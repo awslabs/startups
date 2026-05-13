@@ -1,0 +1,106 @@
+fixture: ai-workload-openai
+
+hard_invariants:
+
+  # === Structural ===
+
+  - id: H1
+    description: ".phase-status.json exists after run completes"
+    source: "SKILL.md:82-106"
+    check:
+      type: file_exists
+      file: .phase-status.json
+
+  - id: H2
+    description: "Phase statuses only progress forward"
+    source: "SKILL.md:102"
+    check:
+      type: custom
+      handler: "tools/invariants/h02_phase_ordering.py"
+
+  - id: H5
+    description: "No later phase is completed while an earlier phase is not"
+    source: "SKILL.md:75"
+    check:
+      type: custom
+      handler: "tools/invariants/h05_phase_sequence.py"
+
+  # === AI Detection ===
+
+  - id: AI1
+    description: "ai-workload-profile.json exists (AI detection fired)"
+    source: "discover-app-code.md:3"
+    check:
+      type: file_exists
+      file: ai-workload-profile.json
+
+  - id: AI2
+    description: "ai_source is openai"
+    source: "schema-discover-ai.md:30"
+    check:
+      type: json_path_value
+      file: ai-workload-profile.json
+      path: "$.summary.ai_source"
+      one_of: ["openai"]
+
+  - id: AI3
+    description: "At least one model detected"
+    source: "schema-discover-ai.md:33"
+    check:
+      type: custom
+      handler: "tools/invariants/ai3_models_detected.py"
+
+  - id: AI4
+    description: "overall_confidence >= 0.7 (threshold for AI profile creation)"
+    source: "discover-app-code.md:3"
+    check:
+      type: custom
+      handler: "tools/invariants/ai4_confidence_threshold.py"
+
+  # === AI Design Mapping ===
+
+  - id: AI5
+    description: "No excluded (EOL <=90 days) models recommended as primary"
+    source: "ai-model-lifecycle.md:31-34"
+    check:
+      type: custom
+      handler: "tools/invariants/ai5_no_excluded_models.py"
+
+  - id: AI6
+    description: "No Legacy models recommended as primary when Active alternative exists"
+    source: "ai-model-lifecycle.md:38"
+    check:
+      type: custom
+      handler: "tools/invariants/ai6_no_legacy_primary.py"
+
+  # === Category F Clarify ===
+
+  - id: AI7
+    description: "Category F questions enabled (category_e_enabled or AI questions asked)"
+    source: "clarify.md:18"
+    check:
+      type: custom
+      handler: "tools/invariants/ai7_category_f_enabled.py"
+
+  # === Security ===
+
+  - id: H41
+    description: "No hardcoded credentials in any generated file"
+    source: "generate-artifacts-infra.md:147"
+    check:
+      type: content_absent
+      file_glob: "terraform/*.tf"
+      patterns:
+        - "AKIA"
+        - "aws_secret_access_key"
+        - "password = \""
+
+soft_observations:
+
+  - id: AI-S1
+    description: "GPT-4o maps to a Bedrock model (not kept as OpenAI)"
+    source: "ai-openai-to-bedrock.md"
+    check:
+      type: custom
+      handler: "tools/invariants/ai_s1_gpt4o_mapping.py"
+    expected: "Bedrock model recommended"

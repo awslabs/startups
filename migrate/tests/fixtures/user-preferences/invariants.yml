@@ -1,0 +1,104 @@
+fixture: user-preferences
+
+hard_invariants:
+
+  # === Structural ===
+
+  - id: H1
+    description: ".phase-status.json exists after run completes"
+    source: "SKILL.md:82-106"
+    check:
+      type: file_exists
+      file: .phase-status.json
+
+  - id: H17
+    description: "preferences.json exists after Clarify completes"
+    source: "clarify.md:342-358"
+    check:
+      type: file_exists
+      file: preferences.json
+
+  # === User Preference Validation ===
+
+  - id: UP1
+    description: "At least one preference has chosen_by user"
+    source: "clarify.md:299-310"
+    check:
+      type: custom
+      handler: "tools/invariants/up1_has_user_choices.py"
+
+  - id: UP2
+    description: "target_region reflects user choice (us-west-2)"
+    source: "clarify.md:342-358"
+    check:
+      type: json_path_value
+      file: preferences.json
+      path: "$.design_constraints.target_region.value"
+      one_of: ["us-west-2"]
+
+  - id: UP3
+    description: "target_region chosen_by is user"
+    source: "clarify.md:342-358"
+    check:
+      type: json_path_value
+      file: preferences.json
+      path: "$.design_constraints.target_region.chosen_by"
+      one_of: ["user"]
+
+  - id: UP4
+    description: "availability reflects user choice (single-az)"
+    source: "clarify.md:342-358"
+    check:
+      type: json_path_value
+      file: preferences.json
+      path: "$.design_constraints.availability.value"
+      one_of: ["single-az"]
+
+  # === Design Reflects Preferences ===
+
+  - id: UP5
+    description: "Design aws_region matches user-chosen us-west-2"
+    source: "design-infra.md"
+    check:
+      type: custom
+      handler: "tools/invariants/up5_design_region.py"
+
+  - id: UP6
+    description: "Design does not use multi-AZ when user chose single-az"
+    source: "design-infra.md"
+    check:
+      type: custom
+      handler: "tools/invariants/up6_single_az.py"
+
+  # === Standard checks ===
+
+  - id: H20
+    description: "No null values in preferences.json"
+    source: "clarify.md:302"
+    check:
+      type: custom
+      handler: "tools/invariants/h20_no_nulls.py"
+
+  - id: H21
+    description: "Every preference entry has value and chosen_by fields"
+    source: "clarify.md:299-310"
+    check:
+      type: custom
+      handler: "tools/invariants/h21_preference_fields.py"
+
+  - id: H22
+    description: "chosen_by is one of the valid values"
+    source: "clarify.md:299-310"
+    check:
+      type: custom
+      handler: "tools/invariants/h22_chosen_by_values.py"
+
+soft_observations:
+
+  - id: UP-S1
+    description: "questions_asked includes at least one question"
+    source: "clarify.md"
+    check:
+      type: custom
+      handler: "tools/invariants/up_s1_questions_asked.py"
+    expected: "At least Q1, Q3, Q5 in questions_asked"

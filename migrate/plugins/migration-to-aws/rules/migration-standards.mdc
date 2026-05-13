@@ -1,0 +1,12 @@
+---
+description: Standards for GCP to AWS migration artifacts
+alwaysApply: true
+---
+
+migration-standards:
+
+- Re-platform by default: select AWS services that match GCP workload types (Cloud Run to Fargate, Cloud SQL to RDS).
+- Default to development-tier sizing unless production is explicitly specified.
+- Always estimate costs before generating infrastructure code.
+- Use Terraform as the default IaC tool for migration artifacts.
+- Preserve existing application architecture patterns during migration.
