@@ -1,0 +1,80 @@
+fixture: bigquery-specialist-gate
+
+hard_invariants:
+
+  # === Structural (inherited from base) ===
+
+  - id: H1
+    description: ".phase-status.json exists after run completes"
+    source: "SKILL.md:82-106"
+    check:
+      type: file_exists
+      file: .phase-status.json
+
+  - id: H2
+    description: "Phase statuses only progress forward"
+    source: "SKILL.md:102"
+    check:
+      type: custom
+      handler: "tools/invariants/h02_phase_ordering.py"
+
+  - id: H5
+    description: "No later phase is completed while an earlier phase is not"
+    source: "SKILL.md:75"
+    check:
+      type: custom
+      handler: "tools/invariants/h05_phase_sequence.py"
+
+  - id: H7
+    description: "gcp-resource-inventory.json exists after run completes"
+    source: "discover-iac.md:241-274"
+    check:
+      type: file_exists
+      file: gcp-resource-inventory.json
+
+  # === BigQuery Specialist Gate (the core tests) ===
+
+  - id: BQ1
+    description: "Every google_bigquery_* resource maps to Deferred -- specialist engagement"
+    source: "design-infra.md:164-165"
+    check:
+      type: custom
+      handler: "tools/invariants/h25_bigquery_gate.py"
+
+  - id: BQ2
+    description: "BigQuery excluded from numeric cost totals"
+    source: "estimate-infra.md:85-89"
+    check:
+      type: custom
+      handler: "tools/invariants/h36_bigquery_excluded.py"
+
+  - id: BQ3
+    description: "No Redshift in Design output for BigQuery resources"
+    source: "estimate-infra.md:87"
+    check:
+      type: custom
+      handler: "tools/invariants/bq3_no_redshift.py"
+
+  - id: BQ4
+    description: "No Athena, Glue, or EMR in Design output for BigQuery resources"
+    source: "estimate-infra.md:87"
+    check:
+      type: custom
+      handler: "tools/invariants/bq4_no_analytics_services.py"
+
+  - id: BQ5
+    description: "Non-BigQuery resources still get normal mappings"
+    source: "design-infra.md"
+    check:
+      type: custom
+      handler: "tools/invariants/bq5_non_bq_mapped.py"
+
+soft_observations:
+
+  - id: BQ-S1
+    description: "Clarify surfaces BigQuery specialist advisory"
+    source: "clarify.md:32"
+    check:
+      type: custom
+      handler: "tools/invariants/bq_s1_clarify_advisory.py"
+    expected: "BigQuery specialist advisory surfaced"

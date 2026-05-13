@@ -1,0 +1,82 @@
+fixture: negative-services
+
+hard_invariants:
+
+  # === Structural ===
+
+  - id: H1
+    description: ".phase-status.json exists after run completes"
+    source: "SKILL.md:82-106"
+    check:
+      type: file_exists
+      file: .phase-status.json
+
+  - id: H7
+    description: "gcp-resource-inventory.json exists after run completes"
+    source: "discover-iac.md:241-274"
+    check:
+      type: file_exists
+      file: gcp-resource-inventory.json
+
+  # === Auth Exclusion ===
+
+  - id: NEG1
+    description: "Auth resources (google_identity_platform_*) excluded from inventory"
+    source: "classification-rules.md:7-18"
+    check:
+      type: custom
+      handler: "tools/invariants/neg1_auth_excluded.py"
+
+  - id: NEG2
+    description: "No Cognito in Design output"
+    source: "classification-rules.md:13"
+    check:
+      type: custom
+      handler: "tools/invariants/neg2_no_cognito.py"
+
+  # === Forbidden Compute Services ===
+
+  - id: NEG3
+    description: "No Lightsail in Design output"
+    source: "fast-path.md"
+    check:
+      type: custom
+      handler: "tools/invariants/neg3_no_lightsail.py"
+
+  - id: NEG4
+    description: "No Elastic Beanstalk in Design output"
+    source: "fast-path.md"
+    check:
+      type: custom
+      handler: "tools/invariants/neg4_no_beanstalk.py"
+
+  # === BigQuery Gate (same as bigquery-specialist-gate) ===
+
+  - id: NEG5
+    description: "Every google_bigquery_* maps to Deferred -- specialist engagement"
+    source: "design-infra.md:164-165"
+    check:
+      type: custom
+      handler: "tools/invariants/h25_bigquery_gate.py"
+
+  - id: NEG6
+    description: "No Redshift, Athena, Glue, or EMR for BigQuery resources"
+    source: "estimate-infra.md:87"
+    check:
+      type: custom
+      handler: "tools/invariants/bq4_no_analytics_services.py"
+
+  # === Security ===
+
+  - id: H41
+    description: "No hardcoded credentials in any generated file"
+    source: "generate-artifacts-infra.md:147"
+    check:
+      type: content_absent
+      file_glob: "terraform/*.tf"
+      patterns:
+        - "AKIA"
+        - "aws_secret_access_key"
+        - "password = \""
+
+soft_observations: []

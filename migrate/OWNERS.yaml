@@ -1,0 +1,10 @@
+team: Startups-Migrate
+resolver_group: STARTUPS-MIGRATE
+cti:
+  category: AWS
+  type: Startups
+  item: Migrate
+contacts:
+  primary: carthick
+  oncall: startups-migrate-oncall
+github_team: "@awslabs/startups-migrate"

@@ -1,0 +1,279 @@
+# Evaluation Harness - Invariant Definitions
+#
+# This file defines the hard invariants and soft observations checked by
+# tools/eval_check.py against migration output. Contributors add new YAML
+# entries here; they do NOT need to write Python.
+#
+# Check types:
+#   file_exists       - Assert a file exists in $MIGRATION_DIR
+#   file_absent       - Assert a file does NOT exist in $MIGRATION_DIR
+#   content_absent    - Assert patterns are NOT present in a file
+#   content_present   - Assert patterns ARE present in a file
+#   json_field_equals - Assert a JSON field has a specific value
+#   json_every        - Assert every item in a JSON array has required fields
+#   json_path_value   - Assert a JSONPath expression returns expected value
+#   cross_file_join   - Assert all values in source path exist in target path
+#   uniqueness        - Assert all values at a JSONPath are unique
+#   custom            - Delegate to a Python handler script
+
+---
+
+fixture: minimal-cloud-run-sql
+
+hard_invariants:
+
+  # === Phase Ordering and State Management ===
+
+  - id: H1
+    description: ".phase-status.json exists after run completes"
+    source: "SKILL.md:82-106"
+    check:
+      type: file_exists
+      file: .phase-status.json
+
+  - id: H2
+    description: "Phase statuses only progress forward (pending -> in_progress -> completed)"
+    source: "SKILL.md:102"
+    check:
+      type: custom
+      handler: "tools/invariants/h02_phase_ordering.py"
+
+  - id: H4
+    description: "current_phase is one of the valid values"
+    source: "SKILL.md:74"
+    check:
+      type: json_path_value
+      file: .phase-status.json
+      path: "$.current_phase"
+      one_of: ["discover", "clarify", "design", "estimate", "generate", "complete"]
+
+  - id: H5
+    description: "No later phase is completed while an earlier phase is not"
+    source: "SKILL.md:75"
+    check:
+      type: custom
+      handler: "tools/invariants/h05_phase_sequence.py"
+
+  # === Discover Phase ===
+
+  - id: H6
+    description: "Discovery outputs contain zero AWS service names"
+    source: "discover.md:180-188"
+    check:
+      type: content_absent
+      file: gcp-resource-inventory.json
+      patterns:
+        - "Fargate"
+        - "Aurora"
+        - "RDS"
+        - "Lambda"
+        - "ECS"
+        - "EKS"
+        - "S3"
+        - "DynamoDB"
+        - "SQS"
+        - "SNS"
+        - "CloudFront"
+        - "API Gateway"
+
+  - id: H7
+    description: "gcp-resource-inventory.json exists after run completes"
+    source: "discover-iac.md:241-274"
+    check:
+      type: file_exists
+      file: gcp-resource-inventory.json
+
+  - id: H8
+    description: "Every resource has required fields"
+    source: "discover-iac.md:241-274"
+    check:
+      type: json_every
+      file: gcp-resource-inventory.json
+      path: "$.resources"
+      has_fields: ["address", "type", "name", "classification"]
+
+  - id: H9
+    description: "Every PRIMARY resource has depth and tier fields"
+    source: "discover-iac.md:241-274"
+    check:
+      type: custom
+      handler: "tools/invariants/h09_primary_fields.py"
+
+  - id: H10
+    description: "Every SECONDARY resource has secondary_role and serves fields"
+    source: "discover-iac.md:241-274"
+    check:
+      type: custom
+      handler: "tools/invariants/h10_secondary_fields.py"
+
+  - id: H11
+    description: "Every resource cluster_id matches a cluster"
+    source: "discover-iac.md:241-274"
+    check:
+      type: cross_file_join
+      source_file: gcp-resource-inventory.json
+      source_path: "$.resources[*].cluster_id"
+      target_file: gcp-resource-clusters.json
+      target_path: "$.clusters[*].cluster_id"
+
+  - id: H12
+    description: "No duplicate address values in inventory"
+    source: "discover-iac.md:241-274"
+    check:
+      type: uniqueness
+      file: gcp-resource-inventory.json
+      path: "$.resources[*].address"
+
+  # === Clarify Phase ===
+
+  - id: H17
+    description: "preferences.json exists after Clarify completes"
+    source: "clarify.md:342-358"
+    check:
+      type: file_exists
+      file: preferences.json
+
+  - id: H18
+    description: "design_constraints.target_region is populated"
+    source: "clarify.md:342-358"
+    check:
+      type: json_path_value
+      file: preferences.json
+      path: "$.design_constraints.target_region.value"
+      not_null: true
+
+  - id: H19
+    description: "design_constraints.availability is populated"
+    source: "clarify.md:342-358"
+    check:
+      type: json_path_value
+      file: preferences.json
+      path: "$.design_constraints.availability.value"
+      not_null: true
+
+  - id: H20
+    description: "No null values in preferences.json"
+    source: "clarify.md:302"
+    check:
+      type: custom
+      handler: "tools/invariants/h20_no_nulls.py"
+
+  - id: H21
+    description: "Every preference entry has value and chosen_by fields"
+    source: "clarify.md:299-310"
+    check:
+      type: custom
+      handler: "tools/invariants/h21_preference_fields.py"
+
+  - id: H22
+    description: "chosen_by is one of the valid values"
+    source: "clarify.md:299-310"
+    check:
+      type: custom
+      handler: "tools/invariants/h22_chosen_by_values.py"
+
+  # === Design Phase ===
+
+  - id: H25
+    description: "Every google_bigquery_* resource maps to Deferred -- specialist engagement"
+    source: "design-infra.md:164-165"
+    check:
+      type: custom
+      handler: "tools/invariants/h25_bigquery_gate.py"
+
+  - id: H27
+    description: "Every resource in aws-design.json has human_expertise_required (boolean)"
+    source: "design-infra.md:164-165"
+    check:
+      type: custom
+      handler: "tools/invariants/h27_expertise_field.py"
+
+  - id: H28
+    description: "confidence values are only deterministic or inferred"
+    source: "design-infra.md:164-165"
+    check:
+      type: custom
+      handler: "tools/invariants/h28_confidence_values.py"
+
+  # === Estimate Phase ===
+
+  - id: H34
+    description: "migration_cost_considerations.categories contains no human labor or professional services"
+    source: "SKILL.md:12"
+    check:
+      type: custom
+      handler: "tools/invariants/h34_empty_migration_costs.py"
+
+  - id: H36
+    description: "BigQuery excluded from numeric cost totals"
+    source: "estimate-infra.md:85-89"
+    check:
+      type: custom
+      handler: "tools/invariants/h36_bigquery_excluded.py"
+
+  # === Generate Phase ===
+
+  - id: H40
+    description: "All generated scripts default to dry-run mode"
+    source: "generate-artifacts-scripts.md:60-64"
+    check:
+      type: content_present
+      file_glob: "scripts/*.sh"
+      patterns:
+        - "DRY_RUN"
+
+  - id: H41
+    description: "No hardcoded credentials in any generated file"
+    source: "generate-artifacts-infra.md:147"
+    check:
+      type: content_absent
+      file_glob: "terraform/*.tf"
+      patterns:
+        - "AKIA"
+        - "aws_secret_access_key"
+        - "password = \""
+
+  - id: H42
+    description: "No wildcard IAM policies in generated Terraform"
+    source: "generate-artifacts-infra.md:145"
+    check:
+      type: content_absent
+      file_glob: "terraform/*.tf"
+      patterns:
+        - "\"*\""
+        - "'*'"
+
+  - id: H43
+    description: "No unrestricted ingress except ALB ports 443/80"
+    source: "generate-artifacts-infra.md:153"
+    check:
+      type: custom
+      handler: "tools/invariants/h43_ingress_rules.py"
+
+soft_observations:
+
+  - id: S1
+    description: "Number of PRIMARY resources"
+    source: "classification-rules.md:20-68"
+    check:
+      type: json_path_value
+      file: gcp-resource-inventory.json
+      path: "$.resources[?(@.classification=='PRIMARY')]"
+      count: true
+    expected: 2
+
+  - id: S3
+    description: "Cloud Run maps to Fargate (deterministic fast-path)"
+    source: "fast-path.md:37-56"
+    check:
+      type: custom
+      handler: "tools/invariants/s03_cloud_run_mapping.py"
+    expected: "Fargate"
+
+  - id: S4
+    description: "Cloud SQL PostgreSQL maps to Aurora PostgreSQL"
+    source: "fast-path.md:37-56"
+    check:
+      type: custom
+      handler: "tools/invariants/s04_cloud_sql_mapping.py"
+    expected: "Aurora PostgreSQL"
