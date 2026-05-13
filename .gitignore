@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+__pycache__/
+
+# Tool caches
+.dprint/
+.ruff_cache/
+.mise/
+
+# Temporary files
+.tmp/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Claude
+.claude/settings.local.json
+
+# Migration artifacts (generated at runtime by plugins)
+.migration/

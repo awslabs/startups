@@ -1,0 +1,176 @@
+name: Security Scanners
+
+on:
+  schedule:
+    - cron: '12 15 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  actions: none
+  contents: none
+
+jobs:
+  gitleaks:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: "8.30.0"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz;
+          sudo mv gitleaks /usr/local/bin/;
+          gitleaks --version;
+      - name: Run gitleaks
+        id: gitleaks
+        run: |
+          set +e
+          gitleaks git --config=.gitleaks.toml --baseline-path=.gitleaks-baseline.json --report-path=gitleaks-report.sarif --report-format=sarif .
+          GITLEAKS_EXIT=$?
+          set -e
+          echo "exit_code=$GITLEAKS_EXIT" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: gitleaks.sarif
+          path: gitleaks-report.sarif
+          if-no-files-found: error
+      - uses: github/codeql-action/upload-sarif@5e7a52feb2a3dfb87f88be2af33b9e2275f48de6 # v4.32.2
+        continue-on-error: true
+        with:
+          sarif_file: gitleaks-report.sarif
+      - if: steps.gitleaks.outputs.exit_code != '0'
+        run: |
+          echo "::error::gitleaks found secrets"
+          exit ${{ steps.gitleaks.outputs.exit_code }}
+
+  bandit:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.x'
+      - name: Run bandit
+        id: bandit
+        run: |
+          pip install "bandit[sarif]==1.9.3"
+          set +e
+          bandit -r . -f sarif -o bandit-report.sarif
+          BANDIT_EXIT=$?
+          set -e
+          echo "exit_code=$BANDIT_EXIT" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: bandit.sarif
+          path: bandit-report.sarif
+          if-no-files-found: error
+      - uses: github/codeql-action/upload-sarif@5e7a52feb2a3dfb87f88be2af33b9e2275f48de6 # v4.32.2
+        continue-on-error: true
+        with:
+          sarif_file: bandit-report.sarif
+      - if: steps.bandit.outputs.exit_code != '0'
+        run: |
+          echo "::error::bandit found security issues"
+          exit ${{ steps.bandit.outputs.exit_code }}
+
+  semgrep:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.x'
+      - name: Run semgrep
+        id: semgrep
+        env:
+          BASELINE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          pip install "semgrep==1.151.0"
+          BASELINE_ARGS=""
+          if [ -n "$BASELINE_SHA" ]; then
+            BASELINE_ARGS="--baseline-commit $BASELINE_SHA"
+          fi
+          set +e
+          semgrep scan --oss-only --metrics=off --config=r/all \
+            --exclude-rule="ai.generic.detect-generic-ai-anthprop.detect-generic-ai-anthprop" \
+            --exclude-rule="ai.generic.detect-generic-ai-oai.detect-generic-ai-oai" \
+            --sarif-output semgrep-report.sarif $BASELINE_ARGS
+          SEMGREP_EXIT=$?
+          set -e
+          echo "exit_code=$SEMGREP_EXIT" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: semgrep.sarif
+          path: semgrep-report.sarif
+          if-no-files-found: error
+      - uses: github/codeql-action/upload-sarif@5e7a52feb2a3dfb87f88be2af33b9e2275f48de6 # v4.32.2
+        continue-on-error: true
+        with:
+          sarif_file: semgrep-report.sarif
+      - if: steps.semgrep.outputs.exit_code != '0'
+        run: |
+          echo "::error::semgrep found security issues"
+          exit ${{ steps.semgrep.outputs.exit_code }}
+
+  checkov:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.x'
+      - name: Run checkov
+        id: checkov
+        run: |
+          pip install "checkov==3.2.500"
+          set +e
+          checkov -d . --output sarif --output-file-path .
+          CHECKOV_EXIT=$?
+          mv results_sarif.sarif checkov-report.sarif || true
+          set -e
+          echo "exit_code=$CHECKOV_EXIT" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: checkov.sarif
+          path: checkov-report.sarif
+          if-no-files-found: error
+      - uses: github/codeql-action/upload-sarif@5e7a52feb2a3dfb87f88be2af33b9e2275f48de6 # v4.32.2
+        continue-on-error: true
+        with:
+          sarif_file: checkov-report.sarif
+      - if: steps.checkov.outputs.exit_code != '0'
+        run: |
+          echo "::error::checkov found IaC issues"
+          exit ${{ steps.checkov.outputs.exit_code }}

@@ -1,0 +1,11 @@
+# Repo infrastructure - only admins can modify
+/.github/                @awslabs/startups-admins
+mise.toml                @awslabs/startups-admins
+dprint.json              @awslabs/startups-admins
+.pre-commit-config.yaml  @awslabs/startups-admins
+.gitleaks.toml           @awslabs/startups-admins
+.semgrep.yaml            @awslabs/startups-admins
+.markdownlint-cli2.yaml  @awslabs/startups-admins
+
+# Team folders
+/migrate/                @awslabs/startups-migrate

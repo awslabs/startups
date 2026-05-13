@@ -1,0 +1,18 @@
+# .semgrepignore - Additional exclusions beyond .gitignore
+# Semgrep automatically respects .gitignore patterns
+
+# Test fixtures and eval harnesses (review separately)
+**/test_fixtures/
+**/fixtures/
+**/evals/**/scripts/
+
+# Lock files (auto-generated)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+uv.lock
+
+# Baseline files for other scanners
+.gitleaks-baseline.json
+.bandit-baseline.json
+.semgrepignore

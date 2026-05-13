@@ -1,0 +1,12 @@
+# .semgrep.yaml - Semgrep configuration for awslabs/startups
+# https://semgrep.dev/docs/writing-rules/rule-syntax
+
+# Excluded rules:
+#
+# ai.generic.detect-generic-ai-anthprop.detect-generic-ai-anthprop
+#   Reason: This repo contains Claude Code plugins - Anthropic references are expected
+#
+# ai.generic.detect-generic-ai-oai.detect-generic-ai-oai
+#   Reason: Migration plugins reference OpenAI models as migration source
+
+rules: []
