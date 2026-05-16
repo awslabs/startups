@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing to `awslabs/startups`.
 
+---
+
 ## RFCs for New Features, Artifacts, and Major Changes
 
 For **new features**, **new artifacts** or **major changes**, contributors must first open an
