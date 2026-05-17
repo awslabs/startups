@@ -52,6 +52,7 @@ jobs:
         with:
           app-id: ${{ secrets.WATCHDOG_APP_ID }}
           private-key: ${{ secrets.WATCHDOG_APP_PRIVATE_KEY }}
+          owner: herosjourney
 
       - name: Detect changed Reference_Files
         id: changed-files
@@ -74,9 +75,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.WATCHDOG_PAT || github.token }}
         run: |
-          # Clone the watchdog repo (replace WATCHDOG_REPO with your actual repo)
+          # Clone the watchdog repo using App token if available, else github.token
           git clone \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ vars.WATCHDOG_REPO || 'aws-samples/migration-watchdog' }}.git" \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ vars.WATCHDOG_REPO || 'herosjourney/migration-watchdog' }}.git" \
             /tmp/migration-watchdog
 
           # The migration_watchdog/ package directory is at the repo root.
@@ -120,6 +121,7 @@ jobs:
           WATCHDOG_TARGET_OWNER: ${{ vars.WATCHDOG_TARGET_OWNER || 'aws-samples' }}
           WATCHDOG_TARGET_REPO: ${{ vars.WATCHDOG_TARGET_REPO || 'sample-agent-skills-for-aws-migration' }}
         run: |
+          pip install httpx --quiet
           python - <<'EOF'
           import json, os, sys
           import httpx
