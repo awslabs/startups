@@ -1,0 +1,169 @@
+name: PR Guardrails
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        run: |
+          git diff --name-only origin/main...HEAD > /tmp/changed_files.txt
+          if [ -s /tmp/changed_files.txt ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Block OWNERS.yaml changes
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          # Match OWNERS.yaml or OWNERS.yml at any path depth (case-insensitive)
+          OWNERS_CHANGED=$(grep -iE "(^|/)OWNERS\.ya?ml$" /tmp/changed_files.txt || true)
+          if [ -n "$OWNERS_CHANGED" ]; then
+            echo "::error::OWNERS.yaml/yml files cannot be modified without admin approval:"
+            echo "$OWNERS_CHANGED"
+            exit 1
+          fi
+
+      - name: Block plugin identity changes
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          # Protected JSON fields in plugin.json and marketplace.json:
+          #   name   – prevents rebranding / impersonation
+          #   author – prevents credit reassignment
+          # description and version are intentionally not protected so contributors
+          # can update them without admin approval.
+          while IFS= read -r f; do
+            case "$f" in
+              .claude-plugin/marketplace.json|*/.claude-plugin/marketplace.json|*/plugin.json|plugin.json) ;;
+              *) continue ;;
+            esac
+            if [ -f "$f" ]; then
+              DIFF=$(git diff origin/main...HEAD -- "$f")
+              CHANGED_FIELD=$(echo "$DIFF" | grep -oP '^\-\s*"\K(name|author)(?="\s*:)' | head -1 || true)
+              if [ -n "$CHANGED_FIELD" ]; then
+                echo "::error::Plugin '$CHANGED_FIELD' in $f cannot be changed without admin approval"
+                exit 1
+              fi
+            fi
+          done < /tmp/changed_files.txt
+
+      - name: Block SKILL.md identity changes
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          # Protected YAML frontmatter fields in SKILL.md:
+          #   name   – prevents in-place skill rebranding
+          #   author – prevents credit reassignment
+          # We compare the frontmatter between origin/main and HEAD to avoid false
+          # positives from `name:` or `author:` lines that may appear in the
+          # markdown body. Newly-added SKILL.md files (not present in origin/main)
+          # are allowed through this check.
+          extract_field() {
+            # $1 = field name (read content from stdin)
+            # Reads only the YAML frontmatter (between the first two `---` lines)
+            # and returns the trimmed value (with surrounding quotes stripped).
+            awk -v field="$1" '
+              /^---[[:space:]]*$/ { c++; if (c==2) exit; next }
+              c==1 {
+                if (match($0, "^[[:space:]]*" field "[[:space:]]*:[[:space:]]*")) {
+                  v = substr($0, RLENGTH+1)
+                  sub(/[[:space:]]+$/, "", v)
+                  # Strip surrounding double or single quotes if present
+                  if (v ~ /^".*"$/ || v ~ /^'\''.*'\''$/) {
+                    v = substr(v, 2, length(v)-2)
+                  }
+                  print v
+                  exit
+                }
+              }
+            '
+          }
+
+          while IFS= read -r f; do
+            case "$f" in */SKILL.md|SKILL.md) ;; *) continue ;; esac
+            [ -f "$f" ] || continue
+            # Skip newly-added skills (no base version to compare against)
+            if ! git cat-file -e "origin/main:$f" 2>/dev/null; then
+              continue
+            fi
+            for field in name author; do
+              BASE_VAL=$(git show "origin/main:$f" | extract_field "$field")
+              HEAD_VAL=$(extract_field "$field" < "$f")
+              if [ "$BASE_VAL" != "$HEAD_VAL" ]; then
+                echo "::error::Skill '$field' changed in $f (was: '$BASE_VAL', now: '$HEAD_VAL') — requires admin approval"
+                exit 1
+              fi
+            done
+          done < /tmp/changed_files.txt
+
+      - name: Block skill directory renames
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          # Use --name-status so we can inspect both source and destination paths.
+          # Matches D (deleted) and R### (renamed) entries where either the source
+          # or destination path includes SKILL.md.
+          AFFECTED=$(git diff --diff-filter=DR --name-status --find-renames origin/main...HEAD \
+            | awk '/SKILL\.md/' || true)
+          if [ -n "$AFFECTED" ]; then
+            echo "::error::Skill files cannot be renamed or deleted without admin approval:"
+            echo "$AFFECTED"
+            exit 1
+          fi
+
+      - name: Enforce folder scoping
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          # Get top-level folders touched (excluding dotfiles/dotfolders and root-level files)
+          FOLDERS=$(grep "/" /tmp/changed_files.txt | cut -d'/' -f1 | sort -u | grep -v '^\.' || true)
+          # Contributors should only touch ONE team folder per PR
+          if [ -z "$FOLDERS" ]; then
+            FOLDER_COUNT=0
+          else
+            FOLDER_COUNT=$(echo "$FOLDERS" | wc -l)
+          fi
+          if [ "$FOLDER_COUNT" -gt 1 ]; then
+            echo "::error::PR touches multiple top-level folders. Each PR should be scoped to a single team folder:"
+            echo "$FOLDERS"
+            exit 1
+          fi
+          # Block changes to root-level files (admins only via CODEOWNERS)
+          # Allowlist: files contributors may legitimately touch
+          ALLOWED_ROOT="^(CONTRIBUTING\.md|CODE_OF_CONDUCT\.md)$"
+          ROOT_FILES=$(grep -v "/" /tmp/changed_files.txt | grep -v '^\.' | grep . || true)
+          if [ -n "$ROOT_FILES" ]; then
+            BLOCKED=$(echo "$ROOT_FILES" | grep -vE "$ALLOWED_ROOT" || true)
+            if [ -n "$BLOCKED" ]; then
+              echo "::error::Root-level files cannot be modified by contributors:"
+              echo "$BLOCKED"
+              exit 1
+            fi
+          fi
+
+      - name: Check for risky code patterns
+        if: steps.changed.outputs.has_changes == 'true'
+        run: |
+          FOUND=0
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            # Skip config and documentation files
+            case "$f" in *.md|*.json|*.yaml|*.yml|*.toml|*.txt|*.csv) continue ;; esac
+            ISSUES=$(grep -nE "(^|[^A-Za-z0-9_])(eval|exec|os\.system)\(|subprocess[^)]*shell\s*=\s*True|(curl|wget)\s+[^\|]*\|\s*(sh|bash)" "$f" 2>/dev/null || true)
+            if [ -n "$ISSUES" ]; then
+              echo "::warning::Risky patterns in $f:"
+              echo "$ISSUES"
+              FOUND=1
+            fi
+          done < /tmp/changed_files.txt
+          if [ "$FOUND" -eq 1 ]; then
+            echo "::error::Risky code patterns detected — requires admin review"
+            exit 1
+          fi
