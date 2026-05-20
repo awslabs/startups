@@ -15,7 +15,7 @@ Questions are organized into **six named categories (A–F)** with documented fi
 | `clarify-global.md`   | A — Global/Strategic         | Q1–Q7     | Always                                          |
 | `clarify-compute.md`  | B — Config Gaps, C — Compute | Q8–Q11    | Compute or billing-source resources present     |
 | `clarify-database.md` | D — Database                 | Q12–Q13   | Database resources present                      |
-| `clarify-ai.md`       | F — AI/Bedrock               | Q14–Q22   | `ai-workload-profile.json` exists               |
+| `clarify-ai.md`       | F — AI/Bedrock               | Q14–Q26   | `ai-workload-profile.json` exists               |
 | `clarify-ai-only.md`  | _(standalone)_               | Q1–Q10    | AI-only migration (no infrastructure artifacts) |
 
 ---
@@ -115,7 +115,7 @@ Record extracted values. Questions whose answers are fully determined by extract
 | **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend)                                  |
 | **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O)                                                                              |
 | **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                           |
-| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                             |
+| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q26 (Q14–Q22 always; Q23–Q26 only when `agentic_profile.is_agentic == true`) |
 
 **Apply firing rules to determine which categories are active:**
 
@@ -162,7 +162,7 @@ After determining active categories, organize questions into **up to three batch
 | ----- | ---------------------- | ------------------------------------------ | --------------------------- | ----------------------------------------- |
 | **1** | Strategic Requirements | A (Global/Strategic)                       | Q1–Q7 (minus Q4)            | Always                                    |
 | **2** | Infrastructure         | B (Config Gaps), C (Compute), D (Database) | Q8–Q13 + Category B prompts | Any compute or database resources present |
-| **3** | AI Workloads           | F (AI/Bedrock)                             | Q14–Q22                     | `ai-workload-profile.json` exists         |
+| **3** | AI Workloads           | F (AI/Bedrock)                             | Q14–Q26 (Q23–Q26 only if agentic) | `ai-workload-profile.json` exists         |
 
 **Determine active batches:**
 
@@ -183,13 +183,13 @@ _Default behavior when disabled:_ Apply conservative defaults — no HA upgrades
 
 If the user opts in, present after all other categories:
 
-### Q24 — Should we recommend upgrading Single-AZ to Multi-AZ where possible?
+### Q-E1 — Should we recommend upgrading Single-AZ to Multi-AZ where possible?
 
 > A) Yes — upgrade to Multi-AZ for higher availability | B) No — keep current topology
 
 Interpret → `ha_upgrade`: A → `true`, B → `false`. Default: B → `false`.
 
-### Q25 — Should we use billing utilization data to right-size instance types?
+### Q-E2 — Should we use billing utilization data to right-size instance types?
 
 > A) Yes — right-size based on utilization | B) No — match current capacity
 
@@ -313,7 +313,7 @@ After the last substantive batch is answered (but before writing final `preferen
 
 > "Would you also like HA upgrade and right-sizing recommendations based on your billing data? If not, I'll use conservative defaults (no upgrades, match current capacity)."
 
-If user opts in, present Q24–Q25 (defined in **Category E — Migration Posture** above). Otherwise, apply Category E defaults (`ha_upgrade: false`, `right_sizing: false`).
+If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Posture** above). Otherwise, apply Category E defaults (`ha_upgrade: false`, `right_sizing: false`).
 
 ---
 
