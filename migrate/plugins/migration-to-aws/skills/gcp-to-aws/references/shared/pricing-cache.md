@@ -1,11 +1,13 @@
 # AWS Pricing Cache
 
-**Last updated:** 2026-04-16
+**Last updated:** 2026-05-20
 **Region:** us-east-1
 **Currency:** USD
 **Accuracy:** ±5-10% for infrastructure services (sourced from AWS Price List API), ±15-25% for AI models (sourced from public pricing pages)
 
 > Prices may vary by region and change over time. Use for estimation only. For real-time pricing, fall back to the AWS Pricing MCP server. **Amazon Nova** figures in the Bedrock subsection often reference **US East (Ohio)** and **inference mode** (global vs geo); other services in this file default to **us-east-1** unless noted.
+
+> **Staleness warning:** If today's date is more than 30 days after the **Last updated** date above, treat AI model prices as potentially stale (±15-25% accuracy may widen). Infrastructure prices (Fargate, RDS, S3, etc.) change rarely and remain reliable longer. When staleness is detected, set `pricing_source: "cached_stale"` in the estimate output and note: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or [aws.amazon.com/bedrock/pricing](https://aws.amazon.com/bedrock/pricing/)."
 
 ---
 
@@ -346,7 +348,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Nova Premier                     | amazon.nova-premier-v1:0                 | Amazon    | 2.50       | 12.50       | 1M      | reasoning | legacy (EOL Sep 14, 2026)  |
 | Mistral Large 3                  | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                     |
 | DeepSeek-R1                      | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                     |
-| DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active                     |
+| DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active (Sydney only)       |
 | gpt-oss-20b                      | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                     |
 | gpt-oss-120b                     | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                     |
 | Gemma 3 4B IT                    | google.gemma-3-4b-it                     | Google    | 0.04       | 0.08        | 128K    | budget    | active                     |
@@ -401,7 +403,7 @@ Prices per 1M input / output tokens.
 
 | Model               | Input $/1M | Output $/1M |
 | ------------------- | ---------- | ----------- |
-| Devstral 2 135B     | 0.40       | 2.00        |
+| Devstral 2 123B     | 0.40       | 2.00        |
 | Magistral Small 1.2 | 0.50       | 1.50        |
 | Voxtral Mini 1.0    | 0.04       | 0.04        |
 | Voxtral Small 1.0   | 0.10       | 0.30        |
@@ -410,7 +412,7 @@ Prices per 1M input / output tokens.
 | Ministral 14B 3.0   | 0.20       | 0.20        |
 | Mistral Large 3     | 0.50       | 1.50        |
 
-_Rates differ in **Asia Pacific (Mumbai)**, **São Paulo**, **Tokyo**, **Europe (Ireland/Milan/London)**, **Sydney**, **Jakarta**, **Frankfurt**, **Stockholm** (e.g. Mistral Large 3 Mumbai **$0.59 / $1.76**). **Devstral 2 135B** appears in Jakarta / Frankfurt / Stockholm at **$0.48 / $2.40** on the same page._
+_Rates differ in **Asia Pacific (Mumbai)**, **São Paulo**, **Tokyo**, **Europe (Ireland/Milan/London)**, **Sydney**, **Jakarta**, **Frankfurt**, **Stockholm** (e.g. Mistral Large 3 Mumbai **$0.59 / $1.76**). **Devstral 2 123B** appears in Jakarta / Frankfurt / Stockholm at **$0.48 / $2.40** on the same page._
 
 ### DeepSeek (Amazon Bedrock)
 
@@ -418,10 +420,11 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (DeepSeek)
 
 #### US East (Ohio) — Standard tier
 
+> **Note:** DeepSeek-V3.1 is no longer listed for US East regions on the Bedrock pricing page as of May 2026. Use DeepSeek-V3.2 for US East deployments. DeepSeek-V3.1 remains available in Asia Pacific (Sydney).
+
 | Model         | Input $/1M | Output $/1M |
 | ------------- | ---------- | ----------- |
 | DeepSeek-R1   | 1.35       | 5.40        |
-| DeepSeek-V3.1 | 0.58       | 1.68        |
 
 #### US East (N. Virginia), US East (Ohio), US West (Oregon)
 
