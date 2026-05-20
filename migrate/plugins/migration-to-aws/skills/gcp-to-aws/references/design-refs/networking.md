@@ -11,6 +11,7 @@
 | Cloud Interconnect   | Direct Connect | Dedicated connection (4-12 weeks setup) → use VPN as temp |
 | Cloud Load Balancing | ALB            | SSL certificate passthrough → NLB (L4, pass-through)      |
 | Cloud Load Balancing | NLB            | Host/path-based routing required → ALB (L7)               |
+| Firewall Rules       | Security Group | Ingress on port 22, 3389, or 5900 with source `0.0.0.0/0` or `::/0` → **BLOCKED** — see Administrative Port Safety Rule below |
 
 ## Signals (Decision Criteria)
 
@@ -23,6 +24,36 @@
 
 - Always → AWS Security Groups (1:1 deterministic)
 - Convert direction (ingress/egress) and IP ranges
+
+**Administrative Port Safety Rule (HARD — no exceptions):**
+
+If a `google_compute_firewall` rule allows ingress on port **22 (SSH)**, **3389 (RDP)**, or **5900 (VNC)**
+with `source_ranges` containing `0.0.0.0/0` or `::/0`:
+
+1. **Do NOT emit** a security group ingress rule with `cidr_blocks = ["0.0.0.0/0"]` for those ports.
+2. Instead, emit a **commented-out placeholder** in `vpc.tf` with an inline explanation:
+
+```hcl
+# SECURITY: GCP source rule allowed port 22/3389 from 0.0.0.0/0.
+# Direct SSH/RDP from the internet is not recommended on AWS.
+# Preferred access method: AWS Systems Manager Session Manager (no open ports required).
+# See: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html
+# If SSM is not viable, uncomment below and restrict cidr_blocks to a known bastion CIDR.
+# ingress {
+#   description = "SSH — RESTRICT TO KNOWN CIDR BEFORE ENABLING"
+#   from_port   = 22
+#   to_port     = 22
+#   protocol    = "tcp"
+#   cidr_blocks = ["<YOUR-BASTION-CIDR>/32"]
+# }
+```
+
+3. Add a `warnings[]` entry to `aws-design.json` for this resource:
+   `"GCP firewall rule [name] allowed port [22|3389|5900] from 0.0.0.0/0. Translated to commented-out placeholder — use SSM Session Manager or restrict to a known CIDR before enabling."`
+
+This rule applies to both default GCP firewall rules (e.g., `default-allow-ssh`) and
+explicit customer-defined rules. The 1:1 deterministic mapping for `google_compute_firewall`
+still applies for all other ports and source ranges.
 
 ### Cloud Load Balancing
 

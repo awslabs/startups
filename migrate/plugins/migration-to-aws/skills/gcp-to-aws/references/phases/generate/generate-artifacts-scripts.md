@@ -219,16 +219,25 @@ for SECRET_NAME in "${SECRETS[@]}"; do
     echo "[DRY RUN] Would migrate secret: $SECRET_NAME"
   else
     echo "Reading secret from GCP: $SECRET_NAME"
-    SECRET_VALUE=$(gcloud secrets versions access latest --secret="$SECRET_NAME")
+    # Write to a restricted temp file — avoids secret values appearing in shell
+    # variables, process lists (ps aux), or shell history. Cleaned up on exit.
+    TMPFILE=$(mktemp)
+    chmod 600 "$TMPFILE"
+    trap 'rm -f "$TMPFILE"' EXIT
 
-    echo "Creating secret in AWS: $SECRET_NAME"
+    gcloud secrets versions access latest --secret="$SECRET_NAME" > "$TMPFILE"
+
+    echo "Creating/updating secret in AWS: $SECRET_NAME"
     aws secretsmanager create-secret \
       --name "$SECRET_NAME" \
-      --secret-string "$SECRET_VALUE" \
+      --secret-string "file://$TMPFILE" \
       --tags Key=MigrationSource,Value=gcp-secret-manager 2>/dev/null || \
     aws secretsmanager put-secret-value \
       --secret-id "$SECRET_NAME" \
-      --secret-string "$SECRET_VALUE"
+      --secret-string "file://$TMPFILE"
+
+    rm -f "$TMPFILE"
+    trap - EXIT
   fi
 done
 
