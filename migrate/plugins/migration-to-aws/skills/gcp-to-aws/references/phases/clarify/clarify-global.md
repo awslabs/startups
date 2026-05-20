@@ -243,8 +243,10 @@ Default: B — `availability: "multi-az"`.
 
 **Database migration tooling notes:**
 
-- For PostgreSQL databases <10GB: **pg_dump/pg_restore** is sufficient.
-- For larger PostgreSQL databases (>10GB): **pgcopydb** offers parallel table copying and index rebuilding, significantly reducing migration time within the same maintenance window.
+- Read `preferences.json.db_size` (set by Q14 in `clarify-database.md`) to select the right tool. If absent, fall back to the size thresholds below.
+- For PostgreSQL databases `db_size: "<10GB"` or unknown-small: **pg_dump/pg_restore** is sufficient.
+- For PostgreSQL databases `db_size: "10-100GB"` or `"100-500GB"`: **pgcopydb** offers parallel table copying and index rebuilding, significantly reducing migration time within the same maintenance window.
+- For PostgreSQL databases `db_size: ">500GB"`: **AWS DMS strongly recommended** regardless of maintenance window — single-pass export/import at this scale is high-risk.
 - pgcopydb's CDC mode requires `wal_level=logical` on Cloud SQL, which must be enabled explicitly.
 
 > The maintenance window determines your migration cutover strategy and which database migration tooling we recommend. Zero-downtime migrations require significantly more complex infrastructure.

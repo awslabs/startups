@@ -102,3 +102,41 @@ E -> same as default (B) — assume medium I/O
 ```
 
 Default: B — `db_io_workload: "medium"`.
+
+---
+
+## Q14 — Approximately how large is your primary database?
+
+_Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL, or engine is SQL Server (DMS is always recommended for SQL Server regardless of size).
+
+**Rationale:** Database size is the primary driver of migration tooling selection. pg_dump/pg_restore is sufficient for small databases but becomes impractically slow above ~10GB within a typical maintenance window. pgcopydb's parallel copy cuts migration time by 3–5x for medium databases. Very large databases (>500GB) require DMS for continuous replication regardless of whether a maintenance window exists — a single-pass export/import at that scale carries too much risk.
+
+**Auto-detect signal:** If `gcp_config.disk_size_gb` is present on `google_sql_database_instance`, use it as the default answer and confirm with the user rather than asking from scratch.
+
+> Database size determines which migration tool we recommend — this directly affects your migration window length and risk.
+>
+> A) < 10 GB — small, pg_dump/pg_restore completes in minutes
+> B) 10 GB – 100 GB — medium, pgcopydb recommended for parallel copy
+> C) 100 GB – 500 GB — large, pgcopydb required; plan for multi-hour window
+> D) > 500 GB — very large, AWS DMS strongly recommended regardless of window
+> E) I don't know
+
+| Answer          | Tooling Recommendation                                                                                                                                                  |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| < 10 GB         | **pg_dump/pg_restore** — fast, simple, no extra tooling required                                                                                                       |
+| 10 GB – 100 GB  | **pgcopydb** — parallel table copy + index rebuild; 3–5x faster than pg_dump; requires `wal_level=logical` on Cloud SQL if CDC mode used                               |
+| 100 GB – 500 GB | **pgcopydb** required — pg_dump at this size risks exceeding maintenance window; plan for 4–12 hour window depending on table count and index complexity                |
+| > 500 GB        | **AWS DMS strongly recommended** — single-pass export/import at this scale is high-risk; DMS provides continuous replication with minimal cutover window (minutes, not hours) |
+| I don't know    | Default to pgcopydb (safer than pg_dump at unknown scale); flag for user to verify before migration                                                                     |
+
+Interpret:
+
+```
+A -> db_size: "<10GB"    — pg_dump/pg_restore recommended
+B -> db_size: "10-100GB" — pgcopydb recommended
+C -> db_size: "100-500GB" — pgcopydb required; flag extended window
+D -> db_size: ">500GB"   — AWS DMS strongly recommended; flag in migration plan
+E -> db_size: "unknown"  — default to pgcopydb; flag for verification
+```
+
+Default: E — `db_size: "unknown"` (default to pgcopydb; safer than pg_dump at unknown scale).

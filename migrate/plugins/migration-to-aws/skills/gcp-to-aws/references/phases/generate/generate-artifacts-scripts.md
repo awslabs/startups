@@ -81,12 +81,24 @@ Based on database and storage resources in `aws-design.json`:
 
 **Cloud SQL to RDS/Aurora** — include only if `has_databases`:
 
+Read `preferences.json.db_size` to select the migration tool:
+- `"<10GB"` → use **pg_dump/pg_restore**
+- `"10-100GB"` or `"100-500GB"` → use **pgcopydb** (parallel copy; requires `wal_level=logical` on Cloud SQL)
+- `">500GB"` → use **AWS DMS** (continuous replication; generate DMS task config instead of a shell export script)
+- `"unknown"` → default to **pgcopydb** with a TODO comment to verify size before running
+
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
 # Cloud SQL → RDS data migration
 # Usage: ./02-migrate-data.sh [--execute]
+#
+# Tool selection based on database size (preferences.json db_size):
+#   <10GB:      pg_dump/pg_restore
+#   10-500GB:   pgcopydb (parallel copy, 3-5x faster than pg_dump)
+#   >500GB:     AWS DMS recommended — see README-DMS.md if generated
+#   unknown:    pgcopydb (safer default at unknown scale)
 
 DRY_RUN=true
 [[ "${1:-}" == "--execute" ]] && DRY_RUN=false
