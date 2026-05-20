@@ -1,0 +1,43 @@
+{
+  "name": "migration-to-aws",
+  "version": "1.1.0",
+  "description": "Migrate workloads from Google Cloud Platform to AWS. Runs a 6-phase process: discover GCP resources from Terraform files, app code, or billing exports; clarify migration requirements; design AWS architecture; estimate costs; generate migration artifacts; and collect optional feedback. Includes AI provider migration guidance (OpenAI/Gemini to Amazon Bedrock) with model mapping, agentic migration paths, and honest pricing comparisons.",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://aws.amazon.com"
+  },
+  "homepage": "https://github.com/awslabs/startups/tree/main/migrate",
+  "repository": "https://github.com/awslabs/startups",
+  "license": "MIT-0",
+  "keywords": [
+    "aws",
+    "gcp",
+    "google-cloud",
+    "migration",
+    "cloud-migration",
+    "terraform",
+    "fargate",
+    "rds",
+    "eks",
+    "bedrock",
+    "ai-migration"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "GCP to AWS Migration",
+    "shortDescription": "Migrate GCP infrastructure and AI workloads to AWS with architecture mapping, cost analysis, and runnable Terraform.",
+    "longDescription": "Point this plugin at your Terraform files, application code, or GCP billing data. It runs a structured 6-phase migration assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.\n\nFor AI-focused startups, it detects your entire AI stack (models, agents, tools, orchestration patterns) and recommends three migration paths: retarget (keep your framework, swap models), AgentCore Harness (config-based managed agents), or Strands Agents (AWS-native multi-agent SDK).\n\nGenerates Terraform configurations, migration scripts, provider adapters, harness.json, and documentation — all tailored to your specific stack.",
+    "developerName": "Amazon Web Services",
+    "category": "DevOps",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/awslabs/startups/tree/main/migrate",
+    "defaultPrompt": [
+      "Migrate my GCP infrastructure to AWS",
+      "Migrate my OpenAI app to Amazon Bedrock",
+      "Estimate AWS costs for my GCP workload",
+      "Generate Terraform for my GCP to AWS migration",
+      "Migrate my LangChain app from OpenAI to Bedrock"
+    ]
+  }
+}

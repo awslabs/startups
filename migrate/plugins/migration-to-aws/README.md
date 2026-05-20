@@ -1,6 +1,6 @@
 # Agent Skills for AWS Migration
 
-AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) and [Cursor](https://www.cursor.com/).
+AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), [Codex](https://openai.com/codex), and [Cursor](https://www.cursor.com/).
 
 ## What This Does
 
@@ -39,10 +39,20 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 
 ```bash
 # Add the marketplace
-/plugin marketplace add aws-samples/sample-agent-skills-for-aws-migration
+/plugin marketplace add awslabs/startups --sparse migrate/plugins
 
 # Install the plugin
-/plugin install migration-to-aws@sample-agent-skills-for-aws-migration
+/plugin install migration-to-aws@startups
+```
+
+### Codex
+
+```bash
+# Add the marketplace
+codex plugin marketplace add awslabs/startups --sparse migrate/plugins
+
+# Install the plugin
+codex plugin install migration-to-aws
 ```
 
 ### Cursor
@@ -86,7 +96,7 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 
 ## Requirements
 
-- Claude Code >=2.1.29 or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
+- Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
 - At least one input source: Terraform files, application code, or GCP billing data
 - **For AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
