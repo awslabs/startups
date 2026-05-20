@@ -307,7 +307,7 @@ _Skip when:_ Auto-detection fully resolves AND user has no preference signal. Us
 > Your agent system can migrate to AWS in different ways, each with different effort and risk:
 >
 > A) **Retarget** — Keep your current framework ([framework name]), swap the model layer to Bedrock. Fastest path, lowest risk. Your orchestration code stays the same.
-> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration.
+> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(Preview — 4 regions: us-east-1, us-west-2, eu-central-1, ap-southeast-2)_
 > C) **Strands native** — Rewrite orchestration using AWS Strands SDK on AgentCore. Most AWS-integrated, highest effort. Best for teams wanting full AWS-native multi-agent capabilities.
 > D) **I'm not sure** — Help me decide based on my workload.
 
