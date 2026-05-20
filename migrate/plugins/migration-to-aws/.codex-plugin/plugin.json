@@ -40,7 +40,7 @@
     "shortDescription": "Migrate GCP infrastructure and AI workloads to AWS with architecture mapping, cost analysis, and runnable Terraform.",
     "longDescription": "Point this plugin at your Terraform files, application code, or GCP billing data. It runs a structured 6-phase migration assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.\n\nFor AI-focused startups, it detects your entire AI stack (models, agents, tools, orchestration patterns) and recommends three migration paths: retarget (keep your framework, swap models), AgentCore Harness (config-based managed agents), or Strands Agents (AWS-native multi-agent SDK).\n\nGenerates Terraform configurations, migration scripts, provider adapters, harness.json, and documentation — all tailored to your specific stack.",
     "developerName": "Amazon Web Services",
-    "category": "DevOps",
+    "category": "Developer Tools",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/awslabs/startups/tree/main/migrate",
     "defaultPrompt": [
