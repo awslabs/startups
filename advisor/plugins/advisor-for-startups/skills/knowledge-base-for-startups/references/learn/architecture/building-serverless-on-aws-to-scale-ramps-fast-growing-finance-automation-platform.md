@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-serverless-on-aws-to-
 title: "Building serverless on AWS to scale Ramp's fast-growing finance automation platform"
 ---
 
-# Building serverless on AWS to scale Ramp's fast-growing finance automation platform
+## Building serverless on AWS to scale Ramp's fast-growing finance automation platform
 
 For startups, coming full circle is a milestone defined by partnering with the [programs](https://aws.amazon.com/startups/startup-programs/) used during early stage growth, or providing [resources](https://amer.resources.awscloud.com/aws-startup) that help other startups succeed as well.
 
@@ -18,7 +18,7 @@ In the startup's early days, founders Eric and Karim prioritized talking to cust
 
 Within one year of launching publicly, Ramp reached [unicorn status](https://fintechmagazine.com/venture-capital/us-company-ramp-latest-fintech-hit-unicorn-status) and became America's fastest-growing corporate card. The company has since significantly scaled its business operations and AWS architecture to reach 12,000+ customers. To date, Ramp has saved businesses over $300 million and 3.5 million hours.
 
-> *"The problem we solve is, 'How can we save businesses time and money, while empowering their employees to spend, but ensuring that it's done in a controlled and efficient way?'"* — Alexis Gordon, leader of Ramp's product partnerships team
+> _"The problem we solve is, 'How can we save businesses time and money, while empowering their employees to spend, but ensuring that it's done in a controlled and efficient way?'"_ — Alexis Gordon, leader of Ramp's product partnerships team
 
 ## Building a modern architecture on AWS
 
@@ -28,7 +28,7 @@ To support the startup's need for a scalable modern architecture, high developer
 
 "This is the modern decade of thinking about cloud infrastructure, instead of the bare bones approach to cloud computing," explains Lewis Drummond, head of infrastructure at Ramp.
 
-> *"I'm very proud of how few legacy-type virtual machines we have and that we leverage more advanced, completely serverless, technologies from AWS. It serves us very well."* — Lewis
+> _"I'm very proud of how few legacy-type virtual machines we have and that we leverage more advanced, completely serverless, technologies from AWS. It serves us very well."_ — Lewis
 
 Ramp uses an [Amazon Aurora](https://aws.amazon.com/rds/aurora/) database cluster, as well as [Amazon ElastiCache for Redis](https://aws.amazon.com/elasticache/redis/) to provide sub-millisecond latency for Ramp's caching needs and to accelerate application and database performance. Jun Isaji, director of cloud infrastructure at Ramp, explains, "AWS solutions allow us to be flexible to meet demand and add components to increase system robustness. They also help us reduce complexity throughout the system by utilizing the features built into AWS solutions."
 
@@ -36,7 +36,7 @@ Ramp uses an [Amazon Aurora](https://aws.amazon.com/rds/aurora/) database cluste
 
 Ramp's architecture uses [Elastic Load Balancing (ELB)](https://aws.amazon.com/elasticloadbalancing/?nc=sn&loc=0), specifically [Application Load Balancer](https://aws.amazon.com/elasticloadbalancing/application-load-balancer/), to distribute incoming application traffic. Behind that, their web servers run on Amazon [Elastic Container Service (Amazon ECS)](https://aws.amazon.com/ecs/) on [AWS Fargate](https://aws.amazon.com/fargate/), which allows Ramp engineers to focus on building their application instead of managing their servers.
 
-> *"AWS really helps by abstracting away the details of running all of our components. Our developer velocity across the organization has significantly increased from using AWS."* — Jun
+> _"AWS really helps by abstracting away the details of running all of our components. Our developer velocity across the organization has significantly increased from using AWS."_ — Jun
 
 Ramp also increases developer velocity by using the flexibility of AWS' managed services to quickly and easily spin up stacks that allow them to experiment, and then spin down the stacks when they're no longer needed.
 
@@ -44,7 +44,7 @@ Ramp also increases developer velocity by using the flexibility of AWS' managed 
 
 "About a year ago we were looking to test Airflow, which can be a pain to set up by yourself." To make the testing easier, Ramp leveraged [Amazon Managed Workflows for Apache Airflow](https://aws.amazon.com/managed-workflows-for-apache-airflow/).
 
-> *"AWS helps a long way to getting us up off the ground more quickly. Being able to go from zero to one in a matter of days instead of weeks, as well as the lower effort there, helps us to iterate quickly."* — Lewis
+> _"AWS helps a long way to getting us up off the ground more quickly. Being able to go from zero to one in a matter of days instead of weeks, as well as the lower effort there, helps us to iterate quickly."_ — Lewis
 
 ## Availability across multiple regions
 
@@ -58,7 +58,7 @@ One of the most essential components of Ramp's architecture is called the author
 
 Saving money on cloud spend is a priority for many startups. With the help of AWS tools and their AWS account team, Ramp has been able to decrease their cloud spend.
 
-> *"Our account manager Xavier was very proactive about reaching out to us about how to reduce costs. I'm definitely happy with AWS proactively reaching out and saying, 'Here are some ways to reduce costs.' That's great."* — Jun
+> _"Our account manager Xavier was very proactive about reaching out to us about how to reduce costs. I'm definitely happy with AWS proactively reaching out and saying, 'Here are some ways to reduce costs.' That's great."_ — Jun
 
 One cost-optimization success that grew from a meeting between Ramp and their account team was implementing AWS Graviton processors for Ramp's databases. "Graviton was a big success for us in increasing performance relative to cost," says Jun. "We're also in the process of working with our account team to review our reserved capacity for compute."
 
@@ -88,7 +88,7 @@ For developers who want to build on AWS, Lewis and Jun share some insight and be
 
 Ramp expects the list of fintech innovations to continue to grow: Buy-now-pay-later, embedded finance options, flexible payment terms, and revenue-based financing (to name a few) are simply the beginning.
 
-> *"The emergence of fintech as an industry sparked change in a financial services sector that had been dominated by large banks for hundreds of years. Agile, nimble, customer-focused startups like Ramp came into play to create great customer experiences and products."* — Alexis
+> _"The emergence of fintech as an industry sparked change in a financial services sector that had been dominated by large banks for hundreds of years. Agile, nimble, customer-focused startups like Ramp came into play to create great customer experiences and products."_ — Alexis
 
 Ramp's upcoming plans include increasing automation, streamlining processes, and providing enhanced insights into spending data. "The innovation in fintech has been unbelievable and continues to be that way," says Alexis. "There's more to come."
 

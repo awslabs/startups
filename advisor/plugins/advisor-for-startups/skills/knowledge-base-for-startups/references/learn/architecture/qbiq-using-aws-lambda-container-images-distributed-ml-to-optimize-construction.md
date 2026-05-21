@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/qbiq-using-aws-lambda-containe
 title: "Qbiq: Using AWS Lambda container images & distributed ML to optimize construction"
 ---
 
-# Qbiq: Using AWS Lambda container images & distributed ML to optimize construction
+## Qbiq: Using AWS Lambda container images & distributed ML to optimize construction
 
-*Guest post by Qbiq Team and Hilal Habashi, Startup Solutions Architect, AWS*
+_Guest post by Qbiq Team and Hilal Habashi, Startup Solutions Architect, AWS_
 
 Real estate software startup Qbiq system delivers an artificial intelligence (AI)-driven space planning design engine that generates large volumes of customized floor plans, compares alternatives, and optimizes the results. It instantly provides suggestions for the best layout design within the constraints of space utilization, costs, build time, efficiency, and a multitude of other factors. These non-trivial compute intensive calculations are done behind the scenes in a distributed manner by dividing each job request into multiple parts. More specifically, each plan received is broken down into sub plans, and each of these sub plans are processed using machine learning (ML) and nonlinear programming. First, we use ML models to recognize and analyze the different layout alternatives, and then we optimize the results using quadratic equations.
 
@@ -69,6 +69,6 @@ We provide our customers with the best construction alternatives considering uti
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

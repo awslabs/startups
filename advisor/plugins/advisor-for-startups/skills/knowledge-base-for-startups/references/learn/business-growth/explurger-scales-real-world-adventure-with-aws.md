@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/explurger-scales-real-world-ad
 title: "Explurger Scales Real-World Adventure with AWS"
 ---
 
-# Explurger Scales Real-World Adventure with AWS
+## Explurger Scales Real-World Adventure with AWS
 
 [Explurger](https://www.explurger.com/) is a travel-focused social media platform that gamifies exploration with features that allow travelers to create journeys and bucket lists, chat, discover destinations, and earn rewards. Designed to inspire users to step out into the world, Explurger has grown to more than 16 million users across 75 countries in just three years.
 
@@ -45,4 +45,4 @@ AWS supports startups at every stage of their journey, helping young organizatio
 
 ---
 
-*Source: [AWS Startups - Learn](/startups/learn)*
+_Source: [AWS Startups - Learn](/startups/learn)_

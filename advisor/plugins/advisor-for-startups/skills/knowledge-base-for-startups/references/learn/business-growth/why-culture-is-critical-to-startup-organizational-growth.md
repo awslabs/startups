@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/why-culture-is-critical-to-sta
 title: "Why Culture is Critical to Startup Organizational Growth"
 ---
 
-# Why Culture is Critical to Startup Organizational Growth
+## Why Culture is Critical to Startup Organizational Growth
 
 Startups are in the business of proving what's possible and bringing world-changing ideas to life. But founders can't do it all on their own. To achieve their goals, they must build strong teams they can trust to implement their vision. And they need to cultivate a strong workplace culture that encourages experimentation, quick decision making, and learning from mistakes.
 
@@ -43,4 +43,4 @@ Hannah Wall is the Head of Startups Content Marketing. She has 15+ years of expe
 
 ---
 
-*Source: [AWS Startups](/startups/learn/why-culture-is-critical-to-startup-organizational-growth)*
+_Source: [AWS Startups](/startups/learn/why-culture-is-critical-to-startup-organizational-growth)_

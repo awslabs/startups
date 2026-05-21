@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/how-building-on-aws-made-a-big
 title: "How building on AWS made a big pivot possible for syniotec"
 ---
 
-# How building on AWS made a big pivot possible for syniotec
+## How building on AWS made a big pivot possible for syniotec
 
-*syniotec aspired to be "the Airbnb" of construction rentals." Feedback from their customers gave them a better idea. Learn how a pivot to microservices made it possible.*
+_syniotec aspired to be "the Airbnb" of construction rentals." Feedback from their customers gave them a better idea. Learn how a pivot to microservices made it possible._
 
 ---
 
@@ -83,4 +83,4 @@ Bonnie is an editor specializing in creating accessible, engaging content for al
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-building-on-aws-made-a-big-pivot-possible-for-syniotec)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-building-on-aws-made-a-big-pivot-possible-for-syniotec)_

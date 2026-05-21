@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-startups-lower-ai-ml-costs
 title: "How Startups Lower AI/ML Costs and Innovate with AWS Inferentia"
 ---
 
-# How Startups Lower AI/ML Costs and Innovate with AWS Inferentia
+## How Startups Lower AI/ML Costs and Innovate with AWS Inferentia
 
 > Want to reduce AI/ML costs and achieve high performance? Learn how Actuate and Finch Computing use AWS Inferentia to do just that.
 
@@ -59,5 +59,4 @@ Check out how more AIML startups are building and scaling on AWS 🚀:
 
 ---
 
-*Author: Shruti Koparkar - Senior Product Marketing Manager at AWS. She helps customers explore, evaluate, and adopt Amazon EC2 accelerated computing infrastructure for their machine learning needs.*
-
+_Author: Shruti Koparkar - Senior Product Marketing Manager at AWS. She helps customers explore, evaluate, and adopt Amazon EC2 accelerated computing infrastructure for their machine learning needs._

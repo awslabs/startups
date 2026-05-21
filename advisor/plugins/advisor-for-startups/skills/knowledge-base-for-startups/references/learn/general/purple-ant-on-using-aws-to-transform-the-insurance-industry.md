@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/purple-ant-on-using-aws-to-tra
 title: "Purple Ant on using AWS to transform the insurance industry"
 ---
 
-# Purple Ant on using AWS to transform the insurance industry
+## Purple Ant on using AWS to transform the insurance industry
 
-*Guest post by Iman Nandi and Greeshma Nallapareddy, Solutions Architects, AWS*
+_Guest post by Iman Nandi and Greeshma Nallapareddy, Solutions Architects, AWS_
 
 Purple Ant is a subscription-based property monitoring platform that enables its customers to detect, prevent, and track damage to their homes using IoT devices. Pankaj Parashar (CEO and co-founder of Purple Ant) founded Purple Ant after his insurance company recommended he install a car device that collects driving data to price his insurance. Parashar quickly realized a similar device for houses could not only help to accurately and fairly price home insurance, but also keep his family safe. This started his journey into leveraging IoT (Internet of Things) and AWS to transform the home insurance industry.
 
@@ -51,4 +51,4 @@ The AWS Startups Content Marketing Team collaborates with startups of all sizes 
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/purple-ant-on-using-aws-to-transform-the-insurance-industry)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/purple-ant-on-using-aws-to-transform-the-insurance-industry)_

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/how-patronus-ai-helps-enterpri
 title: "How Patronus AI helps enterprises boost their confidence in generative AI"
 ---
 
-# How Patronus AI helps enterprises boost their confidence in generative AI
+## How Patronus AI helps enterprises boost their confidence in generative AI
 
-*With its AI-driven automated evaluation and security platform, Patronus helps its customers use large language models (LLMs) confidently and responsibly.*
+_With its AI-driven automated evaluation and security platform, Patronus helps its customers use large language models (LLMs) confidently and responsibly._
 
 ---
 
@@ -66,4 +66,3 @@ Aditya Shahani is a Startup Solutions Architect focused on accelerating early st
 ### Bonnie McClure
 
 Bonnie is an editor specializing in creating accessible, engaging content for all audiences and platforms. She is dedicated to delivering comprehensive editorial guidance to provide a seamless user experience. When she's not advocating for the Oxford comma, you can find her spending time with her two large dogs, practicing her sewing skills, or testing out new recipes in the kitchen.
-

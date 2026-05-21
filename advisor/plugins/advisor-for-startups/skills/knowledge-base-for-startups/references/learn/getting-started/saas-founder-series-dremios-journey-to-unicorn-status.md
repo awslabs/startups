@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/saas-founder-series-dremios-jo
 title: "SaaS Founder Series: Dremio's Journey to Unicorn Status"
 ---
 
-# SaaS Founder Series: Dremio's Journey to Unicorn Status
+## SaaS Founder Series: Dremio's Journey to Unicorn Status
 
-*Guest post by Afza Wajid, Bill Tarr, and Mark Birch, AWS*
+_Guest post by Afza Wajid, Bill Tarr, and Mark Birch, AWS_
 
 With the proliferation of systems of engagement and intelligence, there is an increasing emphasis on delivering data insights throughout modern organizations. However, in order for data to be analyzed effectively, specialized skills and expensive custom code are required to centralize data across disparate storage systems before it can be analyzed. With the advent of open-source distributed data storage frameworks like Hadoop, developers were able to directly query distributed data sources, but data scientists and analysts still could not derive value from data in a self-service manner.
 
@@ -65,6 +65,6 @@ Visit the [AWS SaaS Factory Insights Hub](https://aws.amazon.com/partners/saas-f
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

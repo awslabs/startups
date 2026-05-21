@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/celeristx-drug-discovery-for-i
 title: "CelerisTx: Drug discovery for incurable diseases with ML on AWS"
 ---
 
-# CelerisTx: Drug discovery for incurable diseases with ML on AWS
+## CelerisTx: Drug discovery for incurable diseases with ML on AWS
 
 > Discover how CelerisTx advances in drug discovery. Explore their use of ML on AWS and proximity-inducing compounds for targeted protein degradation.
 
@@ -52,17 +52,21 @@ Now is the time to increase productivity in drug discovery. The inverse of Moore
 ## Authors
 
 ### Christopher Trummer
+
 Christopher Trummer is a Co-Founder of Celeris Therapeutics and serves as CEO. He has been an invited keynote speaker in AI for drug discovery conferences multiple times and is co-author of peer-reviewed publications in various journals.
 
 ### Noah Weber
+
 Noah Weber serves as Chief Technology Officer at Celeris Therapeutics. He is a Kaggle Grandmaster and adjunct lecturer at the Vienna University of Technology and the Vienna University of Applied Sciences.
 
 ### Olajide Enigbokan
+
 Olajide Enigbokan is a Startup Solutions Architect at Amazon Web Services. He loves working with startups (most especially builders) to discover the value of the AWS cloud.
 
 ### AWS Editorial Team
+
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/celeristx-drug-discovery-for-incurable-diseases-with-ml-on-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/celeristx-drug-discovery-for-incurable-diseases-with-ml-on-aws)_

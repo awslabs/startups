@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/guide-to-co-marketing-with-aws
 title: "Guide to co-marketing with AWS as a startup partner"
 ---
 
-# Guide to co-marketing with AWS as a startup partner
+## Guide to co-marketing with AWS as a startup partner
 
 As a startup, you have an abundance of passion, drive, and innovative ideas. Yet to transform these assets into market success, you'll need to extend your reach, build industry credibility, and access the right tools for growth. By joining the [AWS Partner Network (APN)](https://aws.amazon.com/partners/), you'll connect to a global community of businesses using AWS expertise and resources to build, market, and sell their solutions. Through APN membership and strategic co-marketing initiatives with AWS, you'll amplify brand visibility, generate demand with new prospects, and craft a unique value proposition that differentiates your brand.
 
@@ -44,6 +44,7 @@ Learn more about the AWS Partner Marketing Academy Courses on [AWS Partner Marke
 After establishing your marketing budget, explore the [AWS Marketing Development Funds (MDF)](https://aws.amazon.com/partners/funding/) program, which offers both cash and credit to offset your marketing costs to drive demand generation and build your sales pipeline. These funding benefits are allocated based on your Partner Path progressions, AWS Specialization achievements, and participation in various AWS Partner programs.
 
 Marketing activities eligible for MDF include:
+
 - Email campaigns
 - Telemarketing
 - Display advertising
@@ -64,6 +65,7 @@ Learn more about MDF eligibility by exploring the program guide on [AWS Partner 
 With your strategy defined, it's time to bring your marketing vision to life through [AWS Partner Marketing Central](https://partnercentral.awspartner.com/partnercentral2/s/login), a self-service portal with customizable campaign content, virtual support, and an extension resource library to streamline the marketing process. Access [Partner Ready Campaigns](https://partnercentral.awspartner.com/idp/login?app=0sp8a000000blRZ&RelayState=https%3A%2F%2Faws.ziftone.com%2F%23%2Fpage%2Fpartner-ready-campaigns) available in more than 10 languages across 23+ solution topics, which you can launch directly through the platform or customize for your specific needs. Simplify your marketing execution with ready-to-use event and webinar kits, AWS speaker support, and [Field Ready Kits](https://partnercentral.awspartner.com/partnercentral2/s/login?ec=302&startURL=%2Fpartnercentral2%2Fs%2Fresources%3Fsfdc.tabName%3D01r8a000001A846%26Id%3D0698W00000x4Je5QAE) designed to accelerate sales and solution brief development.
 
 AWS Partner Marketing Central serves as your marketing hub, offering:
+
 - Marketing assessments to identify potential knowledge gaps
 - Connections to AWS-approved agencies via Agency Connect
 - Collaboration with Virtual Partner Marketing Managers (vPMMs) to accelerate sales and drive pipeline growth
@@ -78,11 +80,13 @@ Before launching any campaign, review the [AWS Partner Creative and Messaging Gu
 ## 4. Deliver through AWS marketing channels
 
 Listing your solution on AWS Marketplace unlocks new pathways to reach AWS customers efficiently. According to [Forrester Consulting report](https://aws.amazon.com/marketplace/partners/channel-partner-opportunity-for-aws-marketplace?ref_=awsmp_ptr_frstr_ptropp&trk=awsmp_ptr_frstr_ptropp), partners who use AWS Marketplace achieve remarkable results:
+
 - 234 percent ROI
 - 50 percent faster deal closure
 - 4 to 5 times greater deal sizes
 
 AWS Marketplace partners can engage and convert customers through multiple strategic channels, including:
+
 - High-visibility AWS events and AWS Summit sponsorships
 - Compelling customer success stories
 - Engaging APN YouTube content and blogs
@@ -105,6 +109,7 @@ To maximize your AWS presence, consider exploring the following programs:
 Tracking and measuring success are essential as your co-marketing initiatives gain momentum. The [APN Customer Engagements (ACE) program](https://aws.amazon.com/partners/programs/ace/) serves as your central platform for managing joint opportunities with AWS, connecting partners with AWS sales and marketing professionals to securely collaborate and co-sell.
 
 The ACE program enables:
+
 - Seamless sharing of opportunities with AWS Sales teams
 - Access to customized technical and sales support
 - Tapping into AWS-referred opportunities that deepen your engagement with AWS
@@ -114,4 +119,3 @@ The ACE program enables:
 > "By providing a wide variety of resources to help with product development, GTM efforts, and co-sell initiatives." — Daniel Marashlian, CEO of Drata, on how co-selling support from AWS has been instrumental to long-term business scalability
 
 By aligning your go-to-market strategy and implementation plan with AWS, leveraging MDF effectively, optimizing your AWS Marketplace presence, and showing success through the ACE program, you can accelerate your startup's market visibility and growth trajectory. [Explore our comprehensive guide](https://d1.awsstatic.com/2-AWS_Marketing_Central_Interactive_Guide_FA.pdf) to establishing your AWS Marketplace strategy.
-

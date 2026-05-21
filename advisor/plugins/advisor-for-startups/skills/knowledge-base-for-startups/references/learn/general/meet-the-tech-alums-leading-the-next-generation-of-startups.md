@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/meet-the-tech-alums-leading-th
 title: "Meet the tech alums leading the next generation of startups"
 ---
 
-# Meet the tech alums leading the next generation of startups
+## Meet the tech alums leading the next generation of startups
 
 Tech alums are emerging as some of the most successful founders in today's startup landscape. After careers at global tech powerhouses, they're ready to innovate, and it's not just their technical expertise that's helping fast-track their startup success.
 
@@ -31,7 +31,7 @@ Anna said the transition was a natural one once she realized that she had been h
 
 [Argun Kilic](https://www.linkedin.com/in/argunkilic) is another founder who realized he'd been developing critical entrepreneurial skills while working on a small, startup-like team within Cisco. While he worked to help Cisco bring enterprise-based VOIP communication to the cloud, he saw firsthand how startup employees had to wear several hats to get the job done, and learned the best practices for snagging that first critical customer.
 
-Long hours, sacrifice, and hard work would always be part of his career path. "But the *ah-ha* moment was … I didn't want to spend that amount of energy for somebody else's dream," Argun explained. He decided to strike out and solve real-world problems with his company [areal.ai](https://www.areal.ai/), which builds end-to-end automation platforms for mortgage and title industries.
+Long hours, sacrifice, and hard work would always be part of his career path. "But the _ah-ha_ moment was … I didn't want to spend that amount of energy for somebody else's dream," Argun explained. He decided to strike out and solve real-world problems with his company [areal.ai](https://www.areal.ai/), which builds end-to-end automation platforms for mortgage and title industries.
 
 Argun advised that if a tech alum has a great idea to solve a problem, they should commit 100% to the concept rather than trying to build something on the side, stressing that it's only that dedication that can lead to a startup-worthy product.
 
@@ -59,6 +59,6 @@ If you're a tech alum in a similar position—sitting on an idea that only you h
 
 ---
 
-*Author: Amy Chen*
+_Author: Amy Chen_
 
 Amy Chen loves meeting founders and supporting them with resources that are a fit for their stage of growth or for their industry. She's helped startups secure speaking opportunities, meet internal and external experts for product development and fundraising advice, and connect with go-to-market programs to partner and reach joint customers.

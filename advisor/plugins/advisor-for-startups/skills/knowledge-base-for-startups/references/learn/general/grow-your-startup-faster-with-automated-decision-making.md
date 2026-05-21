@@ -3,14 +3,14 @@ source_url: https://aws.amazon.com/startups/learn/grow-your-startup-faster-with-
 title: "Grow your startup faster with automated decision-making"
 ---
 
-# Grow your startup faster with automated decision-making
+## Grow your startup faster with automated decision-making
 
 If you're a startup founder, you face countless daily questions and decisions like these:
 
-- *"Which marketing channel will give us the best ROI this quarter?"*
-- *"Are we prioritizing the right investors for our next funding round?"*
-- *"Is this urgent enough to pull my lead developer off their current sprint?"*
-- *"Should we implement this feature in the next release, or focus on technical debt?"*
+- _"Which marketing channel will give us the best ROI this quarter?"_
+- _"Are we prioritizing the right investors for our next funding round?"_
+- _"Is this urgent enough to pull my lead developer off their current sprint?"_
+- _"Should we implement this feature in the next release, or focus on technical debt?"_
 
 This is where **automated decision-making (ADM)** steps in as a significant advantage. By leveraging AI and machine learning to handle routine yet critical decisions, modern founders free themselves to focus on the big-picture initiatives that truly drive growth. Basic rules-based automation has existed for years, but recent advances in AI make it possible to automate more nuanced, high-impact decisions.
 

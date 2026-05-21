@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/meetingai-automates-time-consu
 title: "Meeting.ai automates time-consuming meeting tasks with Amazon Bedrock"
 ---
 
-# Meeting.ai automates time-consuming meeting tasks with Amazon Bedrock
+## Meeting.ai automates time-consuming meeting tasks with Amazon Bedrock
 
 > Powered by generative AI, Meeting.ai enables users to spend more time engaged in meetings, and less time trying to recall key takeaways after the fact.
 
@@ -84,4 +84,3 @@ As the Meeting.ai team continues to evolve their product, AWS is helping to ensu
 **Author:** Agung Sidharta
 
 Agung Sidharta is a Startup Solutions Architect who loves to work with customers solving their problems. In his spare time, he enjoys traveling, reading IT-related contents, and walking in the surrounding environment with his family and little dog.
-

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-pieces-technologies-levera
 title: "How Pieces Technologies leverages AWS services to predict patient outcomes"
 ---
 
-# How Pieces Technologies leverages AWS services to predict patient outcomes
+## How Pieces Technologies leverages AWS services to predict patient outcomes
 
 HCLS startup Pieces Technologies uses AWS services to predict patient outcomes. Learn how their AI platform improves care and enhances efficiency.
 

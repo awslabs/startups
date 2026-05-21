@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/firsthive-fuses-data-and-ai-to
 title: "FirstHive fuses data and AI to power real-time marketing at scale"
 ---
 
-# FirstHive fuses data and AI to power real-time marketing at scale
+## FirstHive fuses data and AI to power real-time marketing at scale
 
 [FirstHive](https://firsthive.com/) is an AI-powered customer data platform that helps enterprises unify fragmented data and deliver personalized, automated marketing at scale. Built on AWS, the platform supports real-time data processing and scalability, and features embedded AI and gen AI capabilities, enabling the team to launch new features quickly and handle complex workloads with ease.
 
@@ -51,4 +51,4 @@ FirstHive is the among the 350,000 startups that have joined [AWS Activate](http
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/firsthive-fuses-data-and-ai-to-power-real-time-marketing-at-scale)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/firsthive-fuses-data-and-ai-to-power-real-time-marketing-at-scale)_

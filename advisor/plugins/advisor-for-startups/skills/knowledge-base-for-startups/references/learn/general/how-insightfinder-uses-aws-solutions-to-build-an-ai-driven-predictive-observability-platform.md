@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-insightfinder-uses-aws-sol
 title: "How InsightFinder uses AWS solutions to build an AI-driven predictive observability platform"
 ---
 
-# How InsightFinder uses AWS solutions to build an AI-driven predictive observability platform
+## How InsightFinder uses AWS solutions to build an AI-driven predictive observability platform
 
 > InsightFinder helps customers prevent outages in the cloud. See how they use unsupervised machine learning to make cloud infrastructure more reliable.
 
@@ -23,7 +23,7 @@ Alongside being the founder and chief executive officer (CEO) of InsightFinder, 
 
 Amazon Web Services (AWS) played an integral role in InsightFinder's development on the cloud. "When we first started, in the early days, we were looking for something that was easy to use," Helen says.
 
-> *"AWS has a very nice program, [AWS Activate](https://aws.amazon.com/activate/), that gives a lot of credits to startup companies. We got quite a lot of credits that helped us to bootstrap our development. That played a critical role for us."*
+> _"AWS has a very nice program, [AWS Activate](https://aws.amazon.com/activate/), that gives a lot of credits to startup companies. We got quite a lot of credits that helped us to bootstrap our development. That played a critical role for us."_
 
 It's also thanks in part to AWS that InsightFinder has been able to build the high-performance Unified Intelligence Engine that fuels its success. The company leverages AWS solutions according to their needs, whether for CPU-intensive processes or I/O-intensive processes. "A lot of AI tech companies think you need to invest heavily in hardware resources," says Helen. Through AWS, "We can actually build a high-performance engine, and with reasonable cost."
 
@@ -31,13 +31,13 @@ By 2020, InsightFinder saw the problems that their customers faced were evolving
 
 Now, InsightFinder is looking to the [AWS Partner Network](https://aws.amazon.com/partners/) to push the company to the next level.
 
-> *"Being a fast-growing tech startup company, we don't want to hire a large sales force to directly sell to a lot of customers," Helen says. "AWS Partner Network is going to be an important go to market motion for us. It's a more productive, effective, mutual, beneficial path for us."*
+> _"Being a fast-growing tech startup company, we don't want to hire a large sales force to directly sell to a lot of customers," Helen says. "AWS Partner Network is going to be an important go to market motion for us. It's a more productive, effective, mutual, beneficial path for us."_
 
 ## Looking to the future of AI
 
 As fears that AI could impact job opportunities grow, Helen is clear that she doesn't believe the goal of InsightFinder, or AI as a whole, is to replace people: "There's no way we can have enough people, particularly skilled people, sitting there looking at all those charts for each machine and predicting future incidents." Instead, Helen sees AI as a tool to augment human skill; that the technology should focus on things that humans cannot do. The algorithms that Helen works with fill the gaps that humans cannot, performing 24/7 work that is suitable for a machine, not a human being.
 
-> *"The most precious thing in the world is time," says Gu. "Our impact is that we want to give time back to people to do things they enjoy, rather than fix IT outages in the middle of the night."*
+> _"The most precious thing in the world is time," says Gu. "Our impact is that we want to give time back to people to do things they enjoy, rather than fix IT outages in the middle of the night."_
 
 Curious about how AWS can help kick start your startup? Join [AWS Activate](https://aws.amazon.com/activate/) to build and scale your startup with the right resources at the right time.
 
@@ -57,4 +57,4 @@ Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. W
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-insightfinder-uses-aws-solutions-to-build-an-ai-driven-predictive-observability-platform)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-insightfinder-uses-aws-solutions-to-build-an-ai-driven-predictive-observability-platform)_

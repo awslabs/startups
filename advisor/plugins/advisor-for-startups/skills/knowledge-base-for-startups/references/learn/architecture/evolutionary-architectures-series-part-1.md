@@ -3,15 +3,15 @@ source_url: https://aws.amazon.com/startups/learn/evolutionary-architectures-ser
 title: "Evolutionary architectures series: Part 1"
 ---
 
-# Evolutionary architectures series: Part 1
+## Evolutionary architectures series: Part 1
 
-*Discover the key steps of building a successful startup in the Evolutionary Architectures series. Dive into the process of delivering the first MVP and beyond!*
+_Discover the key steps of building a successful startup in the Evolutionary Architectures series. Dive into the process of delivering the first MVP and beyond!_
 
 ---
 
 ![A team evaluates an initial startup idea.](https://d22k7geae6sy8h.cloudfront.net/files/64a2e448db295100084079a6/8ljmzwka7-People-with-an-idea.jpg)
 
-*"I've got this great idea!"*
+_"I've got this great idea!"_
 
 Every startup begins as an idea. Before you start worrying about funding or staff or distribution or any of the other myriad things, you have your fresh, new idea—a product or service that you think has potential.
 
@@ -121,4 +121,3 @@ Aayzed is a Solutions Architect at AWS, working with startup customers in the Fi
 ### Justin Plock
 
 Justin is a Principal Solutions Architect at AWS, focused on fintech startups. He regularly meets with fintech founders to help ensure their business is secure and compliant with industry regulations. Prior to AWS, he was a Director of Cloud Enablement at a Fortune 200 insurance carrier and a Director of Engineering at a cybersecurity firm. He is passionate about helping startups develop securely and efficiently on AWS. He lives in Connecticut with his wife and two daughters.
-

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/seeing-is-believing-using-ai-t
 title: "Seeing is believing: Using AI to validate media authenticity"
 ---
 
-# Seeing is believing: Using AI to validate media authenticity
+## Seeing is believing: Using AI to validate media authenticity
 
 ## Overview
 

@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/aws-security-baseline
 title: "AWS Security Baseline: Terraform Deployment Kit"
 tags: ["Deployment", "Security & Compliance", "Intermediate", "Terraform", "GuardDuty", "Security Hub"]
 ---
-# AWS Security Baseline: Terraform Deployment Kit
+
+## AWS Security Baseline: Terraform Deployment Kit
 
 Deploy comprehensive AWS security baseline using Terraform with automated monitoring, threat detection, and compliance controls so startups meet enterprise security requirements faster.
 
@@ -19,14 +20,15 @@ Create a comprehensive AWS security baseline using Terraform that includes:
 6. CloudWatch Dashboard with 8 widgets showing security metrics
 7. 4 CloudWatch Alarms: root account usage, unauthorized API calls (5+ in 5min), IAM policy changes, S3 bucket policy changes
 8. 3 IAM roles with least-privilege access:
-    - BreakGlassAdmin (requires ExternalId for emergency access)
-    - SecurityAuditor (read-only security monitoring)
-    - DeveloperTemplate (least-privilege development access)
+   - BreakGlassAdmin (requires ExternalId for emergency access)
+   - SecurityAuditor (read-only security monitoring)
+   - DeveloperTemplate (least-privilege development access)
 9. KMS encryption with auto-rotation for CloudTrail and SNS
 10. S3 state management with versioning and DynamoDB locking
 11. SNS topic for security alerts with email subscription
 
 Requirements:
+
 - Use modular Terraform structure (root + security_baseline module)
 - Include comprehensive documentation: README, QUICKSTART, SECURITY-BASELINE with SOC 2 mapping
 - Provide migration script for S3 backend

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/ai-analytics-integration-start
 title: "AI, Analytics & Integration for Startups Scale and Maturity"
 ---
 
-# AI, Analytics & Integration for Startups Scale and Maturity
+## AI, Analytics & Integration for Startups Scale and Maturity
 
 ## Overview
 

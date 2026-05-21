@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/leonardo-ai-drives-tech-evolut
 title: "Leonardo AI drives tech evolution using generative AI on AWS"
 ---
 
-# Leonardo AI drives tech evolution using generative AI on AWS
+## Leonardo AI drives tech evolution using generative AI on AWS
 
 > When Leonardo's legacy architecture couldn't handle the sudden increase in traffic, AWS was there to help their team succeed.
 
@@ -15,7 +15,7 @@ Furthering their relationship with AWS, Leonardo AI participated in the [first A
 
 When building their solution, Leonardo used [Amazon EC2 P4d Instances](https://aws.amazon.com/ec2/instance-types/p4/) for both training and inference, moving to [Amazon EC2 G6e](https://aws.amazon.com/ec2/instance-types/g6/), also G5 for creating their product features in real time. Today, they use [Amazon EC2 Inferentia2 instances](https://aws.amazon.com/ec2/instance-types/inf2/) for low cost, high performance generative AI inference while running several large language models (LLMs). Using Inferentia2, Leonardo AI reduced costs by 60% cost, while improving their LLM speed up to 35%.
 
-*Are you ready to add generative AI to your startup? [Learn how you can begin using AWS Activate credits with Amazon Bedrock today.](https://aws.amazon.com/blogs/startups/aws-activate-credits-now-accepted-for-third-party-models-on-amazon-bedrock/)*
+_Are you ready to add generative AI to your startup? [Learn how you can begin using AWS Activate credits with Amazon Bedrock today.](https://aws.amazon.com/blogs/startups/aws-activate-credits-now-accepted-for-third-party-models-on-amazon-bedrock/)_
 
 ---
 

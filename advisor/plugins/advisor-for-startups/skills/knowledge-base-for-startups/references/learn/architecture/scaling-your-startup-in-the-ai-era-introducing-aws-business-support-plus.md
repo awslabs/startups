@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/scaling-your-startup-in-the-ai
 title: "Scaling your startup in the AI era: Introducing AWS Business Support+"
 ---
 
-# Scaling your startup in the AI era: Introducing AWS Business Support+
+## Scaling your startup in the AI era: Introducing AWS Business Support+
 
 ---
 
@@ -50,4 +50,3 @@ Making AWS Support Plans more accessible ensures all founders can tap into new t
 ---
 
 **Visit the AWS Business Support+ product page to [learn more](https://aws.amazon.com/premiumsupport/plans/business-plus/).**
-

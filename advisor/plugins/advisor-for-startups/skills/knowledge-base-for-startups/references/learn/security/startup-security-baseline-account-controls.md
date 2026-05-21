@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/startup-security-baseline-acco
 title: "Startup Security Baseline: Account controls"
 ---
 
-# Startup Security Baseline: Account controls
+## Startup Security Baseline: Account controls
 
 **Date published:** Oct 15, 2023
 
@@ -12,18 +12,22 @@ Welcome to this introduction to the Startup Security Baseline for AWS. Startup S
 ## Course details
 
 ### 1. Securing your AWS account
+
 - **Duration:** 5 mins
 - [Start learning](/startups/learn/securing-your-aws-account)
 
 ### 2. Identity Access Management (IAM) basics
+
 - **Duration:** 4 mins
 - [Start learning](/startups/learn/identity-access-management-iam-basics)
 
 ### 3. Access and resource management
+
 - **Duration:** 2 mins
 - [Start learning](/startups/learn/access-and-resource-management)
 
 ### 4. Monitoring your account
+
 - **Duration:** 5 mins
 - [Start learning](/startups/learn/monitoring-your-account)
 

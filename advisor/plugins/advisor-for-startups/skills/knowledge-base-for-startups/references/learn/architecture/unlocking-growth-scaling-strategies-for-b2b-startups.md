@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/unlocking-growth-scaling-strat
 title: "Unlocking growth: scaling strategies for B2B startups"
 ---
 
-# Unlocking growth: scaling strategies for B2B startups
+## Unlocking growth: scaling strategies for B2B startups
 
 **Category:** Product Market Fit
 

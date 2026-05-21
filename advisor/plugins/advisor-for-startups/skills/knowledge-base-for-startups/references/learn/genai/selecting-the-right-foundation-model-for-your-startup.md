@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/selecting-the-right-foundation
 title: "Selecting the right foundation model for your startup"
 ---
 
-# Selecting the right foundation model for your startup
+## Selecting the right foundation model for your startup
 
-*Learn how to build a generative AI application — get products to market as quickly as possible, while maintaining cost efficiency and high performance*
+_Learn how to build a generative AI application — get products to market as quickly as possible, while maintaining cost efficiency and high performance_
 
 ---
 
@@ -63,4 +63,3 @@ These AWS Graviton3 processors also use up to 60% less energy for the same perfo
 ### Aaron Melgar
 
 Aaron empowers the AI/ML Startups & Venture Capital ecosystem at AWS, focused on early stage company growth. He is a former Founder, Series-A Product Manager, Machine Learning Director, and Strategy Consultant. He is a first-generation American who loves tennis, golf, travel, and exchanging audiobook recommendations about economics, psychology, or business.
-

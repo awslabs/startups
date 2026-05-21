@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-a-technical-foundatio
 title: "Building a Technical Foundation as a Non-Technical Founder"
 ---
 
-# Building a Technical Foundation as a Non-Technical Founder
+## Building a Technical Foundation as a Non-Technical Founder
 
 It might surprise you to know that many startup founders consider themselves to be non-technical people. For example, Airbnb's co-founder Brian Chesky was an industrial designer when he first hit on the idea of renting out people's homes for money.
 
@@ -40,4 +40,3 @@ Another path founders take is to simply gain some of the technical skills they n
 Building a cloud startup can seem daunting, but it is good to remember that everyone is born non-technical, and everything that even the best software coders know is something they have learned.
 
 Now that you're equipped with the combination of community support, free learning and development opportunities, and a set of technology tools that are becoming progressively easier to use, building a cloud-based startup is now in reach of even the most non-technical founder.
-

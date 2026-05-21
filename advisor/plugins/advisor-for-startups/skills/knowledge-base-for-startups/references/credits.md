@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/credits
 title: "Apply for Activate Credits"
 ---
 
-# Apply for Activate Credits
+## Apply for Activate Credits
 
 Fuel your startup's growth with AWS Activate Credits. Get started by creating an account.
 
@@ -17,9 +17,9 @@ AWS helps startups turn bold ideas into reality. With AWS Activate Credits, star
 
 To be eligible for AWS Activate Credits, startups must be pre-series B, have a company website or company profile, be founded in the last 10 years and have an AWS Account on Paid Tier Plan. Review the details below to select the package that is right for your startup today.
 
-| Package type | Benefits | Eligibility requirements |
-| --- | --- | --- |
-| Activate Founders — Start here if your startup is self-funded | $1,000 USD AWS Activate Credits\* | ✓ Early-stage, self-funded startup — ✓ Either new to Activate Credits or requesting more credits than previously received |
+| Package type                                                                                           | Benefits                                  | Eligibility requirements                                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Activate Founders — Start here if your startup is self-funded                                          | $1,000 USD AWS Activate Credits\*         | ✓ Early-stage, self-funded startup — ✓ Either new to Activate Credits or requesting more credits than previously received                                                                                                  |
 | Activate Portfolio — Start here if you have an Org ID from an Activate Provider (e.g., VC or Investor) | Up to $100,000 USD AWS Activate Credits\* | ✓ Associated with an [Activate Provider](https://aws.amazon.com/startups/lp/aws-activate-provider) and have their Organizational ID — ✓ Either new to Activate Credits or requesting more credits than previously received |
 
 \*All AWS Activate Credits are in USD and subject to the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/activate/terms/).
@@ -42,17 +42,17 @@ Learn more about the application process, requirements, credit usage, credit man
 
 ## Page topics
 
--   [What can I use AWS Activate Credits for?](https://aws.amazon.com/startups/credits/#what-can-i-use-aws-activate-credits-for--ksjf6n)
--   [What is not covered by AWS Activate Credits?](https://aws.amazon.com/startups/credits/#what-is-not-covered-by-aws-activate-credits--ksjf6n)
--   [How do I use my AWS Activate Credits?](https://aws.amazon.com/startups/credits/#how-do-i-use-my-aws-activate-credits--ksjf6n)
--   [What is an Organization ID (Org ID)?](https://aws.amazon.com/startups/credits/#what-is-an-organization-id-org-id--ksjf6n)
--   [What is an Activate Provider?](https://aws.amazon.com/startups/credits/#what-is-an-activate-provider--ksjf6n)
--   [Where can I find details about my credits including usage and expiration dates?](https://aws.amazon.com/startups/credits/#where-can-i-find-details-about-my-credits-including-usage-and-expiration-dates--ksjf6n)
--   [How are my credits applied to Reserved Instances or Saving Plans?](https://aws.amazon.com/startups/credits/#how-are-my-credits-applied-to-reserved-instances-or-saving-plans--ksjf6n)
+- [What can I use AWS Activate Credits for?](https://aws.amazon.com/startups/credits/#what-can-i-use-aws-activate-credits-for--ksjf6n)
+- [What is not covered by AWS Activate Credits?](https://aws.amazon.com/startups/credits/#what-is-not-covered-by-aws-activate-credits--ksjf6n)
+- [How do I use my AWS Activate Credits?](https://aws.amazon.com/startups/credits/#how-do-i-use-my-aws-activate-credits--ksjf6n)
+- [What is an Organization ID (Org ID)?](https://aws.amazon.com/startups/credits/#what-is-an-organization-id-org-id--ksjf6n)
+- [What is an Activate Provider?](https://aws.amazon.com/startups/credits/#what-is-an-activate-provider--ksjf6n)
+- [Where can I find details about my credits including usage and expiration dates?](https://aws.amazon.com/startups/credits/#where-can-i-find-details-about-my-credits-including-usage-and-expiration-dates--ksjf6n)
+- [How are my credits applied to Reserved Instances or Saving Plans?](https://aws.amazon.com/startups/credits/#how-are-my-credits-applied-to-reserved-instances-or-saving-plans--ksjf6n)
 
 ## What can I use AWS Activate Credits for?
 
-AWS offers the world’s most comprehensive and broadly adopted cloud services, offering over 200 fully featured services from data centers globally. You can use your AWS Activate Credits for eligible AWS services and support from infrastructure technologies like compute, storage, and databases–to emerging technologies, such as machine learning and artificial intelligence, data lakes and analytics, and Internet of Things. For a comprehensive list of eligible services, please review the lowermost section of the [credits page](https://console.aws.amazon.com/billing/home#/credits) after receiving your AWS Activate Credit approval email. Note that the [AWS Activate Terms & Conditions](https://aws.amazon.com/activate/terms/) provide additional information regarding the eligible services. 
+AWS offers the world’s most comprehensive and broadly adopted cloud services, offering over 200 fully featured services from data centers globally. You can use your AWS Activate Credits for eligible AWS services and support from infrastructure technologies like compute, storage, and databases–to emerging technologies, such as machine learning and artificial intelligence, data lakes and analytics, and Internet of Things. For a comprehensive list of eligible services, please review the lowermost section of the [credits page](https://console.aws.amazon.com/billing/home#/credits) after receiving your AWS Activate Credit approval email. Note that the [AWS Activate Terms & Conditions](https://aws.amazon.com/activate/terms/) provide additional information regarding the eligible services.
 
 ## What is not covered by AWS Activate Credits?
 

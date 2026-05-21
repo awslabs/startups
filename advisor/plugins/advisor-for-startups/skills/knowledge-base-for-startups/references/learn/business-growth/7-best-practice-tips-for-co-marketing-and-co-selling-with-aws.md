@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/7-best-practice-tips-for-co-ma
 title: "7 Best Practice Tips for Co-Marketing and Co-Selling with AWS"
 ---
 
-# 7 Best Practice Tips for Co-Marketing and Co-Selling with AWS
+## 7 Best Practice Tips for Co-Marketing and Co-Selling with AWS
 
 ---
 

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/building-a-serverless-dynamic-
 title: "Building a serverless dynamic DNS system with AWS"
 ---
 
-# Building a serverless dynamic DNS system with AWS
+## Building a serverless dynamic DNS system with AWS
 
-*This post was originally published in December 2015. It was updated July 2023 to make the solution more cost-effective and efficient. This post has been updated to replace [Amazon API Gateway](https://aws.amazon.com/api-gateway/) with [AWS Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html) and [Amazon Simple Storage Service (Amazon S3)](https://aws.amazon.com/s3/) with [Amazon DynamoDB](https://aws.amazon.com/dynamodb/). Using Lambda function URLs reduces the overall cost of the solution. This feature comes at no extra cost when using the Lambda service, and it provides a RESTful HTTPs endpoint that our client interacts with. Replacing Amazon S3 with DynamoDB increases the efficiency of the solution and reduces the overall latency when querying data.*
+_This post was originally published in December 2015. It was updated July 2023 to make the solution more cost-effective and efficient. This post has been updated to replace [Amazon API Gateway](https://aws.amazon.com/api-gateway/) with [AWS Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html) and [Amazon Simple Storage Service (Amazon S3)](https://aws.amazon.com/s3/) with [Amazon DynamoDB](https://aws.amazon.com/dynamodb/). Using Lambda function URLs reduces the overall cost of the solution. This feature comes at no extra cost when using the Lambda service, and it provides a RESTful HTTPs endpoint that our client interacts with. Replacing Amazon S3 with DynamoDB increases the efficiency of the solution and reduces the overall latency when querying data._
 
 Early-stage startups, small businesses, and home networks often have dynamic public IP addresses that can change without notice. Because of this changing address, you can't reliably access systems on these networks from the outside. For startups in the early stages of their life cycle, it's important to provide a reliable and highly available service in order to gain trust with your first set of customers.
 
@@ -69,7 +69,7 @@ HTTP POST
 ```
 
 ```json
-{"return_message": "176.32.100.36", "return_status": "success"}
+{ "return_message": "176.32.100.36", "return_status": "success" }
 ```
 
 During this process, the Lambda function URL converts the `HTTP` request to JSON, including all request parameters, and passes the requestor's source IP address to a Python Lambda function. The Lambda function then sends a JSON response with the IP back to the client.
@@ -99,7 +99,11 @@ HTTP POST > https://....lambda-url.eu-west-1.on.aws
 ```
 
 ```json
-{"execution_mode":"set", "ddns_hostname":"host1.dyn.example.com", "validation_hash":"96772404892f24ada64bbc4b92a0949b25ccc703270b1f6a51602a1059815535"}
+{
+  "execution_mode": "set",
+  "ddns_hostname": "host1.dyn.example.com",
+  "validation_hash": "96772404892f24ada64bbc4b92a0949b25ccc703270b1f6a51602a1059815535"
+}
 ```
 
 The Lambda function URL then passes the request parameters back to the Lambda function.
@@ -126,13 +130,19 @@ The client passed `host1.dyn.example.com` as the key, so the Lambda function rea
 Once the request is validated, the Lambda function uses the information from the configuration to make an API call to Route 53 to see if the DNS hostname is already set with the client IP. If no change is necessary, the Lambda function responds to the client and exits:
 
 ```json
-{"return_message": "Your IP address matches the current Route53 DNS record.", "return_status": "success"}
+{
+  "return_message": "Your IP address matches the current Route53 DNS record.",
+  "return_status": "success"
+}
 ```
 
 If there is no record, or if the current record and the client IP do not match, the Lambda function makes an API call to Route 53 to set the record, responds to the client, and exits:
 
 ```json
-{"return_message": "Your hostname record host1.dyn.example.com. has been set to 176.32.100.36", "return_status": "success"}
+{
+  "return_message": "Your hostname record host1.dyn.example.com. has been set to 176.32.100.36",
+  "return_status": "success"
+}
 ```
 
 ![Figure 4. Request flow to set hostname](https://d22k7geae6sy8h.cloudfront.net/files/65773f4179391400087544de/8lq15ohe4-Figure-4..jpg)

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/offers/qdrant
 title: "Qdrant for Startups (20% discount)"
 ---
 
-# Qdrant for Startups (20% discount)
+## Qdrant for Startups (20% discount)
 
 ### Estimated offer value: $1,000.00
 

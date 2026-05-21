@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-to-build-a-simple-web-app-
 title: "How to build a simple web app using AWS"
 ---
 
-# How to build a simple web app using AWS
+## How to build a simple web app using AWS
 
 ## Overview
 
@@ -33,5 +33,4 @@ The AWS Startups platform offers additional resources in the following categorie
 
 ---
 
-
-*Note: The main content of this page is a video tutorial. Visit the [original page](https://startups.aws/startups/learn/how-to-build-a-simple-web-app-using-aws) to watch the full video content.*
+_Note: The main content of this page is a video tutorial. Visit the [original page](https://startups.aws/startups/learn/how-to-build-a-simple-web-app-using-aws) to watch the full video content._

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/startups-guide-to-genaiops-on-
 title: "Startup's guide to GenAIOps on AWS part 2: Essentials"
 ---
 
-# Startup's guide to GenAIOps on AWS part 2: Essentials
+## Startup's guide to GenAIOps on AWS part 2: Essentials
 
 ![GenAIOps pipeline: the essentials](https://d22k7geae6sy8h.cloudfront.net/files/68b1b3ef3ae6c3000ca894d4/H1+-+Startup's+guide+to+GenAIOps+on+AWS+part.jpg)
 

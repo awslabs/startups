@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/overview-aws-support-plans-and
 title: "Tailor your cloud success with AWS Support Plans and Activate Credits"
 ---
 
-# Tailor your cloud success with AWS Support Plans and Activate Credits
+## Tailor your cloud success with AWS Support Plans and Activate Credits
 
 Building a successful startup often means moving fast while controlling costs. As such, [AWS Support Plans](https://aws.amazon.com/premiumsupport/plans/) and [AWS Activate Credits](https://aws.amazon.com/startups/credits?lang=en-US) can be a powerful combo.
 
@@ -35,16 +35,16 @@ Startups can apply for AWS Activate credits to offset costs on [more than 200 el
 Here is an overview of **guaranteed response times for each tier:**
 
 | [AWS Developer Support](https://aws.amazon.com/premiumsupport/plans/developers/) | Support Time |
-|---|---|
-| General guidance | < 24 hours |
-| System impaired | < 12 hours |
+| -------------------------------------------------------------------------------- | ------------ |
+| General guidance                                                                 | < 24 hours   |
+| System impaired                                                                  | < 12 hours   |
 
 | [AWS Business Support](https://aws.amazon.com/premiumsupport/plans/business/) | Support Time |
-|---|---|
-| General guidance | < 24 hours |
-| System impaired | < 12 hours |
-| Production system impaired | < 4 hours |
-| Production system down | < 1 hour |
+| ----------------------------------------------------------------------------- | ------------ |
+| General guidance                                                              | < 24 hours   |
+| System impaired                                                               | < 12 hours   |
+| Production system impaired                                                    | < 4 hours    |
+| Production system down                                                        | < 1 hour     |
 
 ### What AWS support plans are available for me if I have been approved for AWS Activate Credits?
 
@@ -79,11 +79,11 @@ Designed for startups **managing business-critical workloads** or **experiencing
 **[Pricing for AWS Business Support](https://aws.amazon.com/premiumsupport/pricing/):**
 
 | Monthly AWS Charges | Support Cost |
-|---|---|
-| $0 – $10,000 | 10% |
-| $10,000 – $80,000 | 7% |
-| $80,000 – $250,000 | 5% |
-| Over $250,000 | 3% |
+| ------------------- | ------------ |
+| $0 – $10,000        | 10%          |
+| $10,000 – $80,000   | 7%           |
+| $80,000 – $250,000  | 5%           |
+| Over $250,000       | 3%           |
 
 The price will be at least a **minimum charge of $100 per month** or the result of the calculation above, whichever is higher. Costs listed here are accurate as of May 2025. For the most recent costs, visit the [AWS Support Plan Pricing](https://aws.amazon.com/premiumsupport/pricing/) page.
 

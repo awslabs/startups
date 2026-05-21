@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/blockchain-and-generative-ai-f
 title: "Blockchain and generative AI: Fueling innovation within the digital economy"
 ---
 
-# Blockchain and generative AI: Fueling innovation within the digital economy
+## Blockchain and generative AI: Fueling innovation within the digital economy
 
-*Generative AI is unlocking new possibilities for the onchain economy*
+_Generative AI is unlocking new possibilities for the onchain economy_
 
 Right now, powerful forces are coming together to create immense innovation and economic potential: the [onchain](https://www.coinbase.com/web3) economy and generative artificial intelligence (AI). The onchain economy represents cryptocurrency transactions and activity on the blockchain, and introduces a new way to create, own, and exchange digital assets and data.
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-labvoice-aws-are-expanding
 title: "How LabVoice & AWS are expanding accessibility in research labs"
 ---
 
-# How LabVoice & AWS are expanding accessibility in research labs
+## How LabVoice & AWS are expanding accessibility in research labs
 
 > **Description:** Breaking barriers in research labs with LabVoice and AWS. Explore their innovative inventory search solution for enhanced accessibility in scientific workflows.
 
@@ -61,4 +61,4 @@ Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. W
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-labvoice-aws-are-expanding-accessibility-in-research-labs-2)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-labvoice-aws-are-expanding-accessibility-in-research-labs-2)_

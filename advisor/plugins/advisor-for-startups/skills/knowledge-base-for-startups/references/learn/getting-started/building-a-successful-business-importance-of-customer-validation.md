@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-a-successful-business
 title: "Building a successful business: the importance of customer validation"
 ---
 
-# Building a successful business: the importance of customer validation
+## Building a successful business: the importance of customer validation
 
 ## Overview
 
@@ -14,5 +14,4 @@ Gain insights into market dynamics, adoption rates, and effective marketing stra
 - **Category:** Product Market Fit
 - **Content Type:** Video Resource
 
-
-*This page is primarily a video resource. The main content is delivered through an embedded video player on the AWS Startups website.*
+_This page is primarily a video resource. The main content is delivered through an embedded video player on the AWS Startups website._

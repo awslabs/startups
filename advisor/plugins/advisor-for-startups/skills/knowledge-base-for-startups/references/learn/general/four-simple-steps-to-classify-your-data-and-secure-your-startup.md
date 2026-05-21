@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/four-simple-steps-to-classify-
 title: "Four Simple Steps to Classify Your Data and Secure Your Startup"
 ---
 
-# Four Simple Steps to Classify Your Data and Secure Your Startup
+## Four Simple Steps to Classify Your Data and Secure Your Startup
 
 A data classification process allows you to distinguish between confidential data and data intended for public consumption, and lets you handle each set accordingly. A startup that has categorized its data can operate more efficiently and more confidently navigate compliance with laws such as the European Union's General Data Protection Regulation (GDPR) and the California Consumer Protection Act (CCPA).
 
@@ -33,7 +33,7 @@ Need some help classifying data? [Amazon Macie](http://aws.amazon.com/macie/) us
 
 ### Determine Data Protection Controls
 
-Data protection *controls manage how your data is used*, who has access to it, and how it is encrypted.
+Data protection _controls manage how your data is used_, who has access to it, and how it is encrypted.
 
 After you assign your datasets to the classification tiers, you'll determine what controls apply to each category. By carefully managing an appropriate data classification system, along with each workload's level of protection requirements, you can map the controls and level of access or protection appropriate for the data.
 
@@ -61,7 +61,7 @@ You can use tags to require encryption, for example, or restrict who can access 
 - [AWS Resource Groups](https://docs.aws.amazon.com/ARG/latest/userguide/) and the [Resource Groups Tagging API](https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/) enable programmatic control of tags, making it easier to manage, search, and filter tags and resources.
 - [AWS Identity and Access Management (IAM)](https://aws.amazon.com/iam/) allows you to [control access to resources using tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_tags.html).
 
-*Remember: It's fairly easy to change tags to accommodate changing business requirements, but consider the consequences of future changes. For example, changing access control tags means you must also update the policies that reference those tags and control access to your resources.*
+_Remember: It's fairly easy to change tags to accommodate changing business requirements, but consider the consequences of future changes. For example, changing access control tags means you must also update the policies that reference those tags and control access to your resources._
 
 ## 3. Redact Sensitive Data
 
@@ -88,4 +88,3 @@ By identifying the data you have and implementing appropriate, automated control
 **Author:** Neil DCruz
 
 Neil DCruz is a startup solutions architect based in Mumbai, India. He helps startups on their AWS journey to build reliable, scalable, and cost-effective cloud architectures. He has over a decade of experience working in various consulting and development roles building enterprise applications, microservices, and data analytics and business intelligence workloads.
-

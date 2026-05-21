@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-the-4x-performance-of-aws-
 title: "How Paradime.io Speeds Up Data Pipeline for Customers Up to 50% Without Increasing Costs Using AWS Graviton"
 ---
 
-# How Paradime.io Speeds Up Data Pipeline for Customers Up to 50% Without Increasing Costs Using AWS Graviton
+## How Paradime.io Speeds Up Data Pipeline for Customers Up to 50% Without Increasing Costs Using AWS Graviton
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/how-the-4x-performance-of-aws-graviton-enables-ai-powered-startup-paradimeio-to-transform-the-effectiveness-of-data-analytics-teams)
 
@@ -86,7 +86,9 @@ AWS actively supports companies looking to migrate to AWS Graviton, with tools l
 ## Authors
 
 ### Christian Sofocleous
+
 AWS Startup Account manager: Christian has almost 5 years of experience at Amazon. Currently, he serves as an AWS Startup Account Manager, guiding startups in adopting the most innovative AWS technologies and supporting their go-to-market journey with AWS solutions. Prior to this role, Christian helped direct-to-consumer startups get listed on Amazon and expand their sales across all Amazon Europe marketplaces.
 
 ### Aleksandra Jovovic
+
 AWS Startup Solutions Architect: With 10 years of experience in software development and consulting, Aleksandra is currently helping Startups building their cloud-based applications as Solutions Architect at AWS. In this role, she enjoys discovering new ideas and challenges in areas like containers, observability, and infrastructure-as-code. Aleksandra is passionate about making technical knowledge accessible and aims to help lower barriers to entering the cloud computing field.

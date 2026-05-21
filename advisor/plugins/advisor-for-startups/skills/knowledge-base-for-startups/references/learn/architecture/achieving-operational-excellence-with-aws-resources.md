@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/achieving-operational-excellen
 title: "Achieving Operational Excellence with AWS Resources"
 ---
 
-# Achieving Operational Excellence with AWS Resources
+## Achieving Operational Excellence with AWS Resources
 
 ## Overview
 

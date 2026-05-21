@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/scaling-smarter-how-relevance-
 title: "Scaling smarter: How Relevance AI is transforming work with AI agents"
 ---
 
-# Scaling smarter: How Relevance AI is transforming work with AI agents
+## Scaling smarter: How Relevance AI is transforming work with AI agents
 
 [Learn](/startups/learn) > Scaling smarter: How Relevance AI is transforming work with AI agents
 

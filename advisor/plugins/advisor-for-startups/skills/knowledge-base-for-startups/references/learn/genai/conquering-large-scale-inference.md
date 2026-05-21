@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/conquering-large-scale-inferen
 title: "Conquering Large-Scale Inference"
 ---
 
-# Conquering Large-Scale Inference
+## Conquering Large-Scale Inference
 
 > Ensure efficient, effective inference processes on deep learning models, from optimizing computational resources to leveraging parallelization and distributed systems.
 

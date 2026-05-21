@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-amazon-sagemaker-helps-wid
 title: "How Amazon SageMaker helps Widebot provide Arabic sentiment analysis"
 ---
 
-# How Amazon SageMaker helps Widebot provide Arabic sentiment analysis
+## How Amazon SageMaker helps Widebot provide Arabic sentiment analysis
 
 > Discover how Widebot leverages Amazon SageMaker for Arabic sentiment analysis. Learn how they enhance customer experiences with advanced NLP techniques.
 
@@ -46,7 +46,7 @@ Widebot began looking for a solution to help them focus on building the models q
 
 Widebot chose SageMaker because it provides a broad selection of ML infrastructure and model deployment options to meet all their ML inference needs. SageMaker makes it easy for startups to deploy ML models at the best price performance.
 
-> *"Fortunately, we found that Amazon SageMaker gives us full ownership and control throughout the model development lifecycle. SageMaker's simple and powerful tools allow us to automate and standardize the MLOps practice to build, train, deploy, and manage models more easily and quickly than was possible through our self-managed infrastructure," said Mohamed Mostafa, co-founder and Chief Technology Officer (CTO), Widebot.*
+> _"Fortunately, we found that Amazon SageMaker gives us full ownership and control throughout the model development lifecycle. SageMaker's simple and powerful tools allow us to automate and standardize the MLOps practice to build, train, deploy, and manage models more easily and quickly than was possible through our self-managed infrastructure," said Mohamed Mostafa, co-founder and Chief Technology Officer (CTO), Widebot._
 
 The Widebot team are now able to focus on building and enhancing their ML models to meet their customer expectations, while SageMaker takes care of setting up and managing instances, software version compatibilities, and patching versions. SageMaker also provides built-in metrics and logs for endpoints to keep monitoring the model health and performance.
 
@@ -98,14 +98,14 @@ To build their model, Widebot's data consists of approximately 100,000 different
 
 ### Sample messages
 
-| Example | Sentiment | Confidence |
-|---------|-----------|------------|
-| الخدمة لديكم مناسبة "Your service is good" | positive | 0.8471 |
-| شكرا لحسن تعاونكم "Thank you for your cooperation" | positive | 0.9688 |
-| الخدمة والتعامل لديكم دون المستوى "Your service is substandard" | negative | 0.8982 |
-| حالة الجو سيئة جدا "The weather is very bad" | negative | 0.9737 |
-| سأعاود الإتصال بكم وقت لاحق "I will contact you later" | neutral | 0.8255 |
-| أريد الإستعلام عن الخدمات "I want to inquire about the services" | neutral | 0.9728 |
+| Example                                                          | Sentiment | Confidence |
+| ---------------------------------------------------------------- | --------- | ---------- |
+| الخدمة لديكم مناسبة "Your service is good"                       | positive  | 0.8471     |
+| شكرا لحسن تعاونكم "Thank you for your cooperation"               | positive  | 0.9688     |
+| الخدمة والتعامل لديكم دون المستوى "Your service is substandard"  | negative  | 0.8982     |
+| حالة الجو سيئة جدا "The weather is very bad"                     | negative  | 0.9737     |
+| سأعاود الإتصال بكم وقت لاحق "I will contact you later"           | neutral   | 0.8255     |
+| أريد الإستعلام عن الخدمات "I want to inquire about the services" | neutral   | 0.9728     |
 
 ## Results Summary
 
@@ -116,8 +116,8 @@ Widebot tested their model against different Arabic text datasets in various dia
 The testing dataset (20,679 samples in the ratio 5004:1783:13892)
 
 | Negative F1 | Neutral F1 | Positive F1 | Overall accuracy | Macro average | Weighted average |
-|-------------|------------|-------------|------------------|---------------|------------------|
-| 89.9 | 79.4 | 95.1 | 92.5 | 88.1 | 92.5 |
+| ----------- | ---------- | ----------- | ---------------- | ------------- | ---------------- |
+| 89.9        | 79.4       | 95.1        | 92.5             | 88.1          | 92.5             |
 
 ### The model response time
 
@@ -130,10 +130,10 @@ Widebot measured the response time using the average (AVG), minimum (MIN), and m
 The following compares the response-time metric between using a general-purpose compute platform and using Amazon SageMaker for model hosting, when deploying the same datasets with an average payload size of 2 KB.
 
 | Total response time | General compute platform (EC2 instances: p2.xlarge) | Amazon SageMaker (SageMaker instances: ml.m4.xlarge) |
-|---------------------|-----------------------------------------------------|------------------------------------------------------|
-| Average | 0.202 sec./response | 0.106 sec./response |
-| Minimum | 0.097 sec./response | 0.088 sec./response |
-| Maximum | 8.458 sec./response | 0.957 sec./response |
+| ------------------- | --------------------------------------------------- | ---------------------------------------------------- |
+| Average             | 0.202 sec./response                                 | 0.106 sec./response                                  |
+| Minimum             | 0.097 sec./response                                 | 0.088 sec./response                                  |
+| Maximum             | 8.458 sec./response                                 | 0.957 sec./response                                  |
 
 ### The model concurrency
 
@@ -163,4 +163,4 @@ Ahmed Azzam is a Senior Solutions Architect based in Dubai, UAE. He is passionat
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-amazon-sagemaker-helps-widebot-provide-arabic-sentiment-analysis)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-amazon-sagemaker-helps-widebot-provide-arabic-sentiment-analysis)_

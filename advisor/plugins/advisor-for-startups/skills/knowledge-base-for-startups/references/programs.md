@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/programs
 title: "AWS Startups Programs"
 ---
 
-# AWS Startups Programs
+## AWS Startups Programs
 
 ### AWS Startups empowers entrepreneurs through a range of program types tailored to meet diverse startup needs around the globe. Our offerings include collaborative Lofts for ongoing, in-person support and networking, focused Spotlights for industry-specific guidance, and intensive Accelerators for rapid growth. Discover how our programs can propel your company forward.
 

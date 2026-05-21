@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/featured-customers
 title: "Featured AWS Customers"
 ---
 
-# Featured AWS Customers
+## Featured AWS Customers
 
 Discover success stories of featured AWS customers. Learn how AWS has empowered startups to achieve their goals.
 

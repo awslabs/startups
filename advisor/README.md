@@ -58,17 +58,17 @@ npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/adv
 
 ### Supported `--agent` values
 
-| Agent | `--agent` |
-|---|---|
-| Kiro | `kiro-cli` |
-| Claude Code | `claude-code` |
-| Cursor | `cursor` |
-| Codex | `codex` |
+| Agent          | `--agent`        |
+| -------------- | ---------------- |
+| Kiro           | `kiro-cli`       |
+| Claude Code    | `claude-code`    |
+| Cursor         | `cursor`         |
+| Codex          | `codex`          |
 | GitHub Copilot | `github-copilot` |
-| OpenCode | `opencode` |
-| Continue | `continue` |
-| Windsurf | `windsurf` |
-| Gemini CLI | `gemini-cli` |
+| OpenCode       | `opencode`       |
+| Continue       | `continue`       |
+| Windsurf       | `windsurf`       |
+| Gemini CLI     | `gemini-cli`     |
 
 Full list of 50+ supported agents: [vercel-labs/skills — Supported Agents](https://github.com/vercel-labs/skills#supported-agents).
 
@@ -78,17 +78,17 @@ Full list of 50+ supported agents: [vercel-labs/skills — Supported Agents](htt
 
 Once installed, ask your agent:
 
-| Prompt | Skill that handles it |
-|---|---|
-| *"Do AWS Activate Credits expire?"* | `knowledge-base-for-startups` → `references/faq.md` |
-| *"Find startups articles on cost optimization for early stage"* | `knowledge-base-for-startups` → `references/learn.md` index → an article file |
-| *"What partner offers help with observability?"* | `knowledge-base-for-startups` → `references/offers.md` index |
-| *"Show me a sample architecture for RAG on Bedrock"* | `knowledge-base-for-startups` → `references/build.md` |
-| *"Give me a prompt for an MVP on AWS"* | `prompt-library-for-startups` → `awsome-mvp-builder.md` |
-| *"Prompt for a RAG chatbot using Claude on Bedrock"* | `prompt-library-for-startups` → `rag-chatbot-with-claude.md` |
-| *"Help me migrate workloads from GCP to AWS"* | `prompt-library-for-startups` → AWS Migration Agent (downloadable) |
-| *"Help me build a SaaS app on AWS"* | `start-building-for-startups` → discovery workflow → scaffolded code |
-| *"How do I start with RAG?"* | `knowledge-base-for-startups` (learn article) + `prompt-library-for-startups` (starter prompt) — boundary query |
+| Prompt                                                          | Skill that handles it                                                                                           |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| _"Do AWS Activate Credits expire?"_                             | `knowledge-base-for-startups` → `references/faq.md`                                                             |
+| _"Find startups articles on cost optimization for early stage"_ | `knowledge-base-for-startups` → `references/learn.md` index → an article file                                   |
+| _"What partner offers help with observability?"_                | `knowledge-base-for-startups` → `references/offers.md` index                                                    |
+| _"Show me a sample architecture for RAG on Bedrock"_            | `knowledge-base-for-startups` → `references/build.md`                                                           |
+| _"Give me a prompt for an MVP on AWS"_                          | `prompt-library-for-startups` → `awsome-mvp-builder.md`                                                         |
+| _"Prompt for a RAG chatbot using Claude on Bedrock"_            | `prompt-library-for-startups` → `rag-chatbot-with-claude.md`                                                    |
+| _"Help me migrate workloads from GCP to AWS"_                   | `prompt-library-for-startups` → AWS Migration Agent (downloadable)                                              |
+| _"Help me build a SaaS app on AWS"_                             | `start-building-for-startups` → discovery workflow → scaffolded code                                            |
+| _"How do I start with RAG?"_                                    | `knowledge-base-for-startups` (learn article) + `prompt-library-for-startups` (starter prompt) — boundary query |
 
 ---
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/maximizing-cost-efficiency-wit
 title: "Maximizing Cost Efficiency with AWS Containers"
 ---
 
-# Maximizing Cost Efficiency with AWS Containers
+## Maximizing Cost Efficiency with AWS Containers
 
 ## Overview
 
@@ -18,4 +18,3 @@ This is a video-based learning resource from AWS Startups. The page primarily co
 **Content Type:** Video
 
 **Category:** Technical Resources / Cost Optimization
-

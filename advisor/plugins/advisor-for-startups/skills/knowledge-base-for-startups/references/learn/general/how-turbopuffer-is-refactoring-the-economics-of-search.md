@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-turbopuffer-is-refactoring
 title: "How turbopuffer is refactoring the economics of search"
 ---
 
-# How turbopuffer is refactoring the economics of search
+## How turbopuffer is refactoring the economics of search
 
 > turbopuffer makes high recall, low-latency semantic search accessible—helping customers search more data, improve search quality, and save millions.
 
@@ -51,4 +51,4 @@ Many startups hold similarly bold ambitions, and they're on their way to achievi
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-turbopuffer-is-refactoring-the-economics-of-search)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-turbopuffer-is-refactoring-the-economics-of-search)_

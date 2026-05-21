@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/maximizing-performance-with-aw
 title: "Maximizing Performance with AWS Databases"
 ---
 
-# Maximizing Performance with AWS Databases
+## Maximizing Performance with AWS Databases
 
 **Category:** Data and Analytics
 
@@ -21,5 +21,4 @@ This resource is a **video-based learning module**. The primary content is deliv
 
 ---
 
-
-*Note: This page primarily contains video content. The text content on the page is limited to the title and overview description above. To access the full learning material, visit the [original page](https://startups.aws/startups/learn/maximizing-performance-with-aws-databases) to watch the video.*
+_Note: This page primarily contains video content. The text content on the page is limited to the title and overview description above. To access the full learning material, visit the [original page](https://startups.aws/startups/learn/maximizing-performance-with-aws-databases) to watch the video._

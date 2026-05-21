@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/pulpoar-on-ml-for-shopping
 title: "PulpoAR uses machine learning to build an augmented reality shopping experience for beauty products"
 ---
 
-# PulpoAR uses machine learning to build an augmented reality shopping experience for beauty products
+## PulpoAR uses machine learning to build an augmented reality shopping experience for beauty products
 
 **Author:** Mikey Tom
 
@@ -47,4 +47,4 @@ Mikey works on the AWS Startup Marketing team to help highlight awesome founders
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/pulpoar-on-ml-for-shopping)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/pulpoar-on-ml-for-shopping)_

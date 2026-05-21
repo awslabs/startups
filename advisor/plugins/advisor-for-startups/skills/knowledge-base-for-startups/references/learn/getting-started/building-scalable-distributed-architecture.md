@@ -3,25 +3,30 @@ source_url: https://aws.amazon.com/startups/learn/building-scalable-distributed-
 title: "Week 5: Building Scalable Distributed Architecture"
 ---
 
-# Week 5: Building Scalable Distributed Architecture
+## Week 5: Building Scalable Distributed Architecture
 
 > Ready to build a scalable architecture that can handle explosive growth? Let's dive in. We'll explore the foundational concepts that will transform your startup from a promising idea into a robust, scalable powerhouse.
 
 ## Course Details
 
 ### 1. Introduction: Building Scalable Distributed Architecture
+
 **Duration:** 2 mins
 
 ### 2. Loosely Coupled v. Tightly Coupled Architecture
+
 **Duration:** 7 mins
 
 ### 3. Orchestration v. Choreography
+
 **Duration:** 6 mins
 
 ### 4. Queuing and Event-Driven Architecture
+
 **Duration:** 5 mins
 
 ### 5. Key Takeaways
+
 **Duration:** 1 min
 
 ---
@@ -44,4 +49,3 @@ title: "Week 5: Building Scalable Distributed Architecture"
 - [Prompts](/startups/prompt-library)
 - [Programs](/startups/programs)
 - [Contact Us](/startups/contact-us)
-

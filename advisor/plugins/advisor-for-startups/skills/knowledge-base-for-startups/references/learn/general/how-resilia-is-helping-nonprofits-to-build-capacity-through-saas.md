@@ -3,13 +3,13 @@ source_url: https://aws.amazon.com/startups/learn/how-resilia-is-helping-nonprof
 title: "How Resilia is helping nonprofits to build capacity through SaaS"
 ---
 
-# How Resilia is helping nonprofits to build capacity through SaaS
+## How Resilia is helping nonprofits to build capacity through SaaS
 
-*Meet Sevetri Wilson, serial entrepreneur, business owner, and problem solver. See how her newest startup, Resilia, is transforming how non-profits do business.*
+_Meet Sevetri Wilson, serial entrepreneur, business owner, and problem solver. See how her newest startup, Resilia, is transforming how non-profits do business._
 
 ---
 
-*To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](https://aws.amazon.com/startups/prove-whats-possible/).*
+_To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](https://aws.amazon.com/startups/prove-whats-possible/)._
 
 ![Sevetri Wilson, founder and chief executive officer (CEO) of Resilia](https://d22k7geae6sy8h.cloudfront.net/files/649c6e5f17ac6600089d8c8b/8ljfztm59-Sevetri-Wilson-photo.jpg)
 
@@ -75,4 +75,4 @@ Sevetri Wilson is a serial entrepreneur, author, and founder and CEO of Resilia,
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-resilia-is-helping-nonprofits-to-build-capacity-through-saas)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-resilia-is-helping-nonprofits-to-build-capacity-through-saas)_

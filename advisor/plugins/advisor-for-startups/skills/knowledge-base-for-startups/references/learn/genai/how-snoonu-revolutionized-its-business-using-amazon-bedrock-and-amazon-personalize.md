@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-snoonu-revolutionized-its-
 title: "How Snoonu revolutionized its business using Amazon Bedrock and Amazon Personalize"
 ---
 
-# How Snoonu revolutionized its business using Amazon Bedrock and Amazon Personalize
+## How Snoonu revolutionized its business using Amazon Bedrock and Amazon Personalize
 
 [Snoonu](https://www.snoonu.com/) is Qatar's leading e-commerce platform, offering 15 essential services through a single comprehensive application. These services range from quick meals to urgent pharmacy runs, grocery shopping, and personal shopping assistance (Snoosend). Innovation and excellence are Snoonu's guiding principles as it strives to deliver the best shopping and delivery experience in Qatar. "We are going to launch a lot of new services inside the Snoonu application, and we are expanding internationally," said Nikita Gordeev, CTO at Snoonu. "Using [Amazon Bedrock](https://aws.amazon.com/bedrock/) helps us to launch one of our new services."
 
@@ -61,4 +61,4 @@ Chris Saleski is the AWS Global Customer References Lead for Migration & Moderni
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-snoonu-revolutionized-its-business-using-amazon-bedrock-and-amazon-personalize)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-snoonu-revolutionized-its-business-using-amazon-bedrock-and-amazon-personalize)_

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/applying-for-aws-activate-cred
 title: "Applying for AWS Activate Credits: A step-by-step guide"
 ---
 
-# Applying for AWS Activate Credits: A step-by-step guide
+## Applying for AWS Activate Credits: A step-by-step guide
 
 Step by step instructions on how to submit an application for AWS credits.
 

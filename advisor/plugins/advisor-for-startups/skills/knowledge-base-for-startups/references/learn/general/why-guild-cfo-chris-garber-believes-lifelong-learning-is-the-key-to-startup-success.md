@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/why-guild-cfo-chris-garber-bel
 title: "Why Guild CFO Chris Garber believes lifelong learning is the key to startup success"
 ---
 
-# Why Guild CFO Chris Garber believes lifelong learning is the key to startup success
+## Why Guild CFO Chris Garber believes lifelong learning is the key to startup success
 
-*You are reading the third installment of our thought leadership spotlight, "The evolving role of the startup CFO." This series features perspectives from prominent players in the startup ecosystem.*
+_You are reading the third installment of our thought leadership spotlight, "The evolving role of the startup CFO." This series features perspectives from prominent players in the startup ecosystem._
 
 The ed tech and skilling industry is booming. Businesses and investors are embracing job training and upskilling as strategies to create more adaptable and resilient workforces. But even in a crowded field, Guild stands out: the startup tripled its valuation in 2021, attracting key investors like Bessemer Venture Partners to help the company get to the next level.
 
@@ -57,4 +57,4 @@ Dave Abrameto is a Principal Business Development Manager in the AWS Early Stage
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/why-guild-cfo-chris-garber-believes-lifelong-learning-is-the-key-to-startup-success)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/why-guild-cfo-chris-garber-believes-lifelong-learning-is-the-key-to-startup-success)_

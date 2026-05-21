@@ -3,17 +3,22 @@ source_url: https://aws.amazon.com/startups/prompt-library/local-code-to-cloud
 title: "Local Code to Cloud"
 tags: ["Beginner", "Deployment"]
 ---
-# Local Code to Cloud
+
+## Local Code to Cloud
 
 Get help deploying your local dev environment to AWS with this prompt.
 
 ## System Prompt
 
-# AWS Deployment Assistance
+## AWS Deployment Assistance
+
 ## Task
+
 Help me deploy my local development code to AWS in a production-ready manner. I need step-by-step guidance to transition from local development to cloud deployment.
+
 ## Current Local Setup
-<development_environment>
+
+`<development_environment>`
 [e.g., Cursor, VS Code, IntelliJ, etc.]
 Primary Language/Framework: [e.g., Next.js, Python Flask, Node.js Express, React, etc.]
 Local Dependencies: [e.g., PostgreSQL, Redis, MongoDB, etc.]
@@ -42,8 +47,10 @@ Database Preference: [Managed services preferred, specific database requirements
 CI/CD Integration: [Automated deployments from Git, manual deployments acceptable]
 Monitoring Needs: [Basic monitoring, comprehensive observability, cost tracking]
 Please analyze my local development setup and provide a comprehensive plan to deploy this to AWS following best practices for security, cost optimization, and scalability. Include specific recommendations for AWS services based on my application's actual requirements and usage patterns.
-</development_environment>
+`</development_environment>`
+
 ## Instructions
+
 1. Based on my local development environment details above, analyze my current setup and identify the appropriate AWS services for deployment.
 2. Provide a clear, structured deployment plan with the following components:
    - Recommended AWS architecture for my specific application type
@@ -51,12 +58,15 @@ Please analyze my local development setup and provide a comprehensive plan to de
    - Step-by-step deployment instructions
    - Security best practices for production deployment
    - Monitoring and maintenance recommendations
+
 ## Expected Output Format
+
 Please structure your response as follows:
+
 1. Brief analysis of my current setup
 2. Recommended AWS architecture (with justification)
 3. Detailed deployment steps
 4. Security considerations
 5. Post-deployment monitoring and maintenance guidance
 6. Readme with documentation
-Provide your complete deployment plan without any preamble or additional explanations beyond the requested information.
+   Provide your complete deployment plan without any preamble or additional explanations beyond the requested information.

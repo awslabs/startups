@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/turning-back-the-data-clock-wi
 title: "Turning back the data clock, with Rewind"
 ---
 
-# Turning back the data clock, with Rewind
+## Turning back the data clock, with Rewind
 
 [Rewind](http://www.rewind.com/) is taking an innovative approach to software-as-a-service (SaaS) resilience and enabling enterprises to recover lost data with precision. The Rewind platform automatically backs up data from applications by capturing incremental changes to information at the account level, meaning businesses can maintain critical operations even during SaaS outages and security issues.
 

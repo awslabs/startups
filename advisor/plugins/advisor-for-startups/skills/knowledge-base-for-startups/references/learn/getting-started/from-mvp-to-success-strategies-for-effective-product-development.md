@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/from-mvp-to-success-strategies
 title: "From MVP to Success: Strategies for Effective Product Development"
 ---
 
-# From MVP to Success: Strategies for Effective Product Development
+## From MVP to Success: Strategies for Effective Product Development
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/from-mvp-to-success-strategies-for-effective-product-development)
 

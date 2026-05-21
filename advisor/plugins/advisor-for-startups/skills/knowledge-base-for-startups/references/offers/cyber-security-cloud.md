@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/offers/cyber-security-cloud
 title: "Save Up to $6,500 on WafCharm – Startup-Exclusive Managed WAF for AWS"
 ---
 
-# Save Up to $6,500 on WafCharm – Startup-Exclusive Managed WAF for AWS
+## Save Up to $6,500 on WafCharm – Startup-Exclusive Managed WAF for AWS
 
 ### Estimated offer value: $6,500.00
 

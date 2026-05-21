@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/camino-financial-is-using-ai-t
 title: "Camino Financial is using AI technology to loan with empathy"
 ---
 
-# Camino Financial is using AI technology to loan with empathy
+## Camino Financial is using AI technology to loan with empathy
 
-*Discover how Camino Financial leverages AI technology to provide empathetic loans for small businesses, and foster generational wealth.*
+_Discover how Camino Financial leverages AI technology to provide empathetic loans for small businesses, and foster generational wealth._
 
 ---
 
@@ -39,4 +39,4 @@ The AWS Startups Content Marketing Team collaborates with startups of all sizes 
 
 ---
 
-*Source: [AWS Startups](/startups/learn)*
+_Source: [AWS Startups](/startups/learn)_

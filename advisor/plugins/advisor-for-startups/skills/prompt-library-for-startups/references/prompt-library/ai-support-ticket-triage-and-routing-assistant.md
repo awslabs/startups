@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/ai-support-ticket-tri
 title: "AI Support Ticket Triage & Routing Assistant"
 tags: ["Operations Automation", "Customer Support", "Intermediate", "Bedrock", "Prototyping"]
 ---
-# AI Support Ticket Triage & Routing Assistant
+
+## AI Support Ticket Triage & Routing Assistant
 
 Respond to customers in minutes instead of hours by automatically analyzing tickets, detecting churn risk, and routing to the right team so you keep customers happy and growing.
 
@@ -154,20 +155,20 @@ OUTPUT: Category: Account Health→Churn | Urgency: 4 | Sentiment: NEGATIVE | Ro
 
 **ENVIRONMENT SETUP**
 
-# Create virtual environment
+## Create virtual environment
 
 python3 -m venv venv
 
 source venv/bin/activate
 
-# Install dependencies
+## Install dependencies
 
 pip install -r requirements.txt
 
-# Configure AWS
+## Configure AWS
 
 aws configure
 
-# Run demo
+## Run demo
 
 python3 main.py

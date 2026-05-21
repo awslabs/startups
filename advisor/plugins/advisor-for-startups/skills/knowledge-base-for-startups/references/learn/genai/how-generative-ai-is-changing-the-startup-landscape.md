@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-generative-ai-is-changing-
 title: "How Generative AI is Changing the Startup Landscape"
 ---
 
-# How Generative AI is Changing the Startup Landscape
+## How Generative AI is Changing the Startup Landscape
 
 Picture an Artificial Intelligence (AI) that's a creator, not just a helper–it codes, designs logos, and writes copy that echoes your brand. Generative AI is making this a reality for startups. But startups aren't just consumers of this technology—they're at the forefront of producing it.
 
@@ -69,7 +69,7 @@ To automate content creation for marketing materials, social media posts, and ad
 - Utilize Anthropic's Claude to streamline content creation. Claude offers a highly efficient solution for generating brand-aligned, contextually relevant content. Its capabilities allow for versatile content outputs in a brand's unique style, enhancing channel productivity and consistency.
 - For image generation, leverage Stability.ai's stable diffusion models. These models are designed to produce high-quality visuals with optimized performance, low latency, and cost efficiency, making them ideal for applications that demand visually engaging content.
 
-The result? Startup's cost-effective scale-up, enhanced focus on high-value tasks, and superior content quality assurance. *Reminder: Use clear and explicit prompts to guide your generative AI model for highly relevant and quality content.*
+The result? Startup's cost-effective scale-up, enhanced focus on high-value tasks, and superior content quality assurance. _Reminder: Use clear and explicit prompts to guide your generative AI model for highly relevant and quality content._
 
 ### Optimize Internal Processes
 

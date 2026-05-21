@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-smore-is-building-an-inclu
 title: "Unlocking authentic connections: How S'More is building an inclusive dating app"
 ---
 
-# Unlocking authentic connections: How S'More is building an inclusive dating app
+## Unlocking authentic connections: How S'More is building an inclusive dating app
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/how-smore-is-building-an-inclusive-dating-app)
 
@@ -21,5 +21,4 @@ Discover how S'more break the barriers of traditional dating apps with AWS's rec
 
 ---
 
-
-*Note: This page primarily contains video content. Visit the original page to watch the full video about how S'More is leveraging AWS technology to build their inclusive dating platform.*
+_Note: This page primarily contains video content. Visit the original page to watch the full video about how S'More is leveraging AWS technology to build their inclusive dating platform._

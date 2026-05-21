@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/qodo-helps-developers-banish-b
 title: "Qodo Helps Developers Banish Bad Code with AI Tools"
 ---
 
-# Qodo Helps Developers Banish Bad Code with AI Tools
+## Qodo Helps Developers Banish Bad Code with AI Tools
 
 > Tech leads and their teams are actively exploring the potential of artificial intelligence (AI) as a means of boosting productivity and efficiency. AI generated code has the potential to streamline developer workflows and help them focus on higher priority tasks, but there is another key part of the puzzle to consider—code quality.
 
@@ -51,7 +51,7 @@ Beyond training, making its models compatible with major code repository systems
 
 ## The Next Generation of Code Generation
 
-Going forward, Qodo is continuing to develop new ways to support developers with AI. "The second phase of Qodo is moving from a platform with a focus on code review and code testing to building *the* AI developer for complex code," says Friedman. "I think we will see developers taking the software world into areas we could not imagine, and Qodo is the milestone, a critical steppingstone towards the next generation of code generation."
+Going forward, Qodo is continuing to develop new ways to support developers with AI. "The second phase of Qodo is moving from a platform with a focus on code review and code testing to building _the_ AI developer for complex code," says Friedman. "I think we will see developers taking the software world into areas we could not imagine, and Qodo is the milestone, a critical steppingstone towards the next generation of code generation."
 
 AWS and NVIDIA will continue to help Qodo innovate and grow through a combination of cutting-edge technology and deep expertise. The company recently announced Qodo-Embed-1, a new state-of-the-art model for code embedding. Embed-1 is available in the [Amazon Bedrock Marketplace](https://aws.amazon.com/bedrock/marketplace/) and includes deep integration with [NVIDIA NIM microservices](https://www.nvidia.com/en-gb/ai/). "NVIDIA and AWS are great partners with great programs, like [NVIDIA Inception](https://www.nvidia.com/en-gb/startups/) and the Generative AI Accelerator," says Friedman. "They open opportunities for us. They understand our needs, what we're trying to achieve right now, and they help us be a better startup."
 
@@ -59,4 +59,4 @@ If you want access to funding, expertise, and cutting-edge technology that can h
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/qodo-helps-developers-banish-bad-code-with-ai-tools)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/qodo-helps-developers-banish-bad-code-with-ai-tools)_

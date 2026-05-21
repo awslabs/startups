@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/maximizing-aws-cost-optimizati
 title: "Maximizing AWS Cost Optimization: Tools & Strategies"
 ---
 
-# Maximizing AWS Cost Optimization: Tools & Strategies
+## Maximizing AWS Cost Optimization: Tools & Strategies
 
 ## Overview
 

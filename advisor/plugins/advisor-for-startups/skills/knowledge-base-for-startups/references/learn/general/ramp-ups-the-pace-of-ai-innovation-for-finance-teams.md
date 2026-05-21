@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/ramp-ups-the-pace-of-ai-innova
 title: "Ramp ups the pace of AI innovation for finance teams"
 ---
 
-# Ramp ups the pace of AI innovation for finance teams
+## Ramp ups the pace of AI innovation for finance teams
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/ramp-ups-the-pace-of-ai-innovation-for-finance-teams)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/ramp-ups-the-pace-of-ai-innovation-for-finance-teams)_
 
 ---
 
@@ -49,4 +49,4 @@ Working with AWS has helped Ramp to further its mission and innovate at speed. R
 
 ---
 
-*Related: [Learn](/startups/learn) | [AWS Startups Home](/startups)*
+_Related: [Learn](/startups/learn) | [AWS Startups Home](/startups)_

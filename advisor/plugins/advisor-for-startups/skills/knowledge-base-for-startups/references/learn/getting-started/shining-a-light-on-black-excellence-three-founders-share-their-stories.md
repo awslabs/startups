@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/shining-a-light-on-black-excel
 title: "Shining a light on Black excellence: three founders share their stories"
 ---
 
-# Shining a light on Black excellence: three founders share their stories
+## Shining a light on Black excellence: three founders share their stories
 
-*To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](https://aws.amazon.com/startups/prove-whats-possible/).*
+_To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](https://aws.amazon.com/startups/prove-whats-possible/)._
 
 Today, we're talking to three Black founders and leaders: Kwame Boler, CEO and co-founder of [Spritz](https://www.usespritz.com/); Natasha Greene, [We Intervene](https://weintervene.com/); and Chandler Malone, CEO of [Bootup](http://www.joinbootup.com/).
 
@@ -21,7 +21,7 @@ Read on to see how they've overcome obstacles and how they encourage and mentor 
 
 **Q: Tell me about some of the obstacles you've faced as a founder. What did you learn about yourself as you confronted them?**
 
-**A:** As a founder, I've faced many challenges along the way. One of the biggest obstacles I experienced was when my previous business, neu, had to shut down and pivot to become Spritz. At the time, it was a low point for our team, *but we didn't let it defeat us*.
+**A:** As a founder, I've faced many challenges along the way. One of the biggest obstacles I experienced was when my previous business, neu, had to shut down and pivot to become Spritz. At the time, it was a low point for our team, _but we didn't let it defeat us_.
 
 We started neu with just $3,000 of funding from friends, and by the end of 2019, we bootstrapped the business to generate nearly $400,000 in gross merchandise value (GMV) in just one city. In 2020, our goal was to close our first round of venture capital while participating in the Techstars accelerator and expand to other markets. But, unfortunately, when the travel industry took a nosedive from the pandemic, our plans had to change. However, we saw this as an opportunity to clear our technical debt, and after making the tough decision to furlough our operations team, we continued building and increasing our product-market fit by including personal protection equipment (PPE) in our service offerings. Despite the circumstances, we successfully closed our first round of venture capital that year. We were now on our way to scale, and by the end of 2021, we had doubled our lifetime GMV to nearly $900,000 in sales and expanded into our 2nd market.
 
@@ -121,4 +121,4 @@ As a highly esteemed Global Business Development Manager on the AWS Startups und
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/shining-a-light-on-black-excellence-three-founders-share-their-stories)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/shining-a-light-on-black-excellence-three-founders-share-their-stories)_

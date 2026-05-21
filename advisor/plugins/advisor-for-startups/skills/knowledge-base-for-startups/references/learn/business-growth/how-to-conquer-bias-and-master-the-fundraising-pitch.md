@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-to-conquer-bias-and-master
 title: "How to conquer bias and master the fundraising pitch"
 ---
 
-# How to conquer bias and master the fundraising pitch
+## How to conquer bias and master the fundraising pitch
 
 ## Overview
 
@@ -26,11 +26,13 @@ This is a **video-based learning resource** from AWS Startups. The main content 
 ## Related Resources
 
 ### AWS Startups Programs
+
 - [Accelerators](/startups/programs#Accelerators) - Cohort-based programs providing expertise, mentorship, and resources to accelerate startups.
 - [Lofts](/startups/programs#Lofts) - Community spaces where startups and developers learn, build, and connect globally.
 - [Spotlights](/startups/programs#Spotlights) - Regional, short-term programs offering industry-specific support to early-stage startups.
 
 ### Learning Resources
+
 - [Generative AI Articles](/startups/learn/generative-ai) - Generative AI resources, use cases, and support for startups.
 - [Showcase](/startups/showcase) - Browse startups on AWS, explore their solutions, and connect with founders.
 - [Startup Resources](/startups/learn/technical-resources) - Technical guides, learning resources, and strategies for startup growth.
@@ -39,6 +41,7 @@ This is a **video-based learning resource** from AWS Startups. The main content 
 - [Business Guidance](/startups/learn/business-guidance) - Expert strategies to propel your startup forward.
 
 ### Other Links
+
 - [AWS Credits](/startups/credits)
 - [Offers](/startups/offers)
 - [Events](/startups/events)
@@ -46,4 +49,3 @@ This is a **video-based learning resource** from AWS Startups. The main content 
 - [Contact Us](/startups/contact-us)
 - [Activate Providers](/startups/providers)
 - [FAQ](/startups/faq)
-

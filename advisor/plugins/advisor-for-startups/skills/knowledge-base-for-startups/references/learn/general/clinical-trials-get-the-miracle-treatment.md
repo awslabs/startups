@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/clinical-trials-get-the-miracl
 title: "Clinical trials get the Miracle treatment"
 ---
 
-# Clinical trials get the Miracle treatment
+## Clinical trials get the Miracle treatment
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/clinical-trials-get-the-miracle-treatment)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/clinical-trials-get-the-miracle-treatment)_
 
 ---
 
@@ -51,7 +51,7 @@ Teams can be confident that their work aligns with industry regulations, thanks 
 
 ### Data gets the AI treatment
 
-Recent years have seen the emergence of another factor which is a growing priority and a *need* for organizations: AI. Miracle is using [Amazon Bedrock](https://aws.amazon.com/bedrock/) and [Amazon SageMaker](https://aws.amazon.com/sagemaker-ai/) which are both managed services. Amazon Bedrock provides access to high-performing foundation models along with a broad set of capabilities needed to build and customize applications that meet governance and audit requirements, while Amazon SageMaker allows users to build and train machine learning models while keeping data secure throughout the lifecycle.
+Recent years have seen the emergence of another factor which is a growing priority and a _need_ for organizations: AI. Miracle is using [Amazon Bedrock](https://aws.amazon.com/bedrock/) and [Amazon SageMaker](https://aws.amazon.com/sagemaker-ai/) which are both managed services. Amazon Bedrock provides access to high-performing foundation models along with a broad set of capabilities needed to build and customize applications that meet governance and audit requirements, while Amazon SageMaker allows users to build and train machine learning models while keeping data secure throughout the lifecycle.
 
 Many such services are available out-of-the-box, "without needing to explore all kinds of different third-party vendors," says Kim, which has saved time and supported Miracle's "pace of innovation."
 
@@ -75,4 +75,4 @@ What else does the future have in store for Miracle? Kim is looking forward to s
 
 ---
 
-*Category: Featured Startups*
+_Category: Featured Startups_

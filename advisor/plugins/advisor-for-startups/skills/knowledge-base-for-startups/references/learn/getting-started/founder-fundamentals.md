@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/founder-fundamentals
 title: "Founder Fundamentals"
 ---
 
-# Founder Fundamentals
+## Founder Fundamentals
 
 Building a startup is no easy feat. Understand the steps to take turning your big idea into a business.
 
@@ -46,4 +46,3 @@ This course covers the essential topics for startup founders. Each module is des
 - [Customer Stories](/startups/learn/featured-customers) - Startup success stories from AWS customers to inspire and inform.
 - [Business Guidance](/startups/learn/business-guidance) - Expert strategies to propel your startup forward.
 - [Activate Providers](/startups/providers) - Resources for startup enabling organizations and venture capital firms.
-

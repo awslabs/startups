@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-swoop-aero-reinvented-comm
 title: "How Swoop Aero reinvented commercial cargo aviation and saves lives"
 ---
 
-# How Swoop Aero reinvented commercial cargo aviation and saves lives
+## How Swoop Aero reinvented commercial cargo aviation and saves lives
 
 > "I thought, it's something different, it's something challenging, and I love to challenge myself, so I went and gave it a shot."
 
@@ -81,4 +81,4 @@ This solution provides secure, scalable, and trackable data transfer for Amazon 
 
 ---
 
-*Source: [AWS Startups](/startups/learn)*
+_Source: [AWS Startups](/startups/learn)_

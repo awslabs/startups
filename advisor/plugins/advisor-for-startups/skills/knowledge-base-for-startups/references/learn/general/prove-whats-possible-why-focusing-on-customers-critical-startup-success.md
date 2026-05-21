@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-why-focus
 title: "Why focusing on customers is critical for startup success"
 ---
 
-# Why focusing on customers is critical for startup success
+## Why focusing on customers is critical for startup success
 
 Launching a new startup is like swimming in a sea of possibilities. The cloud puts almost any business idea within reach and enables founders to dream big, but there always comes a time when those dreams must be tempered by reality, and that means working within the constraints of time and budget.
 
@@ -56,4 +56,3 @@ In the world of startups, this means testing lots of new ideas, and then watchin
 No startup will last for long without customers, and while investors may help you bridge the gap, no investor will be interested in your idea if they don't think you'll ever stand on your own two feet.
 
 So, despite the numerous challenges and choices that will compete for your attention, maintaining a laser focus on customers will ensure you are focusing on the thing that matters most, and will help you prioritise how you invest your time, money, and energy.
-

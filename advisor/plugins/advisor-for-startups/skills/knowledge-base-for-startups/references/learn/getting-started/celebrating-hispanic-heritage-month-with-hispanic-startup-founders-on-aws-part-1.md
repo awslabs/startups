@@ -3,11 +3,11 @@ source_url: https://aws.amazon.com/startups/learn/celebrating-hispanic-heritage-
 title: "Celebrating Hispanic Heritage Month with Hispanic startup founders on AWS: Part 1"
 ---
 
-# Celebrating Hispanic Heritage Month with Hispanic startup founders on AWS: Part 1
+## Celebrating Hispanic Heritage Month with Hispanic startup founders on AWS: Part 1
 
-*At AWS, we know that building a dream is best achieved by having support from people like you who want to get where you're going as much as you do. To celebrate Hispanic Heritage Month, we're recognizing the achievements and contributions of Hispanic and Latino Americans who have inspired others to achieve success.*
+_At AWS, we know that building a dream is best achieved by having support from people like you who want to get where you're going as much as you do. To celebrate Hispanic Heritage Month, we're recognizing the achievements and contributions of Hispanic and Latino Americans who have inspired others to achieve success._
 
-*This series of blog posts features Hispanic founders who share their unique challenges, aspirations, and how AWS helps them carry out their missions.*
+_This series of blog posts features Hispanic founders who share their unique challenges, aspirations, and how AWS helps them carry out their missions._
 
 ## Factored: The transformative power of technology
 
@@ -15,7 +15,7 @@ CEO Israel Niezen co-founded [Factored](https://factored.ai/) with a dream to he
 
 Coming to the US from Peru with his mother and siblings at an early age, Israel quickly recognized the opportunity in the US for technically skilled workers to gain skills and earn livelihoods not available in many parts of the world. He relates to the hope inherent to the American Dream, while acknowledging that as an immigrant, "We're underrepresented in technology and business leadership roles. I am acutely aware of how fortunate I am of having been able to benefit from legal immigration into this country and being educated here."
 
-> *"Being a Hispanic American gives you the best of both worlds. It gives you the ability to match the technical and business rigor expected in Silicon Valley with the human warmth and passion that Latin Americans are known for. That's a superpower that we have and should leverage more often. Make our Hispanic heritage front and center because, when well utilized, it's a level of passion and energy that really, really motivates humans around a cause."*
+> _"Being a Hispanic American gives you the best of both worlds. It gives you the ability to match the technical and business rigor expected in Silicon Valley with the human warmth and passion that Latin Americans are known for. That's a superpower that we have and should leverage more often. Make our Hispanic heritage front and center because, when well utilized, it's a level of passion and energy that really, really motivates humans around a cause."_
 
 Factored was founded in 2019, built from a wellspring of motivation and determination that started many years earlier. After studying finance for his undergraduate degree and earning an MBA at Harvard University, Israel spent two decades working at various technology companies where he learned programming and machine learning (ML). Whether by serendipity or sheer luck, his data science studies led to a correspondence with Dr. Andrew Ng, who shares Israel's vision for investing in Latin American data science talent.
 
@@ -27,7 +27,7 @@ Israel attributes stories like these to the "equalizing power of technology." Wi
 
 Providing the talent and expertise of Latin American engineers to top Silicon Valley firms became a virtuous cycle. Today, three years after founding the company, Factored is an [AWS Select Tier Services Partner](https://aws.amazon.com/partners/services-tiers/) and places their talent in AI and data science roles within industries such as financial services, healthcare, manufacturing, advertising, and retail.
 
-> *"In helping transform our communities in the US and Latin America, we hope to also change the perception of Hispanics and Hispanic talent, specifically in technology."*
+> _"In helping transform our communities in the US and Latin America, we hope to also change the perception of Hispanics and Hispanic talent, specifically in technology."_
 
 The way Factored leverages AWS has scaled as much as their business. Factored "became involved with AWS very early on, as part of the [AWS Activate program](/startups/credits), which was crucial to our development and exponential growth." Israel says. "When you're a startup and you don't have a lot of funding, those credits and that training allow you to very quickly and cost effectively build proof of concepts, demos for clients, and gain the trust and ability to deliver value that led to opening further accounts with clients. I think engaging with Activate is something all startups should leverage early on."
 
@@ -35,7 +35,7 @@ If you're wondering what's next for Factored, Israel says he hopes to become one
 
 He advises others looking to follow in his footsteps to prioritize execution, be extremely selective on who you bring in to share your dream, practice sustainable growth, and—most importantly—be authentic and transparent about your culture and objectives because it, "sets the tone that aligns employees, investors, and customers around your mission."
 
-*Special thanks to Aaron Melgar, Startup AI/ML BDM and Tarryn Heath, Partner Development Representative*
+_Special thanks to Aaron Melgar, Startup AI/ML BDM and Tarryn Heath, Partner Development Representative_
 
 ## Other posts in this series
 

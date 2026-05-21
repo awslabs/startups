@@ -3,12 +3,12 @@ source_url: https://aws.amazon.com/startups/learn/how-aws-supported-wombos-wildl
 title: "How AWS supported WOMBO's wildly popular, AI-powered app"
 ---
 
-# How AWS supported WOMBO's wildly popular, AI-powered app
+## How AWS supported WOMBO's wildly popular, AI-powered app
 
-**Author:** AWS Editorial Team  
+**Author:** AWS Editorial Team\
 **Category:** Founder Stories
 
-*WOMBO's AI-powered app scaled faster than the founders ever imagined. Learn how they managed this hyperscale moment.*
+_WOMBO's AI-powered app scaled faster than the founders ever imagined. Learn how they managed this hyperscale moment._
 
 ---
 
@@ -26,7 +26,7 @@ For most startups, scaling quickly and becoming extremely popular is a desirable
 
 ![Ryan Khurana, Chief of Staff, WOMBO](https://d22k7geae6sy8h.cloudfront.net/files/64abe930fed3720008967834/8ljwrtgsb-Ryan-Khurana-chief-of-staff-WOMBO.png)
 
-*Ryan Khurana, Chief of Staff, WOMBO*
+_Ryan Khurana, Chief of Staff, WOMBO_
 
 Success didn't have to come at a price though. AWS recognized the situation and stepped in to help the company lower its costs, manage its payments, and develop a better understanding of the AWS infrastructure. That allowed the company to continue to improve the quality of its algorithms and operate in the cloud, a central part of WOMBO's vision.
 
@@ -48,4 +48,4 @@ Ultimately, Khurana says, that's a valuable addition to the pace at which techno
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-aws-supported-wombos-wildly-popular-ai-powered-app)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-aws-supported-wombos-wildly-popular-ai-powered-app)_

@@ -3,11 +3,11 @@ source_url: https://aws.amazon.com/startups/learn/krikey-ai-is-empowering-storyt
 title: "Krikey AI is empowering storytellers with accessible AI-driven 3D animation"
 ---
 
-# Krikey AI is empowering storytellers with accessible AI-driven 3D animation
+## Krikey AI is empowering storytellers with accessible AI-driven 3D animation
 
-*The Krikey team are using Amazon Web Services (AWS) technology to not only open doors for new creatives, but take them off at the hinges.*
+_The Krikey team are using Amazon Web Services (AWS) technology to not only open doors for new creatives, but take them off at the hinges._
 
-Everyone has stories worth telling, but we're not all blessed with the technical know-how to bring them to life. In the 3D animation world, creative expression relies on a deep understanding of complex software and technical concepts that few possess. For many of us, *scripting* is Shakespeare's domain, *modelling* belongs on catwalks, and *rigging* is something that should only be discussed by those with a parrot on their shoulder. But things are changing—fast.
+Everyone has stories worth telling, but we're not all blessed with the technical know-how to bring them to life. In the 3D animation world, creative expression relies on a deep understanding of complex software and technical concepts that few possess. For many of us, _scripting_ is Shakespeare's domain, _modelling_ belongs on catwalks, and _rigging_ is something that should only be discussed by those with a parrot on their shoulder. But things are changing—fast.
 
 Generative AI presents an opportunity to break through technical ceilings that have historically limited creativity. [Krikey AI](https://www.krikey.ai/) is a radical startup that has seized that opportunity with both hands. The company was founded by two sisters with a shared creative spark and an appetite to shake things up at industry scale. What started out as a gaming company has rapidly snowballed into an innovative 3D animation service that is democratizing access to 3D animation for consumers and businesses.
 
@@ -83,9 +83,9 @@ AWS technology, programs, and expertise have enabled the Krikey AI team to not o
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
-*The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.*
+_The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires._
 
 ---
 

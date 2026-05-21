@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/greylocks-jerry-chen-on-the-ev
 title: "Greylock's Jerry Chen on the evolving role of the startup CFO"
 ---
 
-# Greylock's Jerry Chen on the evolving role of the startup CFO
+## Greylock's Jerry Chen on the evolving role of the startup CFO
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/greylocks-jerry-chen-on-the-evolving-role-of-the-startup-cfo)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/greylocks-jerry-chen-on-the-evolving-role-of-the-startup-cfo)_
 
 ---
 
@@ -59,4 +59,4 @@ Meaghan Casey is a Venture Capital Business Development Manager, helping the mos
 
 ---
 
-*Related: [Learn more resources](/startups/learn)*
+_Related: [Learn more resources](/startups/learn)_

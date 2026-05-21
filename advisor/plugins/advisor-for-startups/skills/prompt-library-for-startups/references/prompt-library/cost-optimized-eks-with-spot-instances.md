@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/cost-optimized-eks-wi
 title: "Karpenter + KEDA: Cost-Optimized EKS with Spot Instances"
 tags: ["Cost Optimization", "Deployment", "Advanced", "EKS", "EC2"]
 ---
-# Karpenter + KEDA: Cost-Optimized EKS with Spot Instances
+
+## Karpenter + KEDA: Cost-Optimized EKS with Spot Instances
 
 Deploy production-ready EKS with Karpenter auto-scaling, KEDA pod management, and Spot instance prioritization. Includes Bottlerocket OS, encryption, and multi-AZ high availability—optimized for cost.
 

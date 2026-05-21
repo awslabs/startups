@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/accelerate-startup-development
 title: "Accelerate startup development with AWS services"
 ---
 
-# Accelerate startup development with AWS services
+## Accelerate startup development with AWS services
 
 **Category:** Learn > Explore Solutions
 
@@ -21,6 +21,4 @@ This page primarily contains a **video resource** (hosted on Vidyard). The video
 
 ---
 
-
-
-*Note: This page is primarily a video learning resource. The main content is delivered through an embedded video player, and no additional text content or transcript is available on the page.*
+_Note: This page is primarily a video learning resource. The main content is delivered through an embedded video player, and no additional text content or transcript is available on the page._

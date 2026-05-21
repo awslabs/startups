@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/aarogyaai-uses-aiml-on-aws-to-
 title: "AarogyaAI uses AI/ML on AWS to precisely diagnose antimicrobial resistance"
 ---
 
-# AarogyaAI uses AI/ML on AWS to precisely diagnose antimicrobial resistance
+## AarogyaAI uses AI/ML on AWS to precisely diagnose antimicrobial resistance
 
 AarogyaAI, a healthcare and life sciences startup, is building with artificial intelligence and machine learning (AI/ML) on AWS.
 

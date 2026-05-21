@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/using-gitops-with-amazon-elast
 title: "Using GitOps with Amazon Elastic Kubernetes Service with Landbay"
 ---
 
-# Using GitOps with Amazon Elastic Kubernetes Service with Landbay
+## Using GitOps with Amazon Elastic Kubernetes Service with Landbay
 
 In the evolving landscape of digital lending, [Landbay](https://landbay.co.uk/), an award-winning mortgage lender in the UK's buy-to-let market, is revolutionizing its digital infrastructure. With a best-in-class broker platform supporting its underwriting operations, Landbay's platform is built on AWS services and comprises approximately 60 microservices, following a three-tier architecture, combining web servers, Amazon Elastic Kubernetes Service (Amazon EKS), and a multi-layered data layer. By combining the power of AWS Cloud Services with open-source projects, Landbay was able to leverage this new approach to spin up a best in-class architecture based on Amazon Elastic Kubernetes Service.
 
@@ -38,7 +38,7 @@ In addition to the [Amazon Virtual Private Cloud](https://aws.amazon.com/vpc/) (
 
 1. CoreDNS: Ensures DNS service resolution within the cluster
 2. [KubeProxy](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/): Underpins service discovery and networking within Kubernetes.
-3. Amazon VPC CNI with *enableNetworkPolicy*: Allows the enforcement of network policies helping Landbay secure various access to namespaces and pods.
+3. Amazon VPC CNI with _enableNetworkPolicy_: Allows the enforcement of network policies helping Landbay secure various access to namespaces and pods.
 4. [Amazon EBS CSI Driver](https://docs.aws.amazon.com/eks/latest/userguide/ebs-csi.html): Enables the use of persistent volumes.
 
 ## Access Management Configuration
@@ -53,13 +53,13 @@ To enhance the integration between services, Landbay has leveraged [AWS Load Bal
 
 [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/) enables the provisioning of Load Balancers directly from Ingresses as well as the ability to re-use [externally managed Load Balancers](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.1/guide/targetgroupbinding/targetgroupbinding/) and assign target pods. By separating the provisioning of Load Balancers into a separate project, DevOps teams can have greater privileges on one source code repository while still giving tools for the job to engineers managing the targets.
 
-The controller also manages security groups as necessary on the backend between the Load Balancer and its targets. Additionally, by using the *group.name* annotation, the same Load Balancer can be shared with multiple target groups behind the scenes.
+The controller also manages security groups as necessary on the backend between the Load Balancer and its targets. Additionally, by using the _group.name_ annotation, the same Load Balancer can be shared with multiple target groups behind the scenes.
 
 Landbay also uses AWS Load Balancer Controller to provision Network Load Balancers to allow ingress from AWS Lambda functions running within the VPC into the EKS infrastructure.
 
 Complementing this, the [External DNS controller](https://github.com/kubernetes-sigs/external-dns) allows Kubernetes pods limited write-access to Route53. This feature facilitates the automatic exposure of external services with friendly DNS names automatically, enhancing the overall user experience.
 
-From a security standpoint, the [Application Load Balancer](https://aws.amazon.com/elasticloadbalancing/application-load-balancer/) (ALB) controller and the external DNS controller require a limited set of IAM permissions, which can be locked down tightly. For example, the DNS controller simply requires write access to specific Route 53 zones (*route53:ChangeResourceRecordSets*) as well as a handful of *List* permissions.
+From a security standpoint, the [Application Load Balancer](https://aws.amazon.com/elasticloadbalancing/application-load-balancer/) (ALB) controller and the external DNS controller require a limited set of IAM permissions, which can be locked down tightly. For example, the DNS controller simply requires write access to specific Route 53 zones (_route53:ChangeResourceRecordSets_) as well as a handful of _List_ permissions.
 
 ## Secrets Management within Kubernetes
 
@@ -75,7 +75,7 @@ Flux, Landbay's chosen GitOps solution, provides a Terraform provider for bootst
 
 Flux can leverage [AWS Elastic Container Registry](https://aws.amazon.com/ecr/) (ECR) as a Helm Repository as [ECR has first class support for OCI artifacts](https://docs.aws.amazon.com/AmazonECR/latest/userguide/push-oci-artifact.html). This allows Flux to act as the glue between ECR and EKS, using [Kustomizations](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) to apply environment specific configurations.
 
-One key advantage of this approach is the logical separation between the Continuous Integration **(CI)** part of the deployment pipeline (build, test & package) and the Continuous Deployment **(CD)** part (delivery into the environment). From a security perspective, Flux pulls the changes, allowing access permissions to be locked down significantly for daily deployments. To avoid deployment delays, the only permission required is for the build tool to 'notify' Flux of an early reconciliation, which can be done through a locked down *kubeconfig*, with a restricted user.
+One key advantage of this approach is the logical separation between the Continuous Integration **(CI)** part of the deployment pipeline (build, test & package) and the Continuous Deployment **(CD)** part (delivery into the environment). From a security perspective, Flux pulls the changes, allowing access permissions to be locked down significantly for daily deployments. To avoid deployment delays, the only permission required is for the build tool to 'notify' Flux of an early reconciliation, which can be done through a locked down _kubeconfig_, with a restricted user.
 
 As a result, deploying, reverting or promoting a new microservice becomes as simple as updating a semantic versioning (semver) fragment in a YAML file, or reverting a commit. Upon observing a Git change, Flux triggers a reconciliation with Kubernetes and updates the relevant service accordingly.
 
@@ -83,7 +83,7 @@ As a result, deploying, reverting or promoting a new microservice becomes as sim
 
 Flux provides comprehensive documentation on [recommended repository structures](https://fluxcd.io/flux/guides/repository-structure/). Landbay's approach is relatively straight forward and follows these best practices.
 
-Cluster configurations are defined in their own dedicated folders, each referencing shared components. Within these cluster folders, extensive use of *Kustomizations* ensures isolation between clusters. This allows for environment-specific configurations, such as versioning and memory.
+Cluster configurations are defined in their own dedicated folders, each referencing shared components. Within these cluster folders, extensive use of _Kustomizations_ ensures isolation between clusters. This allows for environment-specific configurations, such as versioning and memory.
 
 The structure illustrated above strikes a balance between sharing code and retaining the declarative and explicit nature of the GitOps paradigm, allowing an engineer to read a Git repository and ascertain which components, versions, or packages have been installed on the cluster.
 
@@ -101,9 +101,9 @@ In this case, Landbay's development environment might replace Amazon Relational 
 
 At Landbay, AWS infrastructure is managed entirely by [Terraform](https://www.terraform.io/). It is therefore imperative to bridge the gap between Terraform-provisioned elements (RDS, OpenSearch, etc.) and other pods running within the cluster. The native way to access configuration in Kubernetes in microservices is through ConfigMaps.
 
-The first Terraform project is responsible for setting up all basic networking, internet-facing load balancers and AWS managed services. The second project establishes the EKS cluster, bootstraps Flux into the cluster, secures the EKS cluster, sets up any IAM roles, and manages low level concerns like managed node groups running Bottlerocket. This project creates an *environment ConfigMap* that queries AWS for all environmental variables and injects them into Kubernetes.
+The first Terraform project is responsible for setting up all basic networking, internet-facing load balancers and AWS managed services. The second project establishes the EKS cluster, bootstraps Flux into the cluster, secures the EKS cluster, sets up any IAM roles, and manages low level concerns like managed node groups running Bottlerocket. This project creates an _environment ConfigMap_ that queries AWS for all environmental variables and injects them into Kubernetes.
 
-The final project is a dedicated Flux project. This defines the cluster configuration for the environment, links to a set of shared components, and then *kustomizes* Helm releases and Kubernetes manifests to fit the relevant environment. The *environment ConfigMap* can then be used as part of kustomizations within the Flux repository. Flux also offers a [post-build variable substitution feature](https://github.com/drone/envsubst), allowing for the use of variable substitutions with a rich set of well-defined [bash string replacement functions](https://github.com/drone/envsubst).
+The final project is a dedicated Flux project. This defines the cluster configuration for the environment, links to a set of shared components, and then _kustomizes_ Helm releases and Kubernetes manifests to fit the relevant environment. The _environment ConfigMap_ can then be used as part of kustomizations within the Flux repository. Flux also offers a [post-build variable substitution feature](https://github.com/drone/envsubst), allowing for the use of variable substitutions with a rich set of well-defined [bash string replacement functions](https://github.com/drone/envsubst).
 
 For example, within a Helm chart, the values can use post build variable substitution. This approach enhances the GitOps repository so that shared components can be environment-agnostic.
 
@@ -115,7 +115,7 @@ Moreover, Landbay's security landscape has been fortified, becoming more robust 
 
 The most profound impact of this transformative journey lies in the increased visibility and transparency of the EKS workload's state and changes. With GitOps, the configuration is declared using YAML, and all modifications are stored as Git commits. This paradigm shift has yielded significant advantages for Landbay's Support, Risk, Compliance, and Audit teams, empowering them with unprecedented insight and control over their mission-critical systems.
 
-*If you're ready to transform your startup like Landbay, [join AWS Activate](https://aws.amazon.com/startups) to get access to deployable templates, AWS credits, and learning opportunities.*
+_If you're ready to transform your startup like Landbay, [join AWS Activate](https://aws.amazon.com/startups) to get access to deployable templates, AWS credits, and learning opportunities._
 
 ---
 

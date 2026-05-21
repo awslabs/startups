@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-timehop-developed-the-worl
 title: "How Timehop Developed the World Class Ad Platform Nimbus with Support from AWS"
 ---
 
-# How Timehop Developed the World Class Ad Platform Nimbus with Support from AWS
+## How Timehop Developed the World Class Ad Platform Nimbus with Support from AWS
 
 We recently sat down with the [Timehop](https://www.timehop.com/) and Nimbus CEO, Matt Raoul, as well as two talented team members, David Leviev, VP of Programmatic Product Development, and Mark Laczynski, Senior Cloud Architect to discuss the obstacles the company has faced using third-party ad serving platforms that led to the in-house creation of [Nimbus](https://www.adsbynimbus.com/). They shared their challenges and revealed how they leveraged AWS solutions to optimize the development of Nimbus within Timehop, and not only improved the quality of ad servicing to their users, but also increased overall ad revenue.
 
@@ -43,6 +43,6 @@ If you'd like to explore how AWS can help you to scale your business or develop 
 
 ---
 
-*Written by the AWS Editorial Team*
+_Written by the AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

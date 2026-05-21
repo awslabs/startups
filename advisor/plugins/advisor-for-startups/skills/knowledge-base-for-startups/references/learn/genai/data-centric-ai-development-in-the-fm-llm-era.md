@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/data-centric-ai-development-in
 title: "Data-centric AI development in the FM/LLM era"
 ---
 
-# Data-centric AI development in the FM/LLM era
+## Data-centric AI development in the FM/LLM era
 
 ## Overview
 
@@ -15,5 +15,4 @@ This page includes a video presentation hosted on Vidyard.
 
 ---
 
-
-*Category: Generative AI Technical Resources*
+_Category: Generative AI Technical Resources_

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/hpoolside-pioneers-ai-assisted
 title: "How poolside pioneers AI assisted software development on AWS"
 ---
 
-# How poolside pioneers AI assisted software development on AWS
+## How poolside pioneers AI assisted software development on AWS
 
 > See how our partners at poolside are turning millions of developers into billions
 
@@ -23,7 +23,7 @@ For poolside, the pathway to AGI runs through software and the empowerment of de
 
 "When humans have access to intelligence bound only by compute, the time needed to solve complex problems is significantly reduced," says Warner. "Suddenly, projects that took 10 developers six months to complete can be done in a matter of compute hours." And that's only the beginning—poolside is working towards a future where the number of developers on the planet approaches that of the global population itself. "Imagine a world where over 8 billion people have that superpower," says Warner.
 
-Unlike other AI companies, poolside provides a full stack solution. This means it trains its own models *and* builds applications like the poolside generative AI Assistant. Today, the company is built around two proprietary [large language models](https://aws.amazon.com/what-is/large-language-model/) (LLMs), point and malibu. Kant explains: "point offers us the ability to place code completion capabilities in the hands of developers. malibu is our flagship—and largest ever—model, built for the most challenging software engineering problems like code generation, testing, refactoring, and more."
+Unlike other AI companies, poolside provides a full stack solution. This means it trains its own models _and_ builds applications like the poolside generative AI Assistant. Today, the company is built around two proprietary [large language models](https://aws.amazon.com/what-is/large-language-model/) (LLMs), point and malibu. Kant explains: "point offers us the ability to place code completion capabilities in the hands of developers. malibu is our flagship—and largest ever—model, built for the most challenging software engineering problems like code generation, testing, refactoring, and more."
 
 ## AI models that learn like humans
 
@@ -67,4 +67,4 @@ Going forward, poolside and AWS are continuing to innovate on the AI frontier. "
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/hpoolside-pioneers-ai-assisted-software-development-on-awsow-)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/hpoolside-pioneers-ai-assisted-software-development-on-awsow-)_

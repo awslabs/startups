@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/seeing-is-understanding-twelve
 title: "Twelve Labs pioneers AI video intelligence on AWS"
 ---
 
-# Twelve Labs pioneers AI video intelligence on AWS
+## Twelve Labs pioneers AI video intelligence on AWS
 
 Twelve Labs is using generative AI to process vast amounts of video data, empowering its customers with next generation video intelligence.
 
@@ -57,4 +57,4 @@ As part of a three-year Strategic Collaboration Agreement (SCA), the company is 
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/seeing-is-understanding-twelve-labs-pioneers-ai-video-intelligence-on-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/seeing-is-understanding-twelve-labs-pioneers-ai-video-intelligence-on-aws)_

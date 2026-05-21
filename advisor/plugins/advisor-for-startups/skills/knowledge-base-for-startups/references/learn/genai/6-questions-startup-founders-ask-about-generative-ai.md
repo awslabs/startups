@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/6-questions-startup-founders-a
 title: "6 questions startup founders ask about generative AI"
 ---
 
-# 6 questions startup founders ask about generative AI
+## 6 questions startup founders ask about generative AI
 
 ---
 

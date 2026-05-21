@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/kuona-reimagines-visual-brandi
 title: "Picture perfect: Kuona reimagines visual branding with AI"
 ---
 
-# Picture perfect: Kuona reimagines visual branding with AI
+## Picture perfect: Kuona reimagines visual branding with AI
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/kuona-reimagines-visual-branding-with-ai)
 
@@ -18,4 +18,3 @@ The faster the models are trained, the faster Kuona can solve problems for its c
 Kuona's business has also received a boost as a result of the collaboration with AWS. "The AWS Generative AI Accelerator Program has been great, not only in terms of having access to products, but also getting mentorships. They're also helping business development across different countries that we're operating in."
 
 This has been "transformational" for the startup, concludes Sanroman, enabling it to scale its business throughout the US, Latin America, and Europe. With this global growth—and its partnership with AWS­—Kuona is helping brands better manage and monetize a world of content, making a world of difference.
-

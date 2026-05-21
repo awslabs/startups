@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/manual-processes-to-mobile-fir
 title: "Manual processes to mobile-first: AbleCredit is reinventing lending with AWS"
 ---
 
-# Manual processes to mobile-first: AbleCredit is reinventing lending with AWS
+## Manual processes to mobile-first: AbleCredit is reinventing lending with AWS
 
 ![AbleCredit](https://d22k7geae6sy8h.cloudfront.net/files/6985d2c9209dac000f081fb4/Harshad_AbleCredit_ProfilePhoto_1920x1080.jpg)
 
@@ -41,4 +41,4 @@ AbleCredit's journey reflects that of many startups as they evolve from early bu
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/manual-processes-to-mobile-first-ablecredit-is-reinventing-lending-with-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/manual-processes-to-mobile-first-ablecredit-is-reinventing-lending-with-aws)_

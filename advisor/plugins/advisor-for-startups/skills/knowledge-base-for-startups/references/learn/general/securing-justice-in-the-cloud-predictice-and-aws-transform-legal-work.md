@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/securing-justice-in-the-cloud-
 title: "Securing justice in the cloud: Predictice and AWS transform legal work"
 ---
 
-# Securing justice in the cloud: Predictice and AWS transform legal work
+## Securing justice in the cloud: Predictice and AWS transform legal work
 
-*AWS Startups Customer Story*
+_AWS Startups Customer Story_
 
 ![Predictice](https://d22k7geae6sy8h.cloudfront.net/files/68c7f07b5a0de3000cd61038/Predictice+2.jpg)
 
@@ -35,7 +35,7 @@ Predictice offers a bespoke approach to meet the needs of French-speaking custom
 
 ## A 'complete solution' for security
 
-![Predictice](https://d22k7geae6sy8h.cloudfront.net/files/68c7f38092af47000bc9826d/Predictice+1+(2).jpg)
+![Predictice](https://d22k7geae6sy8h.cloudfront.net/files/68c7f38092af47000bc9826d/Predictice+1+%282%29.jpg)
 
 Security was a priority when Predictice set out to build its platform. "It's very important, we cannot have data leaks from our customers," says Thibaud. Deploying a solution in the EU required the company to adhere to strict data protection laws and protocols, such as the General Data Protection Regulation (GDPR). Transferring data out of the region meanwhile requires specific legal safeguards. Predictice's legacy infrastructure was limiting in this regard, so when Anthropic's Claude Sonnet 4 launched on Amazon Bedrock earlier this year, the company seized it as the perfect opportunity to migrate to AWS. "Claude is winning in Europe!" says Thibaud.
 
@@ -63,4 +63,4 @@ Predictice's continuing relationship with AWS supports the company's ambitions t
 
 ---
 
-*Source: [AWS Startups](/startups/learn)*
+_Source: [AWS Startups](/startups/learn)_

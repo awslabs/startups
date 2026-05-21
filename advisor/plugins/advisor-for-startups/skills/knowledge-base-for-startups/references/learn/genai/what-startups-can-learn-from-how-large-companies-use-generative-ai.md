@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/what-startups-can-learn-from-h
 title: "What Startups Can Learn from How Large Companies Use Generative AI"
 ---
 
-# What Startups Can Learn from How Large Companies Use Generative AI
+## What Startups Can Learn from How Large Companies Use Generative AI
 
 Did you know [96% of AI/ML unicorns run on AWS](https://aws.amazon.com/blogs/startups/accelerating-the-next-wave-of-generative-ai-startups/#:~:text=A%20staggering%2096%25%20of%20AI,by%20startups%20around%20the%20world.)? They use generative AI to enhance customer experiences, increase productivity, and optimize operations. As large companies adopt generative AI on a significant scale, they uncover innovative strategies and insights that can benefit startups like yours.
 

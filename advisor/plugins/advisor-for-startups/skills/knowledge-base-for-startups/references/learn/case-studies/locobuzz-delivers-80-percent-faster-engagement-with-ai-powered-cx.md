@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/locobuzz-delivers-80-percent-f
 title: "Locobuzz delivers 80 percent faster engagement with AI-powered CX"
 ---
 
-# Locobuzz delivers 80 percent faster engagement with AI-powered CX
+## Locobuzz delivers 80 percent faster engagement with AI-powered CX
 
 [Locobuzz](https://locobuzz.com/) is an omnichannel customer experience platform that helps enterprises respond faster and more intelligently across numerous touchpoints. By unifying customer-facing teams and embedding AI at its core, Locobuzz empowers brands to reduce interaction times, streamline operations, and deliver more relevant engagement in near-real time.
 
@@ -55,4 +55,4 @@ Startups like Locobuzz are able to access the latest AI models and tools through
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/locobuzz-delivers-80-percent-faster-engagement-with-ai-powered-cx)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/locobuzz-delivers-80-percent-faster-engagement-with-ai-powered-cx)_

@@ -3,17 +3,17 @@ source_url: https://aws.amazon.com/startups/learn/cred-achieves-a-high-level-of-
 title: "CRED achieves a high level of network inspection with VPC traffic mirroring"
 ---
 
-# CRED achieves a high level of network inspection with VPC traffic mirroring
+## CRED achieves a high level of network inspection with VPC traffic mirroring
 
 **September 8, 2021**: Amazon Elasticsearch Service has been renamed to Amazon OpenSearch Service. [See details](https://aws.amazon.com/opensearch-service/).
 
-*Guest post by Himanshu Das, Security Lead, CRED*
+_Guest post by Himanshu Das, Security Lead, CRED_
 
-*CRED seeks to empower people to upgrade their lives through its members only credit card benefits, exclusive rewards, and experiences from premier brands. CRED, a high-trust community of creditworthy individuals, merchants, and institutions, has reimagined the credit card experience for people serving around millions of credit card payers.*
+_CRED seeks to empower people to upgrade their lives through its members only credit card benefits, exclusive rewards, and experiences from premier brands. CRED, a high-trust community of creditworthy individuals, merchants, and institutions, has reimagined the credit card experience for people serving around millions of credit card payers._
 
-*Dealing with tons of sensitive transactions and data, CRED has always kept its focus on security. There are two types of companies: one where security is seen as an after-thought and the other where security is of the utmost importance. What about the in-betweeners, you ask? At CRED, we genuinely believe that there are no in-betweeners to the above rule. And that's probably why we belong to the latter camp. CRED is a security first company, keeping security their utmost priority at every time.*
+_Dealing with tons of sensitive transactions and data, CRED has always kept its focus on security. There are two types of companies: one where security is seen as an after-thought and the other where security is of the utmost importance. What about the in-betweeners, you ask? At CRED, we genuinely believe that there are no in-betweeners to the above rule. And that's probably why we belong to the latter camp. CRED is a security first company, keeping security their utmost priority at every time._
 
-*"Using AWS has not only helped us in keeping our infrastructure always stable and highly available but also made sure that security is present at each layer" ~ Avinash Jain, Security Engineering, CRED.*
+_"Using AWS has not only helped us in keeping our infrastructure always stable and highly available but also made sure that security is present at each layer" ~ Avinash Jain, Security Engineering, CRED._
 
 ## AWS VPC Traffic Mirroring: Monitoring Network Intrusion in public VPC Subnet Using NIDS
 
@@ -69,10 +69,10 @@ Suricata is a great open source option for monitoring networks for malicious act
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
-*The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.*
+_The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires._
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/cred-achieves-a-high-level-of-network-inspection-with-vpc-traffic-mirroring)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/cred-achieves-a-high-level-of-network-inspection-with-vpc-traffic-mirroring)_

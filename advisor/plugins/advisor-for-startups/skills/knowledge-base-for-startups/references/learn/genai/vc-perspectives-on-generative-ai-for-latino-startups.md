@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/vc-perspectives-on-generative-
 title: "VC perspectives on generative AI for Latino startups"
 ---
 
-# VC perspectives on generative AI for Latino startups
+## VC perspectives on generative AI for Latino startups
 
-*Investors share their insights on how to secure funding for your startup, when to incorporate generative AI into your product, and the competitive advantages of Latino founders.*
+_Investors share their insights on how to secure funding for your startup, when to incorporate generative AI into your product, and the competitive advantages of Latino founders._
 
 The strategic decisions made early in a startup's journey often play a large role in the outcome of the business. These decisions are even more crucial for founders who are underrepresented in their industry; they may not have access to the same resources to sustain many pivots and iterations of their core business strategy. In particular, we'd like to highlight that in the unique investment cycles in artificial intelligence (AI) and machine learning (ML), investors are becoming more stringent. Ensuring that business fundamentals are solid is of the utmost importance, especially considering the [historical underinvestment](https://news.crunchbase.com/diversity/us-based-latine-founded-companies-funding-falls/) in Latino founders.
 
@@ -67,7 +67,7 @@ Learn how underrepresented founders are proving what's possible with AI on AWS:
 
 ---
 
-*AWS Activate updates program benefits regularly, and credit offerings and/or the offerings reflected in this blog post may differ from current Activate offers. For the most up to date information about Activate benefits, please visit [https://aws.amazon.com/activate/](https://aws.amazon.com/activate/)*
+_AWS Activate updates program benefits regularly, and credit offerings and/or the offerings reflected in this blog post may differ from current Activate offers. For the most up to date information about Activate benefits, please visit [https://aws.amazon.com/activate/](https://aws.amazon.com/activate/)_
 
 ---
 

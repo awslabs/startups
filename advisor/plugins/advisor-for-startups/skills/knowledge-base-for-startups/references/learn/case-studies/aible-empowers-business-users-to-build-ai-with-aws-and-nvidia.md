@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/aible-empowers-business-users-
 title: "Aible Empowers Business Users to Build AI with AWS and NVIDIA"
 ---
 
-# Aible Empowers Business Users to Build AI with AWS and NVIDIA
+## Aible Empowers Business Users to Build AI with AWS and NVIDIA
 
-*Source: [AWS Startups](/startups/learn)*
+_Source: [AWS Startups](/startups/learn)_
 
 ---
 

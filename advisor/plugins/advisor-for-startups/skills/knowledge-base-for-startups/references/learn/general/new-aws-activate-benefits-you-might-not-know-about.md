@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/new-aws-activate-benefits-you-
 title: "AWS Activate Benefits You Might Not Know About"
 ---
 
-# AWS Activate Benefits You Might Not Know About
+## AWS Activate Benefits You Might Not Know About
 
 Drawing from nearly two decades of experience with over 350,000 startups, AWS Activate provides what founders need at every stage of growth.
 

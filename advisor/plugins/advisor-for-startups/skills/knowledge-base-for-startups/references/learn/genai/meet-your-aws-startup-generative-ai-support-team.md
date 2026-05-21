@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/meet-your-aws-startup-generati
 title: "Meet your AWS Startup generative AI support team"
 ---
 
-# Meet your AWS Startup generative AI support team
+## Meet your AWS Startup generative AI support team
 
 > Find out how to unlock unparalleled support for your generative AI startup from dedicated AWS experts.
 
@@ -71,7 +71,6 @@ It's exciting to build a business in a field with an unprecedented speed of inno
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
-*The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.*
-
+_The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires._

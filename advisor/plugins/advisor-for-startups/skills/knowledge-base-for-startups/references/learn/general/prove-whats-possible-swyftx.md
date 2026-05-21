@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-swyftx
 title: "Scaling in minutes, not days with AWS – Swyftx is riding the rocket of the crypto revolution"
 ---
 
-# Scaling in minutes, not days with AWS – Swyftx is riding the rocket of the crypto revolution
+## Scaling in minutes, not days with AWS – Swyftx is riding the rocket of the crypto revolution
 
 > "Part of being a founder is you have to wear every hat there is."
 
@@ -85,4 +85,4 @@ AWS CodePipeline is a fully managed continuous delivery service that helps you a
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/prove-whats-possible-swyftx)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/prove-whats-possible-swyftx)_

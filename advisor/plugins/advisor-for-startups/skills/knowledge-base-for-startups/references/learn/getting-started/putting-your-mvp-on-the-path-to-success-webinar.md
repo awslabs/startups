@@ -3,13 +3,13 @@ source_url: https://aws.amazon.com/startups/learn/putting-your-mvp-on-the-path-t
 title: "Putting your MVP on the path to success (webinar)"
 ---
 
-# Putting your MVP on the path to success (webinar)
+## Putting your MVP on the path to success (webinar)
 
-*This post originally appeared on VentureBeat.*
+_This post originally appeared on VentureBeat._
 
 The biggest challenge for new startups is to get to market as quickly as possible before the money runs out — and prove that your company is set to take over the market. To accelerate time to market, you need a minimum viable product (MVP), or the smallest and quickest functional version of your idea. It's something that can be tested quickly and easily, shipped and iterated as often as necessary, as feedback comes back. It proves not only that your new idea works, but that you have the ability to produce it, and the proof that your audience wants it.
 
-The concept comes from Eric Ries, author of *The Lean Startup*. He calls the MVP "that version of a new product which allows a team to collect the maximum amount of validated learning about customers with the least effort."
+The concept comes from Eric Ries, author of _The Lean Startup_. He calls the MVP "that version of a new product which allows a team to collect the maximum amount of validated learning about customers with the least effort."
 
 Right from launch, a startup has to jump into the build-measure-iterate cycle, and the companies that can do that quickly and efficiently are the ones that dominate the market. That requires the kind of solid cloud tools and services that let web and mobile developers build scalable, full-stack applications — like AWS, which has a large, versatile suite of services, from what you need to launch your project to helping you scale as you gain market share.
 

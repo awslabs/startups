@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/celebrating-startups-innovatio
 title: "Celebrating Startups Innovation and Connection at re:Invent 2025"
 ---
 
-# Celebrating Startups Innovation and Connection at re:Invent 2025
+## Celebrating Startups Innovation and Connection at re:Invent 2025
 
 Startups, experts, and innovators from across the world gathered in Las Vegas earlier this month for the 14th annual AWS re:Invent. Through workshops, keynotes, demos, and discussions, the global cloud community built connections, made discoveries, and shared successes.
 
@@ -13,7 +13,7 @@ Dr. Swami Sivasubramanian, Vice President of Agentic AI at AWS, invited attendee
 
 The development of agentic AI is broadening the scope of who can create and how, helping to level the playing field for the startup community. Describing what we want to build through natural language and leveraging AI agents to achieve this is making innovators of us all, providing "the freedom to build without limits" and "accelerating how quickly you can go from idea to impact," said Sivasubramanian.
 
-![Unveiling innovation](https://d22k7geae6sy8h.cloudfront.net/files/69399e86981c87000ca89fd2/20251202_reInvent_Keynote_MattGarman_Venetian_488(Optimsed).jpg)
+![Unveiling innovation](https://d22k7geae6sy8h.cloudfront.net/files/69399e86981c87000ca89fd2/20251202_reInvent_Keynote_MattGarman_Venetian_488%28Optimsed%29.jpg)
 
 ## Unveiling innovation
 
@@ -23,7 +23,7 @@ To support these pioneers, Garman unveiled what AWS has been working on, with ne
 
 Enhancements of existing solutions were also announced, including the expansion of the [Amazon Nova](https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models) portfolio with the addition of four new models. Garman also offered "a sneak peek as to what's coming around the corner," with an update on the development of [Trainium 4](https://aws.amazon.com/ai/machine-learning/trainium/), which promises "six times the FP4 compute performance, four times more memory bandwidth, and two times more high memory bandwidth capacity to support the very largest models that you have in the world."
 
-![Everything starts with the customer](https://d22k7geae6sy8h.cloudfront.net/files/69399e24e08825000d2cc586/20251203_reInvent_GenAIVIPsoiree_Wynn_1676(Optimsed).jpg)
+![Everything starts with the customer](https://d22k7geae6sy8h.cloudfront.net/files/69399e24e08825000d2cc586/20251203_reInvent_GenAIVIPsoiree_Wynn_1676%28Optimsed%29.jpg)
 
 ## Everything starts with the customer
 
@@ -35,7 +35,7 @@ Bob West, Data and AI Security Officer at [Cyera](http://cyera.com/) also priori
 
 The combination of technical innovation and technical innovators similarly benefitted Gabriel Musso, Chief Scientific Officer at [Lunai Bioworks](https://www.lunaibioworks.com/), who was attending re:Invent for the first time this year. The event allowed Musso to experience "what's on the cutting edge; seeing the newest technologies, what we include in our own work, and how we can leverage them." Crucially, it's also provided a "wonderful opportunity" to "plug in and see all the other startups, to compare stories, to talk about what we've done and what they've done, and to try to forge new partnerships."
 
-![Navigating change and embracing opportunity](https://d22k7geae6sy8h.cloudfront.net/files/69399e22d62498000b0f6ecd/20251203_reInvent_GenAIVIPsoiree_Wynn_1674(Optimsed).jpg)
+![Navigating change and embracing opportunity](https://d22k7geae6sy8h.cloudfront.net/files/69399e22d62498000b0f6ecd/20251203_reInvent_GenAIVIPsoiree_Wynn_1674%28Optimsed%29.jpg)
 
 ## Navigating change and embracing opportunity
 
@@ -45,4 +45,4 @@ This year's re:Invent was a showcase of technological breakthrough, as well as a
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/celebrating-startups-innovation-and-connection-at-reinvent-2025)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/celebrating-startups-innovation-and-connection-at-reinvent-2025)_

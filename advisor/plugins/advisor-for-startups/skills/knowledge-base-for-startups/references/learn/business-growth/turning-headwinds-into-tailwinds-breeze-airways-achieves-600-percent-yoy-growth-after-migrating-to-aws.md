@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/turning-headwinds-into-tailwin
 title: "Turning headwinds into tailwinds: Breeze Airways achieves 600% YoY growth after migrating to AWS"
 ---
 
-# Turning headwinds into tailwinds: Breeze Airways achieves 600% YoY growth after migrating to AWS
+## Turning headwinds into tailwinds: Breeze Airways achieves 600% YoY growth after migrating to AWS
 
-*By leveraging native AWS migration tools, Breeze was able to seamlessly migrate their entire infrastructure to AWS.*
+_By leveraging native AWS migration tools, Breeze was able to seamlessly migrate their entire infrastructure to AWS._
 
 ---
 
@@ -17,7 +17,7 @@ On December 17, 1903, Orville Wright—alongside his brother, Wilbur—completed
 
 Founded by David Neeleman, co-founder of Morris Air, WestJet, JetBlue, and Azul Linhas Aereas, Breeze Airways brings affordable air travel to underserved markets across the US. "We saw that small and medium sized communities were losing air service. If you go back ten years, there's about 125 cities that have lost more than 25 percent of their air service" he explains.
 
-Neeleman has previously referred to Breeze Airways as "a technology company that just happens to fly planes." Unlike its more traditional competitors, the company places technology at the forefront of everything it does, enabling its passengers—or *guests*—to enjoy a frictionless end-to-end travel experience every time they fly with Breeze. "This is a capital and labor-intensive business. The more that we can use technology to reduce our costs—and our fares—while making travel easier, the more people are going to want a fly," he explains.
+Neeleman has previously referred to Breeze Airways as "a technology company that just happens to fly planes." Unlike its more traditional competitors, the company places technology at the forefront of everything it does, enabling its passengers—or _guests_—to enjoy a frictionless end-to-end travel experience every time they fly with Breeze. "This is a capital and labor-intensive business. The more that we can use technology to reduce our costs—and our fares—while making travel easier, the more people are going to want a fly," he explains.
 
 "We want to take the friction out of travel" says Lukas Johnson, CCO at Breeze Airways. "We don't have a call center that's picking up the phone and taking reservations. Everything is digital. Designing that experience and then evolving that experience has been key to growing the company." He continues, "Airline technology is very old; there's a lot of old school programs, old school technologies, things that have been in place for decades. It was ripe for disruption and innovation."
 
@@ -105,4 +105,4 @@ David Neeleman is the Founder and Chief Executive Officer of Breeze Airways. Now
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/turning-headwinds-into-tailwinds-breeze-airways-achieves-600-percent-yoy-growth-after-migrating-to-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/turning-headwinds-into-tailwinds-breeze-airways-achieves-600-percent-yoy-growth-after-migrating-to-aws)_

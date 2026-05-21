@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/innovation-in-motion-week-one-
 title: "Innovation in Motion: Week One of GAIA 2025"
 ---
 
-# Innovation in Motion: Week One of GAIA 2025
+## Innovation in Motion: Week One of GAIA 2025
 
 In October, teams from 40 visionary startups gathered in Seattle. They represent a broad range of industries spanning robotics, manufacturing, life sciences, cybersecurity, fintech, media—and more. These founders, co-founders, CTOs, COOs, and others are among the leading thinkers in their fields, the boldest builders of technology, and the savviest business minds in the startup ecosystem.
 
@@ -55,4 +55,4 @@ In addition to GAIA, AWS provides a range of tools and resources to startups loo
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/innovation-in-motion-week-one-of-gaia-2025)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/innovation-in-motion-week-one-of-gaia-2025)_

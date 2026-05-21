@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/offers/multiverse-computing2
 title: "LLM Discount of 30% via CompactifAI"
 ---
 
-# LLM Discount of 30% via CompactifAI
+## LLM Discount of 30% via CompactifAI
 
 ### Estimated offer value: $30,000.00
 

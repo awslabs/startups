@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/atomicwork-puts-service-in-the
 title: "Atomicwork puts service in the fast lane, delivering AI 3x faster on AWS"
 ---
 
-# Atomicwork puts service in the fast lane, delivering AI 3x faster on AWS
+## Atomicwork puts service in the fast lane, delivering AI 3x faster on AWS
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/atomicwork-puts-service-in-the-fast-lane-delivering-ai-3x-faster-on-aws)
 
@@ -39,4 +39,4 @@ Security, scalability, confidence: these are three must-haves for any startup, a
 
 ---
 
-*Related: [Learn](/startups/learn)*
+_Related: [Learn](/startups/learn)_

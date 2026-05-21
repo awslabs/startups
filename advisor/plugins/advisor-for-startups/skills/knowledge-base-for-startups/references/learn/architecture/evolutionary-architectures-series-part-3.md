@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/evolutionary-architectures-ser
 title: "Evolutionary Architectures Series: Part 3"
 ---
 
-# Evolutionary Architectures Series: Part 3
+## Evolutionary Architectures Series: Part 3
 
-*"To the moon 🚀"*
+_"To the moon 🚀"_
 
 "Evolutionary Architectures" is a four-part blog series that shows how solution designs and decisions evolve as companies go through the different stages of the startups lifecycle. In this series, we follow the aptly named Example Startup whose idea is to create a "fantasy stock market" application, similar to fantasy sports leagues. They envision holding four "tournaments" over the course of a year.
 

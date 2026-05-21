@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-futurefit-ai-helps-map-out
 title: "FutureFit AI is building a GPS for your career"
 ---
 
-# FutureFit AI is building a GPS for your career
+## FutureFit AI is building a GPS for your career
 
 > Discover how FutureFit AI is revolutionizing career planning with their GPS-like platform. Find your starting point, set goals, and navigate to success.
 
@@ -41,4 +41,4 @@ Mikey works on the AWS Startup Marketing team to help highlight awesome founders
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-futurefit-ai-helps-map-out-career)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-futurefit-ai-helps-map-out-career)_

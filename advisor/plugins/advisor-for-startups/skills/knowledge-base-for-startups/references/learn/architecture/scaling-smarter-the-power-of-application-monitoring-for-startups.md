@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/scaling-smarter-the-power-of-a
 title: "Scaling smarter: The power of application monitoring for startups"
 ---
 
-# Scaling smarter: The power of application monitoring for startups
+## Scaling smarter: The power of application monitoring for startups
 
 ## Overview
 

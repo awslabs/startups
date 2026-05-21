@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/revolutionizing-music-producti
 title: "Revolutionizing Music Production: How Jim Jones Launched Quarantine Studios with AWS"
 ---
 
-# Revolutionizing Music Production: How Jim Jones Launched Quarantine Studios with AWS
+## Revolutionizing Music Production: How Jim Jones Launched Quarantine Studios with AWS
 
 **Category:** [Underrepresented Founders](/startups/learn)
 
@@ -19,4 +19,4 @@ This page features an embedded video presentation about Quarantine Studios and h
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/revolutionizing-music-production-jim-jones-launched-quarantine-studios-with-aws)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/revolutionizing-music-production-jim-jones-launched-quarantine-studios-with-aws)_

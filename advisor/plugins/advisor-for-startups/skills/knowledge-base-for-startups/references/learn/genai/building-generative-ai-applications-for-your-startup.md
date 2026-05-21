@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-generative-ai-applica
 title: "Building Generative AI Applications for Your Startup"
 ---
 
-# Building Generative AI Applications for Your Startup
+## Building Generative AI Applications for Your Startup
 
 > Learn how to build a generative AI application that can help your startup get its product to market as quickly as possible
 
@@ -194,4 +194,3 @@ Let's go build generative AI applications on AWS! Kickstart your generative AI j
 **Author:** Hrushikesh Gangur
 
 Hrushikesh Gangur is a Principal Solutions Architect for AI/ML startups with expertise in both AWS machine learning and networking services. He helps startups building generative AI, autonomous vehicles, and ML platforms to run their business efficiently and effectively on AWS.
-

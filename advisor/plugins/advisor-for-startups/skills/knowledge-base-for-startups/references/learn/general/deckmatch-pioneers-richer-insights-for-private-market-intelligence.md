@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/deckmatch-pioneers-richer-insi
 title: "Deckmatch pioneers richer insights for private market intelligence"
 ---
 
-# Deckmatch pioneers richer insights for private market intelligence
+## Deckmatch pioneers richer insights for private market intelligence
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/deckmatch-pioneers-richer-insights-for-private-market-intelligence)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/deckmatch-pioneers-richer-insights-for-private-market-intelligence)_
 
 ![AI workers](https://d22k7geae6sy8h.cloudfront.net/files/68a31f23f011c4000c1d8dde/AdobeStock_1614173684.jpg)
 
@@ -55,4 +55,4 @@ Equipped with the tools and expertise to enable rapid and cost-effective growth,
 
 ---
 
-*Category: Featured Startups*
+_Category: Featured Startups_

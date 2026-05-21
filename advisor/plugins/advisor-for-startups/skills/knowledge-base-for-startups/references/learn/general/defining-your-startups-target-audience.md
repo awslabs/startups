@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/defining-your-startups-target-
 title: "Defining your startup's target audience"
 ---
 
-# Defining your startup's target audience
+## Defining your startup's target audience
 
 From demographics to empathy, learn how to truly connect with your audience. Gain a competitive edge by uncovering the 'why' behind their purchasing decisions.
 
@@ -17,5 +17,4 @@ From demographics to empathy, learn how to truly connect with your audience. Gai
 
 ---
 
-
-*Source: [AWS Startups](https://startups.aws)*
+_Source: [AWS Startups](https://startups.aws)_

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/the-case-for-purpose-built-dat
 title: "The case for purpose-built databases"
 ---
 
-# The case for purpose-built databases
+## The case for purpose-built databases
 
-*By Cullen Dejean, Sr. Solutions Architect at AWS, and Matthew de Anda, Startup Solutions Architect at AWS.*
+_By Cullen Dejean, Sr. Solutions Architect at AWS, and Matthew de Anda, Startup Solutions Architect at AWS._
 
 As an early-stage startup, you have many technical decisions to make while you pursue product-market fit. Some of these technical decisions are reversible, while others are critical junctures with long-term impacts. Picking a database tends to fall into the latter category, which is why a one-size-fits-all approach with a relational database no longer works. You need to take a step back and review the exact use cases you have before jumping into selecting a database. Change your expectation that one database can do everything, and instead choose the database service best fit for the task at hand. AWS offers a broad and deep portfolio of [purpose-built databases](https://aws.amazon.com/products/databases/?nc2=h_ql_prod_db) that support diverse data models and allow you to build data-driven, highly scalable, distributed applications. In this blog post, we'll cover the factors an early-stage startup should consider when reviewing database options on AWS.
 
@@ -69,16 +69,16 @@ Time series databases handle use cases where applications are dealing with time 
 
 ## Database Types Summary
 
-| Database Type | Use Cases | AWS Service |
-|---------------|-----------|-------------|
-| Relational | Traditional applications, ecommerce, OLTP transactions | Amazon Aurora, Amazon RDS |
-| Key-value | High-traffic web applications, ecommerce systems, gaming applications, financial trading | Amazon DynamoDB, Amazon Keyspaces |
-| Document | Content management, catalogs, user profiles | Amazon DocumentDB, Amazon Athena, Amazon ElastiCache |
-| In-memory | Caching, session management, gaming leaderboards, geospatial applications | Amazon MemoryDB for Redis |
-| Search | Consolidated logging, personalized search | Amazon OpenSearch |
-| Graph | Fraud detection, social networking, user profiles | Amazon Neptune |
-| Ledger | Systems of record, supply chain, registrations, banking transactions | Amazon QLDB |
-| Time series | IoT, DevOps, industrial telemetry | Amazon Timestream |
+| Database Type | Use Cases                                                                                | AWS Service                                          |
+| ------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Relational    | Traditional applications, ecommerce, OLTP transactions                                   | Amazon Aurora, Amazon RDS                            |
+| Key-value     | High-traffic web applications, ecommerce systems, gaming applications, financial trading | Amazon DynamoDB, Amazon Keyspaces                    |
+| Document      | Content management, catalogs, user profiles                                              | Amazon DocumentDB, Amazon Athena, Amazon ElastiCache |
+| In-memory     | Caching, session management, gaming leaderboards, geospatial applications                | Amazon MemoryDB for Redis                            |
+| Search        | Consolidated logging, personalized search                                                | Amazon OpenSearch                                    |
+| Graph         | Fraud detection, social networking, user profiles                                        | Amazon Neptune                                       |
+| Ledger        | Systems of record, supply chain, registrations, banking transactions                     | Amazon QLDB                                          |
+| Time series   | IoT, DevOps, industrial telemetry                                                        | Amazon Timestream                                    |
 
 ## Conclusion
 
@@ -86,6 +86,6 @@ As an early-stage startup, one of the more critical decisions you will make is w
 
 ---
 
-*AWS Editorial Team*
+_AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-snorkel-ai-achieved-over-4
 title: "How Snorkel AI achieved over 40% cost savings by scaling machine learning workloads using Amazon EKS"
 ---
 
-# How Snorkel AI achieved over 40% cost savings by scaling machine learning workloads using Amazon EKS
+## How Snorkel AI achieved over 40% cost savings by scaling machine learning workloads using Amazon EKS
 
 Machine learning (ML) startups are often heavy compute users, because they train large models using high-end GPUs and deploy them at scale for inference. [AWS Startups](https://aws.amazon.com/startups) partners with startups from inception to IPO, and has helped thousands of founders and artificial intelligence (AI) innovators build their businesses on [Amazon Elastic Kubernetes Service (Amazon EKS)](https://aws.amazon.com/eks/). Amazon EKS is a popular choice to build and host ML models because it provides the flexibility of Kubernetes with the security and resiliency of being an AWS managed service that is optimized for building highly available containerized workloads.
 
@@ -138,7 +138,7 @@ The Snorkel and AWS Startups teams hope that sharing this thought process and th
 
 ---
 
-*Many thanks to David Hao, Edmond Liu, and Alec Xiang for helping to make this technical vision a reality for Snorkel. Special thanks to the aforementioned as well as Matt Casey, Henry Ehrenberg, Anthony Bishopric, and the entire Snorkel infrastructure engineering team for their thoughtful feedback on this article.*
+_Many thanks to David Hao, Edmond Liu, and Alec Xiang for helping to make this technical vision a reality for Snorkel. Special thanks to the aforementioned as well as Matt Casey, Henry Ehrenberg, Anthony Bishopric, and the entire Snorkel infrastructure engineering team for their thoughtful feedback on this article._
 
 ---
 

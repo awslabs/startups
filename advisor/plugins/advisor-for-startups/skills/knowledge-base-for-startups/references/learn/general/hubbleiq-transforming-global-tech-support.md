@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/hubbleiq-transforming-global-t
 title: "HubbleIQ: Transforming Global Tech Support"
 ---
 
-# HubbleIQ: Transforming Global Tech Support
+## HubbleIQ: Transforming Global Tech Support
 
 > Startup HubbleIQ is enabling its customers to better serve their end-users, by empowering self-service technology support on AWS.
 

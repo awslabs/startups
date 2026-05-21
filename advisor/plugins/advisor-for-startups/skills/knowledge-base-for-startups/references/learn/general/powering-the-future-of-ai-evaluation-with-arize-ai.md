@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/powering-the-future-of-ai-eval
 title: "Powering the Future of AI Evaluation with Arize AI"
 ---
 
-# Powering the Future of AI Evaluation with Arize AI
+## Powering the Future of AI Evaluation with Arize AI
 
 > Source: [AWS Startups](https://startups.aws/startups/learn/powering-the-future-of-ai-evaluation-with-arize-ai-)
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/aws-marketplace-listing-a-step
 title: "AWS Marketplace Listing: A Step-by-Step Guide for Startups"
 ---
 
-# AWS Marketplace Listing: A Step-by-Step Guide for Startups
+## AWS Marketplace Listing: A Step-by-Step Guide for Startups
 
 If you've followed along with our previous articles in this series, you've achieved two key milestones: becoming an [AWS Partner Network](https://aws.amazon.com/partners/) member and developing your go-to-market strategy. Now comes the exciting part—creating compelling listings that showcase your solutions on [AWS Marketplace](https://aws.amazon.com/marketplace). Before proceeding, verify your [AWS Partner Network](https://aws.amazon.com/partners/) (APN) registration, as this is essential for listing products on Marketplace.
 

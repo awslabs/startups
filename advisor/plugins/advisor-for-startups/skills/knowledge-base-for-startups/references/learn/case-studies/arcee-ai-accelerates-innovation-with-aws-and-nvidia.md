@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/arcee-ai-accelerates-innovatio
 title: "Arcee AI Accelerates Innovation with AWS and NVIDIA"
 ---
 
-# Arcee AI Accelerates Innovation with AWS and NVIDIA
+## Arcee AI Accelerates Innovation with AWS and NVIDIA
 
-*Source: [AWS Startups](/startups/learn/arcee-ai-accelerates-innovation-with-aws-and-nvidia)*
+_Source: [AWS Startups](/startups/learn/arcee-ai-accelerates-innovation-with-aws-and-nvidia)_
 
 ---
 

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/audiostack-accelerates-product
 title: "AudioStack is building brand connection at the speed of sound"
 ---
 
-# AudioStack is building brand connection at the speed of sound
+## AudioStack is building brand connection at the speed of sound
 
-*AudioStack is accelerating production workflows with generative AI and AWS*
+_AudioStack is accelerating production workflows with generative AI and AWS_
 
 ---
 
@@ -73,6 +73,6 @@ Together with AWS, the company is now turning its attention towards growth. "I'd
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

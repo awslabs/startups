@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/letting-nature-lead-how-sakana
 title: "Letting nature lead: How Sakana AI is transforming model building"
 ---
 
-# Letting nature lead: How Sakana AI is transforming model building
+## Letting nature lead: How Sakana AI is transforming model building
 
-*Sakana AI is spearheading a new trend training AI models to constantly evolve and adapt to changing environments.*
+_Sakana AI is spearheading a new trend training AI models to constantly evolve and adapt to changing environments._
 
 ---
 
@@ -37,7 +37,7 @@ With technology reaching an inflection point, Sakana AI are putting the idea of 
 
 A key breakthrough to date is Sakana AI's novel approach to model merging. The team observed that there's a tremendous amount of value to gain from current models, yet hundreds of thousands of them are unused or dismissed when they get superseded by new versions. "There's a very large ocean of unique, open-source LLMs already out there," says Akiba.
 
-By merging different models, rather than training them from scratch, they can take the best qualities from each one to create a new, more powerful one. Model merging isn't a new notion in itself—people have experimented in the art of 'hacking' models to create specialized LLMs—but what *is* new is how Sakana AI applies a nature-inspired algorithm to automate the process.
+By merging different models, rather than training them from scratch, they can take the best qualities from each one to create a new, more powerful one. Model merging isn't a new notion in itself—people have experimented in the art of 'hacking' models to create specialized LLMs—but what _is_ new is how Sakana AI applies a nature-inspired algorithm to automate the process.
 
 Just consider the process of natural selection. Species have evolved over time to pass on genes that help them to adapt and thrive in their environment. Meanwhile, traits that threaten species' survival are eventually wiped out. Likewise, Sakana AI's evolutionary algorithms can find the optimal combinations of different parts of FMs to produce new FMs that are naturally selected to perform well at a particular application. The new model inherits the winning traits of the previous models based on what the user has specified. It's a far cry from a Frankenstein-style approach of stitching together different model elements.
 
@@ -80,14 +80,17 @@ Teaming up with partners like AWS has been crucial to Sakana AI's journey—and 
 ## Authors
 
 ### Kan Kato
+
 Kan Kato is a Startup Business Development Manager at AWS, demonstrating commitment to fostering startup success and innovation through strategic partnerships with venture capitalists, accelerators and business development initiatives. Besides working for startups, he also enjoys playing soccer and training for triathlons.
 
 ### Arata Yanase
+
 Arata Yanase is a Startup Account Manager at AWS Japan. With an earlier career as a Sales and Business Development in a fintech Startup, he was leading measures for merchant development and service growth to acquire users.
 
 ### Yoshitaka Haribara
+
 Yoshitaka Haribara is a Senior Startup ML Solutions Architect at AWS Japan. In this role, Yoshitaka helps startup customers innovate in generative AI on AWS. In his spare time, Yoshitaka enjoys playing the drums.
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/letting-nature-lead-how-sakana-ai-is-transforming-model-building)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/letting-nature-lead-how-sakana-ai-is-transforming-model-building)_

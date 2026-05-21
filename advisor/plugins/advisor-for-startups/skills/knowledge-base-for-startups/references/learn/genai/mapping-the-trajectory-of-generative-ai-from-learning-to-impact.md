@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/mapping-the-trajectory-of-gene
 title: "Mapping the trajectory of generative AI: from learning to impact"
 ---
 
-# Mapping the trajectory of generative AI: from learning to impact
+## Mapping the trajectory of generative AI: from learning to impact
 
 > Explore the transformative power of generative AI across industries and how today's learnings are paving the way for the future of responsible tech.
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/fresh-ideas-and-new-connection
 title: "Fresh ideas and new connections at the AWS Founders Retreat"
 ---
 
-# Fresh ideas and new connections at the AWS Founders Retreat
+## Fresh ideas and new connections at the AWS Founders Retreat
 
 **AWS Impact Bootcamp**
 
@@ -25,4 +25,4 @@ The AWS Founders Retreat marks the next step in AWS's commitment to expanding ac
 
 ---
 
-*Source: [AWS Startups - Learn](/startups/learn)*
+_Source: [AWS Startups - Learn](/startups/learn)_

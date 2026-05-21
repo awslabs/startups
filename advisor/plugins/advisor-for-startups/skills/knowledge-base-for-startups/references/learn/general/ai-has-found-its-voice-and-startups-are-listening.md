@@ -3,11 +3,11 @@ source_url: https://aws.amazon.com/startups/learn/ai-has-found-its-voice-and-sta
 title: "AI has found its voice, and startups are listening: How disruptors can capitalize on one of 2025's top emerging markets."
 ---
 
-# AI has found its voice, and startups are listening: How disruptors can capitalize on one of 2025's top emerging markets.
+## AI has found its voice, and startups are listening: How disruptors can capitalize on one of 2025's top emerging markets.
 
-![Alexa and Smartphone Voice AI](https://d22k7geae6sy8h.cloudfront.net/files/68a32bcebd478c000b45474a/AdobeStock_360902914(1).jpg)
+![Alexa and Smartphone Voice AI](https://d22k7geae6sy8h.cloudfront.net/files/68a32bcebd478c000b45474a/AdobeStock_360902914%281%29.jpg)
 
-Reasoning models have dominated discourse around AI in recent years, but 2025 has seen a new modality step into the spotlight—voice. It wasn't long ago that the concept of interfacing with technology through speech was reserved for science fiction novels rather than real life—back then, your phone was something you spoke *on*, not *to*. Things began to change in the 2010s with the success of products like Amazon Alexa, Siri, Google Assistant, and Bixby, which helped large parts of the general population get comfortable chatting with their devices.
+Reasoning models have dominated discourse around AI in recent years, but 2025 has seen a new modality step into the spotlight—voice. It wasn't long ago that the concept of interfacing with technology through speech was reserved for science fiction novels rather than real life—back then, your phone was something you spoke _on_, not _to_. Things began to change in the 2010s with the success of products like Amazon Alexa, Siri, Google Assistant, and Bixby, which helped large parts of the general population get comfortable chatting with their devices.
 
 Fast-forward to the AI space race we're living in today, and improvements in performance and latency have enabled the potential applications of voice AI to skyrocket. From call centers, to hospitality, healthcare, and language learning—new possibilities seem to present themselves by the day. That sort of thing doesn't go unnoticed, and a flywheel of investor interest, startup innovation, and changing consumer behaviors have left voice AI primed to make some serious vibrations in the months and years ahead.
 

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/how-c2i-genomics-builds-on-aws
 title: "How C2i Genomics builds on AWS to transform cancer care"
 ---
 
-# How C2i Genomics builds on AWS to transform cancer care
+## How C2i Genomics builds on AWS to transform cancer care
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/how-c2i-genomics-builds-on-aws-to-transform-cancer-care)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/how-c2i-genomics-builds-on-aws-to-transform-cancer-care)_
 
 ---
 
@@ -23,7 +23,7 @@ Beyond that, C2i Genomics faced a complicated legal landscape. Genomic data is s
 
 By working with Amazon Web Services (AWS), C2i Genomics found assistance with both of these complicating factors. It's a collaboration that enabled C2i Genomics to manage potential issues efficiently and cost effectively, and it put the company on track to impact healthcare worldwide.
 
-> *"Utilization of the AWS platform was really a key factor in our success," says Boris.*
+> _"Utilization of the AWS platform was really a key factor in our success," says Boris._
 
 ## Activating success
 
@@ -67,13 +67,13 @@ In addition, Omics is General Data Protection Regulation (GDPR) compliant and He
 
 The impact of C2i Genomics' platform has the potential to ripple across the global healthcare industry, transforming what it means for someone to receive a cancer diagnosis. It can lead to more personalized treatments and better health outcomes. By monitoring a patient's progress throughout treatment, a healthcare team can make informed decisions about whether to continue an aggressive form of therapy, switch to another, or discontinue treatments that may no longer be necessary.
 
-> *"We've the help of AWS, we have achieved a point where we not only have a medical device, but it's clinical grade," Boris says. "It's not only for research; it's actually ready for providing results in short turnaround times for real patients."*
+> _"We've the help of AWS, we have achieved a point where we not only have a medical device, but it's clinical grade," Boris says. "It's not only for research; it's actually ready for providing results in short turnaround times for real patients."_
 
 Similarly, C2i Genomics' platform offers the ability to detect whether a form of treatment has successfully eliminated a cancer. This can help prevent the need for surgeries that remove organs, which are sometimes performed preventatively due to a lack of available information about how far a cancer has spread.
 
 C2i Genomics' ambition is nothing less than making this kind of personalized medicine available to all patients across the globe. It aims to scale its platform so that any lab with the right equipment can take advantage of these innovations in cancer care, getting diagnostic screening results in record time. The company knows that doing this will require designing its service and implementation in close collaboration with AWS, a prospect Boris looks forward to.
 
-> *"On the AWS side, they understand that we are on a mission to transform cancer treatment," says Boris. "It's a unique position where C2i Genomics can utilize AWS' advanced cloud-based technology to save lives."*
+> _"On the AWS side, they understand that we are on a mission to transform cancer treatment," says Boris. "It's a unique position where C2i Genomics can utilize AWS' advanced cloud-based technology to save lives."_
 
 Ready to begin your startup journey? Join [AWS Activate](https://aws.amazon.com/activate/) to build and scale your startup with the right resources at the right time.
 
@@ -101,4 +101,4 @@ Boris Oklander, co-founder and CTO of C2i Genomics, has driven the company's tec
 
 ---
 
-*AWS Activate updates program benefits regularly, and credit offerings and/or the offerings reflected in this blog post may differ from current Activate offers. For the most up to date information about Activate benefits, please visit [https://aws.amazon.com/activate/](https://aws.amazon.com/activate/)*
+_AWS Activate updates program benefits regularly, and credit offerings and/or the offerings reflected in this blog post may differ from current Activate offers. For the most up to date information about Activate benefits, please visit [https://aws.amazon.com/activate/](https://aws.amazon.com/activate/)_

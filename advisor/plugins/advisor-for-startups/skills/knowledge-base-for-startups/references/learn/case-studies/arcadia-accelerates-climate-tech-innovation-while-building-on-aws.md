@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/arcadia-accelerates-climate-te
 title: "Arcadia accelerates climate tech innovation while building on AWS"
 ---
 
-# Arcadia accelerates climate tech innovation while building on AWS
+## Arcadia accelerates climate tech innovation while building on AWS
 
-*Learn how Arcadia builds on AWS to make energy utility consumption data and pricing data accessible and useful to businesses and individuals.*
+_Learn how Arcadia builds on AWS to make energy utility consumption data and pricing data accessible and useful to businesses and individuals._
 
 ---
 
@@ -100,4 +100,4 @@ Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. W
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/arcadia-accelerates-climate-tech-innovation-while-building-on-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/arcadia-accelerates-climate-tech-innovation-while-building-on-aws)_

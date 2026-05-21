@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-an-effective-aws-mark
 title: "Building an effective AWS Marketplace strategy"
 ---
 
-# Building an effective AWS Marketplace strategy
+## Building an effective AWS Marketplace strategy
 
 Expanding into new markets represents a critical milestone for startups, yet it comes with complex challenges. While focus on innovation and product development remains a priority, the strategic expansion of your customer base demands equal attention. Successfully launching your solution requires not only refined marketing expertise but also tools that streamline your sales operations and foster meaningful customer relationships. Fortunately, AWS provides robust ecosystems of resources and strategic partners to support your growth journey, ensuring your path to market expansion is both strategic and successful.
 

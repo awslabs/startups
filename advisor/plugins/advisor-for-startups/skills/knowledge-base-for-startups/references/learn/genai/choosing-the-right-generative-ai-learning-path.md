@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/choosing-the-right-generative-
 title: "Choosing the Right Generative AI Learning Path"
 ---
 
-# Choosing the Right Generative AI Learning Path
+## Choosing the Right Generative AI Learning Path
 
 > The right learning resources can enhance your understanding of generative AI and empower your organization to leverage this technology across many different use cases.
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/culminate-combines-human-and-a
 title: "Culminate combines human and artificial intelligence for real cybersecurity value"
 ---
 
-# Culminate combines human and artificial intelligence for real cybersecurity value
+## Culminate combines human and artificial intelligence for real cybersecurity value
 
 ![Diane Lin, Co-Founder and CTO, Culminate](https://d22k7geae6sy8h.cloudfront.net/files/68595fb6089479000b8ed7d1/unicorn_tank.jpg)
 

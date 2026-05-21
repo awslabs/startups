@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/tailoring-your-pitch-connectin
 title: "Tailoring your pitch: connecting with investors outside your market"
 ---
 
-# Tailoring your pitch: connecting with investors outside your market
+## Tailoring your pitch: connecting with investors outside your market
 
 > **Note:** This page primarily contains video content. The video player requires JavaScript to function.
 
@@ -19,5 +19,4 @@ Discover strategies to overcome market identification barriers when selling your
 
 ---
 
-
-*Source: [AWS Startups](https://startups.aws/startups/learn/tailoring-your-pitch-connecting-with-investors-outside-your-market)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/tailoring-your-pitch-connecting-with-investors-outside-your-market)_

@@ -3,27 +3,36 @@ source_url: https://aws.amazon.com/startups/prompt-library/kiro-project-init
 title: "Kiro Project Init: Automated Spec-Driven Development Setup"
 tags: ["Prototyping", "Deployment", "Kiro", "Lambda", "Beginner", "DynamoDB", "API Gateway"]
 ---
-# Kiro Project Init: Automated Spec-Driven Development Setup
+
+## Kiro Project Init: Automated Spec-Driven Development Setup
 
 One-command project setup with AI-powered specs, automated testing, and AWS integrations. Generates structured requirements, design docs, and deployment-ready code—eliminating hours of manual setup.
 
 ## System Prompt
 
-# Project Setup - modify this to describe what needs to be built
+## Project Setup - modify this to describe what needs to be built
+
 **App Name**:PROJECTNAME - e.g. MyLittle Project
-**Description**: Use Case: A TODO list  
+**Description**: Use Case: A TODO list\
 **Features**: Key features: add/remove tasks, assign to people, mark as done, view all tasks, view tasks for a person
+
 ---
+
 You are setting up a specification-driven development environment with steering files, agent hooks, and MCP servers.
+
 ## PROJECT CONTEXT
+
 Extract from Project Setup above. Use these defaults if not specified:
+
 - **Project Type**: Full-stack web application
 - **Tech Stack**: React frontend, Python backend, AWS services
 - **AWS Services**: Lambda, DynamoDB, S3, API Gateway (simplest options)
 - **Team Size**: Solo developer
 - **Security**: Standard
 - **Target Users**: Development teams
+
 ## TASK 1: CREATE STRUCTURE
+
 ```
 [PROJECT_NAME]/
 ├── .kiro/
@@ -36,73 +45,108 @@ Extract from Project Setup above. Use these defaults if not specified:
 ├── .env.example
 └── README.md
 ```
+
 ## TASK 2: STEERING FILES
+
 ### .kiro/steering/product.md
+
 ```markdown
 ---
 inclusion: always
 ---
+
 # Product Overview: [PROJECT_NAME]
+
 ## Purpose
+
 [2-3 paragraphs: what it does, why it exists]
+
 ## Target Users
+
 [Who uses this]
+
 ## Key Features
+
 [3-7 core features]
+
 ## Business Objectives
+
 [Business goals]
+
 ## Success Metrics
+
 [3-5 key metrics]
 ```
+
 ### .kiro/steering/tech.md
+
 ```markdown
 ---
 inclusion: always
 ---
+
 # Technology Stack: [PROJECT_NAME]
+
 ## Primary Technologies
+
 - **Frontend**: [e.g., React 18, TypeScript, Vite]
 - **Backend**: [e.g., Python 3.12, FastAPI]
 - **Database**: [e.g., DynamoDB, Aurora PostgreSQL]
 - **Infrastructure**: [e.g., AWS CDK, Lambda, API Gateway]
 - **Testing**: [e.g., Jest, Pytest, Playwright]
+
 ## AWS Services
+
 - **Compute**: [Lambda, ECS, EC2]
 - **Storage**: [S3, DynamoDB, Aurora]
 - **Networking**: [API Gateway, CloudFront, VPC]
 - **AI/ML**: [Bedrock, SageMaker]
 - **Monitoring**: [CloudWatch, X-Ray, CloudTrail]
+
 ## MCP Servers Configured
+
 - **awslabs.aws-api-mcp-server**: AWS service management
 - **awslabs.cdk-mcp-server**: CDK best practices
 - **awslabs.cloudwatch-mcp-server**: Monitoring
 - [Add others based on needs]
+
 ## Development Tools
+
 - **IDE**: [VS Code, Cursor]
 - **Version Control**: [Git, GitHub]
 - **CI/CD**: [GitHub Actions, CodePipeline]
 - **Package Management**: [npm, pip, poetry]
+
 ## Technical Constraints
+
 [Limitations, requirements]
+
 ## Architecture Decisions
+
 [Key choices and rationale]
 ```
+
 ### .kiro/steering/structure.md
+
 ```markdown
 ---
 inclusion: always
 ---
+
 # Project Structure: [PROJECT_NAME]
+
 ## Directory Organization
 ```
+
 src/
-├── components/     # Reusable UI
-├── pages/          # Page-level
-├── services/       # Business logic
-├── utils/          # Helpers
-├── types/          # TypeScript types
-├── hooks/          # Custom hooks
-└── config/         # Configuration
+├── components/ # Reusable UI
+├── pages/ # Page-level
+├── services/ # Business logic
+├── utils/ # Helpers
+├── types/ # TypeScript types
+├── hooks/ # Custom hooks
+└── config/ # Configuration
+
 ```
 ## Naming Conventions
 - **Components**: PascalCase (`UserProfile.tsx`)
@@ -116,34 +160,49 @@ src/
 ## Infrastructure Location
 [e.g., `infrastructure/`, `cdk/`]
 ```
+
 ### .kiro/steering/api-standards.md
-```markdown
+
+````markdown
 ---
 inclusion: fileMatch
 fileMatchPattern: "**/{api,routes,endpoints,controllers}/**/*.{ts,js,py}"
 ---
+
 # API Standards: [PROJECT_NAME]
+
 ## REST Conventions
+
 - Plural nouns: `/users`, `/products`
 - Methods: GET (read), POST (create), PUT (update), DELETE (delete)
 - Status: 200 (success), 201 (created), 400 (client error), 500 (server error)
+
 ## Response Format
+
 ```typescript
 // Success
 { "data": {}, "meta": { "timestamp": "ISO 8601", "requestId": "uuid" }}
 // Error
 { "error": { "code": "ERROR_CODE", "message": "...", "details": {} }, "meta": {...}}
 ```
+````
+
 ## Authentication
+
 [JWT, API keys, OAuth, etc.]
+
 ## Validation
+
 - Validate all inputs at API boundary
 - Use schema validation (Zod, Joi, Pydantic)
 - Return field-level errors
+
 ## Documentation
+
 - OpenAPI 3.0 specs in `api-specs/`
 - Use AWS Documentation MCP for AWS patterns
-```
+
+````
 ### .kiro/steering/testing-standards.md
 ```markdown
 ---
@@ -163,17 +222,22 @@ describe('[ComponentName]', () => {
     });
   });
 });
-```
+````
+
 ## Principles
+
 - **Unit**: Isolated functions/components
 - **Integration**: Module interactions
 - **E2E**: Complete workflows
 - **Coverage**: Minimum [80%]
+
 ## AWS Testing
+
 - SDK mocks for unit tests
 - LocalStack for integration
 - Document MCP usage
-```
+
+````
 ### .kiro/steering/security-policies.md
 ```markdown
 ---
@@ -202,9 +266,12 @@ inclusion: always
 - Well-Architected MCP for reviews
 ## Incident Response
 [Procedures]
-```
+````
+
 ## TASK 3: AGENT HOOKS
+
 ### .kiro/hooks/test-sync.kiro.hook
+
 ```json
 {
   "name": "Test File Synchronization",
@@ -220,7 +287,9 @@ inclusion: always
   }
 }
 ```
+
 ### .kiro/hooks/documentation-update.kiro.hook
+
 ```json
 {
   "name": "API Documentation Updater",
@@ -236,20 +305,24 @@ inclusion: always
   }
 }
 ```
+
 ### .kiro/hooks/security-scan.kiro.hook
+
 ```json
 {
   "name": "Security Validation Scanner",
   "description": "Pre-commit security scan",
   "version": "1",
-  "when": {"type": "manual"},
+  "when": { "type": "manual" },
   "then": {
     "type": "askAgent",
     "prompt": "Security scan:\n1. Scan for: credentials, API keys, console.log with sensitive data, SQL injection, unsafe eval()\n2. Infrastructure: CDK Nag (CDK MCP), Checkov (Terraform MCP)\n3. Verify security-policies.md: input validation, auth checks, encryption\n4. Report: issues by severity (CRITICAL/HIGH/MEDIUM/LOW), locations, fixes, pass/fail\n\nRef: #[[file:.kiro/steering/security-policies.md]]"
   }
 }
 ```
+
 ### .kiro/hooks/cost-check.kiro.hook
+
 ```json
 {
   "name": "Infrastructure Cost Estimator",
@@ -265,8 +338,11 @@ inclusion: always
   }
 }
 ```
+
 ## TASK 4: MCP CONFIGURATION
+
 ### Both .vscode/mcp.json and .cursor/mcp.json (identical)
+
 ```json
 {
   "mcpServers": {
@@ -301,63 +377,66 @@ inclusion: always
     "awslabs.terraform-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.terraform-mcp-server@latest"],
-      "env": {"FASTMCP_LOG_LEVEL": "ERROR"},
+      "env": { "FASTMCP_LOG_LEVEL": "ERROR" },
       "disabled": true,
       "comment": "Enable if using Terraform"
     },
     "awslabs.postgres-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.postgres-mcp-server", "--resource_arn", "[ARN]", "--secret_arn", "[ARN]"],
-      "env": {"AWS_PROFILE": "[profile]", "AWS_REGION": "[region]"},
+      "env": { "AWS_PROFILE": "[profile]", "AWS_REGION": "[region]" },
       "disabled": true,
       "comment": "Enable for Aurora PostgreSQL"
     },
     "awslabs.dynamodb-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.dynamodb-mcp-server@latest"],
-      "env": {"AWS_PROFILE": "[profile]", "AWS_REGION": "[region]", "FASTMCP_LOG_LEVEL": "ERROR"},
+      "env": { "AWS_PROFILE": "[profile]", "AWS_REGION": "[region]", "FASTMCP_LOG_LEVEL": "ERROR" },
       "disabled": true,
       "comment": "Enable for DynamoDB"
     },
     "awslabs.cloudwatch-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.cloudwatch-mcp-server@latest"],
-      "env": {"AWS_PROFILE": "[profile]", "FASTMCP_LOG_LEVEL": "ERROR"},
+      "env": { "AWS_PROFILE": "[profile]", "FASTMCP_LOG_LEVEL": "ERROR" },
       "disabled": false,
       "autoApprove": ["describe_log_groups", "describe_log_streams"]
     },
     "awslabs.cloudtrail-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.cloudtrail-mcp-server@latest"],
-      "env": {"AWS_PROFILE": "[profile]", "FASTMCP_LOG_LEVEL": "ERROR"},
+      "env": { "AWS_PROFILE": "[profile]", "FASTMCP_LOG_LEVEL": "ERROR" },
       "disabled": false
     },
     "awslabs.aws-pricing-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.aws-pricing-mcp-server@latest"],
-      "env": {"AWS_PROFILE": "[profile]", "FASTMCP_LOG_LEVEL": "ERROR"},
+      "env": { "AWS_PROFILE": "[profile]", "FASTMCP_LOG_LEVEL": "ERROR" },
       "disabled": false,
       "autoApprove": ["get_products"]
     },
     "awslabs.bedrock-kb-retrieval-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.bedrock-kb-retrieval-mcp-server@latest"],
-      "env": {"AWS_PROFILE": "[profile]", "AWS_REGION": "[region]"},
+      "env": { "AWS_PROFILE": "[profile]", "AWS_REGION": "[region]" },
       "disabled": true,
       "comment": "Enable for Bedrock Knowledge Bases"
     },
     "awslabs.nova-canvas-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.nova-canvas-mcp-server@latest"],
-      "env": {"AWS_PROFILE": "[profile]", "AWS_REGION": "[region]", "FASTMCP_LOG_LEVEL": "ERROR"},
+      "env": { "AWS_PROFILE": "[profile]", "AWS_REGION": "[region]", "FASTMCP_LOG_LEVEL": "ERROR" },
       "disabled": true,
       "comment": "Enable for AI image generation"
     }
   }
 }
 ```
+
 ## TASK 5: SUPPORTING FILES
+
 ### .gitignore
+
 ```
 mcp.json.local
 .env
@@ -378,7 +457,9 @@ build/
 .DS_Store
 Thumbs.db
 ```
+
 ### .env.example
+
 ```bash
 AWS_REGION=us-east-1
 AWS_PROFILE=your-profile
@@ -389,78 +470,110 @@ FASTMCP_LOG_LEVEL=ERROR
 READ_OPERATIONS_ONLY=false
 COST_ALERT_THRESHOLD=500
 ```
+
 ### README.md
-```markdown
+
+````markdown
 # [PROJECT_NAME]
+
 [Brief description]
+
 ## Structure
+
 - `.kiro/steering/` - AI context, standards
 - `.kiro/hooks/` - Automated workflows
 - `.kiro/specs/` - Feature specs (requirements, design, tasks)
 - `.vscode/mcp.json`, `.cursor/mcp.json` - MCP configs
+
 ## Prerequisites
+
 1. **uv**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 2. **Python 3.10+**: `uv python install 3.10`
 3. **AWS CLI**: Configured
 4. **Node.js**: [version]
+
 ### AWS Setup
+
 ```bash
 aws configure --profile [PROFILE]
 export AWS_PROFILE=[PROFILE]
 export AWS_REGION=[REGION]
 ```
+````
+
 ## Getting Started
+
 ```bash
-# Install
+## Install
 [npm install / pip install]
-# Configure
+## Configure
 cp .env.example .env
-# Edit .env
-# Verify MCPs
+## Edit .env
+## Verify MCPs
 timeout 15s uvx awslabs.aws-api-mcp-server@latest 2>&1 || echo "OK"
 ```
+
 ## Workflow
+
 ### Spec-Driven Development
+
 1. Create spec in AI assistant
 2. Requirements → Design → Tasks
 3. Execute tasks
 4. Iterate
+
 ### Agent Hooks
+
 - **Test Sync**: Auto-creates tests on save
 - **Doc Update**: Updates API docs
 - **Security Scan**: Manual pre-commit scan
 - **Cost Check**: Estimates infrastructure costs
+
 ### MCP Usage
+
 ```
 "Use CloudWatch MCP to check error logs from last hour"
 "Use Pricing MCP to estimate costs for 3 Lambda functions"
 ```
+
 ## MCP Servers
+
 ### Enabled
+
 - aws-api, aws-knowledge, cdk, cloudwatch, cloudtrail, aws-pricing
+
 ### Available (Disabled)
+
 - terraform, postgres, dynamodb, bedrock-kb-retrieval, nova-canvas
-Enable by setting `"disabled": false` in mcp.json
+  Enable by setting `"disabled": false` in mcp.json
+
 ## Troubleshooting
+
 ### MCP Issues
+
 ```bash
-# Logs
+## Logs
 tail -f ~/Library/Logs/Claude/mcp*.log  # Mac
 tail -f %APPDATA%/Claude/mcp*.log       # Windows
-# Clear cache
+## Clear cache
 uv cache clean awslabs.server-name
-# Test
+## Test
 timeout 15s uvx awslabs.aws-api-mcp-server@latest 2>&1
 ```
+
 ### Auth Errors
+
 ```bash
 aws sts get-caller-identity --profile [PROFILE]
 ```
+
 ## Resources
+
 - [MCP Docs](https://modelcontextprotocol.io)
 - [AWS MCPs](https://github.com/awslabs/mcp)
 - [Kiro](https://kiro.dev)
-```
+
+````
 ## TASK 6: INITIAL FEATURE SPEC
 Create `.kiro/specs/[app-name]-core/` with three files:
 ### requirements.md
@@ -500,31 +613,45 @@ THE SYSTEM SHALL [error handling]
 [Schema, access patterns, retention]
 ## Out of Scope
 [What's NOT included]
-```
+````
+
 ### design.md
-```markdown
+
+````markdown
 # Design: [FEATURE_NAME]
+
 ## Architecture
+
 [High-level using tech stack from PROJECT CONTEXT]
+
 ```text
 [ASCII component diagram]
 ```
+````
+
 ## Components
+
 ### Component 1: [Name]
+
 **Purpose**: [What it does]
 **Technology**: [From tech stack]
 **Responsibilities**:
+
 - [Responsibility 1]
 - [Responsibility 2]
-**Interfaces**:
+  **Interfaces**:
 - Input: [What it receives]
 - Output: [What it produces]
 - Dependencies: [What it calls]
-[Repeat for each component]
+  [Repeat for each component]
+
 ## Data Model
+
 ### Entity 1: [Name]
+
 **Storage**: [DynamoDB/Aurora/S3]
 **Schema**:
+
 ```typescript
 {
   id: string;
@@ -533,94 +660,145 @@ THE SYSTEM SHALL [error handling]
   updatedAt: timestamp;
 }
 ```
+
 **Access Patterns**:
+
 - Query by [field]: [use case]
 - List by [criteria]: [use case]
-**Indexes**: [GSIs/LSIs]
-[Repeat for each entity]
+  **Indexes**: [GSIs/LSIs]
+  [Repeat for each entity]
+
 ## API Design
+
 ### [METHOD] /[path]
+
 **Purpose**: [What it does]
 **Auth**: [Required level]
 **Request**:
+
 ```typescript
 { [param]: type; }
 ```
+
 **Response** (200):
+
 ```typescript
 { data: {...}, meta: {...} }
 ```
+
 **Errors**: 400, 401, 500
 [Repeat for each endpoint]
+
 ## AWS Services
+
 ### [Service 1]
+
 **Purpose**: [How used]
 **Config**: Runtime, Memory, Timeout, Env vars
 **Triggers**: [What invokes]
 **Permissions**: [IAM]
 [Repeat for each service]
+
 ## Security
+
 ### Auth Flow
+
 [Describe + ASCII diagram]
+
 ### Authorization
+
 [RBAC, ABAC, etc.]
+
 ### Data Protection
+
 - At rest: [approach]
 - In transit: [TLS]
 - PII: [handling]
 - Secrets: [Secrets Manager]
+
 ## Error Handling
+
 - Client (4xx): [approach]
 - Server (5xx): [approach]
 - External: [retry, circuit breakers]
 - Validation: [approach]
+
 ### Logging
+
 - App: CloudWatch structured JSON
 - Access: API Gateway/ALB
 - Audit: CloudTrail
 - Metrics: CloudWatch custom
+
 ## Testing
+
 - **Unit**: Isolated, mocked, [coverage%]
 - **Integration**: Component interactions, LocalStack
 - **E2E**: Full workflows, deployed env
+
 ## Deployment
+
 ### IaC
+
 **Tool**: AWS CDK
 **Structure**:
+
 ```
 infrastructure/
 ├── lib/[feature]-stack.ts
 └── bin/app.ts
 ```
+
 ### Environments
+
 - Dev, Staging, Production: [configs]
+
 ### CI/CD
+
 1. Commit → 2. Tests → 3. Security scan → 4. Deploy staging → 5. E2E → 6. Approval → 7. Production
+
 ## Monitoring
+
 ### Metrics
+
 - [Metric 1]: [how to measure]
+
 ### Alarms
+
 - [Alarm 1]: Threshold, action
+
 ### Dashboards
+
 - [Dashboard 1]: [what it shows]
+
 ## Performance
+
 - Optimization: [strategies]
 - Caching: [what, where]
 - Scalability: [how components scale]
+
 ## Cost
-- [Service 1]: $[estimate]
+
+-
 - **Total**: $[total]/month
 - Optimizations: [opportunities]
+
 ## Migration & Rollback
+
 - Deployment: [blue/green, canary, rolling]
 - Rollback: [how to rollback]
+
 ## Open Questions
+
 [Design decisions needing clarification]
+
 ## References
+
 - #[[file:.kiro/steering/tech.md]]
 - #[[file:.kiro/steering/api-standards.md]]
 - #[[file:.kiro/steering/security-policies.md]]
-```
+
+````
 ### tasks.md
 ```markdown
 # Tasks: [FEATURE_NAME]
@@ -877,8 +1055,10 @@ Deploy to production with safeguards
 - Parallelize where possible
 - Review before marking complete
 - Update as requirements change
-```
+````
+
 ## COMPLETION CHECKLIST
+
 - [ ] Directory structure (.kiro/, .vscode/, .cursor/)
 - [ ] 6 steering files
 - [ ] 4 hooks
@@ -886,14 +1066,18 @@ Deploy to production with safeguards
 - [ ] .gitignore, .env.example, README.md
 - [ ] Replace all [PLACEHOLDER] values
 - [ ] Initial spec: requirements.md, design.md, tasks.md
+
 ## POST-SETUP
+
 1. Enable/disable MCPs in mcp.json
 2. Add custom steering files
 3. Customize hook prompts
 4. Review/refine generated spec
 5. Create additional specs
 6. Keep docs current
+
 ## SECURITY
+
 - Never commit credentials
 - Gitignore .env
 - Use Secrets Manager

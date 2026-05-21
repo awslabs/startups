@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/anthropic-claude-3-next-gen-mo
 title: "Anthropic Claude 3: Next-gen models on Amazon Bedrock"
 ---
 
-# Anthropic Claude 3: Next-gen models on Amazon Bedrock
+## Anthropic Claude 3: Next-gen models on Amazon Bedrock
 
-*Author: Swami Sivasubramanian, AWS VP Database Analytics and Machine Learning*
+_Author: Swami Sivasubramanian, AWS VP Database Analytics and Machine Learning_
 
 You already know Amazon Bedrock is the easiest way to build generative AI solutions with foundation models, including as Anthropic's state-of-the-art model, Claude. And now, the next generation of Claude is here. I've made 3 separate videos covering the first launch so far, but I wanted to write a little companion piece with the key facts and quick links I think developers will be most interested in!
 
@@ -50,4 +50,3 @@ Great news for developers - the Claude 3 models are better at producing structur
 Claude 3 Sonnet is available on [Amazon Bedrock](https://aws.amazon.com/bedrock/) today, so you can get building with the family of Claude 3 models from [Anthropic](https://www.anthropic.com/news/claude-3-family) right away on AWS! For full instructions on how you can get started with Anthropic's Claude 3 Sonnet in Amazon Bedrock, visit [the News Blog post](https://aws.amazon.com/blogs/aws/anthropics-claude-3-sonnet-foundation-model-is-now-available-in-amazon-bedrock/). Opus and Haiku will be available soon, so keep an eye out for them!
 
 There's so much happening, and I can't wait to see what you all build! If there's a specific aspect you'd like me to cover in upcoming videos, articles or tutorials, send me a message on [LinkedIn](https://www.linkedin.com/in/brookejamieson/), [Twitter](https://twitter.com/brooke_jamieson), [Instagram](https://instagram.com/brooke.bytes) or [TikTok](https://www.tiktok.com/@brookebytes).
-

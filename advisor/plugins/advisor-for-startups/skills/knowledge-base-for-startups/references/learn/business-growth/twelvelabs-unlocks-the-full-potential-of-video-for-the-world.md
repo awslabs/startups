@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/twelvelabs-unlocks-the-full-po
 title: "Seeing is understanding – TwelveLabs unlocks the full potential of video for the world"
 ---
 
-# Seeing is understanding – TwelveLabs unlocks the full potential of video for the world
+## Seeing is understanding – TwelveLabs unlocks the full potential of video for the world
 
 [TwelveLabs](https://www.twelvelabs.io/) has two primary models: Marengo and Pegasus. Marengo is a multimodal embedding model that captures the visual, audio, and spatial-temporal context of videos to power any-to-any video search. This capability allows users to easily search and retrieve video data from massive archives. Pegasus is a video language model that analyzes video content to generate text-based outputs like summaries and analyses to structured outputs like metadata and JSON to power downstream video workflows and tools. It is designed to address the practical challenges of real-world video understanding and analysis, from fine-grained temporal reasoning to handling content that spans from seconds to hours. It has been adopted by a broad spectrum of users: from enterprises managing video datasets comprised of millions of hours to individuals pursuing creative projects. With these models, TwelveLabs helps users effectively search, classify, and utilize video data for various applications.
 

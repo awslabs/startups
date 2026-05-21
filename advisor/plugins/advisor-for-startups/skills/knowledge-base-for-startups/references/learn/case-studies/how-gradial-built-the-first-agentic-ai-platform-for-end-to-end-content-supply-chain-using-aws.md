@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-gradial-built-the-first-ag
 title: "How Gradial built the first agentic AI platform for end-to-end content supply chain using AWS"
 ---
 
-# How Gradial built the first agentic AI platform for end-to-end content supply chain using AWS
+## How Gradial built the first agentic AI platform for end-to-end content supply chain using AWS
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/how-gradial-built-the-first-agentic-ai-platform-for-end-to-end-content-supply-chain-using-aws)
 
@@ -20,4 +20,3 @@ Find out how Gradial grew efficiency with agentic AI. [Read the full case study]
 ## About AWS Activate
 
 Over 330,000 have joined [AWS Activate](https://aws.amazon.com/activate/activate-landing/) since its inception in 2013, accessing a range of resources to help build, grow, and scale their startup. This includes unlocking [AWS Activate Credits](https://aws.amazon.com/startups/credits), which can be used to help cover the costs of AWS services and solutions, from compute, database, and storage; to machine learning, containers, applications, and more. AWS Activate has already provided more than $7 billion in credits to startups, and yours could be next to benefit. Find out more about [AWS Activate](https://aws.amazon.com/activate/activate-landing/) today.
-

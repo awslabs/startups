@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/why-every-startup-should-set-u
 title: "Why every startup should set up a budget — and how AWS Budgets makes it easy."
 ---
 
-# Why every startup should set up a budget — and how AWS Budgets makes it easy.
+## Why every startup should set up a budget — and how AWS Budgets makes it easy.
 
-*Discover why every startup needs a budget and how AWS Budgets can help you track costs and optimize your AWS spend. Start maximizing your resources today.*
+_Discover why every startup needs a budget and how AWS Budgets can help you track costs and optimize your AWS spend. Start maximizing your resources today._
 
 ## Do I really need a budget?
 
@@ -25,12 +25,12 @@ Although monitoring costs on AWS might seem like an arduous task (and make it te
 
 Setting up a budget through the AWS console will take no more than a few minutes. If you'd like to follow along and learn the process, start at step 1. Otherwise, you can 1-click deploy a budget with the AWS CloudFormation template below. If you haven't used CloudFormation templates before, follow along [here](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/GettingStarted.Walkthrough.html).
 
-| Region | View | View in Designer | Launch |
-|--------|------|------------------|--------|
-| US East (N. Virginia) | [View](https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [View in Designer](https://console.aws.amazon.com/cloudformation/designer/home?region=us-east-1&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [Launch Stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=BudgetQuickStart&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) |
-| US East (Ohio) | [View](https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [View in Designer](https://console.aws.amazon.com/cloudformation/designer/home?region=us-east-2&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [Launch Stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=BudgetQuickStart&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) |
+| Region                  | View                                                                       | View in Designer                                                                                                                                                                | Launch                                                                                                                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| US East (N. Virginia)   | [View](https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [View in Designer](https://console.aws.amazon.com/cloudformation/designer/home?region=us-east-1&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [Launch Stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=BudgetQuickStart&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) |
+| US East (Ohio)          | [View](https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [View in Designer](https://console.aws.amazon.com/cloudformation/designer/home?region=us-east-2&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [Launch Stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=BudgetQuickStart&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) |
 | US West (N. California) | [View](https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [View in Designer](https://console.aws.amazon.com/cloudformation/designer/home?region=us-west-1&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [Launch Stack](https://console.aws.amazon.com/cloudformation/home?region=us-west-1#/stacks/new?stackName=BudgetQuickStart&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) |
-| US West (Oregon) | [View](https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [View in Designer](https://console.aws.amazon.com/cloudformation/designer/home?region=us-west-2&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | |
+| US West (Oregon)        | [View](https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) | [View in Designer](https://console.aws.amazon.com/cloudformation/designer/home?region=us-west-2&templateURL=https://aws-budgets-quickstart.s3.amazonaws.com/simple-budget.yaml) |                                                                                                                                                                                                           |
 
 ### Step 1 – Select a target amount
 
@@ -84,4 +84,4 @@ Melissa Kwok is a Solutions Architect at AWS, where she helps customers of all s
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/why-every-startup-should-set-up-a-budget-and-how-aws-budgets-makes-it-easy)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/why-every-startup-should-set-up-a-budget-and-how-aws-budgets-makes-it-easy)_

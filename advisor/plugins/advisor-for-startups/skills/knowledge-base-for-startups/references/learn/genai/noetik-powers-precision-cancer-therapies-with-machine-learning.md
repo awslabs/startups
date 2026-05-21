@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/noetik-powers-precision-cancer
 title: "Noetik powers precision cancer therapies with machine learning"
 ---
 
-# Noetik powers precision cancer therapies with machine learning
+## Noetik powers precision cancer therapies with machine learning
 
 Together with Amazon Web Services (AWS) and NVIDIA, Noetik is using advanced machine learning techniques to power a new generation of precision cancer treatments.
 
@@ -51,4 +51,4 @@ With access to cutting-edge technology and proven expertise, Noetik is primed to
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/noetik-powers-precision-cancer-therapies-with-machine-learning)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/noetik-powers-precision-cancer-therapies-with-machine-learning)_

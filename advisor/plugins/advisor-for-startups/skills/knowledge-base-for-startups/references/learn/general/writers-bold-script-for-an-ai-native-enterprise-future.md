@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/writers-bold-script-for-an-ai-
 title: "WRITER's Bold Script for an AI-Native Enterprise Future"
 ---
 
-# WRITER's Bold Script for an AI-Native Enterprise Future
+## WRITER's Bold Script for an AI-Native Enterprise Future
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/writers-bold-script-for-an-ai-native-enterprise-future)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/writers-bold-script-for-an-ai-native-enterprise-future)_
 
 ---
 
@@ -40,4 +40,3 @@ Grounded in "real world enterprise needs" the solution automates and enhances cr
 WRITER operates on "the technology of yes" concludes Habib: "Can agentic AI do X? Yes. Can agentic AI do Y? Yes." The company's partnership with AWS and the solutions it's subsequently created are allowing enterprises to realize ideas easily and cost-effectively. At the same time, WRITER is preserving the human creativity and collaboration that are essential to enterprise operations and workplace culture. "One thing we like to say," says May, "is that the secret ingredient to AI transformation in the enterprise is people."
 
 WRITER's enterprise-grade technology, in combination with the consultative approach it has with its customers, has driven its growth, and today the company counts "hundreds of powerhouses from the Global 2000" amongst its customers. Minimizing costs and technical effort, WRITER is unlocking "limitless" possibilities for enterprise users as a result of this approach and "because of the way that we train and deploy our models."
-

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/how-to-prevent-unexpected-cost
 title: "How to prevent unexpected costs for startups while building with AWS"
 ---
 
-# How to prevent unexpected costs for startups while building with AWS
+## How to prevent unexpected costs for startups while building with AWS
 
-*By Xuan Gao, Startup Solutions Architect, and Carole Suarez, Startup Solutions Architect*
+_By Xuan Gao, Startup Solutions Architect, and Carole Suarez, Startup Solutions Architect_
 
 As a startup, your days are filled with competing priorities: you want to focus your time on innovation and product market fit—not worrying about underlying infrastructure or unexpected costs. The cloud management firm Right Scale estimates that [wasted cloud spend averages about 35%](https://www.globenewswire.com/news-release/2017/11/13/1208218/0/en/RightScale-Estimates-Companies-to-Waste-More-Than-10-Billion-in-Cloud-Spending-Over-the-Next-Year.html), with small and medium-sized companies overspending the most. With this in mind, we've created this how-to guide to make sure your startup doesn't end up spending thousands of dollars due to a spike that could have been prevented through monitoring or an alarm. We'll cover best practices for new and existing AWS accounts when it comes to fundamental security, monitoring, and cost management. We'll also get into the nitty gritty when it comes to proactively setting up alerts on anomalous usage of services due to over provisioning of services and/or misconfiguration. By following these four recommendations, you can extend your runway and create a long-term strategy for cost management.
 
@@ -37,4 +37,4 @@ For startups looking to prevent unexpected costs while building on AWS, we highl
 
 ---
 
-*AWS Editorial Team - The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.*
+_AWS Editorial Team - The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires._

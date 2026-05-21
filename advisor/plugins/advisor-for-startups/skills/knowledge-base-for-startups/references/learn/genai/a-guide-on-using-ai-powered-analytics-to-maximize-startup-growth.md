@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/a-guide-on-using-ai-powered-an
 title: "A guide on using AI-powered analytics to maximize startup growth"
 ---
 
-# A guide on using AI-powered analytics to maximize startup growth
+## A guide on using AI-powered analytics to maximize startup growth
 
-*Explore the how and why of using AI-powered analytics to optimize your startup*
+_Explore the how and why of using AI-powered analytics to optimize your startup_
 
 **Author:** Derrick Selempo, Startup Solutions Architect at Amazon Web Services (AWS)
 
@@ -95,12 +95,12 @@ Like any technology investment, AI analytics should address outcomes your organi
 
 Here are some of the most common ways other startups are using AI-powered analytics:
 
-| Benefit | Description |
-|---------|-------------|
-| **Faster Decision Making** | AI systems—especially those built with Amazon SageMaker or other AWS AI services—analyze large datasets in a fraction of the time it would take a human team. For instance, e-commerce startups often rely on Amazon Personalize for real-time product recommendations and pricing strategies. |
-| **Optimized Operations** | Search methods and other AI solutions can offer daily operational efficiencies. A transportation startup might rely on data from sensors and real-time events to pinpoint optimal routes. You can orchestrate these insights with minimal infrastructure overhead by tapping into AWS serverless technologies like AWS Lambda or AWS Step Functions. |
-| **Support for Rapid Growth** | Because AI-powered analytics can manage large, complex datasets, they can easily scale alongside your expanding startup. This agility is especially valuable in fast-growing industries like fintech, health tech, or marketplace apps. |
-| **Anticipation of Growth Trends** | Predictive models—such as those built with Amazon Forecast—help your startup plan for upcoming changes in resource demands, costs, and data security. |
+| Benefit                           | Description                                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Faster Decision Making**        | AI systems—especially those built with Amazon SageMaker or other AWS AI services—analyze large datasets in a fraction of the time it would take a human team. For instance, e-commerce startups often rely on Amazon Personalize for real-time product recommendations and pricing strategies.                                                       |
+| **Optimized Operations**          | Search methods and other AI solutions can offer daily operational efficiencies. A transportation startup might rely on data from sensors and real-time events to pinpoint optimal routes. You can orchestrate these insights with minimal infrastructure overhead by tapping into AWS serverless technologies like AWS Lambda or AWS Step Functions. |
+| **Support for Rapid Growth**      | Because AI-powered analytics can manage large, complex datasets, they can easily scale alongside your expanding startup. This agility is especially valuable in fast-growing industries like fintech, health tech, or marketplace apps.                                                                                                              |
+| **Anticipation of Growth Trends** | Predictive models—such as those built with Amazon Forecast—help your startup plan for upcoming changes in resource demands, costs, and data security.                                                                                                                                                                                                |
 
 ---
 
@@ -143,14 +143,14 @@ Address data privacy from day one. Consider:
 
 Here's some inspiration as you consider the possible uses of AI-powered analytics within your organization:
 
-| Use Case | Description |
-|----------|-------------|
-| **Product and application development** | Analyze product usage data, user interaction, and performance metrics to identify areas of improvement in your product. [AI Application Development solutions on AWS](https://aws.amazon.com/solutions/digital-natives-startups/ai-application-development/) help startups streamline their architectures and production processes. |
-| **Fraud & threat detection in financial services** | Use anomalous pattern detection to identify possible fraudulent activities or unauthorized purchases. [Amazon Fraud Detector](https://aws.amazon.com/fraud-detector/) supports real-time transaction scoring. |
-| **Supply chain optimization in transportation & logistics** | Shipping fleets and supply chains can use AI analytics to streamline operations, reduce shipping costs, accelerate fulfillment, and/or respond to potential disruptions and delays. |
-| **Predictive analytics in healthcare** | Healthcare professionals are already using AI analytics to account for data from electronic health records (EHR) and other sources when developing treatment plans. Using [HIPAA-eligible AWS services](https://aws.amazon.com/compliance/hipaa-compliance/)—like Amazon SageMaker—you can maintain compliance while innovating with AI. |
-| **Preventative maintenance for manufacturing equipment** | Internet of Things (IoT) sensors can collect data on manufacturing equipment performance and feed this into an AI analytics solution. [AWS IoT services integrate with AI analytics](https://aws.amazon.com/blogs/iot/emerging-architecture-patterns-for-integrating-iot-and-generative-ai-on-aws/) to facilitate predictive maintenance. |
-| **Energy & sustainability initiatives** | Train search methods and optimization models to identify more efficient energy consumption approaches, reducing energy costs and helping your startup meet internal and external sustainability goals. |
+| Use Case                                                    | Description                                                                                                                                                                                                                                                                                                                               |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Product and application development**                     | Analyze product usage data, user interaction, and performance metrics to identify areas of improvement in your product. [AI Application Development solutions on AWS](https://aws.amazon.com/solutions/digital-natives-startups/ai-application-development/) help startups streamline their architectures and production processes.       |
+| **Fraud & threat detection in financial services**          | Use anomalous pattern detection to identify possible fraudulent activities or unauthorized purchases. [Amazon Fraud Detector](https://aws.amazon.com/fraud-detector/) supports real-time transaction scoring.                                                                                                                             |
+| **Supply chain optimization in transportation & logistics** | Shipping fleets and supply chains can use AI analytics to streamline operations, reduce shipping costs, accelerate fulfillment, and/or respond to potential disruptions and delays.                                                                                                                                                       |
+| **Predictive analytics in healthcare**                      | Healthcare professionals are already using AI analytics to account for data from electronic health records (EHR) and other sources when developing treatment plans. Using [HIPAA-eligible AWS services](https://aws.amazon.com/compliance/hipaa-compliance/)—like Amazon SageMaker—you can maintain compliance while innovating with AI.  |
+| **Preventative maintenance for manufacturing equipment**    | Internet of Things (IoT) sensors can collect data on manufacturing equipment performance and feed this into an AI analytics solution. [AWS IoT services integrate with AI analytics](https://aws.amazon.com/blogs/iot/emerging-architecture-patterns-for-integrating-iot-and-generative-ai-on-aws/) to facilitate predictive maintenance. |
+| **Energy & sustainability initiatives**                     | Train search methods and optimization models to identify more efficient energy consumption approaches, reducing energy costs and helping your startup meet internal and external sustainability goals.                                                                                                                                    |
 
 ---
 
@@ -183,4 +183,3 @@ If you're ready to explore AI analytics solutions, head to [AWS Startups](https:
 - Get inspired by learning how to build AI-driven experiences through the [Generative AI Apps](/startups/learn/building-generative-ai-applications-for-your-startup) resource page.
 
 - Learn from a real-world example of scaling serverless solutions by exploring this [cloud-optimized case study](/startups/learn/building-serverless-on-aws-to-scale-ramps-fast-growing-finance-automation-platform).
-

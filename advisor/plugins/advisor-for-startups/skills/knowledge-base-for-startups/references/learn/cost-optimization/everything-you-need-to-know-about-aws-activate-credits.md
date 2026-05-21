@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/everything-you-need-to-know-ab
 title: "Everything you need to know about AWS Activate Credits"
 ---
 
-# Everything you need to know about AWS Activate Credits
+## Everything you need to know about AWS Activate Credits
 
 Let **AWS Activate Credits** offset cloud costs, so you can focus on changing the world with your product. Whether you're just beginning your cloud journey or you've already secured your first customers, these promotional credits help you innovate quickly and efficiently. As you build and scale your business, Activate Credits can grow to support your goals and needs, and also help extend your runway or launch an MVP.
 
@@ -132,7 +132,7 @@ For more information regarding eligible and ineligible services, please visit th
 
 Innovation isn't far out of reach with AWS Activate. Once you are an AWS Activate member, you can apply for AWS Activate Credits by [going to the AWS Startups website](https://aws.amazon.com/startups/credits). If you need further help with your application, [check out this step-by-step guide](/startups/learn/applying-for-aws-activate-credits-a-step-by-step-guide). For even more answers about credits, please see the [frequently asked questions about AWS Activate Credits here](https://aws.amazon.com/startups/faq#AWS%20Activate%20Credits).
 
-*All AWS Credits are subject to the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/awscredits/)*
+_All AWS Credits are subject to the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/awscredits/)_
 
 ---
 
@@ -143,4 +143,4 @@ Innovation isn't far out of reach with AWS Activate. Once you are an AWS Activat
 
 ---
 
-*Author: AWS Editorial Team - The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.*
+_Author: AWS Editorial Team - The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires._

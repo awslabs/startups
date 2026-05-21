@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/aws-launches-global-generative
 title: "AWS launches global generative AI accelerator for startups"
 ---
 
-# AWS launches global generative AI accelerator for startups
+## AWS launches global generative AI accelerator for startups
 
 Building on the exciting new developments around generative AI, we are happy to launch the [AWS Generative AI Accelerator](https://aws-startup-lofts.com/amer/program/accelerators/generative-ai), a 10-week program designed to take the most promising generative AI startups around the globe to the next level.
 
@@ -19,9 +19,9 @@ To fully benefit from the program, startups should have a minimal viable product
 
 Here's what some of our investor partners are saying about the program:
 
-> *"AWS Accelerator offers a compelling program for founders building in the Generative AI space, and I look forward to meeting the cohort when they're announced,"* said **Sonya Huang, Partner at Sequoia Capital.**
-
-> *"With so much activity and opportunity today in the world of AI-driven startups, it is a great time for AWS to launch this Generative AI Accelerator. I am looking forward to seeing which companies are selected for the program and how AWS will partner with them to turbocharge their growth,"* said **Rob Toews, Partner at Radical Ventures.**
+> _"AWS Accelerator offers a compelling program for founders building in the Generative AI space, and I look forward to meeting the cohort when they're announced,"_ said **Sonya Huang, Partner at Sequoia Capital.**
+>
+> _"With so much activity and opportunity today in the world of AI-driven startups, it is a great time for AWS to launch this Generative AI Accelerator. I am looking forward to seeing which companies are selected for the program and how AWS will partner with them to turbocharge their growth,"_ said **Rob Toews, Partner at Radical Ventures.**
 
 We are excited to meet the founders who are applying generative AI to solve some of our society's most riveting challenges.
 

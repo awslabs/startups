@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/join-the-aws-partner-network-a
 title: "Join the AWS Partner Network: A Step-by-Step Guide for Startups"
 ---
 
-# Join the AWS Partner Network: A Step-by-Step Guide for Startups
+## Join the AWS Partner Network: A Step-by-Step Guide for Startups
 
 Looking to take your startup to the next level? Whether you want to innovate with new technologies, expand your reach, or grow your business (or all three!), AWS has it covered. The AWS Partner Network makes it simple for startups to build, market, and co-sell innovative software to AWS customers globally.
 
@@ -100,4 +100,3 @@ Finally, to get the most of your AWS Partner Network membership—and to upskill
 Once you've completed all of the above you can begin transacting your first [Marketplace Private Offers](https://docs.aws.amazon.com/marketplace/latest/userguide/private-offers-overview.html) (MPPO). MPPOs are negotiated terms used when customers purchase your product from AWS Marketplace, a tool allowing customers to find, buy, and deploy software, services, and solutions. MPPOs can involve custom pricing plans, end user license agreements or custom solutions.
 
 If you have buy-in from your team, are willing to give a little time commitment, and have big ambitions for growth, the AWS Partner Network offers an ideal opportunity. Follow the step-by-step approach above and get started on your build, market, and co-sell journey with AWS today.
-

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-proto-is-bringing-cutting-
 title: "How Proto is bringing cutting-edge avatars to life with Amazon Bedrock"
 ---
 
-# How Proto is bringing cutting-edge avatars to life with Amazon Bedrock
+## How Proto is bringing cutting-edge avatars to life with Amazon Bedrock
 
 A patient in Australia requires urgent specialist care from a doctor in the UK. A robotics firm needs to demo its latest invention to potential investors without the hassle of transporting machinery. A new hotel wants to wow guests with a premium experience. [Proto](https://protohologram.com/) is enabling all of these things and more – with holograms powered by [generative AI](https://aws.amazon.com/generative-ai/).
 
@@ -35,7 +35,7 @@ Amazon Bedrock is also serverless, meaning startups don't have to manage any inf
 
 Proto migrated to Amazon Bedrock and chose Anthropic's Claude Instant, an FM available on Amazon Bedrock, to demonstrate a conversational avatar at a major conference. It fine-tuned this model to optimize its AI avatar, putting guardrails in place to ensure interactions were appropriate for the setting, audience, and context.
 
-Amazon Bedrock allowed Proto to test the performance of various FMs before progressing to the next stage of development, meaning it could pick the most cost-effective solution for each use case. This was a straightforward process, so didn't impact on workflow or deployment pipelines – both critical for startups wanting to stay at the forefront of AI development. As Raffi Kryszek, Chief Product and AI Officer at Proto explains, "*Amazon Bedrock allowed us to test the performance of our avatar when sourced from different foundational models by only changing one line of code.*"
+Amazon Bedrock allowed Proto to test the performance of various FMs before progressing to the next stage of development, meaning it could pick the most cost-effective solution for each use case. This was a straightforward process, so didn't impact on workflow or deployment pipelines – both critical for startups wanting to stay at the forefront of AI development. As Raffi Kryszek, Chief Product and AI Officer at Proto explains, "_Amazon Bedrock allowed us to test the performance of our avatar when sourced from different foundational models by only changing one line of code._"
 
 Proto also deployed [Amazon Polly](https://aws.amazon.com/polly/), a cloud service that converts text to lifelike speech, and [Amazon Transcribe](https://aws.amazon.com/transcribe/), a speech recognition service that automatically converts speech into text. This provides them with the agility to adapt their solution to support conversation in different languages such as Japanese, Korean, and Spanish.
 
@@ -75,7 +75,7 @@ Migrating workloads and applications to AWS is just the beginning. Proto has tak
 
 In migrating to AWS it's lightened the (technical) load for its team while expanding their creative abilities, and is more easily building, scaling and deploying its own gen AI applications with security, privacy and responsible AI. Whether you're a startup looking to begin your journey with generative AI, or you want to optimize and enhance your current workflow and products, the [AWS Migration Acceleration Program](https://aws.amazon.com/migration-acceleration-program/) can help you explore your options, and discover more about how Amazon Bedrock can work for you.
 
-*With contributing writing from Shaun Wang and Tony Gabriel Silva*
+_With contributing writing from Shaun Wang and Tony Gabriel Silva_
 
 ---
 

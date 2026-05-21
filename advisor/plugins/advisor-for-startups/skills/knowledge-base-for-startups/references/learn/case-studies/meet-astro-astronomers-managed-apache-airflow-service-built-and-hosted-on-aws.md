@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/meet-astro-astronomers-managed
 title: "Meet Astro — Astronomer's managed Apache Airflow service built and hosted on AWS"
 ---
 
-# Meet Astro — Astronomer's managed Apache Airflow service built and hosted on AWS
+## Meet Astro — Astronomer's managed Apache Airflow service built and hosted on AWS
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/meet-astro-astronomers-managed-apache-airflow-service-built-and-hosted-on-aws)
 
@@ -35,7 +35,7 @@ With more than 350 employees and a globally distributed team, both Astronomer an
 
 The market's need for Astronomer products, as well as the company's potential for success, was evident early on. Viraj laughs as he shares a story about their early days. "We were all hands on deck for a proof-of-concept with a large gaming company. The company relied on Astronomer to orchestrate the flow of data for its biggest launch of the year. The morning after the launch, there were no support tickets," says Viraj. "And I thought, 'Oh no, did something go wrong?' Turns out, something went right. Everything worked. We were handling 100% of the data ingest that was coming from one of this company's biggest launches, and everything ran without a hitch."
 
-> *Why did Astronomer build its startup on AWS? "I can't say it was a decision. It was the obvious choice—AWS has been the cornerstone of our cloud strategy," says Paola. "As a baseline, the ubiquity of AWS services across countries and regions allows us to work with organizations around the world. It single-handedly unlocks our market."*
+> _Why did Astronomer build its startup on AWS? "I can't say it was a decision. It was the obvious choice—AWS has been the cornerstone of our cloud strategy," says Paola. "As a baseline, the ubiquity of AWS services across countries and regions allows us to work with organizations around the world. It single-handedly unlocks our market."_
 
 To meet the broadening needs of its customer base, Astronomer builds interfaces that allow data practitioners to get the most out of Airflow as they develop data pipelines and form a singular view of their ecosystem. Viraj explains: "We're merging data orchestration through any system you want—using whatever tools and services your team uses—with data lineage. Not only can you orchestrate data across all your systems, but you can see how that data moves."
 
@@ -51,11 +51,11 @@ As Astronomer grows, the company has scaled its AWS footprint to meet the needs 
 
 For startups looking to replicate their success, the Astronomer founding team agrees that it's critical to spend time with [early adopters of the product](https://www.forbes.com/sites/abdoriani/2020/08/06/how-to-identify-your-startup-early-adopters/?sh=49fdb851d0a7). This creates a tight feedback loop that improves your product early on, and often results in strong personal relationships that will guide you throughout the company-building journey.
 
-> *"Especially for early-stage startups, the people who adopt your product first are most likely to understand the problem you're trying to solve. Curate those relationships over time, because these customers have been thinking about your problem and using your solution as long as you have." – Viraj Parekh*
-
-> *"Ask a lot of questions — and put in the work. So much about taking a company through its early stages is about rolling up your sleeves, letting yourself iterate, and rallying a small team alongside you. As simple as it sounds, execution ultimately differentiates so many successful ventures." – Paola Peraza Calderon*
-
-> *"As your company grows, the list of things to do will never end. It's a real skill to learn how to identify what the high-priority items are on the list and focus on accomplishing those." – Pete DeJoy*
+> _"Especially for early-stage startups, the people who adopt your product first are most likely to understand the problem you're trying to solve. Curate those relationships over time, because these customers have been thinking about your problem and using your solution as long as you have." – Viraj Parekh_
+>
+> _"Ask a lot of questions — and put in the work. So much about taking a company through its early stages is about rolling up your sleeves, letting yourself iterate, and rallying a small team alongside you. As simple as it sounds, execution ultimately differentiates so many successful ventures." – Paola Peraza Calderon_
+>
+> _"As your company grows, the list of things to do will never end. It's a real skill to learn how to identify what the high-priority items are on the list and focus on accomplishing those." – Pete DeJoy_
 
 ## What's next for Astronomer?
 

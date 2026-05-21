@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/alloys-global-identity-decisio
 title: "Alloy's Global Identity Decisioning Platform, Built on AWS"
 ---
 
-# Alloy's Global Identity Decisioning Platform, Built on AWS
+## Alloy's Global Identity Decisioning Platform, Built on AWS
 
-> *Source: [AWS Startups](https://startups.aws/startups/learn/alloys-global-identity-decisioning-platform-built-on-aws)*
+> _Source: [AWS Startups](https://startups.aws/startups/learn/alloys-global-identity-decisioning-platform-built-on-aws)_
 
 Entrepreneurs know all about risk versus reward: short-term trade-offs, long-term gains, and some decisions so complex that solving one conflict raises another. This is particularly true in the financial industry, where success is built on choosing the right clients.
 
@@ -15,7 +15,7 @@ In 2015 they founded Alloy, a [unicorn](https://techcrunch.com/2021/09/30/alloy-
 
 Alloy combines the use of traditional data sources (such as credit scores) with newer, alternative data sources, such as cash flow data, to provide a complete and more accurate picture of each customer.
 
-> *"We tell you which aspects of a client's identity match, and which don't match, or match in one record source but not another, and here's an interesting flag that we should show you," explains Charles.*
+> _"We tell you which aspects of a client's identity match, and which don't match, or match in one record source but not another, and here's an interesting flag that we should show you," explains Charles._
 
 Effective identity decisioning helps companies to:
 
@@ -47,7 +47,7 @@ The specificity of what you can flag and let through helps Alloy serve a broad r
 
 Clients can use these features to instantaneously onboard customers who may have otherwise been sent to manual review or declined due to a lack of data or a mismatch between the data and the risks.
 
-> *"Our product lets you see the outcomes," explains Laura, "so you can easily see how you're optimizing for fraud mitigation or for conversion. We give you the results and you can spot where your performance is the best."*
+> _"Our product lets you see the outcomes," explains Laura, "so you can easily see how you're optimizing for fraud mitigation or for conversion. We give you the results and you can spot where your performance is the best."_
 
 Creating broader access to financial services, while making it safe and easy for the companies involved, is a [core component of Alloy's mission](https://www.alloy.com/about). "We have always taken our position in approving and denying people for essential financial services really seriously," explains Charles. "The core motivation behind our product is to make those experiences safe and easy to do."
 
@@ -57,11 +57,11 @@ One way Alloy is giving their customers an easy-to-use experience is by building
 
 For their cloud technology, Alloy is all-in on AWS. Whether that be their core PostgreSQL database that runs on [Amazon Aurora](https://aws.amazon.com/rds/aurora/); their compute, which runs their containerized applications on [Amazon Elastic Kubernetes Service (EKS)](https://aws.amazon.com/eks/); or [Amazon OpenSearch Service](https://aws.amazon.com/opensearch-service/), which Alloy relies on for log analytics and search. Beyond these fundamental technological components, the Alloy teams also use [Amazon ElastiCache](https://aws.amazon.com/elasticache/) for their caching needs and [Amazon Managed Workflows for Apache Airflow (Amazon MWAA)](https://aws.amazon.com/managed-workflows-for-apache-airflow/) to orchestrate their data pipelines. They also use [AWS machine learning and analytics](https://aws.amazon.com/machine-learning/) services to enhance their decisioning and monitoring services.
 
-> *"We joined very early with AWS. A lot of the products AWS offered made us stand out and made it easier for us to get off the ground, especially for providing security," says Charles.*
+> _"We joined very early with AWS. A lot of the products AWS offered made us stand out and made it easier for us to get off the ground, especially for providing security," says Charles._
 
 Alloy joined the [AWS Activate](https://aws.amazon.com/activate/) startup program through [Techstars](https://www.techstars.com/) which, "was essential to our growth in our first two years," said Charles. "Through the program, we didn't have to pay for server costs for a long time and AWS provided an experienced solutions architect to streamline our infrastructure in those earliest days."
 
-> *"Using AWS services makes it easier to optimize building your product instead of building all of the things that you think you have to build that are peripheral to it," says Charles. "That's the same thing we try to do for our clients—take things off their plate, and handle the things that are not core to their business, so they can focus on their core business objectives."*
+> _"Using AWS services makes it easier to optimize building your product instead of building all of the things that you think you have to build that are peripheral to it," says Charles. "That's the same thing we try to do for our clients—take things off their plate, and handle the things that are not core to their business, so they can focus on their core business objectives."_
 
 Strong collaboration, proactiveness, and openness between Alloy and their AWS account team has led to more effective solution implementation, accelerated progress on key initiatives, and support for launching new products. "AWS is always helping us assess how to optimize our tech stack, especially as we've launched new products like transaction monitoring, which required different scalability requirements than our original onboarding product," explains Charles.
 

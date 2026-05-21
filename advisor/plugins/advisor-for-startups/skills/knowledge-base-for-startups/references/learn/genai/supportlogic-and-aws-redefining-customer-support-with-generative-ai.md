@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/supportlogic-and-aws-redefinin
 title: "SupportLogic and AWS: Redefining customer support with generative AI"
 ---
 
-# SupportLogic and AWS: Redefining customer support with generative AI
+## SupportLogic and AWS: Redefining customer support with generative AI
 
 Customer support teams face growing complexity. They must monitor multiple channels, guide customers to solutions, and prevent issues from escalating – all while delivering exceptional service. [SupportLogic](https://www.supportlogic.com/) helps organizations capture and understand these signals in real time; predicting risks and improving customer experiences through AI-powered insights.
 
@@ -23,4 +23,4 @@ Discover how the collaboration has unlocked new opportunities for SupportLogic a
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/supportlogic-and-aws-redefining-customer-support-with-generative-ai)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/supportlogic-and-aws-redefining-customer-support-with-generative-ai)_

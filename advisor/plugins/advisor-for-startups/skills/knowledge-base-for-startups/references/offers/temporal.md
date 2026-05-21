@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/offers/temporal
 title: "$1,500 in Free Credits for AWS Startups"
 ---
 
-# $1,500 in Free Credits for AWS Startups
+## $1,500 in Free Credits for AWS Startups
 
 ### Estimated offer value: $1,500.00
 

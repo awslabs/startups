@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/reimagining-search-perplexity-
 title: "Reimagining search: Perplexity drives productivity with generative AI-powered answer engine"
 ---
 
-# Reimagining search: Perplexity drives productivity with generative AI-powered answer engine
+## Reimagining search: Perplexity drives productivity with generative AI-powered answer engine
 
 Perplexity provides users with a single synthesized answer to their queries, based on real-time information.
 
@@ -85,4 +85,4 @@ Marcos is an AWS Sr. Machine Learning Solutions Architect based in Florida, US. 
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/reimagining-search-perplexity-drives-productivity-with-generative-ai-powered-answer-engine)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/reimagining-search-perplexity-drives-productivity-with-generative-ai-powered-answer-engine)_

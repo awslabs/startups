@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/law-on-earth-delivering-afford
 title: "Delivering affordable legal services from the cloud"
 ---
 
-# Delivering affordable legal services from the cloud
+## Delivering affordable legal services from the cloud
 
-*Meet Law on Earth, a legal justice startup, proving what's possible on AWS.*
+_Meet Law on Earth, a legal justice startup, proving what's possible on AWS._
 
 ---
 
@@ -81,4 +81,4 @@ Amazon ElastiCache is a fully managed, in-memory caching service supporting flex
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/law-on-earth-delivering-affordable-legal-services-from-the-cloud)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/law-on-earth-delivering-affordable-legal-services-from-the-cloud)_

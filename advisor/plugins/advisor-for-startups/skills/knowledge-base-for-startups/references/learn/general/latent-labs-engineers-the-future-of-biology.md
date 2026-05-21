@@ -3,13 +3,13 @@ source_url: https://aws.amazon.com/startups/learn/latent-labs-engineers-the-futu
 title: "Mastering the machine: Latent Labs engineers the future of biology"
 ---
 
-# Mastering the machine: Latent Labs engineers the future of biology
+## Mastering the machine: Latent Labs engineers the future of biology
 
 > Latent Labs is breaking conventions of the past, offering a generative-AI powered approach to protein design that sidesteps and augments lab experiments.
 
 ---
 
-In Julien Offray de La Mettrie's 18th century work, *l'homme machine*, the philosopher likened the human body to a complex machine. Decades later, pioneering biologists and biophysicists like Thomas Huxley and Francis Crick drew comparable analogies. Today, that mechanistic view of biology shapes the operations, mission, and future ambitions of [Latent Labs](https://www.latentlabs.com/). "Biology underpins humanity; all of our bodies are made up of its building blocks," says Simon Kohl, founder and CEO. This field of science, he explains, is "a system that computes," and our cells, like "mini-computers."
+In Julien Offray de La Mettrie's 18th century work, _l'homme machine_, the philosopher likened the human body to a complex machine. Decades later, pioneering biologists and biophysicists like Thomas Huxley and Francis Crick drew comparable analogies. Today, that mechanistic view of biology shapes the operations, mission, and future ambitions of [Latent Labs](https://www.latentlabs.com/). "Biology underpins humanity; all of our bodies are made up of its building blocks," says Simon Kohl, founder and CEO. This field of science, he explains, is "a system that computes," and our cells, like "mini-computers."
 
 Early figures channeled their philosophies into their work, laying the groundwork for the development of rigorous, testable sciences. In parallel we've seen an evolution of machines themselves, from industrial mechanisms to, more recently, powerful artificial intelligence. Latent Labs is building on this, taking the age-old analogy of biology as machinery into a new era. By harnessing generative AI, the startup is helping scientists make biology "programmable," says Kohl, and ultimately "computationally master biology, in order to advance therapeutics research."
 
@@ -51,4 +51,4 @@ Like AWS, Latent Labs believes that trust and customer-centricity underpin innov
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/latent-labs-engineers-the-future-of-biology)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/latent-labs-engineers-the-future-of-biology)_

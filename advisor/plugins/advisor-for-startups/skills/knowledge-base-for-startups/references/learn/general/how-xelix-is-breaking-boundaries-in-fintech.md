@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/how-xelix-is-breaking-boundari
 title: "Riding the AI Wave: How Xelix is Breaking Boundaries in Fintech"
 ---
 
-# Riding the AI Wave: How Xelix is Breaking Boundaries in Fintech
+## Riding the AI Wave: How Xelix is Breaking Boundaries in Fintech
 
-*AWS Startups Customer Story*
+_AWS Startups Customer Story_
 
 ## Overview
 
@@ -55,4 +55,4 @@ Xelix is still embracing the AI wave, working with AWS to enhance and grow the r
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-xelix-is-breaking-boundaries-in-fintech)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-xelix-is-breaking-boundaries-in-fintech)_

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/evolutionary-architectures-ser
 title: "Evolutionary architectures series: Part 2"
 ---
 
-# Evolutionary architectures series: Part 2
+## Evolutionary architectures series: Part 2
 
-> *"I think we may be onto something."*
+> _"I think we may be onto something."_
 
 "Evolutionary Architectures" is a four-part blog series that shows how solution designs and decisions evolve as companies go through the different stages of the [startups lifecycle](https://www.investopedia.com/articles/personal-finance/102015/series-b-c-funding-what-it-all-means-and-how-it-works.asp). In this series, we follow the aptly named Example Startup whose idea is to create a "fantasy stock market" application, similar to fantasy sports leagues. They envision holding four "tournaments" over the course of a year.
 
@@ -48,7 +48,7 @@ The team is busy experimenting with ideas, implementing new technology, and lear
 
 The [AWS Activate](https://aws.amazon.com/activate/) credits helped with the AWS cost, but the team is growing and other expenses start piling up as well. The initial bootstrap funds are near depletion, gradually limiting the team's ability to experiment. It is time to start thinking about raising some capital. The founders have been getting ready for this moment for some time, with a deck almost ready. This is not something they have prior experience with, nor the contacts that would be able to help. They do have AWS on their side. The AWS team facilitates conversations with the Business Development teams, who are happy to help with advice and introductions to investors and venture capital firms. Exciting times are ahead.
 
-*Check out the [first blog](/startups/learn/evolutionary-architectures-series-part-1) in the Evolutionary Architectures series.*
+_Check out the [first blog](/startups/learn/evolutionary-architectures-series-part-1) in the Evolutionary Architectures series._
 
 ---
 

@@ -3,19 +3,19 @@ source_url: https://aws.amazon.com/startups/learn/building-your-frontend
 title: "Week 1: Building your frontend"
 ---
 
-# Week 1: Building your frontend
+## Week 1: Building your frontend
 
 Front-end development is the face of your product: the first impression that can make or break user experience. Join us as we dive into the fast-paced world of front-end development, where the right choices can transform a good product into a great one.
 
 ## Course details
 
-| # | Lesson | Duration |
-|---|--------|----------|
-| 1 | Introduction: Building Your Front End | 3 mins |
-| 2 | Evaluating Front End Frameworks | 11 mins |
-| 3 | Best Practices and Common Pitfalls | 15 mins |
-| 4 | Deliver Your MVP and Iterate | 15 mins |
-| 5 | Key Takeaways | 2 mins |
+| # | Lesson                                | Duration |
+| - | ------------------------------------- | -------- |
+| 1 | Introduction: Building Your Front End | 3 mins   |
+| 2 | Evaluating Front End Frameworks       | 11 mins  |
+| 3 | Best Practices and Common Pitfalls    | 15 mins  |
+| 4 | Deliver Your MVP and Iterate          | 15 mins  |
+| 5 | Key Takeaways                         | 2 mins   |
 
 ## Related learning paths
 

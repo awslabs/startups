@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/scale-your-startup-smarter-ess
 title: "Scale your startup smarter: Essential generative AI use cases"
 ---
 
-# Scale your startup smarter: Essential generative AI use cases
+## Scale your startup smarter: Essential generative AI use cases
 
 Generative AI can create significant business value for startups of every size and stage, including, but not limited to:
 

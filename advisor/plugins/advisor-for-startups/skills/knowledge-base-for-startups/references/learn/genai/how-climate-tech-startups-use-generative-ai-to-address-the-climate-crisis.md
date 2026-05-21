@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-climate-tech-startups-use-
 title: "How Climate Tech Startups Use Generative AI to Address the Climate Crisis"
 ---
 
-# How Climate Tech Startups Use Generative AI to Address the Climate Crisis
+## How Climate Tech Startups Use Generative AI to Address the Climate Crisis
 
 > Source: [AWS Startups](https://startups.aws/startups/learn/how-climate-tech-startups-use-generative-ai-to-address-the-climate-crisis)
 
@@ -108,4 +108,3 @@ Before she was a founder, Lisbeth worked on climate policy as an energy/environm
 ### Benoit de Chateauvieux
 
 Benoit de Chateauvieux is a Startup Solutions Architect at AWS, based in Montreal, Canada. As a former CTO, he enjoys helping startups build great and sustainable products using the cloud. Outside of work, you'll find Benoit in canoe-camping expeditions, paddling across Canadian rivers.
-

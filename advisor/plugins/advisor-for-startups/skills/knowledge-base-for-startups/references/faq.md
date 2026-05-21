@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/faq
 title: "AWS Startups & Activate FAQ"
 ---
 
-# AWS Startups & Activate FAQ
+## AWS Startups & Activate FAQ
 
 ## Frequently asked questions
 
@@ -69,7 +69,7 @@ Builder ID. AWS Builder ID is a personal profile for every individual that
 builds on AWS. It provides access to tools and builder services on AWS, plus it
 stays with you as you move between jobs, schools, or other organizations.
 
-**Step 2: **Once you verify your AWS Builder ID via email, you’ll be directed to
+**Step 2:**Once you verify your AWS Builder ID via email, you’ll be directed to
 complete your one-time AWS Activate membership profile. This help us better
 understand the needs of you and your startup, allows you to save your progress
 through the application steps, and it helps us personalize your experience.
@@ -103,8 +103,7 @@ automatically applied to your AWS account. No further action is required on your
 part
 
 For step-by-step instructions on how to
-apply for Activate Credits, see our [AWS Activate
-Credits Application Guide](https://aws.amazon.com/startups/learn/applying-for-aws-activate-credits-a-step-by-step-guide).
+apply for Activate Credits, see our [AWS Activate Credits Application Guide](https://aws.amazon.com/startups/learn/applying-for-aws-activate-credits-a-step-by-step-guide).
 
 ### Do I need an AWS account to apply for AWS Activate Credits?
 
@@ -113,25 +112,22 @@ you need an AWS account linked with your BuilderID to apply for AWS Activate
 Credits. To link your BuilderID, you’ll need to take the following steps: 1)
 create an AWS Builder ID using your personal email address. 2) complete your
 AWS Activate profile, and 3) either create a new AWS account or link your
-existing AWS account to your AWS Builder ID in [AWS Management
-Console](https://signin.aws.amazon.com/signup?request_type=register).
+existing AWS account to your AWS Builder ID in [AWS Management Console](https://signin.aws.amazon.com/signup?request_type=register).
 Validate your account to confirm your account is correct and properly linked to
-your AWS Builder ID. You can learn more in the [Profile and
-Membership FAQs.](https://aws.amazon.com/startups/faq#Profile%20and%20membership)
+your AWS Builder ID. You can learn more in the [Profile and Membership FAQs.](https://aws.amazon.com/startups/faq#Profile%20and%20membership)
 
 Here are a few tips for linking your
 BuilderID and AWS account:
 
 - Administrator permissions are
-required for linking accounts. Root account users have admin access. Non-root
-users can gain administrator-level permission by [creating your
-first IAM Admin User and Group](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html).
+  required for linking accounts. Root account users have admin access. Non-root
+  users can gain administrator-level permission by [creating your first IAM Admin User and Group](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html).
 
 - Only one Builder ID can be linked
-per AWS account, so you may need to override existing links.
+  per AWS account, so you may need to override existing links.
 
 - If your account is inactive, contact
-[AWS Customer Support](https://aws.amazon.com/contact-us/).
+  [AWS Customer Support](https://aws.amazon.com/contact-us/).
 
 ### I chose a wrong AWS Account while submitting my Activate Credits application or entered the wrong information in my application e.g. wrong email address. Can I change my application now?
 
@@ -221,11 +217,11 @@ Yes, you are still eligible for AWS Activate Credits. AWS Activate Credits issue
 
 Benefits of AWS Activate Credits include:
 
-- **Build on AWS with AWS Activate Credits: **if approved, AWS Activate Credits will be added to your AWS Account and will automatically apply towards the cost of AWS Eligible Services. You can check your credit balance in your [AWS Billing and Cost Management Console](https://console.aws.amazon.com/billing/home#/credits). AWS Activate Credits can also be used for third-party models on Amazon Bedrock.
-- **Explore other startups and promote your startup at Startup Showcase:** AWS Activate members that have received credit offers can promote their startup on [Startup Showcase](https://aws.amazon.com/startups/showcase), a directory designed for AWS startup customers. If you’ve built and launched a product on AWS, create a page to promote your  offerings to potential customers, investors, and partners.
+- **Build on AWS with AWS Activate Credits:**if approved, AWS Activate Credits will be added to your AWS Account and will automatically apply towards the cost of AWS Eligible Services. You can check your credit balance in your [AWS Billing and Cost Management Console](https://console.aws.amazon.com/billing/home#/credits). AWS Activate Credits can also be used for third-party models on Amazon Bedrock.
+- **Explore other startups and promote your startup at Startup Showcase:** AWS Activate members that have received credit offers can promote their startup on [Startup Showcase](https://aws.amazon.com/startups/showcase), a directory designed for AWS startup customers. If you’ve built and launched a product on AWS, create a page to promote your offerings to potential customers, investors, and partners.
 - $1f
 - **Exclusive offers:** as you start building using your AWS Activate Credits, you can get ahead with Activate Exclusive Offers from organizations such as ZenDesk, Stripe, DataDog, Brex, HubSpot, and Chargebee.
-- **Pre-built infrastructure templates: **AWS Activate Credit approval also allows you to explore solutions with [Build](https://aws.amazon.com/startups/build), a collection of cloud templates and integration guides curated by AWS experts to tackle the most common industry- and product-specific use cases.
+- **Pre-built infrastructure templates:**AWS Activate Credit approval also allows you to explore solutions with [Build](https://aws.amazon.com/startups/build), a collection of cloud templates and integration guides curated by AWS experts to tackle the most common industry- and product-specific use cases.
 
 ### What can I use AWS Activate Credits for?
 
@@ -239,7 +235,7 @@ AWS Activate Credits cannot be applied to any fees or charges for Amazon Mechani
 
 ### How do I use my AWS Activate Credits?
 
-No action is required from you to activate your AWS Activate Credits. AWS Activate Credits offset charges for AWS EligibleServices incurred during or following the billing cycle in which you receive the credits. You can view, track, and monitor your AWS Activate Credits in the  [AWS Billing and Cost Management Console](https://console.aws.amazon.com/billing/home?#/account).
+No action is required from you to activate your AWS Activate Credits. AWS Activate Credits offset charges for AWS EligibleServices incurred during or following the billing cycle in which you receive the credits. You can view, track, and monitor your AWS Activate Credits in the [AWS Billing and Cost Management Console](https://console.aws.amazon.com/billing/home?#/account).
 
 ### Do AWS Activate Credits expire?
 
@@ -285,7 +281,7 @@ Unfortunately, the AWS Activate team is unable to apply more AWS Activate Credit
 
 ### Can I transfer or sell my AWS Activate Credits?
 
-No. AWS Activate Credits cannot be transferred into another AWS account. You may not sell, license, rent, or transfer AWS Activate Credits. If you violate this policy, your AWS Activate Credits will be revoked. For more information, please refer to the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/awscredits/) and the [AWS Activate Terms & Conditions](https://aws.amazon.com/activate/terms/).  If you are looking for information on how to share credits within your AWS accounts, please refer to [Applying AWS Credits](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/useconsolidatedbilling-credits.html). For customers in India, please see [Consolidated Billing in India](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/useconsolidatedbilling-India.html).
+No. AWS Activate Credits cannot be transferred into another AWS account. You may not sell, license, rent, or transfer AWS Activate Credits. If you violate this policy, your AWS Activate Credits will be revoked. For more information, please refer to the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/awscredits/) and the [AWS Activate Terms & Conditions](https://aws.amazon.com/activate/terms/). If you are looking for information on how to share credits within your AWS accounts, please refer to [Applying AWS Credits](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/useconsolidatedbilling-credits.html). For customers in India, please see [Consolidated Billing in India](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/useconsolidatedbilling-India.html).
 
 ### Can I share my AWS Activate Credits with associated accounts? How are AWS Activate Credits shared among parent and child accounts?
 
@@ -457,7 +453,7 @@ Effective April 11, 2023, approved AWS Activate Credit applications receive a si
 - AWS Business Support Plans _(deprecated December 1, 2025)_
 - AWS Business Support+ _(new plan as of December 1, 2025)_
 
-**  Key Dates:**
+**Key Dates:**
 
 - December 1, 2025: AWS Developer Support and AWS Business Support no longer available for new subscriptions
 - Transition Period: Current customers have 13 months to migrate to AWS Business Support+
@@ -536,8 +532,7 @@ attend” to request a spot for the event.
 **Step
 2:**
 Log in to your existing account, or sign up by: 1) creating a Builder ID, and 2) setting up your Activate
-profile (See [Profile and
-Membership FAQs](https://aws.amazon.com/startups/faq#Profile%20and%20Membership)
+profile (See [Profile and Membership FAQs](https://aws.amazon.com/startups/faq#Profile%20and%20Membership)
 for support).
 
 **Step
@@ -587,8 +582,7 @@ to join the streaming website.
 ### How do I check in for in-person events?
 
 Before
-arriving at the event, access your [AWS Activate
-profile](https://aws.amazon.com/startups/profile) to
+arriving at the event, access your [AWS Activate profile](https://aws.amazon.com/startups/profile) to
 locate your unique event QR code. You can also find your QR code in the event
 confirmation and reminder emails. When you arrive, present this QR code at the
 registration desk for quick check-in.
@@ -596,8 +590,7 @@ registration desk for quick check-in.
 ### How do I manage my event registrations?
 
 Navigate
-to the "Your bookings" tab on your [events
-list page](https://aws.amazon.com/startups/events)to manage all your registrations. From there,
+to the "Your bookings" tab on your [events list page](https://aws.amazon.com/startups/events)to manage all your registrations. From there,
 you can cancel registrations, add events to your calendar, or share events with
 colleagues and friends.
 
@@ -645,26 +638,26 @@ Upload logo
 image (120x44 px)
 
 - Upload a cover
-image (1728x960 px)
+  image (1728x960 px)
 - Enter startup
-name
+  name
 - Enter startup
-name
+  name
 - Enter company
-description
+  description
 - Enter date
-founded
+  founded
 - Enter country
 - Select
-industries
+  industries
 - Select
-technologies used
+  technologies used
 - Enter company
-website
+  website
 - Add product
-section
+  section
 - Enter product
-images (420x420 px) with titles and descriptions
+  images (420x420 px) with titles and descriptions
 
 **Step
 4:**
@@ -708,6 +701,6 @@ If you’re not seeing a template you need, please let us know through the reque
 
 Kiro Startup Credits provide eligible startups with promotional credits specifically for accessing Kiro Pro+. Kiro is an agentic AI development environment that turns your ideas into structured specifications, designs, and tasks before writing code. Startups can apply for [Kiro Startup Credits](https://aws.amazon.com/startups/credits/kiro).
 
-[](https://aws.amazon.com/startups/credits/kiro)**Eligibility requirements:** To apply, startups must be less than 10 years old, have a working website, be pre-Series B, and cannot have active AWS Activate Credits at the time of application. AWS Activate Credits can also be used for Kiro Pro+, so if you already have active Activate Credits, you can use them towards Kiro. This promotion is available in most countries globally, except startups in Argentina, Brazil, France, Germany, Italy, Mexico, Russia, Spain, Cuba, Iran, North Korea, Syria, and the region of Crimea.
+[](https://aws.amazon.com/startups/credits/kiro) **Eligibility requirements:** To apply, startups must be less than 10 years old, have a working website, be pre-Series B, and cannot have active AWS Activate Credits at the time of application. AWS Activate Credits can also be used for Kiro Pro+, so if you already have active Activate Credits, you can use them towards Kiro. This promotion is available in most countries globally, except startups in Argentina, Brazil, France, Germany, Italy, Mexico, Russia, Spain, Cuba, Iran, North Korea, Syria, and the region of Crimea.
 
-**To use your Kiro Startup Credits:** Your organization needs to conduct billing through AWS IAM Identity Center. Team members should cancel any existing paid individual Kiro accounts, sign out completely, and sign back in with their organization identity. Otherwise, they may continue to be billed individually instead of using your startup credits. We've created a[ step-by-step guide](https://kiro.dev/startups/onboarding/) to help you connect your Kiro Startup Credits to your organization's billing and set up team access through AWS IAM Identity Center.
+**To use your Kiro Startup Credits:** Your organization needs to conduct billing through AWS IAM Identity Center. Team members should cancel any existing paid individual Kiro accounts, sign out completely, and sign back in with their organization identity. Otherwise, they may continue to be billed individually instead of using your startup credits. We've created a[step-by-step guide](https://kiro.dev/startups/onboarding/) to help you connect your Kiro Startup Credits to your organization's billing and set up team access through AWS IAM Identity Center.

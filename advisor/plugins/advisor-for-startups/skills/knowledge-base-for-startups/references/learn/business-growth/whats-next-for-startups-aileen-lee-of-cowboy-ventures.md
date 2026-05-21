@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/whats-next-for-startups-aileen
 title: "What's next for startups: Aileen Lee of Cowboy Ventures"
 ---
 
-# What's next for startups: Aileen Lee of Cowboy Ventures
+## What's next for startups: Aileen Lee of Cowboy Ventures
 
 > [Learn](/startups/learn) > What's next for startups: Aileen Lee of Cowboy Ventures
 
@@ -13,4 +13,4 @@ This conversation with Aileen Lee, Founder & Managing Partner of Cowboy Ventures
 
 ---
 
-*This page features a video resource. Visit [AWS Startups](https://startups.aws/startups/learn/whats-next-for-startups-aileen-lee-of-cowboy-ventures) to watch the full video.*
+_This page features a video resource. Visit [AWS Startups](https://startups.aws/startups/learn/whats-next-for-startups-aileen-lee-of-cowboy-ventures) to watch the full video._

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/tamarind-bio-is-driving-ai-ass
 title: "Tamarind Bio is driving AI-assisted drug discovery with AWS"
 ---
 
-# Tamarind Bio is driving AI-assisted drug discovery with AWS
+## Tamarind Bio is driving AI-assisted drug discovery with AWS
 
 Research and development (R&D) teams and life scientists dedicate their careers to discovering treatments to some of the most complicated diseases facing humankind. Given the complexity of human biology, developing these breakthrough drugs is a costly, multi-year endeavor. AI now holds the keys to speeding up life-saving medical research at scale—but only if it's accessible to the experts pushing those projects forward.
 

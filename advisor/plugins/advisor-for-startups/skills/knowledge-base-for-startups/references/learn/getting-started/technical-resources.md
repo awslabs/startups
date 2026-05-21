@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/technical-resources
 title: "Technical Resources"
 ---
 
-# Technical Resources
+## Technical Resources
 
 > Need more technical know-how to take your startup to the next level? Explore topics startups are interested in most, like AI/ML, security, data, and more!
 
@@ -90,4 +90,3 @@ title: "Technical Resources"
 - [AI, analytics & integration for startups scale and maturity](/startups/learn/ai-analytics-integration-startups-scale-and-maturity) - Discover how AWS services can amplify your startup's growth through AI, analytics, and application integration, for enhanced customer insights and scalability.
 
 - [Next generation data management for clinical trials & research built on AWS](/startups/learn/next-generation-data-management-for-clinical-trials-research-built-on-aws) - Precision Digital Health is revolutionizing data management in research and development and life sciences.
-

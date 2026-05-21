@@ -3,11 +3,11 @@ source_url: https://aws.amazon.com/startups/learn/what-amazon-cto-werner-vogels-
 title: "What Amazon CTO Werner Vogels' predictions for 2024 mean for startups"
 ---
 
-# What Amazon CTO Werner Vogels' predictions for 2024 mean for startups
+## What Amazon CTO Werner Vogels' predictions for 2024 mean for startups
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/what-amazon-cto-werner-vogels-predictions-for-2024-mean-for-startups)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/what-amazon-cto-werner-vogels-predictions-for-2024-mean-for-startups)_
 
-For the past two years, we've published a startup-specific take on Amazon CTO Werner Vogels' yearly predictions for technology (check out [2023](/startups/learn/what-amazon-cto-werner-vogels-predictions-for-2023-mean-for-startups) and [2022](/startups/learn/what-amazon-cto-werner-vogels-predictions-for-2022-mean-for-startups)). Werner traveled the world to speak with cutting edge startups and technology companies in [*Now Go Build*](https://www.youtube.com/playlist?list=PLhr1KZpdzukdIpgzSSCkNsnRAwDz6Xx5B) (2018 - 2022). From this and his work as CTO, he creates a list of technology predictions for the following year and beyond. In past years, these predictions have included how modernized supply chains will drive innovation (2022), the impact of artificial intelligence (AI) tools on developers (2021), and how cloud computing at the edge will drive new levels of internet of things (IoT) integration with devices all around us (2020).
+For the past two years, we've published a startup-specific take on Amazon CTO Werner Vogels' yearly predictions for technology (check out [2023](/startups/learn/what-amazon-cto-werner-vogels-predictions-for-2023-mean-for-startups) and [2022](/startups/learn/what-amazon-cto-werner-vogels-predictions-for-2022-mean-for-startups)). Werner traveled the world to speak with cutting edge startups and technology companies in [_Now Go Build_](https://www.youtube.com/playlist?list=PLhr1KZpdzukdIpgzSSCkNsnRAwDz6Xx5B) (2018 - 2022). From this and his work as CTO, he creates a list of technology predictions for the following year and beyond. In past years, these predictions have included how modernized supply chains will drive innovation (2022), the impact of artificial intelligence (AI) tools on developers (2021), and how cloud computing at the edge will drive new levels of internet of things (IoT) integration with devices all around us (2020).
 
 For 2024, [Werner's four predictions](https://www.allthingsdistributed.com/2023/11/tech-predictions-for-2024-and-beyond.html) build on both prior years' predictions, but also introduce new trends impacting opportunities for startups. The 2024 predictions:
 
@@ -50,7 +50,7 @@ For startups, I think this prediction highlights two possibilities, 1) how these
 
 ## 4. Education evolves to match the speed of tech innovation
 
-Werner's final prediction for 2024 is how the pace of innovation is accelerating the pace of evolution of education. Growing up in the United States, I recall having textbooks that were often dated from the time my parents were in school. Thankfully history, the English language, and mathematics don't change often enough to require new textbooks every few years. But the world of technology moves a *lot* faster, and teaching people with 30-year-old textbooks won't prepare builders for the world of today.
+Werner's final prediction for 2024 is how the pace of innovation is accelerating the pace of evolution of education. Growing up in the United States, I recall having textbooks that were often dated from the time my parents were in school. Thankfully history, the English language, and mathematics don't change often enough to require new textbooks every few years. But the world of technology moves a _lot_ faster, and teaching people with 30-year-old textbooks won't prepare builders for the world of today.
 
 Werner's prediction talks about how newer models of learning and training have helped enterprises and small companies learn the latest and greatest and upskill/reskill existing workers with newer technology. "None of this means that traditional degrees are going away. This is not an 'either/or' situation—it's about choice."
 

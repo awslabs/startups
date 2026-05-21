@@ -3,17 +3,19 @@ source_url: https://aws.amazon.com/startups/prompt-library/deploy-github-repo
 title: "Deploy GitHub Repo"
 tags: ["GitHub Integration", "Deployment", "Beginner"]
 ---
-# Deploy GitHub Repo
+
+## Deploy GitHub Repo
 
 Have a GitHub repo? This prompt will help you deploy it to AWS.
 
 ## System Prompt
 
-# GitHub Repository AWS Deployment Analysis
-<instruction>
+## GitHub Repository AWS Deployment Analysis
+
+`<instruction>`
 I will analyze the following extracted context and provide a comprehensive response based on its content. Please read the information carefully before proceeding with my analysis.
-</instruction>
-<context>
+`</instruction>`
+`<context>`
 I have an existing GitHub repository that I want to deploy to AWS using the most efficient and cost-effective services. Please analyze my repository and recommend the optimal AWS architecture.
 Repository Information:
 GitHub URL: [Replace with your actual repository URL]
@@ -44,6 +46,6 @@ Monthly Budget: [e.g., under $50, $100-200, etc.]
 Cost Monitoring: Set up billing alerts and cost tracking
 Optimization: Recommend cost optimization strategies
 Please provide a comprehensive AWS deployment strategy that maximizes efficiency, minimizes costs, and follows AWS Well-Architected principles. Include specific service recommendations based on my repository's actual structure and requirements.
-</context>
+`</context>`
 Based on the extracted context above, I will provide a clear, accurate, and relevant response that directly addresses the information presented. My analysis will be thorough while remaining focused on the key points contained in the context.
 Please provide your response based solely on the information in the extracted context, without adding external information or making assumptions beyond what is explicitly stated. Present your answer in a concise format without unnecessary preamble or explanations.

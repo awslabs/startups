@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-application-specific-
 title: "Building application-specific blockchains with AWS on Avalanche"
 ---
 
-# Building application-specific blockchains with AWS on Avalanche
+## Building application-specific blockchains with AWS on Avalanche
 
 > Unlock the potential of application-specific blockchains on Avalanche with AWS. Learn how Ava Labs drives mainstream growth and blockchain innovation.
 
@@ -31,7 +31,7 @@ John explains, "Our mission is not just to play in the world of crypto; we want 
 
 Digitized assets also remove geographical and systemic barriers to access, such as the third-party incumbents who own traditional finance processes.
 
-> *"It's time to democratize finance entirely," says Gün. "You, me, and everybody else can be on an equal footing with the bankers. Scales differ, but the opportunities open to us must be identical."*
+> _"It's time to democratize finance entirely," says Gün. "You, me, and everybody else can be on an equal footing with the bankers. Scales differ, but the opportunities open to us must be identical."_
 
 ## Blazing a trail in web3 with novel blockchain infrastructure
 
@@ -41,7 +41,7 @@ Launched in September 2020, Avalanche started a new era for blockchains with nea
 - **Adaptability.** Avalanche allows users to create application-specific blockchains, called "Subnets." Subnets are customizable and improve the speed and scalability of decentralized applications ("dApps") hosted on the blockchain.
 - **Scalability.** A blockchain platform on which others can build needs to support thousands of transactions per second and have rapid finality.
 
-> *"Instead of a single chain to rule them all, Avalanche is more like an umbrella where anyone can create their own chain," says Gün. "These chains isolate activity away from the main network: a load spike on my chain shall not affect the performance of your chain, nor will my fee activity or congestion affect your chain."*
+> _"Instead of a single chain to rule them all, Avalanche is more like an umbrella where anyone can create their own chain," says Gün. "These chains isolate activity away from the main network: a load spike on my chain shall not affect the performance of your chain, nor will my fee activity or congestion affect your chain."_
 
 The critical technology behind Subnets is the Avalanche consensus protocol. A consensus protocol ensures the digital ledger is constructed in an orderly fashion and that the nodes sustaining the ledger agree on its state.
 
@@ -61,7 +61,7 @@ To support its technology, Ava Labs built a serverless architecture and is all-i
 
 Avalanche uses AWS solutions such as [Amazon Elastic Compute Cloud (Amazon EC2)](https://aws.amazon.com/ec2/) to deliver consistent millisecond performance in order to confirm transactions instantly and process thousands of transactions per second.
 
-> *"It has been a huge, huge boon to all of our developers to be able to spin up nodes on the fly, spin up test networks on the fly, using AWS," says Gün.*
+> _"It has been a huge, huge boon to all of our developers to be able to spin up nodes on the fly, spin up test networks on the fly, using AWS," says Gün._
 
 He continues, "Our processes for spinning up Subnets relies on dynamically-provisioned AWS instances so that people can easily, quickly launch their own chain in a couple of clicks." With AWS global footprint, Avalanche is able to launch customized blockchains, private and public, in seconds to scale with demand.
 
@@ -73,7 +73,7 @@ As a result of AWS' [global infrastructure](https://aws.amazon.com/about-aws/glo
 
 Ava Labs plans to add subnet deployment as a managed service to the AWS Marketplace in 2023.
 
-> *John explains, "AWS is so valuable as it streamlines developers being able to go from zero to in-production with dedicated infrastructure. This is especially important to early stage and startup Web3 projects who really benefit from that blockchain-as-a-service model."*
+> _John explains, "AWS is so valuable as it streamlines developers being able to go from zero to in-production with dedicated infrastructure. This is especially important to early stage and startup Web3 projects who really benefit from that blockchain-as-a-service model."_
 
 ## Building the future of web3 with Ava Labs and AWS
 
@@ -87,7 +87,7 @@ These events give web3 developers and researchers the opportunity to learn from 
 
 To developers in web3, Gün advises "Part of our success story was to keep the vision incredibly broad, instead of specializing, and to ensure what we are doing ties into the societal problems of the day."
 
-> *"Ventures can succeed and fail. At the end of the day, you want to go home and say, 'I worked on something meaningful today,'" says Gün. "If you tackle something of importance to people and remain true to the things that you know to be good for society at large, you will be fulfilled."*
+> _"Ventures can succeed and fail. At the end of the day, you want to go home and say, 'I worked on something meaningful today,'" says Gün. "If you tackle something of importance to people and remain true to the things that you know to be good for society at large, you will be fulfilled."_
 
 ---
 
@@ -111,4 +111,4 @@ Shai Perednik is a global leader in web3 and blockchain technology with 5.5yrs a
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/building-application-specific-blockchains-with-aws-on-avalanche)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/building-application-specific-blockchains-with-aws-on-avalanche)_

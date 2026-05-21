@@ -3,13 +3,13 @@ source_url: https://aws.amazon.com/startups/learn/technology-that-teaches-empath
 title: "Technology that teaches empathy? How mpathic uses AI to help us listen to each other"
 ---
 
-# Technology that teaches empathy? How mpathic uses AI to help us listen to each other
+## Technology that teaches empathy? How mpathic uses AI to help us listen to each other
 
 ---
 
 On a basic human level, we want to be heard. We want to connect with others, and we want to be understood. Unfortunately, we're often faced with many things competing for our attention, which makes us bad listeners.
 
-Active listening is a learned behavior and not easy to master. But what if artificial intelligence (AI) could augment our ability to *really* listen and truly relate to others? What if technology could draw upon our collective lived experiences and help us be more human to each other?
+Active listening is a learned behavior and not easy to master. But what if artificial intelligence (AI) could augment our ability to _really_ listen and truly relate to others? What if technology could draw upon our collective lived experiences and help us be more human to each other?
 
 These are the questions Dr. Grin Lord, clinical psychologist and founder of conversation analytics company [mpathic](https://mpathic.ai/), has spent the last 15 years chasing. During her research, Grin and the team at mpathic have identified trust-building words, phrases, and communication behaviors and modeled them using AI.
 

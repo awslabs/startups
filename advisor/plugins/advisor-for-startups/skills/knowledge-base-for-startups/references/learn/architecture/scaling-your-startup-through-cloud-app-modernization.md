@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/scaling-your-startup-through-c
 title: "Scaling your startup through cloud app modernization"
 ---
 
-# Scaling your startup through cloud app modernization
+## Scaling your startup through cloud app modernization
 
 Startups often face the challenge of scaling applications as their customer base grows and demands increase. A key benefit of modernizing your cloud infrastructure is the ability to scale your applications quickly without the constraints of traditional, on-premise systems.
 
@@ -228,4 +228,4 @@ By working with [AWS's dedicated network of startup partners](https://aws.amazon
 
 **Author:** Majid Shokrolahi
 
-*Majid is a Senior Solutions Architect at AWS, helping Startups to innovate and build their solutions on the AWS platform. He is passionate about Containers, Gen AI, Analytics and the Startup ecosystem.*
+_Majid is a Senior Solutions Architect at AWS, helping Startups to innovate and build their solutions on the AWS platform. He is passionate about Containers, Gen AI, Analytics and the Startup ecosystem._

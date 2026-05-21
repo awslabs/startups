@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/choosing-the-right-architectur
 title: "Choosing the Right Architecture"
 ---
 
-# Choosing the Right Architecture
+## Choosing the Right Architecture
 
 **Breadcrumb**: [Learn](/startups/learn) > Choosing the right architecture
 
@@ -18,4 +18,3 @@ Discover the advantages of AWS compute models and serverless architecture for yo
 ## Note
 
 This page primarily contains video content (hosted via Vidyard player) rather than text-based articles. The main educational material is delivered through the embedded video. To access the full content, please visit the original page and watch the video.
-

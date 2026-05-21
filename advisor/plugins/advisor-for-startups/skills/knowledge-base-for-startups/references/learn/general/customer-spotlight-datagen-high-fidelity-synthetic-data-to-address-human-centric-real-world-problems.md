@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/customer-spotlight-datagen-hig
 title: "Spotlight: Datagen creates high-fidelity synthetic data to address human-centric problems"
 ---
 
-# Spotlight: Datagen creates high-fidelity synthetic data to address human-centric problems
+## Spotlight: Datagen creates high-fidelity synthetic data to address human-centric problems
 
 When Gil Elbaz and Ofir Zuk founded [Datagen](https://datagen.tech/) in 2018, it was with the purpose of re-inventing the broken process of how clients obtain data for computer vision network training. More specifically, they wanted to bring data simulation to every computer vision team in a continuous and scalable way.
 
@@ -35,4 +35,4 @@ The AWS Startups Content Marketing Team collaborates with startups of all sizes 
 
 ---
 
-*Source: [AWS Startups](/startups/learn/customer-spotlight-datagen-high-fidelity-synthetic-data-to-address-human-centric-real-world-problems)*
+_Source: [AWS Startups](/startups/learn/customer-spotlight-datagen-high-fidelity-synthetic-data-to-address-human-centric-real-world-problems)_

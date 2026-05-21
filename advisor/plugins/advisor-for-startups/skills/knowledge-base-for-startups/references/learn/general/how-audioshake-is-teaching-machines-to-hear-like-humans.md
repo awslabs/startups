@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-audioshake-is-teaching-mac
 title: "Breaking the sound barrier: How AudioShake is teaching machines to hear like humans"
 ---
 
-# Breaking the sound barrier: How AudioShake is teaching machines to hear like humans
+## Breaking the sound barrier: How AudioShake is teaching machines to hear like humans
 
 > Source: [AWS Startups](https://startups.aws/startups/learn/how-audioshake-is-teaching-machines-to-hear-like-humans)
 

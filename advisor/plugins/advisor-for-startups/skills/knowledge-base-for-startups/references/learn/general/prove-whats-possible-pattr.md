@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-pattr
 title: "How Pattr is helping take out the social media trash"
 ---
 
-# How Pattr is helping take out the social media trash
+## How Pattr is helping take out the social media trash
 
 > "We're attracted to big problems—seeing a big problem, then being able to apply our skill set and solve it," Sebastian says.
 
@@ -87,4 +87,4 @@ Amazon ElastiCache is a fully managed, in-memory caching service supporting flex
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/prove-whats-possible-pattr)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/prove-whats-possible-pattr)_

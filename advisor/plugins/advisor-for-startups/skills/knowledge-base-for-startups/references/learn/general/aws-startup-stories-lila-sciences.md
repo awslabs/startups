@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/aws-startup-stories-lila-scien
 title: "AWS Startup Stories: Lila Sciences"
 ---
 
-# AWS Startup Stories: Lila Sciences
+## AWS Startup Stories: Lila Sciences
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/aws-startup-stories-lila-sciences)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/aws-startup-stories-lila-sciences)_
 
 ---
 
@@ -16,4 +16,3 @@ Lila Sciences CEO Geoff von Maltzahn believes AI models cannot truly understand 
 ---
 
 Over 330,000 have joined [AWS Activate](https://aws.amazon.com/activate/activate-landing/) since its inception in 2013, accessing a range of resources to help build, grow, and scale their startup. This includes unlocking [AWS Activate Credits](https://aws.amazon.com/startups/credits), which can be used to help cover the costs of AWS services and solutions, from compute, database, and storage; to machine learning, containers, applications, and more. AWS Activate has already provided more than $7 billion in credits to startups, and yours could be next to benefit. Find out more about [AWS Activate](https://aws.amazon.com/activate/activate-landing/) today.
-

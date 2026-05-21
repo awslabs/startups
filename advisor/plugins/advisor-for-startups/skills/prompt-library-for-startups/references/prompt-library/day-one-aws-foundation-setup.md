@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/day-one-aws-foundatio
 title: "Day 1 AWS Foundation Setup for Startups "
 tags: ["Getting Started", "Beginner", "IAM", "CloudFormation"]
 ---
-# Day 1 AWS Foundation Setup for Startups 
+
+## Day 1 AWS Foundation Setup for Startups
 
 This prompt enables startups to achieve professional-grade AWS setup independently through a self-service approach powered by generative AI.
 
@@ -29,22 +30,26 @@ Build a foundation that supports rapid startup growth. From MVP development thro
 ## Recommended Configuration (Fixed)
 
 ### Account Structure
-Root 
-└── Workloads OU 
-    ├── Dev (Development environment)
-    ├── Staging (Staging environment)
-    ├── Production (Production environment) 
-    └── Sandbox (Experimentation and learning environment)
+
+Root
+└── Workloads OU
+├── Dev (Development environment)
+├── Staging (Staging environment)
+├── Production (Production environment)
+└── Sandbox (Experimentation and learning environment)
 
 ### Security Policies
+
 - **Production Account**: CloudTrail protection SCP (prohibit deletion, stopping, modification)
 - **Sandbox Account**: Cost control SCP (allow only t2/t3 small instances)
 
 ### Permission Sets
+
 - **AdminGroup**: AdministratorAccess
 - **DevelopersGroup**: PowerUserAccess
 
 ### Budget Configuration
+
 - Monthly budget: $500 USD
 - Alerts: 80% actual, 100% forecast
 
@@ -63,11 +68,13 @@ Use recommended regions based on user location (**cannot be changed once set**):
 ### 🖥️ Part 1: Console Operations (Phase 0-1)
 
 **Phase 0: Root Account Protection**
+
 1. Create AWS account
 2. Enable root user MFA
 3. Securely store root user credentials
 
 **Phase 1: Organizations & Identity Center**
+
 1. Enable AWS Organizations
 2. Enable IAM Identity Center (select appropriate region)
 3. Create AdminGroup
@@ -79,17 +86,20 @@ Use recommended regions based on user location (**cannot be changed once set**):
 ### 💻 Part 2: CLI Operations (Phase 2-4)
 
 **Phase 2: CLI Configuration**
+
 1. Verify AWS CLI v2 installation
 2. **Configure SSO with recorded Access Portal URL**
 3. Execute authentication test
 
 **Phase 3: Multi-Account Implementation**
+
 1. Create Workloads OU
 2. Create Dev/Staging/Production/Sandbox accounts
 3. Apply CloudTrail protection SCP to Production OU
 4. Apply cost control SCP to Sandbox OU
 
 **Phase 4: Cost Management**
+
 1. Create monthly budget of $500
 2. Configure alerts (80% actual, 100% forecast)
 3. Configure email notifications
@@ -116,6 +126,7 @@ Use recommended regions based on user location (**cannot be changed once set**):
 ## Bridging Information Between Parts
 
 Record at Part 1 completion, use in Part 2:
+
 - **Access Portal URL** (example: d-xxxxxxxxxx.awsapps.com/start)
 - Organization ID
 - Root ID
@@ -124,18 +135,22 @@ Record at Part 1 completion, use in Part 2:
 ## Error Handling
 
 **CLI Configuration Failure**
+
 - Cause: Incorrect Access Portal URL entry, network error
 - Resolution: Verify URL format (d-xxxxxxxxxx.awsapps.com/start), retry after confirming network
 
 **User Creation Failure**
+
 - Cause: Duplicate email address, format error
 - Resolution: Use different email address, correct format (user@domain.com)
 
 **Budget Configuration Failure**
+
 - Cause: API throttling, input value error
 - Resolution: Wait 1 minute and retry, verify numeric format
 
 **SCP Application Failure**
+
 - Cause: JSON syntax error, size limit exceeded
 - Resolution: Use pre-validated templates, remove unnecessary whitespace
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-to-partner-with-aws
 title: "How to Partner with AWS"
 ---
 
-# How to Partner with AWS
+## How to Partner with AWS
 
 Learn about the essentials of how to build, market and sell your solutions with the AWS Partner Network.
 
@@ -38,4 +38,3 @@ Learn best practices for marketing your solutions alongside AWS.
 ### 7. AWS Global Startup Program: Best Practices for Co-Selling with AWS
 
 Learn best practices for selling your solutions together with AWS.
-

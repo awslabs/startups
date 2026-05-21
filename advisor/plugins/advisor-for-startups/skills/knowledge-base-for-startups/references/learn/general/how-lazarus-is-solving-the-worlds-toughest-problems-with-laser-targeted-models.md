@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/how-lazarus-is-solving-the-wor
 title: "How Lazarus is solving the world's toughest problems with laser-targeted models"
 ---
 
-# How Lazarus is solving the world's toughest problems with laser-targeted models
+## How Lazarus is solving the world's toughest problems with laser-targeted models
 
-*AWS Startups > [Learn](/startups/learn)*
+_AWS Startups > [Learn](/startups/learn)_
 
 Technology can solve the biggest challenges we face today—but it takes purpose-driven innovation to make that happen. That goes beyond economic impact and demands that we focus on more than finances alone. At a time when AI is reshaping how we live and work, foundation models (FMs) built with purpose can do amazing things, from helping us track down criminal networks to improving medical care.
 

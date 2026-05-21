@@ -3,11 +3,11 @@ source_url: https://aws.amazon.com/startups/learn/celebrating-hispanic-heritage-
 title: "Celebrating Hispanic Heritage Month with Hispanic Startup Founders on AWS: Part 2"
 ---
 
-# Celebrating Hispanic Heritage Month with Hispanic Startup Founders on AWS: Part 2
+## Celebrating Hispanic Heritage Month with Hispanic Startup Founders on AWS: Part 2
 
-*At AWS, we know that building a dream is best achieved by having support from people like you who want to get where you're going as much as you do. To [celebrate Hispanic Heritage Month](https://www.aboutamazon.com/news/workplace/amazon-celebrates-hispanic-heritage-month-2022), we're recognizing the achievements and contributions of Hispanic and Latino Americans who have inspired others to achieve success.*
+_At AWS, we know that building a dream is best achieved by having support from people like you who want to get where you're going as much as you do. To [celebrate Hispanic Heritage Month](https://www.aboutamazon.com/news/workplace/amazon-celebrates-hispanic-heritage-month-2022), we're recognizing the achievements and contributions of Hispanic and Latino Americans who have inspired others to achieve success._
 
-*This [series of blog posts](/startups/learn/celebrating-hispanic-heritage-month-with-hispanic-startup-founders-on-aws-part-1) features Hispanic founders who share their unique challenges, aspirations, and how AWS helps them carry out their missions.*
+_This [series of blog posts](/startups/learn/celebrating-hispanic-heritage-month-with-hispanic-startup-founders-on-aws-part-1) features Hispanic founders who share their unique challenges, aspirations, and how AWS helps them carry out their missions._
 
 ## Gallus Insights: Solutions Built from Entrepreneurial Spirit
 
@@ -17,7 +17,7 @@ Per Augie, "We turn raw data into insights across the company: financials, marke
 
 Augie's path to CEO began in Monterrey, Mexico, where he lived until the age of 15 before moving to the US. He went to High School in Arkansas then attended the University of Amsterdam in the Netherlands, where he obtained a degree in Economics.
 
-> *"Mexico is full of entrepreneurs. You can find artists, restaurateurs, greengrocers, and much more on every corner of Mexico City. And globally, there are major Hispanic companies like [Softtek](https://www.softtek.com/) and [Kavak](https://www.kavak.com/). Hispanics are an entrepreneurial bunch."*
+> _"Mexico is full of entrepreneurs. You can find artists, restaurateurs, greengrocers, and much more on every corner of Mexico City. And globally, there are major Hispanic companies like [Softtek](https://www.softtek.com/) and [Kavak](https://www.kavak.com/). Hispanics are an entrepreneurial bunch."_
 
 After a retail banking career at HSBC, Augie returned to the US to earn an MBA from the Yale School of Management and worked at Goldman Sachs' Investment Banking Division. After five years on Wall Street, he worked at Caliber Home Loans as head of finance. That's where Augie had his "a-ha" moment.
 
@@ -37,7 +37,7 @@ With plans to expand their product to other industries within Financial Services
 
 For other founders who want to achieve similar success, Augie's advice is two-fold. "Once you've identified a problem and you are passionate about solving it, have the conviction to go and do it. The entrepreneurial process itself—paired with passion and diligence—will give you the answers you need to successfully execute your plan." He also advises, "There are a lot of benefits on the AWS side that I had no idea about: their [entrepreneurship program](https://aws.amazon.com/startups/startup-programs/) has been super helpful and [AWS Activate](https://aws.amazon.com/activate/) provides credits for startups. It's like you help startup firms live rent-free for the first few months or years. Memo to startup founders: Knock on the AWS door. They will help."
 
-*Special thanks to Ashley Wax, Demand Generation Representative*
+_Special thanks to Ashley Wax, Demand Generation Representative_
 
 ## Other Posts in This Series
 

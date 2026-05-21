@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/sign-speak-builds-with-ai-on-a
 title: "Sign-Speak builds with AI on AWS to create accessible experiences"
 ---
 
-# Sign-Speak builds with AI on AWS to create accessible experiences
+## Sign-Speak builds with AI on AWS to create accessible experiences
 
 > Meet Sign-Speak, an innovative startup who builds language software on AWS that recognizes American Sign Language (ASL) and translates it into spoken words (and vice versa).
 
@@ -71,7 +71,7 @@ For other Latino founders who are proving what's possible with technology, Yami 
 
 Ready to begin your startup journey? Join [AWS Activate](https://aws.amazon.com/activate/) to build and scale your startup with the right resources at the right time.
 
-*AWS Activate updates program benefits regularly, and credit offerings and/or the offerings reflected in this blog post may differ from current Activate offers. For the most up to date information about Activate benefits, please visit [https://aws.amazon.com/activate/](https://aws.amazon.com/activate/)*
+_AWS Activate updates program benefits regularly, and credit offerings and/or the offerings reflected in this blog post may differ from current Activate offers. For the most up to date information about Activate benefits, please visit [https://aws.amazon.com/activate/](https://aws.amazon.com/activate/)_
 
 ---
 

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-reejig
 title: "How Reejig is helping everyone realise their true potential"
 ---
 
-# How Reejig is helping everyone realise their true potential
+## How Reejig is helping everyone realise their true potential
 
-*Meet Reejig, the award-winning workforce intelligence platform, proving what's possible on AWS.*
+_Meet Reejig, the award-winning workforce intelligence platform, proving what's possible on AWS._
 
 ---
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/graas-powers-real-time-retail-
 title: "Graas powers real-time retail intelligence with AWS"
 ---
 
-# Graas powers real-time retail intelligence with AWS
+## Graas powers real-time retail intelligence with AWS
 
 [Graas](https://www.graas.ai/) is an AI-native decision intelligence platform designed to help commerce brands act in real time across every channel, market, and campaign. From inventory allocation to ad spend optimization, Graas aims to simplify complex retail operations to help brands grow faster and operate smarter.
 
@@ -51,4 +51,4 @@ Startups like Graas are able to grow faster while still managing tight budgets a
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/graas-powers-real-time-retail-intelligence-with-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/graas-powers-real-time-retail-intelligence-with-aws)_

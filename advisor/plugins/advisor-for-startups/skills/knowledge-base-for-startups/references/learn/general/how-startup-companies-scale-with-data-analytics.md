@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-startup-companies-scale-wi
 title: "How Startup Companies Scale with Data Analytics"
 ---
 
-# How Startup Companies Scale with Data Analytics
+## How Startup Companies Scale with Data Analytics
 
 Data analytics isn't just a behind-the-scenes operational tool—it can also be the foundation for a startup's core offering.
 

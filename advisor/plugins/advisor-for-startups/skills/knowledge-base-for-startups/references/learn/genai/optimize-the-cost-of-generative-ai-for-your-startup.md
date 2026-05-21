@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/optimize-the-cost-of-generativ
 title: "Optimize the cost of generative AI for your startup"
 ---
 
-# Optimize the cost of generative AI for your startup
+## Optimize the cost of generative AI for your startup
 
 ## Make smart choices now to optimize your generative AI costs later
 

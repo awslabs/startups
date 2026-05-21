@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/through-aws-impact-accelerator
 title: "How Eyegage scaled their life-saving app via Impact Accelerator partnership"
 ---
 
-# How Eyegage scaled their life-saving app via Impact Accelerator partnership
+## How Eyegage scaled their life-saving app via Impact Accelerator partnership
 
-*To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](https://aws.amazon.com/startups/prove-whats-possible/).*
+_To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](https://aws.amazon.com/startups/prove-whats-possible/)._
 
 Dr. LaVonda Brown, founder and CEO of [Eyegage](http://eyegage.com/), whose expertise lies in artificial intelligence (AI) and eye-analysis technologies, developed a robotic engagement model based on user eye gaze and pupil size (dilation and constriction).
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/yulu-is-electrifying-indias-st
 title: "Yulu is electrifying India's streets with AWS"
 ---
 
-# Yulu is electrifying India's streets with AWS
+## Yulu is electrifying India's streets with AWS
 
 [Yulu](https://www.yulu.bike/) is India's largest EBITDA profitable shared electric mobility platform, designed to solve first- and last-mile connectivity challenges across urban centers. Operating a fleet of 45,000 electric vehicles across major cities, Yulu offers a seamless, sustainable solution for both hyperlocal deliveries and daily commuters, supporting millions of journeys with lower carbon emissions.
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/the-2025-aws-generative-ai-acc
 title: "The 2025 AWS Generative AI Accelerator: 40 startups shooting for the stars"
 ---
 
-# The 2025 AWS Generative AI Accelerator: 40 startups shooting for the stars
+## The 2025 AWS Generative AI Accelerator: 40 startups shooting for the stars
 
 **Selected visionary startups from around the world have landed a space on the program designed to propel their real-world value with generative AI.**
 
@@ -191,4 +191,4 @@ The [AWS Activate](https://aws.amazon.com/startups/credits) program offers acces
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/the-2025-aws-generative-ai-accelerator-40-startups-shooting-for-the-stars-)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/the-2025-aws-generative-ai-accelerator-40-startups-shooting-for-the-stars-)_

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/discover-four-pakistani-startu
 title: "Discover four Pakistani startups at the forefront of AI/ML"
 ---
 
-# Discover four Pakistani startups at the forefront of AI/ML
+## Discover four Pakistani startups at the forefront of AI/ML
 
-*By Eunice Cheng*
+_By Eunice Cheng_
 
 [Amazon Web Services (AWS)](https://aws.amazon.com/) and [Epiphany](https://epiphanyofficial.co/) joined forces in 2021 to co-curate an artificial intelligence (AI)/machine learning (ML) bootcamp called [AI/ML Reactor](https://epiphanyofficial.co/ai-ml-reactor/). AI/ML Reactor is a rigorous 5-week virtual program aimed at driving AI/ML awareness and empowering startups in Pakistan.
 
@@ -23,7 +23,7 @@ Currently, only 2% of Pakistan's 700,000 retail outlets are merchandized. This p
 
 Since winning AI/ML Reactor in 2021, Salesflo has completed successful pilot tests with clients such as [Unilever](https://www.unilever.com/) and [Friesland Campina](https://www.frieslandcampina.com/). In addition, they have been working on embedding this module within their product [Engage](http://www.engage.salesflo.com/) to enhance merchandizing and optimize workflows. This past year, Salesflo has been working on optimizing the models that they are using and determining product divisions and pricing categories.
 
-> *"The program is a step toward fulfilling the potential of the retail industry and bringing innovation to the up-and-coming tech sphere of Pakistan" – Hamza Khan, Head of Data & Engineering, Salesflo*
+> _"The program is a step toward fulfilling the potential of the retail industry and bringing innovation to the up-and-coming tech sphere of Pakistan" – Hamza Khan, Head of Data & Engineering, Salesflo_
 
 ## Ozoned Digital Ltd ("Ozoned") – 2nd prize
 
@@ -35,7 +35,7 @@ To help minimize insurance claims surveyor interaction during the initial stages
 
 Most recently, Ozoned has signed up one of the largest insurers in Pakistan – [Adamjee General Insurance](https://www.adamjeeinsurance.com/). Adamjee is deploying Ozoned across their motor insurance operations.
 
-> *"The AI/ML Reactor program allowed Ozoned Digital to impart AI/ML training to its team and come up with a world class AI/ML technology solution in the insurtech space." – Nomaan Bashir, co-founder and CEO, Ozoned Digital Ltd*
+> _"The AI/ML Reactor program allowed Ozoned Digital to impart AI/ML training to its team and come up with a world class AI/ML technology solution in the insurtech space." – Nomaan Bashir, co-founder and CEO, Ozoned Digital Ltd_
 
 ## XpertFlow – joint 3rd prize
 
@@ -55,7 +55,7 @@ The winning model delivered 97% accuracy in predicting sepsis 6 hours ahead of t
 
 After the AI/ML Reactor program, the sepsis AWS AI model is now fully tested and is being piloted at a few hospitals in Pakistan. XpertFlow has started using SageMaker to estimate blood pressure noninvasively, continuously, and without using arm cuffs. They are currently running trials for this new approach towards calculating blood pressure in a hospital in Islamabad, Pakistan.
 
-> *"Being a CTO of a young startup, I am always looking out for tech-focused programs. After attending many programs and accelerators during the life of XpertFlow, this has been by far one of the best. The learning the team and I got from this, during a span of 5 weeks, was just incredible. We learned from the best on how to deploy our existing AI/ML solutions on the cloud and supercharge them using AWS AI/ML services. Huge shout to AWS and Epiphany for coming up with one-of-a-kind program, which was missing here in Pakistan." – Shan Ul Haq, CTO, XpertFlow*
+> _"Being a CTO of a young startup, I am always looking out for tech-focused programs. After attending many programs and accelerators during the life of XpertFlow, this has been by far one of the best. The learning the team and I got from this, during a span of 5 weeks, was just incredible. We learned from the best on how to deploy our existing AI/ML solutions on the cloud and supercharge them using AWS AI/ML services. Huge shout to AWS and Epiphany for coming up with one-of-a-kind program, which was missing here in Pakistan." – Shan Ul Haq, CTO, XpertFlow_
 
 ## Trukkr – joint 3rd prize
 
@@ -67,7 +67,7 @@ The team was able to make an impact on improving the onboarding funnel, increasi
 
 ![Figure 1. Trukkr's dropoff rates during sign up](https://d22k7geae6sy8h.cloudfront.net/files/64a2f36573217a00082c8119/8ljn27hic-Figure-1.-Trukkrs-dropoff-rates-during-sign-up.png)
 
-> *"This program helped us in further leveraging AI/ML to provide our customers with intelligent features that help them better manage and optimize their logistics. During the program, regular feedback from AWS expert mentors and the step-by-step architecture review sessions helped speed up the learning process, and deliver meaningful features to our customers." – Kasra Zunnaiyyer, co-founder and CTO, Trukkr*
+> _"This program helped us in further leveraging AI/ML to provide our customers with intelligent features that help them better manage and optimize their logistics. During the program, regular feedback from AWS expert mentors and the step-by-step architecture review sessions helped speed up the learning process, and deliver meaningful features to our customers." – Kasra Zunnaiyyer, co-founder and CTO, Trukkr_
 
 ---
 

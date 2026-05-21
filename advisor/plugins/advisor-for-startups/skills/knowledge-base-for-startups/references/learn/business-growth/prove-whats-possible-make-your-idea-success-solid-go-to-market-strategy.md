@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-make-your
 title: "Make your idea a success with a solid go-to-market strategy"
 ---
 
-# Make your idea a success with a solid go-to-market strategy
+## Make your idea a success with a solid go-to-market strategy
 
 ---
 
@@ -64,4 +64,3 @@ Borrowing proven ideas is a good way to reduce the risk in launching a startup b
 As its name suggests, your go-to-market strategy is the guide that will help you get your product into your target market.
 
 Therefore, before you get too far into building your great idea, invest the time needed to develop a solid plan. Because while it's often a great to be first to market, being first doesn't always mean you're the winner, and it is hard to win without starting with a solid plan.
-

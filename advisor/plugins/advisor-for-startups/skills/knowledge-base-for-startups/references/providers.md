@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/providers
 title: "AWS Activate Providers"
 ---
 
-# AWS Activate Providers
+## AWS Activate Providers
 
 AWS Activate collaborates with hundreds of accelerators, angel investors, and venture capital firms worldwide to empower startups with promotional credits, technical support, and business mentorship. Through these partnerships, startups can access exclusive AWS Activate Credits packages by using their provider's secure Organization ID. Join our community of providers supporting the next generation of innovative startups.
 

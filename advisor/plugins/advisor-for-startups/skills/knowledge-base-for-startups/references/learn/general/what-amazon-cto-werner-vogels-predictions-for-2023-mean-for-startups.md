@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/what-amazon-cto-werner-vogels-
 title: "What Amazon CTO Werner Vogels' predictions for 2023 mean for startups"
 ---
 
-# What Amazon CTO Werner Vogels' predictions for 2023 mean for startups
+## What Amazon CTO Werner Vogels' predictions for 2023 mean for startups
 
 Last year, we published our [first ever startup-specific take](https://aws.amazon.com/blogs/startups/what-amazon-cto-werner-vogels-predictions-for-2022-mean-for-startups/) on Amazon CTO Werner Vogel's yearly predictions for technology. As Amazon's CTO, Werner has a wide view across industries and countries, seeing both what's being invented by hot startups, as well as seeing what's happening in the world's largest enterprises. Based on this, he publishes predictions for the year ahead and beyond.
 

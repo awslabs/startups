@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/build-ai-agents-that-scale-ser
 title: "Build AI agents that scale: Serverless architecture on AWS"
 ---
 
-# Build AI agents that scale: Serverless architecture on AWS
+## Build AI agents that scale: Serverless architecture on AWS
 
 > Source: [AWS Startups](https://startups.aws/startups/learn/build-ai-agents-that-scale-serverless-architecture-on-aws)
 
@@ -49,4 +49,3 @@ Amazon Bedrock and AgentCore offer many more serverless capabilities, but the th
 Developing agentic AI applications has traditionally been complex and challenging, especially for startups which are often operating with limited resources. Serverless architectures reduce this complexity by removing the need for engineers to build and manage underlying infrastructure. Whether you're an experienced agentic AI developer or just starting out, Amazon Bedrock provides a comprehensive set of tools and services to help you build and scale with confidence.
 
 Ready to start building agentic AI on AWS? [AWS Activate](https://aws.amazon.com/activate/activate-landing/) offers access to [AWS Credits](/startups/credits) which can be used to offset the cost of solutions covered in this article, as well as a broad range of other services. Since its inception in 2013, AWS Activate has provided more than $8 billion in credits to startups around the world. Founders also benefit from programs and resources, technical support, business mentorship, and a closer connection with the global startup community. Join millions of others and discover how to take your ideas from concept to cloud-ready.
-

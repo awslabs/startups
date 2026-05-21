@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/cautio-reimagines-fleet-safety
 title: "Cautio reimagines fleet safety at scale with AWS"
 ---
 
-# Cautio reimagines fleet safety at scale with AWS
+## Cautio reimagines fleet safety at scale with AWS
 
 [Cautio](https://www.cautio.in/en) is an AI-powered telematics platform helping commercial and public transport operators in India improve driver accountability, reduce road incidents, and build trust with passengers. Its dual-lens dashcams stream real-time footage, while onboard AI detects unsafe behavior and triggers instant alerts.
 
@@ -43,4 +43,4 @@ Cautio isn't just capturing what happens on the road. It's changing how safety i
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/cautio-reimagines-fleet-safety-at-scale-with-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/cautio-reimagines-fleet-safety-at-scale-with-aws)_

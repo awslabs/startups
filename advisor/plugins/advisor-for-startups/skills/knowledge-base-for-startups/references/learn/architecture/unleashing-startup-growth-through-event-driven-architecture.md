@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/unleashing-startup-growth-thro
 title: "Unleashing Startup Growth Through Event-Driven Architecture"
 ---
 
-# Unleashing Startup Growth Through Event-Driven Architecture
+## Unleashing Startup Growth Through Event-Driven Architecture
 
 > **Note:** This page is primarily a video resource. The main content is delivered via an embedded Vidyard video player.
 

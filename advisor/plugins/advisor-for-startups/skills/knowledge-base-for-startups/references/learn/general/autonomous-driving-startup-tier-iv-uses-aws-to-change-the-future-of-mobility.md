@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/autonomous-driving-startup-tie
 title: "Autonomous driving startup TIER IV uses AWS to change the future of mobility"
 ---
 
-# Autonomous driving startup TIER IV uses AWS to change the future of mobility
+## Autonomous driving startup TIER IV uses AWS to change the future of mobility
 
 TIER IV is transforming the vehicle production process and the future of mobility, all with open-source software.
 
@@ -71,4 +71,4 @@ Shinpei Kato is the CEO, CTO, and founder of TIER IV. He is also the founder and
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/autonomous-driving-startup-tier-iv-uses-aws-to-change-the-future-of-mobility)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/autonomous-driving-startup-tier-iv-uses-aws-to-change-the-future-of-mobility)_

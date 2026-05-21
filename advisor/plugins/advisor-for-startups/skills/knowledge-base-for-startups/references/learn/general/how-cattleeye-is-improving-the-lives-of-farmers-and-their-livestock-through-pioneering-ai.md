@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-cattleeye-is-improving-the
 title: "How CattleEye is improving the lives of farmers and their livestock through pioneering AI"
 ---
 
-# How CattleEye is improving the lives of farmers and their livestock through pioneering AI
+## How CattleEye is improving the lives of farmers and their livestock through pioneering AI
 
 CattleEye is an Agriculture Technology Startup based in Ireland, who are the world's first hardware-independent autonomous livestock monitoring platform.
 

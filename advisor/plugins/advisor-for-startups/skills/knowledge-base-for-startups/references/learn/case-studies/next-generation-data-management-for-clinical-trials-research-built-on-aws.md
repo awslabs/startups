@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/next-generation-data-managemen
 title: "Next generation data management for clinical trials & research built on AWS"
 ---
 
-# Next generation data management for clinical trials & research built on AWS
+## Next generation data management for clinical trials & research built on AWS
 
-*Guest post by Steve Bilawey, Co-Founder & Chief Business Officer, Precision Digital Health*
+_Guest post by Steve Bilawey, Co-Founder & Chief Business Officer, Precision Digital Health_
 
 ## Data and Automation in Drug Development
 
@@ -65,6 +65,6 @@ To learn more about how PDH can power your clinical research, visit [https://pre
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/aws-cost-management-insights-f
 title: "AWS Cost Management Insights for Startup Growth"
 ---
 
-# AWS Cost Management Insights for Startup Growth
+## AWS Cost Management Insights for Startup Growth
 
 ## Overview
 

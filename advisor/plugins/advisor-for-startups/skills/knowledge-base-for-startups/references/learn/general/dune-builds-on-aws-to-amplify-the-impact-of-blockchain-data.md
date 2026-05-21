@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/dune-builds-on-aws-to-amplify-
 title: "Dune builds on AWS to amplify the impact of blockchain data"
 ---
 
-# Dune builds on AWS to amplify the impact of blockchain data
+## Dune builds on AWS to amplify the impact of blockchain data
 
 By migrating from their multi-cloud setup to go all-in on AWS, Dune significantly lowered their costs while optimizing their ability to build and scale.
 

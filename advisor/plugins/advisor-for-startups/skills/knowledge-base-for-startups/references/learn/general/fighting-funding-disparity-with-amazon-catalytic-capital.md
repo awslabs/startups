@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/fighting-funding-disparity-wit
 title: "Fighting funding disparity with Amazon Catalytic Capital"
 ---
 
-# Fighting funding disparity with Amazon Catalytic Capital
+## Fighting funding disparity with Amazon Catalytic Capital
 
-*In October 2022, Amazon launched its [Catalytic Capital](https://www.amazoncatalyticcapital.com/) initiative, investing $150 million in funds to underrepresented entrepreneurs. Now, AWS is further accelerating the conversation through strategic partnerships and data-driven reporting with the publication of the [State of Black Venture Report](https://www.blckvc.org/sbvr2023), launched Tuesday at the [2023 State of Black Venture event](https://stateofblackvcreportlaunch.splashthat.com/) hosted by BLCK VC at the [AWS Startup Loft](https://aws-startup-lofts.com/amer/loft/san-francisco) in San Francisco, California.*
+_In October 2022, Amazon launched its [Catalytic Capital](https://www.amazoncatalyticcapital.com/) initiative, investing $150 million in funds to underrepresented entrepreneurs. Now, AWS is further accelerating the conversation through strategic partnerships and data-driven reporting with the publication of the [State of Black Venture Report](https://www.blckvc.org/sbvr2023), launched Tuesday at the [2023 State of Black Venture event](https://stateofblackvcreportlaunch.splashthat.com/) hosted by BLCK VC at the [AWS Startup Loft](https://aws-startup-lofts.com/amer/loft/san-francisco) in San Francisco, California._
 
 When new founders have access to venture funding and mentorship, they go on to [build solutions](https://aws.amazon.com/blogs/startups/through-aws-impact-accelerator-eyegage-formed-crucial-connection-to-prepare-machine-learning-demo/) that transform our society, [create jobs](https://www.youtube.com/watch?v=RdXxrO-xl-8) that strengthen our communities, and [inspire the next generation](https://aws.amazon.com/blogs/startups/shining-a-light-on-black-excellence-three-founders-share-their-stories/) of founders to begin their journey toward entrepreneurship and innovation. Unfortunately, not all entrepreneurs and startups are funded equally.
 
@@ -35,9 +35,9 @@ Digitalundivided finds that, despite the reality of the venture funding gap, und
 
 There's more work to be done, and shedding light on the funding gap through impactful, in-depth research is a vital part of the process. The better we understand our challenge, the better we can work towards a solution. Publications such as the 2022 State of Black Venture Report acts as a guiding light as we work with our partners to build pathways to success for underrepresented founders.
 
-*Learn more about [Amazon's Catalytic Capital](https://www.amazoncatalyticcapital.com/) initiative and the [AWS Impact Accelerator](https://www.aboutamazon.com/news/aws/aws-launches-30-million-impact-accelerator-for-underrepresented-founders).*
+_Learn more about [Amazon's Catalytic Capital](https://www.amazoncatalyticcapital.com/) initiative and the [AWS Impact Accelerator](https://www.aboutamazon.com/news/aws/aws-launches-30-million-impact-accelerator-for-underrepresented-founders)._
 
-*You may also want to join the upcoming AWS Impact Accelerator: Latino Founders. [Applications](https://aws-startup-lofts.com/amer/program/accelerators/latino-founders) are open from March 6 – March 17, 2023.*
+_You may also want to join the upcoming AWS Impact Accelerator: Latino Founders. [Applications](https://aws-startup-lofts.com/amer/program/accelerators/latino-founders) are open from March 6 – March 17, 2023._
 
 ---
 

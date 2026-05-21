@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/transforming-payments-how-star
 title: "Transforming Payments: How Startups Are Pioneering Stablecoin Infrastructure on AWS"
 ---
 
-# Transforming Payments: How Startups Are Pioneering Stablecoin Infrastructure on AWS
+## Transforming Payments: How Startups Are Pioneering Stablecoin Infrastructure on AWS
 
-*From emerging market innovations to Wall Street institutions, startups and enterprises are embracing stablecoins for faster, cheaper, and safer payment solutions.*
+_From emerging market innovations to Wall Street institutions, startups and enterprises are embracing stablecoins for faster, cheaper, and safer payment solutions._
 
 ---
 
@@ -101,4 +101,3 @@ Accelerate your digital asset, stablecoin, or fintech startup with up to $100,00
 Brad Feinstein is a GTM leader who builds and scales businesses at the intersection of enterprise technology and startups, with a focus on cloud, AI, and Web3. He leads AWS's North America Startup FinTech & Web3 team, partnering with top startups and venture capital firms to accelerate market adoption and drive co-sell success. His experience includes leading GTM partnerships for international startups at AWS, serving as Head of Global Business Development at ConsenSys, and founding two venture-backed companies. Brad also held senior roles at Amex & Capgemini. He blends founder-level execution with enterprise scale to deliver customer success.
 
 ---
-

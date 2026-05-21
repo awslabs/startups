@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/meet-three-women-who-make-star
 title: "Meet three women who make startup journeys smoother"
 ---
 
-# Meet three women who make startup journeys smoother
+## Meet three women who make startup journeys smoother
 
-*Meet three AWS Solutions Architects guiding entrepreneurs toward growth.*
+_Meet three AWS Solutions Architects guiding entrepreneurs toward growth._
 
 [Learn](/startups/learn) > Meet three women who make startup journeys smoother
 

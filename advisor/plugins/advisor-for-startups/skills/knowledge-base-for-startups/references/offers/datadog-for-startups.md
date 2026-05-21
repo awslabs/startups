@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/offers/datadog-for-startups
 title: "Datadog for AWS: Built to scale, priced for startups"
 ---
 
-# Datadog for AWS: Built to scale, priced for startups
+## Datadog for AWS: Built to scale, priced for startups
 
 ### Estimated offer value: $100,000.00
 
@@ -13,12 +13,12 @@ Datadog unifies data from across your infrastructure - servers, containers, data
 
 As a member of the Datadog for Startup program you will have access to resources you need to be successful and grow your business
 
-1.  Datadog Pro
-2.  Access to Datadog Technical Training
+1. Datadog Pro
+2. Access to Datadog Technical Training
 
-3.  Dedicated Support
+3. Dedicated Support
 
-4.  Customer Success Team Alignment
+4. Customer Success Team Alignment
 
 Datadog offers AWS Activate one full year of Datadog Pro credits\*.
 

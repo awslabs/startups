@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-to-choose-between-compute-
 title: "How to choose between compute options on AWS"
 ---
 
-# How to choose between compute options on AWS
+## How to choose between compute options on AWS
 
 ## Overview
 
@@ -20,4 +20,4 @@ Learn about serverless, containers, and monolithic web apps, and choose the best
 
 ---
 
-*Page retrieved from AWS Startups portal. Available in multiple languages: English, Deutsch, Español, Français, Italiano, Português, 日本語, 한국어, Bahasa Indonesia.*
+_Page retrieved from AWS Startups portal. Available in multiple languages: English, Deutsch, Español, Français, Italiano, Português, 日本語, 한국어, Bahasa Indonesia._

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-to-get-started-with-aws
 title: "Getting started with AWS"
 ---
 
-# Getting started with AWS
+## Getting started with AWS
 
 Whether you're an early-stage founder with a fresh idea or a technical lead building your next product, AWS provides comprehensive support, AI, automation, resources, and tools to help you innovate and grow, and much more.
 

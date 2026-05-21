@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/build-and-deploy-a-cutting-edg
 title: "Build and deploy a cutting-edge generative AI application with LangChain and Amazon Bedrock"
 ---
 
-# Build and deploy a cutting-edge generative AI application with LangChain and Amazon Bedrock
+## Build and deploy a cutting-edge generative AI application with LangChain and Amazon Bedrock
 
 ## Overview
 

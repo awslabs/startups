@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/datology-ensures-quality-over-
 title: "Datology ensures quality over quantity for better AI"
 ---
 
-# Datology ensures quality over quantity for better AI
+## Datology ensures quality over quantity for better AI
 
 > Datology is making it easier for organizations to train AI models, by selecting, organizing, and cleaning the highest quality data.
 
@@ -17,6 +17,6 @@ Training models using data is a matter of quality over quantity. Using Datology'
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/datology-ensures-quality-over-quantity-for-better-ai)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/datology-ensures-quality-over-quantity-for-better-ai)_
 
 **Category:** Featured Startups

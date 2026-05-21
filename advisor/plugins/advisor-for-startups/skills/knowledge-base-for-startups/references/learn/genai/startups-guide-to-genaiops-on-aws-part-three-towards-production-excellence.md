@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/startups-guide-to-genaiops-on-
 title: "Startup's Guide to GenAIOps on AWS Part 3: Towards Production Excellence"
 ---
 
-# Startup's Guide to GenAIOps on AWS Part 3: Towards Production Excellence
+## Startup's Guide to GenAIOps on AWS Part 3: Towards Production Excellence
 
 ---
 
@@ -26,6 +26,7 @@ With production traffic now flowing, it's time to transform static datasets into
 **Automated RAG data pipeline:** Replace manual data source updates for knowledge bases with event-driven workflows using [Amazon EventBridge](https://aws.amazon.com/eventbridge/). Workflows involving documents, images, audio, and videos can be automated at scale using [Amazon Bedrock Data Automation](https://aws.amazon.com/bedrock/bda/). When queries fail to retrieve relevant context or show low confidence scores, automatically capture failures as RAG evaluation test cases.
 
 **Helpful resources:**
+
 - [High-quality human feedback for your generative AI applications from Amazon SageMaker Ground Truth Plus](https://aws.amazon.com/blogs/machine-learning/high-quality-human-feedback-for-your-generative-ai-applications-from-amazon-sagemaker-ground-truth-plus)
 - [Build a multimodal RAG based application using Amazon Bedrock Data Automation and Amazon Bedrock Knowledge Bases](https://aws.amazon.com/blogs/machine-learning/building-a-multimodal-rag-based-application-using-amazon-bedrock-data-automation-and-amazon-bedrock-knowledge-bases/)
 
@@ -54,6 +55,7 @@ Establish regular optimization cycles to evolve context systems with your applic
 To ensure reliable experiment results, start by creating isolated testing environments that mirror production data and traffic patterns. Then establish standardized metrics across both technical aspects like accuracy and latency, as well as user behavior metrics such as satisfaction and engagement. When comparing experiments, take a holistic approach to evaluation. For example, when comparing two RAG retrieval strategies, consider that a small accuracy improvement with better latency might drive higher overall user satisfaction than a larger accuracy gain with increased latency. This ensures that your experimental outcomes reflect real-world impact rather than just isolated metrics.
 
 **Helpful resources:**
+
 - [Building scalable, secure, and reliable RAG applications using Amazon Bedrock Knowledge Bases](https://aws.amazon.com/blogs/machine-learning/building-scalable-secure-and-reliable-rag-applications-using-amazon-bedrock-knowledge-bases/)
 - [Amazon Bedrock Knowledge Bases now supports advanced parsing, chunking, and query reformulation giving greater control of accuracy in RAG based applications](https://aws.amazon.com/blogs/machine-learning/amazon-bedrock-knowledge-bases-now-supports-advanced-parsing-chunking-and-query-reformulation-giving-greater-control-of-accuracy-in-rag-based-applications/)
 - [Multi agent collaboration with strands](https://aws.amazon.com/blogs/devops/multi-agent-collaboration-with-strands/)
@@ -69,6 +71,7 @@ Manual testing can quickly become unmanageable, especially when shipping multipl
 **Responsible AI evaluation strategies:** Functional correctness isn't enough—production systems must be safe and trustworthy. Extend automated testing to include hallucination detection with factual grounding checks, [prompt injection](https://aws.amazon.com/blogs/security/safeguard-your-generative-ai-workloads-from-prompt-injections/) resistance via adversarial test cases, and harmful content assessment. Other strategies for supporting performance and safety at scale include running regular [red teaming](https://aws.amazon.com/blogs/machine-learning/responsible-ai-in-action-how-data-reply-red-teaming-supports-generative-ai-safety-on-aws/) exercises to identify unsafe behaviors and spot-checking production outputs for responsible AI metrics.
 
 **Helpful resources:**
+
 - [Build an automated generative AI solution evaluation pipeline with Amazon Nova](https://aws.amazon.com/blogs/machine-learning/build-an-automated-generative-ai-solution-evaluation-pipeline-with-amazon-nova/)
 - [Considerations for addressing the core dimensions of responsible AI for Amazon Bedrock applications](https://aws.amazon.com/blogs/machine-learning/considerations-for-addressing-the-core-dimensions-of-responsible-ai-for-amazon-bedrock-applications/)
 
@@ -91,6 +94,7 @@ Deployment patterns can also de-risk releases, such as [canary deployments](http
 By configuring model cascade hierarchies—primary model to backup model to cached responses to gracefully degraded responses—you can ensure users always receive a response even when optimal serving paths fail. Beyond this, implement circuit breakers to halt requests to failing dependencies.
 
 **Helpful resources:**
+
 - [Optimizing AI responsiveness: A practical guide to Amazon Bedrock latency-optimized inference](https://aws.amazon.com/blogs/machine-learning/optimizing-ai-responsiveness-a-practical-guide-to-amazon-bedrock-latency-optimized-inference/)
 - [Designing generative AI workloads for resilience](https://aws.amazon.com/blogs/machine-learning/designing-generative-ai-workloads-for-resilience/)
 
@@ -113,6 +117,7 @@ For example, your customer service bot's observability can trigger the following
 - **Governance and maintenance:** When deployment logs show 40 percent of releases fail due to missing IAM permissions or infrastructure prerequisites, pre-flight validation checks are added to the deployment pipeline—catching configuration issues before they block releases.
 
 **Helpful resources:**
+
 - [Empower your generative AI application with a comprehensive custom observability solution](https://aws.amazon.com/blogs/machine-learning/empower-your-generative-ai-application-with-a-comprehensive-custom-observability-solution/)
 - [Build trustworthy AI agents with Amazon Bedrock AgentCore Observability](https://aws.amazon.com/blogs/machine-learning/build-trustworthy-ai-agents-with-amazon-bedrock-agentcore-observability/)
 
@@ -129,6 +134,7 @@ Your governance framework should feel like a trusted advisor who accelerates sma
 **Operational visibility and accountability:** Create role-specific dashboards in [Amazon QuickSight](https://aws.amazon.com/quicksuite/quicksight/) that surface governance metrics. Establish clear ownership across teams, with product owning performance targets, engineering owning reliability, compliance owning safety, and governance coordinating across teams.
 
 **Helpful resources:**
+
 - [Effectively manage foundation models for generative AI applications with Amazon SageMaker Model Registry](https://aws.amazon.com/blogs/machine-learning/effectively-manage-foundation-models-for-generative-ai-applications-with-amazon-sagemaker-model-registry/)
 - [Streamline the path from data to insights with new Amazon SageMaker Catalog capabilities](https://aws.amazon.com/blogs/aws/streamline-the-path-from-data-to-insights-with-new-amazon-sagemaker-capabilities/)
 
@@ -145,10 +151,13 @@ To take your next step, prioritize your most challenging pipeline stage—whethe
 ## Authors
 
 ### Nima Seifi
+
 Nima Seifi is a Senior Solutions Architect at AWS, based in Southern California, where he specializes in SaaS and GenAIOps. He serves as a technical advisor to startups building on AWS. Prior to AWS, he worked as a DevOps architect in the ecommerce industry for over 5 years, following a decade of R&D work in mobile internet technologies. Nima has 20+ publications in prominent technical journals and conferences and holds 7 US patents. Outside of work, he enjoys reading, watching documentaries, and taking beach walks.
 
 ### Pat Santora
+
 Pat Santora is a GenAI Labs Cloud Architect and Technologist with over 25 years of experience implementing solutions across the cloud for both enterprises and startups. He has successfully launched numerous products from inception, led analytical re-architecture projects, and managed remote teams with a philosophy centered on transparency and trust. His technical expertise spans strategic planning, systems management, and architectural redesign, complemented by interests in GenAI, Analytics, and Big Data.
 
 ### Clement Perrot
+
 Clement Perrot helps top-tier startups accelerate their AI initiatives by providing strategic guidance on model selection, responsible AI implementation, and optimized machine learning operations. A serial entrepreneur and Inc 30 Under 30 honoree, he brings deep expertise in building and scaling AI companies, having founded and successfully exited multiple ventures in consumer technology and enterprise AI.

@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/aws-ecs-express-deplo
 title: "AWS ECS Express Deployment Assistant"
 tags: ["Beginner", "ECS Express", "ECR", "ECS", "EC2", "Deployment"]
 ---
-# AWS ECS Express Deployment Assistant
+
+## AWS ECS Express Deployment Assistant
 
 Accelerates containerized app deployment to AWS ECS Express by automating Docker builds, ECR setup, and IAM configuration so startups deploy applications in minutes while maintaining best practices.
 
@@ -45,7 +46,7 @@ Ask for the folder with your docker file, and validate Dockerfile exists in spec
 Build the docker image with Intel architecture and push it to ECR
 Create the IAM roles
 Deploy to ECS Express using this command:
-aws ecs create-express-gateway-service --execution-role-arn arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE] --infrastructure-role-arn arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE] --task-role-arn arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE] --primary-container image=<ecr image>,containerPort=<port>
+aws ecs create-express-gateway-service --execution-role-arn arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE] --infrastructure-role-arn arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE] --task-role-arn arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE] --primary-container image=`<ecr image>`,containerPort=`<port>`
 Pay attention for other parameters if there were requested and use them as well
 After running this command please get and print the application URL to the screen and let the user know they need to wait 5-10 minutes until the service is fully deployed.
 

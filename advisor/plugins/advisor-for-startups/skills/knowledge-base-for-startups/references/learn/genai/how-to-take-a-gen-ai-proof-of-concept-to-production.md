@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-to-take-a-gen-ai-proof-of-
 title: "How to take a generative AI proof of concept to production"
 ---
 
-# How to take a generative AI proof of concept to production
+## How to take a generative AI proof of concept to production
 
 > Learn the steps to build a generative AI proof of concept and safely deploy it into production.
 
@@ -22,4 +22,3 @@ Learn the steps to build a generative AI proof of concept and safely deploy it i
 ### Jillian Forde
 
 Jillian is a Sr. Solutions Architect who works with startups to help them grow their businesses using the AWS cloud. With a non-technical background, she has not only become an expert in the AWS cloud but also an official AWS podcast host. Her mission is to bridge the gap for those new to the tech industry by making cloud computing and technical concepts approachable and understandable.
-

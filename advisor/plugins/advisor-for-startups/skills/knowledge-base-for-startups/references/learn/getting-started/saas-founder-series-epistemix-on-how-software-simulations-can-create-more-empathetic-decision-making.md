@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/saas-founder-series-epistemix-
 title: "SaaS founder series: Epistemix on how software simulations can create more empathetic decision-making"
 ---
 
-# SaaS founder series: Epistemix on how software simulations can create more empathetic decision-making
+## SaaS founder series: Epistemix on how software simulations can create more empathetic decision-making
 
 Sometimes companies that offer software-as-a-service (SaaS) need help creating scalable infrastructure so they can deliver their product to a larger audience. [AWS SaaS Factory](https://aws.amazon.com/partners/programs/saas-factory/) invited Epistemix's chief executive officer (CEO) and co-founder [John Cordier](https://www.linkedin.com/in/johncordier/) to share how the company is using Amazon Web Services (AWS) to scale, and how their software is helping data scientists make more informed, empathetic decisions based on real and synthetic data through machine learning models.
 
@@ -41,7 +41,7 @@ After looking at other cloud providers, they partnered with AWS based on its bro
 
 "Relying on the AWS SaaS Factory's expertise, we've been able to create a better user onboarding experience. And through that better onboarding experience, we hope to grow the impact that our company can have," says Cordier.
 
-> *"AWS SaaS Factory helped us deliver the tool that we've built—with the sole intention of improving population health, equity, and policy decision-making that's going to impact entire groups of people—to data scientists and other organizations."*
+> _"AWS SaaS Factory helped us deliver the tool that we've built—with the sole intention of improving population health, equity, and policy decision-making that's going to impact entire groups of people—to data scientists and other organizations."_
 
 ## Making large-scale, informed decisions with empathy
 
@@ -53,7 +53,7 @@ Cordier believes that by sharing their platform, which one can use to see how th
 
 With this in mind, he believes that Epistemix has the power to change the way people think about solving a problem.
 
-> *"And if we can have perspectives that are rooted around entire populations, I believe that creates more empathetic leadership, because you're thinking about the population that your decision is going to impact."*
+> _"And if we can have perspectives that are rooted around entire populations, I believe that creates more empathetic leadership, because you're thinking about the population that your decision is going to impact."_
 
 ## About AWS SaaS Factory
 

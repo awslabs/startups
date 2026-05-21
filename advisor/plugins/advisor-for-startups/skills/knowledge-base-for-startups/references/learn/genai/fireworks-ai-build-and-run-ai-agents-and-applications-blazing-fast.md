@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/fireworks-ai-build-and-run-ai-
 title: "Fireworks AI: build and run AI agents and applications blazing fast"
 ---
 
-# Fireworks AI: build and run AI agents and applications blazing fast
+## Fireworks AI: build and run AI agents and applications blazing fast
 
 > Source: [AWS Startups](https://aws.amazon.com/startups/learn/fireworks-ai-build-and-run-ai-agents-and-applications-blazing-fast)
 
@@ -22,4 +22,3 @@ Like the customers it serves, Fireworks AI also faced challenges when it came to
 AWS provided the tools, underlying infrastructure, and capacity Fireworks AI needed to support its developers and wider business in its early stages, scale services as it grew, and ensure its platform was reliable, stable, and secure.
 
 "AWS has been there from the get-go," says Qiao, and, as more organizations in more industries seek easy, cost-effective means of utilizing AI, the partnership will no doubt continue to evolve to support its continued growth.
-

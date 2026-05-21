@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/aws-generative-ai-accelerator-
 title: "AWS Generative AI Accelerator seeks the next generation of global AI leaders"
 ---
 
-# AWS Generative AI Accelerator seeks the next generation of global AI leaders
+## AWS Generative AI Accelerator seeks the next generation of global AI leaders
 
 In 2024, the [AWS Generative AI Accelerator](https://aws.amazon.com/startups/programs/generative-ai) (GAIA) brought together a diverse cohort of standout generative AI startups, for a fast-paced, hybrid program that equipped them with the resources to accelerate real-world impact through AI innovation.
 
@@ -32,4 +32,3 @@ Participants will receive:
 This experience is designed to be truly transformational, as Adèle, Co-founder and CTO of [Phagos](https://phagos.org/), found, "Thanks to the accelerator, we have architectural support on AWS helping plan the next months and years of our company, meaning we can totally focus on the technology."
 
 Ready to accelerate your AI startup? [Apply](https://aws.amazon.com/startups/programs/generative-ai) by July 10, 2025 for your opportunity to be part of the 2025 Generative AI Accelerator Cohort!
-

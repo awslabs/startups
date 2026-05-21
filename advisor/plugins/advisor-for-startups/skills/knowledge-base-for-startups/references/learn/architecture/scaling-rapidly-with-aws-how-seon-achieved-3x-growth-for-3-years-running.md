@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/scaling-rapidly-with-aws-how-s
 title: "Scaling rapidly with AWS—How SEON achieved 3x growth for 3 years running"
 ---
 
-# Scaling rapidly with AWS—How SEON achieved 3x growth for 3 years running
+## Scaling rapidly with AWS—How SEON achieved 3x growth for 3 years running
 
 > SEON scaled rapidly for three consecutive years, achieving triple growth each year. Learn how they did it, all without major refactors to their architecture.
 
@@ -17,7 +17,7 @@ title: "Scaling rapidly with AWS—How SEON achieved 3x growth for 3 years runni
 
 A key driver of SEON's successful scaling, according to their Chief Architect Adam Berkecz, is their use of over 30 AWS solutions regularly.
 
-> *"The traditional approach of provisioning environments without AWS cloud solutions is expensive and has the hidden cost of time needed to launch. With AWS, we have more than 100 engineers delivering customer value on a diverse technical portfolio," explains Adam.*
+> _"The traditional approach of provisioning environments without AWS cloud solutions is expensive and has the hidden cost of time needed to launch. With AWS, we have more than 100 engineers delivering customer value on a diverse technical portfolio," explains Adam._
 
 The stars of SEON's architecture include AWS solutions such as [Amazon Elastic Compute Cloud (Amazon EC2)](https://aws.amazon.com/ec2/), [Amazon Relational Database Service (Amazon RDS)](https://aws.amazon.com/rds/), [Amazon API Gateway](https://aws.amazon.com/api-gateway/), and [AWS Lambda](https://aws.amazon.com/lambda/), which allow them to handle real-time transactions for more than 5,000 customers.
 
@@ -29,7 +29,7 @@ In addition to granting flexibility, SEON's AWS solutions help them to [keep cos
 
 **1. Keep it simple.** When looking for a minimum viable product (MVP) or a market fit with a new product offering, stick to the most easy-to-use AWS services like [AWS Elastic Beanstalk](https://aws.amazon.com/elasticbeanstalk/). Simple yet powerful offerings like Elastic Beanstalk enable your organization to focus on building products rather than invest time in managing services. For SEON, it is important that developers stay as productive as possible to propel the company's growth.
 
-> *"With AWS Elastic Beanstalk and Lambda solutions, we are able to have developers working in various languages (Java, TypeScript, Python, Golang, and others) while focusing on writing code and not on managing servers and databases. With this approach, we can spin up new environments in minutes," says Adam.*
+> _"With AWS Elastic Beanstalk and Lambda solutions, we are able to have developers working in various languages (Java, TypeScript, Python, Golang, and others) while focusing on writing code and not on managing servers and databases. With this approach, we can spin up new environments in minutes," says Adam._
 
 **2. Invest in a multi-AZ and multi-region architecture.** When clients send SEON's tools a transaction to review, a customer at the other end is hoping to sign up for a new service or place an order. Every second that passes will affect their overall customer experience.
 
@@ -41,7 +41,7 @@ By investing in [multi-AZ](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuid
 
 Having raised $94 million in Series B funding in April 2022, SEON is looking to expand its presence in North America, Latin America, and the Asia Pacific region. SEON continues to build partnerships with leading ecommerce platforms, heighten product functionality, and integrate additional data sources to help customers better fight fraud.
 
-> *"With AWS continuously providing and updating futuristic services for AI, containerization, and message streaming, we do not see ourselves slowing down," says Adam. "Managed services like Amazon Aurora and managed Kafka are on our technological roadmap, and we look forward to what we can accomplish further with them."*
+> _"With AWS continuously providing and updating futuristic services for AI, containerization, and message streaming, we do not see ourselves slowing down," says Adam. "Managed services like Amazon Aurora and managed Kafka are on our technological roadmap, and we look forward to what we can accomplish further with them."_
 
 ---
 
@@ -53,4 +53,4 @@ Bilal Dayeh is a Senior Technical Account Manager on the AWS Enterprise Support 
 
 ---
 
-*Source: [AWS Startups Learn](/startups/learn)*
+_Source: [AWS Startups Learn](/startups/learn)_

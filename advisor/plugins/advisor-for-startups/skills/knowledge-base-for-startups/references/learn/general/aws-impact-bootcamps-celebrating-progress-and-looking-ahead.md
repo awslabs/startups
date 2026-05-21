@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/aws-impact-bootcamps-celebrati
 title: "AWS Impact Bootcamps: Celebrating Progress and Looking Ahead"
 ---
 
-# AWS Impact Bootcamps: Celebrating Progress and Looking Ahead
+## AWS Impact Bootcamps: Celebrating Progress and Looking Ahead
 
 Fresh ideas can come from anywhere, and innovation is never dependent on gender, ethnicity, background, or age. In fact, [teams that are diverse consistently outperform those that aren't](https://www.forbes.com/sites/roncarucci/2024/01/24/one-more-time-why-diversity-leads-to-better-team-performance/), seeing greater financial success, retention, and team morale. Diverse companies bring a wider range of experiences to the table, contributing to better decision-making, creativity, and customer understanding.
 

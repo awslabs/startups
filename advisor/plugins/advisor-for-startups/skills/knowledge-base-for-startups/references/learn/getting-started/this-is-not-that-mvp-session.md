@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/this-is-not-that-mvp-session
 title: "This is not that MVP session"
 ---
 
-# This is not that MVP session
+## This is not that MVP session
 
-**Category:** MVP Strategies  
+**Category:** MVP Strategies\
 **Source:** [AWS Startups](https://aws.amazon.com/startups/learn/this-is-not-that-mvp-session)
 
 ## Overview

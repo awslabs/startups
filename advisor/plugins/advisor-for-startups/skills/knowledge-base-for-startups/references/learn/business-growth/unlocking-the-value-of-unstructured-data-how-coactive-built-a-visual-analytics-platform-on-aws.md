@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/unlocking-the-value-of-unstruc
 title: "Unlocking the value of unstructured data: How Coactive built a visual analytics platform on AWS"
 ---
 
-# Unlocking the value of unstructured data: How Coactive built a visual analytics platform on AWS
+## Unlocking the value of unstructured data: How Coactive built a visual analytics platform on AWS
 
 Coactive builds on AWS to bring structure to unstructured data through their innovative visual analytics platform.
 
@@ -103,4 +103,4 @@ Bonnie is an editor specializing in creating accessible, engaging content for al
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/unlocking-the-value-of-unstructured-data-how-coactive-built-a-visual-analytics-platform-on-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/unlocking-the-value-of-unstructured-data-how-coactive-built-a-visual-analytics-platform-on-aws)_

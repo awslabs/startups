@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/demystifying-startup-jargon
 title: "Demystifying Startup Jargon"
 ---
 
-# Demystifying Startup Jargon
+## Demystifying Startup Jargon
 
-*Discover some of the most common startup terminology to help you navigate conversations across funding and finance and stay ahead of the game.*
+_Discover some of the most common startup terminology to help you navigate conversations across funding and finance and stay ahead of the game._
 
 ---
 
@@ -293,7 +293,7 @@ A moonshot is an ambitious project or venture that aims for a radical, transform
 
 ### MVP (Minimum Viable Product)
 
-MVP is short for minimum viable product and describes the earliest stage that your product or service can be sold to customers. Originally defined in the book *Lean Startup* by Eric Reis, the term has caught on and is used by many startups to get, well, started.
+MVP is short for minimum viable product and describes the earliest stage that your product or service can be sold to customers. Originally defined in the book _Lean Startup_ by Eric Reis, the term has caught on and is used by many startups to get, well, started.
 
 ---
 
@@ -374,4 +374,3 @@ Seed funding is the first official equity funding stage, helping a startup move 
 ## A Final Thought
 
 Understanding startup jargon isn't just about sounding knowledgeable in meetings—it's about being able to navigate the complex world of entrepreneurship, funding, and growth with confidence. Whether you're a first-time founder or an experienced entrepreneur exploring new ventures, mastering this vocabulary will help you communicate more effectively with investors, partners, and team members alike.
-

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-o8t
 title: "Unlocking the Human Brain with the Power of Artificial Intelligence"
 ---
 
-# Unlocking the Human Brain with the Power of Artificial Intelligence
+## Unlocking the Human Brain with the Power of Artificial Intelligence
 
 > "The cloud has been a revolution for healthcare and neuroscience, with a lot of really good services for dealing with patient data, patient health records, and image processing."
 

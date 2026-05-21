@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/how-stigma-scaled-their-hope-d
 title: "How STIGMA scaled their hope delivery app with the AWS Impact Accelerator"
 ---
 
-# How STIGMA scaled their hope delivery app with the AWS Impact Accelerator
+## How STIGMA scaled their hope delivery app with the AWS Impact Accelerator
 
-*Discover how the AWS Impact Accelerator Latino Founder cohort helped STIGMA rapidly scale and add features to their hope delivery messaging app.*
+_Discover how the AWS Impact Accelerator Latino Founder cohort helped STIGMA rapidly scale and add features to their hope delivery messaging app._
 
 ---
 
@@ -75,4 +75,4 @@ Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. W
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-stigma-scaled-their-hope-delivery-app-with-the-aws-impact-accelerator)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-stigma-scaled-their-hope-delivery-app-with-the-aws-impact-accelerator)_

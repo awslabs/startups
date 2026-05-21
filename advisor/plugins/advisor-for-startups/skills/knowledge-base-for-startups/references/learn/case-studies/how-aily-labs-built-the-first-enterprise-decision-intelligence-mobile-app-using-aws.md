@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-aily-labs-built-the-first-
 title: "How Aily Labs built the first enterprise decision intelligence mobile app using AWS"
 ---
 
-# How Aily Labs built the first enterprise decision intelligence mobile app using AWS
+## How Aily Labs built the first enterprise decision intelligence mobile app using AWS
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/how-aily-labs-built-the-first-enterprise-decision-intelligence-mobile-app-using-aws)
 
@@ -18,4 +18,3 @@ Discover how Aily Labs powers decisions with AI. [Read the full case study.](htt
 ## About AWS Activate
 
 Over 330,000 have joined [AWS Activate](https://aws.amazon.com/activate/activate-landing/) since its inception in 2013, accessing a range of resources to help build, grow, and scale their startup. This includes unlocking [AWS Activate Credits](https://aws.amazon.com/startups/credits), which can be used to help cover the costs of AWS services and solutions, from compute, database, and storage; to machine learning, containers, applications, and more. AWS Activate has already provided more than $7 billion in credits to startups, and yours could be next to benefit. Find out more about [AWS Activate](https://aws.amazon.com/activate/activate-landing/) today.
-

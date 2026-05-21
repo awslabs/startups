@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/rapidly-building-and-deliverin
 title: "Optimize startup success: Rapidly building and delivering your application with AWS tools"
 ---
 
-# Optimize startup success: Rapidly building and delivering your application with AWS tools
+## Optimize startup success: Rapidly building and delivering your application with AWS tools
 
 ## Overview
 
@@ -24,5 +24,4 @@ This page features a video resource on AWS Startups focusing on DevOps practices
 
 ---
 
-
-*Note: This page primarily contains video content. The full video transcript and detailed information are available on the source page.*
+_Note: This page primarily contains video content. The full video transcript and detailed information are available on the source page._

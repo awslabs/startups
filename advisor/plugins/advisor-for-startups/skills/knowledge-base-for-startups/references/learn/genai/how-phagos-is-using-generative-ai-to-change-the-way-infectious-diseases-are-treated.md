@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-phagos-is-using-generative
 title: "Solving bacterial infections: How Phagos is using generative AI to change the way infectious diseases are treated"
 ---
 
-# Solving bacterial infections: How Phagos is using generative AI to change the way infectious diseases are treated
+## Solving bacterial infections: How Phagos is using generative AI to change the way infectious diseases are treated
 
 Phagos has a remarkable mission: to end bacterial disease. Today, Phagos is turning that vision into reality by harnessing bacteriophages, nature's bacteria-killing viruses, to cure infectious disease. Bacteriophages, or phages, are the natural regulators of bacteria. In an era of rising antibiotic resistance, there is an urgent need for this new antibacterial solution.
 

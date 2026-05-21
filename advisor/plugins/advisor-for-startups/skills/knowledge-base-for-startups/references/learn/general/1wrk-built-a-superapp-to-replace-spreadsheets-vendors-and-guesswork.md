@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/1wrk-built-a-superapp-to-repla
 title: "1Wrk built a SuperApp to replace spreadsheets, vendors, and guesswork"
 ---
 
-# 1Wrk built a SuperApp to replace spreadsheets, vendors, and guesswork
+## 1Wrk built a SuperApp to replace spreadsheets, vendors, and guesswork
 
 [1Wrk](https://1wrk.com/) by ANSR is a full-stack SuperApp built to help global enterprises design, launch, and scale Global Capability Centers (GCCs) across India and emerging markets. The platform simplifies every stage of expansion—from talent acquisition and onboarding to infrastructure, compliance, and operations—through a single, templatized experience.
 
@@ -43,4 +43,4 @@ With AWS providing a secure, scalable foundation, 1Wrk can continue to scale its
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/1wrk-built-a-superapp-to-replace-spreadsheets-vendors-and-guesswork)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/1wrk-built-a-superapp-to-replace-spreadsheets-vendors-and-guesswork)_

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/
 title: "AWS Startups Home"
 ---
 
-# AWS Startups
+## AWS Startups
 
 ## Build your startup on AWS
 

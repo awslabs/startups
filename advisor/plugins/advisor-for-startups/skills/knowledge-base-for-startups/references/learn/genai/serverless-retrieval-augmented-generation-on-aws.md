@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/serverless-retrieval-augmented
 title: "Serverless Retrieval Augmented Generation (RAG) on AWS"
 ---
 
-# Serverless Retrieval Augmented Generation (RAG) on AWS
+## Serverless Retrieval Augmented Generation (RAG) on AWS
 
 In the evolving landscape of generative AI, integrating external, up-to-date information into large language models (LLMs) presents a significant advancement. In this post, we're going to build up to a truly serverless [Retrieval Augmented Generation](https://bit.ly/3XS0X04) (RAG) solution, facilitating the creation of applications that produce more accurate and contextually relevant responses. Our goal is to help you create your GenAI powered application as fast as possible, keeping an eye on your costs, and making sure you don't pay for compute you're not using.
 

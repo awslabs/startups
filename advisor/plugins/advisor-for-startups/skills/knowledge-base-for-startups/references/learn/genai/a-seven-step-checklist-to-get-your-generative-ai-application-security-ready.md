@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/a-seven-step-checklist-to-get-
 title: "A Seven-Step Checklist to Get Your Generative AI Application Security-Ready"
 ---
 
-# A Seven-Step Checklist to Get Your Generative AI Application Security-Ready
+## A Seven-Step Checklist to Get Your Generative AI Application Security-Ready
 
 [Generative AI](https://aws.amazon.com/generative-ai/) has seen explosive growth in recent years, with applications transforming how startups create content, analyze data, and make critical decisions. Organizations are increasingly using the power of generative AI models to build custom applications. As such, the startups experimenting and wielding generative AI must make security and responsible usage a top priority.
 
@@ -32,6 +32,7 @@ Establishing a comprehensive governance and compliance framework is the foundati
 Next, develop a compliance checklist tailored to your industry regulations (such as [GDPR](https://aws.amazon.com/compliance/gdpr-center/) or [PCI DSS](https://aws.amazon.com/compliance/pci-dss-level-1-faqs/)). This should cover data privacy measures, consent management, and transparency requirements. Implement a regular compliance review, such as quarterly audits, to make sure you adhere to developing standards.
 
 **Further reading:**
+
 - [Scaling a governance, risk, and compliance program for the cloud, emerging technologies, and innovation](https://aws.amazon.com/blogs/security/scaling-a-governance-risk-and-compliance-program-for-the-cloud/)
 - [Securing generative AI: data, compliance, and privacy considerations](https://aws.amazon.com/blogs/security/securing-generative-ai-data-compliance-and-privacy-considerations/)
 

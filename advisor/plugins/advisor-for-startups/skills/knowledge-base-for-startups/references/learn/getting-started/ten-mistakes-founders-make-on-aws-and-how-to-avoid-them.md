@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/ten-mistakes-founders-make-on-
 title: "Ten Mistakes Founders Make on AWS, and How to Avoid Them"
 ---
 
-# Ten Mistakes Founders Make on AWS, and How to Avoid Them
+## Ten Mistakes Founders Make on AWS, and How to Avoid Them
 
-*by Britton Winterrose, AWS Startup Solutions Architect and Jordan Patapoff, AWS Startup CTO Engagement Lead*
+_by Britton Winterrose, AWS Startup Solutions Architect and Jordan Patapoff, AWS Startup CTO Engagement Lead_
 
 For founders, the only thing longer than the hours you work is the list of tasks to be done. Ideally, you'd get to spend your time talking with your customers and implementing improvements to your product. That's why AWS fuels the growth of startups at all stages by providing reliable, scalable, and inexpensive cloud computing services that allow founders to quickly innovate, experiment, and iterate. The breadth and depth of AWS services make the platform a powerful tool to build fast and focus on your customers — but with that power comes great responsibility.
 
@@ -21,7 +21,7 @@ No one likes a surprise bill. Learn [why every startup should set up a budget an
 
 **Mistake #2: Not leveraging business support**
 
-Time is of the essence for startups who are building. With help from AWS Business support, you don't have to go it alone. Learn [how to use business support to help fix issues and get answers *faster*](https://aws.amazon.com/blogs/startups/leveraging-aws-business-support-as-a-startup/).
+Time is of the essence for startups who are building. With help from AWS Business support, you don't have to go it alone. Learn [how to use business support to help fix issues and get answers _faster_](https://aws.amazon.com/blogs/startups/leveraging-aws-business-support-as-a-startup/).
 
 **Mistake #3: Confusing root accounts and IAM users**
 
@@ -78,4 +78,3 @@ Britton Winterrose is a Startup Solutions Architect with AWS. Prior to joining A
 ### Jordan Patapoff
 
 Jordan Patapoff is a CTO in Residence on the Startup team at AWS. Prior to joining AWS, he co-founded Clyp, a Techstars-backed company that scaled to support millions of creators.
-

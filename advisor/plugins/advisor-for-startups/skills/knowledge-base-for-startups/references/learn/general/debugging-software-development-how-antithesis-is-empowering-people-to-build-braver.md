@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/debugging-software-development
 title: "Debugging Software Development: How Antithesis is Empowering People to Build Braver"
 ---
 
-# Debugging Software Development: How Antithesis is Empowering People to Build Braver
+## Debugging Software Development: How Antithesis is Empowering People to Build Braver
 
 > Source: [AWS Startups](https://startups.aws/startups/learn/debugging-software-development-how-antithesis-is-empowering-people-to-build-braver)
 
@@ -59,4 +59,4 @@ Excited to quickly feed into developers' iteration loops and empower them to bui
 
 ---
 
-*Related: [Learn](/startups/learn)*
+_Related: [Learn](/startups/learn)_

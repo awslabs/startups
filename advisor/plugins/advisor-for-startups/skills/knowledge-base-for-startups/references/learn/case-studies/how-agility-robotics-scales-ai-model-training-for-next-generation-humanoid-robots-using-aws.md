@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-agility-robotics-scales-ai
 title: "How Agility Robotics scales AI model training for next-generation humanoid robots using AWS"
 ---
 
-# How Agility Robotics scales AI model training for next-generation humanoid robots using AWS
+## How Agility Robotics scales AI model training for next-generation humanoid robots using AWS
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/how-agility-robotics-scales-ai-model-training-for-next-generation-humanoid-robots-using-aws)
 
@@ -16,4 +16,3 @@ Explore Agility's revolutionary robotics solution. [Read the full case study](ht
 ---
 
 Over 330,000 have joined [AWS Activate](https://aws.amazon.com/activate/activate-landing/) since its inception in 2013, accessing a range of resources to help build, grow, and scale their startup. This includes unlocking [AWS Activate Credits](https://aws.amazon.com/startups/credits), which can be used to help cover the costs of AWS services and solutions, from compute, database, and storage; to machine learning, containers, applications, and more. AWS Activate has already provided more than $7 billion in credits to startups, and yours could be next to benefit. Find out more about [AWS Activate](https://aws.amazon.com/activate/activate-landing/) today.
-

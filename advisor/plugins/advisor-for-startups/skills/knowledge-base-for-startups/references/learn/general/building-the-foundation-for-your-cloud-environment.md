@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-the-foundation-for-yo
 title: "Building the foundation for your cloud environment"
 ---
 
-# Building the foundation for your cloud environment
+## Building the foundation for your cloud environment
 
 ## Overview
 
@@ -18,4 +18,3 @@ This page features a video resource from AWS Startups about building the foundat
 ### Navigation
 
 - [Learn](/startups/learn) → Building the foundation for your cloud environment
-

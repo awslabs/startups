@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-rox-is-transforming-revenu
 title: "How Rox is transforming revenue teams with AI-driven integration powered by AWS"
 ---
 
-# How Rox is transforming revenue teams with AI-driven integration powered by AWS
+## How Rox is transforming revenue teams with AI-driven integration powered by AWS
 
 > With infrastructure built from the ground up using a variety of AWS services, Rox benefited immensely from the robust expertise of AWS.
 
@@ -82,7 +82,7 @@ Rox AI CTO and Co-Founder Shriram Sridharan says, "We are incredibly happy to ha
 
 ![Overview of the Architecture](/images/rox-architecture.png)
 
-*The diagram outlines the Rox AI architecture, showcasing the integration between customer data systems and Rox's proprietary infrastructure, built on Amazon Web Services (AWS).*
+_The diagram outlines the Rox AI architecture, showcasing the integration between customer data systems and Rox's proprietary infrastructure, built on Amazon Web Services (AWS)._
 
 ## The future of revenue teams
 

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/crate-builds-with-generative-a
 title: "Crate builds with generative AI on AWS to reimagine online spaces"
 ---
 
-# Crate builds with generative AI on AWS to reimagine online spaces
+## Crate builds with generative AI on AWS to reimagine online spaces
 
 > Anna Bofa's ambition for Crate is to create an internet where the user does not go out looking for content—the best of the internet comes to them.
 
@@ -63,6 +63,6 @@ Anna believes that the potential for AI to revolutionize how we live and work is
 
 ---
 
-*Author: Megan Crowley*
+_Author: Megan Crowley_
 
 Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. With an earlier career as a high school English teacher, she is driven by a relentless enthusiasm for contributing to content that is equal parts educational and inspirational. Sharing startups' stories with the world is the most rewarding part of her role at AWS. In her spare time, Megan can be found woodworking, in the garden, and at antique markets.

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/14-reasons-to-fall-in-love-wit
 title: "14 reasons to fall in love with AWS Activate"
 ---
 
-# 14 reasons to fall in love with AWS Activate
+## 14 reasons to fall in love with AWS Activate
 
 > Discover why startups adore AWS Activate. Access exclusive offers, expert guidance, and AWS resources to build, launch, and grow your business.
 
@@ -92,4 +92,4 @@ Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. W
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/14-reasons-to-fall-in-love-with-aws-activate)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/14-reasons-to-fall-in-love-with-aws-activate)_

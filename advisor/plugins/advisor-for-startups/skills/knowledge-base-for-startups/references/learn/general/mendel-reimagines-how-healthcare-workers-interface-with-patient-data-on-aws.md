@@ -3,15 +3,15 @@ source_url: https://aws.amazon.com/startups/learn/mendel-reimagines-how-healthca
 title: "Mendel reimagines how healthcare workers interface with patient data on AWS"
 ---
 
-# Mendel reimagines how healthcare workers interface with patient data on AWS
+## Mendel reimagines how healthcare workers interface with patient data on AWS
 
-*Mendel is using AI and Amazon Web Services to overcome the shortcomings of traditional healthcare tech that limits clinical curiosity.*
+_Mendel is using AI and Amazon Web Services to overcome the shortcomings of traditional healthcare tech that limits clinical curiosity._
 
 ---
 
 Whenever we find ourselves sat across from a doctor or nurse, we want to know that they have access to whatever they need to administer the highest level of care. In today's world, that means data. Every note taken, medication prescribed, or test result received while caring for a patient is part of an evolving story that is unique to them. Healthcare professionals need access to both individualized data and broader contextual data to make informed decisions about the treatment we receive.
 
-[Mendel](https://www.mendel.ai/) is an innovative artificial intelligence (AI) startup committed to making that process faster than ever before. Together with [Amazon Web Services (AWS)](https://aws.amazon.com/), Mendel is using AI to overcome the shortcomings of traditional healthcare technologies and processes that limit clinical curiosity. Mendel's AI deciphers clinical data with clinician-like logic by indexing structured and unstructured data and enabling healthcare workers to interface or *chat* with patient data using natural language.
+[Mendel](https://www.mendel.ai/) is an innovative artificial intelligence (AI) startup committed to making that process faster than ever before. Together with [Amazon Web Services (AWS)](https://aws.amazon.com/), Mendel is using AI to overcome the shortcomings of traditional healthcare technologies and processes that limit clinical curiosity. Mendel's AI deciphers clinical data with clinician-like logic by indexing structured and unstructured data and enabling healthcare workers to interface or _chat_ with patient data using natural language.
 
 ## A transfusion of ideas: medicine meets computer science
 
@@ -69,7 +69,7 @@ The Mendel team are currently working on pre-training a foundation model capable
 
 Beyond expertise, Mendel needed a cloud partner capable of securely storing patient data in full compliance with regulatory standards and regional laws like The Health Insurance Portability and Accountability Act (HIPAA). "Privacy is a big deal in healthcare. How information is being stored and handled is a priority for any healthcare startup. A lot of our customers are already on AWS, which makes it easier for us to be there too. We're meeting them where they are versus us asking them to send data from one cloud vendor to another."
 
-AWS helps startups develop and evolve their security posture with proven best practices and cutting-edge technology. "Security is job number zero," says Chao. "We operate under a shared responsibility model where AWS is responsible for the security *of* the cloud, and our customers are responsible for securing their data *in* the cloud." She continues: "We also provide hands-on guidance and resources on how to remain protected and compliant."
+AWS helps startups develop and evolve their security posture with proven best practices and cutting-edge technology. "Security is job number zero," says Chao. "We operate under a shared responsibility model where AWS is responsible for the security _of_ the cloud, and our customers are responsible for securing their data _in_ the cloud." She continues: "We also provide hands-on guidance and resources on how to remain protected and compliant."
 
 ## Collaboration, not competition
 
@@ -89,4 +89,4 @@ Going forward, Mendel will continue to empower healthcare professionals and impr
 
 **Author:** AWS Editorial Team
 
-*The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.*
+_The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires._

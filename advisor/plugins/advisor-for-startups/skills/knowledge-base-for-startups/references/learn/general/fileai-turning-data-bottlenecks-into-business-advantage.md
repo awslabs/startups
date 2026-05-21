@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/fileai-turning-data-bottleneck
 title: "fileAI: turning data bottlenecks into business advantage"
 ---
 
-# fileAI: turning data bottlenecks into business advantage
+## fileAI: turning data bottlenecks into business advantage
 
-*[fileAI](http://www.file.ai) is collaborating with AWS to transform manual data cleanup into automated, reliable workflows that can scale across enterprises.*
+_[fileAI](http://www.file.ai) is collaborating with AWS to transform manual data cleanup into automated, reliable workflows that can scale across enterprises._
 
 Enterprise data is often unstructured. It may not fit into standard formats or live in neat tables, and for multinational companies, may be in multiple languages and reside in systems in numerous geographies. As such, it's difficult to manage, impacting workflows, compliance efforts and the ability to extract valuable insights.
 
@@ -33,4 +33,4 @@ To learn more about cutting-edge developments in AI and data processing, join fi
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/fileai-turning-data-bottlenecks-into-business-advantage)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/fileai-turning-data-bottlenecks-into-business-advantage)_

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-data-star
 title: "Data can be a startup's greatest asset"
 ---
 
-# Data can be a startup's greatest asset
+## Data can be a startup's greatest asset
 
 Data is a critical asset for founders, and the more you can gather, the better you can understand your startup's performance and future potential.
 
@@ -66,4 +66,3 @@ All data has value, and many startup investors are keenly aware that much of the
 The fact that data has value means that we must [appropriately protect it](https://amer.resources.awscloud.com/aws-startup/building-strong-security-foundation). And given that data is often collected from customers, it is critical to ensure we use data in ways that are respectful of privacy and considerations of fair use, to both retain customers' trust, and to avoid falling foul of government regulations.
 
 The value of data can only truly be realized if that value is understood early in a startup's life. So, while data might not seem like the most exciting aspect of building a startup, it can often become the most important.
-

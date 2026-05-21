@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/opensearch-cluster-op
 title: "OpenSearch Cluster Operational Review"
 tags: ["Architecture", "Advanced", "OpenSearch"]
 ---
-# OpenSearch Cluster Operational Review
+
+## OpenSearch Cluster Operational Review
 
 Automated operational review of your OpenSearch cluster across 6 pillars. Analyzes performance, security, costs, and configurations—generating actionable recommendations with prioritized fixes.
 
@@ -87,8 +88,9 @@ Password
 ## How to use?
 
 Prerequisites:
-1. Install Kiro CLI 
+
+1. Install Kiro CLI
 2. Amazon OpenSearch cluster deployed
-3. Connection from Kiro cli machine to the OpenSearch cluster. This could be through public cluster (not recommended), proxy, or ssh tunnel. 
-a. SSH tunnel instructions: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/vpc.html#vpc-ssh
-b. Proxy instructions: https://repost.aws/knowledge-center/opensearch-outside-vpc-nginx
+3. Connection from Kiro cli machine to the OpenSearch cluster. This could be through public cluster (not recommended), proxy, or ssh tunnel.
+   a. SSH tunnel instructions: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/vpc.html#vpc-ssh
+   b. Proxy instructions: https://repost.aws/knowledge-center/opensearch-outside-vpc-nginx

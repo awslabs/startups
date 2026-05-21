@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/video-daytwo-is-using-data-ana
 title: "Video: DayTwo Is Using Data Analytics from the Gut Microbiome to Further Healthcare"
 ---
 
-# Video: DayTwo Is Using Data Analytics from the Gut Microbiome to Further Healthcare
+## Video: DayTwo Is Using Data Analytics from the Gut Microbiome to Further Healthcare
 
 > Discover how DayTwo leverages AWS services for powerful insights to unlock the potential of gut microbiome data analytics in healthcare.
 
@@ -27,4 +27,4 @@ The AWS Startups Content Marketing Team collaborates with startups of all sizes 
 
 ---
 
-*Source: [AWS Startups](/startups/learn/video-daytwo-is-using-data-analytics-from-the-gut-microbiome-to-further-healthcare)*
+_Source: [AWS Startups](/startups/learn/video-daytwo-is-using-data-analytics-from-the-gut-microbiome-to-further-healthcare)_

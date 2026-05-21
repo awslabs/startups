@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-machine-learning-helps-fra
 title: "How Machine Learning Helps Fraud.net Build App to Combat Fraud"
 ---
 
-# How Machine Learning Helps Fraud.net Build App to Combat Fraud
+## How Machine Learning Helps Fraud.net Build App to Combat Fraud
 
 > Fraud.net outpaces and outsmarts the technology criminals use to commit fraud. Learn how they use AI/ML to give their banking and fintech customers peace of mind.
 
@@ -101,9 +101,9 @@ Curious about how AWS can help kick start your startup? Join [AWS Activate](http
 
 ---
 
-**Author:** Megan Crowley  
-*Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. With an earlier career as a high school English teacher, she is driven by a relentless enthusiasm for contributing to content that is equal parts educational and inspirational. Sharing startups' stories with the world is the most rewarding part of her role at AWS.*
+**Author:** Megan Crowley\
+_Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. With an earlier career as a high school English teacher, she is driven by a relentless enthusiasm for contributing to content that is equal parts educational and inspirational. Sharing startups' stories with the world is the most rewarding part of her role at AWS._
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/how-machine-learning-helps-fraud-net-to-build-a-modern-app-on-aws-to-combat-financial-fraud)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/how-machine-learning-helps-fraud-net-to-build-a-modern-app-on-aws-to-combat-financial-fraud)_

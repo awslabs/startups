@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/quick-cloud-cost-optimization-
 title: "Quick Cloud Cost Optimization Strategies for Early-Stage Startups"
 ---
 
-# Quick Cloud Cost Optimization Strategies for Early-Stage Startups
+## Quick Cloud Cost Optimization Strategies for Early-Stage Startups
 
 Navigating the delicate balance between rapid growth and cost control can be daunting for startups. Managing expenses becomes increasingly crucial to maintaining profitability and competitiveness as the business expands.
 
@@ -136,4 +136,3 @@ By understanding your spending using [AWS Cost Explorer](https://aws.amazon.com/
 **Victor Jansson**
 
 Victor Jansson is a Solution Architect Manager for Startups at Amazon Web Services (AWS) in London, UK. With hands-on experience as a CTO in leading European startups, he now helps technical companies break through growth barriers. Victor combines the practical power of generative AI, machine learning, and strong data foundations to help teams realize their full potential in the cloud.
-

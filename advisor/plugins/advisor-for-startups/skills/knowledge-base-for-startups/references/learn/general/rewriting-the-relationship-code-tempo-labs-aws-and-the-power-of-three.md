@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/rewriting-the-relationship-cod
 title: "Rewriting the relationship code: Tempo Labs, AWS, and the power of three"
 ---
 
-# Rewriting the relationship code: Tempo Labs, AWS, and the power of three
+## Rewriting the relationship code: Tempo Labs, AWS, and the power of three
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/rewriting-the-relationship-code-tempo-labs-aws-and-the-power-of-three)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/rewriting-the-relationship-code-tempo-labs-aws-and-the-power-of-three)_
 
 ![Tempo Labs](https://d22k7geae6sy8h.cloudfront.net/files/68e8e82b9326e80015fe0fd2/image001+-+Optimised.jpg)
 
@@ -63,4 +63,4 @@ And Tempo itself remains committed to working as a collective with partner AWS. 
 
 ---
 
-*Related: [Learn](/startups/learn)*
+_Related: [Learn](/startups/learn)_

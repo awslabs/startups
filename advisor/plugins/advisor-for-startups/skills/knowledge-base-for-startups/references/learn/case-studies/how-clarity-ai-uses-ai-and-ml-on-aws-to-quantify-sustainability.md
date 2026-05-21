@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-clarity-ai-uses-ai-and-ml-
 title: "How Clarity AI uses AI and ML on AWS to quantify sustainability"
 ---
 
-# How Clarity AI uses AI and ML on AWS to quantify sustainability
+## How Clarity AI uses AI and ML on AWS to quantify sustainability
 
 Building a sustainable company—from an environmental, social, and governance perspective—is a priority for many founders. But did you know a company's sustainability is becoming increasingly important to investors as well?
 
@@ -79,4 +79,4 @@ And it's not just investors who are focusing on ESG issues; regulatory agencies 
 
 ---
 
-*Author: Megan Crowley, Senior Technical Writer on the Startup Content Team at AWS*
+_Author: Megan Crowley, Senior Technical Writer on the Startup Content Team at AWS_

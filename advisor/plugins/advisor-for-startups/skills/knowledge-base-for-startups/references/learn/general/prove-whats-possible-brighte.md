@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-brighte
 title: "A Brighte idea"
 ---
 
-# A Brighte idea
+## A Brighte idea
 
 > "I knew that this was a good idea, and I knew this was possible – I just had to take that leap."
 
@@ -69,4 +69,4 @@ Hannah Wall is the Head of Startups Content Marketing. She has 15+ years of expe
 
 ---
 
-*Source: [AWS Startups - Learn](/startups/learn)*
+_Source: [AWS Startups - Learn](/startups/learn)_

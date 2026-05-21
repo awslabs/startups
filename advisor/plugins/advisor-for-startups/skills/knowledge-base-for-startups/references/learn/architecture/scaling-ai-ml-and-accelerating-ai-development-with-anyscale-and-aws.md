@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/scaling-ai-ml-and-accelerating
 title: "Accelerating AI/ML scaling and AI development with Anyscale and AWS"
 ---
 
-# Accelerating AI/ML scaling and AI development with Anyscale and AWS
+## Accelerating AI/ML scaling and AI development with Anyscale and AWS
 
 > Learn how Anyscale and AWS accelerate AI/ML scaling and AI development to help customers reduce time-to-market and focus on product innovation.
 
@@ -72,4 +72,4 @@ Megan Crowley is a Senior Technical Writer on the Startup Content Team at AWS. W
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/scaling-ai-ml-and-accelerating-ai-development-with-anyscale-and-aws)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/scaling-ai-ml-and-accelerating-ai-development-with-anyscale-and-aws)_

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/carecopilot-founder-alyse-dunn
 title: "CareCoPilot founder Alyse Dunn wins big after AWS Impact Accelerator"
 ---
 
-# CareCoPilot founder Alyse Dunn wins big after AWS Impact Accelerator
+## CareCoPilot founder Alyse Dunn wins big after AWS Impact Accelerator
 
-*To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](/startups/prove-whats-possible/).*
+_To celebrate Black History Month, AWS Startups is featuring posts throughout February highlighting the contributions of Black builders and leaders in tech. Above all, these individuals inspire, empower, and encourage others—especially those historically underrepresented in tech—to [prove what's possible](/startups/prove-whats-possible/)._
 
 Just before Thanksgiving in 2014, [CareCoPilot](https://carecopilot.co/) founder Alyse Dunn knew she had to make a change. She and her sister had spent the past two years managing their father's care as he dealt with multiple sclerosis. Then, shortly before his death, their mother received an Alzheimer's diagnosis.
 
@@ -51,5 +51,5 @@ She understands her startup path may not be seamless. But on her desk, she has a
 
 ---
 
-**Author:** Chalaire Miller  
-*Web and Social Content Manager, Global SUP, AWS*
+**Author:** Chalaire Miller\
+_Web and Social Content Manager, Global SUP, AWS_

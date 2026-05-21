@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-remote-wo
 title: "Remote work helps founders recruit international talent, save on real estate costs, and gain global experience"
 ---
 
-# Remote work helps founders recruit international talent, save on real estate costs, and gain global experience
+## Remote work helps founders recruit international talent, save on real estate costs, and gain global experience
 
-*Embracing remote cloud-based working delivers numerous benefits to workers and managers alike, reducing costs and expanding the pool of talent.*
+_Embracing remote cloud-based working delivers numerous benefits to workers and managers alike, reducing costs and expanding the pool of talent._
 
 ---
 
@@ -60,4 +60,4 @@ Just as cloud computing has freed startups from needing to invest in their own c
 
 ---
 
-*Source: [AWS Startups](/startups/learn)*
+_Source: [AWS Startups](/startups/learn)_

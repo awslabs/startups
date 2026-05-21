@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/should-i-learn-aws-lambda-as-a
 title: "Should I learn AWS Lambda as a startup founder?"
 ---
 
-# Should I learn AWS Lambda as a startup founder?
+## Should I learn AWS Lambda as a startup founder?
 
 Generative AI and cloud computing are transforming businesses' operations, and [AWS Lambda](https://aws.amazon.com/lambda/) is leading the charge in the serverless landscape. As a startup founder or [developer](https://aws.amazon.com/blogs/devops/introducing-the-new-amazon-q-developer-experience-in-aws-lambda/), you might wonder if learning AWS Lambda is worth your time.
 

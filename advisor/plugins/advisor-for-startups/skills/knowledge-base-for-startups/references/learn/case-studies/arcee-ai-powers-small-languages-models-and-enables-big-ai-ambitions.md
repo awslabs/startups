@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/arcee-ai-powers-small-language
 title: "Arcee AI powers small languages models and enables big AI ambitions"
 ---
 
-# Arcee AI powers small languages models and enables big AI ambitions
+## Arcee AI powers small languages models and enables big AI ambitions
 
 > Source: [AWS Startups](https://startups.aws/startups/learn/arcee-ai-powers-small-languages-models-and-enables-big-ai-ambitions)
 

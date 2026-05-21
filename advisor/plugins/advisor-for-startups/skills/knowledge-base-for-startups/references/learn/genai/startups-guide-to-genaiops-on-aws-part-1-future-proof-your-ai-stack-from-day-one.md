@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/startups-guide-to-genaiops-on-
 title: "Startup's Guide to GenAIOps on AWS Part 1: Future-Proof Your AI Stack from Day One"
 ---
 
-# Startup's Guide to GenAIOps on AWS Part 1: Future-Proof Your AI Stack from Day One
+## Startup's Guide to GenAIOps on AWS Part 1: Future-Proof Your AI Stack from Day One
 
 ---
 
@@ -122,13 +122,17 @@ Whether you're just starting your AI journey or looking to optimize your existin
 ## Authors
 
 ### Nima Seifi
+
 Nima Seifi is a Senior Solutions Architect at AWS, based in Southern California, where he specializes in SaaS and GenAIOps. He serves as a technical advisor to startups building on AWS. Prior to AWS, he worked as a DevOps architect in the ecommerce industry for over 5 years, following a decade of R&D work in mobile internet technologies. Nima has 20+ publications in prominent technical journals and conferences and holds 7 US patents.
 
 ### Anu Jayanthi
+
 Anu Jayanthi works with Startup customers, providing advocacy and strategic technical guidance to help plan and build solutions using AWS best practices.
 
 ### Pat Santora
+
 Pat Santora is a GenAI Labs Cloud Architect and Technologist with over 25 years of experience implementing solutions across the cloud for both enterprises and startups. He has successfully launched numerous products from inception, led analytical re-architecture projects, and managed remote teams with a philosophy centered on transparency and trust.
 
 ### Clement Perrot
+
 Clement Perrot helps top-tier startups accelerate their AI initiatives by providing strategic guidance on model selection, responsible AI implementation, and optimized machine learning operations. A serial entrepreneur and Inc 30 Under 30 honoree, he brings deep expertise in building and scaling AI companies, having founded and successfully exited multiple ventures in consumer technology and enterprise AI.

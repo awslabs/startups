@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/rogo-delivers-secure-ai-with-a
 title: "Rogo delivers secure AI with Amazon Bedrock, driving innovation in finance"
 ---
 
-# Rogo delivers secure AI with Amazon Bedrock, driving innovation in finance
+## Rogo delivers secure AI with Amazon Bedrock, driving innovation in finance
 
 Wall Street stands at a pivotal moment in its technological evolution. While generative artificial intelligence (AI) promises to revolutionize how financial professionals work, the industry's stringent compliance requirements and complex legacy systems have created significant adoption challenges for firms. Many banks still rely on siloed core systems that are decades old, making it difficult and expensive to integrate new technologies and systems.
 
@@ -61,6 +61,6 @@ Canning adds: "From a security perspective, I'm really excited about [AWS Nitro 
 
 ---
 
-*AWS Editorial Team*
+_AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

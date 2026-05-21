@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/how-startups-thrive-challengin
 title: "How Startups Can Thrive in a Challenging Market"
 ---
 
-# How Startups Can Thrive in a Challenging Market
+## How Startups Can Thrive in a Challenging Market
 
 Startups disrupt traditional business landscapes—that's what makes them such exciting ventures. But when the landscape for startups itself faces disruption, anxiety and caution can take root.
 
@@ -62,4 +62,3 @@ Startups can use cloud computing credits to obtain one or more of the 200+ cloud
 ### Jim Routh
 
 Jim is currently leading North America's Startup Business Development (BD) team for AWS. He started his career at Apple, working in various business development and product-focused roles. Frustrated with the big company pace, he left and joined his first startup in 1996 as Director of Business Development for NetObjects. Over the next 18 years, Jim helped run eight different startups, leading teams in BD, sales, product development, and strategy. He was often the first business person hired into a startup to help develop the business strategy and land the startup's first customers. He was an early member of the AWS Startup BD team, joining in early 2014 when the team was being formed, and has helped the organization expand globally. He has led the Venture Capital BD team and the Specialized Segments BD team (HCLS, Fintech, and ML), moving into his current role in April of 2022. AWS's role in reshaping how tech startups build and innovate initially attracted Jim to the team. AWS's role in continuing to help enable startups to create and scale keeps him energized in his daily work.
-

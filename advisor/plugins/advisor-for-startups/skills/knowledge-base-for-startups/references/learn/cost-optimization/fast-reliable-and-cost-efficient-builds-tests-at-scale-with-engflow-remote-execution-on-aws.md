@@ -3,11 +3,11 @@ source_url: https://aws.amazon.com/startups/learn/fast-reliable-and-cost-efficie
 title: "Fast, reliable, and cost-efficient builds/tests at scale with EngFlow Remote Execution on AWS"
 ---
 
-# Fast, reliable, and cost-efficient builds/tests at scale with EngFlow Remote Execution on AWS
+## Fast, reliable, and cost-efficient builds/tests at scale with EngFlow Remote Execution on AWS
 
 **Authors:** Christian Mueller, Luis Pino
 
-*Gain a competitive advantage and discover EngFlow's platform for large-scale builds and tests on AWS, enabling fast and cost-effective software development.*
+_Gain a competitive advantage and discover EngFlow's platform for large-scale builds and tests on AWS, enabling fast and cost-effective software development._
 
 ---
 
@@ -31,7 +31,7 @@ To support operations when deployed into a customer account, EngFlow's Remote Ex
 
 ![Figure 1. EngFlow Remote Execution solution architecture on AWS](https://d22k7geae6sy8h.cloudfront.net/files/64a2f47773217a00082c811b/8ljn2dcnp-Figure-1.-EngFlow-Remote-Execution-solution-architecture-on-AWS-1.png)
 
-*Figure 1. EngFlow Remote Execution solution architecture on AWS*
+_Figure 1. EngFlow Remote Execution solution architecture on AWS_
 
 Let's take a deeper look at how EngFlow enables fast, reliable, cost-efficient builds on AWS and how they identified areas to improve their Remote Execution solution when working through their Well-Architected review.
 
@@ -61,7 +61,7 @@ EngFlow customers run CI builds/tests at large scale, using hundreds or even tho
 
 To save up to 90% on compute costs compared to on-demand, in our Well-Architected review we discussed with EngFlow the ability to enable Spot Instances for their Remote Execution, based on [Amazon EC2 Spot Fleet](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet.html).
 
-> *"This feature is a huge opportunity for our customers and us to become more cost-efficient when running in AWS. We loved implementing it. By design, our Worker instances are stateless and handle spontaneous termination with a robust retry mechanism. AWS Spot Instances were a perfect fit, saving EngFlow and our customers 70% on compute costs on average."* — Yannic Bonenberger, Engineer at EngFlow
+> _"This feature is a huge opportunity for our customers and us to become more cost-efficient when running in AWS. We loved implementing it. By design, our Worker instances are stateless and handle spontaneous termination with a robust retry mechanism. AWS Spot Instances were a perfect fit, saving EngFlow and our customers 70% on compute costs on average."_ — Yannic Bonenberger, Engineer at EngFlow
 
 While working on the Spot Instance integration, EngFlow also improved the overall EC2 instance resource utilization by improving our Worker instance scheduling algorithm, resulting in additional cost savings for our customers.
 
@@ -71,4 +71,4 @@ After EngFlow integrated Spot Instances, they listened to the [Spot Instance int
 
 Large, nimble technology organizations such as social media platforms, short-term travel marketplaces, and auto manufacturers rely on EngFlow's platform to keep engineers in flow and maintain the necessary agility for modern software development. AWS is at the core of EngFlow's success, giving them flexible architecture and cost efficiency, which directly translates into competitive advantage for end customers.
 
-> *"It's incredible how much power you get at your fingertips. This is the first time in history that you can get 1,000 machines as a single developer and try something out at scale."* — Ulf Adams, CTO at EngFlow
+> _"It's incredible how much power you get at your fingertips. This is the first time in history that you can get 1,000 machines as a single developer and try something out at scale."_ — Ulf Adams, CTO at EngFlow

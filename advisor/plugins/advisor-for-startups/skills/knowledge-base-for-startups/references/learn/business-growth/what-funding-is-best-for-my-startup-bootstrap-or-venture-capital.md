@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/what-funding-is-best-for-my-st
 title: "What funding is best for my startup: bootstrap or venture capital?"
 ---
 
-# What funding is best for my startup: bootstrap or venture capital?
+## What funding is best for my startup: bootstrap or venture capital?
 
 > Bootstrap or Venture Capital? Learn the differences and choose the right funding path for your startup's success. Get insights from a founder's perspective.
 
@@ -17,8 +17,8 @@ When you look for VC support for your startup, you're looking to use private equ
 
 Bootstrapping and venture capital are very different approaches and each ask entirely different things of the entrepreneur. The list below unpacks some of the most important considerations that you need to make in order to choose between a bootstrapping or VC or a combination of the two.
 
-> *"I'll be very honest, this is my fourth startup and I wasn't planning to do another, it's hard."*
-> 
+> _"I'll be very honest, this is my fourth startup and I wasn't planning to do another, it's hard."_
+>
 > – Osvaldo Spadano, Founder and CEO of [Akoova](https://akoova.com/)
 
 ## 1. Independent decision making
@@ -47,14 +47,14 @@ That said, both methods of building a business are proven with many companies st
 
 Whether you're bootstrapping your startup with the [Activate Founders program](https://aws.amazon.com/activate/founders/) or have VC investment and are leveraging [Activate Portfolio](https://aws.amazon.com/activate/portfolio/), we have a program that can support you.
 
-*You can also discover more about bootstrapping a successful startup by listening to Osvaldo Spadano, Founder and CEO of Akoova, [on our podcast](https://aws-startup-lofts.com/emea/community/aws-for-software-startups/podcasts). [Become a member](https://aws-startup-lofts.com/emea/sign-in) of the AWS Startup Loft to learn more.*
+_You can also discover more about bootstrapping a successful startup by listening to Osvaldo Spadano, Founder and CEO of Akoova, [on our podcast](https://aws-startup-lofts.com/emea/community/aws-for-software-startups/podcasts). [Become a member](https://aws-startup-lofts.com/emea/sign-in) of the AWS Startup Loft to learn more._
 
 ---
 
 **Author:** AWS Editorial Team
 
-*The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.*
+_The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires._
 
 ---
 
-*Source: [AWS Startups](https://aws.amazon.com/startups/learn/what-funding-is-best-for-my-startup-bootstrap-or-venture-capital)*
+_Source: [AWS Startups](https://aws.amazon.com/startups/learn/what-funding-is-best-for-my-startup-bootstrap-or-venture-capital)_

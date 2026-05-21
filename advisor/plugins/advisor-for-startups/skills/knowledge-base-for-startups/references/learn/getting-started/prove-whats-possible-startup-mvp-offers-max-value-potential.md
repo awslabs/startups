@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/prove-whats-possible-startup-m
 title: "The Startup MVP – Why Your Minimum Viable Product Offers the Maximum Value Potential"
 ---
 
-# The Startup MVP – Why Your Minimum Viable Product Offers the Maximum Value Potential
+## The Startup MVP – Why Your Minimum Viable Product Offers the Maximum Value Potential
 
 Every successful entrepreneur has a unique story about how they turned their idea into a business and the many choices they made along the way.
 
@@ -55,4 +55,4 @@ This makes MVPs one of the most critical tools when it comes to helping all entr
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/prove-whats-possible-startup-mvp-offers-max-value-potential)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/prove-whats-possible-startup-mvp-offers-max-value-potential)_

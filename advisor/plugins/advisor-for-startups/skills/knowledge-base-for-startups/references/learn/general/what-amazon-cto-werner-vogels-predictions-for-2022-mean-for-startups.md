@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/what-amazon-cto-werner-vogels-
 title: "What Amazon CTO Werner Vogels' Predictions for 2022 Mean for Startups"
 ---
 
-# What Amazon CTO Werner Vogels' Predictions for 2022 Mean for Startups
+## What Amazon CTO Werner Vogels' Predictions for 2022 Mean for Startups
 
 As Amazon's CTO since 2005, Werner Vogels has observed macro trends around the technology industry, giving him a unique perspective to distinguish substantive progress from mere fads. He [recently published](https://www.allthingsdistributed.com/2021/12/tech-prediction-for-2022-and-beyond.html) his views on what he sees in store in 2022 for cloud technology and the technology world in general.
 

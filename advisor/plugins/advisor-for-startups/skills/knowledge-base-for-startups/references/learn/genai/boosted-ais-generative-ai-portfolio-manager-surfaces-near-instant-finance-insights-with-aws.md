@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/boosted-ais-generative-ai-port
 title: "Boosted.ai's generative AI portfolio manager surfaces near-instant finance insights with AWS"
 ---
 
-# Boosted.ai's generative AI portfolio manager surfaces near-instant finance insights with AWS
+## Boosted.ai's generative AI portfolio manager surfaces near-instant finance insights with AWS
 
-*By switching from a generic LLM that was too expansive and cumbersome for their needs to a model tailored to their domain (capital markets), Boosted.ai reduced costs by 90 percent, vastly improved efficiency, and unlocked the GPU capacity needed to scale their generative AI investment management application.*
+_By switching from a generic LLM that was too expansive and cumbersome for their needs to a model tailored to their domain (capital markets), Boosted.ai reduced costs by 90 percent, vastly improved efficiency, and unlocked the GPU capacity needed to scale their generative AI investment management application._
 
 ## Summary
 
@@ -23,7 +23,7 @@ Boosted.ai began domain-optimizing a model running on AWS and:
 
 Here's how Boosted.ai incorporated generative AI to automate research tasks for their investment management clients in a way that improved outcomes for both Boosted.ai and their customers.
 
-Founded in 2017, Boosted.ai offers an AI and machine learning (ML) platform—Boosted Insights—to help asset managers sort through data to enhance their efficiency, improve their portfolio metrics, and make better, data-driven decisions. When the founders saw the impact of powerful LLMs, they decided to use a closed-source LLM to build an AI-powered portfolio management assistant. Overnight, it would process millions of documents from 150,000 sources, including nontraditional datasets like SEC filings such as 10Ks and 10Qs, earnings calls, trade publications, international news, local news, even fashion. After all, if you're talking about a company like Shein going public, a *Vogue* article could become relevant investing information. Boosted Insights summarized and collated all this information into an interactive user interface that their asset manager clients could sort through themselves.
+Founded in 2017, Boosted.ai offers an AI and machine learning (ML) platform—Boosted Insights—to help asset managers sort through data to enhance their efficiency, improve their portfolio metrics, and make better, data-driven decisions. When the founders saw the impact of powerful LLMs, they decided to use a closed-source LLM to build an AI-powered portfolio management assistant. Overnight, it would process millions of documents from 150,000 sources, including nontraditional datasets like SEC filings such as 10Ks and 10Qs, earnings calls, trade publications, international news, local news, even fashion. After all, if you're talking about a company like Shein going public, a _Vogue_ article could become relevant investing information. Boosted Insights summarized and collated all this information into an interactive user interface that their asset manager clients could sort through themselves.
 
 With their new generative AI model, Boosted.ai was now pushing critical investment information to all their clients, over 180 of the world's biggest asset managers. For these teams, time is money. When something impacts a company's stock price, how fast someone gets and acts on that information can be the difference of thousands, even millions of dollars. Boosted.ai gave these managers an edge. For instance, it flagged that Apple was moving some of its manufacturing capabilities into India before news broke in mainstream media outlets, because Boosted Insights was reading articles in Indian media.
 
@@ -42,7 +42,7 @@ Boosted.ai decided to explore a more targeted and cost-effective approach: fine-
 The ability to fine-tune their model would prove to make a difference for Boosted.ai. Through the [AWS Partner Network](https://aws.amazon.com/partners/), Boosted.ai connected with [Invisible](https://aws.amazon.com/marketplace/seller-profile?id=edc87aec-2a1e-46f5-a6ce-b9375e6b235e), whose global network of AI training specialists allowed Boosted.ai to stay focused on their core developmental work while Invisible provided high-quality data annotation faster and more cost effectively than staffing an in-house team to the project. Together, AWS, Invisible, and Boosted.ai found and implemented the smallest possible model that could handle their use case, benchmarking against the industry-standard Massive Multitask Language Understanding (MMLU) dataset to evaluate performance.
 
 > "Our goal was to have the smallest possible model with the highest possible IQ for our tasks. We went into the MMLU and looked at subtasks we thought were highly relevant to what Boosted.ai is doing: microeconomics and macroeconomics, math, and a few others. We grabbed the smallest model we thought would work and tuned it to be the best it could be for our tasks. If that didn't work, we moved to the next size model and the next level of intelligence."
-> 
+>
 > – Joshua Pantony, Boosted.ai co-founder and CEO
 
 With a more compact and efficient model that performed just as well at financial analysis, Boosted.ai slashed costs by 90 percent. The big benefit they saw from this efficiency was being able to massively upsize the amount of data they pulled—going from overnight updates to near real-time. More importantly, they got the GPUs they needed to scale. Where Boosted.ai once needed A100 and H100 to run their models, this more efficient domain-specific generative AI allowed them to run a layer on smaller and more readily available hardware.
@@ -56,7 +56,7 @@ The model also gave Boosted.ai more optionality for where and how they deploy. W
 > "Having a generative AI strategy will be a fundamental expectation for investment management firms in 2024, and we are seeing huge demand of companies wanting to run their internal data through our generative AI to create smart agents. Understandably, leveraging proprietary data raises privacy concerns. A lot of our users feel safer on our model than on a big closed-source LLM. 90 percent of our clients have an AWS account, and the benefit we're seeing is that keeping their data secure within their private AWS cloud is extremely simple when we run on the same cloud."
 >
 > "Giving access to private deployments running their data is a lot easier than trying to build the entire thing from scratch."
-> 
+>
 > – Joshua Pantony
 
 With the extra peace of mind that a private endpoint offers, more customers are willing to share their proprietary data to create more customized insights. For instance, a hedge fund might have access to interviews with hundreds of CFOs and management analysts. That dataset is too valuable and confidential to send to a public API endpoint. With Boosted.ai's domain-specific approach, it doesn't have to. The entire workload runs within the customer's cloud, and they get more customized insights.
@@ -72,7 +72,7 @@ AI is the most rapidly adopted technology in human history, and for smaller orga
 > "We're in this really unique time in history where there's a lot of big companies that don't know the potential of this technology and are adopting it in suboptimal ways. You're seeing a ton of chatbots go up left, right, and center. If you're a startup today, meet customers, learn their problems, and be aware of what generative AI is capable of. If you do, there's a very high probability you're going to find a unique value add."
 >
 > "Once you're confident that you've got some product-market fit, I would think about fine-tuning smaller models versus LLMs across speed, accuracy, and data sensitivity. If you think any of those are critical for your use case, it's probably worth it to use a domain-specific model."
-> 
+>
 > – Joshua Pantony
 
 Additional thanks to [Invisible](https://www.invisible.co/) for their contributions to this project and article. Invisible is an operations innovation company that seamlessly merges AI and automation with a skilled human workforce to unlock strategic execution bottlenecks.

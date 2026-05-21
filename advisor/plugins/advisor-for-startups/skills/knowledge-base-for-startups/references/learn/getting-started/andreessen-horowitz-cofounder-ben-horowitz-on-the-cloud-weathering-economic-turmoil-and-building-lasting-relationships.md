@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/andreessen-horowitz-cofounder-
 title: "Andreessen Horowitz cofounder Ben Horowitz on the cloud, weathering economic turmoil, and building lasting relationships"
 ---
 
-# Andreessen Horowitz cofounder Ben Horowitz on the cloud, weathering economic turmoil, and building lasting relationships
+## Andreessen Horowitz cofounder Ben Horowitz on the cloud, weathering economic turmoil, and building lasting relationships
 
 Few people have seen the technology sector transform like Ben Horowitz. The [Andreessen Horowitz (a16z)](https://a16z.com/) cofounder, entrepreneur, and New York Times-bestselling author has spent decades fostering innovation and building strong business relationships—and has plenty of wisdom to share.
 
@@ -33,7 +33,7 @@ Many of a16z's portfolio companies build on AWS, which Horowitz sees as a means 
 
 He pointed to the difference between bygone tech companies like Netscape, which sold its Navigator browser as a physical, boxed product, and newer players like Snap, which created and distributed its product with just, "four guys, a laptop, AWS, boom."
 
-***"[AWS] has been a big change," he said. "Which is why there are so many more startups now."***
+_**"[AWS] has been a big change," he said. "Which is why there are so many more startups now."**_
 
 In addition to boosting innovation, AWS helps smooth out internal processes, he said. Old-school software was difficult to install and implement—plus, training teams on new software (and updates) could be arduous. Integrating new software was so difficult, Horowitz explained, that a company's chief information officer (CIO) was the point-of-contact for sales. But when the cloud came along, it became much easier, and software companies could sell to whichever department had the actual business need.
 
@@ -43,7 +43,7 @@ In addition to boosting innovation, AWS helps smooth out internal processes, he 
 
 Horowitz had three pieces of advice for businesses interested in working with AWS.
 
-***First, he said, it's imperative to get into the [AWS Marketplace](https://aws.amazon.com/marketplace). "It works," he said. "You will get sales, it'll help you."***
+_**First, he said, it's imperative to get into the [AWS Marketplace](https://aws.amazon.com/marketplace). "It works," he said. "You will get sales, it'll help you."**_
 
 Next, he emphasized the importance of aligning your sales teams with AWS sales. "Your regional salespeople need to find their AWS sales counterpart, who want to help you. Your teams should find them … call them up … it's maybe your best lead-gen opportunity."
 
@@ -69,7 +69,7 @@ Horowitz has carried that attitude with him in his subsequent endeavors: The pri
 
 "What do I need to step up and do?" Horowitz said. "What am I capable of doing that's going to make a difference?"
 
-*See the full interview [here](https://www.youtube.com/watch?v=o2KHvKoogLo).*
+_See the full interview [here](https://www.youtube.com/watch?v=o2KHvKoogLo)._
 
 ---
 
@@ -81,4 +81,4 @@ Megan Dubinsky is a Senior Field Marketing Manager working with Startup customer
 
 ---
 
-*Source: [AWS Startups](/startups/learn/andreessen-horowitz-cofounder-ben-horowitz-on-the-cloud-weathering-economic-turmoil-and-building-lasting-relationships)*
+_Source: [AWS Startups](/startups/learn/andreessen-horowitz-cofounder-ben-horowitz-on-the-cloud-weathering-economic-turmoil-and-building-lasting-relationships)_

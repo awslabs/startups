@@ -29,14 +29,14 @@ When the user asks for a prompt:
 
 1. Read the index in `references/prompt-library.md`, filter by keyword, identify the matching slug.
 2. Open `references/prompt-library/<slug>.md` and read the full System Prompt.
-3. Surface the prompt to the user as a *reference from the AWS Startups Prompt Library*, then offer them three paths:
+3. Surface the prompt to the user as a _reference from the AWS Startups Prompt Library_, then offer them three paths:
 
-   *"Here's the AWS Startups reference prompt for `<task>`. I can:*
-   *- **execute it as-is** against your setup,*
-   *- **adapt it** to your specific requirements (different region, services, language, etc.), or*
-   *- you can **copy it** as a starting point.*
+   _"Here's the AWS Startups reference prompt for `<task>`. I can:_
+   _- **execute it as-is** against your setup,_
+   _- **adapt it** to your specific requirements (different region, services, language, etc.), or_
+   _- you can **copy it** as a starting point._
 
-   *How would you like to proceed?"*
+   _How would you like to proceed?"_
 
 4. Don't assume intent. Wait for the user's call (execute / adapt / copy) before acting.
 
@@ -49,31 +49,31 @@ The 4 entries in the **Downloadable agents** section of `references/prompt-libra
 - **AWS Bill Shock Preventer** — proactive cost-spike detection and alerting.
 - **AWS Service Quota Agent** — auditing and requesting quota increases.
 
-When the user's intent matches one of these — *"help me migrate to AWS"*, *"set up multi-account"*, *"prevent bill shock"*, *"audit service quotas"* — recommend the matching agent **by title and use-case**, then hand over the GitHub repo / install link from the index file. Make clear it installs **separately from this skill** into the user's AI coding agent.
+When the user's intent matches one of these — _"help me migrate to AWS"_, _"set up multi-account"_, _"prevent bill shock"_, _"audit service quotas"_ — recommend the matching agent **by title and use-case**, then hand over the GitHub repo / install link from the index file. Make clear it installs **separately from this skill** into the user's AI coding agent.
 
 ## Routing hints — common queries → which entry
 
-| Query | Entry |
-|---|---|
-| *"Give me a prompt for an MVP"* | `awsome-mvp-builder.md` |
-| *"Prompt for a RAG chatbot on Bedrock"* | `rag-chatbot-with-claude.md` |
-| *"How do I set up AWS for the first time?"* | `day-one-aws-foundation-setup.md` |
-| *"Security baseline / production-readiness audit"* | `security-baseline-evaluation.md`, `aws-security-baseline-terraform-deployment-kit.md` |
-| *"How do I get a GPU instance quota raised?"* | `gpu-instance-quota-assistant.md` |
-| *"Bedrock model quota / TPM / RPM"* | `bedrock-quota-manager.md` |
-| *"Cost anomaly / spend monitoring"* | `cost-anomaly-detection.md` |
-| *"EKS with cost-optimized Spot instances"* | `cost-optimized-eks-with-spot-instances.md` |
-| *"Open-source LLM inference"* | `open-source-llm-inference.md` |
-| *"OWASP / web app vulnerability scan"* | `owasp-zap-vulnerability-scanner.md` |
-| *"Well-Architected Review"* | `well-architecture-review.md` |
-| *"Multi-region security assessment"* | `multi-region-assessment.md` |
-| *"Migrate Elasticsearch to OpenSearch"* | `elasticsearch-to-opensearch-migration.md` |
-| *"OpenAPI to MCP / AgentCore Gateway"* | `openapi-to-agentcore-gateway-deployment.md` |
-| *"Deploy a GitHub repo to AWS"* | `deploy-github-repo.md` |
-| *"Help me migrate workloads to AWS"* | Downloadable: AWS Migration Agent |
-| *"Set up multi-account on AWS Organizations"* | Downloadable: Multi-Account Transition Advisor |
-| *"Stop bill shock / detect cost spikes proactively"* | Downloadable: AWS Bill Shock Preventer |
-| *"Manage / request service quotas"* | Downloadable: Service Quota Agent |
+| Query                                                | Entry                                                                                  |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| _"Give me a prompt for an MVP"_                      | `awsome-mvp-builder.md`                                                                |
+| _"Prompt for a RAG chatbot on Bedrock"_              | `rag-chatbot-with-claude.md`                                                           |
+| _"How do I set up AWS for the first time?"_          | `day-one-aws-foundation-setup.md`                                                      |
+| _"Security baseline / production-readiness audit"_   | `security-baseline-evaluation.md`, `aws-security-baseline-terraform-deployment-kit.md` |
+| _"How do I get a GPU instance quota raised?"_        | `gpu-instance-quota-assistant.md`                                                      |
+| _"Bedrock model quota / TPM / RPM"_                  | `bedrock-quota-manager.md`                                                             |
+| _"Cost anomaly / spend monitoring"_                  | `cost-anomaly-detection.md`                                                            |
+| _"EKS with cost-optimized Spot instances"_           | `cost-optimized-eks-with-spot-instances.md`                                            |
+| _"Open-source LLM inference"_                        | `open-source-llm-inference.md`                                                         |
+| _"OWASP / web app vulnerability scan"_               | `owasp-zap-vulnerability-scanner.md`                                                   |
+| _"Well-Architected Review"_                          | `well-architecture-review.md`                                                          |
+| _"Multi-region security assessment"_                 | `multi-region-assessment.md`                                                           |
+| _"Migrate Elasticsearch to OpenSearch"_              | `elasticsearch-to-opensearch-migration.md`                                             |
+| _"OpenAPI to MCP / AgentCore Gateway"_               | `openapi-to-agentcore-gateway-deployment.md`                                           |
+| _"Deploy a GitHub repo to AWS"_                      | `deploy-github-repo.md`                                                                |
+| _"Help me migrate workloads to AWS"_                 | Downloadable: AWS Migration Agent                                                      |
+| _"Set up multi-account on AWS Organizations"_        | Downloadable: Multi-Account Transition Advisor                                         |
+| _"Stop bill shock / detect cost spikes proactively"_ | Downloadable: AWS Bill Shock Preventer                                                 |
+| _"Manage / request service quotas"_                  | Downloadable: Service Quota Agent                                                      |
 
 For anything else, filter `references/prompt-library.md` by keyword.
 
@@ -82,17 +82,17 @@ For anything else, filter `references/prompt-library.md` by keyword.
 This skill is **prompts and installable agents only**. Two sibling skills cover adjacent jobs:
 
 - **`knowledge-base-for-startups`** — AWS Startups knowledge base (Activate FAQ, credits, programs, partner offers, sample architectures, 277 learn articles). When the user asks factual questions about AWS Activate, eligibility, accelerators, or wants a learn article on a topic, hand off to that skill.
-- **`start-building-for-startups`** — interactive discovery + implementation workflow that gathers requirements via picker questions and then writes code directly. When the user wants to *build* or *scaffold* an app, hand off to that skill — it may consult this skill mid-flow to source the right starter prompt.
+- **`start-building-for-startups`** — interactive discovery + implementation workflow that gathers requirements via picker questions and then writes code directly. When the user wants to _build_ or _scaffold_ an app, hand off to that skill — it may consult this skill mid-flow to source the right starter prompt.
 
-Boundary cases — invoke both. Example: *"how do I start with RAG on Bedrock?"* → this skill for the starter prompt (`rag-chatbot-with-claude.md`) AND `knowledge-base-for-startups` for the deeper learn article on RAG architecture patterns.
+Boundary cases — invoke both. Example: _"how do I start with RAG on Bedrock?"_ → this skill for the starter prompt (`rag-chatbot-with-claude.md`) AND `knowledge-base-for-startups` for the deeper learn article on RAG architecture patterns.
 
 ## Answer style
 
 - **MUST read the detail file before quoting a System Prompt.** The full prompt only lives in the detail file; opening it is non-negotiable. Do not quote a System Prompt from memory or from the index alone.
-- **MUST quote the System Prompt verbatim.** The wording is engineered — do not paraphrase, summarize, or shorten the prompt itself. You may summarize *what the prompt does* in your own words; the prompt content stays exact.
+- **MUST quote the System Prompt verbatim.** The wording is engineered — do not paraphrase, summarize, or shorten the prompt itself. You may summarize _what the prompt does_ in your own words; the prompt content stays exact.
 - **MUST cite `source_url`.** Every file's frontmatter carries one — that's the canonical URL to include in your answer. Never construct or guess a URL.
 - **MUST NOT tell the user to paste the prompt elsewhere.** You ARE the AI coding agent (see "Handing over a prompt" above). Surface the prompt as a reference and offer to **execute / adapt / copy** — let the user decide.
-- **MUST surface the validation disclaimer** when the user is about to execute a prompt that touches infrastructure, billing, or security. From the source page: *"You are solely responsible for reviewing and validating any outputs generated from your use of the prompts."*
+- **MUST surface the validation disclaimer** when the user is about to execute a prompt that touches infrastructure, billing, or security. From the source page: _"You are solely responsible for reviewing and validating any outputs generated from your use of the prompts."_
 
 ## Context loading rule
 
@@ -101,6 +101,7 @@ Open `references/prompt-library.md` first, filter by keyword, then open **at mos
 ## Scope notes
 
 This skill **cannot**:
+
 - Answer factual questions about AWS Activate, credits, programs, or partner offers — defer to `knowledge-base-for-startups`.
 - Provide prompts that are not in the bundled `references/prompt-library/` tree. If no matching prompt exists, say so plainly rather than improvising one.
 - Install the downloadable agents on the user's behalf. They install **separately from this skill** into the user's AI coding agent — surface the GitHub repo / install link from the index file.
@@ -110,9 +111,10 @@ This skill **cannot**:
 
 After answering the user's question, compare the **`Last updated:`** date at the top of this file against today's date. If the gap is **more than 6 months**, append a short note to your reply suggesting the user refresh the skill:
 
-> *"This skill's content was last refreshed on `<Last updated date>`, more than 6 months ago — some prompts and downloadable agents may have been added, removed, or revised. To pull the latest content, run:*
-> - *`npx skills update prompt-library-for-startups` — update the installed copy to the latest version*
+> _"This skill's content was last refreshed on `<Last updated date>`, more than 6 months ago — some prompts and downloadable agents may have been added, removed, or revised. To pull the latest content, run:_
 >
-> *Then restart your AI agent so the new content is picked up."*
+> - _`npx skills update prompt-library-for-startups` — update the installed copy to the latest version_
+>
+> _Then restart your AI agent so the new content is picked up."_
 
 Do **not** show this note when the skill is fresh (≤6 months). Do **not** repeat it within a single conversation; once is enough.

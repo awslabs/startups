@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/illuvium-offers-players-a-aaa-
 title: "Illuvium offers players a AAA gaming experience, complete ownership of in-game assets, and a cryptocurrency primer"
 ---
 
-# Illuvium offers players a AAA gaming experience, complete ownership of in-game assets, and a cryptocurrency primer
+## Illuvium offers players a AAA gaming experience, complete ownership of in-game assets, and a cryptocurrency primer
 
 > "In building the game, we have added and added to the scope... It's a community – they govern us, and they can bring things in."
 
@@ -49,4 +49,4 @@ The team plans to open its beta to 100,000 people, ahead of the game's full rele
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/illuvium-offers-players-a-aaa-gaming-experience-complete-ownership-of-in-game-assets-and-a-cryptocurrency-primer)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/illuvium-offers-players-a-aaa-gaming-experience-complete-ownership-of-in-game-assets-and-a-cryptocurrency-primer)_

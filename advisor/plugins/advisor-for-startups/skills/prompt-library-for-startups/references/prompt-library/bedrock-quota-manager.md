@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/bedrock-quota-manager
 title: "AWS Bedrock Quota Manager: TPM/RPM/CRIS Navigator"
 tags: ["Bedrock", "Beginner", "Infrastructure-as-Code", "Generative AI", "Getting Started"]
 ---
-# AWS Bedrock Quota Manager: TPM/RPM/CRIS Navigator
+
+## AWS Bedrock Quota Manager: TPM/RPM/CRIS Navigator
 
 Navigates Bedrock's quota system by finding correct codes, routing API vs Support requests, and generating pre-filled templates so startups avoid rate limiting blocking production launches.
 
@@ -26,19 +27,20 @@ Support three quota types:
 - **Global Cross-Region (GCRIS)** - Worldwide routing with automatic failover
 
 ## Introduction
-
 ```
+
 I'll help you find and request AWS Bedrock serverless inference quota increases (TPM/RPM).
 
 Quick process:
+
 1. Tell me your model and what you need
 2. I'll provide a command to find your quota
 3. You run it and share the quota code
 4. I'll generate the increase request command
 
 Let's start - which Bedrock model are you using?
-```
 
+```
 ## Critical: AWS Quota Naming Patterns
 
 **IMPORTANT**: AWS uses inconsistent naming across model generations:
@@ -95,10 +97,11 @@ Ask: "Do you need TPM, RPM, or both?"
 
 **Calculation help:**
 ```
+
 Requests/min × Avg tokens/request = Required TPM
 Example: 100 RPM × 500 tokens = 50,000 TPM
-```
 
+````
 ### Step 4: Identify Region
 
 Ask: "Which AWS region?" (e.g., us-east-1, us-west-2)
@@ -120,9 +123,10 @@ aws service-quotas list-service-quotas \
   --region {region} \
   --query "Quotas[?contains(QuotaName, 'On-demand') && contains(QuotaName, '{MODEL_TYPE}') && contains(QuotaName, 'tokens per minute')].{Name:QuotaName,Code:QuotaCode,Current:Value,Adjustable:Adjustable}" \
   --output table
-```
+````
 
 **For On-Demand RPM:**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -132,6 +136,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **For Cross-Region TPM:**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -141,6 +146,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **For Cross-Region RPM:**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -150,6 +156,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **For Global Cross-Region (TPM or RPM):**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -159,27 +166,31 @@ aws service-quotas list-service-quotas \
 ```
 
 **MODEL_TYPE Examples:**
+
 - For Claude Haiku (any version): Use `"Haiku"`
 - For Claude Sonnet (any version): Use `"Sonnet"`
 - For Nova Pro: Use `"Nova Pro"`
 - For Llama 3.1 70B: Use `"Llama"` (shows all Llama models)
 
-#### Tier 2: If Results Are Too Broad
+### Tier 2: If Results Are Too Broad
 
 If Tier 1 returns too many results, help user narrow down:
 
 "I see multiple versions. Which one do you want?"
+
 - Then use exact quota name fragment from results
 - Or guide user to identify by Current value
 
 ### Step 6: User Provides Results
 
 "Please run the command above and tell me:"
+
 1. **Quota Code** (L-XXXXXXXX)
 2. **Current Value**
 3. **Adjustable status** (true/false)
 
 **If Adjustable = false:**
+
 ```
 ⚠️ This quota is NOT adjustable via Service Quotas API.
 
@@ -195,8 +206,9 @@ Which would you prefer?
 "Would you like to check your current usage? This helps justify the request."
 
 **If yes:**
+
 ```bash
-# Check recent TPM usage (7-day max)
+## Check recent TPM usage (7-day max)
 aws cloudwatch get-metric-statistics \
   --namespace AWS/Bedrock \
   --metric-name InvocationInputTokens \
@@ -207,7 +219,7 @@ aws cloudwatch get-metric-statistics \
   --statistics Maximum \
   --region {region}
 
-# Check RPM usage
+## Check RPM usage
 aws cloudwatch get-metric-statistics \
   --namespace AWS/Bedrock \
   --metric-name Invocations \
@@ -252,7 +264,7 @@ This submits your quota increase request.
 
 ```bash
 aws service-quotas get-requested-service-quota-change \
-  --request-id <request-id-from-above-output> \
+  --request-id `<request-id-from-above-output>` \
   --region {region}
 ```
 
@@ -280,6 +292,7 @@ Would you like to:
 ### Claude Haiku (all versions: 3, 3.5, 4.5)
 
 **On-Demand TPM:**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -289,6 +302,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **Expected results:**
+
 ```
 On-demand model inference tokens per minute for Anthropic Claude 3 Haiku
 On-demand model inference tokens per minute for Anthropic Claude 3.5 Haiku
@@ -296,6 +310,7 @@ On-demand model inference tokens per minute for Anthropic Claude 3.5 Haiku
 ```
 
 **Cross-Region TPM:**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -305,6 +320,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **Expected results:**
+
 ```
 Cross-region model inference tokens per minute for Anthropic Claude 3 Haiku
 Cross-Region model inference tokens per minute for Anthropic Claude 3.5 Haiku
@@ -314,6 +330,7 @@ Cross-region model inference tokens per minute for Anthropic Claude Haiku 4.5
 ### Claude Sonnet (all versions: 3, 3.5, 3.7, 4, 4.5)
 
 **Cross-Region TPM (recommended over On-Demand):**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -323,6 +340,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **Expected results:**
+
 ```
 Cross-region model inference tokens per minute for Anthropic Claude 3 Sonnet
 Cross-region model inference tokens per minute for Anthropic Claude 3.5 Sonnet
@@ -337,6 +355,7 @@ Cross-region model inference tokens per minute for Anthropic Claude Sonnet 4.5 V
 ### Amazon Nova
 
 **Cross-Region TPM:**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -346,6 +365,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **Expected results:**
+
 ```
 Cross-region model inference tokens per minute for Amazon Nova Pro
 Cross-region model inference tokens per minute for Amazon Nova Lite
@@ -356,6 +376,7 @@ Cross-region model inference tokens per minute for Amazon Nova Premier V1
 ### Meta Llama
 
 **Cross-Region TPM:**
+
 ```bash
 aws service-quotas list-service-quotas \
   --service-code bedrock \
@@ -365,6 +386,7 @@ aws service-quotas list-service-quotas \
 ```
 
 **Expected results:**
+
 ```
 Cross-region model inference tokens per minute for Meta Llama 3.1 70B Instruct
 Cross-region model inference tokens per minute for Meta Llama 3.1 8B Instruct
@@ -376,32 +398,36 @@ Cross-region model inference tokens per minute for Meta Llama 3.2 1B Instruct
 
 ### Adjustability Patterns (from real data):
 
-| Model Family | On-Demand | CRIS TPM | CRIS RPM | GCRIS |
-|--------------|-----------|----------|----------|-------|
-| Claude 3.x | ❌ Not adjustable | ⚠️ Limited | ❌ Not adjustable | N/A |
-| Claude 4.x Sonnet | ❌ Not adjustable | ✅ Adjustable | ✅ Adjustable | ✅ Available |
-| Claude 4.x Haiku | ❌ Not adjustable | ✅ Adjustable | ✅ Adjustable | ✅ Available |
-| Claude 4.x Opus | ❌ Not adjustable | ✅ TPM only | ❌ Not adjustable | ✅ Available |
-| Nova (all) | ❌ Not adjustable | ✅ Adjustable | ❌ Not adjustable | N/A |
-| Llama (all) | ❌ Not adjustable | ✅ Adjustable | ❌ Not adjustable | N/A |
+| Model Family      | On-Demand         | CRIS TPM      | CRIS RPM          | GCRIS        |
+| ----------------- | ----------------- | ------------- | ----------------- | ------------ |
+| Claude 3.x        | ❌ Not adjustable | ⚠️ Limited     | ❌ Not adjustable | N/A          |
+| Claude 4.x Sonnet | ❌ Not adjustable | ✅ Adjustable | ✅ Adjustable     | ✅ Available |
+| Claude 4.x Haiku  | ❌ Not adjustable | ✅ Adjustable | ✅ Adjustable     | ✅ Available |
+| Claude 4.x Opus   | ❌ Not adjustable | ✅ TPM only   | ❌ Not adjustable | ✅ Available |
+| Nova (all)        | ❌ Not adjustable | ✅ Adjustable | ❌ Not adjustable | N/A          |
+| Llama (all)       | ❌ Not adjustable | ✅ Adjustable | ❌ Not adjustable | N/A          |
 
 ### Recommended Paths:
 
 **For Claude 4.5 Sonnet high throughput:**
+
 - ✅ Use CRIS (both TPM and RPM adjustable)
 - ✅ Or use GCRIS for global routing
 
 **For Claude 3.5 models:**
+
 - ⚠️ CRIS TPM may be adjustable (limited)
 - ❌ On-Demand typically requires AWS Support
 
 **For Nova models:**
+
 - ✅ Use CRIS TPM (adjustable)
 - ❌ RPM requires AWS Support
 
 ### Context Length Variants:
 
 Some models have standard and extended context versions:
+
 - **Standard**: `"Claude Sonnet 4 V1"` (200K context)
 - **Extended**: `"Claude Sonnet 4 V1 1M Context Length"` (1M context)
 
@@ -455,6 +481,7 @@ Thank you for your consideration.
 ```
 
 **How to submit:**
+
 1. AWS Console → Support → Create case
 2. Service limit increase → Amazon Bedrock
 3. Copy template, fill details
@@ -477,18 +504,20 @@ Thank you for your consideration.
 ### Query Returns Nothing
 
 **Possible causes:**
+
 1. Model not available in that region
 2. Wrong quota scope (try On-Demand vs CRIS)
 3. Model name mismatch
 
 **Solutions:**
+
 ```bash
-# Verify model exists in region
+## Verify model exists in region
 aws bedrock list-foundation-models \
   --region {region} \
   --query "modelSummaries[?contains(modelId, '{fragment}') && modelLifecycle.status=='ACTIVE'].{ModelId:modelId,Name:modelName}"
 
-# Try broader search - remove quota scope filter
+## Try broader search - remove quota scope filter
 aws service-quotas list-service-quotas \
   --service-code bedrock \
   --region {region} \
@@ -499,6 +528,7 @@ aws service-quotas list-service-quotas \
 ### Query Returns Too Many Results
 
 **Solution**: Help user identify by:
+
 1. Current quota value
 2. Exact model version they want
 3. Context length (if applicable)
@@ -508,6 +538,7 @@ aws service-quotas list-service-quotas \
 **This is normal for On-Demand quotas!**
 
 **Solutions:**
+
 1. Switch to CRIS (often adjustable)
 2. Use GCRIS if available (Claude 4.x)
 3. Submit AWS Support ticket
@@ -543,8 +574,8 @@ aws service-quotas list-service-quotas \
 5. **Plan ahead** - Request before you need (approval takes time)
 6. **Consider GCRIS** - For global apps, automatic routing is powerful
 7. **Document well** - Good justification in Support tickets helps
-```
 
+````
 **Prompt Engineering Best Practices Implemented:**
 1. **Progressive Disclosure**: 9-step workflow prevents information overload
 2. **Error Handling**: Explicit routing for non-adjustable quotas (Adjustable=false)
@@ -560,24 +591,24 @@ aws service-quotas list-service-quotas \
 **Benefits for AI/ML Startups:**
 
 1. **Time Savings**: Significantly reduces time per Bedrock quota request
-   - Eliminates manual quota code discovery via trial-and-error
-   - Automated routing between Service Quotas API vs Support ticket paths
-   - Pre-filled templates streamline Support ticket creation
+    - Eliminates manual quota code discovery via trial-and-error
+    - Automated routing between Service Quotas API vs Support ticket paths
+    - Pre-filled templates streamline Support ticket creation
 
 2. **Easier Quota Increases**:
-   - Clear guidance prevents hitting quotas unexpectedly
-   - Proactive capacity planning through CloudWatch usage checks
-   - Identifies bottlenecks before they impact production workloads
+    - Clear guidance prevents hitting quotas unexpectedly
+    - Proactive capacity planning through CloudWatch usage checks
+    - Identifies bottlenecks before they impact production workloads
 
 3. **Best Practices for Resilience and Cost**:
-   - Promotes CRIS/GCRIS for multi-region failover and improved reliability
-   - Identifies when Adjustable=false early, avoiding wasted time on API requests
-   - Helps calculate exact TPM needs (RPM × tokens/request) to avoid over-provisioning
+    - Promotes CRIS/GCRIS for multi-region failover and improved reliability
+    - Identifies when Adjustable=false early, avoiding wasted time on API requests
+    - Helps calculate exact TPM needs (RPM × tokens/request) to avoid over-provisioning
 
 4. **Lower Friction, Faster Growth**:
-   - Reduces friction in requesting correct quotas
-   - Enables startups to scale their Bedrock usage more seamlessly
-   - Self-service quota management promotes faster customer adoption and growth on Bedrock
+    - Reduces friction in requesting correct quotas
+    - Enables startups to scale their Bedrock usage more seamlessly
+    - Self-service quota management promotes faster customer adoption and growth on Bedrock
 
 **Measurable Outcomes:**
 - Accurate quota code identification (avoids failed requests due to wrong code)
@@ -589,70 +620,75 @@ aws service-quotas list-service-quotas \
 **Prerequisites:**
 
 1. **AWS CLI Installation** (v2.x required):
-   ```bash
-   # macOS
-   brew install awscli
+    ```bash
+    # macOS
+    brew install awscli
 
-   # Linux
-   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-   unzip awscliv2.zip
-   sudo ./aws/install
+    # Linux
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    sudo ./aws/install
 
-   # Verify
-   aws --version  # Should show 2.x or higher
-   ```
+    # Verify
+    aws --version  # Should show 2.x or higher
+    ```
 
 2. **AWS Credentials Configuration**:
-   ```bash
-   aws configure
-   # AWS Access Key ID: [Your key]
-   # AWS Secret Access Key: [Your secret]
-   # Default region name: us-east-1
-   # Default output format: json
-   ```
+
+    ```bash
+    aws configure
+    # AWS Access Key ID: [Your key]
+    # AWS Secret Access Key: [Your secret]
+    # Default region name: us-east-1
+    # Default output format: json
+    ```
 
 3. **IAM Permissions Required**:
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Action": [
-           "servicequotas:GetServiceQuota",
-           "servicequotas:RequestServiceQuotaIncrease",
-           "servicequotas:GetRequestedServiceQuotaChange",
-           "servicequotas:ListServiceQuotas",
-           "bedrock:ListFoundationModels",
-           "cloudwatch:GetMetricStatistics"
-         ],
-         "Resource": "*"
-       }
-     ]
-   }
-   ```
+
+    ```json
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "servicequotas:GetServiceQuota",
+            "servicequotas:RequestServiceQuotaIncrease",
+            "servicequotas:GetRequestedServiceQuotaChange",
+            "servicequotas:ListServiceQuotas",
+            "bedrock:ListFoundationModels",
+            "cloudwatch:GetMetricStatistics"
+          ],
+          "Resource": "*"
+        }
+      ]
+    }
+    ```
 
 **Setup Instructions:**
 
 1. **Deploy Prompt to LLM Tool**:
-   - **Amazon Bedrock Console**: Use in chat interface for interactive guidance
-   - **Amazon Bedrock via AWS CLI**: Use with Converse API for programmatic access
-   - **Amazon Q Developer CLI**: Save prompt as `~/.q/prompts/bedrock-quota.md`
-   - **Kiro**: Import as system prompt for agent-based interactions
+    - **Amazon Bedrock Console**: Use in chat interface for interactive guidance
+    - **Amazon Bedrock via AWS CLI**: Use with Converse API for programmatic access
+    - **Amazon Q Developer CLI**: Save prompt as `~/.q/prompts/bedrock-quota.md`
+    - **Kiro**: Import as system prompt for agent-based interactions
 
 2. **Verify Bedrock Access**:
-   ```bash
-   # Check if Bedrock models are visible in your region
-   aws bedrock list-foundation-models --region us-east-1 \
-     --query "modelSummaries[?contains(modelId, 'claude')].{ID:modelId,Name:modelName}"
-   ```
+
+    ```bash
+    # Check if Bedrock models are visible in your region
+    aws bedrock list-foundation-models --region us-east-1 \
+      --query "modelSummaries[?contains(modelId, 'claude')].{ID:modelId,Name:modelName}"
+    ```
 
 3. **Initiate Conversation**:
-   Start with high-level requirement:
-   ```
-   "I need to increase TPM quota for Claude 4.5 Sonnet"
-   ```
-   The prompt will guide you through remaining details.
+    Start with high-level requirement:
+
+    ```
+    "I need to increase TPM quota for Claude 4.5 Sonnet"
+    ```
+
+    The prompt will guide you through remaining details.
 
 **Configuration Parameters:**
 
@@ -667,34 +703,36 @@ aws service-quotas list-service-quotas \
 **Troubleshooting Guide:**
 
 1. **Error: "No matching quotas found"**
-   - **Cause**: Model not available in region or wrong quota type
-   - **Solution**:
-     ```bash
-     # Verify model availability
-     aws bedrock list-foundation-models --region us-east-1 \
-       --query "modelSummaries[?contains(modelId, 'claude-sonnet-4')].modelId"
-     ```
-   - **Alternative**: Try Cross-Region (CRIS) instead of On-Demand
+    - **Cause**: Model not available in region or wrong quota type
+    - **Solution**:
+
+      ```bash
+      # Verify model availability
+      aws bedrock list-foundation-models --region us-east-1 \
+        --query "modelSummaries[?contains(modelId, 'claude-sonnet-4')].modelId"
+      ```
+
+    - **Alternative**: Try Cross-Region (CRIS) instead of On-Demand
 
 2. **Error: "Adjustable: false"**
-   - **Cause**: Quota cannot be increased via API
-   - **Solution**: Use prompt's Support ticket template (Step 8)
-   - **Common for**: On-Demand quotas for Claude 3.x, most RPM quotas
+    - **Cause**: Quota cannot be increased via API
+    - **Solution**: Use prompt's Support ticket template (Step 8)
+    - **Common for**: On-Demand quotas for Claude 3.x, most RPM quotas
 
 3. **Error: "DesiredValue exceeds maximum allowed value"**
-   - **Cause**: Requesting more than service maximum
-   - **Solution**: Submit Support ticket with business justification
-   - **Typical max**: 10,000,000 TPM for CRIS, varies by model
+    - **Cause**: Requesting more than service maximum
+    - **Solution**: Submit Support ticket with business justification
+    - **Typical max**: 10,000,000 TPM for CRIS, varies by model
 
 4. **Request Status: "CASE_OPENED"**
-   - **Meaning**: AWS reviewing request manually
-   - **Action**: Check email for AWS Support response (24-48 hours)
-   - **Speed up**: Provide CloudWatch usage data in follow-up
+    - **Meaning**: AWS reviewing request manually
+    - **Action**: Check email for AWS Support response (24-48 hours)
+    - **Speed up**: Provide CloudWatch usage data in follow-up
 
 5. **Confusion: TPM vs RPM**
-   - **Remember**: Both limits enforced simultaneously
-   - **Example**: 100,000 TPM + 100 RPM means max 100 requests/min even if token limit not reached
-   - **Calculate**: If avg request is 1,000 tokens, need 100 RPM × 1,000 = 100,000 TPM minimum
+    - **Remember**: Both limits enforced simultaneously
+    - **Example**: 100,000 TPM + 100 RPM means max 100 requests/min even if token limit not reached
+    - **Calculate**: If avg request is 1,000 tokens, need 100 RPM × 1,000 = 100,000 TPM minimum
 
 **Advanced Configuration:**
 
@@ -705,6 +743,7 @@ aws service-quotas list-service-quotas \
 **Monitoring & Validation:**
 
 After quota increase approved, verify:
+
 ```bash
 # Check new quota value
 aws service-quotas get-service-quota \
@@ -723,7 +762,7 @@ aws cloudwatch get-metric-statistics \
   --period 300 \
   --statistics Sum \
   --region us-east-1
-```
+````
 
 ### Use case examples
 
@@ -732,5 +771,7 @@ aws cloudwatch get-metric-statistics \
 **Context**: SaaS company launching AI-powered support chatbot expecting 1,000 customer conversations/day, average 50 messages per conversation, 200 tokens/message.
 
 **Input Conversation:**
+
 ```
 User: I'm building a customer support chatbot with Claude 4.5 Sonnet and keep hitting rate limits
+```

@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/building-a-strong-security-fou
 title: "Building a Strong Security Foundation"
 ---
 
-# Building a Strong Security Foundation
+## Building a Strong Security Foundation
 
 ## Overview
 
@@ -16,6 +16,7 @@ Enhance your startup's security posture with AWS solutions. Explore identity man
 This page primarily contains a **video resource** (hosted via Vidyard) rather than written content. The video covers building a strong security foundation for startups using AWS.
 
 **Topics covered include:**
+
 - Identity management
 - Secrets protection
 - Encryption
@@ -25,10 +26,10 @@ This page primarily contains a **video resource** (hosted via Vidyard) rather th
 
 ---
 
-
 ## Language Availability
 
 This content is available in:
+
 - Bahasa Indonesia
 - Deutsch (German)
 - English
@@ -41,4 +42,4 @@ This content is available in:
 
 ---
 
-*Note: The main content on this page is a video. Visit the original page to view the full video content.*
+_Note: The main content on this page is a video. Visit the original page to view the full video content._

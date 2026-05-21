@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/why-early-stage-startups-need-
 title: "Why early stage startups need to use multi-factor authentication"
 ---
 
-# Why early stage startups need to use multi-factor authentication
+## Why early stage startups need to use multi-factor authentication
 
 Every startup is unique – there's no universal to-do list that fits every company. But no matter the nature of your business, security is always of primary importance and should be one of the very first things you address. After all, for most startups, your most valuable asset is your data — your ideas, workloads, and applications — and you need to protect it. We often tell startups to make lots of mistakes, just not fatal ones. A security breach can be a fatal one.
 
@@ -63,4 +63,3 @@ Xuan Gao is a Solutions Architect at AWS on the Startups team, where she helps s
 ### AWS Editorial Team
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.
-

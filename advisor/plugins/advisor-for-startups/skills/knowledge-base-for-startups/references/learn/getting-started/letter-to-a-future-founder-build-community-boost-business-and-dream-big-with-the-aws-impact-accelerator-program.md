@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/letter-to-a-future-founder-bui
 title: "Letter to a future founder: Build community, boost business, and dream big with the AWS Impact Accelerator program"
 ---
 
-# Letter to a future founder: Build community, boost business, and dream big with the AWS Impact Accelerator program
+## Letter to a future founder: Build community, boost business, and dream big with the AWS Impact Accelerator program
 
-*This post was authored by Aireka Harvell, founder of Nodat and inaugural member of [AWS Impact Accelerator for Black Founders](https://aws.amazon.com/blogs/startups/inside-the-inaugural-aws-impact-accelerator-program-for-black-founders/).*
+_This post was authored by Aireka Harvell, founder of Nodat and inaugural member of [AWS Impact Accelerator for Black Founders](https://aws.amazon.com/blogs/startups/inside-the-inaugural-aws-impact-accelerator-program-for-black-founders/)._
 
 Dear future AWS Impact Accelerator founder,
 
@@ -15,13 +15,13 @@ I remember walking into the Amazon offices for my first week of the program. It 
 
 ## From applicant to accepted
 
-I'm getting ahead of myself! Let me back up and tell you a bit about how I was accepted into the Impact Accelerator program. I first heard of the program in a newsletter from *[digitalundivided](https://www.digitalundivided.com/)*, the leading nonprofit that catalyzes economic growth for Latina and Black women entrepreneurs. AWS' program was the first accelerator option I had come across for Black founders in a while that offered [more than mentorship](https://aws.amazon.com/blogs/startups/inside-the-inaugural-aws-impact-accelerator-program-for-black-founders/). But just a few hours remained to apply. So, I clicked the link and worked on my submission late into the night to [meet the criteria](https://aws.amazon.com/blogs/startups/aws-leveraging-power-provide-funding-resources-for-women-founders/).
+I'm getting ahead of myself! Let me back up and tell you a bit about how I was accepted into the Impact Accelerator program. I first heard of the program in a newsletter from _[digitalundivided](https://www.digitalundivided.com/)_, the leading nonprofit that catalyzes economic growth for Latina and Black women entrepreneurs. AWS' program was the first accelerator option I had come across for Black founders in a while that offered [more than mentorship](https://aws.amazon.com/blogs/startups/inside-the-inaugural-aws-impact-accelerator-program-for-black-founders/). But just a few hours remained to apply. So, I clicked the link and worked on my submission late into the night to [meet the criteria](https://aws.amazon.com/blogs/startups/aws-leveraging-power-provide-funding-resources-for-women-founders/).
 
 Among the 1,600+ applicants, I was chosen for an initial phone interview. A few days after that, I gave a 10-minute pitch with a 20-minute Q&A. Immediately after my pitch, I received an invitation to meet soon as possible. Not only would Denise Quashie, Head of Startup Programs and Accelerators, be on the call, but VP of Global Startups for Amazon, Howard Wright, would be joining the discussion. I called my advisors and got to work prepping for the final round of interview questions.
 
 In the meeting, Denise and Howard wanted to know if I could meet them in Seattle in a few weeks. But it had not occurred to me that they selected us for the program. So, I answered yes confidently and waited anxiously for the more complex questions about our technology. Instead, Howard turned the camera to his entire team at AWS and said, "Are we going to invest in Aireka? If so, thumbs up!" Everyone put up their thumbs and said, "Welcome to Amazon, Aireka!" I gasped and cried!
 
-Now that I've gone through the program and can reflect on those game-changing moments, I realize *I got there because I wasn't afraid to brag about myself*. Make sure you do the same. No accomplishment is too small! At the same time, don't be afraid to talk about your weaknesses and the things you don't have together. When else will you have the opportunity to ask for what you need and get it?
+Now that I've gone through the program and can reflect on those game-changing moments, I realize _I got there because I wasn't afraid to brag about myself_. Make sure you do the same. No accomplishment is too small! At the same time, don't be afraid to talk about your weaknesses and the things you don't have together. When else will you have the opportunity to ask for what you need and get it?
 
 ## First impressions and making connections
 
@@ -68,6 +68,6 @@ Aireka Harvell
 
 ---
 
-*Author: AWS Editorial Team*
+_Author: AWS Editorial Team_
 
 The AWS Startups Content Marketing Team collaborates with startups of all sizes and across all sectors to deliver exceptional content that educates, entertains, and inspires.

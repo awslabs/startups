@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/offers/bright-data
 title: "Bright Data | Get 70% extra discount on your Web Data Spend"
 ---
 
-# Bright Data | Get 70% extra discount on your Web Data Spend
+## Bright Data | Get 70% extra discount on your Web Data Spend
 
 ### Estimated offer value: $10,000.00
 

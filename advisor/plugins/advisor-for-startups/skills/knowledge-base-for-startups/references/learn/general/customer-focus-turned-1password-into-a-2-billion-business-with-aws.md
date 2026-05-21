@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/customer-focus-turned-1passwor
 title: "Customer focus turned 1Password into a $2 billion business with AWS"
 ---
 
-# Customer focus turned 1Password into a $2 billion business with AWS
+## Customer focus turned 1Password into a $2 billion business with AWS
 
 > **Source:** [AWS Startups](https://startups.aws/startups/learn/customer-focus-turned-1password-into-a-2-billion-business-with-aws)
 

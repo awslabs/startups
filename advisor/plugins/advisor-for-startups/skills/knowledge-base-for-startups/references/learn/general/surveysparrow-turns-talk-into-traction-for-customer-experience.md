@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/surveysparrow-turns-talk-into-
 title: "SurveySparrow turns talk into traction for customer experience"
 ---
 
-# SurveySparrow turns talk into traction for customer experience
+## SurveySparrow turns talk into traction for customer experience
 
 [SurveySparrow](https://surveysparrow.com/) is an experience management platform designed to help mid-market businesses capture, analyze, and act on feedback across surveys, reviews, and social channels. With AI-powered analysis and real-time loop closures, it enables organizations to turn fragmented responses into actionable insights that improve customer experience at scale.
 
@@ -47,4 +47,4 @@ Most startups face a similar challenge: a desire to innovate and grow with limit
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/surveysparrow-turns-talk-into-traction-for-customer-experience)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/surveysparrow-turns-talk-into-traction-for-customer-experience)_

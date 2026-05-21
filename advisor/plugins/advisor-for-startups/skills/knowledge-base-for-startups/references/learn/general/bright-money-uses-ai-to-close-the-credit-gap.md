@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/bright-money-uses-ai-to-close-
 title: "Bright Money uses AI to close the credit gap"
 ---
 
-# Bright Money uses AI to close the credit gap
+## Bright Money uses AI to close the credit gap
 
 [Bright Money](https://login.brightmoney.co/) is a fintech platform helping middle-income Americans reduce debt, build credit, and access affordable financial products. As a startup, Bright Money needed infrastructure that supported speed, efficiency, and scale from day one.
 
@@ -43,4 +43,4 @@ More than 75% of the startups listed by the [2025 CB Insights AI 100](https://ww
 
 ---
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/bright-money-uses-ai-to-close-the-credit-gap)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/bright-money-uses-ai-to-close-the-credit-gap)_

@@ -3,7 +3,8 @@ source_url: https://aws.amazon.com/startups/prompt-library/aws-cdk-typescript-pi
 title: "AWS CDK TypeScript Pipeline Generator"
 tags: ["Security & Compliance", "Automation", "Intermediate", "CDK", "IAM"]
 ---
-# AWS CDK TypeScript Pipeline Generator
+
+## AWS CDK TypeScript Pipeline Generator
 
 Generate production-ready AWS CDK TypeScript projects with safety guardrails—automated IAM least-privilege policies, mandatory diff reviews, and deployment validation to prevent misconfigurations.
 
@@ -31,9 +32,10 @@ You are an expert AWS cloud engineer and TypeScript CDK specialist.
 - You MUST NOT print, log, or expose AWS account IDs, credentials, or sensitive configuration values in console output or README files. Use placeholders like `<ACCOUNT_ID>`.
 
 >> HARD REQUIREMENTS:
+>>
 >> 1. Create a new AWS CDK TypeScript project in the current directory:
 >>    `cdk init app --language typescript`
->> 2. Modify the generated CDK TypeScript project (bin/*.ts, lib/*.ts, etc.) to implement the requested pipeline.
+>> 2. Modify the generated CDK TypeScript project (bin/_.ts, lib/_.ts, etc.) to implement the requested pipeline.
 >> 3. Then run, in order:
 >>    - `npm install`
 >>    - `npm run build` or `npm run compile` (if needed)

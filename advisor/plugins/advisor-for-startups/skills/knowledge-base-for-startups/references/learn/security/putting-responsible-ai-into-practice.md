@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/putting-responsible-ai-into-pr
 title: "Putting responsible AI into practice"
 ---
 
-# Putting responsible AI into practice
+## Putting responsible AI into practice
 
 Discover why organizations across all sectors are prioritizing responsible AI. From legal and ethical considerations to cultural impacts, "Putting responsible AI into practice," navigates the intricate landscape of deploying AI systems responsibly. Gain insights into the evolving role of leaders tasked with steering responsible AI efforts and learn how to transition from high-level principles to actionable, system-level change.
 
@@ -22,4 +22,3 @@ Discover why organizations across all sectors are prioritizing responsible AI. F
 Check out this comprehensive guide to mastering responsible AI in the era of digital transformation. Equip yourself with the knowledge and strategies needed to lead your organization toward a future where AI is not just powerful but also responsible and ethical.
 
 ### Get your copy now: [English](https://d1.awsstatic.com/psc-digital/2023/gc-400/responsible-ai-idc/IDC-Putting-Responsible-AI-Into-Practice.pdf)
-

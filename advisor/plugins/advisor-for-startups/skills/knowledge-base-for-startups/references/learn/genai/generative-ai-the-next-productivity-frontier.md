@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/generative-ai-the-next-product
 title: "Generative AI: The next productivity frontier"
 ---
 
-# Generative AI: The next productivity frontier
+## Generative AI: The next productivity frontier
 
 > From automating repetitive tasks to enhancing collaboration, discover how startups use generative AI to make work more rewarding and productive.
 
@@ -19,4 +19,3 @@ Imagine if work focused on outcomes, not tedium. Imagine if generative AI could 
 - **Knowtex**
 - **Fireworks**
 - **Yellow**
-

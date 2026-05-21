@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/learn/maximizing-your-b2b-success-on
 title: "Maximizing your B2B success on AWS Marketplace"
 ---
 
-# Maximizing your B2B success on AWS Marketplace
+## Maximizing your B2B success on AWS Marketplace
 
 For startups experiencing rapid growth, creating a go-to-market (GTM) strategy often competes with core business priorities. Many startups turn to [AWS Marketplace](https://aws.amazon.com/marketplace) to accelerate their sales and procurement processes while focusing on product development.
 

@@ -3,9 +3,9 @@ source_url: https://aws.amazon.com/startups/learn/celebrating-women-in-tech-with
 title: "Celebrating women in tech with Panzura CEO Jill Stelfox"
 ---
 
-# Celebrating women in tech with Panzura CEO Jill Stelfox
+## Celebrating women in tech with Panzura CEO Jill Stelfox
 
-*Source: [AWS Startups](https://startups.aws/startups/learn/celebrating-women-in-tech-with-panzura-ceo-jill-stelfox)*
+_Source: [AWS Startups](https://startups.aws/startups/learn/celebrating-women-in-tech-with-panzura-ceo-jill-stelfox)_
 
 Meet Jill Stelfox. Jill is a serial founder and entrepreneur, holds multiple patents, and is the chief executive officer (CEO) and executive chair of [Panzura](https://panzura.com/). Panzura's award-winning CloudFS global file system gives the ability to access files from anywhere with visibility, security, and control.
 

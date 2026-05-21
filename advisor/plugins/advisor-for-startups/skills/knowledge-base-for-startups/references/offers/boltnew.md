@@ -3,7 +3,7 @@ source_url: https://aws.amazon.com/startups/offers/boltnew
 title: "25% off Bolt.new for Teams Plan"
 ---
 
-# 25% off Bolt.new for Teams Plan
+## 25% off Bolt.new for Teams Plan
 
 ### Estimated offer value: $1,000.00
 
