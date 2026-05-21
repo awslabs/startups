@@ -10,6 +10,12 @@
       "source": "./migrate/plugins/migration-to-aws",
       "version": "1.1.0",
       "description": "Migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning"
+    },
+    {
+      "name": "advisor-for-startups",
+      "source": "./advisor/plugins/advisor-for-startups",
+      "version": "1.1.0",
+      "description": "Three sibling skills for startups building on AWS: knowledge-base-for-startups (Activate FAQ, credits, programs, partner offers, sample architectures, 277 learn articles), prompt-library-for-startups (30 copy-paste prompts + 4 downloadable installable agents), and start-building-for-startups (interactive discovery workflow that scaffolds an AWS architecture)"
     }
   ]
 }

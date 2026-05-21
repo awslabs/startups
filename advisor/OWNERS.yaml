@@ -1,0 +1,10 @@
+team: AWS MASH
+resolver_group: aws-mash
+cti:
+  category: AWS
+  type: Activate
+  item: MASH - General Support
+contacts:
+  primary: aws-mash
+  oncall: aws-mash-oc-primary
+github_team: "@awslabs/startups-advisor"
