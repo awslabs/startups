@@ -381,7 +381,7 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
     "questions_defaulted": ["Q9"],
     "questions_skipped_extracted": ["Q14"],
     "questions_skipped_early_exit": ["Q8"],
-    "questions_skipped_not_applicable": ["Q4", "Q10", "Q11", "Q12", "Q13"],
+    "questions_skipped_not_applicable": ["Q4", "Q10", "Q11", "Q12", "Q13", "Q14-DB"],
     "category_e_enabled": false,
     "inventory_clarifications": {}
   },
