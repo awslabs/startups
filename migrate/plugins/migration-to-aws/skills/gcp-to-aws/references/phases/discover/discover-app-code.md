@@ -30,6 +30,15 @@ Recursively scan the entire target directory tree for source code and dependency
 
 **Exit gate:** If NO source code files or dependency manifests are found, **exit cleanly**. Return no output artifacts. Other sub-discovery files may still produce artifacts.
 
+**Secret file exclusion (HARD — no exceptions):** Before scanning any file, skip the following paths entirely — do NOT read, parse, or include their contents in any output artifact:
+
+- `.env`, `.env.local`, `.env.*.local`, `.env.development`, `.env.production`, `.env.test`
+- `credentials.json`, `service-account.json`, `*-service-account.json`
+- `*.pem`, `*.key`, `*.p12`, `*.pfx`
+- `secrets.yaml`, `secrets.yml`
+
+If any of these files are encountered during the recursive scan, log: "Skipped [filename] — potential secret file excluded from discovery scope." Do NOT include them in source file counts or any output.
+
 ---
 
 ## Step 0.5: Auth SDK Exclusion List
