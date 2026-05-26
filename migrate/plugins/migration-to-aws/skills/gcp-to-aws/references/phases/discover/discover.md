@@ -145,7 +145,9 @@ Output to user — build message from whichever artifacts exist:
 - If `ai-workload-profile.json` exists: "Detected AI workloads (source: [ai_source])."
 - If `billing-profile.json` exists: "Parsed billing data ($Z/month across N services)."
 
-Format: "Discover phase complete. [artifact summaries joined by space] Next required step: Phase 2 — Clarify. Load `references/phases/clarify/clarify.md` now. Do not load Design, Estimate, or Generate until Clarify completes and `.phase-status.json` marks `phases.clarify` as `completed`."
+**After building the artifact summary, load and execute `references/phases/discover/discover-preview.md`** to compute the migration preview. This produces `migration-preview.json` and the preview chat block. Append the preview block to the output message below.
+
+Format: "Discover phase complete. [artifact summaries joined by space] [preview block from discover-preview.md Step 6] Next required step: Phase 2 — Clarify. Load `references/phases/clarify/clarify.md` now. Do not load Design, Estimate, or Generate until Clarify completes and `.phase-status.json` marks `phases.clarify` as `completed`."
 
 ## Output Files
 
@@ -155,6 +157,7 @@ Format: "Discover phase complete. [artifact summaries joined by space] Next requ
 2. `gcp-resource-clusters.json` — from discover-iac.md
 3. `ai-workload-profile.json` — from discover-app-code.md (confidence ≥ 70%, optionally merged) and/or discover-iac.md Step 7d (Vertex-strong IaC only)
 4. `billing-profile.json` — from discover-billing.md
+5. `migration-preview.json` — from discover-preview.md (always written when any artifact exists)
 
 **No other files must be created:**
 
