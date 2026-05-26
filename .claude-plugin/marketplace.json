@@ -9,7 +9,7 @@
       "name": "migration-to-aws",
       "source": "./migrate/plugins/migration-to-aws",
       "version": "1.2.0",
-      "description": "Migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning"
+      "description": "Migrate GCP infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning"
     },
     {
       "name": "aws-startup-advisor",
