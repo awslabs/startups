@@ -71,6 +71,8 @@ Same decision logic, auto-detect signals, and interpretation as Q14 in `clarify-
 
 Auto-detect: No framework → A, LiteLLM/OpenRouter/Kong/Apigee → B, LangChain/LangGraph → C, CrewAI/AutoGen → D, OpenAI Agents SDK → E, MCP/A2A → F, Vapi/Bland.ai/Retell → G.
 
+_Skip when:_ `integration.gateway_type` AND `integration.frameworks` are both populated in `ai-workload-profile.json` — use extracted values with `chosen_by: "extracted"` and do not present this question.
+
 > A) No framework — direct API calls | B) LLM router/gateway | C) LangChain / LangGraph | D) Multi-agent framework | E) OpenAI Agents SDK | F) MCP/A2A | G) Voice platform
 
 Interpret → `ai_framework` array. Default: auto-detect, fallback `["direct"]`.
@@ -113,6 +115,8 @@ Interpret → `cross_cloud`. Default: B → `"latency-acceptable"`.
 ## Q5 — Current model in use?
 
 Establishes baseline Bedrock recommendation. Override hierarchy: Q10 special features > Q2 priority > Q7/Q8 volume/latency > Q5 baseline.
+
+_Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` — auto-detect from detected model IDs with `chosen_by: "extracted"` and do not present this question. The detected models are already shown in the Step 1 summary.
 
 > A) Gemini Flash | B) Gemini Pro | C) GPT-3.5 Turbo | D) GPT-4/4 Turbo | E) GPT-4o | F) GPT-5.4/Mini/Nano | G) GPT-5/5.x (older) | H) GPT-5.5/Pro | I) o-series | J) Other/Multiple | K) Don't know
 
@@ -175,6 +179,8 @@ You can answer each, skip individual ones, or say "use defaults for the rest."
 ### Batch 2 — Technical Requirements (Q6–Q10)
 
 ## Q6 — What input types must the model accept: text only, images (vision), or audio/video?
+
+_Skip when:_ `integration.capabilities_summary` in `ai-workload-profile.json` has definitive values for `vision` AND (`speech_to_text` or `text_to_speech`) — derive from capabilities with `chosen_by: "extracted"` and do not present this question. Only ask if capabilities are unknown or ambiguous (all false with no evidence either way).
 
 > A) Text only | B) Vision required | C) Audio/Video inputs
 
@@ -253,8 +259,9 @@ Write `$MIGRATION_DIR/preferences.json`:
 | -------------------------- | ----------------------------------------- | ------------------------------------------- |
 | `migration_type`           | `metadata.migration_type`                 | `"ai-only"` — downstream skips infra phases |
 | `discovery_artifacts`      | `metadata.discovery_artifacts`            | `["ai-workload-profile.json"]`              |
-| `questions_asked`          | `metadata.questions_asked`                | Array of Q1-Q10 asked                       |
+| `questions_asked`          | `metadata.questions_asked`                | Array of Q IDs actually presented           |
 | `questions_defaulted`      | `metadata.questions_defaulted`            | Array of Q IDs where defaults used          |
+| `questions_extracted`      | `metadata.questions_extracted`            | Array of Q IDs skipped via auto-detect      |
 | `target_region`            | `design_constraints.target_region`        | Derived from GCP region or cross-cloud pref |
 | `ai_framework`             | `ai_constraints.ai_framework`             | From Q1                                     |
 | `ai_priority`              | `ai_constraints.ai_priority`              | From Q2                                     |

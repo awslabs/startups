@@ -10,7 +10,7 @@
 
 Read `$MIGRATION_DIR/ai-workload-profile.json`:
 
-- `summary.ai_source` — `"gemini"`, `"openai"`, `"both"`, `"other"`
+- `summary.ai_source` — `"gemini"`, `"openai"`, `"anthropic"`, `"both"`, `"other"`
 - `models[]` — Detected AI models with service, capabilities, evidence
 - `integration` — SDK, frameworks, languages, gateway type, capability summary
 - `infrastructure[]` — Terraform resources related to AI (may be empty)
@@ -24,8 +24,9 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 - `"gemini"` → load `references/design-refs/ai-gemini-to-bedrock.md`
 - `"openai"` → load `references/design-refs/ai-openai-to-bedrock.md`
-- `"both"` → load both files
-- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric)
+- `"anthropic"` → load `references/design-refs/ai-openai-to-bedrock.md` (Anthropic SDK users are migrating to Bedrock-hosted Claude — the Converse API target and model mapping process is identical to the OpenAI path; the source model IDs differ but the Bedrock destination is the same Claude family)
+- `"both"` → load both `ai-gemini-to-bedrock.md` and `ai-openai-to-bedrock.md`
+- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
 
 ---
 
@@ -135,6 +136,7 @@ If `models[]` contains more than one model, check for coordination patterns and 
 
 1. **Embeddings + generation model detected** — If `models[]` contains both an embeddings model (capabilities_used includes `"embeddings"`) AND a text generation model:
    > ⚠️ "Migrating the embedding model (e.g., text-embedding-3-small → Titan Embeddings v2) requires re-embedding all documents in your vector store. Plan for re-indexing time and temporary storage. Test retrieval quality with the new embeddings before switching generation model."
+   > ⚠️ "Verify vector index dimension compatibility before cutover. OpenAI text-embedding-3-small outputs 1536 dimensions; Titan Embeddings v2 is configurable (256, 512, or 1024). A mismatch will cause insert failures at the vector store layer — your index must be rebuilt at the target dimension before any data is written."
 
 2. **Models at different price tiers** — If `models[]` contains both a mini/nano/lite model AND a flagship model (infer from model_id naming: `*-mini`, `*-nano`, `*-lite` vs flagship):
    > ⚠️ "These models appear to work as a cascade or routing pattern (cheap model for classification/filtering, expensive model for generation). Test the Bedrock replacement pair together — validate that the cheaper model's classification accuracy is preserved with its Bedrock equivalent before testing the expensive model."
@@ -218,6 +220,7 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 | Direct SDK (OpenAI)  | OpenAI                    | Mantle (OpenAI-compat) | Change `OPENAI_BASE_URL` + `OPENAI_API_KEY` + model string (zero code changes)                       |
 | Direct SDK           | Vertex AI                 | boto3 Converse API     | `generate_content()` → `converse()`                                                                  |
 | Direct SDK           | OpenAI                    | boto3 Converse API     | `completions.create()` → `converse()` (use if Mantle region unavailable or Converse features needed) |
+| Direct SDK           | Anthropic                 | boto3 Converse API     | `messages.create()` → `converse()` with Claude model ID on Bedrock                                   |
 | LangChain            | ChatVertexAI / ChatOpenAI | ChatBedrock            | Swap import and model_id                                                                             |
 | LlamaIndex           | Vertex / OpenAI LLM       | BedrockConverse        | Swap import                                                                                          |
 | LLM Router (LiteLLM) | Any                       | Config change          | `model="bedrock/<model_id>"` (1 line)                                                                |
@@ -225,6 +228,10 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 | Streaming            | `stream=True`             | `converse_stream`      | Event loop over `contentBlockDelta`                                                                  |
 
 **Mantle (OpenAI-compatible endpoints):** If `ai_source = "openai"` and `integration.pattern = "direct_sdk"`, prefer the Mantle path as the primary migration option. Mantle provides OpenAI-compatible Chat Completions and Responses APIs on Bedrock — the existing OpenAI SDK code works with zero changes, only environment variable updates. Check [Mantle regional availability](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) — if the target region does not have Mantle, fall back to the boto3 Converse API path. Record `migration_path: "mantle"` or `migration_path: "converse"` in `aws-design-ai.json` → `ai_architecture.code_migration`.
+
+**Mantle throughput caveat (medium/high volume):** Mantle runs on a shared 10,000 RPM account limit. For workloads with `ai_token_volume = "medium"` or `"high"`, add a note in the design summary: "Mantle is subject to a shared 10K RPM account limit. At medium/high volume, monitor for 429s and consider migrating to `bedrock-runtime` (Converse API) for dedicated throughput." See `references/shared/ai-migration-guardrails.md` for the full risk table.
+
+**gpt-oss migration path:** If `ai_source = "openai"` and the user wants to preserve OpenAI model architecture while consolidating on AWS, offer `gpt-oss` on Bedrock as a fourth migration path alongside Mantle, Converse API, and framework swap. Record `migration_path: "gpt-oss"` in `aws-design-ai.json` → `ai_architecture.code_migration`. The gpt-oss path uses the Converse API with the gpt-oss Bedrock model ID — it is not an OpenAI-compatible endpoint. Note the Claude 4.7+ output TPM cap (2M) if the user is migrating from a high-output OpenAI workload.
 
 Generate concrete code examples using actual model IDs from the selected Bedrock models. Only include patterns matching the detected integration.
 

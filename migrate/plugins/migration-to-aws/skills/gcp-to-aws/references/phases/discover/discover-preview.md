@@ -105,7 +105,7 @@ For each mapped model pair, compute:
 - `source_input_per_1m` and `source_output_per_1m` from pricing-cache.md Source Provider Pricing
 - `bedrock_input_per_1m` and `bedrock_output_per_1m` from pricing-cache.md Bedrock Models
 - `cost_direction`: `"lower"` if both Bedrock prices ≤ source, `"higher"` if both > source, `"mixed"` otherwise
-- `savings_pct`: percentage difference on output price (the larger cost driver) — only include if `cost_direction` is `"lower"` or `"higher"`
+- `savings_pct`: percentage difference on output price — only include if `cost_direction` is `"lower"` or `"higher"`
 
 **No monthly total is computed at this step.** Monthly estimate requires usage volume
 from Clarify (Q3 `ai_monthly_spend`, Q7 `ai_token_volume`). Set `cost_preview.monthly_estimate: null`
@@ -167,8 +167,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
         "bedrock_model_id": "anthropic.claude-sonnet-4-6",
         "bedrock_input_per_1m": 3.00,
         "bedrock_output_per_1m": 15.00,
-        "cost_direction": "higher",
-        "savings_pct": null
+        "cost_direction": "higher"
       },
       {
         "source_model": "text-embedding-3-small",
@@ -178,8 +177,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
         "bedrock_model_id": "amazon.titan-embed-text-v2:0",
         "bedrock_input_per_1m": 0.02,
         "bedrock_output_per_1m": null,
-        "cost_direction": "lower",
-        "savings_pct": null
+        "cost_direction": "lower"
       }
     ],
     "is_agentic": false,
@@ -191,7 +189,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
     "monthly_estimate_note": "Monthly estimate available after Clarify (usage volume collected in Q3, Q7)",
     "disclaimer": "Per-token prices from pricing-cache.md; full cost analysis in Estimate phase"
   },
-  "timeline_hint": "2-4 weeks (multi-model migration; confirm after Clarify)",
+  "timeline_hint": "2-6 weeks (multi-model migration; confirm after Clarify)",
   "ai_detected": true,
   "key_decisions_ahead": [
     "Bedrock model selection for gpt-4o, text-embedding-3-small",
@@ -201,13 +199,13 @@ Write `$MIGRATION_DIR/migration-preview.json`:
 ```
 
 **Field rules:**
-- `route` is `"ai_only"` for this path; `"infra"` for the standard path
+- `route` is `"ai_only"` for this path
 - `primary_resource_count` is `0` for AI-only runs (no IaC)
-- `complexity_signal` mirrors `ai_complexity_signal` for downstream consumers (PR B fast-path gate reads `complexity_signal`)
+- `complexity_signal` mirrors `ai_complexity_signal` for downstream consumers
 - `services_summary` is `[]` for AI-only runs
-- `ai_summary.bedrock_targets` lists one entry per distinct source model with actual per-token prices from pricing-cache.md
+- `ai_summary.bedrock_targets` lists one entry per distinct source model with actual per-token prices
 - `cost_preview.monthly_estimate` is always `null` at Discover time — no invented token volumes
-- `eligible_for_clarify_fast_path` is always `false` for AI-only route (consistent with PR 25 design)
+- `eligible_for_clarify_fast_path` is always `false` for AI-only route
 
 ---
 
@@ -223,7 +221,7 @@ Output this block as part of `discover.md` Step 3's user message (chat only — 
 | **Models detected** | [model_ids joined by ", "] |
 | **Bedrock targets** | [for each bedrock_target: "source_model → bedrock_equivalent (input: $X/1M → $Y/1M [higher/lower/same])"] |
 | **Routing** | [if has_multi_model_routing: gateway_type + " (multi-model routing)" else "Direct SDK"] |
-| **Per-token cost** | [if any cost_direction == "lower": "Cost savings available — see Estimate for details" / if all "higher": "Bedrock rates higher per token for this model tier — migration case is AWS consolidation" / if "mixed": "Mixed — some models cheaper, some higher on Bedrock"] |
+| **Per-token cost** | [if any cost_direction == "lower": "Cost savings available — see Estimate" / if all "higher": "Bedrock rates higher per token — migration case is AWS consolidation" / if "mixed": "Mixed — some models cheaper, some higher on Bedrock"] |
 | **Monthly estimate** | Available after Clarify (we'll ask about your usage volume) |
 | **Timeline (rough)** | [timeline_hint] |
 | **Decisions ahead** | [key_decisions_ahead joined by "; "] |
@@ -239,20 +237,20 @@ Do NOT write this to a file. Chat output only.
 ## Infra Route (Steps 1–6)
 
 > Used when `gcp-resource-inventory.json` exists (infra-only, hybrid infra+AI, or billing-only).
-> Original PR 25 behavior — unchanged.
+> Original behavior — unchanged.
 
-### Step 1: Compute complexity_signal
+## Step 1: Compute complexity_signal
 
 Read from available discovery artifacts:
 
-| Input | Source | Key |
-|---|---|---|
-| `primary_resource_count` | `gcp-resource-inventory.json` | Count resources where `classification: "PRIMARY"` |
-| `has_database` | `gcp-resource-inventory.json` | Any resource type matching `google_sql_*`, `google_spanner_*`, `google_redis_*` |
-| `has_bigquery` | `gcp-resource-inventory.json` or `billing-profile.json` | Any `google_bigquery_*` resource or BigQuery billing SKU |
-| `has_ai_profile` | File presence | `ai-workload-profile.json` exists |
-| `is_agentic` | `ai-workload-profile.json` | `agentic_profile.is_agentic == true` (if file exists) |
-| `billing_monthly_usd` | `billing-profile.json` | `summary.total_monthly_spend` (null if absent) |
+| Input                    | Source                                                  | Key                                                                             |
+| ------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `primary_resource_count` | `gcp-resource-inventory.json`                           | Count resources where `classification: "PRIMARY"`                               |
+| `has_database`           | `gcp-resource-inventory.json`                           | Any resource type matching `google_sql_*`, `google_spanner_*`, `google_redis_*` |
+| `has_bigquery`           | `gcp-resource-inventory.json` or `billing-profile.json` | Any `google_bigquery_*` resource or BigQuery billing SKU                        |
+| `has_ai_profile`         | File presence                                           | `ai-workload-profile.json` exists                                               |
+| `is_agentic`             | `ai-workload-profile.json`                              | `agentic_profile.is_agentic == true` (if file exists)                           |
+| `billing_monthly_usd`    | `billing-profile.json`                                  | `summary.total_monthly_spend` (null if absent)                                  |
 
 **Classify (first match wins, top to bottom):**
 
@@ -264,14 +262,14 @@ IF has_bigquery
 THEN complexity_signal = "complex"
 
 ELSE IF primary_resource_count <= 3
-        AND has_database == false
-        AND has_bigquery == false
-        AND is_agentic != true
-        AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
+   AND has_database == false
+   AND has_bigquery == false
+   AND is_agentic != true
+   AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
 THEN complexity_signal = "likely_simple"
 
 ELSE
-  complexity_signal = "standard"
+   complexity_signal = "standard"
 END
 ```
 
@@ -279,33 +277,33 @@ END
 
 ```
 eligible_for_clarify_fast_path =
-  complexity_signal == "likely_simple"
-  AND has_ai_profile == false   // any AI profile -> full Clarify, even non-agentic
+   complexity_signal == "likely_simple"
+   AND has_ai_profile == false // any AI profile -> full Clarify, even non-agentic
 ```
 
 ---
 
-### Step 2: Compute rough AWS cost range
+## Step 2: Compute rough AWS cost range
 
 **Purpose:** Give the user a ballpark before Estimate runs. Always label as rough. Never invent GCP spend if billing data is absent.
 
-#### Service type -> dev-tier AWS line item mapping
+### Service type -> dev-tier AWS line item mapping
 
 For each PRIMARY resource in `gcp-resource-inventory.json`, map to a dev-tier AWS equivalent and look up its monthly cost from `references/shared/pricing-cache.md`:
 
-| GCP Primary Type | Typical AWS Target | Dev-tier sizing for preview |
-|---|---|---|
-| `google_cloud_run_v2_service` / `google_cloud_run_service` | Fargate | 0.5 vCPU, 1GB RAM, 730 hrs/mo |
-| `google_cloudfunctions_function` / `google_cloudfunctions2_function` | Lambda | 1M requests, 128MB, 200ms avg |
-| `google_compute_instance` | EC2 t4g.small | On-demand, us-east-1 |
-| `google_container_cluster` | EKS (2x t4g.small nodes) | On-demand, us-east-1 |
-| `google_sql_database_instance` | RDS db.t4g.micro | Single-AZ, gp3 20GB |
-| `google_redis_instance` | ElastiCache cache.t4g.micro | Single-AZ |
-| `google_storage_bucket` | S3 | 50GB standard + 10K GET + 1K PUT |
-| `google_pubsub_topic` | SQS | 1M requests/mo |
-| `google_filestore_instance` | EFS | 10GB standard |
-| `google_spanner_instance` | Aurora Serverless v2 | 0.5-1 ACU |
-| `google_bigquery_dataset` | Deferred -- specialist | $0 (not estimated) |
+| GCP Primary Type                                                     | Typical AWS Target          | Dev-tier sizing for preview      |
+| -------------------------------------------------------------------- | --------------------------- | -------------------------------- |
+| `google_cloud_run_v2_service` / `google_cloud_run_service`           | Fargate                     | 0.5 vCPU, 1GB RAM, 730 hrs/mo    |
+| `google_cloudfunctions_function` / `google_cloudfunctions2_function` | Lambda                      | 1M requests, 128MB, 200ms avg    |
+| `google_compute_instance`                                            | EC2 t4g.small               | On-demand, us-east-1             |
+| `google_container_cluster`                                           | EKS (2x t4g.small nodes)    | On-demand, us-east-1             |
+| `google_sql_database_instance`                                       | RDS db.t4g.micro            | Single-AZ, gp3 20GB              |
+| `google_redis_instance`                                              | ElastiCache cache.t4g.micro | Single-AZ                        |
+| `google_storage_bucket`                                              | S3                          | 50GB standard + 10K GET + 1K PUT |
+| `google_pubsub_topic`                                                | SQS                         | 1M requests/mo                   |
+| `google_filestore_instance`                                          | EFS                         | 10GB standard                    |
+| `google_spanner_instance`                                            | Aurora Serverless v2        | 0.5-1 ACU                        |
+| `google_bigquery_dataset`                                            | Deferred -- specialist      | $0 (not estimated)               |
 
 Sum the dev-tier line items to get `aws_monthly_range_usd.low`. Multiply by 1.5 for `high` (accounts for NAT gateway, data transfer, CloudWatch, and sizing variance).
 
@@ -317,43 +315,42 @@ Sum the dev-tier line items to get `aws_monthly_range_usd.low`. Multiply by 1.5 
 
 ---
 
-### Step 3: Build key_decisions_ahead
+## Step 3: Build key_decisions_ahead
 
 Generate 2-4 bullets based on what was detected. Use only signals present in discovery artifacts:
 
-| Signal | Decision bullet |
-|---|---|
-| Any compute resource | "Target region and deployment model (Fargate vs EKS)" |
-| `has_database == true` | "Database migration tooling and cutover window" |
-| `has_ai_profile == true` | "Bedrock model selection for [detected model IDs]" |
-| `is_agentic == true` | "Agentic migration path (retarget / Harness / Strands)" |
-| `has_bigquery == true` | "BigQuery analytics target (specialist engagement required)" |
+| Signal                   | Decision bullet                                              |
+| ------------------------ | ------------------------------------------------------------ |
+| Any compute resource     | "Target region and deployment model (Fargate vs EKS)"        |
+| `has_database == true`   | "Database migration tooling and cutover window"              |
+| `has_ai_profile == true` | "Bedrock model selection for [detected model IDs]"           |
+| `is_agentic == true`     | "Agentic migration path (retarget / Harness / Strands)"      |
+| `has_bigquery == true`   | "BigQuery analytics target (specialist engagement required)" |
 
 Always include "Target region" if any compute is present. Cap at 4 bullets.
 
 ---
 
-### Step 4: Build timeline_hint string
+## Step 4: Build timeline_hint string
 
-| complexity_signal | timeline_hint |
-|---|---|
-| `likely_simple` | "3-6 weeks (likely simple infra; confirm after Clarify)" |
-| `standard` | "8-12 weeks (standard migration; confirm after Clarify)" |
-| `complex` | "12-16+ weeks (complex stack; confirm after Clarify)" |
+| complexity_signal | timeline_hint                                            |
+| ----------------- | -------------------------------------------------------- |
+| `likely_simple`   | "3-6 weeks (likely simple infra; confirm after Clarify)" |
+| `standard`        | "8-12 weeks (standard migration; confirm after Clarify)" |
+| `complex`         | "12-16+ weeks (complex stack; confirm after Clarify)"    |
 
 Always append "(confirm after Clarify)" -- full tier classification requires preferences.
 
 ---
 
-### Step 5: Write migration-preview.json
+## Step 5: Write migration-preview.json
 
 Write `$MIGRATION_DIR/migration-preview.json`:
 
 ```json
 {
   "preview_version": 1,
-  "computed_at": "<ISO 8601 UTC>",
-  "route": "infra",
+  "computed_at": "<ISO timestamp>",
   "primary_resource_count": 3,
   "complexity_signal": "likely_simple",
   "eligible_for_clarify_fast_path": true,
@@ -361,7 +358,6 @@ Write `$MIGRATION_DIR/migration-preview.json`:
     { "gcp_type": "google_cloud_run_v2_service", "typical_aws_target": "Fargate" },
     { "gcp_type": "google_storage_bucket", "typical_aws_target": "S3" }
   ],
-  "ai_summary": null,
   "cost_preview": {
     "gcp_monthly_usd": 240.00,
     "aws_monthly_range_usd": { "low": 120, "high": 180 },
@@ -377,17 +373,16 @@ Write `$MIGRATION_DIR/migration-preview.json`:
 ```
 
 **Field rules:**
-- `route` is `"infra"` for this path
+
 - `cost_preview` is `null` if neither IaC nor billing data was available
 - `cost_preview.gcp_monthly_usd` is `null` if no billing data (IaC-only run)
 - `ai_detected` is `true` if `ai-workload-profile.json` exists
-- `ai_summary` is `null` for infra route (AI detail lives in `ai-workload-profile.json`)
 - `services_summary` lists only PRIMARY resources, deduplicated by `gcp_type`
 - `eligible_for_clarify_fast_path` is `false` whenever `ai_detected == true`, regardless of infra complexity
 
 ---
 
-### Step 6: Build preview chat message
+## Step 6: Build preview chat message
 
 Output this block as part of `discover.md` Step 3's user message (chat only -- not a file):
 
