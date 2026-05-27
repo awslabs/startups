@@ -7,5 +7,13 @@ dprint.json              @awslabs/startups-admins
 .semgrep.yaml            @awslabs/startups-admins
 .markdownlint-cli2.yaml  @awslabs/startups-admins
 
+# Protected metadata files - admin approval for identity changes
+**/OWNERS.yaml           @awslabs/startups-admins
+**/OWNERS.yml            @awslabs/startups-admins
+**/.claude-plugin/       @awslabs/startups-admins
+**/.cursor-plugin/       @awslabs/startups-admins
+**/SKILL.md              @awslabs/startups-admins
+
 # Team folders
 /migrate/                @awslabs/startups-migrate
+/advisor/                @awslabs/startups-advisor

@@ -10,7 +10,7 @@ The parent `estimate.md` determines pricing source before loading this file.
 
 **Price lookup order for each AWS service in `aws-design.json`:**
 
-1. **`shared/pricing-cache.md` (primary)** — Read once. Look up each service by table. If found, use the price directly. No MCP call needed. Set `pricing_source: "cached"`.
+1. **`shared/pricing-cache.md` (primary)** — Read once. **Before using, check staleness:** compute `days_since_cache = today − cache "Last updated" date`. If `days_since_cache > 30`, set `pricing_source: "cached_stale"` for all AI model prices and prepend a warning to the estimate output: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or aws.amazon.com/bedrock/pricing." Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable; only AI model prices need the stale flag. If `days_since_cache ≤ 30`, use the price directly and set `pricing_source: "cached"`.
 2. **MCP with recipes (secondary)** — If a service is NOT in pricing-cache.md and MCP is available, use the Pricing Recipes table below. Set `pricing_source: "live"`.
 3. **Cache after MCP failure** — If MCP was attempted but failed, and the service IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`.
 4. **Unavailable** — If a service is NOT in the cache AND MCP failed, set `pricing_source: "unavailable"`. Add to `services_with_missing_fallback` and warn the user.

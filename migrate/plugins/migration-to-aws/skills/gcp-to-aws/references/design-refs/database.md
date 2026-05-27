@@ -20,6 +20,7 @@
 - **High availability required** → RDS Multi-AZ or Aurora (preferred)
 - **Dev/test sizing** → RDS Aurora Serverless v2 (min 0.5 ACU, ~$43–58/mo depending on I/O mode)
 - **Production, always-on** → RDS Aurora Provisioned (or Serverless v2 if fluctuating)
+- **Migration tooling** — Read `preferences.json` → `design_constraints.db_size.value` (set by Q13b in Clarify) to select the right tool: `"<10GB"` → pg_dump/pg_restore; `"10-100GB"` or `"100-500GB"` → pgcopydb; `">500GB"` → AWS DMS strongly recommended; `"unknown"` → default to pgcopydb
 
 ### Firestore
 

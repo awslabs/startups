@@ -8,8 +8,14 @@
     {
       "name": "migration-to-aws",
       "source": "./migrate/plugins/migration-to-aws",
-      "version": "1.1.0",
-      "description": "Migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning"
+      "version": "1.2.0",
+      "description": "This no-cost tool assesses your current cloud provider's usage, geography, and billing data to estimate and compare AWS services and pricing, and recommends migration or continued use of your current provider. AWS pricing is based on current published pricing and may vary over time. The tool may generate a .migration folder containing comparison and migration execution data, which you may delete upon completion or use to migrate to AWS."
+    },
+    {
+      "name": "aws-startup-advisor",
+      "source": "./advisor/plugins/aws-startup-advisor",
+      "version": "1.2.0",
+      "description": "Three sibling skills for startups building on AWS: knowledge-base-for-startups (Activate FAQ, credits, programs, partner offers, sample architectures, 277 learn articles), prompt-library-for-startups (30 copy-paste prompts + 4 downloadable installable agents), and start-building-for-startups (interactive discovery workflow that scaffolds an AWS architecture)"
     }
   ]
 }

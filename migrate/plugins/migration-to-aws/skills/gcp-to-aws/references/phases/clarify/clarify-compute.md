@@ -75,11 +75,11 @@ E -> same as default — see IaC-signal default rule below
 
 **Default (IaC-signal driven):**
 
-- If `gcp-resource-inventory.json` contains `google_container_cluster` resources → Default **B** (`kubernetes: "eks-or-ecs"`). Discovery shows the team is running Kubernetes; defaulting to Fargate produces a wrong first-pass architecture for users who skip questions.
+- If `gcp-resource-inventory.json` contains `google_container_cluster` resources → Default **C** (`kubernetes: "ecs-fargate"`). Teams that answer "I don't know" are better served by Fargate's lower operational overhead; EKS remains available via explicit answers A and B.
 - If no `google_container_cluster` in inventory (Cloud Run, Cloud Functions, or billing-only) → Default **C** (`kubernetes: "ecs-fargate"`). No Kubernetes signal; Fargate is the lower-ops starting point.
 - If inventory is absent (billing-only mode) → Default **C** (`kubernetes: "ecs-fargate"`).
 
-**Rationale:** The default follows what discovery found, not a blanket product preference. Teams running GKE who answer E ("I don't know") are more likely to want EKS than Fargate — they already operate Kubernetes. Teams migrating from Cloud Run who answer E have no Kubernetes investment to preserve and are better served by Fargate. EKS and Fargate remain fully available via explicit answers A–C regardless of default.
+**Rationale:** Teams that answer E ("I don't know") have not expressed a Kubernetes preference. Defaulting to Fargate gives them a simpler, lower-ops starting point regardless of what discovery found. Teams who actively want EKS will answer A or B explicitly. EKS remains fully available via explicit answers A and B.
 
 ---
 

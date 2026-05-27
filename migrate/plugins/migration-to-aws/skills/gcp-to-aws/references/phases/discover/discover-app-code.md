@@ -30,6 +30,15 @@ Recursively scan the entire target directory tree for source code and dependency
 
 **Exit gate:** If NO source code files or dependency manifests are found, **exit cleanly**. Return no output artifacts. Other sub-discovery files may still produce artifacts.
 
+**Secret file exclusion (HARD — no exceptions):** Before scanning any file, skip the following paths entirely — do NOT read, parse, or include their contents in any output artifact:
+
+- `.env*` (matches `.env`, `.env.local`, `.env.production`, `.env.staging`, and any other `.env` variant)
+- `credentials.json`, `service-account.json`, `*-service-account.json`
+- `*.pem`, `*.key`, `*.p12`, `*.pfx`
+- `secrets.yaml`, `secrets.yml`
+
+If any of these files are encountered during the recursive scan, log: "Skipped [filename] — potential secret file excluded from discovery scope." Do NOT include them in source file counts or any output.
+
 ---
 
 ## Step 0.5: Auth SDK Exclusion List
@@ -130,6 +139,8 @@ Scan source code and dependency manifests for agentic framework patterns. These 
 | 3B.3 AutoGen           | `from autogen` imports, `AssistantAgent(`, `GroupChat(`, `ConversableAgent(`                                                                                   | 95%        |
 | 3B.4 OpenAI Agents SDK | `from openai.agents` or `from agents import`, `openai.beta.assistants`, `Runner(`                                                                              | 95%        |
 | 3B.5 Strands Agents    | `from strands` imports, `Agent(` with `tools=`, `Swarm(`, `GraphBuilder(`                                                                                      | 95%        |
+| 3B.5a Pydantic AI      | `from pydantic_ai import Agent`, `from pydantic_ai.models` imports, `Agent(model=`, `.run_sync(`, `.run(`                                                      | 95%        |
+| 3B.5b Agno             | `from agno.agent import Agent`, `from agno.models` imports, `Agent(model=`, `Team(`, `.print_response(`                                                        | 95%        |
 | 3B.6 Custom agent loop | `while` loop body containing BOTH an LLM call (completions/generate) AND tool execution (function dispatch from model output) AND result parsing back to model | 80%        |
 | 3B.7 Tool definitions  | `@tool` decorators, `function_declarations=`, `tools=[{...schema...}]`, tool schema objects with `name`+`description`+`parameters`                             | 90%        |
 | 3B.8 MCP integration   | `from mcp.server` or `from mcp.client`, `mcp.json` config files, `MCPClient(`                                                                                  | 90%        |
@@ -142,6 +153,8 @@ Also check dependency manifests for agentic framework dependencies:
 - `pyautogen` or `autogen` (AutoGen)
 - `openai` with agents imports (OpenAI Agents SDK — same package, different import path)
 - `strands-agents` (Strands Agents SDK)
+- `pydantic-ai` (Pydantic AI)
+- `agno` (Agno)
 - `mcp` (Model Context Protocol SDK)
 
 ---
@@ -150,7 +163,7 @@ Also check dependency manifests for agentic framework dependencies:
 
 Determine whether the codebase contains agentic workflows. Execute these rules in order:
 
-1. If ANY framework signal from 3B.1–3B.5 detected → set `is_agentic: true`, set `framework` to the detected framework name
+1. If ANY framework signal from 3B.1–3B.5b detected → set `is_agentic: true`, set `framework` to the detected framework name
 2. If NO framework signal BUT 3B.6 (custom agent loop) detected → set `is_agentic: true`, set `framework: "custom"`
 3. If 3B.7 (tool definitions) detected WITH an LLM call in a loop pattern → set `is_agentic: true`, set `framework: "custom"`
 4. If ONLY 3B.8 (MCP integration) detected WITHOUT an agent loop → set `is_agentic: false` (MCP alone does not imply agent orchestration)
@@ -501,7 +514,7 @@ After generating the output file, the parent `discover.md` handles the phase sta
 - If `is_agentic: true`: `agentic_profile` section exists with all required fields
 - If `is_agentic: true`: `agentic_profile.agent_count` equals length of `agentic_profile.agents[]`
 - If `is_agentic: true`: `agentic_profile.tool_count` equals length of `tool_manifest[]` (deduplicated)
-- If `is_agentic: true`: `agentic_profile.framework` is one of: `"langgraph"`, `"crewai"`, `"autogen"`, `"openai_agents"`, `"strands"`, `"custom"`, `"none"`
+- If `is_agentic: true`: `agentic_profile.framework` is one of: `"langgraph"`, `"crewai"`, `"autogen"`, `"openai_agents"`, `"strands"`, `"pydantic_ai"`, `"agno"`, `"custom"`, `"none"`
 - If `is_agentic: true`: `agentic_profile.orchestration_pattern` is one of: `"single"`, `"hierarchical"`, `"swarm"`, `"graph"`, `"sequential"`, `"unknown"`
 - If `is_agentic: true`: every `agent_id` in `tool_manifest[].used_by_agents` exists in `agentic_profile.agents[].agent_id`
 - If `is_agentic: true`: `tool_manifest[].transport` is one of: `"function"`, `"api"`, `"mcp"`, `"unknown"`
