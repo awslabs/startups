@@ -7,6 +7,7 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 | Plugin                           | Description                                                                                                                                   | Status    |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **[migration-to-aws](migrate/)** | Migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning | Available |
+| **[aws-startups-advisor](advisor/)** | A plugin of three sibling skills that work alongside each other in any modern AI coding agent (Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and 50+ others) | Available |
 
 ## Installation
 
