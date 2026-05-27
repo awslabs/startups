@@ -237,8 +237,9 @@ Scan files that contained AI signals for specific model information:
   - Model strings in config files or environment variables: `OPENAI_MODEL`, `MODEL_NAME`, etc.
   - Look for model string patterns: `gpt-*`, `o1*`, `o3*`, `o4*`, `text-embedding-*`, `dall-e-*`, `gpt-image-*`, `whisper-*`, `tts-*`
 
-  **Other provider patterns:**
+  **Anthropic patterns:**
   - `anthropic.Anthropic().messages.create(model="claude-*")` -> model_id: `"claude-*"`
+  - Look for model string patterns: `claude-3-*`, `claude-sonnet-*`, `claude-haiku-*`, `claude-opus-*`
 
 - **Capabilities used** — Determine from API calls and method signatures:
   - `text_generation`: `generate_content()`, `predict()`, `messages.create()`, `chat.completions.create()`
@@ -368,7 +369,10 @@ Determine how the application integrates with AI services:
   | Pattern                                                      | Gateway Type     | Evidence                           |
   | ------------------------------------------------------------ | ---------------- | ---------------------------------- |
   | `from litellm import completion` / `litellm` in dependencies | `llm_router`     | LiteLLM — multi-provider router    |
-  | `base_url` containing `openrouter.ai`                        | `llm_router`     | OpenRouter — multi-provider router |
+  | `base_url` containing `openrouter.ai` in source code        | `llm_router`     | OpenRouter — multi-provider router (code) |
+  | Env var `OPENAI_BASE_URL` containing `openrouter.ai` in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router` | OpenRouter — env-configured router |
+  | Env var `OPENROUTER_API_KEY` or `OR_API_KEY` present in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router` | OpenRouter — API key detected |
+  | Env var `LITELLM_PROXY_BASE_URL` or `LITELLM_API_KEY` present in any config file | `llm_router` | LiteLLM proxy — env-configured |
   | `portkey` imports or `x-portkey-` headers                    | `llm_router`     | Portkey — AI gateway               |
   | `helicone` imports or `x-helicone-` headers                  | `llm_router`     | Helicone — AI gateway              |
   | Kong, Apigee, or custom API gateway routing to AI endpoints  | `api_gateway`    | API gateway proxying AI calls      |
@@ -378,6 +382,15 @@ Determine how the application integrates with AI services:
   | `from langchain` with provider imports                       | `framework`      | LangChain orchestration framework  |
   | `from llama_index` with provider imports                     | `framework`      | LlamaIndex orchestration framework |
   | Direct SDK calls only (no router/gateway/framework)          | `direct`         | Direct API integration             |
+
+  **Env var scan scope for gateway detection:** Check these files for `OPENAI_BASE_URL`, `OPENROUTER_API_KEY`, `OR_API_KEY`, `LITELLM_PROXY_BASE_URL`, `LITELLM_API_KEY`:
+  - `.env`, `.env.local`, `.env.production`, `.env.staging`, `.env.*` (any environment file)
+  - `docker-compose.yml`, `docker-compose.*.yml`
+  - `.github/workflows/*.yml`, `.gitlab-ci.yml`, `cloudbuild.yaml`, `Jenkinsfile`
+  - Shell scripts: `*.sh`, `Makefile`
+  - `fly.toml`, `railway.toml`, `render.yaml`, `vercel.json`, `netlify.toml`
+
+  **Do NOT read secret values** — only check for the presence of the key name. Log: "Detected [KEY_NAME] in [file] — classified as llm_router (OpenRouter/LiteLLM)."
 
   Set `gateway_type` to `null` if no AI signals were detected or detection is ambiguous.
 
@@ -480,8 +493,11 @@ If `$MIGRATION_DIR/ai-workload-profile.json` **already exists** with `metadata.p
 
 - `"gemini"` — Only Gemini/Vertex AI generative models detected (patterns 2.3)
 - `"openai"` — Only OpenAI SDK/models detected (patterns 2.4)
-- `"both"` — Both Gemini and OpenAI detected in the same codebase
-- `"other"` — Other LLM providers (Anthropic, Cohere, etc.) or traditional ML only (no LLM)
+- `"anthropic"` — Only Anthropic SDK detected (pattern 2.5, `anthropic` package, `claude-*` model strings) with no Gemini or OpenAI signals
+- `"both"` — Both Gemini and OpenAI detected in the same codebase; or Anthropic + any other provider
+- `"other"` — Traditional ML only (custom models, Vision API, Speech API, Document AI) with no LLM SDK detected
+
+**Note:** Anthropic SDK users are migrating to Bedrock-hosted Claude models, not to SageMaker. Setting `ai_source: "anthropic"` ensures Design routes to the correct Bedrock migration path rather than the traditional ML rubric.
 
 **Conditional sections:**
 
@@ -500,7 +516,7 @@ After generating the output file, the parent `discover.md` handles the phase sta
 - `metadata.sources_analyzed` reflects which data sources were actually provided
 - `summary.overall_confidence` matches the detection confidence from Step 4
 - `summary.total_models_detected` matches the length of `models` array
-- `summary.ai_source` is set correctly: `"gemini"`, `"openai"`, `"both"`, or `"other"` based on detected LLM SDKs
+- `summary.ai_source` is set correctly: `"gemini"`, `"openai"`, `"anthropic"`, `"both"`, or `"other"` based on detected LLM SDKs
 - Every entry in `models` has `model_id`, `service`, `detected_via`, `evidence`, `capabilities_used`, and `usage_context`
 - `models[].detected_via` only contains sources that were actually analyzed (`"code"`, `"terraform"`, `"billing"`)
 - `models[].evidence` array has at least one entry per source listed in `detected_via`
@@ -527,7 +543,7 @@ After generating the output file, the parent `discover.md` handles the phase sta
 
 The Design phase (`references/phases/design/design.md`) uses `ai-workload-profile.json`:
 
-1. **`summary.ai_source`** — Routes to the correct design reference: `"gemini"` → `ai-gemini-to-bedrock.md`, `"openai"` → `ai-openai-to-bedrock.md`, `"both"` → load both, `"other"` → `ai.md` (traditional ML)
+1. **`summary.ai_source`** — Routes to the correct design reference: `"gemini"` → `ai-gemini-to-bedrock.md`, `"openai"` → `ai-openai-to-bedrock.md`, `"anthropic"` → `ai-openai-to-bedrock.md` (Bedrock Claude migration path — same Converse API target), `"both"` → load both Gemini and OpenAI refs, `"other"` → `ai.md` (traditional ML / Vision API / Speech API only)
 2. **`models`** — Determines which Bedrock models to recommend via the model selection decision tree
 3. **`integration.capabilities_summary`** — Validates Bedrock feature parity (e.g., if `function_calling` is `true`, selected Bedrock model must support tool use)
 4. **`integration.pattern`** and **`integration.primary_sdk`** — Determines code migration guidance (direct SDK swap vs framework provider swap vs REST endpoint change)
