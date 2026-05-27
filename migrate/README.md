@@ -22,7 +22,7 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 # Add the marketplace
 /plugin marketplace add awslabs/startups
 
-# Install the plugin
+# Install a plugin
 /plugin install migration-to-aws@startups-for-aws
 ```
 
