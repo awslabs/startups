@@ -14,8 +14,8 @@ Questions are organized into **six named categories (A–F)** with documented fi
 | --------------------- | ---------------------------- | --------- | ----------------------------------------------- |
 | `clarify-global.md`   | A — Global/Strategic         | Q1–Q7     | Always                                          |
 | `clarify-compute.md`  | B — Config Gaps, C — Compute | Q8–Q11    | Compute or billing-source resources present     |
-| `clarify-database.md` | D — Database                 | Q12–Q13   | Database resources present                      |
-| `clarify-ai.md`       | F — AI/Bedrock               | Q14–Q22   | `ai-workload-profile.json` exists               |
+| `clarify-database.md` | D — Database                 | Q12–Q13b  | Database resources present                      |
+| `clarify-ai.md`       | F — AI/Bedrock               | Q14–Q26   | `ai-workload-profile.json` exists               |
 | `clarify-ai-only.md`  | _(standalone)_               | Q1–Q10    | AI-only migration (no infrastructure artifacts) |
 
 ---
@@ -89,6 +89,44 @@ Present a discovery summary:
 
 ---
 
+## Step 1.5: Fast-Path Gate (Simple Infra Only)
+
+**After presenting the Discovery Summary**, check `$MIGRATION_DIR/migration-preview.json` for fast-path eligibility:
+
+```
+IF migration-preview.json exists
+   AND eligible_for_clarify_fast_path == true
+THEN offer fast-path
+ELSE skip to Step 2 (full Clarify)
+```
+
+**If eligible**, present this offer before any questions:
+
+> "Your stack looks straightforward — [primary_resource_count] resource(s), no database, no AI detected.
+>
+> Want to use smart defaults and answer just 3 questions instead of up to 22?
+>
+> **[Yes — 3 questions]** / **[No — ask me everything]**"
+
+**If user chooses Yes (fast-path):**
+
+1. Ask only these three questions (load exact wording from their respective category files):
+   - **Q1** (target region) — from `clarify-global.md`
+   - **Q2** (compliance) — from `clarify-global.md`, presented as a one-liner: "Any compliance requirements? (A) None (B) SOC2 (C) PCI (D) HIPAA (E) FedRAMP (F) GDPR/CCPA"
+   - **Q7** (maintenance window / cutover strategy) — from `clarify-global.md`
+
+2. Apply documented defaults for ALL other questions. Record each in `metadata.questions_defaulted`.
+
+3. Still run the BigQuery advisory if `bigquery_present` is true (Step 4 mandatory callout).
+
+4. Write `preferences.json` with `metadata.clarify_mode: "fast_path"` and proceed to Step 5. Skip Steps 2–4 entirely.
+
+**Agentic hard block:** Even if `eligible_for_clarify_fast_path` is true in `migration-preview.json`, if `ai-workload-profile.json` exists with `agentic_profile.is_agentic == true`, **never offer fast-path**. Agentic workloads require Q23–Q26 (Category G) which have mandatory questions that cannot be defaulted.
+
+**If user chooses No, or fast-path is not eligible:** Continue to Step 2 (full Clarify).
+
+---
+
 ## Step 2: Extract Known Information
 
 Before generating questions, scan the inventory to extract values that are already known:
@@ -99,6 +137,7 @@ Before generating questions, scan the inventory to extract values that are alrea
 4. **Billing-only mode** — If `billing-profile.json` exists and `gcp-resource-inventory.json` does NOT exist, check `billing-profile.json → services[]` for Category B question matching.
 5. **AI framework detection** — If `ai-workload-profile.json` exists, check `integration.gateway_type` and `integration.frameworks` for auto-detection of Q14 answer.
 6. **BigQuery / analytics warehouse** — Set `bigquery_present` to **true** if **any** of: (a) a resource in `gcp-resource-inventory.json` has `gcp_type` (or equivalent type field) starting with `google_bigquery_`; (b) `billing-profile.json` lists a service/SKU that clearly indicates **BigQuery** (e.g., service name or SKU contains `BigQuery`). Otherwise `bigquery_present` is **false**.
+7. **Database size auto-detect** — If `gcp-resource-inventory.json` exists and any `google_sql_database_instance` resource has `gcp_config.disk_size_gb`, record that value as the default for Q13b and confirm with the user rather than asking from scratch. Set `chosen_by: "extracted"` if confirmed unchanged.
 
 Record extracted values. Questions whose answers are fully determined by extraction will be skipped and the extracted value used directly with `chosen_by: "extracted"`.
 
@@ -113,9 +152,9 @@ Record extracted values. Questions whose answers are fully determined by extract
 | **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q4 (funding stage), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance) |
 | **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                    |
 | **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend)                                  |
-| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O)                                                                              |
+| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                              |
 | **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                           |
-| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                             |
+| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q26 (Q14–Q22 always; Q23–Q26 only when `agentic_profile.is_agentic == true`)                                    |
 
 **Apply firing rules to determine which categories are active:**
 
@@ -152,17 +191,18 @@ Apply these before presenting questions:
 - **Q5 = "Yes, multi-cloud required"** — Immediately record `compute: "eks"`. Skip Q8 (Kubernetes sentiment) — all container workloads resolve to EKS.
 - **Q10/Q11 N/A** — Cloud Run not present, auto-skip.
 - **Q12/Q13 N/A** — Cloud SQL not present, auto-skip.
+- **Q13b auto-detect** — If `gcp_config.disk_size_gb` is present on any `google_sql_database_instance`, use it as the default for Q13b with `chosen_by: "extracted"` if the user confirms it unchanged.
 - **Q14 auto-detected** — If `integration.gateway_type` is non-null OR `integration.frameworks` is non-empty in `ai-workload-profile.json`, skip Q14. Set `ai_framework` from the detected values with `chosen_by: "extracted"`.
 
 ### Batch Planning
 
 After determining active categories, organize questions into **up to three batches** presented sequentially with intermediate saves:
 
-| Batch | Name                   | Categories                                 | Questions                   | Fires When                                |
-| ----- | ---------------------- | ------------------------------------------ | --------------------------- | ----------------------------------------- |
-| **1** | Strategic Requirements | A (Global/Strategic)                       | Q1–Q7 (minus Q4)            | Always                                    |
-| **2** | Infrastructure         | B (Config Gaps), C (Compute), D (Database) | Q8–Q13 + Category B prompts | Any compute or database resources present |
-| **3** | AI Workloads           | F (AI/Bedrock)                             | Q14–Q22                     | `ai-workload-profile.json` exists         |
+| Batch | Name                   | Categories                                 | Questions                         | Fires When                                |
+| ----- | ---------------------- | ------------------------------------------ | --------------------------------- | ----------------------------------------- |
+| **1** | Strategic Requirements | A (Global/Strategic)                       | Q1–Q7 (minus Q4)                  | Always                                    |
+| **2** | Infrastructure         | B (Config Gaps), C (Compute), D (Database) | Q8–Q13b + Category B prompts      | Any compute or database resources present |
+| **3** | AI Workloads           | F (AI/Bedrock)                             | Q14–Q26 (Q23–Q26 only if agentic) | `ai-workload-profile.json` exists         |
 
 **Determine active batches:**
 
@@ -183,13 +223,13 @@ _Default behavior when disabled:_ Apply conservative defaults — no HA upgrades
 
 If the user opts in, present after all other categories:
 
-### Q24 — Should we recommend upgrading Single-AZ to Multi-AZ where possible?
+### Q-E1 — Should we recommend upgrading Single-AZ to Multi-AZ where possible?
 
 > A) Yes — upgrade to Multi-AZ for higher availability | B) No — keep current topology
 
 Interpret → `ha_upgrade`: A → `true`, B → `false`. Default: B → `false`.
 
-### Q25 — Should we use billing utilization data to right-size instance types?
+### Q-E2 — Should we use billing utilization data to right-size instance types?
 
 > A) Yes — right-size based on utilization | B) No — match current capacity
 
@@ -313,7 +353,7 @@ After the last substantive batch is answered (but before writing final `preferen
 
 > "Would you also like HA upgrade and right-sizing recommendations based on your billing data? If not, I'll use conservative defaults (no upgrades, match current capacity)."
 
-If user opts in, present Q24–Q25 (defined in **Category E — Migration Posture** above). Otherwise, apply Category E defaults (`ha_upgrade: false`, `right_sizing: false`).
+If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Posture** above). Otherwise, apply Category E defaults (`ha_upgrade: false`, `right_sizing: false`).
 
 ---
 
@@ -381,8 +421,9 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
     "questions_defaulted": ["Q9"],
     "questions_skipped_extracted": ["Q14"],
     "questions_skipped_early_exit": ["Q8"],
-    "questions_skipped_not_applicable": ["Q4", "Q10", "Q11", "Q12", "Q13"],
+    "questions_skipped_not_applicable": ["Q4", "Q10", "Q11", "Q12", "Q13", "Q13b"],
     "category_e_enabled": false,
+    "clarify_mode": "full",
     "inventory_clarifications": {}
   },
   "design_constraints": {
@@ -394,7 +435,8 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
     "cutover_strategy": { "value": "maintenance-window-weekly", "chosen_by": "user" },
     "kubernetes": { "value": "eks-or-ecs", "chosen_by": "user" },
     "database_traffic": { "value": "steady", "chosen_by": "user" },
-    "db_io_workload": { "value": "medium", "chosen_by": "user" }
+    "db_io_workload": { "value": "medium", "chosen_by": "user" },
+    "db_size": { "value": "10-100GB", "chosen_by": "user" }
   },
   "ai_constraints": {
     "ai_framework": { "value": ["direct"], "chosen_by": "extracted" },
@@ -449,6 +491,7 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 | Q11 — Cloud Run spend   | B ($100–$500)        | `cloud_run_monthly_spend: "$100-$500"`            |
 | Q12 — DB traffic        | A (steady)           | `database_traffic: "steady"`                      |
 | Q13 — DB I/O            | B (medium)           | `db_io_workload: "medium"`                        |
+| Q13b — DB size          | E (unknown)          | `db_size: "unknown"` → default to pgcopydb        |
 | Q14 — AI framework      | _(auto-detect)_      | `ai_framework` from code detection                |
 | Q15 — AI spend          | B ($500–$2K)         | `ai_monthly_spend: "$500-$2K"`                    |
 | Q16 — AI priority       | E (balanced)         | `ai_priority: "balanced"`                         |
@@ -479,6 +522,7 @@ Before handing off to Design:
 - [ ] `ai_constraints.ai_framework` is an array (Q14 is multi-select)
 - [ ] Output is valid JSON
 - [ ] `preferences-draft.json` has been deleted (if it existed)
+- [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`
 
 ---
 

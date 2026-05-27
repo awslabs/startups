@@ -297,6 +297,7 @@ Before presenting Category G questions, show:
 
 **Auto-detect signals** — recommend default based on `agentic_profile.framework`:
 
+- `gateway_type` is `"llm_router"` (LiteLLM or OpenRouter detected) → Default to **A (retarget)**. These users are already abstracted from the model provider — migration is a config change (swap model IDs), not a code rewrite. Set `migration_approach: "retarget"` automatically and skip Q23 unless the user explicitly asks to evaluate Harness or Strands.
 - `langgraph`, `crewai`, `autogen` → Default to A (retarget). These frameworks support Bedrock as a model provider with minimal code changes.
 - `openai_agents` → Surface all options. OpenAI Agents SDK is tightly coupled to OpenAI API; retarget is harder. Note partial retarget (HTTP-compatible routing to Bedrock) as a bridge.
 - `strands` → Already AWS-native. Recommend B (Harness) for managed deployment or note "already on target framework."
@@ -307,7 +308,7 @@ _Skip when:_ Auto-detection fully resolves AND user has no preference signal. Us
 > Your agent system can migrate to AWS in different ways, each with different effort and risk:
 >
 > A) **Retarget** — Keep your current framework ([framework name]), swap the model layer to Bedrock. Fastest path, lowest risk. Your orchestration code stays the same.
-> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration.
+> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(Preview — 4 regions: us-east-1, us-west-2, eu-central-1, ap-southeast-2)_
 > C) **Strands native** — Rewrite orchestration using AWS Strands SDK on AgentCore. Most AWS-integrated, highest effort. Best for teams wanting full AWS-native multi-agent capabilities.
 > D) **I'm not sure** — Help me decide based on my workload.
 

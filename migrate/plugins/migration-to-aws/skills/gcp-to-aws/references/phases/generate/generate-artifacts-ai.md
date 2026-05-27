@@ -45,6 +45,7 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 Check `preferences.json` → `ai_constraints.ai_framework.value` and `aws-design-ai.json` → `ai_architecture.code_migration.migration_path`:
 
 - `migration_path` = `"mantle"` → Generate Mantle setup (Step 1M) + setup (Step 3) + test harness (Step 2). Skip provider adapter (Step 1).
+- `migration_path` = `"gpt-oss"` → Generate provider adapter (Step 1) targeting the gpt-oss model on Bedrock via the Converse API + setup (Step 3) + test harness (Step 2). Use the Bedrock model ID from `aws-design-ai.json` → `ai_architecture.bedrock_models[].aws_model_id` (the gpt-oss model ID). Do NOT generate a Mantle script — gpt-oss uses the Converse API directly.
 - `"direct"` or absent → Generate provider adapter (Step 1) + setup (Step 3) + test harness (Step 2)
 - `"llm_router"`, `"api_gateway"`, `"voice_platform"`, or `"framework"` → Skip Step 1, generate gateway config (Step 3B) instead
 
@@ -62,8 +63,23 @@ Generate `ai-migration/migrate_to_mantle.sh` — a shell script that configures 
 - Print the environment variables to set: `OPENAI_BASE_URL=https://bedrock-mantle.{region}.api.aws/v1`, `OPENAI_API_KEY=<bedrock-api-key>`
 - Print the model string change: current model ID → Bedrock model ID from `aws-design-ai.json`
 - Include a quick verification call using the OpenAI SDK against the Mantle endpoint
+- **Add a warning comment** about `max_tokens`: OpenAI SDK users migrating via Mantle carry over their existing `max_tokens` value unchanged. If the existing value is 4096 (OpenAI default), this reduces Bedrock concurrency by 5–8x on TPM quota. Instruct users to audit `max_tokens` before production and include the workload-type lookup table (see Step 1M max_tokens guidance above).
 - Note: "No code changes required. Your existing OpenAI SDK calls work unchanged."
 - Reference [Mantle documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) for API key generation
+- **Set `max_tokens` default to 1024** in the generated migration script with an explanatory comment. Do NOT inherit the caller's existing `max_tokens` value (often 4096 from OpenAI defaults) — this reduces concurrency by 5–8x on Bedrock's TPM quota. Include a workload-type lookup table as a comment so users tune before production:
+
+  ```bash
+  # max_tokens guidance — tune before production:
+  # | Workload type                                | Suggested max_tokens |
+  # |--------------------------------------------|----------------------|
+  # | Classification / extraction / routing       | 256–512              |
+  # | Chat / Q&A / summarization                  | 512–1024 (default)   |
+  # | Long-form generation / reports              | 2048–4096             |
+  # | Tool outputs / multi-step reasoning         | 2048–8192             |
+  # | Code generation                             | 2048–4096             |
+  # TODO: Review and adjust max_tokens for your workload before deploying to production.
+  MAX_TOKENS=1024 # Starting point — see table above
+  ```
 
 Skip Step 1 (provider adapter) when this step runs — the OpenAI SDK is the adapter.
 

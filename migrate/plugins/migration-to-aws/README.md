@@ -1,6 +1,6 @@
-# Agent Skills for AWS Migration
+# Sample Agent Skills for AWS Migration
 
-AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) and [Cursor](https://www.cursor.com/).
+AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), [Codex](https://openai.com/codex), and [Cursor](https://www.cursor.com/).
 
 ## What This Does
 
@@ -12,7 +12,7 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 - **Recommends three migration paths** for agentic workloads: retarget (keep your framework, swap models), AgentCore Harness (config-based managed agents), or Strands Agents (AWS-native multi-agent SDK)
 - **Surfaces options you wouldn't find on your own** — like Strands Agents (open-source, powers AgentCore internally) and AgentCore Harness (declare an agent in 3 API calls)
 - **Generates runnable artifacts** — `harness.json`, deployment scripts, incremental migration scripts, provider adapters — tailored to your specific models, tools, and architecture
-- **Gives honest pricing comparisons** — Gives honest pricing comparisons — finds you the best Bedrock option for your workload with current April 2026 pricing data, including side-by-side cost comparisons against your existing OpenAI/Gemini spend
+- **Gives honest pricing comparisons** — finds you the best Bedrock option for your workload with current pricing data, including side-by-side cost comparisons against your existing OpenAI/Gemini spend
 
 ## What You Get That a Base LLM Can't Give You
 
@@ -39,10 +39,20 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 
 ```bash
 # Add the marketplace
-/plugin marketplace add aws-samples/sample-agent-skills-for-aws-migration
+/plugin marketplace add awslabs/startups --sparse migrate/plugins
 
 # Install the plugin
-/plugin install migration-to-aws@sample-agent-skills-for-aws-migration
+/plugin install migration-to-aws@startups
+```
+
+### Codex
+
+```bash
+# Add the marketplace
+codex plugin marketplace add awslabs/startups --sparse migrate/plugins
+
+# Install the plugin
+codex plugin install migration-to-aws
 ```
 
 ### Cursor
@@ -86,7 +96,7 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 
 ## Requirements
 
-- Claude Code >=2.1.29 or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
+- Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
 - At least one input source: Terraform files, application code, or GCP billing data
 - **For AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)

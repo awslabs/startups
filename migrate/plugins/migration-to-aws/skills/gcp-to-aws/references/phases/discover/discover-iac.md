@@ -27,6 +27,16 @@ Record file paths and types for all files found.
 
 **Exit gate:** If NO Terraform files (`.tf`, `.tfvars`, `.tfstate`, `.terraform.lock.hcl`) are found, **exit cleanly**. Return no output artifacts. Other sub-discovery files may still produce artifacts.
 
+**Secret hygiene (HARD — no exceptions):** `.tfstate` and `.tfvars` files may contain database passwords, API keys, TLS private keys, and certificate material in plaintext.
+
+When `.tfstate` or `.tfvars` files are found:
+
+1. **Warn the user immediately:** "Found [N] Terraform state/variable file(s). These may contain secrets. They will be read for resource discovery only — raw values will NOT be copied into any migration artifact."
+2. **Redact sensitive attributes** before writing to `gcp-resource-inventory.json`. For any `gcp_config` field whose key matches a sensitive pattern (password, secret, key, token, credential, private_key, client_secret, access_key, api_key), replace the value with `"[REDACTED]"`.
+3. **Never write raw secret values** into `gcp-resource-inventory.json`, `gcp-resource-clusters.json`, or any other output artifact.
+
+Sensitive key patterns to redact (case-insensitive): `password`, `passwd`, `secret`, `api_key`, `apikey`, `access_key`, `private_key`, `client_secret`, `token`, `credential`, `auth`.
+
 ## Step 1: Extract Resources from Terraform
 
 1. Read all `.tf`, `.tfvars`, and `.tfstate` files in working directory (recursively)

@@ -6,11 +6,12 @@
 
 ## Eliminators (Hard Blockers)
 
-| GCP Service          | AWS            | Blocker                                                   |
-| -------------------- | -------------- | --------------------------------------------------------- |
-| Cloud Interconnect   | Direct Connect | Dedicated connection (4-12 weeks setup) → use VPN as temp |
-| Cloud Load Balancing | ALB            | SSL certificate passthrough → NLB (L4, pass-through)      |
-| Cloud Load Balancing | NLB            | Host/path-based routing required → ALB (L7)               |
+| GCP Service          | AWS            | Blocker                                                                                                                       |
+| -------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Cloud Interconnect   | Direct Connect | Dedicated connection (4-12 weeks setup) → use VPN as temp                                                                     |
+| Cloud Load Balancing | ALB            | SSL certificate passthrough → NLB (L4, pass-through)                                                                          |
+| Cloud Load Balancing | NLB            | Host/path-based routing required → ALB (L7)                                                                                   |
+| Firewall Rules       | Security Group | Ingress on port 22, 3389, or 5900 with source `0.0.0.0/0` or `::/0` → **BLOCKED** — see Administrative Port Safety Rule below |
 
 ## Signals (Decision Criteria)
 
