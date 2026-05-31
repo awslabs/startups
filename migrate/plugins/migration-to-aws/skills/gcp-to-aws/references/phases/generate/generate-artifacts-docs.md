@@ -185,7 +185,12 @@ The README.md follows this structure:
 
 Immediately after the subtitle, before any other section, write a conditional **Start here** callout block. Include only the lines that apply to what was actually generated:
 
-
+```markdown
+> **Start here**
+> - **AI migration:** `cd ai-migration && ./setup_bedrock.sh --dry-run`, then re-run with `--execute` when ready
+> - **Infrastructure:** `cd terraform && terraform init && terraform plan -out migration.tfplan`, then `terraform apply migration.tfplan`
+> - **Both tracks:** complete AI setup first, then run Terraform
+```
 
 **Conditional rules:**
 - Omit the AI line entirely if `ai-migration/` was not generated
