@@ -255,18 +255,18 @@ Read from available discovery artifacts:
 
 ```
 IF has_bigquery
-OR is_agentic == true
-OR primary_resource_count > 8
-OR (billing_monthly_usd != null AND billing_monthly_usd > 10000)
+   OR is_agentic == true
+   OR primary_resource_count > 8
+   OR (billing_monthly_usd != null AND billing_monthly_usd > 10000)
 THEN complexity_signal = "complex"
 ELSE IF primary_resource_count <= 3
-AND has_database == false
-AND has_bigquery == false
-AND is_agentic != true
-AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
+        AND has_database == false
+        AND has_bigquery == false
+        AND is_agentic != true
+        AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
 THEN complexity_signal = "likely_simple"
 ELSE
-complexity_signal = "standard"
+  complexity_signal = "standard"
 END
 ```
 

@@ -135,7 +135,6 @@ _Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` — 
 | GPT-5 flagship | Claude Opus 4.7 / 4.6 ($5/$25)    | Cheaper than GPT-5 Pro ($15/$120)  |
 | o-series       | Sonnet 4.6 with extended thinking | o1 $15/$60 → significant savings   |
 | Claude (any)   | Same model on Bedrock             | Client swap only — no model change  |
-| Claude (any)   | Same model on Bedrock             | Client swap only — no model change  |
 
 Override examples: GPT-4 + Q2=cost → Haiku; Flash + Q10=extended thinking → Sonnet; GPT-4o + Q10=speech → Nova 2 Sonic; GPT-5.5 + Q2=cost → Sonnet 4.6.
 
