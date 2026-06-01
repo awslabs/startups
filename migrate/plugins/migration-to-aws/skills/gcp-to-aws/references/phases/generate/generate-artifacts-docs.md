@@ -12,6 +12,7 @@ Produce comprehensive migration documentation from all generated artifacts. This
 
 - `MIGRATION_GUIDE.md` — Step-by-step migration guide organized by phase
 - `README.md` — Quick start, artifact catalog, and architecture overview
+- `STARTUP_PROGRAMS.md` — AWS startup program eligibility and credit guidance (AI track only)
 
 ## Prerequisites
 
@@ -122,6 +123,10 @@ Generate the following section:
 
 ### Common Sections (always included)
 
+**AWS Credits callout (only when generation-ai.json exists):**
+
+> 💡 **Before incurring costs:** Check [STARTUP_PROGRAMS.md](./STARTUP_PROGRAMS.md) for AWS Activate credits that apply to Bedrock and infrastructure costs. Credits do not apply retroactively — apply before running `terraform apply`.
+
 **Cutover section** with subsections:
 
 - Pre-Cutover Checklist (from generation plan)
@@ -191,6 +196,7 @@ Numbered steps:
 1. Deploy infrastructure: `cd terraform/ && terraform init && terraform plan`
 1. Run migration scripts: `./scripts/01-validate-prerequisites.sh`
 1. If AI track ran: Set up AI: `cd ai-migration/ && ./setup_bedrock.sh`
+1. If AI track ran: Review AWS credits: [STARTUP_PROGRAMS.md](./STARTUP_PROGRAMS.md) — apply before incurring costs
 
 #### Artifact Catalog
 
