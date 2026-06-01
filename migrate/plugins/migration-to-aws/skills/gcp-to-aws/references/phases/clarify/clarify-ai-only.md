@@ -47,6 +47,18 @@ Check `$MIGRATION_DIR/` for existing state:
 
 ---
 
+## Step 1.5: Fast-Path Check
+
+If `migration-preview.json` exists and `ai_complexity_signal == "likely_simple"` (single model, non-agentic, no multi-provider, no multi-model routing):
+
+> "Your AI migration looks straightforward — one model swapping to Bedrock. I only need 3 quick answers to complete your migration plan."
+
+Present **only Q2, Q3, Q4** (Q1 framework is extracted; Q5 model is extracted; Q6 capabilities are extracted; Q7–Q10 use defaults). After answering, skip directly to Step 3.
+
+If `ai_complexity_signal` is `"standard"` or `"complex"`, or `migration-preview.json` is absent, continue to Step 2 (full question set).
+
+---
+
 ## Step 2: Ask Questions in Progressive Batches (Q1–Q10)
 
 Questions are presented in two batches with a save after the first. The user can skip individual questions (defaults applied), say **"use defaults for the rest"** to apply defaults for all remaining questions and proceed immediately, or answer normally.
