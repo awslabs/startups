@@ -6,8 +6,6 @@ AI agent skills for migrating workloads from GCP to AWS, built for [Claude Code]
 
 Point this plugin at your Terraform files, application code, or GCP billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
 
-Includes AWS Pricing Calculator.
-
 **For infrastructure migrations:**
 
 - **Maps your GCP resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → Aurora, GKE → EKS, Cloud Storage → S3, VPC → VPC, and more
