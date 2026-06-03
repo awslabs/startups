@@ -44,7 +44,7 @@ When the user asks for a prompt:
 
 The 4 entries in the **Downloadable agents** section of `references/prompt-library.md` are **installable agents**, not copy-paste prompts:
 
-- **AWS Migration Agent** — Terraform-based discovery + migration of GCP / OpenAI / Gemini workloads to AWS. Repo: https://github.com/aws-samples/sample-agent-skills-for-aws-migration
+- **AWS Migration Agent** — Terraform-based discovery + migration of GCP / OpenAI / Gemini workloads to AWS. Now the `migration-to-aws` plugin: https://github.com/awslabs/startups/tree/main/migrate
 - **AWS Multi-Account Transition Advisor** — guides single-account → multi-account (AWS Organizations + OUs).
 - **AWS Bill Shock Preventer** — proactive cost-spike detection and alerting.
 - **AWS Service Quota Agent** — auditing and requesting quota increases.

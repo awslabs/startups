@@ -14,8 +14,8 @@
     {
       "name": "aws-startup-advisor",
       "source": "./advisor/plugins/aws-startup-advisor",
-      "version": "1.3.1",
-      "description": "AWS Startup Advisor delivers personalized architecture, cost, and security guidance with expertise from AWS Startup Solutions Architects."
+      "version": "1.3.2",
+      "description": "AI-powered build guidance from AWS Solutions Architects, built for startups at any stage."
     }
   ]
 }

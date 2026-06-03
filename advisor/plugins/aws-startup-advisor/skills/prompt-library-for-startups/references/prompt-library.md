@@ -65,8 +65,13 @@ Tags: Cloud-Migration Intermediate
 
 AI agent skills for migrating workloads to AWS, built for Claude Code and Cursor.
 
-Agent Details: This agent helps you migrate Google Cloud Platform (GCP) infrastructure and AI models such as OpenAI and Gemini to AWS through Terraform resource discovery, architecture mapping, cost estimation, and execution planning.
-You can download the agent from here: https://github.com/aws-samples/sample-agent-skills-for-aws-migration
+Agent Details: This agent helps you migrate Google Cloud Platform (GCP) infrastructure and AI models such as OpenAI and Gemini to AWS through Terraform resource discovery, architecture mapping, cost estimation, and execution planning. It has moved into the `awslabs/startups` repo as the `migration-to-aws` plugin: https://github.com/awslabs/startups/tree/main/migrate
+
+Install it with your AI coding tool:
+
+- **Claude Code:** `/plugin marketplace add awslabs/startups --sparse migrate/plugins` then `/plugin install migration-to-aws@startups`
+- **Codex:** `codex plugin marketplace add awslabs/startups --sparse migrate/plugins` then `codex plugin install migration-to-aws`
+- **Other tools:** install from the marketplace at https://github.com/awslabs/startups/tree/main/migrate
 
 ### [AWS Multi-Account Transition Advisor](https://aws.amazon.com/startups/prompt-library/multi-account-transition-advisor)
 
