@@ -1,9 +1,9 @@
-# AWS Startup Advisor — four-skill plugin
+# AWS Startup Advisor
 
-A plugin of four sibling skills that work alongside each other in any modern AI coding agent (Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and 50+ others):
+A plugin of sibling skills that work alongside each other in any modern AI coding agent (Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and many others):
 
-- **`knowledge-base-for-startups`** — AWS Startups knowledge base. Activate FAQ, credits guide, programs, partner offers, sample architectures, and 277+ learn articles. Read-only reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups), all searchable and offline after install.
-- **`prompt-library-for-startups`** — 29+ AWS-curated copy-paste prompts plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota).
+- **`knowledge-base-for-startups`** — AWS Startups knowledge base. Activate FAQ, credits guide, programs, partner offers, sample architectures, and hundreds of learn articles. Read-only reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups), all searchable and offline after install.
+- **`prompt-library-for-startups`** — AWS-curated copy-paste prompts plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota).
 - **`start-building-for-startups`** — interactive discovery workflow that gathers requirements via picker questions and writes an AWS architectural scaffold directly into the user's codebase.
 - **`migration-to-aws`** — Plan a migration from Google Cloud Platform — and OpenAI/Gemini AI workloads — to AWS, directly in your IDE. The plugin runs a guided, multi-phase workflow: discover resources from Terraform/IaC, app code, and GCP billing exports; design an AWS architecture; estimate costs; and generate migration artifacts. AI-provider migration maps OpenAI/Gemini usage to closest-fit Amazon Bedrock model families. Processing is local — your data stays in your environment. Requires MCP servers (see below).
 
@@ -24,7 +24,7 @@ The other three skills do not require MCP servers.
 
 **Prerequisite:** Node.js 18+ (ships with `npx`). Grab the LTS or current release for your OS from [nodejs.org/en/download](https://nodejs.org/en/download). Verify with `node -v && npx -v`.
 
-Install all four skills at once into a single agent:
+Install all skills at once into a single agent:
 
 ```bash
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent <agent>
@@ -53,7 +53,7 @@ npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent kiro-cli --global
 ```
 
-### Install only one of the four skills
+### Install only one skill
 
 ```bash
 # Just the knowledge base
@@ -83,7 +83,7 @@ npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws
 | Windsurf       | `windsurf`       |
 | Gemini CLI     | `gemini-cli`     |
 
-Full list of 50+ supported agents: [vercel-labs/skills — Supported Agents](https://github.com/vercel-labs/skills#supported-agents).
+Full list of supported agents: [vercel-labs/skills — Supported Agents](https://github.com/vercel-labs/skills#supported-agents).
 
 ---
 

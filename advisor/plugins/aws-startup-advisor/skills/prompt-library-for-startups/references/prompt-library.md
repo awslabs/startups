@@ -19,7 +19,7 @@ You are solely responsible for reviewing and validating any outputs generated fr
 
 ## Prompts — searchable index
 
-Searchable index of 29+ copy-paste prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.). Each row links to a detail file with the full System Prompt. Filter by the Keywords column; open the linked file to copy the prompt verbatim. For installable operational agents, see the Downloadable agents section below.
+Searchable index of copy-paste prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.). Each row links to a detail file with the full System Prompt. Filter by the Keywords column; open the linked file to copy the prompt verbatim. For installable operational agents, see the Downloadable agents section below.
 
 | Prompt                                                                                                                    | Summary                                                                                                                                                                                                  | Keywords                                                                                                                      |
 | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |

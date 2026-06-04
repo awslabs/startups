@@ -5,7 +5,7 @@ title: "AWS Startups Learn Articles — searchable index"
 
 ## AWS Startups Learn Articles
 
-Searchable index of 277+ learn articles from aws.amazon.com/startups/learn, organized by category. Use it to find the right article, then open the linked file for full content.
+Searchable index of hundreds of learn articles from aws.amazon.com/startups/learn, organized by category. Use it to find the right article, then open the linked file for full content.
 
 ## How to use
 
