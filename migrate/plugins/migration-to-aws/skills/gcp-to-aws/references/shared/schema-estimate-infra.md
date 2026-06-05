@@ -178,7 +178,7 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
       "timing": "post-migration (after 30-90 days of usage data)",
       "implementation_effort": "low",
       "prerequisite": "Establish AWS compute usage baseline before committing",
-      "description": "Cloud Run variable pricing makes pre-migration commitment sizing unreliable. Use Cost Explorer recommendations after migration.",
+      "description": "GCP compute billing (Cloud Run or GKE re-platform) makes pre-migration commitment sizing unreliable. Use Cost Explorer recommendations after migration.",
       "references": [
         "https://aws.amazon.com/savingsplans/compute-pricing/",
         "https://aws.amazon.com/savingsplans/faqs/"

@@ -145,7 +145,7 @@ If `billing-profile.json` has `commitments.has_active_cuds == true`, add a `comm
   - **Database Savings Plans** (Aurora, RDS, DynamoDB, ElastiCache, etc.): up to **35%** (serverless) / up to **~20%** (provisioned instances), 1-year no-upfront
   - **RDS Reserved Instances** (alternative to Database Savings Plans on the same workload): up to **69%** (3-year All Upfront); locked to instance family/region — mutually exclusive with Database Savings Plans per workload
 - **Fair comparison framing**: Present both an uncommitted comparison (GCP list vs. AWS on-demand) and a committed comparison (GCP net-of-CUD vs. AWS with 1yr commitments where applicable)
-- **Migration timing note**: If the customer has active CUDs, note that CUD fees continue regardless of usage — migrating mid-commitment means paying both GCP CUD fees and AWS costs until the CUD term expires. For **Cloud Run → Fargate** workloads, recommend establishing a 30–90 day AWS compute baseline before purchasing Compute Savings Plans (see Part 6).
+- **Migration timing note**: If the customer has active CUDs, note that CUD fees continue regardless of usage — migrating mid-commitment means paying both GCP CUD fees and AWS costs until the CUD term expires. For **Cloud Run → Fargate** or **GKE → Fargate** (re-platform) workloads, recommend establishing a 30–90 day AWS compute baseline before purchasing Compute Savings Plans (see Part 6).
 
 Include in `estimation-infra.json` under `cost_comparison`:
 
@@ -160,7 +160,7 @@ Include in `estimation-infra.json` under `cost_comparison`:
   "aws_rds_reserved_instance_discount": "up to 69% (specific instance family, 3yr All Upfront)",
   "aws_1yr_savings_plan_typical_discount": "20-40%",
   "aws_3yr_savings_plan_typical_discount": "40-66%",
-  "note": "GCP baseline uses list price for apples-to-apples comparison. Customer currently saves 8.2% via CUDs. AWS Savings Plans (compute + database) offer comparable or deeper discounts post-migration. Database Savings Plans and RDS Reserved Instances are mutually exclusive on the same workload. For variable compute (Cloud Run → Fargate), commit after establishing a 30-90 day usage baseline."
+  "note": "GCP baseline uses list price for apples-to-apples comparison. Customer currently saves 8.2% via CUDs. AWS Savings Plans (compute + database) offer comparable or deeper discounts post-migration. Database Savings Plans and RDS Reserved Instances are mutually exclusive on the same workload. For Cloud Run → Fargate or GKE → Fargate (re-platform), commit Compute Savings Plans after establishing a 30-90 day AWS usage baseline."
 }
 ```
 
@@ -233,7 +233,7 @@ Present applicable optimizations with estimated savings:
 
 For each applicable optimization:
 
-- **Compute Savings Plans:** emit percent range and post-migration timing; **omit `savings_monthly`** unless 30+ days of AWS usage data exist — do not size commitments from GCP Cloud Run billing alone.
+- **Compute Savings Plans:** emit percent range and post-migration timing; **omit `savings_monthly`** unless 30+ days of AWS usage data exist — do not size commitments from GCP Cloud Run or GKE billing alone (see below).
 - **Database Savings Plans / RDS RIs:** may include preliminary `savings_monthly` when the Design phase mapped a target instance class **and** projected monthly DB on-demand cost exceeds **$50/month**; otherwise percent-only guidance.
 - **S3 / Spot:** calculate before/after monthly cost when quantities are known from design.
 
@@ -241,7 +241,13 @@ Cross-reference Clarify when available: `cloud_run_traffic_pattern = business-ho
 
 ### Compute Savings Plans (Fargate / Lambda)
 
-**Relevance to GCP migrations:** GCP Cloud Run is variable-priced — scales to zero and bills per-request. When migrating to AWS Fargate or Lambda, steady-state vCPU-hours are difficult to predict from GCP billing alone. Cloud Run billing does not map 1:1 to Fargate's per-second model.
+**Relevance to GCP migrations:**
+
+| Source | Fargate commitment sizing from GCP data? | Notes |
+| ------ | ---------------------------------------- | ----- |
+| **Cloud Run → Fargate** | **Unreliable** | Variable-priced, scales to zero, bills per-request. GCP billing does not map 1:1 to Fargate vCPU-hours. |
+| **GKE → Fargate** (re-platform to ECS) | **Unreliable for commitment; useful for sanity check** | Node pools are often 24/7 with known machine types — you can rough-estimate vCPU-hours from node count × machine type. But re-platforming changes task sizing, autoscaling, and bin-packing; do not purchase a Savings Plan from GCP data alone. |
+| **GKE → EKS** (keep Kubernetes) | **Partial** | Compute Savings Plans apply to **EC2 worker nodes** or **EKS Fargate profiles**, not the EKS control plane fee (~$0.10/hr per cluster). Post-migration baseline still recommended after right-sizing. |
 
 **What Compute Savings Plans offer:**
 
@@ -250,7 +256,7 @@ Cross-reference Clarify when available: `cloud_run_traffic_pattern = business-ho
 - Applies automatically across EC2, Fargate, and Lambda regardless of instance family, size, AZ, region, OS, or tenancy ([source](https://aws.amazon.com/savingsplans/faqs/))
 - 1-year or 3-year terms; deeper discounts for longer terms and higher upfront payment
 
-**Guidance for variable workloads (Cloud Run migrations):**
+**Guidance for workloads migrating to Fargate (Cloud Run or GKE re-platform):**
 
 The plugin SHALL present Compute Savings Plans as a **post-migration optimization** and SHALL NOT size a commitment from GCP billing data alone:
 
@@ -272,7 +278,7 @@ The plugin SHALL present Compute Savings Plans as a **post-migration optimizatio
   "timing": "post-migration (after 30-90 days of usage data)",
   "implementation_effort": "low",
   "prerequisite": "Establish AWS compute usage baseline before committing",
-  "description": "Cloud Run's variable pricing makes pre-migration commitment sizing unreliable. Use AWS Cost Explorer recommendations after migration to size the commitment to your actual usage floor.",
+  "description": "GCP compute billing (Cloud Run variable pricing or GKE re-platform to Fargate) makes pre-migration commitment sizing unreliable. GKE node pool sizing may sanity-check the floor but do not commit from GCP data alone. Use AWS Cost Explorer recommendations after migration to size the commitment to your actual usage floor.",
   "references": [
     "https://aws.amazon.com/savingsplans/compute-pricing/",
     "https://aws.amazon.com/savingsplans/faqs/"

@@ -135,7 +135,7 @@ Commitment Context:
 
   Fair comparison: GCP list price vs AWS on-demand (both uncommitted)
   Committed comparison: GCP net-of-CUD vs AWS with applicable 1yr commitments
-  Cloud Run note: Do not size Compute Savings Plans from GCP billing — establish 30-90 day AWS baseline post-migration
+  Cloud Run / GKE → Fargate note: Do not size Compute Savings Plans from GCP billing — establish 30-90 day AWS baseline post-migration. GKE node pools may inform a rough floor estimate only.
 ```
 
 This ensures the customer understands that their current GCP discount has an AWS equivalent, and the comparison is apples-to-apples.
