@@ -104,9 +104,12 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
       "gcp_effective_discount_percent": 8.2,
       "gcp_monthly_at_list": 300,
       "gcp_monthly_net_of_discounts": 275,
-      "aws_1yr_savings_plan_typical_discount": "20-30%",
-      "aws_3yr_savings_plan_typical_discount": "40-60%",
-      "note": "GCP baseline uses list price for apples-to-apples comparison. Customer currently saves 8.2% via CUDs. AWS Savings Plans offer comparable or deeper discounts post-migration."
+      "aws_compute_savings_plan_discount": "up to 66% (Fargate/Lambda/EC2; max term); typical 20-40% (1yr no-upfront)",
+      "aws_database_savings_plan_discount": "up to 35% (serverless) / up to 20% (provisioned RDS/Aurora)",
+      "aws_rds_reserved_instance_discount": "up to 69% (specific instance family, 3yr All Upfront)",
+      "aws_1yr_savings_plan_typical_discount": "20-40%",
+      "aws_3yr_savings_plan_typical_discount": "40-66%",
+      "note": "GCP baseline uses list price for apples-to-apples comparison. Customer currently saves 8.2% via CUDs. Database Savings Plans and RDS RIs are mutually exclusive per workload. For Cloud Run → Fargate, establish 30-90 day AWS baseline before Compute Savings Plans."
     }
   },
 
@@ -144,13 +147,42 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 
   "optimization_opportunities": [
     {
-      "opportunity": "Reserved Instances",
+      "opportunity": "Database Savings Plans",
+      "type": "database_savings_plan",
       "target_services": ["RDS", "Aurora"],
-      "savings_monthly": 58,
-      "savings_percent": "40%",
-      "commitment": "1-year",
+      "savings_monthly": 15,
+      "savings_percent": "up to 20% (provisioned)",
+      "commitment": "1-year no-upfront",
+      "timing": "post-migration or after instance right-sizing",
       "implementation_effort": "low",
-      "description": "Commit to 1-year reserved capacity for predictable workloads"
+      "prerequisite": "Confirm target instance class; omit savings_monthly when DB on-demand < $50/month",
+      "description": "Cloud SQL 24/7 usage is predictable. Database Savings Plans offer flexibility post-migration. Mutually exclusive with RDS RIs on the same workload.",
+      "alternative": {
+        "opportunity": "RDS Reserved Instances",
+        "type": "rds_reserved_instances",
+        "savings_percent": "up to 69%",
+        "trade_off": "Locked to specific instance family and region"
+      },
+      "references": [
+        "https://aws.amazon.com/savingsplans/database-pricing/",
+        "https://aws.amazon.com/rds/reserved-instances/"
+      ]
+    },
+    {
+      "opportunity": "Compute Savings Plans",
+      "type": "compute_savings_plan",
+      "target_services": ["Fargate", "Lambda"],
+      "savings_monthly": null,
+      "savings_percent": "20-66%",
+      "commitment": "1-year or 3-year",
+      "timing": "post-migration (after 30-90 days of usage data)",
+      "implementation_effort": "low",
+      "prerequisite": "Establish AWS compute usage baseline before committing",
+      "description": "Cloud Run variable pricing makes pre-migration commitment sizing unreliable. Use Cost Explorer recommendations after migration.",
+      "references": [
+        "https://aws.amazon.com/savingsplans/compute-pricing/",
+        "https://aws.amazon.com/savingsplans/faqs/"
+      ]
     },
     {
       "opportunity": "S3 Infrequent Access",
@@ -169,15 +201,6 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
       "commitment": "none",
       "implementation_effort": "medium",
       "description": "Use Spot instances for fault-tolerant batch processing jobs"
-    },
-    {
-      "opportunity": "Compute Savings Plans",
-      "target_services": ["Fargate", "Lambda"],
-      "savings_monthly": 20,
-      "savings_percent": "25%",
-      "commitment": "1-year",
-      "implementation_effort": "low",
-      "description": "AWS Savings Plans covering Fargate and Lambda usage"
     }
   ],
 
@@ -224,6 +247,10 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 - `roi_analysis` presents recurring monthly/annual savings (or increase) per tier
 - `roi_analysis` is honest — if migration increases cost, say so and justify with non-cost benefits
 - `optimization_opportunities` only includes strategies relevant to the designed architecture
+- Each `optimization_opportunities[]` entry includes required fields: `opportunity`, `target_services`, `savings_percent`, `implementation_effort`, `description`. Optional fields: `type`, `savings_monthly` (null when post-migration sizing unavailable), `commitment`, `timing`, `prerequisite`, `references`, `alternative`
+- Compute Savings Plans entries for Cloud Run migrations MUST NOT include `savings_monthly` sized from GCP billing — use `savings_monthly: null` and `timing: post-migration`
+- Database Savings Plans entries MAY include `savings_monthly` only when projected DB on-demand exceeds $50/month
+- `optimization_opportunities` savings are incremental to **Balanced** on-demand totals — not additive on **Optimized** tier (which already embeds reservation/Spot assumptions)
 - `financial_summary` provides a clear executive-level view
 - `recommendation.next_steps` includes actionable items
 - No references to AI-specific costs (those belong in `estimate-ai.md`)

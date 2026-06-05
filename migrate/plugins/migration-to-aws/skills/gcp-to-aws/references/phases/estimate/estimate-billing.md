@@ -127,11 +127,15 @@ Commitment Context:
   GCP net-of-discounts:      $[cost_basis.total_net_of_discounts]/month
 
   AWS equivalent commitment options:
-    1-year Savings Plan: typically 20-30% below on-demand
-    3-year Savings Plan: typically 40-60% below on-demand
+    Compute Savings Plans (Fargate/Lambda/EC2): up to 66% max; typical 20-40% (1yr no-upfront)
+    Database Savings Plans (Aurora/RDS/etc.): up to 35% (serverless) / up to 20% (provisioned); 1yr no-upfront
+    RDS Reserved Instances: up to 69% (3yr All Upfront); mutually exclusive with Database SP on same workload
+    1-year Compute Savings Plan: typically 20-40% below on-demand
+    3-year Compute Savings Plan: typically 40-66% below on-demand
 
   Fair comparison: GCP list price vs AWS on-demand (both uncommitted)
-  Committed comparison: GCP net-of-CUD vs AWS with 1yr Savings Plan
+  Committed comparison: GCP net-of-CUD vs AWS with applicable 1yr commitments
+  Cloud Run note: Do not size Compute Savings Plans from GCP billing — establish 30-90 day AWS baseline post-migration
 ```
 
 This ensures the customer understands that their current GCP discount has an AWS equivalent, and the comparison is apples-to-apples.
