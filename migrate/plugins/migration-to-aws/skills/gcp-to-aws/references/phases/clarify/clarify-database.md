@@ -130,11 +130,11 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 Interpret:
 
 ```
-A -> design_constraints.db_size: { value: "<10GB", chosen_by: "user" }
-B -> design_constraints.db_size: { value: "10-100GB", chosen_by: "user" }
-C -> design_constraints.db_size: { value: "100-500GB", chosen_by: "user" }
-D -> design_constraints.db_size: { value: ">500GB", chosen_by: "user" }
-E -> design_constraints.db_size: { value: "unknown", chosen_by: "default" }
+A -> design_constraints.db_size: { value: "<10GB", chosen_by: "user" } — pg_dump/pg_restore recommended
+B -> design_constraints.db_size: { value: "10-100GB", chosen_by: "user" } — pgcopydb recommended
+C -> design_constraints.db_size: { value: "100-500GB", chosen_by: "user" } — pgcopydb required; flag extended window
+D -> design_constraints.db_size: { value: ">500GB", chosen_by: "user" } — AWS DMS strongly recommended; flag in migration plan
+E -> design_constraints.db_size: { value: "unknown", chosen_by: "default" } — default to pgcopydb; flag for verification
 ```
 
-Default: E — `design_constraints.db_size: { value: "unknown", chosen_by: "default" }`.
+Default: E — `design_constraints.db_size: { value: "unknown", chosen_by: "default" }` (default to pgcopydb; safer than pg_dump at unknown scale).

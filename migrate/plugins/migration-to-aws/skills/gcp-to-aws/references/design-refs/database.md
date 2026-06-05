@@ -91,7 +91,23 @@ Apply in order:
 - → **AWS: RDS PostgreSQL (`db.t4g.micro`, single-AZ, gp3)**
 - Confidence: `inferred`
 
-### Example 2: Cloud SQL PostgreSQL (production Multi-AZ RDS)
+### Example 2: Firestore (mobile app)
+
+- GCP: `google_firestore_document` (root_path=users, auto_id=true)
+- Signals: NoSQL, real-time, offline-first (inferred from Firestore choice)
+- Criterion 1 (Eliminators): PASS (DynamoDB supports eventual consistency)
+- Criterion 2 (Operational Model): DynamoDB (managed NoSQL)
+- Criterion 3 (User Preference): NoSQL type detected from GCP resource → DynamoDB confirmed
+- → **AWS: DynamoDB (on-demand billing for dev)**
+- Confidence: `inferred`
+
+### Example 3: BigQuery (analytics)
+
+- GCP: `google_bigquery_dataset` (location=us, schema=[large table])
+- **Agent output:** `aws_service`: **`Deferred — specialist engagement`**, `human_expertise_required`: **`true`**, `confidence`: **`inferred`**, `rubric_applied`: `["BigQuery specialist gate — no automated AWS service target"]`
+- **User-facing:** Engage **AWS account team** and/or **data analytics migration partner** before choosing AWS analytics architecture. **Do not** state Athena vs Redshift vs Glue as the plugin’s recommendation.
+
+### Example 4: Cloud SQL PostgreSQL (production Multi-AZ RDS)
 
 - GCP: `google_sql_database_instance` (database_version=POSTGRES_15, tier=db-custom-2-7680)
 - Q6: `availability: "multi-az"`
@@ -99,24 +115,13 @@ Apply in order:
 - → **AWS: RDS PostgreSQL Multi-AZ + optional read replica**
 - Confidence: `inferred`
 
-### Example 3: Cloud SQL PostgreSQL (mission-critical)
+### Example 5: Cloud SQL PostgreSQL (mission-critical)
 
 - GCP: `google_sql_database_instance` (database_version=POSTGRES_15)
 - Q6: `availability: "multi-az-ha"`
 - Criterion 3: `db_io_workload: "high"` → Aurora I/O-Optimized
 - → **AWS: Aurora PostgreSQL Multi-AZ, I/O-Optimized storage**
 - Confidence: `inferred`
-
-### Example 4: Firestore (mobile app)
-
-- GCP: `google_firestore_document` (root_path=users, auto_id=true)
-- → **AWS: DynamoDB (on-demand billing for dev)**
-- Confidence: `inferred`
-
-### Example 5: BigQuery (analytics)
-
-- GCP: `google_bigquery_dataset`
-- **Agent output:** `aws_service`: **`Deferred — specialist engagement`**, `human_expertise_required`: **`true`**
 
 ## Output Schema
 
