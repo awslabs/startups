@@ -35,16 +35,20 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 >
 > | # | Model | SDK Method | Capability | Confidence | Proposed Bedrock Target |
 > |---|---|---|---|---|---|
-> | 1 | gemini-2.5-flash | generateContent | text_generation | medium | Claude Sonnet 4.6 |
-> | 2 | gemini-2.5-flash | generateContent (structured) | structured_output | high | Claude Sonnet 4.6 |
-> | 3 | imagen-3.0-generate-001 | generateImages | image_generation | high | Amazon Nova Canvas |
+> | 1 | gemini-2.5-flash | generateContent | text_generation | medium | [text-class per Q16 priority] |
+> | 2 | gemini-2.5-flash | generateContent (structured) | structured_output | high | [same text-class as row 1] |
+> | 3 | imagen-3.0-generate-001 | generateImages | image_generation | high | [image-class model] |
 >
 > **For each row, you can:**
 > - **Accept** — keep the proposed mapping
-> - **Edit** — change the Bedrock target
+> - **Edit** — change the capability or Bedrock target
 > - **Drop** — this isn't an AI workload (false positive)
 >
+> _(v1: merge and split actions are planned for v2)_
+>
 > _Do you accept all mappings? Or type the row number to edit._
+
+**Timing:** This table fires AFTER existing global/infra questions complete (Q1–Q15 and Q14–Q15 AI globals). It does not replace or conflict with the master Clarify orchestrator or PR #57 auto-extraction — those run first, and their answers feed into the capability confirmation.
 
 **Behavior:**
 
@@ -54,23 +58,27 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
    - "Is the detected capability correct?" (confirm or select from: text_generation, structured_output, image_generation, embedding, speech_to_text, text_to_speech, unknown)
    - "What matters most for this workload?" (Q16 priority: quality/speed/cost/balanced)
 
-3. **Target mapping** (default, overridden by user edits):
+3. **Target mapping** (default, overridden by user edits — look up actual model IDs from design-refs tables, not hardcoded names):
 
-   | Capability | Default Bedrock Target |
-   |---|---|
-   | text_generation | Apply Q16–Q19 override hierarchy (existing logic) |
-   | structured_output | Same as text_generation target (structured output is a mode, not a different model) |
-   | image_generation | Amazon Nova Canvas |
-   | embedding | Amazon Titan Embed Text v2 |
-   | speech_to_text | Amazon Transcribe |
-   | text_to_speech | Amazon Polly |
-   | unknown | Ask Q16–Q22 for this workload |
+   | Capability | Target Class | Notes |
+   |---|---|---|
+   | text_generation | Text/reasoning class | Apply Q16–Q19 override hierarchy |
+   | structured_output | Text/reasoning class (same as text_generation) | Uses same Bedrock target as text_generation for that workload's priority tier — structured output is a mode, not a different model |
+   | image_generation | Image generation class | e.g., Nova Canvas |
+   | embedding | Embedding class | e.g., Titan Embed Text v2 |
+   | speech_to_text | Speech-to-text class | e.g., Transcribe |
+   | text_to_speech | Text-to-speech class | e.g., Polly |
+   | unknown | Ask Q16–Q22 for this workload | Falls back to full questionnaire |
 
-4. **After confirmation:** Write one entry per accepted workload to `preferences.json` under a new `workloads[]` field alongside the existing scalar fields. Downstream phases (Design, Estimate) iterate `workloads[]` when present.
+4. **After confirmation:** Write confirmed workloads to `preferences.json` under a `workloads[]` field. Design reads workloads from `preferences.json` (not ai-workload-profile.json) so that edits and drops are respected. Each entry includes: `workload_id`, `model_id`, `sdk_method`, `capability`, `capability_confidence`, `structured_output`, `call_sites`, and the user's priority/latency selections if asked.
 
 5. **Question budget:** 4 global questions (Q14, Q15, framework, spend) + at most 2 per medium/low workload. For an app with 3 high-confidence workloads: 4 questions total, 0 per-workload. For an app with 2 high + 1 medium: 4 + 2 = 6 questions max.
 
 **Single-workload fallback:** If `workloads[]` has exactly 1 entry or is empty, skip the confirmation table and proceed with the existing Q16–Q22 flow below.
+
+**Known limitations (v1):**
+- Gateway calls (LiteLLM, OpenRouter) and custom HTTP calls to AI endpoints are not yet detected as separate workloads — they may be miscategorized or missed. Planned for v2.
+- Merge and split actions are not supported in v1. Users who need to combine or split workloads should edit individual rows.
 
 ---
 

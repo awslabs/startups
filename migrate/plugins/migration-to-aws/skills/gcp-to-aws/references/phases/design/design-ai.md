@@ -74,7 +74,11 @@ If `agentic_profile.is_agentic == true`:
 
 **Multi-workload iteration (when `workloads[]` is present):**
 
-If `ai-workload-profile.json` contains a non-empty `workloads[]` array, iterate per workload instead of per model. For each `workloads[]` entry:
+If `preferences.json` contains a non-empty `workloads[]` array (written by Clarify after user confirmation), iterate per workload instead of per model. **Design MUST read workloads from `preferences.json` (not `ai-workload-profile.json`)** because Clarify may have edited, dropped, or re-confirmed rows.
+
+Fallback: if `preferences.json` has no `workloads[]` field but `ai-workload-profile.json` does, use the profile's `workloads[]` directly (no user edits were made).
+
+For each `workloads[]` entry:
 
 1. **Use the workload's `capability` to select the Bedrock target class:**
 
