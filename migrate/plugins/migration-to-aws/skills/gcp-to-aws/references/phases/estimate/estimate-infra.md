@@ -126,6 +126,149 @@ Show calculation breakdown per service: rate × quantity = cost. Present all 3 t
 
 ---
 
+## Part 2B: Observability Cost Estimation (CloudWatch)
+
+GCP Cloud Operations Suite has generous free tiers (50 GB/month logging free, 150M metric samples free, alerting free, profiling free). AWS CloudWatch charges from the first GB and first custom metric. This section ensures observability costs are not a surprise post-migration.
+
+**Relationship to Part 2 "Supporting" line item:** The observability entry produced by this section REPLACES any CloudWatch/log/metric portion that would otherwise appear in the "Supporting" row of Part 2. Do NOT include CloudWatch log ingestion, metrics, or alarms in the Supporting line item — they are fully covered here. Supporting retains only Secrets Manager and any non-observability per-unit charges.
+
+### Pricing source
+
+All rates from `pricing-cache.md § CloudWatch` and `§ X-Ray`. No MCP calls needed.
+
+### Step 1: Determine log volume
+
+**IF billing data IS available** (`billing-profile.json` exists):
+
+Check for Cloud Logging line items:
+- Look for `services[].sku` containing `Log Volume`, `Logging`, or `Cloud Logging`
+- Extract volume in GiB from the SKU quantity/units field directly (preferred)
+- OR derive from GCP cost: `gcp_logging_cost ÷ $0.50/GiB` (GCP's own list rate above free tier) = volume above free tier, then add 50 GiB for the free portion
+- **Important:** Use GCP's own rate ($0.50/GiB) to reverse-engineer volume from GCP billing — not AWS rates. Apply AWS rates ($0.50/GB Standard) to the derived volume for the projected cost.
+- Set `observability.log_volume_source: "billing"`
+
+**IF billing data is NOT available:**
+
+Use the per-service heuristic table to estimate monthly log volume:
+
+| AWS Service (from aws-design.json) | Estimated log volume/month | Basis                                               |
+| ----------------------------------- | -------------------------- | --------------------------------------------------- |
+| Fargate task                        | 3 GB per task              | Container stdout/stderr, request logs               |
+| Lambda function                     | 0.2 GB per function        | Invocation logs at INFO level                       |
+| RDS/Aurora instance                 | 1 GB per instance          | Error log + slow query (audit log off)              |
+| RDS/Aurora instance (audit on)      | 8 GB per instance          | If source has `pgaudit.log`, `log_statement = 'all'`, `cloudsql.log_min_duration_statement`, or explicit audit/general log database flags in Terraform |
+| ALB                                 | 2 GB per load balancer     | Access logs (if enabled)                            |
+| NAT Gateway                         | 1 GB per gateway           | Flow logs (if enabled)                              |
+| ElastiCache                         | 0.5 GB per node            | Slow log only                                       |
+
+**RDS audit detection:** Check for database flags in the source `google_sql_database_instance` Terraform that indicate audit logging: `pgaudit.log`, `log_statement = 'all'`, `cloudsql.log_min_duration_statement`, or general/audit log flags for MySQL. Do NOT use `cloudsql.iam_authentication` as an audit proxy — IAM auth is access control, not audit logging.
+
+Sum all applicable services. Set `observability.log_volume_source: "heuristic"`.
+
+### Step 2: Determine custom metrics count
+
+**IF billing data IS available:**
+
+GCP Cloud Monitoring uses sample-based pricing ($0.10/1000 samples above 150M free) which does not map 1:1 to CloudWatch's per-metric-per-month pricing ($0.30/metric/month). Even with billing data, treat custom metrics as heuristic:
+- Count `google_monitoring_alert_policy` resources in `gcp-resource-inventory.json` as a proxy for custom metric complexity
+- Multiply alert policy count × 3 (typical metrics per alert: threshold metric + 2 related dimensions)
+- Set `observability.metrics_source: "heuristic"` (even when billing data exists — GCP metric pricing is not cleanly convertible to CloudWatch's model)
+
+**IF billing data is NOT available:**
+
+Use the heuristic: `custom_metrics_count = (number of services in aws-design.json × 5) + (number of alert policies from source × 2)`
+
+Default floor: 10 custom metrics.
+Default ceiling for small startups: 50 custom metrics.
+
+Set `observability.metrics_source: "heuristic"`.
+
+### Step 2b: Determine alarm count
+
+Count `google_monitoring_alert_policy` resources in `gcp-resource-inventory.json`.
+
+- If count > 0: `alarm_count = count`
+- If count is 0 or no alert policies found: `alarm_count = 5` (baseline — most teams set up basic health/error/latency alarms post-migration)
+
+Set `observability.alarm_count_source: "inventory"` or `"default"`.
+
+### Step 3: Determine tracing usage
+
+**IF billing data IS available:**
+
+Check for Cloud Trace line items:
+- Extract span volume from SKU quantity/units field directly (preferred)
+- OR derive from GCP cost: `gcp_trace_cost ÷ $0.20/million` (GCP's own list rate above 2.5M free tier) = millions of spans above free tier, then add 2.5M
+- **Important:** Use GCP's rate ($0.20/M spans) to reverse-engineer volume from GCP billing. Apply AWS X-Ray rate ($5.00/M traces) to that volume for the projected cost.
+- Set `observability.tracing_source: "billing"`
+
+**IF billing data is NOT available:**
+
+Check `gcp-resource-inventory.json` or application code for tracing libraries:
+- If OpenTelemetry, `@google-cloud/trace-agent`, or `google.cloud.trace` imports detected: assume 1M spans/month (small app baseline)
+- If no tracing signals: set `monthly_spans: 0` (tracing not in use; do not add X-Ray costs)
+
+Set `observability.tracing_source: "heuristic"`.
+
+### Step 4: Calculate CloudWatch costs
+
+Default estimate uses Standard log class ($0.50/GB) for all logs. Infrequent Access ($0.25/GB) is an optimization opportunity surfaced in Step 6, not the baseline assumption.
+
+```
+log_ingestion_cost    = monthly_log_gb × $0.50
+log_storage_cost      = monthly_log_gb × $0.03 × retention_months (default: 1)
+custom_metrics_cost   = custom_metrics_count × $0.30  (flat rate; valid for ≤10K metrics at startup scale)
+alarms_cost           = alarm_count × $0.10
+tracing_cost          = max(0, monthly_spans - 100_000) / 1_000_000 × $5.00  (honors X-Ray 100K/month free tier)
+dashboard_cost        = max(0, dashboards - 3) × $3.00  (default: 0 — assume ≤3)
+
+total_observability   = log_ingestion_cost + log_storage_cost + custom_metrics_cost + alarms_cost + tracing_cost + dashboard_cost
+```
+
+### Step 5: Add to projected costs
+
+Add an `observability` entry to `projected_costs.breakdown`. This entry REPLACES any CloudWatch/log/metric portion in the "Supporting" row — do not double-count.
+
+```json
+{
+  "service": "CloudWatch + X-Ray (Observability)",
+  "low": <total × 0.7>,
+  "mid": <total>,
+  "high": <total × 1.5>,
+  "accuracy": "±30%",
+  "pricing_source": "cached",
+  "components": {
+    "log_ingestion": <log_ingestion_cost>,
+    "log_storage": <log_storage_cost>,
+    "custom_metrics": <custom_metrics_cost>,
+    "alarms": <alarms_cost>,
+    "tracing": <tracing_cost>
+  },
+  "volume_source": "<billing|heuristic>  (reflects log volume source — the largest cost component; metrics are always heuristic regardless of this field)",
+  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch charges from the first GB. Tracing is significantly more expensive on X-Ray ($5/M) vs Cloud Trace ($0.20/M). Actual costs depend on log verbosity and retention policy."
+}
+```
+
+### Step 6: Surface GCP free tier delta in cost comparison
+
+In Part 3 (Cost Comparison), if observability costs exceed $20/month, add a callout:
+
+> **Observability cost note:** Your GCP Cloud Operations costs may appear low or zero due to generous free tiers (50 GB/month logging, 150M metric samples, free alerting). The CloudWatch estimate of $X/month reflects the same workload without those free tiers. Consider:
+> - Reducing log verbosity (WARN-only for production services) to lower ingestion costs
+> - Using CloudWatch Logs Infrequent Access class for non-critical logs ($0.25/GB — 50% cheaper than Standard)
+> - Evaluating sampling rate for X-Ray traces (10% sampling = 90% cost reduction)
+> - CloudWatch Logs Insights for ad-hoc queries instead of always-on metric filters
+
+### Estimation rules
+
+- Do NOT emit observability costs as $0 — even minimal apps produce logs on AWS
+- Floor: $5/month (absolute minimum for any running Fargate + RDS workload)
+- If tracing is not detected in source, do NOT add X-Ray costs (don't upsell)
+- Container Insights is NOT included by default — add only if source uses Cloud Monitoring with per-container metrics or if production-tier observability is required
+- The observability line item REPLACES CloudWatch entries in the "Supporting" row — never double-count
+
+---
+
 ## Part 3: Cost Comparison
 
 Present a side-by-side comparison:
