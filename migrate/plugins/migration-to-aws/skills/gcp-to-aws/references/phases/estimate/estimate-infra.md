@@ -263,11 +263,11 @@ Part 7 MUST write the following `recommendation` block to `estimation-infra.json
 
 **Enum normalization for `path`:**
 
-| Scenario | `path` value | `path_label` (display) |
-| --- | --- | --- |
-| AWS cheaper or operational benefits justify | `"migrate_optimized"` | `"Migrate with Optimizations"` |
-| Complex stack, phase-by-phase safer | `"migrate_phased"` | `"Phased Migration"` |
-| AWS more expensive AND costs are sole metric | `"stay"` | `"Stay on GCP"` |
+| Scenario                                     | `path` value          | `path_label` (display)         |
+| -------------------------------------------- | --------------------- | ------------------------------ |
+| AWS cheaper or operational benefits justify  | `"migrate_optimized"` | `"Migrate with Optimizations"` |
+| Complex stack, phase-by-phase safer          | `"migrate_phased"`    | `"Phased Migration"`           |
+| AWS more expensive AND costs are sole metric | `"stay"`              | `"Stay on GCP"`                |
 
 Use `path` for machine consumption; `path_label` for display in report and chat.
 

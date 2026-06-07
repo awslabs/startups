@@ -54,12 +54,12 @@ Patching artifacts to satisfy a gate defeats fail-closed validation and produces
 
 ## Phase re-entry (idempotent runs)
 
-| Situation | Rule |
-| --- | --- |
-| Re-run **Discover** after **Clarify** completed | **STOP** unless user explicitly confirms. Emit `GATE_FAIL \| phase=discover \| field=preferences.json \| reason=stale_downstream`. Downstream artifacts may be stale. |
-| Re-run **Clarify** after **Design** completed | Same — confirm with user; Design/Estimate may need re-run. |
-| Re-run **Estimate** after **Generate** started | Same — confirm with user; report and Terraform may be stale. |
-| Re-run a phase **before** downstream phase completed | Allowed. Overwrite that phase's artifacts; downstream phases remain `"pending"` or must be re-run. |
+| Situation                                            | Rule                                                                                                                                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Re-run **Discover** after **Clarify** completed      | **STOP** unless user explicitly confirms. Emit `GATE_FAIL \| phase=discover \| field=preferences.json \| reason=stale_downstream`. Downstream artifacts may be stale. |
+| Re-run **Clarify** after **Design** completed        | Same — confirm with user; Design/Estimate may need re-run.                                                                                                            |
+| Re-run **Estimate** after **Generate** started       | Same — confirm with user; report and Terraform may be stale.                                                                                                          |
+| Re-run a phase **before** downstream phase completed | Allowed. Overwrite that phase's artifacts; downstream phases remain `"pending"` or must be re-run.                                                                    |
 
 When user confirms intentional re-run: set downstream phases back to `"pending"` in `.phase-status.json` before proceeding.
 
@@ -69,13 +69,13 @@ When user confirms intentional re-run: set downstream phases back to `"pending"`
 
 Detailed checklists live in each phase file. Minimum gates:
 
-| Phase | Key checks |
-| --- | --- |
+| Phase        | Key checks                                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- |
 | **discover** | At least one discovery artifact; `migration-preview.json` when any artifact exists; route output gates (existing) |
-| **clarify** | `preferences.json` valid; Cloud SQL in inventory → `design_constraints.availability.value` set |
-| **design** | Active route artifacts present (existing gates) |
-| **estimate** | Active route artifacts present; infra route → `recommendation.path` + non-empty `migrate_if` / `stay_if` |
-| **generate** | Load `shared/validate-artifacts.md` before report; report pre-write sanity (see `generate-artifacts-report.md`) |
+| **clarify**  | `preferences.json` valid; Cloud SQL in inventory → `design_constraints.availability.value` set                    |
+| **design**   | Active route artifacts present (existing gates)                                                                   |
+| **estimate** | Active route artifacts present; infra route → `recommendation.path` + non-empty `migrate_if` / `stay_if`          |
+| **generate** | Load `shared/validate-artifacts.md` before report; report pre-write sanity (see `generate-artifacts-report.md`)   |
 
 ---
 

@@ -219,11 +219,11 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 
 The `recommendation` block is the single source of truth for migrate/stay guidance. Consumed by Estimate chat output AND HTML migration report (Section 0). Do not duplicate this logic in the report template.
 
-| `path` value | `path_label` (display) |
-| --- | --- |
+| `path` value          | `path_label` (display)         |
+| --------------------- | ------------------------------ |
 | `"migrate_optimized"` | `"Migrate with Optimizations"` |
-| `"migrate_phased"` | `"Phased Migration"` |
-| `"stay"` | `"Stay on GCP"` |
+| `"migrate_phased"`    | `"Phased Migration"`           |
+| `"stay"`              | `"Stay on GCP"`                |
 
 Validation:
 
