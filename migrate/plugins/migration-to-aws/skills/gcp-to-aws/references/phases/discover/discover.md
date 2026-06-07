@@ -131,9 +131,33 @@ After all loaded sub-discoveries complete, check what artifacts were produced in
    - If full `discover-billing.md` ran OR lightweight billing extraction ran -> require `billing-profile.json`
    - If any triggered route is missing its required artifact(s): STOP and output: "Discover route [name] did not produce required artifacts. Resolve the sub-discovery failure before completing Phase 1."
 
-## Step 3: Update Phase Status
+## Step 3: Migration Preview
 
-In the **same turn** as the output message below, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
+Load and execute `references/phases/discover/discover-preview.md` to compute the migration preview. This produces `migration-preview.json` and the preview chat block. Skip only if Step 2 found no artifacts (already STOPped).
+
+## Completion Handoff Gate (Fail Closed)
+
+Load `shared/handoff-gates.md`. **Re-read from disk** every artifact below before checking.
+
+**Re-entry guard:** If `preferences.json` exists and `phases.clarify` is `"completed"`: STOP unless the user explicitly confirms re-running Discover. Emit:
+
+```
+GATE_FAIL | phase=discover | field=preferences.json | reason=stale_downstream
+```
+
+**Checks (all must PASS):**
+
+1. At least one discovery artifact exists (`gcp-resource-inventory.json`, `ai-workload-profile.json`, or `billing-profile.json`).
+2. Route output gates from Step 2 all pass.
+3. If any discovery artifact exists → `migration-preview.json` exists with `complexity_signal` set.
+
+**On any FAIL:** Emit `GATE_FAIL | phase=discover | field=<path> | reason=<missing|invalid|stale_downstream>`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user which sub-discovery to re-run.
+
+**On PASS:** Emit `HANDOFF_OK | phase=discover | artifacts=<comma-separated list of files verified>`.
+
+## Step 4: Update Phase Status
+
+Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
 
 - Set `phases.discover` to `"completed"`
 - Set `current_phase` to `"clarify"`
@@ -145,7 +169,7 @@ Output to user — build message from whichever artifacts exist:
 - If `ai-workload-profile.json` exists: "Detected AI workloads (source: [ai_source])."
 - If `billing-profile.json` exists: "Parsed billing data ($Z/month across N services)."
 
-**After building the artifact summary, load and execute `references/phases/discover/discover-preview.md`** to compute the migration preview. This produces `migration-preview.json` and the preview chat block. Append the preview block to the output message below.
+Append the preview block from Step 3 to the output message below.
 
 Format: "Discover phase complete. [artifact summaries joined by space] [preview block from discover-preview.md Step 6] Next required step: Phase 2 — Clarify. Load `references/phases/clarify/clarify.md` now. Do not load Design, Estimate, or Generate until Clarify completes and `.phase-status.json` marks `phases.clarify` as `completed`."
 

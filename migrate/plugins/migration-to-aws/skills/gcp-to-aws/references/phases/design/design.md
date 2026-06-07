@@ -62,7 +62,17 @@ Before marking Design complete, enforce route output gates (fail closed):
    - AI route -> `aws-design-ai.json`
 4. If any active route is missing its expected output: STOP and output: "Design route [name] did not produce required artifact(s). Re-run the failed sub-design before completing Phase 3."
 
-After all active route gates pass, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+## Completion Handoff Gate (Fail Closed)
+
+Load `shared/handoff-gates.md`. **Re-read from disk** each active route artifact before checking.
+
+**Re-entry guard:** If `estimation-infra.json` (or sibling estimate artifacts) exists and `phases.estimate` is `"completed"`: STOP unless the user explicitly confirms re-running Design. Emit `GATE_FAIL | phase=design | field=estimation-infra.json | reason=stale_downstream`.
+
+**On any route gate FAIL:** Emit `GATE_FAIL | phase=design | field=<artifact> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.**
+
+**On PASS:** Emit `HANDOFF_OK | phase=design | artifacts=<comma-separated active design files>`.
+
+After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
 
 - Set `phases.design` to `"completed"`
 - Set `current_phase` to `"estimate"`
