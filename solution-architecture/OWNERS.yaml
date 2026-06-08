@@ -1,0 +1,12 @@
+# TODO(@awslabs/startups-admins): confirm team metadata before merge.
+# These values gate CODEOWNERS routing and on-call resolution — placeholders below.
+team: Startups-Solution-Architecture # TODO: confirm canonical team name
+resolver_group: STARTUPS-SOLUTION-ARCHITECTURE # TODO: confirm resolver group
+cti:
+  category: AWS
+  type: Startups
+  item: Solution Architecture # TODO: confirm CTI item
+contacts:
+  primary: TODO # TODO: primary contact alias
+  oncall: startups-solution-architecture-oncall # TODO: confirm on-call alias
+github_team: "@awslabs/startups-solution-architecture" # TODO: confirm team exists

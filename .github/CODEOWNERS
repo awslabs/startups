@@ -17,3 +17,4 @@ dprint.json              @awslabs/startups-admins
 # Team folders
 /migrate/                @awslabs/startups-migrate
 /advisor/                @awslabs/startups-advisor
+/solution-architecture/  @awslabs/startups-solution-architecture

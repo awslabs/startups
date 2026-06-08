@@ -1,0 +1,12 @@
+{
+  "name": "aws-dev-toolkit",
+  "displayName": "AWS Dev Toolkit",
+  "description": "AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and performing architecture reviews on AWS.",
+  "version": "0.3.0",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "license": "MIT-0",
+  "keywords": ["aws", "cdk", "cloudformation", "terraform", "serverless", "well-architected", "iac", "migration", "gcp", "azure", "bedrock"],
+  "skills": "./skills/"
+}
