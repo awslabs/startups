@@ -689,15 +689,20 @@ Use alongside Bedrock pricing to calculate migration ROI.
 
 ### Gemini (Standard Tier)
 
-Prices per 1M tokens.
+Prices per 1M tokens. Source: [ai.google.dev/gemini-api/docs/pricing](https://ai.google.dev/gemini-api/docs/pricing), verified May 2026.
 
-| Model                  | Input $/1M | Output $/1M | Context | Tier     |
-| ---------------------- | ---------- | ----------- | ------- | -------- |
-| Gemini 3.1 Pro Preview | 2.00       | 12.00       | 1M      | flagship |
-| Gemini 2.5 Pro         | 1.25       | 10.00       | 1M      | flagship |
-| Gemini 2.5 Flash       | 0.30       | 2.50        | 1M      | fast     |
-| Gemini 2.0 Flash       | 0.10       | 0.40        | 1M      | fast     |
-| Gemini 2.0 Flash Lite  | 0.075      | 0.30        | 1M      | budget   |
+| Model                 | Input $/1M | Output $/1M | Context | Tier     |
+| --------------------- | ---------- | ----------- | ------- | -------- |
+| Gemini 3.5 Flash      | 1.50       | 9.00        | 1M      | flagship |
+| Gemini 3.1 Pro        | 2.00       | 12.00       | 1M      | flagship |
+| Gemini 3.1 Flash-Lite | 0.25       | 1.50        | 1M      | budget   |
+| Gemini 2.5 Pro        | 1.25       | 10.00       | 1M      | flagship |
+| Gemini 2.5 Flash      | 0.30       | 2.50        | 1M      | fast     |
+| Gemini 2.0 Flash      | 0.10       | 0.40        | 1M      | fast     |
+| Gemini 2.0 Flash Lite | 0.075      | 0.30        | 1M      | budget   |
+
+> **Gemini 3.1 Pro breakpoint pricing:** $4.00/$18.00 per 1M for prompts >200k tokens (vs $2.00/$12.00 for ≤200k). Table above uses ≤200k rates.
+> **Gemini 3.5 Flash** is now GA and the current flagship Flash model, replacing Gemini 2.5 Flash as the primary Flash-tier recommendation. At $1.50/$9.00 it is 5x more expensive than Gemini 2.5 Flash — the Bedrock cost savings case is significantly stronger against 3.5 Flash.
 
 ### OpenAI (Standard Tier)
 
