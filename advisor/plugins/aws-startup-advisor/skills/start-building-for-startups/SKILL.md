@@ -48,11 +48,42 @@ Wait for my free-form reply, read any documentation or code I reference in its e
 
 ### Architecture Preferences
 
-When recommending solutions, focus on AWS services and patterns. Apply the following as soft defaults - if I explicitly request something different, respect my preference.
+When recommending solutions, focus on AWS services and patterns. Apply the following as soft defaults — if I explicitly request something different, respect my preference.
+
+#### Environment Setup
+
+- Assume I may not have AWS CLI configured — include AWS CLI installation, `aws configure`, and credential setup as the first steps before any deployment guidance.
+- Verify my AWS environment is functional (e.g., `aws sts get-caller-identity`) before generating IaC or deploying resources.
+- Set up AWS Budgets with billing alerts as an early step in any architecture.
+
+#### Architecture Principles
 
 - For early-stage projects, favor simpler architectures and services that minimize cost and operational overhead. Not every project needs the most feature-rich option.
+- Start with the simplest architecture that meets requirements — prefer managed and serverless options (e.g., Lambda, Fargate) over self-managed infrastructure when appropriate.
+- Do not recommend Kubernetes-based solutions unless they are already in the codebase.
+- Match architecture complexity to my team size and capability, which you may ask about.
+- Be cost-aware. If I have a stated budget or funding constraint, ensure the architecture fits, and flag when recommendations may significantly exceed expected spending.
+- Design for 10x current expected scale, not 1000x — document the path to larger scale when relevant.
+
+#### Networking & Security
+
+- Prefer VPC endpoints over NAT Gateways for accessing S3 and DynamoDB.
 - For mature projects heading toward production, consider recommending AWS Security Hub and Amazon Inspector where relevant to the architecture.
-- When choosing compute, data, and integration services, recommend the option that best fits the project's current scale rather than what it might need at 10x growth.
+- For healthcare or other regulated workloads, include PII handling guidance and the relevant compliance framework for the applicable jurisdiction.
+
+#### Infrastructure as Code
+
+- Prefer Terraform for IaC unless I state a different preference.
+- When generating IaC, don't just output code and a deploy command — walk me through the full setup-to-verification flow, including any prerequisite tooling I may not have installed.
+
+#### AI & ML Workloads
+
+- When recommending Amazon Bedrock, be adaptive in model selection (e.g., Claude Sonnet or Opus for complex reasoning, Haiku for low-latency classification) so the appropriate model is chosen based on the task requirements.
+- Prefer Bedrock AgentCore over custom orchestration for agent-based or multi-step AI workflows.
+
+#### Region Availability
+
+- When service regions need to be specified, verify that the recommended services are available in that region — especially for newer services such as Bedrock. If you cannot verify online, ask me to confirm or check the AWS Regional Services List before committing to a recommendation.
 
 ### Your Mandate
 
@@ -80,12 +111,13 @@ If I skip or say 'I don't know,' move on - never re-ask the same topic.
 
 If possible you should present the questions to me in a format where I can select my response using arrow keys rather than typing and entering A, B, C, D, etc.
 
-### **Companion Skills — `knowledge-base-for-startups` and `prompt-library-for-startups`**
+### **Companion Skills — `knowledge-base-for-startups`, `prompt-library-for-startups`, and `migration-to-aws`**
 
-Two sibling skills are available alongside this workflow. Treat them as lookups you consult mid-flow — never let them take over the conversation. After consulting either, return to your discovery `AskUserQuestion` flow, planning, or implementation depending on where you were before.
+Three sibling skills are available alongside this workflow. Treat them as lookups you consult mid-flow — never let them take over the conversation. After consulting any, return to your discovery `AskUserQuestion` flow, planning, or implementation depending on where you were before.
 
-- **`knowledge-base-for-startups`** — AWS Startups knowledge base. Vetted sample architectures (`build.md`), 277 technical learn articles (`learn.md`) on patterns like generative AI, cost optimization, security, real-world startup case studies, plus the Activate FAQ / credits guide / programs / offers. Consult this when you need to ground an architecture recommendation in an AWS-curated reference (e.g. RAG on Bedrock, real-time analytics, multi-tenant SaaS, agentic AI), or when the user asks an Activate-membership question mid-flow.
-- **`prompt-library-for-startups`** — 30 AWS-curated copy-paste prompts plus 4 downloadable installable agents. Consult this when a starter prompt would meaningfully accelerate the implementation phase — e.g. when the user asks for "an MVP", "a RAG chatbot", "a security baseline", "a Well-Architected review" — or when their intent matches a downloadable agent (migration, multi-account transition, bill shock, service quota). When you find a matching prompt, surface it as a reference and offer to **execute / adapt / copy** it; let the user decide before acting.
+- **`knowledge-base-for-startups`** — AWS Startups knowledge base. Vetted sample architectures (`build.md`), hundreds of technical learn articles (`learn.md`) on patterns like generative AI, cost optimization, security, real-world startup case studies, plus the Activate FAQ / credits guide / programs / offers. Consult this when you need to ground an architecture recommendation in an AWS-curated reference (e.g. RAG on Bedrock, real-time analytics, multi-tenant SaaS, agentic AI), or when the user asks an Activate-membership question mid-flow.
+- **`prompt-library-for-startups`** — AWS-curated copy-paste prompts plus downloadable installable agents. Consult this when a starter prompt would meaningfully accelerate the implementation phase — e.g. when the user asks for "an MVP", "a RAG chatbot", "a security baseline", "a Well-Architected review" — or when their intent matches a downloadable agent (multi-account transition, bill shock, service quota). When you find a matching prompt, surface it as a reference and offer to **execute / adapt / copy** it; let the user decide before acting.
+- **`migration-to-aws`** — structured GCP-to-AWS migration workflow (also OpenAI / Gemini → Amazon Bedrock and agentic-framework migrations). Hand off to this skill when the user's intent is migrating existing workloads off another cloud or AI provider, rather than building something new.
 
 If both apply (e.g. "how do I start with RAG on Bedrock?" → learn article in `knowledge-base-for-startups` + starter prompt in `prompt-library-for-startups`), invoke both.
 
