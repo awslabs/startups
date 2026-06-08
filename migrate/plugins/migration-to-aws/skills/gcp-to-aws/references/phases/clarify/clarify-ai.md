@@ -19,6 +19,85 @@ Before presenting questions, show:
 
 ---
 
+## Q14 — Framework auto-detection signals
+
+**Auto-detect signals** — scan IaC and application code before asking:
+
+---
+
+## Multi-Workload Confirmation Table (if `workloads[]` has ≥ 2 entries)
+
+**Fire when:** `ai-workload-profile.json` contains a non-empty `workloads[]` array with 2 or more entries. This replaces the per-workload Q16–Q22 loop with a single confirmation table.
+
+Before presenting Q16–Q22, show the detected workloads and proposed Bedrock targets:
+
+> **Detected AI Workloads:**
+>
+> | # | Model                   | SDK Method                   | Capability        | Confidence | Proposed Bedrock Target       |
+> | - | ----------------------- | ---------------------------- | ----------------- | ---------- | ----------------------------- |
+> | 1 | gemini-2.5-flash        | generateContent              | text_generation   | medium     | [text-class per Q16 priority] |
+> | 2 | gemini-2.5-flash        | generateContent (structured) | structured_output | high       | [same text-class as row 1]    |
+> | 3 | imagen-3.0-generate-001 | generateImages               | image_generation  | high       | [image-class model]           |
+>
+> **For each row, you can:**
+>
+> - **Accept** — keep the proposed mapping
+> - **Edit** — change the capability or Bedrock target
+> - **Drop** — this isn't an AI workload (false positive)
+>
+> _(v1: merge and split actions are planned for v2)_
+>
+> _Do you accept all mappings? Or type the row number to edit._
+
+**Timing:** This table fires AFTER existing global/infra questions complete (Q1–Q15 and Q14–Q15 AI globals). It does not replace or conflict with the master Clarify orchestrator or PR #57 auto-extraction — those run first, and their answers feed into the capability confirmation.
+
+**Behavior:**
+
+1. **High-confidence rows (confidence = `high`):** Pre-fill Bedrock target from `capability → Bedrock model` mapping. Do NOT ask Q16–Q22 for these rows unless the user edits.
+
+2. **Medium/low-confidence rows:** Ask at most 2 questions per row:
+   - "Is the detected capability correct?" (confirm or select from: text_generation, structured_output, image_generation, embedding, speech_to_text, text_to_speech, unknown)
+   - "What matters most for this workload?" (Q16 priority: quality/speed/cost/balanced)
+
+3. **Target mapping** (default, overridden by user edits — look up actual model IDs from design-refs tables, not hardcoded names):
+
+   | Capability        | Target Class                                   | Notes                                                                                                                              |
+   | ----------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+   | text_generation   | Text/reasoning class                           | Apply Q16–Q19 override hierarchy                                                                                                   |
+   | structured_output | Text/reasoning class (same as text_generation) | Uses same Bedrock target as text_generation for that workload's priority tier — structured output is a mode, not a different model |
+   | image_generation  | Image generation class                         | e.g., Nova Canvas                                                                                                                  |
+   | embedding         | Embedding class                                | e.g., Titan Embed Text v2                                                                                                          |
+   | speech_to_text    | Speech-to-text class                           | e.g., Transcribe                                                                                                                   |
+   | text_to_speech    | Text-to-speech class                           | e.g., Polly                                                                                                                        |
+   | unknown           | Ask Q16–Q22 for this workload                  | Falls back to full questionnaire                                                                                                   |
+
+4. **After confirmation — persist workloads[] to preferences.json (REQUIRED):**
+
+   Immediately after the user confirms (accepts all, or finishes editing individual rows), write the final `workloads[]` array to `preferences.json`. This is the **single source of truth** for all downstream phases (Design, Estimate, Generate). Do NOT rely on `ai-workload-profile.json` downstream — it contains the raw Discover output before user edits/drops.
+
+   **Write rules:**
+   - Read existing `preferences.json` (preserving all non-AI fields written by earlier Clarify categories)
+   - Add or overwrite the top-level `workloads` key with the confirmed array
+   - Each entry MUST include: `workload_id`, `model_id`, `sdk_method`, `capability`, `capability_confidence`, `structured_output`, `call_sites`, `target_bedrock_model`, and the user's `priority`/`latency_tier` selections (use defaults `"balanced"`/`"standard"` for high-confidence rows that were auto-accepted)
+   - Dropped rows are excluded from `workloads[]` — they do not appear
+   - Write the file atomically (write to `.tmp`, then rename) to prevent partial writes on failure
+   - If write fails: STOP. Output: "Failed to persist workloads to preferences.json — do not proceed to Design."
+
+   **Single-workload case:** If only 1 workload exists (confirmation table skipped), persist it to `workloads[]` after Q16–Q22 completes, using the same schema. Design always reads `workloads[]` regardless of count.
+
+   **Zero-workload case:** If no AI workloads detected and user doesn't report any, write `"workloads": []` to preferences.json. Design emits empty `design_blocks[]` for this case.
+
+5. **Question budget:** 4 global questions (Q14, Q15, framework, spend) + at most 2 per medium/low workload. For an app with 3 high-confidence workloads: 4 questions total, 0 per-workload. For an app with 2 high + 1 medium: 4 + 2 = 6 questions max.
+
+**Single-workload fallback:** If `workloads[]` has exactly 1 entry or is empty, skip the confirmation table and proceed with the existing Q16–Q22 flow below.
+
+**Known limitations (v1):**
+
+- Gateway calls (LiteLLM, OpenRouter) and custom HTTP calls to AI endpoints are not yet detected as separate workloads — they may be miscategorized or missed. Planned for v2.
+- Merge and split actions are not supported in v1. Users who need to combine or split workloads should edit individual rows.
+
+---
+
 ## Q14 — What AI framework or orchestration layer are you using? (select all that apply)
 
 **Auto-detect signals** — scan IaC and application code before asking:
@@ -91,12 +170,14 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 > D) > $10,000/month
 > E) I don't know
 
-| Answer               | Recommendation Impact                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| < $500/month         | AWS Activate or low-tier IW Migrate credits; Bedrock cost comparison shows modest savings         |
-| $500–$2,000/month    | IW Migrate credits at 35% of ARR; Bedrock cost comparison highlighted                             |
-| $2,000–$10,000/month | Significant IW Migrate credits; Bedrock cost savings prominently featured; Savings Plans analysis |
-| > $10,000/month      | MAP eligibility likely; dedicated AI migration support; Bedrock provisioned throughput analysis   |
+| Answer               | Recommendation Impact                                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| < $500/month         | **AWS Activate Founders** (up to $5,000 credits, self-service, no VC needed — apply at aws.amazon.com/startups/credits); Bedrock free tier covers initial testing; Bedrock cost comparison shows modest savings                                                                                                                                                                                                                  |
+| $500–$2,000/month    | **AWS Activate Portfolio** (up to $200,000 credits for VC/accelerator-backed startups — requires Activate Provider Org ID); Bedrock cost comparison highlighted; credits apply to Bedrock third-party models including Claude                                                                                                                                                                                                    |
+| $2,000–$10,000/month | **AWS Activate Portfolio** (up to $200,000); Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (up to $1M credits, cohort-based, adjacent to the credits-hub funnel)                                                                                                                                                                      |
+| > $10,000/month      | **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; see aws.amazon.com/startups/credits); dedicated AI migration support; Bedrock provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort — aws.amazon.com/startups/generative-ai/accelerator) |
+
+**Activate eligibility (Founders & Portfolio):** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
 
 Interpret → `ai_monthly_spend`. Default: B → `"$500-$2K"`.
 
@@ -138,18 +219,18 @@ Interpret → `ai_priority`. Default: E → `"balanced"`.
 > I) Real-time conversational speech
 > J) None — standard features are sufficient
 
-| Answer                               | Recommendation Impact                                                                                                                                                                                                                                                                                           |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Function calling / Tool use          | Claude Sonnet 4.6 — best-in-class tool use on Bedrock via structured JSON tool schemas; supports parallel tool calls and multi-turn tool use                                                                                                                                                                    |
-| Ultra-long context (> 300K tokens)   | Claude Sonnet/Opus 4.6 long-context SKUs where available (standard on-demand for 4.6 matches base tier in US East N. Virginia per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/)); or Llama 4 Scout (10M), Llama 4 Maverick (1M), Nova 2 Pro/Lite (1M) for very large native context windows |
-| Extended thinking / Chain-of-thought | Claude Sonnet 4.6 with extended thinking mode; Claude Opus 4.6 for most complex reasoning                                                                                                                                                                                                                       |
-| Prompt caching                       | Claude Sonnet 4.6 with prompt caching enabled; cost savings analysis included                                                                                                                                                                                                                                   |
-| RAG optimization                     | Amazon Bedrock Knowledge Bases recommended alongside model; Titan Embeddings for vector store                                                                                                                                                                                                                   |
-| Agentic workflows                    | Claude Sonnet 4.6 with Bedrock Agents; multi-agent orchestration guidance included                                                                                                                                                                                                                              |
-| Real-time speed (< 500ms)            | Claude Haiku 4.5 or Nova Micro; streaming response guidance included                                                                                                                                                                                                                                            |
-| Multimodal with image generation     | Claude Sonnet 4.6 (vision) + Amazon Nova Canvas for generation                                                                                                                                                                                                                                                  |
-| Real-time conversational speech      | Amazon Nova 2 Sonic recommended for speech-to-speech; latency guidance included                                                                                                                                                                                                                                 |
-| None                                 | Default recommendation from Q16 priority stands                                                                                                                                                                                                                                                                 |
+| Answer                               | Recommendation Impact                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Function calling / Tool use          | Claude Sonnet 4.6 — best-in-class tool use on Bedrock via structured JSON tool schemas; supports parallel tool calls and multi-turn tool use                                                                                                                                                                                                                                         |
+| Ultra-long context (> 300K tokens)   | Claude Sonnet/Opus 4.6 long-context SKUs where available (standard on-demand for 4.6 matches base tier in US East N. Virginia per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/)); or Llama 4 Scout (10M), Llama 4 Maverick (1M), Nova 2 Pro/Lite (1M) for very large native context windows                                                                      |
+| Extended thinking / Chain-of-thought | Claude Sonnet 4.6 with extended thinking mode; Claude Opus 4.6 for most complex reasoning                                                                                                                                                                                                                                                                                            |
+| Prompt caching                       | Claude Sonnet 4.6 with prompt caching enabled; cost savings analysis included. **Caveat:** caching only helps for long, repeated context (system prompts, documents). Per-model minimum token thresholds (~1K–4K tokens) and TTL apply — short prompts won't cache. Verify current minimums at docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html before recommending. |
+| RAG optimization                     | Amazon Bedrock Knowledge Bases recommended alongside model; Titan Embeddings for vector store                                                                                                                                                                                                                                                                                        |
+| Agentic workflows                    | Claude Sonnet 4.6 with Bedrock Agents; multi-agent orchestration guidance included                                                                                                                                                                                                                                                                                                   |
+| Real-time speed (< 500ms)            | Claude Haiku 4.5 or Nova Micro; streaming response guidance included                                                                                                                                                                                                                                                                                                                 |
+| Multimodal with image generation     | Claude Sonnet 4.6 (vision) + Amazon Nova Canvas for generation                                                                                                                                                                                                                                                                                                                       |
+| Real-time conversational speech      | Amazon Nova 2 Sonic recommended for speech-to-speech; latency guidance included                                                                                                                                                                                                                                                                                                      |
+| None                                 | Default recommendation from Q16 priority stands                                                                                                                                                                                                                                                                                                                                      |
 
 Interpret → `ai_critical_feature`. Default: J → no override.
 
@@ -173,32 +254,43 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 
 ## Q19 — Which Gemini or OpenAI model are you currently using?
 
+**Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19.
+
+_Skip when:_ Primary model fully resolved from discovery. Use detected value with `chosen_by: "extracted"`.
+
 Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > Q19 source model (baseline only).
 
-> A) Gemini 2.5 Flash (standard, no thinking budget)
-> B) Gemini 2.5 Flash Thinking (thinking budget enabled — variable output pricing)
-> C) Gemini 2.5 Pro
-> D) Gemini 3 Pro / 3.1 Pro Preview
-> E) Gemini Flash (2.0 Flash) or Gemini Flash 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
-> F) Gemini Pro 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
-> G) GPT-3.5 Turbo
-> H) GPT-4 / GPT-4 Turbo
-> I) GPT-4o
-> J) GPT-5.4 / GPT-5.4 Mini / GPT-5.4 Nano
-> K) GPT-5 / GPT-5.x (older)
-> L) GPT-5.5 / GPT-5.5 Pro
-> M) o-series (o1, o3)
-> N) Other / Multiple models
-> O) I don't know
+> A) Gemini 3.5 Flash (GA — current flagship Flash model)
+> B) Gemini 3.5 Flash Thinking (thinking budget enabled)
+> C) Gemini 3.1 Pro
+> D) Gemini 3.1 Flash-Lite (high-volume, low-cost)
+> E) Gemini 2.5 Flash (standard, no thinking budget)
+> F) Gemini 2.5 Flash Thinking (thinking budget enabled — variable output pricing)
+> G) Gemini 2.5 Pro
+> H) Gemini 3 Pro / 3.1 Pro Preview
+> I) Gemini Flash (2.0 Flash) or Gemini Flash 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
+> J) Gemini Pro 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
+> K) GPT-3.5 Turbo
+> L) GPT-4 / GPT-4 Turbo
+> M) GPT-4o
+> N) GPT-5.4 / GPT-5.4 Mini / GPT-5.4 Nano
+> O) GPT-5 / GPT-5.x (older)
+> P) GPT-5.5 / GPT-5.5 Pro
+> Q) o-series (o1, o3)
+> R) Other / Multiple models
+> S) I don't know
 
 | Source Model                   | Baseline Bedrock Recommendation                                                                                                                                                 | Pricing Context                                                                                                                                                                                                                                                              |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gemini 3.5 Flash (GA)          | Nova Lite ($0.06/$0.24) — 94% cheaper                                                                                                                                           | Gemini 3.5 Flash is $1.50/$9.00 — 5x more expensive than old 2.5 Flash; Nova Lite is the cost-equivalent; very strong migration case                                                                                                                                         |
+| Gemini 3.5 Flash Thinking      | Claude Sonnet 4.6 with extended thinking ($3/$15)                                                                                                                               | At $1.50/$9.00 base + thinking tokens, Sonnet 4.6 is comparable or cheaper at full thinking; profile actual thinking usage before committing                                                                                                                                 |
+| Gemini 3.1 Flash-Lite          | Nova Micro ($0.035/$0.14) — 88% cheaper; or Nova Lite ($0.06/$0.24) — 76% cheaper                                                                                               | Gemini 3.1 Flash-Lite is $0.25/$1.50; strong Bedrock cost case                                                                                                                                                                                                               |
 | Gemini 2.5 Flash (standard)    | Nova Lite ($0.06/$0.24) — 88% cheaper                                                                                                                                           | Gemini 2.5 Flash is $0.30/$2.50; Nova Lite is the cost-equivalent; strong migration case                                                                                                                                                                                     |
 | Gemini 2.5 Flash Thinking      | Claude Sonnet 4.6 with extended thinking ($3/$15)                                                                                                                               | Thinking output pricing on Gemini 2.5 Flash ranges $0.60–$3.50/M depending on thinking budget; at full thinking budget Sonnet 4.6 is comparable or cheaper; flag that thinking token costs vary and user should profile their actual thinking budget usage before committing |
 | Gemini 2.5 Pro                 | Nova 2 Pro ($1.38/$11) — 9% cheaper; or Nova Pro ($0.80/$3.20) — 62% cheaper                                                                                                    | Gemini 2.5 Pro is $1.25/$10; migration case is cost + AWS consolidation                                                                                                                                                                                                      |
-| Gemini 3 Pro / 3.1 Pro Preview | Claude Sonnet 4.6 ($3/$15) — agentic reliability; or Nova 2 Pro ($1.38/$11) — cost                                                                                              | Gemini 3.1 Pro Preview is $2/$12 — cheaper than Sonnet 4.6; migration case is agentic reliability and AWS ecosystem, NOT cost. Be honest: Gemini 3.1 Pro leads on general benchmarks.                                                                                        |
-| Gemini Flash 1.5 / 2.0 (older) | Nova Lite ($0.06/$0.24) or Nova Micro ($0.035/$0.14) — **flag Gemini 1.5 Flash as EOL (Sep 2025); recommend upgrading source model to 2.5 Flash before or alongside migration** | Strong Bedrock cost savings; 1.5 Flash is past EOL so migration is doubly urgent                                                                                                                                                                                             |
-| Gemini Pro 1.5 (older)         | Claude Sonnet 4.6 ($3/$15) — **flag Gemini 1.5 Pro as EOL (Sep 2025); recommend upgrading source model to 2.5 Pro or 3.x Pro before or alongside migration**                    | 1.5 Pro is past EOL; migration to Bedrock and source model upgrade should be planned together                                                                                                                                                                                |
+| Gemini 3 Pro / 3.1 Pro         | Claude Sonnet 4.6 ($3/$15) — agentic reliability; or Nova 2 Pro ($1.38/$11) — cost                                                                                              | Gemini 3.1 Pro is $2/$12 — cheaper than Sonnet 4.6; migration case is agentic reliability and AWS ecosystem, NOT cost. Be honest: Gemini 3.1 Pro leads on general benchmarks.                                                                                                |
+| Gemini Flash 1.5 / 2.0 (older) | Nova Lite ($0.06/$0.24) or Nova Micro ($0.035/$0.14) — **flag Gemini 1.5 Flash as EOL (Sep 2025); recommend upgrading source model to 3.5 Flash before or alongside migration** | Strong Bedrock cost savings; 1.5 Flash is past EOL so migration is doubly urgent                                                                                                                                                                                             |
+| Gemini Pro 1.5 (older)         | Claude Sonnet 4.6 ($3/$15) — **flag Gemini 1.5 Pro as EOL (Sep 2025); recommend upgrading source model to 3.1 Pro before or alongside migration**                               | 1.5 Pro is past EOL; migration to Bedrock and source model upgrade should be planned together                                                                                                                                                                                |
 | GPT-3.5 Turbo                  | Claude Haiku 4.5 ($1/$5) — cost-equivalent                                                                                                                                      | Haiku is faster and cheaper                                                                                                                                                                                                                                                  |
 | GPT-4 / GPT-4 Turbo            | Claude Sonnet 4.6 ($3/$15) — quality equivalent                                                                                                                                 | Major savings: GPT-4 Turbo is $10/$30 vs Sonnet $3/$15                                                                                                                                                                                                                       |
 | GPT-4o                         | Claude Sonnet 4.6 ($3/$15) — performance equivalent                                                                                                                             | Modest savings on output; input slightly higher on Bedrock                                                                                                                                                                                                                   |
@@ -220,6 +312,17 @@ Interpret → `ai_model_baseline`. Default: auto-detect from code, fallback Q16 
 ---
 
 ## Q20 — What input types must the model accept: text only, images (vision), or audio/video?
+
+**Auto-detect signal:** Read `integration.capabilities_summary`:
+
+| Signal                                           | Extract                                                                    | Skip Q20?                      |
+| ------------------------------------------------ | -------------------------------------------------------------------------- | ------------------------------ |
+| `vision: true`                                   | `ai_vision: "vision-required"`                                             | Yes — `chosen_by: "extracted"` |
+| `speech_to_text: true` or `text_to_speech: true` | `ai_vision: "audio-video"`                                                 | Yes                            |
+| all false / text only                            | `ai_vision: "text-only"`                                                   | Yes                            |
+| `image_generation: true` and `vision: false`     | note in `ai_capabilities_required`; skip Q20 (image output ≠ vision input) | Yes                            |
+
+_Skip when:_ Modalities fully resolved from `capabilities_summary`. Use detected value with `chosen_by: "extracted"`.
 
 > A) Text only
 > B) Vision required — model must process images
@@ -387,6 +490,40 @@ Interpret → `ai_constraints.agentic.incremental_migration`: A → `true`, B �
 | B (harness) + D (very long tasks)       | Flag: 8-hour session limit. Recommend task decomposition or session chaining.    |
 | C (strands) + C (cross-session memory)  | Strands SessionManager + AgentCore Memory                                        |
 | Any + A (incremental)                   | Include incremental migration script in Generate artifacts                       |
+
+---
+
+## Category H — Startup Programs (Always fires when Category F fires)
+
+_Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). Ask once, after Q26 if agentic, or after Q22 if non-agentic.
+
+---
+
+## Q27 — Have you applied for AWS Activate credits?
+
+**Rationale:** AWS Activate credits apply directly to Bedrock usage (including Claude, Llama, Nova, and other third-party models). Surfacing eligibility at the migration decision moment helps startups reduce the cost of the migration itself. This takes 30 seconds to answer and can unlock $5K–$200K in credits.
+
+**Activate eligibility:** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
+
+> AWS Activate credits offset Bedrock costs during and after migration — including Claude, Llama, and Nova models. Eligible startups can get $5K–$200K depending on funding stage.
+>
+> A) Yes — already have AWS Activate credits
+> B) No — haven't applied yet (self-funded or pre-VC)
+> C) No — VC/accelerator-backed but haven't applied
+> D) I don't know
+
+| Answer                     | Recommendation Impact                                                                                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Already have credits       | Note credit balance in migration plan; flag Bedrock usage as credit-eligible                                                                                   |
+| No — self-funded           | Flag **AWS Activate Founders** (up to $5,000, self-service): aws.amazon.com/startups/credits — apply before starting migration to offset Bedrock testing costs |
+| No — VC/accelerator-backed | Flag **AWS Activate Portfolio** (up to $200,000): requires Activate Provider Org ID from your VC/accelerator — contact them for the Org ID before applying     |
+| Don't know                 | Surface both tiers; recommend checking with investors/accelerator for Org ID                                                                                   |
+
+If `ai_monthly_spend` is `">$10K"`: also flag **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; aws.amazon.com/startups/credits).
+
+If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`: also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort — adjacent cohort program, distinct from the credits-hub funnel): aws.amazon.com/startups/generative-ai/accelerator
+
+Interpret → `startup_program_status`: A → `"has_credits"`, B → `"eligible_founders"`, C → `"eligible_portfolio"`, D → `"unknown"`. Default: D → `"unknown"`.
 
 ---
 

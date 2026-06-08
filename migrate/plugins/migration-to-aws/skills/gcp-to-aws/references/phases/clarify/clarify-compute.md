@@ -87,7 +87,9 @@ E -> same as default — see IaC-signal default rule below
 
 _Fire when:_ Compute resources present AND WebSocket usage cannot be determined from inventory.
 
-**Rationale:** WebSocket support affects load balancer configuration. App Runner is no longer recommended for any workload — this question confirms whether ALB WebSocket configuration is needed in templates.
+**Auto-extract signal:** Only when application code was analyzed (see Clarify Step 2 item 14). If code was scanned and no WebSocket patterns found, extract `websocket: false` and skip. **If no code was analyzed** (Terraform-only), always ask Q9 — do not infer absence of WebSockets.
+
+**Rationale:** WebSocket support affects load balancer configuration.
 
 > WebSocket support affects load balancer configuration. This confirms whether ALB WebSocket configuration is needed in the migration templates.
 >
@@ -116,7 +118,9 @@ Default: B — no constraint.
 
 _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 
-**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage. If traffic is constant, that advantage disappears and AWS becomes cost-competitive or cheaper. This drives whether we recommend migrating Cloud Run at all.
+**Auto-extract signal:** When Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` with `chosen_by: "extracted"` and **skip Q10**.
+
+**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage.
 
 > Cloud Run's scale-to-zero is its primary cost advantage. Understanding your traffic pattern helps me determine whether migrating Cloud Run to AWS makes financial sense.
 >

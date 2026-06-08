@@ -28,28 +28,28 @@ If **none** exist: skip report generation. Output: "Skipping HTML report — no 
 
 Gather data from all available artifacts. Each section below notes which artifact provides the data.
 
-| Data Point                              | Primary Source                                               | Fallback                                         |
-| --------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| GCP services detected                   | `aws-design.json` clusters[].resources[]                     | `aws-design-billing.json` services[]             |
-| AWS service mappings                    | `aws-design.json` resources[].aws_service                    | `aws-design-billing.json` services[].aws_service |
-| Rationale per service                   | `aws-design.json` resources[].rationale                      | `aws-design-billing.json` services[].rationale   |
-| Current GCP monthly cost                | `estimation-infra.json` current_costs.gcp_monthly            | `estimation-billing.json`                        |
-| Projected AWS monthly cost              | `estimation-infra.json` projected_costs.aws_monthly_balanced | `estimation-billing.json`                        |
-| Cost breakdown per service              | `estimation-infra.json` projected_costs.breakdown            | `estimation-billing.json`                        |
-| Cost tiers (premium/balanced/optimized) | `estimation-infra.json` cost_comparison                      | —                                                |
-| Optimization opportunities              | `estimation-infra.json` optimization_opportunities           | —                                                |
-| Migration timeline                      | `generation-infra.json` migration_plan.total_weeks           | `generation-billing.json`                        |
-| Top risks                               | `generation-infra.json` risk_assessment                      | `generation-billing.json`                        |
-| Human expertise flags                   | Design artifact resources[].human_expertise_required         | —                                                |
-| AI model mappings                       | `aws-design-ai.json`                                         | —                                                |
-| AI cost estimates                       | `estimation-ai.json`                                         | —                                                |
-| Migration decision / recommendation   | `estimation-infra.json` → `recommendation`                   | `financial_summary.recommendation` (string fallback) |
-| Complexity and timeline hint          | `migration-preview.json` → `complexity_signal`, `timeline_hint` | —                                             |
-| Key decisions ahead                   | `migration-preview.json` → `key_decisions_ahead`             | —                                                |
-| User configuration choices            | `preferences.json` (read `.value` from wrapped fields)       | —                                                |
-| AI capabilities and integration       | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile` | —                                   |
-| Deferred services                     | Design artifact `resources[].aws_service == "Deferred — specialist engagement"` | —                          |
-| Observability cost callout            | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`) | — |
+| Data Point                              | Primary Source                                                                                                                                          | Fallback                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| GCP services detected                   | `aws-design.json` clusters[].resources[]                                                                                                                | `aws-design-billing.json` services[]                 |
+| AWS service mappings                    | `aws-design.json` resources[].aws_service                                                                                                               | `aws-design-billing.json` services[].aws_service     |
+| Rationale per service                   | `aws-design.json` resources[].rationale                                                                                                                 | `aws-design-billing.json` services[].rationale       |
+| Current GCP monthly cost                | `estimation-infra.json` current_costs.gcp_monthly                                                                                                       | `estimation-billing.json`                            |
+| Projected AWS monthly cost              | `estimation-infra.json` projected_costs.aws_monthly_balanced                                                                                            | `estimation-billing.json`                            |
+| Cost breakdown per service              | `estimation-infra.json` projected_costs.breakdown                                                                                                       | `estimation-billing.json`                            |
+| Cost tiers (premium/balanced/optimized) | `estimation-infra.json` cost_comparison                                                                                                                 | —                                                    |
+| Optimization opportunities              | `estimation-infra.json` optimization_opportunities                                                                                                      | —                                                    |
+| Migration timeline                      | `generation-infra.json` migration_plan.total_weeks                                                                                                      | `generation-billing.json`                            |
+| Top risks                               | `generation-infra.json` risk_assessment                                                                                                                 | `generation-billing.json`                            |
+| Human expertise flags                   | Design artifact resources[].human_expertise_required                                                                                                    | —                                                    |
+| AI model mappings                       | `aws-design-ai.json`                                                                                                                                    | —                                                    |
+| AI cost estimates                       | `estimation-ai.json`                                                                                                                                    | —                                                    |
+| Migration decision / recommendation     | `estimation-infra.json` → `recommendation`                                                                                                              | `financial_summary.recommendation` (string fallback) |
+| Complexity and timeline hint            | `migration-preview.json` → `complexity_signal`, `timeline_hint`                                                                                         | —                                                    |
+| Key decisions ahead                     | `migration-preview.json` → `key_decisions_ahead`                                                                                                        | —                                                    |
+| User configuration choices              | `preferences.json` (read `.value` from wrapped fields)                                                                                                  | —                                                    |
+| AI capabilities and integration         | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile`                                                                               | —                                                    |
+| Deferred services                       | Design artifact `resources[].aws_service == "Deferred — specialist engagement"`                                                                         | —                                                    |
+| Observability cost callout              | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`) | —                                                    |
 
 ## Step 1: Build Executive Summary Section
 
@@ -125,11 +125,11 @@ Source: estimation artifact `recommendation`, `migration-preview.json`, design a
 
 Show top controls as a compact teaser:
 
-| Control | What it does for you | Monthly cost |
-| --- | --- | --- |
-| GuardDuty | Detects compromised credentials and crypto mining within minutes | ~$2–25/mo |
-| CloudTrail | Immutable audit log of every API call — required for SOC 2 | ~$0.50–3/mo |
-| Budget alerts | Email when spend exceeds threshold — catches runaway resources | $0 |
+| Control                        | What it does for you                                               | Monthly cost                         |
+| ------------------------------ | ------------------------------------------------------------------ | ------------------------------------ |
+| GuardDuty                      | Detects compromised credentials and crypto mining within minutes   | ~$2–25/mo                            |
+| CloudTrail                     | Immutable audit log of every API call — required for SOC 2         | ~$0.50–3/mo                          |
+| Budget alerts                  | Email when spend exceeds threshold — catches runaway resources     | $0                                   |
 | Bedrock cost anomaly detection | Alerts within ~24h if AI spend spikes unexpectedly (AI track only) | $0 (Cost Explorer anomaly detection) |
 
 The fourth row is **conditional** — only render when `$MIGRATION_DIR/ai-migration/bedrock_monitoring.tf` exists on disk. Do NOT render based on `generation-ai.json` alone.
@@ -148,12 +148,12 @@ Source: static content + `preferences.json` compliance values
 
 Only render rows for service types PRESENT in the design artifact. Do not show rows for services not in the migration.
 
-| GCP Service | AWS Service | What stays the same | What's new |
-| --- | --- | --- | --- |
-| Cloud Run | Fargate | Fully managed containers, auto-scaling, pay-per-use | Task definitions replace service.yaml; ALB for HTTP routing; ECR replaces GCR |
-| Cloud SQL | RDS/Aurora | Managed DB, automated backups, PITR | Parameter groups replace database flags; Security Groups replace authorized networks |
-| Cloud Storage | S3 | Object storage, lifecycle policies, versioning | Bucket policies replace IAM conditions; CloudFront needed for public CDN |
-| Vertex AI / Gemini | Bedrock | Managed API, pay-per-token | IAM-based access (no API keys); SDKs differ |
+| GCP Service        | AWS Service | What stays the same                                 | What's new                                                                           |
+| ------------------ | ----------- | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Cloud Run          | Fargate     | Fully managed containers, auto-scaling, pay-per-use | Task definitions replace service.yaml; ALB for HTTP routing; ECR replaces GCR        |
+| Cloud SQL          | RDS/Aurora  | Managed DB, automated backups, PITR                 | Parameter groups replace database flags; Security Groups replace authorized networks |
+| Cloud Storage      | S3          | Object storage, lifecycle policies, versioning      | Bucket policies replace IAM conditions; CloudFront needed for public CDN             |
+| Vertex AI / Gemini | Bedrock     | Managed API, pay-per-token                          | IAM-based access (no API keys); SDKs differ                                          |
 
 **Conditional rendering:** Check design artifact for each `gcp_type` / `aws_service` pair. Only include rows where the GCP source type exists in the design. If a service category has no match, skip that row entirely.
 
@@ -227,21 +227,22 @@ Source: generation plan
 
 Pull from `ai-workload-profile.json` when present:
 
-| Aspect | Detected |
-| --- | --- |
-| AI source | `summary.ai_source` |
-| Models | `models[].model_id` — comma-separated list |
-| Capabilities in use | `integration.capabilities_summary` — keys where value is `true` |
-| Integration pattern | `integration.pattern` |
-| Gateway/router | `integration.gateway_type` or "None (direct SDK)" |
-| Frameworks | `integration.frameworks` or "None" |
-| Agentic | If `agentic_profile` exists: "Yes — [framework], [orchestration_pattern], [agent_count] agents"; else "No" |
+| Aspect              | Detected                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| AI source           | `summary.ai_source`                                                                                        |
+| Models              | `models[].model_id` — comma-separated list                                                                 |
+| Capabilities in use | `integration.capabilities_summary` — keys where value is `true`                                            |
+| Integration pattern | `integration.pattern`                                                                                      |
+| Gateway/router      | `integration.gateway_type` or "None (direct SDK)"                                                          |
+| Frameworks          | `integration.frameworks` or "None"                                                                         |
+| Agentic             | If `agentic_profile` exists: "Yes — [framework], [orchestration_pattern], [agent_count] agents"; else "No" |
 
 **D.2 — Why Bedrock (conditional):**
 
 Show this section when `aws-design-ai.json` → `ai_architecture.honest_assessment` contains ANY of: `"recommend_stay"`, `"weak_migrate"`, or `"moderate_migrate"` where any model's Bedrock price exceeds the source provider price.
 
 > **Why migrate to Bedrock when [source] may be cheaper per token?**
+>
 > - **Single-vendor billing:** One AWS bill instead of separate provider invoices
 > - **VPC-private inference:** Model calls stay in your VPC — no data over public internet
 > - **IAM access control:** No API keys to rotate; permissions follow your AWS IAM model
@@ -266,11 +267,11 @@ Show this section when `aws-design-ai.json` → `ai_architecture.honest_assessme
 
 After migration is validated and stable, three optimization levers are available (typical ranges from plugin guidance — validate against your traffic):
 
-| Optimization | Estimated savings | When to apply | Prerequisite |
-| --- | --- | --- | --- |
-| Intelligent Prompt Routing | 10–30% | After 2+ weeks of production traffic | Same model family in multiple tiers (e.g., Claude Sonnet + Haiku) |
-| Prompt caching | 20–50% on eligible calls | When prompts have long repeated context | Minimum ~1K–4K tokens cacheable prefix; per-model minimums and TTL apply |
-| Model distillation | Up to ~75% | After 30+ days of stable, high-volume production | Stable prompts, evaluation dataset, sufficient call volume |
+| Optimization               | Estimated savings        | When to apply                                    | Prerequisite                                                             |
+| -------------------------- | ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------ |
+| Intelligent Prompt Routing | 10–30%                   | After 2+ weeks of production traffic             | Same model family in multiple tiers (e.g., Claude Sonnet + Haiku)        |
+| Prompt caching             | 20–50% on eligible calls | When prompts have long repeated context          | Minimum ~1K–4K tokens cacheable prefix; per-model minimums and TTL apply |
+| Model distillation         | Up to ~75%               | After 30+ days of stable, high-volume production | Stable prompts, evaluation dataset, sufficient call volume               |
 
 These are not migration steps — they are post-migration optimizations. Do not block migration on these. Surface as a "Month 2–3" roadmap item.
 
@@ -293,24 +294,24 @@ Check for actual file/directory existence before listing.
 
 **Data artifacts (for detailed review):**
 
-| Artifact | Contents |
-| --- | --- |
-| `preferences.json` | All migration configuration choices and their sources |
-| `ai-workload-profile.json` | Full AI model inventory, capabilities, evidence |
-| `gcp-resource-inventory.json` | Complete GCP resource inventory with classifications |
-| `estimation-infra.json` | Detailed cost model, recommendation, per-service breakdown |
-| `aws-design.json` | Full architecture design with rationale per service |
+| Artifact                      | Contents                                                   |
+| ----------------------------- | ---------------------------------------------------------- |
+| `preferences.json`            | All migration configuration choices and their sources      |
+| `ai-workload-profile.json`    | Full AI model inventory, capabilities, evidence            |
+| `gcp-resource-inventory.json` | Complete GCP resource inventory with classifications       |
+| `estimation-infra.json`       | Detailed cost model, recommendation, per-service breakdown |
+| `aws-design.json`             | Full architecture design with rationale per service        |
 
 Open any JSON file with a text editor or `cat <filename> | python3 -m json.tool` for formatted output.
 
 **AI migration artifacts (conditional — only list if they exist on disk):**
 
-| Artifact | Description |
-| --- | --- |
-| `ai-migration/bedrock_monitoring.tf` | Bedrock budget alerts, anomaly detection, inference profiles for cost attribution |
-| `ai-migration/STARTUP_PROGRAMS.md` or `STARTUP_PROGRAMS.md` | AWS Activate credit tiers, application URLs, eligibility guidance |
-| `ai-migration/setup_bedrock.sh` | Bedrock model access setup script |
-| `ai-migration/test_comparison.py` | A/B comparison harness for source vs Bedrock quality |
+| Artifact                                                    | Description                                                                       |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `ai-migration/bedrock_monitoring.tf`                        | Bedrock budget alerts, anomaly detection, inference profiles for cost attribution |
+| `ai-migration/STARTUP_PROGRAMS.md` or `STARTUP_PROGRAMS.md` | AWS Activate credit tiers, application URLs, eligibility guidance                 |
+| `ai-migration/setup_bedrock.sh`                             | Bedrock model access setup script                                                 |
+| `ai-migration/test_comparison.py`                           | A/B comparison harness for source vs Bedrock quality                              |
 
 Do not list files that were not generated.
 
@@ -320,14 +321,14 @@ Do not list files that were not generated.
 
 Key decisions that shaped this migration plan. Each value is read from `preferences.json` using the `.value` field of wrapped preference objects (e.g., `availability.value`, not `availability` directly).
 
-| Decision | Your choice | Impact on plan |
-| --- | --- | --- |
-| Target AWS region | `design_constraints.target_region.value` or equivalent | All resources deployed here; Bedrock model availability checked |
-| Availability requirement | `availability.value` | Drives RDS single-AZ vs Multi-AZ vs Aurora selection |
-| Monthly GCP spend | From estimation source or `gcp_monthly_spend.value` | Cost comparison baseline |
-| Framework | `ai_framework.value` (if AI track ran) | Determines migration effort for AI workloads |
-| AI priority | `ai_priority.value` (if present) | Drives Bedrock model selection |
-| Compliance | `compliance.value` (if present) | Triggers Config + Security Hub in baseline.tf |
+| Decision                 | Your choice                                            | Impact on plan                                                  |
+| ------------------------ | ------------------------------------------------------ | --------------------------------------------------------------- |
+| Target AWS region        | `design_constraints.target_region.value` or equivalent | All resources deployed here; Bedrock model availability checked |
+| Availability requirement | `availability.value`                                   | Drives RDS single-AZ vs Multi-AZ vs Aurora selection            |
+| Monthly GCP spend        | From estimation source or `gcp_monthly_spend.value`    | Cost comparison baseline                                        |
+| Framework                | `ai_framework.value` (if AI track ran)                 | Determines migration effort for AI workloads                    |
+| AI priority              | `ai_priority.value` (if present)                       | Drives Bedrock model selection                                  |
+| Compliance               | `compliance.value` (if present)                        | Triggers Config + Security Hub in baseline.tf                   |
 
 **Source indicators:** Each preference shows `chosen_by`: `"user"` (explicitly answered), `"extracted"` (inferred from IaC/code), or `"default"` (plugin default applied).
 
@@ -339,31 +340,31 @@ Source: `preferences.json`
 
 Full security baseline capabilities. Executive summary shows a teaser; this appendix provides the complete picture.
 
-| Control | What it does for you | Threat mitigated | GCP equivalent | Monthly cost |
-| --- | --- | --- | --- | --- |
-| GuardDuty | Detects compromised credentials, crypto mining, unusual API patterns within minutes | Credential theft, resource hijacking | Security Command Center (paid Premium) | ~$2–25/mo |
-| CloudTrail | Immutable audit log of every API call — who did what, when | Unauthorized changes, compliance gaps | Cloud Audit Logs (free for admin activity) | ~$0.50–3/mo |
-| IMDSv2 enforcement | Blocks SSRF attacks from stealing instance/container credentials | Server-side request forgery | N/A (GCP uses different metadata model) | $0 |
-| Access Analyzer | Alerts when IAM policies or S3 buckets become publicly accessible | Accidental public exposure | IAM Recommender (partial) | $0 |
-| EBS default encryption | All storage volumes encrypted at rest by default | Data exposure from stolen disks | Default encryption (GCP default) | $0 |
-| Budget alerts | Email when spend exceeds threshold | Bill shock from runaway resources | GCP Budgets (free) | $0 |
-| S3 Block Public Access | Account-wide prevention of any bucket being made public | Accidental data leaks | Uniform bucket-level access (opt-in) | $0 |
-| IAM password policy | 14-char min, rotation, complexity for console users | Weak password compromise | Cloud Identity policies | $0 |
+| Control                | What it does for you                                                                | Threat mitigated                      | GCP equivalent                             | Monthly cost |
+| ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------ | ------------ |
+| GuardDuty              | Detects compromised credentials, crypto mining, unusual API patterns within minutes | Credential theft, resource hijacking  | Security Command Center (paid Premium)     | ~$2–25/mo    |
+| CloudTrail             | Immutable audit log of every API call — who did what, when                          | Unauthorized changes, compliance gaps | Cloud Audit Logs (free for admin activity) | ~$0.50–3/mo  |
+| IMDSv2 enforcement     | Blocks SSRF attacks from stealing instance/container credentials                    | Server-side request forgery           | N/A (GCP uses different metadata model)    | $0           |
+| Access Analyzer        | Alerts when IAM policies or S3 buckets become publicly accessible                   | Accidental public exposure            | IAM Recommender (partial)                  | $0           |
+| EBS default encryption | All storage volumes encrypted at rest by default                                    | Data exposure from stolen disks       | Default encryption (GCP default)           | $0           |
+| Budget alerts          | Email when spend exceeds threshold                                                  | Bill shock from runaway resources     | GCP Budgets (free)                         | $0           |
+| S3 Block Public Access | Account-wide prevention of any bucket being made public                             | Accidental data leaks                 | Uniform bucket-level access (opt-in)       | $0           |
+| IAM password policy    | 14-char min, rotation, complexity for console users                                 | Weak password compromise              | Cloud Identity policies                    | $0           |
 
 **Compliance-conditional (only when SOC 2/PCI/HIPAA/FedRAMP declared in preferences):**
 
-| Control | What it adds | Compliance gap covered | Monthly cost |
-| --- | --- | --- | --- |
-| AWS Config | Continuous recording of resource configuration changes | Change audit trail for SOC 2 / PCI | ~$2–10/mo |
-| Security Hub + FSBP | Automated security checks against AWS best practices | Baseline posture scoring | ~$1–15/mo |
+| Control             | What it adds                                           | Compliance gap covered             | Monthly cost |
+| ------------------- | ------------------------------------------------------ | ---------------------------------- | ------------ |
+| AWS Config          | Continuous recording of resource configuration changes | Change audit trail for SOC 2 / PCI | ~$2–10/mo    |
+| Security Hub + FSBP | Automated security checks against AWS best practices   | Baseline posture scoring           | ~$1–15/mo    |
 
 **Cost guardrails (when `$MIGRATION_DIR/ai-migration/bedrock_monitoring.tf` exists):**
 
-| Control | What it does for you | Threat mitigated | GCP equivalent | Monthly cost |
-| --- | --- | --- | --- | --- |
-| Bedrock budget (1.5× projected) | Hard spend alert at 150% of estimated AI costs — fires before month-end | Runaway token spend from buggy retry loops | GCP Budgets (free, but no per-service scoping) | $0 |
-| Cost anomaly detection | Daily digest when AI spend deviates from baseline (~24h data lag) | Gradual cost creep, unexpected model-price changes | None (no GCP per-service anomaly equivalent) | $0 |
-| Inference profiles (tagged) | Per-model cost attribution in Cost Explorer | Invisible cost distribution across models | None | $0 |
+| Control                         | What it does for you                                                    | Threat mitigated                                   | GCP equivalent                                 | Monthly cost |
+| ------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------- | ------------ |
+| Bedrock budget (1.5× projected) | Hard spend alert at 150% of estimated AI costs — fires before month-end | Runaway token spend from buggy retry loops         | GCP Budgets (free, but no per-service scoping) | $0           |
+| Cost anomaly detection          | Daily digest when AI spend deviates from baseline (~24h data lag)       | Gradual cost creep, unexpected model-price changes | None (no GCP per-service anomaly equivalent)   | $0           |
+| Inference profiles (tagged)     | Per-model cost attribution in Cost Explorer                             | Invisible cost distribution across models          | None                                           | $0           |
 
 These are detective controls, not spend caps. You will know within ~24 hours if something goes wrong — not at invoice time.
 
