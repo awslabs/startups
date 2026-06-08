@@ -178,6 +178,7 @@ For each mapped AWS service, verify:
 - Every resource has `gcp_address`, `gcp_type`, `gcp_config`, `aws_service`, `aws_config`
 - Every resource has `human_expertise_required` (boolean) — `true` for all `google_bigquery_*` resources (specialist gate); `false` for others unless a rubric explicitly requires it
 - Every `google_bigquery_*` resource has `aws_service` exactly **`Deferred — specialist engagement`** (not Athena, Redshift, Glue, etc.)
+- Every `google_sql_database_instance` resource has `aws_service` ∈ {`RDS PostgreSQL`, `RDS MySQL`, `Aurora PostgreSQL`, `Aurora MySQL`} with non-empty `rationale` citing Q6 availability value. If `availability` is `single-az` or `multi-az`, `aws_service` MUST be RDS (not Aurora). If `multi-az-ha` or `multi-region`, MUST be Aurora.
 - All `confidence` values are either `"deterministic"` or `"inferred"`
 - All `rationale` fields are non-empty
 - Every resource from every evaluated cluster appears in the output
