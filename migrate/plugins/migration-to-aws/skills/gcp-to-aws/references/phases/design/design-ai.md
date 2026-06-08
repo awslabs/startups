@@ -83,15 +83,15 @@ For each `workloads[]` entry:
 
 1. **Use the workload's `capability` to select the Bedrock target class:**
 
-   | Capability | Target Class | Default Model |
-   |---|---|---|
-   | `text_generation` | Text/reasoning | Apply override hierarchy below |
+   | Capability          | Target Class                                           | Default Model                  |
+   | ------------------- | ------------------------------------------------------ | ------------------------------ |
+   | `text_generation`   | Text/reasoning                                         | Apply override hierarchy below |
    | `structured_output` | Text/reasoning (same models support structured output) | Apply override hierarchy below |
-   | `image_generation` | Image generation | Amazon Nova Canvas |
-   | `embedding` | Embedding | Amazon Titan Embed Text v2 |
-   | `speech_to_text` | Speech-to-text | Amazon Transcribe |
-   | `text_to_speech` | Text-to-speech | Amazon Polly |
-   | `unknown` | Text/reasoning (default) | Apply override hierarchy below |
+   | `image_generation`  | Image generation                                       | Amazon Nova Canvas             |
+   | `embedding`         | Embedding                                              | Amazon Titan Embed Text v2     |
+   | `speech_to_text`    | Speech-to-text                                         | Amazon Transcribe              |
+   | `text_to_speech`    | Text-to-speech                                         | Amazon Polly                   |
+   | `unknown`           | Text/reasoning (default)                               | Apply override hierarchy below |
 
 2. **For text/reasoning capabilities:** Apply the existing override hierarchy from `ai_constraints`:
    - Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > source model baseline

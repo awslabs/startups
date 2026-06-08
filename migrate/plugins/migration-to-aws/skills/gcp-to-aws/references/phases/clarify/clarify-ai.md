@@ -19,7 +19,7 @@ Before presenting questions, show:
 
 ---
 
-## Q14 — What AI framework or orchestration layer are you using? (select all that apply)
+## Q14 — Framework auto-detection signals
 
 **Auto-detect signals** — scan IaC and application code before asking:
 
@@ -33,13 +33,14 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 
 > **Detected AI Workloads:**
 >
-> | # | Model | SDK Method | Capability | Confidence | Proposed Bedrock Target |
-> |---|---|---|---|---|---|
-> | 1 | gemini-2.5-flash | generateContent | text_generation | medium | [text-class per Q16 priority] |
-> | 2 | gemini-2.5-flash | generateContent (structured) | structured_output | high | [same text-class as row 1] |
-> | 3 | imagen-3.0-generate-001 | generateImages | image_generation | high | [image-class model] |
+> | # | Model                   | SDK Method                   | Capability        | Confidence | Proposed Bedrock Target       |
+> | - | ----------------------- | ---------------------------- | ----------------- | ---------- | ----------------------------- |
+> | 1 | gemini-2.5-flash        | generateContent              | text_generation   | medium     | [text-class per Q16 priority] |
+> | 2 | gemini-2.5-flash        | generateContent (structured) | structured_output | high       | [same text-class as row 1]    |
+> | 3 | imagen-3.0-generate-001 | generateImages               | image_generation  | high       | [image-class model]           |
 >
 > **For each row, you can:**
+>
 > - **Accept** — keep the proposed mapping
 > - **Edit** — change the capability or Bedrock target
 > - **Drop** — this isn't an AI workload (false positive)
@@ -60,15 +61,15 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 
 3. **Target mapping** (default, overridden by user edits — look up actual model IDs from design-refs tables, not hardcoded names):
 
-   | Capability | Target Class | Notes |
-   |---|---|---|
-   | text_generation | Text/reasoning class | Apply Q16–Q19 override hierarchy |
+   | Capability        | Target Class                                   | Notes                                                                                                                              |
+   | ----------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+   | text_generation   | Text/reasoning class                           | Apply Q16–Q19 override hierarchy                                                                                                   |
    | structured_output | Text/reasoning class (same as text_generation) | Uses same Bedrock target as text_generation for that workload's priority tier — structured output is a mode, not a different model |
-   | image_generation | Image generation class | e.g., Nova Canvas |
-   | embedding | Embedding class | e.g., Titan Embed Text v2 |
-   | speech_to_text | Speech-to-text class | e.g., Transcribe |
-   | text_to_speech | Text-to-speech class | e.g., Polly |
-   | unknown | Ask Q16–Q22 for this workload | Falls back to full questionnaire |
+   | image_generation  | Image generation class                         | e.g., Nova Canvas                                                                                                                  |
+   | embedding         | Embedding class                                | e.g., Titan Embed Text v2                                                                                                          |
+   | speech_to_text    | Speech-to-text class                           | e.g., Transcribe                                                                                                                   |
+   | text_to_speech    | Text-to-speech class                           | e.g., Polly                                                                                                                        |
+   | unknown           | Ask Q16–Q22 for this workload                  | Falls back to full questionnaire                                                                                                   |
 
 4. **After confirmation — persist workloads[] to preferences.json (REQUIRED):**
 
@@ -91,6 +92,7 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 **Single-workload fallback:** If `workloads[]` has exactly 1 entry or is empty, skip the confirmation table and proceed with the existing Q16–Q22 flow below.
 
 **Known limitations (v1):**
+
 - Gateway calls (LiteLLM, OpenRouter) and custom HTTP calls to AI endpoints are not yet detected as separate workloads — they may be miscategorized or missed. Planned for v2.
 - Merge and split actions are not supported in v1. Users who need to combine or split workloads should edit individual rows.
 

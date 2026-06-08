@@ -351,6 +351,7 @@ After extracting model details (Step 5), split the detected AI usage into distin
 ```
 
 **Rules:**
+
 - `workloads[]` is an empty array when no AI call sites are detected
 - `call_sites[].file` uses repo-relative POSIX paths
 - Every model_id in `workloads[]` MUST also appear in `models[]` (backward compatibility)

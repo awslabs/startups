@@ -145,13 +145,13 @@ Produce a clear migrate/stay/optimize verdict for the AI workload migration. Thi
 
 **Decision logic:**
 
-| Condition | Verdict | `recommendation.path` |
-|-----------|---------|----------------------|
-| Bedrock cheaper AND capabilities match | Migrate | `migrate_optimized` |
-| Bedrock more expensive BUT non-cost benefits justify (vendor diversification, Guardrails, multi-model) AND user priority ≠ `cost` | Migrate with caveat | `migrate_optimized` |
-| Bedrock more expensive AND user priority = `cost` AND no compelling non-cost reason | Stay | `stay` |
-| Design `honest_assessment` = `recommend_stay` | Stay | `stay` |
-| Mixed (some workloads cheaper, some not) | Migrate selectively | `migrate_phased` |
+| Condition                                                                                                                         | Verdict             | `recommendation.path` |
+| --------------------------------------------------------------------------------------------------------------------------------- | ------------------- | --------------------- |
+| Bedrock cheaper AND capabilities match                                                                                            | Migrate             | `migrate_optimized`   |
+| Bedrock more expensive BUT non-cost benefits justify (vendor diversification, Guardrails, multi-model) AND user priority ≠ `cost` | Migrate with caveat | `migrate_optimized`   |
+| Bedrock more expensive AND user priority = `cost` AND no compelling non-cost reason                                               | Stay                | `stay`                |
+| Design `honest_assessment` = `recommend_stay`                                                                                     | Stay                | `stay`                |
+| Mixed (some workloads cheaper, some not)                                                                                          | Migrate selectively | `migrate_phased`      |
 
 **Output fields** (add to `estimation-ai.json` top-level):
 
@@ -167,6 +167,7 @@ Produce a clear migrate/stay/optimize verdict for the AI workload migration. Thi
 ```
 
 **Rules:**
+
 - MUST emit `recommendation` — never omit. If data is insufficient, set `confidence: "low"` and state why in `rationale`.
 - If `honest_assessment` from `aws-design-ai.json` says `recommend_stay`, `recommendation.path` MUST be `stay` regardless of cost numbers.
 - For multi-workload runs: if some workloads favor migration and others don't, use `migrate_phased` and list which workloads to migrate vs. keep in `rationale`.
