@@ -70,7 +70,21 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
    | text_to_speech | Text-to-speech class | e.g., Polly |
    | unknown | Ask Q16–Q22 for this workload | Falls back to full questionnaire |
 
-4. **After confirmation:** Write confirmed workloads to `preferences.json` under a `workloads[]` field. Design reads workloads from `preferences.json` (not ai-workload-profile.json) so that edits and drops are respected. Each entry includes: `workload_id`, `model_id`, `sdk_method`, `capability`, `capability_confidence`, `structured_output`, `call_sites`, and the user's priority/latency selections if asked.
+4. **After confirmation — persist workloads[] to preferences.json (REQUIRED):**
+
+   Immediately after the user confirms (accepts all, or finishes editing individual rows), write the final `workloads[]` array to `preferences.json`. This is the **single source of truth** for all downstream phases (Design, Estimate, Generate). Do NOT rely on `ai-workload-profile.json` downstream — it contains the raw Discover output before user edits/drops.
+
+   **Write rules:**
+   - Read existing `preferences.json` (preserving all non-AI fields written by earlier Clarify categories)
+   - Add or overwrite the top-level `workloads` key with the confirmed array
+   - Each entry MUST include: `workload_id`, `model_id`, `sdk_method`, `capability`, `capability_confidence`, `structured_output`, `call_sites`, `target_bedrock_model`, and the user's `priority`/`latency_tier` selections (use defaults `"balanced"`/`"standard"` for high-confidence rows that were auto-accepted)
+   - Dropped rows are excluded from `workloads[]` — they do not appear
+   - Write the file atomically (write to `.tmp`, then rename) to prevent partial writes on failure
+   - If write fails: STOP. Output: "Failed to persist workloads to preferences.json — do not proceed to Design."
+
+   **Single-workload case:** If only 1 workload exists (confirmation table skipped), persist it to `workloads[]` after Q16–Q22 completes, using the same schema. Design always reads `workloads[]` regardless of count.
+
+   **Zero-workload case:** If no AI workloads detected and user doesn't report any, write `"workloads": []` to preferences.json. Design emits empty `design_blocks[]` for this case.
 
 5. **Question budget:** 4 global questions (Q14, Q15, framework, spend) + at most 2 per medium/low workload. For an app with 3 high-confidence workloads: 4 questions total, 0 per-workload. For an app with 2 high + 1 medium: 4 + 2 = 6 questions max.
 

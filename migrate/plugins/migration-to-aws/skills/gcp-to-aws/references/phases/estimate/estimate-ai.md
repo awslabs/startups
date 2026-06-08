@@ -137,6 +137,40 @@ For each applicable optimization, calculate before/after monthly cost and show a
 
 ---
 
+## Part 7: Migration Recommendation (REQUIRED)
+
+Produce a clear migrate/stay/optimize verdict for the AI workload migration. This is the AI-only equivalent of `estimate-infra.md` Part 7.
+
+**Decision logic:**
+
+| Condition | Verdict | `recommendation.path` |
+|-----------|---------|----------------------|
+| Bedrock cheaper AND capabilities match | Migrate | `migrate_optimized` |
+| Bedrock more expensive BUT non-cost benefits justify (vendor diversification, Guardrails, multi-model) AND user priority ≠ `cost` | Migrate with caveat | `migrate_optimized` |
+| Bedrock more expensive AND user priority = `cost` AND no compelling non-cost reason | Stay | `stay` |
+| Design `honest_assessment` = `recommend_stay` | Stay | `stay` |
+| Mixed (some workloads cheaper, some not) | Migrate selectively | `migrate_phased` |
+
+**Output fields** (add to `estimation-ai.json` top-level):
+
+```json
+"recommendation": {
+  "path": "migrate_optimized | migrate_phased | stay",
+  "path_label": "Migrate to Bedrock | Migrate selectively | Stay on current provider",
+  "migrate_if": "Brief condition under which migration makes sense (1 sentence)",
+  "stay_if": "Brief condition under which staying makes sense (1 sentence)",
+  "confidence": "high | medium | low",
+  "rationale": "2-3 sentence justification citing cost delta and non-cost factors"
+}
+```
+
+**Rules:**
+- MUST emit `recommendation` — never omit. If data is insufficient, set `confidence: "low"` and state why in `rationale`.
+- If `honest_assessment` from `aws-design-ai.json` says `recommend_stay`, `recommendation.path` MUST be `stay` regardless of cost numbers.
+- For multi-workload runs: if some workloads favor migration and others don't, use `migrate_phased` and list which workloads to migrate vs. keep in `rationale`.
+
+---
+
 ## Output
 
 Write `estimation-ai.json` to `$MIGRATION_DIR/`.
@@ -160,11 +194,15 @@ Write `estimation-ai.json` to `$MIGRATION_DIR/`.
 | `roi_analysis`                  | object | `monthly_cost_delta`, `annual_cost_delta`, `justification`, `non_cost_benefits[]`                                               |
 | `optimization_opportunities`    | array  | `opportunity`, `potential_savings_monthly`, `implementation_effort`, `description`                                              |
 | `optimized_projection`          | object | `monthly_with_optimizations`, `vs_current`, `note`                                                                              |
+| `recommendation`                | object | `path`, `path_label`, `migrate_if`, `stay_if`, `confidence`, `rationale` (see Part 7)                                           |
 
 All cost values are numbers, not strings. Output must be valid JSON.
 
 ## Validation Checklist
 
+- [ ] `recommendation` field is present with non-empty `path`, `path_label`, `migrate_if`, `stay_if`, and `rationale`
+- [ ] `recommendation.path` is one of: `migrate_optimized`, `migrate_phased`, `stay`
+- [ ] If Design `honest_assessment` = `recommend_stay`, then `recommendation.path` = `stay`
 - [ ] `model_comparison` includes ALL viable Bedrock models, not just recommended
 - [ ] Legacy models in `model_comparison` are annotated with EOL dates (per `shared/ai-model-lifecycle.md`)
 - [ ] `recommended_model` is an Active model (not Legacy) unless no Active alternative exists
