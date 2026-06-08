@@ -549,11 +549,18 @@ Read `shared/schema-estimate-infra.md` for the `estimation-infra.json` schema an
 
 ## Completion Handoff Gate (Fail Closed)
 
+Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
+
 Before returning control to `estimate.md`, require:
 
 - `estimation-infra.json` exists and passes `shared/schema-estimate-infra.md` validation.
+- `recommendation.path` is one of `migrate_optimized`, `migrate_phased`, or `stay`
+- `recommendation.path_label` is non-empty
+- `recommendation.migrate_if` and `recommendation.stay_if` are non-empty arrays (Part 7 MUST persist `recommendation`)
 
-If this gate fails: STOP and output: "estimate-infra did not produce a valid `estimation-infra.json`; do not complete Phase 4."
+**On FAIL:** Emit `GATE_FAIL | phase=estimate | field=<path> | reason=missing`. **Do NOT patch `estimation-infra.json` to pass the gate.** STOP — do not return control to `estimate.md` for phase completion.
+
+**On PASS:** Emit `HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json` (parent `estimate.md` emits the combined handoff after all routes pass).
 
 ## Present Summary
 

@@ -115,7 +115,23 @@ Before marking Estimate complete, enforce route output gates (fail closed):
    - AI route -> `estimation-ai.json`
 4. If any active route is missing its expected output: STOP and output: "Estimate route [name] did not produce required artifact(s). Re-run the failed sub-estimate before completing Phase 4."
 
-After all active route gates pass, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+## Completion Handoff Gate (Fail Closed)
+
+Load `shared/handoff-gates.md`. **Re-read from disk** each active estimate artifact before checking.
+
+**Re-entry guard:** If `generation-infra.json` (or sibling generation artifacts) exists and `phases.generate` is not `"pending"`: STOP unless the user explicitly confirms re-running Estimate. Emit `GATE_FAIL | phase=estimate | field=generation-infra.json | reason=stale_downstream`.
+
+**Infra route additional checks** (when `estimation-infra.json` exists):
+
+- `recommendation.path` ∈ `{migrate_optimized, migrate_phased, stay}`
+- `recommendation.path_label` is non-empty
+- `recommendation.migrate_if` and `recommendation.stay_if` are non-empty arrays
+
+**On any FAIL:** Emit `GATE_FAIL | phase=estimate | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to re-run `estimate-infra.md` Part 7 (recommendation block).
+
+**On PASS:** Emit `HANDOFF_OK | phase=estimate | artifacts=<comma-separated active estimate files>`.
+
+After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
 
 - Set `phases.estimate` to `"completed"`
 - Set `current_phase` to `"generate"`

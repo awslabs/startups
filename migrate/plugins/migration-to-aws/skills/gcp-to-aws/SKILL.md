@@ -102,6 +102,18 @@ This is the execution controller. After completing each phase, consult this tabl
 
 **Feedback checkpoints**: Feedback is not a sequential phase — it is offered at two interleaved checkpoints (after Discover and after Estimate). See the **Feedback Checkpoints** section below for details.
 
+### Handoff Gate Orchestration (Fail Closed)
+
+Load `references/shared/handoff-gates.md` when executing any phase completion step.
+
+1. **Single `$MIGRATION_DIR`**: Use one run directory for the entire migration. Do not mix artifacts across `.migration/*/` sessions.
+2. **Re-read from disk**: Before each phase (and before each handoff gate), Read required artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
+3. **Advance only on `HANDOFF_OK`**: A phase is complete only when its orchestrator emits `HANDOFF_OK | phase=<name> | artifacts=...`. Do not load the next phase without it.
+4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Tell the user which phase to re-run.
+5. **Re-entry**: Re-running an earlier phase after downstream phases completed requires explicit user confirmation; downstream phases must be reset to `"pending"`. See `handoff-gates.md` re-entry table.
+
+Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`.
+
 ---
 
 ## State Validation
@@ -267,6 +279,8 @@ gcp-to-aws/
 │       ├── schema-discover-ai.md               # ai-workload-profile schema (loaded by discover-app-code.md and discover-iac.md Step 7d)
 │       ├── schema-discover-billing.md          # billing-profile schema (loaded by discover-billing.md)
 │       ├── schema-estimate-infra.md            # estimation-infra.json schema (loaded by estimate-infra.md at write time)
+│       ├── handoff-gates.md                    # Fail-closed phase handoff protocol (GATE_FAIL / HANDOFF_OK)
+│       ├── validate-artifacts.md               # Pre-report validation (Generate Step 0; read-only)
 │       ├── migration-complexity.md             # Complexity tier definitions (small/medium/large) for timeline scaling
 │       ├── pricing-cache.md                    # Cached AWS + source provider pricing (±5-25%, primary source)
 │       └── bedrock-quotas.md                   # Bedrock TPM/RPM quota awareness, burndown rates, capacity planning
@@ -306,11 +320,13 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 4. **Execute ALL steps in order**: Follow every numbered step in the reference file. **Do not skip, optimize, or deviate.**
 
-5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding.
+5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding. Phase orchestrators run **Completion Handoff Gate** checks per `shared/handoff-gates.md`.
 
-6. **Update phase status**: Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
+6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `shared/handoff-gates.md`. On `GATE_FAIL`, stop — do not update phase status or load the next phase.
 
-7. **Feedback checkpoint**: After a phase completes, check if feedback is due (see rules below). This runs **before** advancing to the next phase.
+7. **Update phase status**: Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
+
+8. **Feedback checkpoint**: After a phase completes, check if feedback is due (see rules below). This runs **before** advancing to the next phase.
 
    - **After Discover** (if `phases.feedback` is `"pending"`): Output to user:
      "Would you like to share quick feedback (5 optional questions + anonymized usage data) to help improve this tool? Your data never includes resource names, file paths, or account IDs.
@@ -328,7 +344,7 @@ When invoked, the agent **MUST follow this exact sequence**:
 
    - **After Generate**: No feedback offer. If `phases.feedback` is still `"pending"`, use the Phase Status Update Protocol to set it to `"completed"` (user had two chances and chose to defer/skip).
 
-8. **Display summary**: Show user what was accomplished, highlight next phase, or confirm migration completion.
+9. **Display summary**: Show user what was accomplished, highlight next phase, or confirm migration completion.
 
 **Critical constraint**: Agent must strictly adhere to the reference file's workflow. If unable to complete a step, stop and report the exact step that failed.
 

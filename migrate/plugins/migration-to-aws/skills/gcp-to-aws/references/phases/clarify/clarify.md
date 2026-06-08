@@ -719,9 +719,25 @@ Before handing off to Design:
 
 ---
 
+## Completion Handoff Gate (Fail Closed)
+
+Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
+
+**Re-entry guard:** If `aws-design.json` (or `aws-design-ai.json` / `aws-design-billing.json`) exists and `phases.design` is `"completed"`: STOP unless the user explicitly confirms re-running Clarify. Emit `GATE_FAIL | phase=clarify | field=aws-design.json | reason=stale_downstream`.
+
+**Checks (all must PASS):**
+
+1. `preferences.json` exists and parses as JSON.
+2. Step 5 validation checklist items all pass (including `metadata.clarify_mode`).
+3. If `gcp-resource-inventory.json` contains `google_sql_database_instance` → `design_constraints.availability.value` is set (non-null, non-empty).
+
+**On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
+
+**On PASS:** Emit `HANDOFF_OK | phase=clarify | artifacts=preferences.json`.
+
 ## Step 6: Update Phase Status
 
-In the **same turn** as the output message below, use the Phase Status Update Protocol (Write tool) to write `.phase-status.json` with `phases.clarify` set to `"completed"`.
+Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the Phase Status Update Protocol (Write tool) to write `.phase-status.json` with `phases.clarify` set to `"completed"`.
 
 Output to user: "Clarification complete. Proceeding to Phase 3: Design AWS Architecture."
 
