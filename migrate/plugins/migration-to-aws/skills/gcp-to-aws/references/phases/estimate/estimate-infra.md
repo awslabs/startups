@@ -505,6 +505,42 @@ Include migrate/stay decision factors:
 - **Migrate if:** operational efficiency matters, AWS-specific services needed, batch workloads (Spot savings), long-term AWS strategy, growing infrastructure
 - **Stay if:** cost is the only metric and AWS is more expensive, team deeply experienced with GCP, no need for AWS-specific services
 
+### Persist recommendation to estimation-infra.json
+
+Part 7 MUST write the following `recommendation` block to `estimation-infra.json`. This is the single source of truth consumed by the HTML migration report (Section 0) and the Estimate chat summary. Do NOT duplicate this logic elsewhere.
+
+```json
+"recommendation": {
+  "path": "migrate_optimized|migrate_phased|stay",
+  "path_label": "Migrate with Optimizations|Phased Migration|Stay on GCP",
+  "roi_justification": "string — one-sentence ROI case from Part 5",
+  "confidence": "high|medium|low",
+  "migrate_if": [
+    "string — each factor that favors migration for THIS stack"
+  ],
+  "stay_if": [
+    "string — each factor that favors staying for THIS stack"
+  ],
+  "next_steps": [
+    "string — actionable items from Part 7"
+  ]
+}
+```
+
+**Enum normalization for `path`:**
+
+| Scenario                                     | `path` value          | `path_label` (display)         |
+| -------------------------------------------- | --------------------- | ------------------------------ |
+| AWS cheaper or operational benefits justify  | `"migrate_optimized"` | `"Migrate with Optimizations"` |
+| Complex stack, phase-by-phase safer          | `"migrate_phased"`    | `"Phased Migration"`           |
+| AWS more expensive AND costs are sole metric | `"stay"`              | `"Stay on GCP"`                |
+
+Use `path` for machine consumption; `path_label` for display in report and chat.
+
+**Required fields:** `path`, `path_label`, `confidence`, `migrate_if` (non-empty array), `stay_if` (non-empty array), `next_steps` (non-empty array). `roi_justification` is optional (omit when `path` is `"stay"`).
+
+Tailor `migrate_if` and `stay_if` to THIS stack (deferred services, AI cost delta, CUD lock-in, team GCP depth, etc.) — do not copy the generic Part 7 bullets verbatim unless they apply.
+
 ---
 
 ## Output
@@ -530,6 +566,7 @@ After writing `estimation-infra.json`, present a concise summary to the user:
 5. **If billing data available**: Estimated GCP data transfer egress fees. **If billing data NOT available**: "Data transfer cost estimates require GCP billing data."
 6. Monthly and annual savings (or increase) vs GCP per tier
 7. Top 2-3 optimization opportunities with savings amounts
+8. **Recommendation:** `recommendation.path_label` with one-line ROI justification when present
 
 Keep it under 25 lines. The user can ask for details or re-read `estimation-infra.json` at any time.
 
@@ -541,7 +578,7 @@ The Generate phase (`generate.md`) uses `estimation-infra.json` as follows:
 2. **`migration_cost_considerations`** — Data transfer egress cost estimates (if billing data available)
 3. **`optimization_opportunities`** — Which optimizations to implement and when (some during initial migration, some post-migration)
 4. **`cost_comparison`** — Set cost monitoring targets and alerts for each migrated cluster
-5. **`recommendation.next_steps`** — Prerequisites for starting generation
+5. **`recommendation`** — Migrate/stay guidance (`path`, `path_label`, `migrate_if`, `stay_if`, `next_steps`); consumed by HTML report Section 0
 6. **Cost tier vs Terraform** — Generated **`terraform/`** implements **one** baseline aligned with the **Balanced** scenario; **Premium** and **Optimized** are **estimate-only** bands unless the user changes IaC. See `generate-artifacts-infra.md` (`terraform/README.md`, `migration_summary` output).
 
 The generated artifacts reference the cost estimates to set per-cluster cost monitoring thresholds and validate that actual AWS spend aligns with projections after each cluster migration.
