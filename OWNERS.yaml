@@ -1,10 +1,4 @@
 team: Startups
-resolver_group: AWS-Startups-GH-Repo 
-cti:
-  category: AWS Startups
-  type: GH-Repo
-  item: Security
 contacts:
-  primary: ayn
-  oncall: startups-githubrepo-oncall
+  primary: kelsjam
 github_team: "@awslabs/startups"
