@@ -228,6 +228,38 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 }
 ```
 
+## Observability Entry in `projected_costs.breakdown`
+
+When Part 2B of `estimate-infra.md` produces an observability cost, it is included as an entry in `projected_costs.breakdown[]` with this shape:
+
+```json
+{
+  "service": "CloudWatch + X-Ray (Observability)",
+  "low": 7.00,
+  "mid": 10.00,
+  "high": 15.00,
+  "accuracy": "±30%",
+  "pricing_source": "cached",
+  "components": {
+    "log_ingestion": 5.00,
+    "log_storage": 0.45,
+    "custom_metrics": 3.00,
+    "alarms": 0.50,
+    "tracing": 0.00
+  },
+  "volume_source": "heuristic",
+  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch charges from the first GB."
+}
+```
+
+**Validation for observability entry:**
+
+- `components` keys are exactly: `log_ingestion`, `log_storage`, `custom_metrics`, `alarms`, `tracing`
+- `volume_source` is one of: `"heuristic"`, `"billing"` (reflects log volume source — the largest cost component; metrics are always heuristic regardless of this field)
+- `tracing` is 0 when no tracing signals detected in source — do not add X-Ray costs unprompted
+- `mid` equals the sum of all `components` values
+- This entry REPLACES any CloudWatch/log/metric portion in the "Supporting" row — never both
+
 ## Output Validation Checklist
 
 - `design_source` is `"infrastructure"`
@@ -237,8 +269,9 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 - `current_costs.gcp_monthly` matches billing-profile.json total (if used) or is a reasonable estimate
 - `projected_costs` has all three tiers (premium, balanced, optimized)
 - **Tier semantics:** Three totals are **scenario $** only (same design); **Balanced** matches generated Terraform baseline — see **Cost tiers** section above; user-facing labels must use the subtitles there (also `estimate-infra.md` Present Summary / `generate-artifacts-report.md`)
-- `projected_costs.breakdown` covers compute, database, storage, networking, and supporting services
+- `projected_costs.breakdown` covers compute, database, storage, networking, supporting services, and observability
 - Every service in `aws-design.json` is represented in the cost breakdown
+- `projected_costs.breakdown` observability entry (when present) REPLACES any CloudWatch/log/metric costs in the "Supporting" row — never double-count
 - `cost_comparison` shows all three options with monthly and annual differences
 - `cost_comparison.commitment_context` is present if `billing-profile.json` has `commitments.has_active_cuds == true`; omitted otherwise
 - `migration_cost_considerations.billing_data_available` is `true` if `billing-profile.json` exists, `false` otherwise
