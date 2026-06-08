@@ -22,6 +22,17 @@ Attempt to reach awspricing with **up to 2 retries** (3 total attempts):
 3. **If still fails**: Wait 2 seconds, retry (Attempt 3)
 4. **If all 3 attempts fail**: Use cached prices with staleness warning
 
+### Step 0c: MCP Preflight — Surface Status to User (ALWAYS run)
+
+**Before any sub-estimate file runs**, display the pricing mode to the user so they know what to expect:
+
+- **If cache ≤ 90 days and MCP not needed**: "Pricing source: cached (updated [date], ±5-25% accuracy). Live pricing API not required."
+- **If cache > 90 days and MCP available**: "Pricing source: live API (awspricing MCP). Cache is stale ([date]) — using real-time pricing."
+- **If cache > 90 days and MCP unavailable**: "⚠️ Pricing source: stale cache only (updated [date]). The awspricing MCP server is unreachable — ensure `uvx` is installed (`pip install uv` or `brew install uv`) and AWS credentials are configured. Proceeding with cached pricing; accuracy may be ±15-25% for AI models."
+- **If cache ≤ 90 days but a required service is NOT in cache and MCP unavailable**: "⚠️ Some services not in pricing cache and MCP unreachable. Those services will show `pricing_source: unavailable` in the estimate."
+
+This prevents silent failures — the user sees the pricing constraint upfront, not after 5 minutes of estimation work.
+
 ### Pricing Hierarchy
 
 Each sub-estimate file uses this lookup order per service:

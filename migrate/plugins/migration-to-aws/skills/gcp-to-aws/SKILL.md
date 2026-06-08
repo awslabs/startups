@@ -37,12 +37,29 @@ Each phase loads reference files on demand. To keep per-turn context manageable 
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | `design-refs/ai-gemini-to-bedrock.md`            | `ai-workload-profile.json` exists AND `summary.ai_source` = `"gemini"` or `"both"`                 |
 | `design-refs/ai-openai-to-bedrock.md`            | `ai-workload-profile.json` exists AND `summary.ai_source` = `"openai"` or `"both"`                 |
+| `design-refs/ai-anthropic-to-bedrock.md`         | `ai-workload-profile.json` exists AND `summary.ai_source` = `"anthropic"`                          |
 | `design-refs/ai.md`                              | `ai-workload-profile.json` exists AND `summary.ai_source` = `"other"`                              |
 | `design-refs/design-ref-harness.md`              | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "harness"`  |
 | `design-refs/design-ref-agentic-to-agentcore.md` | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "strands"`  |
 | `shared/retarget-gotchas.md`                     | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "retarget"` |
 
 When adding new reference files, verify the phase's total loaded instructions remain under budget. If a new file would exceed ~800 lines when combined with other loaded refs, split it or make it conditional.
+
+**Hybrid stack budget warning:**
+
+When both `gcp-resource-inventory.json` AND `ai-workload-profile.json` exist, the combined design refs will approach the ~800-line budget. Output this warning to the user **before** loading the AI design refs:
+
+> "⚠️ This is a large hybrid stack (infrastructure + AI workloads). To ensure complete and accurate recommendations, consider running the migration in two separate passes:
+>
+> **Pass 1 — Infrastructure:** Run with only your Terraform files to get infra mapping, Terraform generation, and cost estimates.
+>
+> **Pass 2 — AI workloads:** Run with only your application code to get Bedrock model recommendations, provider adapters, and AI migration artifacts.
+>
+> Continue with the combined run? (Y/N)"
+
+If the user chooses to continue, proceed with the combined run. Load AI refs **after** infra refs to preserve infra instruction fidelity. If the user declines, stop and instruct them to re-run with a single input source type.
+
+**This warning is advisory only** — it does not block the run.
 
 ---
 
@@ -213,7 +230,7 @@ gcp-to-aws/
 │   │   │   ├── clarify.md                     # Phase 2: Clarify orchestrator
 │   │   │   ├── clarify-global.md              # Category A: Global/Strategic (Q1-Q7)
 │   │   │   ├── clarify-compute.md             # Categories B+C: Config Gaps + Compute (Q8-Q11)
-│   │   │   ├── clarify-database.md            # Category D: Database (Q12-Q13)
+│   │   │   ├── clarify-database.md            # Category D: Database (Q12–Q13b)
 │   │   │   ├── clarify-ai.md                  # Category F: AI/Bedrock (Q14-Q22)
 │   │   │   └── clarify-ai-only.md             # Standalone AI-only migration flow
 │   │   ├── design/
