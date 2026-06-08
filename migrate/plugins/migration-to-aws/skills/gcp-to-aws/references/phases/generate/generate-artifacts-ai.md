@@ -110,6 +110,7 @@ Generate `ai-migration/provider_adapter.{py,js,go}` — an abstraction layer tha
       "{aws_model_id}"  # fallback — replace with actual ARN from aws-design-ai.json
   )
   ```
+
 - **Shadow mode**: Send requests to both providers, return source response, log Bedrock response for comparison.
 - Include error handling and logging for API calls.
 
@@ -571,7 +572,6 @@ print(f"Next step: Validate model quality, then migrate to Strands.")
 ```
 
 ---
-
 
 ---
 
