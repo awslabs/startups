@@ -288,9 +288,12 @@ Present a side-by-side comparison:
 If `billing-profile.json` has `commitments.has_active_cuds == true`, add a `commitment_context` section to the comparison:
 
 - **GCP effective committed rate**: The customer currently pays `effective_discount_percent`% below list via CUDs
-- **AWS equivalent**: 1-year Savings Plans typically save 20-30%; 3-year Savings Plans save 40-60%
-- **Fair comparison framing**: Present both an uncommitted comparison (GCP list vs. AWS on-demand) and a committed comparison (GCP net-of-CUD vs. AWS with 1yr SP)
-- **Migration timing note**: If the customer has active CUDs, note that CUD fees continue regardless of usage — migrating mid-commitment means paying both GCP CUD fees and AWS costs until the CUD term expires
+- **AWS equivalent**:
+  - **Compute Savings Plans** (Fargate, Lambda, EC2): up to 66% vs On-Demand at maximum term/discount; typical 1-year no-upfront **20–40%**
+  - **Database Savings Plans** (Aurora, RDS, DynamoDB, ElastiCache, etc.): up to **35%** (serverless) / up to **~20%** (provisioned instances), 1-year no-upfront
+  - **RDS Reserved Instances** (alternative to Database Savings Plans on the same workload): up to **69%** (3-year All Upfront); locked to instance family/region — mutually exclusive with Database Savings Plans per workload
+- **Fair comparison framing**: Present both an uncommitted comparison (GCP list vs. AWS on-demand) and a committed comparison (GCP net-of-CUD vs. AWS with 1yr commitments where applicable)
+- **Migration timing note**: If the customer has active CUDs, note that CUD fees continue regardless of usage — migrating mid-commitment means paying both GCP CUD fees and AWS costs until the CUD term expires. For **Cloud Run → Fargate** or **GKE → Fargate** (re-platform) workloads, recommend establishing a 30–90 day AWS compute baseline before purchasing Compute Savings Plans (see Part 6).
 
 Include in `estimation-infra.json` under `cost_comparison`:
 
@@ -300,9 +303,12 @@ Include in `estimation-infra.json` under `cost_comparison`:
   "gcp_effective_discount_percent": 8.2,
   "gcp_monthly_at_list": 2450.00,
   "gcp_monthly_net_of_discounts": 2280.00,
-  "aws_1yr_savings_plan_typical_discount": "20-30%",
-  "aws_3yr_savings_plan_typical_discount": "40-60%",
-  "note": "GCP baseline uses list price for apples-to-apples comparison. Customer currently saves 8.2% via CUDs. AWS Savings Plans offer comparable or deeper discounts post-migration."
+  "aws_compute_savings_plan_discount": "up to 66% (Fargate/Lambda/EC2; max term); typical 20-40% (1yr no-upfront)",
+  "aws_database_savings_plan_discount": "up to 35% (serverless) / up to 20% (provisioned RDS/Aurora)",
+  "aws_rds_reserved_instance_discount": "up to 69% (specific instance family, 3yr All Upfront)",
+  "aws_1yr_savings_plan_typical_discount": "20-40%",
+  "aws_3yr_savings_plan_typical_discount": "40-66%",
+  "note": "GCP baseline uses list price for apples-to-apples comparison. Customer currently saves 8.2% via CUDs. AWS Savings Plans (compute + database) offer comparable or deeper discounts post-migration. Database Savings Plans and RDS Reserved Instances are mutually exclusive on the same workload. For Cloud Run → Fargate or GKE → Fargate (re-platform), commit Compute Savings Plans after establishing a 30-90 day AWS usage baseline."
 }
 ```
 
@@ -361,16 +367,128 @@ Present the monthly and annual cost difference between GCP baseline and each AWS
 
 ## Part 6: Cost Optimization Opportunities
 
+**Relationship to cost tiers:** Premium / Balanced / Optimized totals in Part 2 are **pricing scenarios** for the same design. The **Optimized** tier already assumes illustrative trade-offs (e.g. reserved DB pricing, Fargate Spot). Entries in `optimization_opportunities` are **incremental post-migration actions** beyond the Balanced on-demand baseline — do **not** add their savings on top of Optimized tier totals (which already embed assumptions).
+
 Present applicable optimizations with estimated savings:
 
-| Optimization                       | Savings Range | Applies To                       | When                                    |
-| ---------------------------------- | ------------- | -------------------------------- | --------------------------------------- |
-| Reserved Instances / Savings Plans | 40-60%        | RDS, Aurora                      | Post-migration (after validating usage) |
-| Compute Savings Plans              | 20-50%        | Fargate, Lambda                  | Post-migration                          |
-| S3 Intelligent-Tiering / S3-IA     | 38-50%        | S3 storage                       | During migration                        |
-| Spot Instances                     | 60-90%        | Batch/non-critical EC2 workloads | If batch jobs exist                     |
+| Optimization                   | Savings Range                               | Applies To                                                                          | When                                            |
+| ------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Compute Savings Plans          | 20–66%                                      | Fargate, Lambda, EC2                                                                | Post-migration (after 30–90 day usage baseline) |
+| Database Savings Plans         | Up to 35% (serverless) / ~20% (provisioned) | Aurora, RDS, DynamoDB, ElastiCache, DocumentDB, Neptune, Keyspaces, Timestream, DMS | Post-migration or after instance right-sizing   |
+| RDS Reserved Instances         | Up to 69%                                   | RDS, Aurora (provisioned)                                                           | Post-migration (after architecture stabilizes)  |
+| S3 Intelligent-Tiering / S3-IA | 38–50%                                      | S3 storage                                                                          | During migration                                |
+| Spot Instances                 | 60–90%                                      | Batch/non-critical EC2 workloads                                                    | If batch jobs exist                             |
 
-For each applicable optimization, calculate the before and after monthly cost.
+For each applicable optimization:
+
+- **Compute Savings Plans:** emit percent range and post-migration timing; **omit `savings_monthly`** unless 30+ days of AWS usage data exist — do not size commitments from GCP Cloud Run or GKE billing alone (see below).
+- **Database Savings Plans / RDS RIs:** may include preliminary `savings_monthly` when the Design phase mapped a target instance class **and** projected monthly DB on-demand cost exceeds **$50/month**; otherwise percent-only guidance.
+- **S3 / Spot:** calculate before/after monthly cost when quantities are known from design.
+
+Cross-reference Clarify when available: `cloud_run_traffic_pattern = business-hours` strengthens post-migration baseline guidance for compute; `constant-24-7` allows slightly more confidence in floor sizing — still post-migration for Compute Savings Plans.
+
+### Compute Savings Plans (Fargate / Lambda)
+
+**Relevance to GCP migrations:**
+
+| Source                                 | Fargate commitment sizing from GCP data?               | Notes                                                                                                                                                                                                                                            |
+| -------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Cloud Run → Fargate**                | **Unreliable**                                         | Variable-priced, scales to zero, bills per-request. GCP billing does not map 1:1 to Fargate vCPU-hours.                                                                                                                                          |
+| **GKE → Fargate** (re-platform to ECS) | **Unreliable for commitment; useful for sanity check** | Node pools are often 24/7 with known machine types — you can rough-estimate vCPU-hours from node count × machine type. But re-platforming changes task sizing, autoscaling, and bin-packing; do not purchase a Savings Plan from GCP data alone. |
+| **GKE → EKS** (keep Kubernetes)        | **Partial**                                            | Compute Savings Plans apply to **EC2 worker nodes** or **EKS Fargate profiles**, not the EKS control plane fee (~$0.10/hr per cluster). Post-migration baseline still recommended after right-sizing.                                            |
+
+**What Compute Savings Plans offer:**
+
+- Up to **66%** savings on Fargate, Lambda, and EC2 vs On-Demand at maximum term/discount ([source](https://aws.amazon.com/savingsplans/compute-pricing/))
+- Commitment measured in **$/hour** — not tied to specific instance types, regions, or services
+- Applies automatically across EC2, Fargate, and Lambda regardless of instance family, size, AZ, region, OS, or tenancy ([source](https://aws.amazon.com/savingsplans/faqs/))
+- 1-year or 3-year terms; deeper discounts for longer terms and higher upfront payment
+
+**Guidance for workloads migrating to Fargate (Cloud Run or GKE re-platform):**
+
+The plugin SHALL present Compute Savings Plans as a **post-migration optimization** and SHALL NOT size a commitment from GCP billing data alone:
+
+1. **Run on On-Demand for 30–90 days post-migration** to establish an AWS usage baseline
+2. **Use AWS Cost Explorer Savings Plans Recommendations** — after 30+ days, Cost Explorer generates personalized recommendations based on actual hourly usage floor
+3. **Commit to the usage floor, not the average** — cover minimum sustained usage; burst above the commitment bills at On-Demand with no penalty
+4. **Consider rolling Savings Plans** — purchase smaller plans staggered quarterly to reduce risk if usage patterns change ([source](https://aws.amazon.com/blogs/aws-cloud-financial-management/how-can-i-use-rolling-savings-plans-to-reduce-commitment-risk/))
+
+**Emit in `optimization_opportunities` when Fargate or Lambda is in `aws-design.json`:**
+
+```json
+{
+  "opportunity": "Compute Savings Plans",
+  "type": "compute_savings_plan",
+  "target_services": ["Fargate", "Lambda"],
+  "savings_percent": "20-66%",
+  "savings_monthly": null,
+  "commitment": "1-year or 3-year",
+  "timing": "post-migration (after 30-90 days of usage data)",
+  "implementation_effort": "low",
+  "prerequisite": "Establish AWS compute usage baseline before committing",
+  "description": "GCP compute billing (Cloud Run variable pricing or GKE re-platform to Fargate) makes pre-migration commitment sizing unreliable. GKE node pool sizing may sanity-check the floor but do not commit from GCP data alone. Use AWS Cost Explorer recommendations after migration to size the commitment to your actual usage floor.",
+  "references": [
+    "https://aws.amazon.com/savingsplans/compute-pricing/",
+    "https://aws.amazon.com/savingsplans/faqs/"
+  ]
+}
+```
+
+### Database Savings Plans and Reserved Instances (Aurora / RDS)
+
+**Relevance to GCP migrations:** Cloud SQL instances typically run 24/7 with a known instance size. Unlike Cloud Run, Cloud SQL usage translates well to AWS RDS/Aurora steady-state workloads — commitment sizing is more predictable from source configuration.
+
+**What Database Savings Plans offer:**
+
+- Up to **35%** on serverless deployments; up to **~20%** on provisioned RDS/Aurora instances ([source](https://aws.amazon.com/blogs/aws/introducing-database-savings-plans-for-aws-databases/))
+- **1-year term only**, no upfront payment required ([source](https://aws.amazon.com/about-aws/whats-new/2025/12/database-savings-plans-savings/))
+- Applies across eligible usage regardless of engine, instance family, size, deployment option, or Region
+- **Mutually exclusive with RDS Reserved Instances on the same workload** — choose one discount model per database workload; you may use RIs on one workload and Database Savings Plans on another
+
+**What RDS Reserved Instances offer (alternative):**
+
+- Up to **69%** savings for 1-year or 3-year terms ([source](https://aws.amazon.com/rds/reserved-instances/))
+- Payment options: No Upfront (~30%), Partial Upfront (~36% 1yr), All Upfront (~42% 1yr); 3-year terms up to 69%
+- Locked to specific instance family, size, and region — less flexible but deeper discounts than Database Savings Plans
+
+**Guidance for Cloud SQL → Aurora/RDS migrations:**
+
+When Cloud SQL maps to a prod-tier instance with **> $50/month** projected on-demand DB cost:
+
+1. Map source instance to AWS instance class (from Design phase)
+2. Present Database Savings Plan benefit — 1-year, up to 35% (serverless) or ~20% (provisioned), flexible engine/instance changes
+3. Present RI alternative for deeper savings when instance family is stable for 1+ years
+4. **Recommend Database Savings Plans over RIs for migrations** — post-migration right-sizing flexibility outweighs RI depth for most customers
+
+For dev-tier databases (< $50/month on-demand), emit percent-only guidance without dollar `savings_monthly`.
+
+**Emit in `optimization_opportunities` when RDS or Aurora is in `aws-design.json`:**
+
+```json
+{
+  "opportunity": "Database Savings Plans",
+  "type": "database_savings_plan",
+  "target_services": ["Aurora", "RDS"],
+  "savings_percent": "up to 35% (serverless) / up to 20% (provisioned)",
+  "savings_monthly": 4.50,
+  "commitment": "1-year no-upfront",
+  "timing": "immediately post-migration or after instance right-sizing",
+  "implementation_effort": "low",
+  "prerequisite": "Confirm target instance class and expected steady-state usage; omit savings_monthly when DB on-demand < $50/month",
+  "description": "Cloud SQL 24/7 usage is predictable. Database Savings Plans offer flexibility to change engines/instances post-migration. Mutually exclusive with RDS RIs on the same workload.",
+  "alternative": {
+    "opportunity": "RDS Reserved Instances",
+    "type": "rds_reserved_instances",
+    "savings_percent": "up to 69%",
+    "trade_off": "Locked to specific instance family and region — less flexibility during post-migration optimization"
+  },
+  "references": [
+    "https://aws.amazon.com/savingsplans/database-pricing/",
+    "https://aws.amazon.com/rds/reserved-instances/",
+    "https://aws.amazon.com/about-aws/whats-new/2025/12/database-savings-plans-savings/"
+  ]
+}
+```
 
 ---
 
