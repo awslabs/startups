@@ -193,6 +193,7 @@ Immediately after the subtitle, before any other section, write a conditional **
 ```
 
 **Conditional rules:**
+
 - Omit the AI line entirely if `ai-migration/` was not generated
 - Omit the Infra line entirely if `terraform/` was not generated
 - Omit the "Both" line if only one track ran
