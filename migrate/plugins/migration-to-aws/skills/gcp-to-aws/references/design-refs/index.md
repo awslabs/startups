@@ -16,8 +16,8 @@
 
 | GCP Service            | Resource Type                  | Reference File | Typical AWS target                                                                |
 | ---------------------- | ------------------------------ | -------------- | --------------------------------------------------------------------------------- |
-| Cloud SQL (PostgreSQL) | `google_sql_database_instance` | `database.md`  | RDS PostgreSQL or Aurora PostgreSQL (Q6 selects family)                         |
-| Cloud SQL (MySQL)      | `google_sql_database_instance` | `database.md`  | RDS MySQL or Aurora MySQL (Q6 selects family)                                   |
+| Cloud SQL (PostgreSQL) | `google_sql_database_instance` | `database.md`  | RDS PostgreSQL or Aurora PostgreSQL (Q6 selects family)                           |
+| Cloud SQL (MySQL)      | `google_sql_database_instance` | `database.md`  | RDS MySQL or Aurora MySQL (Q6 selects family)                                     |
 | Cloud SQL (SQL Server) | `google_sql_database_instance` | `database.md`  | RDS SQL Server                                                                    |
 | Firestore (instance)   | `google_firestore_database`    | `database.md`  | DynamoDB                                                                          |
 | Firestore (document)   | `google_firestore_document`    | `database.md`  | DynamoDB                                                                          |

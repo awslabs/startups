@@ -67,21 +67,21 @@ For resources not covered by fast-path:
 
 7b. **Cloud SQL Q6 gate (mandatory — after rubric):** For `google_sql_database_instance` (PostgreSQL or MySQL), read `preferences.json` → `design_constraints.availability` and **enforce**:
 
-| `availability`   | Required `aws_service`                          |
-| ------------------ | ----------------------------------------------- |
-| `single-az`        | `RDS PostgreSQL` or `RDS MySQL` (engine match)  |
-| `multi-az`         | `RDS PostgreSQL` or `RDS MySQL` + `multi_az: true` |
-| `multi-az-ha`      | `Aurora PostgreSQL` or `Aurora MySQL`           |
-| `multi-region`     | `Aurora PostgreSQL` or `Aurora MySQL` Global Database |
+| `availability`          | Required `aws_service`                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `single-az`             | `RDS PostgreSQL` or `RDS MySQL` (engine match)                                                                                                                                                                                        |
+| `multi-az`              | `RDS PostgreSQL` or `RDS MySQL` + `multi_az: true`                                                                                                                                                                                    |
+| `multi-az-ha`           | `Aurora PostgreSQL` or `Aurora MySQL`                                                                                                                                                                                                 |
+| `multi-region`          | `Aurora PostgreSQL` or `Aurora MySQL` Global Database                                                                                                                                                                                 |
 | absent / null / missing | **Do not proceed** — Cloud SQL PostgreSQL/MySQL is present but Q6 was not answered. Return to Clarify to ask Q6 (or apply the documented Q6 default) before assigning RDS/Aurora topology. Do not infer Aurora from the rubric alone. |
 
 **IaC extraction note:** Only `single-az` and `multi-az` can be auto-extracted from Terraform (`ZONAL` / `REGIONAL`). **`multi-az-ha` and `multi-region` are never inferred from IaC** — they require explicit user intent via Q6 (Mission-Critical / Catastrophic). Cloud SQL `REGIONAL` maps to `multi-az` (RDS Multi-AZ), not `multi-az-ha` (Aurora).
 
 If rubric or fast-path would select Aurora when `availability` is `single-az` or `multi-az`, **replace with RDS**. If rubric would select RDS when `availability` is `multi-az-ha` or `multi-region`, **replace with Aurora**. Add `"User Preference: availability=<value>"` to `rubric_applied`. Q12/Q13 must not override this gate.
 
-8. **Set `human_expertise_required`**: If the BigQuery specialist gate applied, already `true`. Otherwise set `false` unless another rubric explicitly requires it. This field is REQUIRED on every resource in the output.
+1. **Set `human_expertise_required`**: If the BigQuery specialist gate applied, already `true`. Otherwise set `false` unless another rubric explicitly requires it. This field is REQUIRED on every resource in the output.
 
-9. **Preferred AWS target check**: **Skip** if `aws_service` is **`Deferred — specialist engagement`**. **Skip Aurora substitution** for Cloud SQL when Q6 availability is `single-az` or `multi-az` (RDS is correct). Otherwise verify the selected `aws_service` aligns with the Preferred AWS Target Services table in `design-refs/fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
+1. **Preferred AWS target check**: **Skip** if `aws_service` is **`Deferred — specialist engagement`**. **Skip Aurora substitution** for Cloud SQL when Q6 availability is `single-az` or `multi-az` (RDS is correct). Otherwise verify the selected `aws_service` aligns with the Preferred AWS Target Services table in `design-refs/fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
 
 ## Step 3: Handle Secondary Resources
 
@@ -178,6 +178,7 @@ For each mapped AWS service, verify:
 - Every resource has `gcp_address`, `gcp_type`, `gcp_config`, `aws_service`, `aws_config`
 - Every resource has `human_expertise_required` (boolean) — `true` for all `google_bigquery_*` resources (specialist gate); `false` for others unless a rubric explicitly requires it
 - Every `google_bigquery_*` resource has `aws_service` exactly **`Deferred — specialist engagement`** (not Athena, Redshift, Glue, etc.)
+- Every `google_sql_database_instance` resource has `aws_service` ∈ {`RDS PostgreSQL`, `RDS MySQL`, `Aurora PostgreSQL`, `Aurora MySQL`} with non-empty `rationale` citing Q6 availability value. If `availability` is `single-az` or `multi-az`, `aws_service` MUST be RDS (not Aurora). If `multi-az-ha` or `multi-region`, MUST be Aurora.
 - All `confidence` values are either `"deterministic"` or `"inferred"`
 - All `rationale` fields are non-empty
 - Every resource from every evaluated cluster appears in the output

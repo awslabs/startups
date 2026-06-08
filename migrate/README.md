@@ -36,7 +36,7 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 ### Codex
 
 ```bash
-codex plugin marketplace add awslabs/startups --sparse migrate/plugins
+codex plugin marketplace add awslabs/startups
 codex plugin install migration-to-aws
 ```
 
@@ -58,19 +58,19 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 ## What It Detects
 
-| Category             | GCP → AWS                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Containers           | Cloud Run → Fargate, GKE → EKS                                                                                                              |
-| Serverless           | Cloud Functions → Lambda                                                                                                                    |
+| Category             | GCP → AWS                                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Containers           | Cloud Run → Fargate, GKE → EKS                                                                                                                          |
+| Serverless           | Cloud Functions → Lambda                                                                                                                                |
 | Databases            | Cloud SQL (PostgreSQL/MySQL) → RDS or Aurora (Q6), Cloud SQL (SQL Server) → RDS, Firestore → DynamoDB, Memorystore → ElastiCache, Spanner → Aurora DSQL |
-| Storage              | Cloud Storage → S3, Filestore → EFS                                                                                                         |
-| Networking           | VPC → VPC, Cloud Load Balancing → ALB/NLB, Cloud DNS → Route 53, Cloud Armor → WAF + Shield                                                 |
-| Secrets              | Secret Manager → Secrets Manager                                                                                                            |
-| AI Models            | OpenAI (GPT-4o, GPT-5.x, o-series), Gemini (Pro, Flash), embeddings, image, speech → Amazon Bedrock                                         |
-| Agentic Frameworks   | LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Strands, custom agent loops                                                                  |
-| Integration Patterns | Direct SDK, LangChain, LlamaIndex, LiteLLM, OpenRouter, MCP servers                                                                         |
-| Agent Architecture   | Single agent, hierarchical, swarm, graph, sequential orchestration                                                                          |
-| Tools & Memory       | Tool definitions with transport/auth classification, memory backends (Redis, Postgres, vector stores)                                       |
+| Storage              | Cloud Storage → S3, Filestore → EFS                                                                                                                     |
+| Networking           | VPC → VPC, Cloud Load Balancing → ALB/NLB, Cloud DNS → Route 53, Cloud Armor → WAF + Shield                                                             |
+| Secrets              | Secret Manager → Secrets Manager                                                                                                                        |
+| AI Models            | OpenAI (GPT-4o, GPT-5.x, o-series), Gemini (Pro, Flash), embeddings, image, speech → Amazon Bedrock                                                     |
+| Agentic Frameworks   | LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Strands, custom agent loops                                                                              |
+| Integration Patterns | Direct SDK, LangChain, LlamaIndex, LiteLLM, OpenRouter, MCP servers                                                                                     |
+| Agent Architecture   | Single agent, hierarchical, swarm, graph, sequential orchestration                                                                                      |
+| Tools & Memory       | Tool definitions with transport/auth classification, memory backends (Redis, Postgres, vector stores)                                                   |
 
 ## What You Get That a Base LLM Can't
 
@@ -98,8 +98,8 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 ## Agent Skill Triggers
 
-| Agent Skill    | Triggers                                                                                                                                                                                                                                          |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent Skill    | Triggers                                                                                                                                                                                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws** | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
 
 ## MCP Servers

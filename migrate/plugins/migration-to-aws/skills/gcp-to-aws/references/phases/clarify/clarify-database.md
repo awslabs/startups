@@ -12,11 +12,11 @@ Before asking questions, detect the database engine from IaC (`database_version`
 
 > "I see Cloud SQL for PostgreSQL (or MySQL) in your Terraform."
 
-| Detected Engine          | Migration Target family                                         | Notes                                |
-| ------------------------ | --------------------------------------------------------------- | ------------------------------------ |
-| Cloud SQL for PostgreSQL | **RDS PostgreSQL** or **Aurora PostgreSQL** (per Q6)            | Q6 selects family; engine from IaC   |
-| Cloud SQL for MySQL      | **RDS MySQL** or **Aurora MySQL** (per Q6)                      | Q6 selects family; engine from IaC   |
-| Cloud SQL for SQL Server | **RDS for SQL Server**                                          | Aurora doesn't support SQL Server    |
+| Detected Engine          | Migration Target family                                           | Notes                                |
+| ------------------------ | ----------------------------------------------------------------- | ------------------------------------ |
+| Cloud SQL for PostgreSQL | **RDS PostgreSQL** or **Aurora PostgreSQL** (per Q6)              | Q6 selects family; engine from IaC   |
+| Cloud SQL for MySQL      | **RDS MySQL** or **Aurora MySQL** (per Q6)                        | Q6 selects family; engine from IaC   |
+| Cloud SQL for SQL Server | **RDS for SQL Server**                                            | Aurora doesn't support SQL Server    |
 | Spanner                  | Aurora DSQL (global distributed) or DynamoDB (key-value patterns) | Migration path differs significantly |
 | Firestore                | DynamoDB                                                          | NoSQL migration                      |
 | AlloyDB                  | Aurora PostgreSQL                                                 | Closest equivalent                   |
@@ -51,12 +51,12 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 > E) N/A — We don't use Cloud SQL
 > F) I don't know
 
-| Answer                              | When Q6 = Inconvenient or Significant Issue (**RDS** path)                    | When Q6 = Mission-Critical or Catastrophic (**Aurora** path)                          |
-| ----------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Steady, predictable                 | Size **RDS** from Cloud SQL config; single-AZ or Multi-AZ per Q6              | **Aurora** standard Multi-AZ; size from Cloud SQL config                                |
-| Read-heavy with write spikes        | **RDS** with read replicas where justified; size writer for spikes            | **Aurora** with read replicas; auto-scaling read capacity where supported               |
-| Write-heavy or globally distributed | Size **RDS** writer; flag architecture review if multi-region writes required | **Aurora DSQL** considered for global active-active; architecture review flagged        |
-| Rapidly growing                     | **RDS** with headroom on instance class; plan capacity reviews                | **Aurora** with headroom; **Aurora Serverless v2** for elastic scaling                  |
+| Answer                              | When Q6 = Inconvenient or Significant Issue (**RDS** path)                    | When Q6 = Mission-Critical or Catastrophic (**Aurora** path)                     |
+| ----------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Steady, predictable                 | Size **RDS** from Cloud SQL config; single-AZ or Multi-AZ per Q6              | **Aurora** standard Multi-AZ; size from Cloud SQL config                         |
+| Read-heavy with write spikes        | **RDS** with read replicas where justified; size writer for spikes            | **Aurora** with read replicas; auto-scaling read capacity where supported        |
+| Write-heavy or globally distributed | Size **RDS** writer; flag architecture review if multi-region writes required | **Aurora DSQL** considered for global active-active; architecture review flagged |
+| Rapidly growing                     | **RDS** with headroom on instance class; plan capacity reviews                | **Aurora** with headroom; **Aurora Serverless v2** for elastic scaling           |
 
 Interpret:
 
@@ -87,11 +87,11 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 > D) N/A — We don't use Cloud SQL
 > E) I don't know
 
-| Answer                     | When Q6 = Inconvenient or Significant Issue (**RDS** path)     | When Q6 = Mission-Critical or Catastrophic (**Aurora** path)        |
-| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Low (< 1,000 IOPS)         | **gp3** (default RDS storage)                                  | **Aurora Standard** storage/I/O billing                             |
-| Medium (1,000–10,000 IOPS) | **gp3**; note optional Provisioned IOPS if I/O grows         | **Aurora Standard**; note optional switch to I/O-Optimized        |
-| High (> 10,000 IOPS)       | **io2** or Provisioned IOPS on RDS                             | **Aurora I/O-Optimized**                                            |
+| Answer                     | When Q6 = Inconvenient or Significant Issue (**RDS** path) | When Q6 = Mission-Critical or Catastrophic (**Aurora** path) |
+| -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| Low (< 1,000 IOPS)         | **gp3** (default RDS storage)                              | **Aurora Standard** storage/I/O billing                      |
+| Medium (1,000–10,000 IOPS) | **gp3**; note optional Provisioned IOPS if I/O grows       | **Aurora Standard**; note optional switch to I/O-Optimized   |
+| High (> 10,000 IOPS)       | **io2** or Provisioned IOPS on RDS                         | **Aurora I/O-Optimized**                                     |
 
 Interpret:
 
@@ -115,8 +115,8 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 
 **Auto-detect signal:** Read disk size from `google_sql_database_instance`: `config.disk_size`, `config.disk_size_gb`, or `gcp_config.disk_size_gb`. Map to Q13b band and **skip Q13b** when unambiguous:
 
-| Disk size (GB) | `db_size` value | Skip Q13b? |
-| -------------- | --------------- | ---------- |
+| Disk size (GB) | `db_size` value | Skip Q13b?                     |
+| -------------- | --------------- | ------------------------------ |
 | < 10           | `"<10GB"`       | Yes — `chosen_by: "extracted"` |
 | 10 – 99        | `"10-100GB"`    | Yes — `chosen_by: "extracted"` |
 | 100 – 499      | `"100-500GB"`   | Yes — `chosen_by: "extracted"` |

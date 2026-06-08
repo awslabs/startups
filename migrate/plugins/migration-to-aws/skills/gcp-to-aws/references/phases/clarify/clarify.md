@@ -161,8 +161,8 @@ Before generating questions, scan the inventory to extract values that are alrea
 6. **BigQuery / analytics warehouse** — Set `bigquery_present` to **true** if **any** of: (a) a resource in `gcp-resource-inventory.json` has `gcp_type` (or equivalent type field) starting with `google_bigquery_`; (b) `billing-profile.json` lists a service/SKU that clearly indicates **BigQuery** (e.g., service name or SKU contains `BigQuery`). Otherwise `bigquery_present` is **false**.
 7. **Database size auto-detect (Q13b)** — For each `google_sql_database_instance`, read `config.disk_size`, `config.disk_size_gb`, or `gcp_config.disk_size_gb`. Map to Q13b band and **skip Q13b** when unambiguous:
 
-| Disk size (GB) | `db_size` value | Skip Q13b? |
-| -------------- | --------------- | ---------- |
+| Disk size (GB) | `db_size` value | Skip Q13b?                     |
+| -------------- | --------------- | ------------------------------ |
 | < 10           | `"<10GB"`       | Yes — `chosen_by: "extracted"` |
 | 10 – 99        | `"10-100GB"`    | Yes — `chosen_by: "extracted"` |
 | 100 – 499      | `"100-500GB"`   | Yes — `chosen_by: "extracted"` |
@@ -170,56 +170,56 @@ Before generating questions, scan the inventory to extract values that are alrea
 
 If multiple instances disagree, ask Q13b. Record in `metadata.inventory_clarifications.db_size_gb` when extracted.
 
-8. **Q6 from Cloud SQL HA** — For each `google_sql_database_instance`, read `availability_type` (or `config.availability_type`):
+1. **Q6 from Cloud SQL HA** — For each `google_sql_database_instance`, read `availability_type` (or `config.availability_type`):
 
-| GCP value | `availability` extracted |
-| --------- | ------------------------ |
-| `ZONAL`   | `"single-az"`            |
-| `REGIONAL`| `"multi-az"`             |
+| GCP value  | `availability` extracted |
+| ---------- | ------------------------ |
+| `ZONAL`    | `"single-az"`            |
+| `REGIONAL` | `"multi-az"`             |
 
 Skip Q6 only when **all** Cloud SQL PostgreSQL/MySQL instances agree on the same mapped value. **`multi-az-ha` and `multi-region` are never auto-extracted** — those require Q6 user answers (Mission-Critical / Catastrophic). Cloud SQL `REGIONAL` maps to `multi-az` (RDS Multi-AZ), not `multi-az-ha` (Aurora). Record in `metadata.inventory_clarifications.cloud_sql_ha`. When `availability_type` is missing on any instance, or instances disagree, ask Q6.
 
-9. **Q12/Q13 dev-tier defaults** — When **all** Cloud SQL instances match dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract and **skip Q12 and Q13**. When instances mix dev and prod tiers, do not extract — ask Q12 and Q13.
+1. **Q12/Q13 dev-tier defaults** — When **all** Cloud SQL instances match dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract and **skip Q12 and Q13**. When instances mix dev and prod tiers, do not extract — ask Q12 and Q13.
 
 ```
 database_traffic: "steady" — chosen_by: "extracted"
 db_io_workload: "low" — chosen_by: "extracted"
 ```
 
-10. **Q3 GCP spend from billing** — If `billing-profile.json` exists, map `summary.total_monthly_spend` to spend band and **skip Q3** when unambiguous:
+1. **Q3 GCP spend from billing** — If `billing-profile.json` exists, map `summary.total_monthly_spend` to spend band and **skip Q3** when unambiguous:
 
-| Monthly USD | `gcp_monthly_spend` |
-| ----------- | ------------------- |
-| < 1,000     | `"<$1K"`            |
-| 1,000–4,999 | `"$1K-$5K"`         |
-| 5,000–19,999| `"$5K-$20K"`        |
-| 20,000–99,999| `"$20K-$100K"`     |
-| ≥ 100,000   | `">$100K"`          |
+| Monthly USD   | `gcp_monthly_spend` |
+| ------------- | ------------------- |
+| < 1,000       | `"<$1K"`            |
+| 1,000–4,999   | `"$1K-$5K"`         |
+| 5,000–19,999  | `"$5K-$20K"`        |
+| 20,000–99,999 | `"$20K-$100K"`      |
+| ≥ 100,000     | `">$100K"`          |
 
-11. **Q1 region extraction** — When inventory has a **single** GCP region among PRIMARY compute/database resources, map to closest AWS region and **skip Q1** with `target_region` `chosen_by: "extracted"`. When multiple regions, suggest default but still ask Q1.
+1. **Q1 region extraction** — When inventory has a **single** GCP region among PRIMARY compute/database resources, map to closest AWS region and **skip Q1** with `target_region` `chosen_by: "extracted"`. When multiple regions, suggest default but still ask Q1.
 
-12. **Q19 primary model** — If `ai-workload-profile.json` exists and `models[0].model_id` is set with confidence ≥ 0.8, map to Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`.
+1. **Q19 primary model** — If `ai-workload-profile.json` exists and `models[0].model_id` is set with confidence ≥ 0.8, map to Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`.
 
-13. **Q20 input modalities** — If `integration.capabilities_summary` exists:
+1. **Q20 input modalities** — If `integration.capabilities_summary` exists:
 
-| Signal | Extract | Skip Q20? |
-| ------ | ------- | --------- |
-| `vision: true` | `ai_vision: "vision-required"` | Yes |
+| Signal                               | Extract                                                                           | Skip Q20?                                                |
+| ------------------------------------ | --------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `vision: true`                       | `ai_vision: "vision-required"`                                                    | Yes                                                      |
 | `image_generation: true` (no vision) | note in `ai_capabilities_required`; Q20 may still ask unless text-only path clear | Partial — skip if only text + image gen via separate API |
-| all false / text only | `ai_vision: "text-only"` | Yes |
+| all false / text only                | `ai_vision: "text-only"`                                                          | Yes                                                      |
 
-When `image_generation: true` and `vision: false`, set `ai_capabilities_required` derived from profile and skip Q20 (image output is not vision *input*).
+When `image_generation: true` and `vision: false`, set `ai_capabilities_required` derived from profile and skip Q20 (image output is not vision _input_).
 
-14. **Q9 WebSocket scan** — Only when application code was **actually analyzed**. Treat code as analyzed when **any** of: (a) `discover-app-code.md` ran and found source files; (b) `ai-workload-profile.json` → `metadata.sources_analyzed.application_code == true`; (c) a companion app directory was scanned. Scan for WebSocket usage: `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI WebSocket, `ws` package imports. If code was analyzed and **no matches**, extract `websocket: false` and **skip Q9**. If matches found, ask Q9 to confirm.
-    **If no application code was available** (Terraform-only workspace, no code discovery), do **NOT** extract Q9 — leave Q9 in the question flow. Absence of a code scan is not evidence of no WebSockets.
+1. **Q9 WebSocket scan** — Only when application code was **actually analyzed**. Treat code as analyzed when **any** of: (a) `discover-app-code.md` ran and found source files; (b) `ai-workload-profile.json` → `metadata.sources_analyzed.application_code == true`; (c) a companion app directory was scanned. Scan for WebSocket usage: `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI WebSocket, `ws` package imports. If code was analyzed and **no matches**, extract `websocket: false` and **skip Q9**. If matches found, ask Q9 to confirm.
+   **If no application code was available** (Terraform-only workspace, no code discovery), do **NOT** extract Q9 — leave Q9 in the question flow. Absence of a code scan is not evidence of no WebSockets.
 
-15. **Q10 Cloud Run traffic** — If Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` and skip Q10. Otherwise ask Q10.
+1. **Q10 Cloud Run traffic** — If Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` and skip Q10. Otherwise ask Q10.
 
-16. **Multi-instance Cloud SQL conflicts** — When multiple `google_sql_database_instance` resources **disagree** on values used for Q6, Q12/Q13, or Q13b (e.g. one ZONAL and one REGIONAL; mixed dev/prod tiers; different disk sizes):
-    - Do **not** extract a single global value or skip the affected question(s)
-    - Record per-instance values in `metadata.inventory_clarifications.cloud_sql_instances[]` (address, `availability_type`, `tier`, `disk_size_gb`)
-    - In Step 2.5, show a **per-instance breakdown** (see below) instead of a single summary row
-    - Ask the affected question(s), or let the user pick a global posture during Step 2.5 confirmation
+1. **Multi-instance Cloud SQL conflicts** — When multiple `google_sql_database_instance` resources **disagree** on values used for Q6, Q12/Q13, or Q13b (e.g. one ZONAL and one REGIONAL; mixed dev/prod tiers; different disk sizes):
+   - Do **not** extract a single global value or skip the affected question(s)
+   - Record per-instance values in `metadata.inventory_clarifications.cloud_sql_instances[]` (address, `availability_type`, `tier`, `disk_size_gb`)
+   - In Step 2.5, show a **per-instance breakdown** (see below) instead of a single summary row
+   - Ask the affected question(s), or let the user pick a global posture during Step 2.5 confirmation
 
 Record all extracted values in `metadata.inventory_clarifications` where applicable. Questions fully resolved by extraction are **skipped** (not asked) with `chosen_by: "extracted"` and listed in `metadata.questions_skipped_extracted`.
 
@@ -274,17 +274,17 @@ A) Most conservative (highest HA) | B) Use [instance name] as primary | C) Ask m
 
 **Override handling** — when the user corrects a detected value:
 
-| User correction (examples) | Update constraint | Re-ask? |
-| -------------------------- | ----------------- | ------- |
-| `availability: mission-critical` / `multi-az-ha` | `availability: "multi-az-ha"`, `chosen_by: "user"` | No — value is explicit |
-| `availability: significant` / `multi-az` | `availability: "multi-az"`, `chosen_by: "user"` | No |
-| `availability: dev` / `single-az` | `availability: "single-az"`, `chosen_by: "user"` | No |
-| `db size: <10GB` / `10-100GB` / etc. | Set `db_size` to stated band, `chosen_by: "user"` | No if band is explicit |
-| `region: [AWS region]` | Set `target_region`, `chosen_by: "user"` | No |
-| `model: [model name]` | Set `ai_model_baseline`, `chosen_by: "user"` | No if maps cleanly to Q19 |
-| `websockets: yes` | Set `websocket: "required"`, `chosen_by: "user"` | No |
-| `spend: $5K-$20K` | Set `gcp_monthly_spend`, `chosen_by: "user"` | No if band is explicit |
-| Vague correction ("that's wrong") | Remove that item from skipped list | Yes — ask full question |
+| User correction (examples)                       | Update constraint                                  | Re-ask?                   |
+| ------------------------------------------------ | -------------------------------------------------- | ------------------------- |
+| `availability: mission-critical` / `multi-az-ha` | `availability: "multi-az-ha"`, `chosen_by: "user"` | No — value is explicit    |
+| `availability: significant` / `multi-az`         | `availability: "multi-az"`, `chosen_by: "user"`    | No                        |
+| `availability: dev` / `single-az`                | `availability: "single-az"`, `chosen_by: "user"`   | No                        |
+| `db size: <10GB` / `10-100GB` / etc.             | Set `db_size` to stated band, `chosen_by: "user"`  | No if band is explicit    |
+| `region: [AWS region]`                           | Set `target_region`, `chosen_by: "user"`           | No                        |
+| `model: [model name]`                            | Set `ai_model_baseline`, `chosen_by: "user"`       | No if maps cleanly to Q19 |
+| `websockets: yes`                                | Set `websocket: "required"`, `chosen_by: "user"`   | No                        |
+| `spend: $5K-$20K`                                | Set `gcp_monthly_spend`, `chosen_by: "user"`       | No if band is explicit    |
+| Vague correction ("that's wrong")                | Remove that item from skipped list                 | Yes — ask full question   |
 
 For each override: remove the associated question ID(s) from `metadata.questions_skipped_extracted`, set `chosen_by: "user"`, and record in `metadata.detected_settings` with `"confirmed": false` and `"corrected_by_user": true`.
 
@@ -533,45 +533,45 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 
 ## Answer Combination Triggers
 
-| Scenario                     | Key Answers                                  | Recommendation                                                                                 |
-| ---------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Early-stage funding path     | Q3 = lower spend band                        | Entry-tier migration funding program review                                                    |
-| Growth-stage funding path    | Q3 = higher spend band                       | Migration funding/support program review based on spend profile                                |
-| Must stay portable           | Q5 = Yes multi-cloud                         | EKS only, no ECS Fargate                                                                       |
-| Kubernetes-averse            | Q5 = No + Q8 = Frustrated                    | ECS Fargate strongly recommended                                                               |
-| WebSocket app                | Q9 = Yes                                     | ALB WebSocket config required                                                                  |
-| Low-traffic Cloud Run        | Q10 = Business hours + Q11 < $100            | Recommend staying on Cloud Run                                                                 |
-| Cloud SQL Postgres — dev/low HA | Q6 = Inconvenient + Cloud SQL in inventory | **RDS PostgreSQL** single-AZ                                                                   |
-| Cloud SQL Postgres — prod HA (RDS) | Q6 = Significant Issue + Cloud SQL in inventory | **RDS PostgreSQL** Multi-AZ                                                                    |
-| Cloud SQL Postgres — mission-critical | Q6 = Mission-Critical + Cloud SQL in inventory | **Aurora PostgreSQL** Multi-AZ; apply Q12/Q13                                               |
-| Cloud SQL Postgres — global catastrophic | Q6 = Catastrophic + Q1 = Global + Cloud SQL in inventory | **Aurora PostgreSQL Global Database**                                          |
-| High I/O database (RDS path) | Q6 = Inconvenient/Significant + Q13 = High | **RDS** io2 or Provisioned IOPS                                                             |
-| High I/O database (Aurora path) | Q6 = Mission-Critical/Catastrophic + Q13 = High | Aurora I/O-Optimized                                                                    |
-| Write-heavy global DB        | Q6 = Mission-Critical/Catastrophic + Q12 = Write-heavy/global | Aurora DSQL architecture review (RDS path only: size writer; flag review)        |
-| Rapidly growing DB (RDS path) | Q6 = Inconvenient/Significant + Q12 = Rapidly growing | RDS with headroom on instance class                                                  |
-| Rapidly growing DB (Aurora path) | Q6 = Mission-Critical/Catastrophic + Q12 = Rapidly growing | Aurora Serverless v2                                                              |
-| Zero downtime required       | Q7 = No downtime                             | Blue/green + AWS DMS required (RDS or Aurora blue/green per Q6)                                |
-| HIPAA compliance             | Q2 = HIPAA                                   | BAA services only, specific regions                                                            |
-| FedRAMP required             | Q2 = FedRAMP                                 | GovCloud regions only                                                                          |
-| CCPA / CPRA                  | Q2 = G (CCPA / CPRA)                         | Consumer privacy, logging/retention, data-inventory posture; confirm regions with legal review |
-| Gateway-only AI              | Q14 = B only (LLM router/gateway)            | Config change only; skip SDK migration                                                         |
-| LangChain/LangGraph AI       | Q14 includes C                               | Provider swap via ChatBedrock; 1–3 days                                                        |
-| OpenAI Agents SDK            | Q14 includes E                               | Highest AI effort; Bedrock Agents; 2–4 weeks                                                   |
-| Multi-agent + MCP            | Q14 = D + F                                  | Bedrock Agents to unify orchestration + MCP                                                    |
-| Voice platform AI            | Q14 includes G                               | Check native Bedrock support; Nova 2 Sonic if needed                                           |
-| GPT-5.5 migration            | Q19 = GPT-5.5                                | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                 |
-| GPT-5.5 Pro migration        | Q19 = GPT-5.5 Pro                            | Nova 2 Pro — 95% cheaper on Bedrock                                                            |
-| GPT-5.4 migration            | Q19 = GPT-5.4                                | Claude Sonnet 4.6 — near price parity; AWS consolidation                                       |
-| GPT-5.4 Mini/Nano migration  | Q19 = GPT-5.4 Mini or Nano                   | Nova Lite/Micro — 87-94% cheaper on Bedrock                                                    |
-| GPT-4 Turbo migration        | Q19 = GPT-4 Turbo                            | Claude Sonnet 4.6 — 70% cheaper on input                                                       |
-| o-series migration           | Q19 = o-series                               | Claude Sonnet 4.6 with extended thinking                                                       |
-| High-volume cost-critical AI | Q18 = High + cost critical                   | Nova Micro or Haiku 4.5 + provisioned throughput                                               |
-| Reasoning/agent workload     | Q17 = Extended thinking                      | Claude Sonnet 4.6 extended thinking; Opus 4.6 for hardest                                      |
-| Speech-to-speech AI          | Q17 = Real-time speech                       | Nova 2 Sonic                                                                                   |
-| RAG workload                 | Q17 = RAG optimization                       | Bedrock Knowledge Bases + Titan Embeddings                                                     |
-| Vision workload              | Q20 = Vision required                        | Claude Sonnet 4.6 (multimodal)                                                                 |
-| Latency-critical AI          | Q21 = Critical                               | Haiku 4.5 or Nova Micro + streaming                                                            |
-| Complex reasoning tasks      | Q22 = Complex                                | Claude Sonnet 4.6; Opus 4.6 for hardest                                                        |
+| Scenario                                 | Key Answers                                                   | Recommendation                                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Early-stage funding path                 | Q3 = lower spend band                                         | Entry-tier migration funding program review                                                    |
+| Growth-stage funding path                | Q3 = higher spend band                                        | Migration funding/support program review based on spend profile                                |
+| Must stay portable                       | Q5 = Yes multi-cloud                                          | EKS only, no ECS Fargate                                                                       |
+| Kubernetes-averse                        | Q5 = No + Q8 = Frustrated                                     | ECS Fargate strongly recommended                                                               |
+| WebSocket app                            | Q9 = Yes                                                      | ALB WebSocket config required                                                                  |
+| Low-traffic Cloud Run                    | Q10 = Business hours + Q11 < $100                             | Recommend staying on Cloud Run                                                                 |
+| Cloud SQL Postgres — dev/low HA          | Q6 = Inconvenient + Cloud SQL in inventory                    | **RDS PostgreSQL** single-AZ                                                                   |
+| Cloud SQL Postgres — prod HA (RDS)       | Q6 = Significant Issue + Cloud SQL in inventory               | **RDS PostgreSQL** Multi-AZ                                                                    |
+| Cloud SQL Postgres — mission-critical    | Q6 = Mission-Critical + Cloud SQL in inventory                | **Aurora PostgreSQL** Multi-AZ; apply Q12/Q13                                                  |
+| Cloud SQL Postgres — global catastrophic | Q6 = Catastrophic + Q1 = Global + Cloud SQL in inventory      | **Aurora PostgreSQL Global Database**                                                          |
+| High I/O database (RDS path)             | Q6 = Inconvenient/Significant + Q13 = High                    | **RDS** io2 or Provisioned IOPS                                                                |
+| High I/O database (Aurora path)          | Q6 = Mission-Critical/Catastrophic + Q13 = High               | Aurora I/O-Optimized                                                                           |
+| Write-heavy global DB                    | Q6 = Mission-Critical/Catastrophic + Q12 = Write-heavy/global | Aurora DSQL architecture review (RDS path only: size writer; flag review)                      |
+| Rapidly growing DB (RDS path)            | Q6 = Inconvenient/Significant + Q12 = Rapidly growing         | RDS with headroom on instance class                                                            |
+| Rapidly growing DB (Aurora path)         | Q6 = Mission-Critical/Catastrophic + Q12 = Rapidly growing    | Aurora Serverless v2                                                                           |
+| Zero downtime required                   | Q7 = No downtime                                              | Blue/green + AWS DMS required (RDS or Aurora blue/green per Q6)                                |
+| HIPAA compliance                         | Q2 = HIPAA                                                    | BAA services only, specific regions                                                            |
+| FedRAMP required                         | Q2 = FedRAMP                                                  | GovCloud regions only                                                                          |
+| CCPA / CPRA                              | Q2 = G (CCPA / CPRA)                                          | Consumer privacy, logging/retention, data-inventory posture; confirm regions with legal review |
+| Gateway-only AI                          | Q14 = B only (LLM router/gateway)                             | Config change only; skip SDK migration                                                         |
+| LangChain/LangGraph AI                   | Q14 includes C                                                | Provider swap via ChatBedrock; 1–3 days                                                        |
+| OpenAI Agents SDK                        | Q14 includes E                                                | Highest AI effort; Bedrock Agents; 2–4 weeks                                                   |
+| Multi-agent + MCP                        | Q14 = D + F                                                   | Bedrock Agents to unify orchestration + MCP                                                    |
+| Voice platform AI                        | Q14 includes G                                                | Check native Bedrock support; Nova 2 Sonic if needed                                           |
+| GPT-5.5 migration                        | Q19 = GPT-5.5                                                 | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                 |
+| GPT-5.5 Pro migration                    | Q19 = GPT-5.5 Pro                                             | Nova 2 Pro — 95% cheaper on Bedrock                                                            |
+| GPT-5.4 migration                        | Q19 = GPT-5.4                                                 | Claude Sonnet 4.6 — near price parity; AWS consolidation                                       |
+| GPT-5.4 Mini/Nano migration              | Q19 = GPT-5.4 Mini or Nano                                    | Nova Lite/Micro — 87-94% cheaper on Bedrock                                                    |
+| GPT-4 Turbo migration                    | Q19 = GPT-4 Turbo                                             | Claude Sonnet 4.6 — 70% cheaper on input                                                       |
+| o-series migration                       | Q19 = o-series                                                | Claude Sonnet 4.6 with extended thinking                                                       |
+| High-volume cost-critical AI             | Q18 = High + cost critical                                    | Nova Micro or Haiku 4.5 + provisioned throughput                                               |
+| Reasoning/agent workload                 | Q17 = Extended thinking                                       | Claude Sonnet 4.6 extended thinking; Opus 4.6 for hardest                                      |
+| Speech-to-speech AI                      | Q17 = Real-time speech                                        | Nova 2 Sonic                                                                                   |
+| RAG workload                             | Q17 = RAG optimization                                        | Bedrock Knowledge Bases + Titan Embeddings                                                     |
+| Vision workload                          | Q20 = Vision required                                         | Claude Sonnet 4.6 (multimodal)                                                                 |
+| Latency-critical AI                      | Q21 = Critical                                                | Haiku 4.5 or Nova Micro + streaming                                                            |
+| Complex reasoning tasks                  | Q22 = Complex                                                 | Claude Sonnet 4.6; Opus 4.6 for hardest                                                        |
 
 ---
 

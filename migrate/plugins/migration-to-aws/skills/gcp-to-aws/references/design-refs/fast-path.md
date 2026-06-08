@@ -36,21 +36,21 @@ JSON artifacts **must** keep the `confidence` string values above. When speaking
 
 ## Direct Mappings Table
 
-| GCP Service                                 | AWS Service           | Conditions | Notes                                                |
-| ------------------------------------------- | --------------------- | ---------- | ---------------------------------------------------- |
-| `google_storage_bucket`                     | S3                    | Always     | 1:1 mapping; preserve ACL/versioning/lifecycle rules |
-| `google_cloud_run_service`                  | Fargate               | Always     | Preferred container runtime target                   |
-| `google_cloud_run_v2_service`               | Fargate               | Always     | v2 API variant of Cloud Run                          |
-| `google_cloudfunctions_function`            | Lambda                | Always     | Gen 1 function mapping                               |
-| `google_cloudfunctions2_function`           | Lambda                | Always     | Gen 2 function mapping                               |
-| `google_sql_database_instance` (SQL Server) | RDS SQL Server        | Always     | Always provisioned (no serverless)                   |
-| `google_compute_network`                    | VPC                   | Always     | 1:1; preserve CIDR ranges                            |
-| `google_compute_firewall`                   | Security Group        | Always     | 1:1 rule mapping; adjust CIDR if needed              |
-| `google_dns_managed_zone`                   | Route 53 Hosted Zone  | Always     | Preserve zone name and records                       |
-| `google_service_account`                    | IAM Role              | Always     | Map permissions directly; adjust service principals  |
-| `google_secret_manager_secret`              | Secrets Manager       | Always     | Create secret metadata and IAM-scoped access         |
-| `google_secret_manager_secret_version`      | Secrets Manager       | Always     | Carry current value or explicit migration TODO       |
-| `google_redis_instance`                     | ElastiCache Redis     | Always     | 1:1 mapping; preserve cluster mode and node type     |
+| GCP Service                                 | AWS Service          | Conditions | Notes                                                |
+| ------------------------------------------- | -------------------- | ---------- | ---------------------------------------------------- |
+| `google_storage_bucket`                     | S3                   | Always     | 1:1 mapping; preserve ACL/versioning/lifecycle rules |
+| `google_cloud_run_service`                  | Fargate              | Always     | Preferred container runtime target                   |
+| `google_cloud_run_v2_service`               | Fargate              | Always     | v2 API variant of Cloud Run                          |
+| `google_cloudfunctions_function`            | Lambda               | Always     | Gen 1 function mapping                               |
+| `google_cloudfunctions2_function`           | Lambda               | Always     | Gen 2 function mapping                               |
+| `google_sql_database_instance` (SQL Server) | RDS SQL Server       | Always     | Always provisioned (no serverless)                   |
+| `google_compute_network`                    | VPC                  | Always     | 1:1; preserve CIDR ranges                            |
+| `google_compute_firewall`                   | Security Group       | Always     | 1:1 rule mapping; adjust CIDR if needed              |
+| `google_dns_managed_zone`                   | Route 53 Hosted Zone | Always     | Preserve zone name and records                       |
+| `google_service_account`                    | IAM Role             | Always     | Map permissions directly; adjust service principals  |
+| `google_secret_manager_secret`              | Secrets Manager      | Always     | Create secret metadata and IAM-scoped access         |
+| `google_secret_manager_secret_version`      | Secrets Manager      | Always     | Carry current value or explicit migration TODO       |
+| `google_redis_instance`                     | ElastiCache Redis    | Always     | 1:1 mapping; preserve cluster mode and node type     |
 
 ### Cloud SQL PostgreSQL / MySQL — NOT in Direct Mappings
 
@@ -58,12 +58,12 @@ JSON artifacts **must** keep the `confidence` string values above. When speaking
 
 **Q6 (`design_constraints.availability`) is the only selector for RDS vs Aurora:**
 
-| `availability` value | AWS target (match engine from GCP)        |
-| -------------------- | ----------------------------------------- |
-| `single-az`          | **RDS PostgreSQL** or **RDS MySQL**       |
-| `multi-az`           | **RDS PostgreSQL** or **RDS MySQL** Multi-AZ |
+| `availability` value | AWS target (match engine from GCP)                 |
+| -------------------- | -------------------------------------------------- |
+| `single-az`          | **RDS PostgreSQL** or **RDS MySQL**                |
+| `multi-az`           | **RDS PostgreSQL** or **RDS MySQL** Multi-AZ       |
 | `multi-az-ha`        | **Aurora PostgreSQL** or **Aurora MySQL** Multi-AZ |
-| `multi-region`       | **Aurora Global Database** (engine per GCP) |
+| `multi-region`       | **Aurora Global Database** (engine per GCP)        |
 
 Q12 (traffic) and Q13 (I/O) tune sizing and storage **within** the family Q6 chose — they never upgrade Inconvenient/Significant Issue workloads to Aurora.
 

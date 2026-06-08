@@ -10,7 +10,7 @@
 
 Read `$MIGRATION_DIR/ai-workload-profile.json`:
 
-- `summary.ai_source` — `"gemini"`, `"openai"`, `"both"`, `"other"`
+- `summary.ai_source` — `"gemini"`, `"openai"`, `"anthropic"`, `"both"`, `"other"`
 - `models[]` — Detected AI models with service, capabilities, evidence
 - `integration` — SDK, frameworks, languages, gateway type, capability summary
 - `infrastructure[]` — Terraform resources related to AI (may be empty)
@@ -24,8 +24,9 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 - `"gemini"` → load `references/design-refs/ai-gemini-to-bedrock.md`
 - `"openai"` → load `references/design-refs/ai-openai-to-bedrock.md`
-- `"both"` → load both files
-- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric)
+- `"anthropic"` → load `references/design-refs/ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use ai-openai-to-bedrock.md for Anthropic SDK users)
+- `"both"` → load both `ai-gemini-to-bedrock.md` and `ai-openai-to-bedrock.md`
+- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
 
 ---
 
@@ -125,6 +126,18 @@ If `ai_token_volume` is `"high"`, generate a `tiered_strategy`:
 
 Set `tiered_strategy: null` for low/medium volume.
 
+**Intelligent Prompt Routing — automated alternative to manual tiering:**
+If `ai_token_volume` is `"high"` AND the selected models are within the same family
+(e.g., Claude Haiku + Claude Sonnet, or Nova Lite + Nova Pro), note Bedrock Intelligent
+Prompt Routing as an option. It automatically routes each request to the cheapest model
+that can handle it at adequate quality — the AWS-native automation of the tiered strategy above.
+
+> Intelligent Prompt Routing only routes within a single model family. It does NOT replace
+> cross-provider routing (e.g., Claude ↔ GPT-4o). If the startup was using OpenRouter or
+> LiteLLM to route across providers, they still need app-level routing for cross-family calls.
+> One-line caveat: adds a routing-prediction latency hop; verify model support at
+> docs.aws.amazon.com/bedrock/latest/userguide/prompt-routing.html before recommending.
+
 ---
 
 ## Part 1C: Multi-Model Coordination Warnings
@@ -219,6 +232,7 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 | Direct SDK (OpenAI)  | OpenAI                    | Mantle (OpenAI-compat) | Change `OPENAI_BASE_URL` + `OPENAI_API_KEY` + model string (zero code changes)                       |
 | Direct SDK           | Vertex AI                 | boto3 Converse API     | `generate_content()` → `converse()`                                                                  |
 | Direct SDK           | OpenAI                    | boto3 Converse API     | `completions.create()` → `converse()` (use if Mantle region unavailable or Converse features needed) |
+| Direct SDK           | Anthropic                 | boto3 Converse API     | `messages.create()` → `converse()` with Claude model ID on Bedrock                                   |
 | LangChain            | ChatVertexAI / ChatOpenAI | ChatBedrock            | Swap import and model_id                                                                             |
 | LlamaIndex           | Vertex / OpenAI LLM       | BedrockConverse        | Swap import                                                                                          |
 | LLM Router (LiteLLM) | Any                       | Config change          | `model="bedrock/<model_id>"` (1 line)                                                                |
@@ -236,6 +250,12 @@ Generate concrete code examples using actual model IDs from the selected Bedrock
 **OpenRouter-specific guidance** (if `gateway_type == "llm_router"` AND `detection_signals` contains OpenRouter evidence):
 
 OpenRouter is a hosted routing service (not self-hosted like LiteLLM). It adds a margin on top of provider pricing. Present three options to the user:
+
+> **If the startup was using OpenRouter primarily for cost-based routing within one model family**
+> (e.g., routing between Claude Haiku and Claude Sonnet, or Nova Lite and Nova Pro),
+> Bedrock Intelligent Prompt Routing is the AWS-native replacement — no routing infrastructure
+> needed. If they routed across providers (e.g., Claude ↔ GPT-4o), they still need
+> app-level or LiteLLM routing after migration.
 
 | Option                          | Action                                                    | Effort    | Trade-off                                                                  |
 | ------------------------------- | --------------------------------------------------------- | --------- | -------------------------------------------------------------------------- |

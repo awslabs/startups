@@ -8,12 +8,12 @@
 
 Read `preferences.json` → `design_constraints.availability` **before** selecting `aws_service`:
 
-| `availability` | PostgreSQL target              | MySQL target              | `multi_az` in aws_config |
-| -------------- | ------------------------------ | ------------------------- | ------------------------ |
-| `single-az`    | RDS PostgreSQL                 | RDS MySQL                 | `false`                  |
-| `multi-az`     | RDS PostgreSQL                 | RDS MySQL                 | `true`                   |
-| `multi-az-ha`  | Aurora PostgreSQL              | Aurora MySQL              | `true`                   |
-| `multi-region` | Aurora PostgreSQL Global Database | Aurora MySQL Global Database | global cluster      |
+| `availability` | PostgreSQL target                 | MySQL target                 | `multi_az` in aws_config |
+| -------------- | --------------------------------- | ---------------------------- | ------------------------ |
+| `single-az`    | RDS PostgreSQL                    | RDS MySQL                    | `false`                  |
+| `multi-az`     | RDS PostgreSQL                    | RDS MySQL                    | `true`                   |
+| `multi-az-ha`  | Aurora PostgreSQL                 | Aurora MySQL                 | `true`                   |
+| `multi-region` | Aurora PostgreSQL Global Database | Aurora MySQL Global Database | global cluster           |
 
 Engine (PostgreSQL vs MySQL) comes from GCP `database_version`, not from Q12/Q13.
 
