@@ -135,6 +135,8 @@ Present applicable optimizations with estimated savings:
 
 For each applicable optimization, calculate before/after monthly cost and show an `optimized_projection` (best-case monthly with all optimizations).
 
+**Post-migration optimization (do not surface during migration):** Model distillation — training a smaller, faster student model from a larger teacher model — can reduce inference costs up to ~75% for high-volume, stable workloads. Requires production traffic, labeled examples, and a teacher/student eval loop. Mention in the estimate summary as: "Once you have 2–4 weeks of Bedrock production traffic, consider model distillation to further reduce costs. See docs.aws.amazon.com/bedrock/latest/userguide/model-distillation.html." Do not recommend distillation before the startup has migrated and validated their workload.
+
 ---
 
 ## Output

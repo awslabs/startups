@@ -125,6 +125,18 @@ If `ai_token_volume` is `"high"`, generate a `tiered_strategy`:
 
 Set `tiered_strategy: null` for low/medium volume.
 
+**Intelligent Prompt Routing — automated alternative to manual tiering:**
+If `ai_token_volume` is `"high"` AND the selected models are within the same family
+(e.g., Claude Haiku + Claude Sonnet, or Nova Lite + Nova Pro), note Bedrock Intelligent
+Prompt Routing as an option. It automatically routes each request to the cheapest model
+that can handle it at adequate quality — the AWS-native automation of the tiered strategy above.
+
+> Intelligent Prompt Routing only routes within a single model family. It does NOT replace
+> cross-provider routing (e.g., Claude ↔ GPT-4o). If the startup was using OpenRouter or
+> LiteLLM to route across providers, they still need app-level routing for cross-family calls.
+> One-line caveat: adds a routing-prediction latency hop; verify model support at
+> docs.aws.amazon.com/bedrock/latest/userguide/prompt-routing.html before recommending.
+
 ---
 
 ## Part 1C: Multi-Model Coordination Warnings
@@ -236,6 +248,12 @@ Generate concrete code examples using actual model IDs from the selected Bedrock
 **OpenRouter-specific guidance** (if `gateway_type == "llm_router"` AND `detection_signals` contains OpenRouter evidence):
 
 OpenRouter is a hosted routing service (not self-hosted like LiteLLM). It adds a margin on top of provider pricing. Present three options to the user:
+
+> **If the startup was using OpenRouter primarily for cost-based routing within one model family**
+> (e.g., routing between Claude Haiku and Claude Sonnet, or Nova Lite and Nova Pro),
+> Bedrock Intelligent Prompt Routing is the AWS-native replacement — no routing infrastructure
+> needed. If they routed across providers (e.g., Claude ↔ GPT-4o), they still need
+> app-level or LiteLLM routing after migration.
 
 | Option                          | Action                                                    | Effort    | Trade-off                                                                  |
 | ------------------------------- | --------------------------------------------------------- | --------- | -------------------------------------------------------------------------- |
