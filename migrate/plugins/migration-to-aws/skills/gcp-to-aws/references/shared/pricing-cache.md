@@ -248,12 +248,37 @@ VPC itself is free. Add-ons:
 
 ### CloudWatch
 
-| Metric                        | Rate   |
-| ----------------------------- | ------ |
-| Log ingestion per GB          | $0.50  |
-| Log storage per GB-month      | $0.03  |
-| Insights query per GB scanned | $0.005 |
-| Custom metric per month       | $0.30  |
+| Metric                                   | Rate   | Notes                                                                            |
+| ---------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| Log ingestion per GB (Standard)          | $0.50  |                                                                                  |
+| Log ingestion per GB (Infrequent Access) | $0.25  | 50% cheaper than Standard; no Live Tail, subscription filters, or metric filters |
+| Log storage per GB-month                 | $0.03  | Same for both Standard and Infrequent Access                                     |
+| Insights query per GB scanned            | $0.005 | Same for both log classes                                                        |
+| Custom metric per month (≤10K)           | $0.30  | Flat rate at startup scale; $0.10 for 10K–250K, $0.05 for 250K+                  |
+| Standard alarm per month                 | $0.10  |                                                                                  |
+| High-resolution alarm per month          | $0.30  |                                                                                  |
+| Dashboard per month (first 3 free)       | $3.00  |                                                                                  |
+
+Free tier (not subtracted in estimates — startup apps often exceed quickly):
+
+- 5 GB log ingestion + archive + Insights queries
+- 10 custom metrics + 10 standard alarms
+- 3 dashboards (50 metrics each)
+
+### X-Ray
+
+| Metric                       | Rate  | Notes                 |
+| ---------------------------- | ----- | --------------------- |
+| Traces recorded per million  | $5.00 | First 100K free/month |
+| Traces retrieved per million | $0.50 | First 1M free/month   |
+| Traces scanned per million   | $0.50 | First 1M free/month   |
+
+### CloudWatch Container Insights (ECS/Fargate)
+
+| Metric                       | Rate  | Notes                                      |
+| ---------------------------- | ----- | ------------------------------------------ |
+| Per-task performance log/GB  | $0.50 | Same as standard log ingestion             |
+| Cluster/service/task metrics | $0.30 | Per custom metric — can accumulate quickly |
 
 ### SQS
 
@@ -664,15 +689,20 @@ Use alongside Bedrock pricing to calculate migration ROI.
 
 ### Gemini (Standard Tier)
 
-Prices per 1M tokens.
+Prices per 1M tokens. Source: [ai.google.dev/gemini-api/docs/pricing](https://ai.google.dev/gemini-api/docs/pricing), verified May 2026.
 
-| Model                  | Input $/1M | Output $/1M | Context | Tier     |
-| ---------------------- | ---------- | ----------- | ------- | -------- |
-| Gemini 3.1 Pro Preview | 2.00       | 12.00       | 1M      | flagship |
-| Gemini 2.5 Pro         | 1.25       | 10.00       | 1M      | flagship |
-| Gemini 2.5 Flash       | 0.30       | 2.50        | 1M      | fast     |
-| Gemini 2.0 Flash       | 0.10       | 0.40        | 1M      | fast     |
-| Gemini 2.0 Flash Lite  | 0.075      | 0.30        | 1M      | budget   |
+| Model                 | Input $/1M | Output $/1M | Context | Tier     |
+| --------------------- | ---------- | ----------- | ------- | -------- |
+| Gemini 3.5 Flash      | 1.50       | 9.00        | 1M      | flagship |
+| Gemini 3.1 Pro        | 2.00       | 12.00       | 1M      | flagship |
+| Gemini 3.1 Flash-Lite | 0.25       | 1.50        | 1M      | budget   |
+| Gemini 2.5 Pro        | 1.25       | 10.00       | 1M      | flagship |
+| Gemini 2.5 Flash      | 0.30       | 2.50        | 1M      | fast     |
+| Gemini 2.0 Flash      | 0.10       | 0.40        | 1M      | fast     |
+| Gemini 2.0 Flash Lite | 0.075      | 0.30        | 1M      | budget   |
+
+> **Gemini 3.1 Pro breakpoint pricing:** $4.00/$18.00 per 1M for prompts >200k tokens (vs $2.00/$12.00 for ≤200k). Table above uses ≤200k rates.
+> **Gemini 3.5 Flash** is now GA and the current flagship Flash model, replacing Gemini 2.5 Flash as the primary Flash-tier recommendation. At $1.50/$9.00 it is 5x more expensive than Gemini 2.5 Flash — the Bedrock cost savings case is significantly stronger against 3.5 Flash.
 
 ### OpenAI (Standard Tier)
 
