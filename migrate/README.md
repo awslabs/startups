@@ -36,7 +36,7 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 ### Codex
 
 ```bash
-codex plugin marketplace add awslabs/startups --sparse migrate/plugins
+codex plugin marketplace add awslabs/startups
 codex plugin install migration-to-aws
 ```
 

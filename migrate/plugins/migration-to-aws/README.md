@@ -49,7 +49,7 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 
 ```bash
 # Add the marketplace
-codex plugin marketplace add awslabs/startups --sparse migrate/plugins
+codex plugin marketplace add awslabs/startups
 
 # Install the plugin
 codex plugin install migration-to-aws
@@ -100,6 +100,7 @@ codex plugin install migration-to-aws
 - AWS CLI configured with appropriate credentials
 - At least one input source: Terraform files, application code, or GCP billing data
 - **For AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
+- **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
 ## Development
 
