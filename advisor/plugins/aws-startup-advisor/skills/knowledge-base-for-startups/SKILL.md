@@ -1,6 +1,6 @@
 ---
 name: knowledge-base-for-startups
-description: "AWS Startups reference content — Activate FAQ, credits guide, programs, partner offers, sample architectures, and 277+ learn articles spanning generative AI, cloud architecture, cost optimization, security, fundraising, go-to-market, and real-world startup case studies. Use when the user asks factual questions about AWS Activate (eligibility, credits, programs, providers), wants a sample architecture or solution guide, or needs an AWS-curated learn article on a specific startup topic. For copy-paste AI prompts (RAG chatbot, MVP scaffold, security baseline, GPU quota, etc.), see the prompt-library-for-startups skill. Do not use for: account-specific lookups (credits balance, Activate membership status, application status), real-time event listings beyond the events stub, or content not present in the bundled `references/` tree."
+description: "AWS Startups reference content — Activate FAQ, credits guide, programs, partner offers, sample architectures, and hundreds of learn articles spanning generative AI, cloud architecture, cost optimization, security, fundraising, go-to-market, and real-world startup case studies. Use when the user asks factual questions about AWS Activate (eligibility, credits, programs, providers), wants a sample architecture or solution guide, or needs an AWS-curated learn article on a specific startup topic. For copy-paste AI prompts (RAG chatbot, MVP scaffold, security baseline, GPU quota, etc.), see the prompt-library-for-startups skill. Do not use for: account-specific lookups (credits balance, Activate membership status, application status), real-time event listings beyond the events stub, or content not present in the bundled `references/` tree."
 ---
 
 # AWS Startup Advisor — Knowledge Base
@@ -19,21 +19,21 @@ Reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups
 
 Three files are indexes, not articles. They have a **Keywords column** — filter by keyword first, then open the linked detail file.
 
-- **[references/learn.md](references/learn.md)** — 277 learn articles, 8 categories (genai, general, getting-started, architecture, business-growth, case-studies, cost-optimization, security). Each row: title, one-line summary, keywords, link into `references/learn/<category>/<slug>.md`.
-- **[references/offers.md](references/offers.md)** — 13 publicly-viewable AWS Activate partner offers with keywords + links into `references/offers/<slug>.md`. Offers that require Activate sign-in are not captured here; direct the user to `<https://aws.amazon.com/startups/offers>` for the full list.
-- **[references/build.md](references/build.md)** — 22 sample architectures and solution guides. Two sub-sections:
-  - **Publicly-viewable solutions** (14 rows) link to local `references/build/<slug>.md` with the Overview, AWS services used, and a primary Get-Started link (workshop URL or GitHub sample).
-  - **Sign-in required** (8 rows) are gated. Recommend them by title + keywords and hand over the Live URL: _"There's a Build sample that might be useful — please sign in to view it at [URL]."_
+- **[references/learn.md](references/learn.md)** — hundreds of learn articles across a dozen categories (genai, general, getting-started, architecture, business-growth, case-studies, cost-optimization, security, and more). Each row: title, one-line summary, keywords, link into `references/learn/<category>/<slug>.md`.
+- **[references/offers.md](references/offers.md)** — publicly-viewable AWS Activate partner offers with keywords + links into `references/offers/<slug>.md`. Offers that require Activate sign-in are not captured here; direct the user to `<https://aws.amazon.com/startups/offers>` for the full list.
+- **[references/build.md](references/build.md)** — sample architectures and solution guides. Two sub-sections:
+  - **Publicly-viewable solutions** link to local `references/build/<slug>.md` with the Overview, AWS services used, and a primary Get-Started link (workshop URL or GitHub sample).
+  - **Sign-in required** entries are gated. Recommend them by title + keywords and hand over the Live URL: _"There's a Build sample that might be useful — please sign in to view it at [URL]."_
 
 ## Reference pages — full-topic content, read directly
 
-| File                                                 | Topic                                                                                                             |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| [references/faq.md](references/faq.md)               | 111-question Activate FAQ — membership, Builder ID, credits, providers, offers, events, showcase, troubleshooting |
-| [references/credits.md](references/credits.md)       | AWS Activate Credits — how to apply, eligibility, package tiers, terms                                            |
-| [references/programs.md](references/programs.md)     | AWS Startups programs — Accelerators and Lofts currently running                                                  |
-| [references/providers.md](references/providers.md)   | AWS Activate Providers — accelerators, VCs, Provider Central, how to apply                                        |
-| [references/contact-us.md](references/contact-us.md) | Support channels and the Ask AWS Startups assistant                                                               |
+| File                                                 | Topic                                                                                                              |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| [references/faq.md](references/faq.md)               | Comprehensive Activate FAQ — membership, Builder ID, credits, providers, offers, events, showcase, troubleshooting |
+| [references/credits.md](references/credits.md)       | AWS Activate Credits — how to apply, eligibility, package tiers, terms                                             |
+| [references/programs.md](references/programs.md)     | AWS Startups programs — Accelerators and Lofts currently running                                                   |
+| [references/providers.md](references/providers.md)   | AWS Activate Providers — accelerators, VCs, Provider Central, how to apply                                         |
+| [references/contact-us.md](references/contact-us.md) | Support channels and the Ask AWS Startups assistant                                                                |
 
 ## Live-URL redirects — point users at the live page
 

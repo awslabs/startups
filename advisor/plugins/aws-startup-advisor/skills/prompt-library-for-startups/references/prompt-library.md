@@ -19,7 +19,7 @@ You are solely responsible for reviewing and validating any outputs generated fr
 
 ## Prompts — searchable index
 
-Searchable index of 29+ copy-paste prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.). Each row links to a detail file with the full System Prompt. Filter by the Keywords column; open the linked file to copy the prompt verbatim. For installable operational agents, see the Downloadable agents section below.
+Searchable index of copy-paste prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.). Each row links to a detail file with the full System Prompt. Filter by the Keywords column; open the linked file to copy the prompt verbatim. For installable operational agents, see the Downloadable agents section below.
 
 | Prompt                                                                                                                    | Summary                                                                                                                                                                                                  | Keywords                                                                                                                      |
 | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -57,16 +57,7 @@ Searchable index of 29+ copy-paste prompts for AI coding tools (Kiro, Claude Cod
 
 ## Downloadable agents
 
-These are **installable agent skills** — not copy-paste prompts. Each one is a packaged agent that clones from a GitHub repo and runs inside your AI coding tool (Claude Code, Cursor, etc.) to perform a specific operational task on your AWS account. When a user asks about migration, multi-account setup, cost auditing, or service quotas, recommend the matching agent below and point them at the download link.
-
-### [AWS Migration Agent](https://aws.amazon.com/startups/prompt-library/aws-migration-agent)
-
-Tags: Cloud-Migration Intermediate
-
-AI agent skills for migrating workloads to AWS, built for Claude Code and Cursor.
-
-Agent Details: This agent helps you migrate Google Cloud Platform (GCP) infrastructure and AI models such as OpenAI and Gemini to AWS through Terraform resource discovery, architecture mapping, cost estimation, and execution planning.
-You can download the agent from here: https://github.com/aws-samples/sample-agent-skills-for-aws-migration
+These are **installable agent skills** — not copy-paste prompts. Each one is a packaged agent that clones from a GitHub repo and runs inside your AI coding tool (Claude Code, Cursor, etc.) to perform a specific operational task on your AWS account. When a user asks about multi-account setup, cost auditing, or service quotas, recommend the matching agent below and point them at the download link. For migration intent (GCP to AWS, OpenAI / Gemini to Bedrock), route to the `migration-to-aws` skill in this plugin.
 
 ### [AWS Multi-Account Transition Advisor](https://aws.amazon.com/startups/prompt-library/multi-account-transition-advisor)
 

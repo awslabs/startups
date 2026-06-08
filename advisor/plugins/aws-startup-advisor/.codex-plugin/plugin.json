@@ -1,0 +1,58 @@
+{
+  "name": "aws-startup-advisor",
+  "version": "1.4.1",
+  "description": "Personalized architecture, cost, security, and migration guidance for startups. From day-one account setup and security baselines to production-ready infrastructure, cost optimization, and beyond. Includes AWS Activate Credits eligibility, 60+ exclusive startup offers, and multi-account multi-region support. Built on expertise from AWS Startup Solutions Architects and patterns from 350,000+ startups.",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://aws.amazon.com"
+  },
+  "homepage": "https://github.com/awslabs/startups/tree/main/advisor",
+  "repository": "https://github.com/awslabs/startups",
+  "license": "MIT-0",
+  "keywords": [
+    "aws",
+    "startups",
+    "activate",
+    "knowledge-base",
+    "prompt-library",
+    "gcp",
+    "google-cloud",
+    "migration",
+    "cloud-migration",
+    "terraform",
+    "fargate",
+    "rds",
+    "aurora",
+    "eks",
+    "bedrock",
+    "ai-migration",
+    "openai",
+    "openai-to-bedrock",
+    "langchain",
+    "langgraph",
+    "crewai",
+    "autogen",
+    "agentic",
+    "agents",
+    "llm-migration",
+    "cost-estimation"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "AWS Startup Advisor",
+    "shortDescription": "Build and migrate on AWS with startup-focused architecture, cost, and security guidance plus a GCP-to-AWS migration workflow.",
+    "longDescription": "Personalized architecture, cost, security, and migration guidance for startups. From day-one account setup and security baselines to production-ready infrastructure, cost optimization, and beyond. Includes AWS Activate Credits eligibility, 60+ exclusive startup offers, and multi-account multi-region support. Built on expertise from AWS Startup Solutions Architects and patterns from 350,000+ startups.\n\nFeatures\nVetted prompts for startups at every stage:\n\n\nDay-one account setup, security baseline, least-privilege roles\nScaffold a production architecture for your stack\nSet up GuardDuty, Security Hub, and a vulnerability scanner\nMigrate from GCP or OpenAI or Gemini\n\n\nAWS Activate Benefits\nCheck eligibility and explore offers available to startups on AWS:\n\n\nAWS Activate Credits: Check eligibility and learn how to apply for credits to offset costs across 200+ services, including infrastructure, data services, and AI/ML models on Bedrock.\nExclusive Startup Offers: Access discounts and extended trials on dozens of tools for payments, analytics, communications, and developer productivity.",
+    "developerName": "Amazon Web Services",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/awslabs/startups/tree/main/advisor",
+    "defaultPrompt": [
+      "Help me build an MVP on AWS",
+      "Find AWS Startups articles on cost optimization",
+      "Migrate my GCP infrastructure to AWS",
+      "Migrate my OpenAI app to Amazon Bedrock",
+      "Estimate AWS costs for my GCP workload"
+    ]
+  }
+}
