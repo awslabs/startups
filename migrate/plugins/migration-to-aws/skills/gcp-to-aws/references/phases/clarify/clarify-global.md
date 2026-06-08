@@ -200,7 +200,7 @@ Default: B — no constraint, evaluate full compute options.
 
 **Rationale:** Availability requirements drive database engine selection, deployment topology, and whether multi-AZ is mandatory. Aurora Global Database and multi-region compute are only recommended when Catastrophic is selected AND Q1 confirms global users — both signals are required.
 
-**Cloud SQL PostgreSQL / MySQL → RDS vs Aurora (decision order):** For customers on Cloud SQL (PostgreSQL or MySQL), **Q6 is the only question that selects the AWS product family** — **RDS** (PostgreSQL or MySQL, matching the Cloud SQL engine) vs **Aurora** (Aurora PostgreSQL or Aurora MySQL). **Q12–Q13 never override Q6**; they tune sizing, replicas, storage/I/O billing, and Aurora variants **after** Q6 has chosen RDS or Aurora. When Cloud SQL is detected, you may add: *"For dev/staging or workloads where brief outage is tolerable, RDS PostgreSQL is usually simpler and cheaper; Aurora is for mission-critical HA needs."*
+**Cloud SQL PostgreSQL / MySQL → RDS vs Aurora (decision order):** For customers on Cloud SQL (PostgreSQL or MySQL), **Q6 is the only question that selects the AWS product family** — **RDS** (PostgreSQL or MySQL, matching the Cloud SQL engine) vs **Aurora** (Aurora PostgreSQL or Aurora MySQL). **Q12–Q13 never override Q6**; they tune sizing, replicas, storage/I/O billing, and Aurora variants **after** Q6 has chosen RDS or Aurora. When Cloud SQL is detected, you may add: _"For dev/staging or workloads where brief outage is tolerable, RDS PostgreSQL is usually simpler and cheaper; Aurora is for mission-critical HA needs."_
 
 **Context for user:** When asking, include these descriptions so the user can self-select accurately:
 
@@ -259,12 +259,12 @@ Default: B — `availability: "multi-az"`.
 > D) Flexible — we can schedule one if needed
 > E) I don't know
 
-| Answer         | Recommendation Impact                                                                                                                                                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Weekly window  | Standard cutover with DNS switchover during window; **pg_dump/pg_restore** for PostgreSQL <10GB; **pgcopydb** for larger databases — parallel copying cuts migration time significantly; no DMS licensing, no replication lag risk |
-| Monthly window | Cutover timed to monthly window; pg_dump/pg_restore or **pgcopydb** depending on DB size; blue/green for application layer                                                                                                         |
+| Answer         | Recommendation Impact                                                                                                                                                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weekly window  | Standard cutover with DNS switchover during window; **pg_dump/pg_restore** for PostgreSQL <10GB; **pgcopydb** for larger databases — parallel copying cuts migration time significantly; no DMS licensing, no replication lag risk                          |
+| Monthly window | Cutover timed to monthly window; pg_dump/pg_restore or **pgcopydb** depending on DB size; blue/green for application layer                                                                                                                                  |
 | Zero downtime  | **AWS DMS required** for live database replication; blue/green deployment for application layer; **RDS blue/green deployments** (RDS path per Q6) or **Aurora blue/green deployments** (Aurora path per Q6); Route 53 weighted routing for traffic shifting |
-| Flexible       | Recommend scheduling a weekly window to enable pg_dump/pgcopydb approach; falls back to DMS if window cannot be arranged                                                                                                           |
+| Flexible       | Recommend scheduling a weekly window to enable pg_dump/pgcopydb approach; falls back to DMS if window cannot be arranged                                                                                                                                    |
 
 Interpret:
 

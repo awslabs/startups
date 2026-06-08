@@ -79,9 +79,9 @@ For resources not covered by fast-path:
 
 If rubric or fast-path would select Aurora when `availability` is `single-az` or `multi-az`, **replace with RDS**. If rubric would select RDS when `availability` is `multi-az-ha` or `multi-region`, **replace with Aurora**. Add `"User Preference: availability=<value>"` to `rubric_applied`. Q12/Q13 must not override this gate.
 
-8. **Set `human_expertise_required`**: If the BigQuery specialist gate applied, already `true`. Otherwise set `false` unless another rubric explicitly requires it. This field is REQUIRED on every resource in the output.
+1. **Set `human_expertise_required`**: If the BigQuery specialist gate applied, already `true`. Otherwise set `false` unless another rubric explicitly requires it. This field is REQUIRED on every resource in the output.
 
-9. **Preferred AWS target check**: **Skip** if `aws_service` is **`Deferred — specialist engagement`**. **Skip Aurora substitution** for Cloud SQL when Q6 availability is `single-az` or `multi-az` (RDS is correct). Otherwise verify the selected `aws_service` aligns with the Preferred AWS Target Services table in `design-refs/fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
+1. **Preferred AWS target check**: **Skip** if `aws_service` is **`Deferred — specialist engagement`**. **Skip Aurora substitution** for Cloud SQL when Q6 availability is `single-az` or `multi-az` (RDS is correct). Otherwise verify the selected `aws_service` aligns with the Preferred AWS Target Services table in `design-refs/fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
 
 ## Step 3: Handle Secondary Resources
 
