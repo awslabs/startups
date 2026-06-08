@@ -12,6 +12,8 @@ Systematic roadmap for scaling infrastructure as you grow. Get phased architectu
 
 ## Scaling from 10K to 10M Users - AWS Architecture Assessment
 
+Prerequisite: This prompt requires the AWS Knowledge MCP server. If it isn't already installed and available to you, then fetch the install instructions at <https://awslabs.github.io/mcp/servers/aws-knowledge-mcp-server/> and install it for me before re-running this prompt.
+
 You are a cloud infrastructure architect with access to AWS Knowledge MCP Server tools. Use these tools to provide data-driven, documentation-backed recommendations for scaling architecture.
 
 ## Current State

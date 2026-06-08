@@ -177,30 +177,37 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 
 Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > Q19 source model (baseline only).
 
-> A) Gemini 2.5 Flash (standard, no thinking budget)
-> B) Gemini 2.5 Flash Thinking (thinking budget enabled — variable output pricing)
-> C) Gemini 2.5 Pro
-> D) Gemini 3 Pro / 3.1 Pro Preview
-> E) Gemini Flash (2.0 Flash) or Gemini Flash 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
-> F) Gemini Pro 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
-> G) GPT-3.5 Turbo
-> H) GPT-4 / GPT-4 Turbo
-> I) GPT-4o
-> J) GPT-5.4 / GPT-5.4 Mini / GPT-5.4 Nano
-> K) GPT-5 / GPT-5.x (older)
-> L) GPT-5.5 / GPT-5.5 Pro
-> M) o-series (o1, o3)
-> N) Other / Multiple models
-> O) I don't know
+> A) Gemini 3.5 Flash (GA — current flagship Flash model)
+> B) Gemini 3.5 Flash Thinking (thinking budget enabled)
+> C) Gemini 3.1 Pro
+> D) Gemini 3.1 Flash-Lite (high-volume, low-cost)
+> E) Gemini 2.5 Flash (standard, no thinking budget)
+> F) Gemini 2.5 Flash Thinking (thinking budget enabled — variable output pricing)
+> G) Gemini 2.5 Pro
+> H) Gemini 3 Pro / 3.1 Pro Preview
+> I) Gemini Flash (2.0 Flash) or Gemini Flash 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
+> J) Gemini Pro 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
+> K) GPT-3.5 Turbo
+> L) GPT-4 / GPT-4 Turbo
+> M) GPT-4o
+> N) GPT-5.4 / GPT-5.4 Mini / GPT-5.4 Nano
+> O) GPT-5 / GPT-5.x (older)
+> P) GPT-5.5 / GPT-5.5 Pro
+> Q) o-series (o1, o3)
+> R) Other / Multiple models
+> S) I don't know
 
 | Source Model                   | Baseline Bedrock Recommendation                                                                                                                                                 | Pricing Context                                                                                                                                                                                                                                                              |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gemini 3.5 Flash (GA)          | Nova Lite ($0.06/$0.24) — 94% cheaper                                                                                                                                           | Gemini 3.5 Flash is $1.50/$9.00 — 5x more expensive than old 2.5 Flash; Nova Lite is the cost-equivalent; very strong migration case                                                                                                                                         |
+| Gemini 3.5 Flash Thinking      | Claude Sonnet 4.6 with extended thinking ($3/$15)                                                                                                                               | At $1.50/$9.00 base + thinking tokens, Sonnet 4.6 is comparable or cheaper at full thinking; profile actual thinking usage before committing                                                                                                                                 |
+| Gemini 3.1 Flash-Lite          | Nova Micro ($0.035/$0.14) — 88% cheaper; or Nova Lite ($0.06/$0.24) — 76% cheaper                                                                                               | Gemini 3.1 Flash-Lite is $0.25/$1.50; strong Bedrock cost case                                                                                                                                                                                                               |
 | Gemini 2.5 Flash (standard)    | Nova Lite ($0.06/$0.24) — 88% cheaper                                                                                                                                           | Gemini 2.5 Flash is $0.30/$2.50; Nova Lite is the cost-equivalent; strong migration case                                                                                                                                                                                     |
 | Gemini 2.5 Flash Thinking      | Claude Sonnet 4.6 with extended thinking ($3/$15)                                                                                                                               | Thinking output pricing on Gemini 2.5 Flash ranges $0.60–$3.50/M depending on thinking budget; at full thinking budget Sonnet 4.6 is comparable or cheaper; flag that thinking token costs vary and user should profile their actual thinking budget usage before committing |
 | Gemini 2.5 Pro                 | Nova 2 Pro ($1.38/$11) — 9% cheaper; or Nova Pro ($0.80/$3.20) — 62% cheaper                                                                                                    | Gemini 2.5 Pro is $1.25/$10; migration case is cost + AWS consolidation                                                                                                                                                                                                      |
-| Gemini 3 Pro / 3.1 Pro Preview | Claude Sonnet 4.6 ($3/$15) — agentic reliability; or Nova 2 Pro ($1.38/$11) — cost                                                                                              | Gemini 3.1 Pro Preview is $2/$12 — cheaper than Sonnet 4.6; migration case is agentic reliability and AWS ecosystem, NOT cost. Be honest: Gemini 3.1 Pro leads on general benchmarks.                                                                                        |
-| Gemini Flash 1.5 / 2.0 (older) | Nova Lite ($0.06/$0.24) or Nova Micro ($0.035/$0.14) — **flag Gemini 1.5 Flash as EOL (Sep 2025); recommend upgrading source model to 2.5 Flash before or alongside migration** | Strong Bedrock cost savings; 1.5 Flash is past EOL so migration is doubly urgent                                                                                                                                                                                             |
-| Gemini Pro 1.5 (older)         | Claude Sonnet 4.6 ($3/$15) — **flag Gemini 1.5 Pro as EOL (Sep 2025); recommend upgrading source model to 2.5 Pro or 3.x Pro before or alongside migration**                    | 1.5 Pro is past EOL; migration to Bedrock and source model upgrade should be planned together                                                                                                                                                                                |
+| Gemini 3 Pro / 3.1 Pro         | Claude Sonnet 4.6 ($3/$15) — agentic reliability; or Nova 2 Pro ($1.38/$11) — cost                                                                                              | Gemini 3.1 Pro is $2/$12 — cheaper than Sonnet 4.6; migration case is agentic reliability and AWS ecosystem, NOT cost. Be honest: Gemini 3.1 Pro leads on general benchmarks.                                                                                                |
+| Gemini Flash 1.5 / 2.0 (older) | Nova Lite ($0.06/$0.24) or Nova Micro ($0.035/$0.14) — **flag Gemini 1.5 Flash as EOL (Sep 2025); recommend upgrading source model to 3.5 Flash before or alongside migration** | Strong Bedrock cost savings; 1.5 Flash is past EOL so migration is doubly urgent                                                                                                                                                                                             |
+| Gemini Pro 1.5 (older)         | Claude Sonnet 4.6 ($3/$15) — **flag Gemini 1.5 Pro as EOL (Sep 2025); recommend upgrading source model to 3.1 Pro before or alongside migration**                               | 1.5 Pro is past EOL; migration to Bedrock and source model upgrade should be planned together                                                                                                                                                                                |
 | GPT-3.5 Turbo                  | Claude Haiku 4.5 ($1/$5) — cost-equivalent                                                                                                                                      | Haiku is faster and cheaper                                                                                                                                                                                                                                                  |
 | GPT-4 / GPT-4 Turbo            | Claude Sonnet 4.6 ($3/$15) — quality equivalent                                                                                                                                 | Major savings: GPT-4 Turbo is $10/$30 vs Sonnet $3/$15                                                                                                                                                                                                                       |
 | GPT-4o                         | Claude Sonnet 4.6 ($3/$15) — performance equivalent                                                                                                                             | Modest savings on output; input slightly higher on Bedrock                                                                                                                                                                                                                   |
