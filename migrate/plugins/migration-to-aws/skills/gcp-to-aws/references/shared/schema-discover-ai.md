@@ -31,7 +31,7 @@ Focused profile of AI/ML workloads including models, capabilities, integration p
     "confidence_level": "very_high",
     "total_models_detected": 2,
     "languages_found": ["python"],
-    "ai_source": "gemini|openai|both|other",
+    "ai_source": "gemini|openai|anthropic|both|other",
     "inferred_from_iac": false
   },
 
@@ -149,7 +149,7 @@ Focused profile of AI/ML workloads including models, capabilities, integration p
 - `pattern` — Integration pattern in `integration` object: `direct_sdk`, `framework`, `rest_api`, `mixed`, or `unknown` when not inferable (typical for IaC-only profiles) (NOT `integration_type`, `method`)
 - `gateway_type` — Gateway/router type in `integration` object: `"llm_router"`, `"api_gateway"`, `"voice_platform"`, `"framework"`, `"direct"`, or `null`
 - `capabilities_summary` — Boolean map in `integration` object (NOT `capabilities`, `feature_flags`)
-- `ai_source` — Source AI provider in `summary` object: `"gemini"`, `"openai"`, `"both"`, or `"other"`
+- `ai_source` — Source AI provider in `summary` object: `"gemini"`, `"openai"`, `"anthropic"`, `"both"`, or `"other"`
 
 **Key Fields:**
 

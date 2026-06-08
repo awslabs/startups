@@ -7,6 +7,240 @@
 
 ---
 
+## Route Detection
+
+Before executing Steps 1–6, determine which route applies:
+
+```
+IF gcp-resource-inventory.json does NOT exist
+   AND ai-workload-profile.json exists
+THEN route = "ai_only"
+
+ELSE
+  route = "infra"   // covers infra-only, hybrid infra+AI, and billing-only
+END
+```
+
+**AI-only route** executes Steps 1A–6A below.
+**Infra route** executes Steps 1–6 below (original behavior, unchanged).
+
+---
+
+## AI-Only Route (Steps 1A–6A)
+
+> Used when only `ai-workload-profile.json` exists — no Terraform, no billing data.
+> Infrastructure stays on GCP; only AI/LLM calls move to AWS Bedrock.
+
+### Step 1A: Compute AI complexity_signal
+
+Read from `ai-workload-profile.json`:
+
+| Input                     | Source                     | Key                                                                                |
+| ------------------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| `model_count`             | `ai-workload-profile.json` | Count of distinct entries in `models[]`                                            |
+| `is_agentic`              | `ai-workload-profile.json` | `agentic_profile.is_agentic == true`                                               |
+| `has_multi_model_routing` | `ai-workload-profile.json` | `integration.gateway_type` is `"openrouter"`, `"litellm"`, `"kong"`, or `"apigee"` |
+| `has_multiple_providers`  | `ai-workload-profile.json` | `summary.ai_source == "both"` or distinct provider values across `models[]` > 1    |
+| `capability_count`        | `ai-workload-profile.json` | Count of `true` values in `integration.capabilities_summary`                       |
+
+**Classify (first match wins, top to bottom):**
+
+```
+IF is_agentic == true
+   OR has_multi_model_routing == true
+   OR model_count > 3
+   OR has_multiple_providers == true
+THEN ai_complexity_signal = "complex"
+
+ELSE IF model_count == 1
+        AND is_agentic != true
+        AND has_multi_model_routing != true
+        AND capability_count <= 2
+THEN ai_complexity_signal = "likely_simple"
+
+ELSE
+  ai_complexity_signal = "standard"
+END
+```
+
+**Fast-path eligibility:** Always `false` for AI-only route — AI profiles always route to full Clarify.
+
+```
+eligible_for_clarify_fast_path = false
+```
+
+---
+
+### Step 2A: Build per-token price comparison
+
+**Purpose:** Show the user what their models map to on Bedrock and whether the per-token
+price is higher, lower, or roughly equivalent. Do NOT compute a monthly dollar total —
+usage volume is unknown at Discover time and will be collected in Clarify (Q3, Q7).
+
+For each model in `models[]` of `ai-workload-profile.json`, map to the closest Bedrock
+equivalent using the table below, then look up both source and Bedrock per-token prices
+from `references/shared/pricing-cache.md` (Source Provider Pricing + Bedrock Models sections).
+
+**Source model → Bedrock equivalent mapping:**
+
+| Source model pattern                            | Bedrock equivalent         | Bedrock model ID                           |
+| ----------------------------------------------- | -------------------------- | ------------------------------------------ |
+| `gpt-4o`, `gpt-4.1`, `gpt-5.*` flagship         | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `gpt-4o-mini`, `gpt-4.1-mini`, `gpt-5.*-mini`   | Claude Haiku 4.5           | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `gpt-3.5-turbo`, `gpt-4.1-nano`, `gpt-5.*-nano` | Amazon Nova Micro          | `amazon.nova-micro-v1:0`                   |
+| `o3`, `o4-mini`, reasoning models               | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `gemini-2.5-pro`, `gemini-3.*-pro`              | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `gemini-2.5-flash`, `gemini-2.0-flash`          | Claude Haiku 4.5           | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `gemini-2.0-flash-lite`                         | Amazon Nova Lite           | `amazon.nova-lite-v1:0`                    |
+| `claude-3-5-sonnet`, `claude-sonnet-*`          | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `claude-3-5-haiku`, `claude-haiku-*`            | Claude Haiku 4.5           | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `claude-3-opus`, `claude-opus-*`                | Claude Opus 4.6            | `anthropic.claude-opus-4-6-v1`             |
+| `text-embedding-*`, `*-embedding-*`             | Amazon Titan Embeddings v2 | `amazon.titan-embed-text-v2:0`             |
+| `dall-e-*`, `imagen-*`, image generation        | Amazon Nova Canvas         | `amazon.nova-canvas-v1:0`                  |
+| `whisper-*`, speech-to-text                     | Amazon Transcribe          | (non-token service — note separately)      |
+| `tts-*`, text-to-speech                         | Amazon Polly               | (non-token service — note separately)      |
+| Unknown / other                                 | Amazon Nova Pro            | `amazon.nova-pro-v1:0`                     |
+
+For each mapped model pair, compute:
+
+- `source_input_per_1m` and `source_output_per_1m` from pricing-cache.md Source Provider Pricing
+- `bedrock_input_per_1m` and `bedrock_output_per_1m` from pricing-cache.md Bedrock Models
+- `cost_direction`: `"lower"` if both Bedrock prices ≤ source, `"higher"` if both > source, `"mixed"` otherwise
+- `savings_pct`: percentage difference on output price — only include if `cost_direction` is `"lower"` or `"higher"`
+
+**No monthly total is computed at this step.** Monthly estimate requires usage volume
+from Clarify (Q3 `ai_monthly_spend`, Q7 `ai_token_volume`). Set `cost_preview.monthly_estimate: null`
+and note that it will be available after Clarify.
+
+---
+
+### Step 3A: Build key_decisions_ahead
+
+Generate 2-4 bullets based on what was detected in `ai-workload-profile.json`:
+
+| Signal                               | Decision bullet                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| Always                               | "Bedrock model selection for [list detected model IDs, max 3, then '+ N more']" |
+| `is_agentic == true`                 | "Agentic migration path (retarget / AgentCore Harness / Strands)"               |
+| `has_multi_model_routing == true`    | "Multi-model routing strategy on Bedrock (LiteLLM adapter vs native routing)"   |
+| `has_multiple_providers == true`     | "Re-embedding requirements and cascade pair testing across providers"           |
+| `integration.pattern == "streaming"` | "Streaming transport layer (Bedrock streaming vs current SDK)"                  |
+
+Cap at 4 bullets.
+
+---
+
+### Step 4A: Build timeline_hint string
+
+| ai_complexity_signal | timeline_hint                                                        |
+| -------------------- | -------------------------------------------------------------------- |
+| `likely_simple`      | "1-3 weeks (single model swap; confirm after Clarify)"               |
+| `standard`           | "2-6 weeks (multi-model migration; confirm after Clarify)"           |
+| `complex`            | "4-8 weeks (agentic or multi-provider stack; confirm after Clarify)" |
+
+Always append "(confirm after Clarify)" — full classification requires preferences.
+
+---
+
+### Step 5A: Write migration-preview.json (AI-only)
+
+Write `$MIGRATION_DIR/migration-preview.json`:
+
+```json
+{
+  "preview_version": 1,
+  "computed_at": "<ISO 8601 UTC>",
+  "route": "ai_only",
+  "primary_resource_count": 0,
+  "complexity_signal": "standard",
+  "ai_complexity_signal": "standard",
+  "eligible_for_clarify_fast_path": false,
+  "services_summary": [],
+  "ai_summary": {
+    "model_count": 2,
+    "model_ids": ["gpt-4o", "text-embedding-3-small"],
+    "bedrock_targets": [
+      {
+        "source_model": "gpt-4o",
+        "source_input_per_1m": 2.50,
+        "source_output_per_1m": 10.00,
+        "bedrock_equivalent": "Claude Sonnet 4.6",
+        "bedrock_model_id": "anthropic.claude-sonnet-4-6",
+        "bedrock_input_per_1m": 3.00,
+        "bedrock_output_per_1m": 15.00,
+        "cost_direction": "higher"
+      },
+      {
+        "source_model": "text-embedding-3-small",
+        "source_input_per_1m": 0.02,
+        "source_output_per_1m": null,
+        "bedrock_equivalent": "Amazon Titan Embeddings v2",
+        "bedrock_model_id": "amazon.titan-embed-text-v2:0",
+        "bedrock_input_per_1m": 0.02,
+        "bedrock_output_per_1m": null,
+        "cost_direction": "lower"
+      }
+    ],
+    "is_agentic": false,
+    "has_multi_model_routing": false,
+    "gateway_type": "direct"
+  },
+  "cost_preview": {
+    "monthly_estimate": null,
+    "monthly_estimate_note": "Monthly estimate available after Clarify (usage volume collected in Q3, Q7)",
+    "disclaimer": "Per-token prices from pricing-cache.md; full cost analysis in Estimate phase"
+  },
+  "timeline_hint": "2-6 weeks (multi-model migration; confirm after Clarify)",
+  "ai_detected": true,
+  "key_decisions_ahead": [
+    "Bedrock model selection for gpt-4o, text-embedding-3-small",
+    "Streaming transport layer (Bedrock streaming vs current SDK)"
+  ]
+}
+```
+
+**Field rules:**
+
+- `route` is `"ai_only"` for this path
+- `primary_resource_count` is `0` for AI-only runs (no IaC)
+- `complexity_signal` mirrors `ai_complexity_signal` for downstream consumers
+- `services_summary` is `[]` for AI-only runs
+- `ai_summary.bedrock_targets` lists one entry per distinct source model with actual per-token prices
+- `cost_preview.monthly_estimate` is always `null` at Discover time — no invented token volumes
+- `eligible_for_clarify_fast_path` is always `false` for AI-only route
+
+---
+
+### Step 6A: Build preview chat message (AI-only)
+
+Output this block as part of `discover.md` Step 3's user message (chat only — not a file):
+
+```
+### Your AI migration at a glance *(preview — not final)*
+
+| | |
+|---|---|
+| **Models detected** | [model_ids joined by ", "] |
+| **Bedrock targets** | [for each bedrock_target: "source_model → bedrock_equivalent (input: $X/1M → $Y/1M [higher/lower/same])"] |
+| **Routing** | [if has_multi_model_routing: gateway_type + " (multi-model routing)" else "Direct SDK"] |
+| **Per-token cost** | [if any cost_direction == "lower": "Cost savings available — see Estimate" / if all "higher": "Bedrock rates higher per token — migration case is AWS consolidation" / if "mixed": "Mixed — some models cheaper, some higher on Bedrock"] |
+| **Monthly estimate** | Available after Clarify (we'll ask about your usage volume) |
+| **Timeline (rough)** | [timeline_hint] |
+| **Decisions ahead** | [key_decisions_ahead joined by "; "] |
+
+*Full cost breakdown in Estimate; runnable adapter code in Generate.*
+AI workload detected — full Clarify recommended for best results.
+```
+
+Do NOT write this to a file. Chat output only.
+
+---
+
+## Infra Route (Steps 1–6)
+
+> Used when `gcp-resource-inventory.json` exists (infra-only, hybrid infra+AI, or billing-only).
+> Original behavior — unchanged.
+
 ## Step 1: Compute complexity_signal
 
 Read from available discovery artifacts:
@@ -28,16 +262,14 @@ IF has_bigquery
    OR primary_resource_count > 8
    OR (billing_monthly_usd != null AND billing_monthly_usd > 10000)
 THEN complexity_signal = "complex"
-
 ELSE IF primary_resource_count <= 3
-   AND has_database == false
-   AND has_bigquery == false
-   AND is_agentic != true
-   AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
+        AND has_database == false
+        AND has_bigquery == false
+        AND is_agentic != true
+        AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
 THEN complexity_signal = "likely_simple"
-
 ELSE
-   complexity_signal = "standard"
+  complexity_signal = "standard"
 END
 ```
 
@@ -45,8 +277,8 @@ END
 
 ```
 eligible_for_clarify_fast_path =
-   complexity_signal == "likely_simple"
-   AND has_ai_profile == false // any AI profile -> full Clarify, even non-agentic
+complexity_signal == "likely_simple"
+AND has_ai_profile == false   // any AI profile -> full Clarify, even non-agentic
 ```
 
 ---
@@ -166,6 +398,7 @@ Output this block as part of `discover.md` Step 3's user message (chat only -- n
 | **Decisions ahead** | [key_decisions_ahead joined by "; "] |
 
 *Full cost breakdown in Estimate; runnable Terraform in Generate.*
+
 [if eligible_for_clarify_fast_path: "Your stack looks straightforward -- next step is 3 quick questions."]
 [if ai_detected and not eligible_for_clarify_fast_path: "AI workload detected -- full Clarify recommended for best results."]
 ```
