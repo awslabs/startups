@@ -2,7 +2,7 @@
   "name": "migration-to-aws",
   "displayName": "Migration to AWS",
   "version": "1.1.0",
-  "description": "Migrate from GCP to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Cloud SQL → Aurora, GKE → EKS), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn’t.",
+  "description": "Migrate from GCP to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Cloud SQL → RDS or Aurora, GKE → EKS), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn’t.",
   "author": {
     "name": "Amazon Web Services"
   },

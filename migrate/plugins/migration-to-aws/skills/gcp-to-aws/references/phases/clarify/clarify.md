@@ -190,7 +190,7 @@ Apply these before presenting questions:
 
 - **Q5 = "Yes, multi-cloud required"** — Immediately record `compute: "eks"`. Skip Q8 (Kubernetes sentiment) — all container workloads resolve to EKS.
 - **Q10/Q11 N/A** — Cloud Run not present, auto-skip.
-- **Q12/Q13 N/A** — Cloud SQL not present, auto-skip.
+- **Q12/Q13 N/A** — Cloud SQL (PostgreSQL or MySQL) not present in inventory, auto-skip.
 - **Q13b auto-detect** — If `gcp_config.disk_size_gb` is present on any `google_sql_database_instance`, use it as the default for Q13b with `chosen_by: "extracted"` if the user confirms it unchanged.
 - **Q14 auto-detected** — If `integration.gateway_type` is non-null OR `integration.frameworks` is non-empty in `ai-workload-profile.json`, skip Q14. Set `ai_framework` from the detected values with `chosen_by: "extracted"`.
 
@@ -359,39 +359,45 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 
 ## Answer Combination Triggers
 
-| Scenario                     | Key Answers                                  | Recommendation                                                                                 |
-| ---------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Early-stage funding path     | Q3 = lower spend band                        | Entry-tier migration funding program review                                                    |
-| Growth-stage funding path    | Q3 = higher spend band                       | Migration funding/support program review based on spend profile                                |
-| Must stay portable           | Q5 = Yes multi-cloud                         | EKS only, no ECS Fargate                                                                       |
-| Kubernetes-averse            | Q5 = No + Q8 = Frustrated                    | ECS Fargate strongly recommended                                                               |
-| WebSocket app                | Q9 = Yes                                     | ALB WebSocket config required                                                                  |
-| Low-traffic Cloud Run        | Q10 = Business hours + Q11 < $100            | Recommend staying on Cloud Run                                                                 |
-| High I/O database            | Q13 = High IOPS                              | Aurora I/O-Optimized                                                                           |
-| Write-heavy global DB        | Q6 = Catastrophic + Q12 = Write-heavy/global | Aurora DSQL                                                                                    |
-| Rapidly growing DB           | Q12 = Rapidly growing                        | Aurora Serverless v2                                                                           |
-| Zero downtime required       | Q7 = No downtime                             | Blue/green + AWS DMS required                                                                  |
-| HIPAA compliance             | Q2 = HIPAA                                   | BAA services only, specific regions                                                            |
-| FedRAMP required             | Q2 = FedRAMP                                 | GovCloud regions only                                                                          |
-| CCPA / CPRA                  | Q2 = G (CCPA / CPRA)                         | Consumer privacy, logging/retention, data-inventory posture; confirm regions with legal review |
-| Gateway-only AI              | Q14 = B only (LLM router/gateway)            | Config change only; skip SDK migration                                                         |
-| LangChain/LangGraph AI       | Q14 includes C                               | Provider swap via ChatBedrock; 1–3 days                                                        |
-| OpenAI Agents SDK            | Q14 includes E                               | Highest AI effort; Bedrock Agents; 2–4 weeks                                                   |
-| Multi-agent + MCP            | Q14 = D + F                                  | Bedrock Agents to unify orchestration + MCP                                                    |
-| Voice platform AI            | Q14 includes G                               | Check native Bedrock support; Nova 2 Sonic if needed                                           |
-| GPT-5.5 migration            | Q19 = GPT-5.5                                | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                 |
-| GPT-5.5 Pro migration        | Q19 = GPT-5.5 Pro                            | Nova 2 Pro — 95% cheaper on Bedrock                                                            |
-| GPT-5.4 migration            | Q19 = GPT-5.4                                | Claude Sonnet 4.6 — near price parity; AWS consolidation                                       |
-| GPT-5.4 Mini/Nano migration  | Q19 = GPT-5.4 Mini or Nano                   | Nova Lite/Micro — 87-94% cheaper on Bedrock                                                    |
-| GPT-4 Turbo migration        | Q19 = GPT-4 Turbo                            | Claude Sonnet 4.6 — 70% cheaper on input                                                       |
-| o-series migration           | Q19 = o-series                               | Claude Sonnet 4.6 with extended thinking                                                       |
-| High-volume cost-critical AI | Q18 = High + cost critical                   | Nova Micro or Haiku 4.5 + provisioned throughput                                               |
-| Reasoning/agent workload     | Q17 = Extended thinking                      | Claude Sonnet 4.6 extended thinking; Opus 4.6 for hardest                                      |
-| Speech-to-speech AI          | Q17 = Real-time speech                       | Nova 2 Sonic                                                                                   |
-| RAG workload                 | Q17 = RAG optimization                       | Bedrock Knowledge Bases + Titan Embeddings                                                     |
-| Vision workload              | Q20 = Vision required                        | Claude Sonnet 4.6 (multimodal)                                                                 |
-| Latency-critical AI          | Q21 = Critical                               | Haiku 4.5 or Nova Micro + streaming                                                            |
-| Complex reasoning tasks      | Q22 = Complex                                | Claude Sonnet 4.6; Opus 4.6 for hardest                                                        |
+| Scenario                                 | Key Answers                                                   | Recommendation                                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Early-stage funding path                 | Q3 = lower spend band                                         | Entry-tier migration funding program review                                                    |
+| Growth-stage funding path                | Q3 = higher spend band                                        | Migration funding/support program review based on spend profile                                |
+| Must stay portable                       | Q5 = Yes multi-cloud                                          | EKS only, no ECS Fargate                                                                       |
+| Kubernetes-averse                        | Q5 = No + Q8 = Frustrated                                     | ECS Fargate strongly recommended                                                               |
+| WebSocket app                            | Q9 = Yes                                                      | ALB WebSocket config required                                                                  |
+| Low-traffic Cloud Run                    | Q10 = Business hours + Q11 < $100                             | Recommend staying on Cloud Run                                                                 |
+| Cloud SQL Postgres — dev/low HA          | Q6 = Inconvenient + Cloud SQL in inventory                    | **RDS PostgreSQL** single-AZ                                                                   |
+| Cloud SQL Postgres — prod HA (RDS)       | Q6 = Significant Issue + Cloud SQL in inventory               | **RDS PostgreSQL** Multi-AZ                                                                    |
+| Cloud SQL Postgres — mission-critical    | Q6 = Mission-Critical + Cloud SQL in inventory                | **Aurora PostgreSQL** Multi-AZ; apply Q12/Q13                                                  |
+| Cloud SQL Postgres — global catastrophic | Q6 = Catastrophic + Q1 = Global + Cloud SQL in inventory      | **Aurora PostgreSQL Global Database**                                                          |
+| High I/O database (RDS path)             | Q6 = Inconvenient/Significant + Q13 = High                    | **RDS** io2 or Provisioned IOPS                                                                |
+| High I/O database (Aurora path)          | Q6 = Mission-Critical/Catastrophic + Q13 = High               | Aurora I/O-Optimized                                                                           |
+| Write-heavy global DB                    | Q6 = Mission-Critical/Catastrophic + Q12 = Write-heavy/global | Aurora DSQL architecture review (RDS path only: size writer; flag review)                      |
+| Rapidly growing DB (RDS path)            | Q6 = Inconvenient/Significant + Q12 = Rapidly growing         | RDS with headroom on instance class                                                            |
+| Rapidly growing DB (Aurora path)         | Q6 = Mission-Critical/Catastrophic + Q12 = Rapidly growing    | Aurora Serverless v2                                                                           |
+| Zero downtime required                   | Q7 = No downtime                                              | Blue/green + AWS DMS required (RDS or Aurora blue/green per Q6)                                |
+| HIPAA compliance                         | Q2 = HIPAA                                                    | BAA services only, specific regions                                                            |
+| FedRAMP required                         | Q2 = FedRAMP                                                  | GovCloud regions only                                                                          |
+| CCPA / CPRA                              | Q2 = G (CCPA / CPRA)                                          | Consumer privacy, logging/retention, data-inventory posture; confirm regions with legal review |
+| Gateway-only AI                          | Q14 = B only (LLM router/gateway)                             | Config change only; skip SDK migration                                                         |
+| LangChain/LangGraph AI                   | Q14 includes C                                                | Provider swap via ChatBedrock; 1–3 days                                                        |
+| OpenAI Agents SDK                        | Q14 includes E                                                | Highest AI effort; Bedrock Agents; 2–4 weeks                                                   |
+| Multi-agent + MCP                        | Q14 = D + F                                                   | Bedrock Agents to unify orchestration + MCP                                                    |
+| Voice platform AI                        | Q14 includes G                                                | Check native Bedrock support; Nova 2 Sonic if needed                                           |
+| GPT-5.5 migration                        | Q19 = GPT-5.5                                                 | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                 |
+| GPT-5.5 Pro migration                    | Q19 = GPT-5.5 Pro                                             | Nova 2 Pro — 95% cheaper on Bedrock                                                            |
+| GPT-5.4 migration                        | Q19 = GPT-5.4                                                 | Claude Sonnet 4.6 — near price parity; AWS consolidation                                       |
+| GPT-5.4 Mini/Nano migration              | Q19 = GPT-5.4 Mini or Nano                                    | Nova Lite/Micro — 87-94% cheaper on Bedrock                                                    |
+| GPT-4 Turbo migration                    | Q19 = GPT-4 Turbo                                             | Claude Sonnet 4.6 — 70% cheaper on input                                                       |
+| o-series migration                       | Q19 = o-series                                                | Claude Sonnet 4.6 with extended thinking                                                       |
+| High-volume cost-critical AI             | Q18 = High + cost critical                                    | Nova Micro or Haiku 4.5 + provisioned throughput                                               |
+| Reasoning/agent workload                 | Q17 = Extended thinking                                       | Claude Sonnet 4.6 extended thinking; Opus 4.6 for hardest                                      |
+| Speech-to-speech AI                      | Q17 = Real-time speech                                        | Nova 2 Sonic                                                                                   |
+| RAG workload                             | Q17 = RAG optimization                                        | Bedrock Knowledge Bases + Titan Embeddings                                                     |
+| Vision workload                          | Q20 = Vision required                                         | Claude Sonnet 4.6 (multimodal)                                                                 |
+| Latency-critical AI                      | Q21 = Critical                                                | Haiku 4.5 or Nova Micro + streaming                                                            |
+| Complex reasoning tasks                  | Q22 = Complex                                                 | Claude Sonnet 4.6; Opus 4.6 for hardest                                                        |
 
 ---
 

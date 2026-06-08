@@ -175,6 +175,8 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 
 ## Q19 — Which Gemini or OpenAI model are you currently using?
 
+_Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` — auto-detect from detected model IDs with `chosen_by: "extracted"` and do not present this question. The detected models are already shown in the Step 1 summary.
+
 Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > Q19 source model (baseline only).
 
 > A) Gemini 3.5 Flash (GA — current flagship Flash model)
@@ -229,6 +231,8 @@ Interpret → `ai_model_baseline`. Default: auto-detect from code, fallback Q16 
 ---
 
 ## Q20 — What input types must the model accept: text only, images (vision), or audio/video?
+
+_Skip when:_ `integration.capabilities_summary` in `ai-workload-profile.json` has definitive values for `vision` AND (`speech_to_text` or `text_to_speech`) — derive from capabilities with `chosen_by: "extracted"` and do not present this question. Only ask if capabilities are unknown or ambiguous (all false with no evidence either way).
 
 > A) Text only
 > B) Vision required — model must process images

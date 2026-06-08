@@ -2,7 +2,7 @@
 
 _Fire when:_ Database resources present (Cloud SQL, Spanner, Memorystore).
 
-Traffic pattern and I/O intensity determine the Aurora configuration — standard vs I/O-Optimized, read replicas, Serverless v2, or DSQL.
+**Q6 (`availability`) selects RDS vs Aurora** for Cloud SQL PostgreSQL/MySQL — see `clarify-global.md` Q6. Q12–Q13 tune sizing and storage **within** the family Q6 chose. **Q12–Q13 never override Q6.**
 
 ---
 
@@ -12,35 +12,35 @@ Before asking questions, detect the database engine from IaC (`database_version`
 
 > "I see Cloud SQL for PostgreSQL (or MySQL) in your Terraform."
 
-Handle non-Aurora-compatible engines:
-
-| Detected Engine          | Migration Target                                                  | Notes                                |
+| Detected Engine          | Migration Target family                                           | Notes                                |
 | ------------------------ | ----------------------------------------------------------------- | ------------------------------------ |
-| Cloud SQL for PostgreSQL | Aurora PostgreSQL                                                 | Direct migration path                |
-| Cloud SQL for MySQL      | Aurora MySQL                                                      | Direct migration path                |
+| Cloud SQL for PostgreSQL | **RDS PostgreSQL** or **Aurora PostgreSQL** (per Q6)              | Q6 selects family; engine from IaC   |
+| Cloud SQL for MySQL      | **RDS MySQL** or **Aurora MySQL** (per Q6)                        | Q6 selects family; engine from IaC   |
 | Cloud SQL for SQL Server | **RDS for SQL Server**                                            | Aurora doesn't support SQL Server    |
 | Spanner                  | Aurora DSQL (global distributed) or DynamoDB (key-value patterns) | Migration path differs significantly |
 | Firestore                | DynamoDB                                                          | NoSQL migration                      |
 | AlloyDB                  | Aurora PostgreSQL                                                 | Closest equivalent                   |
 
-If the engine is not PostgreSQL or MySQL, note that Aurora doesn't support it and flag the appropriate RDS or DynamoDB target. Ask the user to confirm if detection is ambiguous.
+If the engine is not PostgreSQL or MySQL, note the appropriate RDS or DynamoDB target. Ask the user to confirm if detection is ambiguous.
+
+**Skip Q12/Q13/Q13b** when Cloud SQL (PostgreSQL or MySQL) is not present in inventory — auto-detect from IaC; no separate screening question required.
 
 ---
 
 ## Q12 — What does your database traffic pattern look like?
 
-_Fire when:_ Cloud SQL present in inventory. Skip when: no Cloud SQL.
+_Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL.
 
-**Rationale:** Database traffic pattern determines whether standard Aurora is sufficient or whether more specialized options (read replicas, DSQL, Serverless v2) are needed. Asking about the pattern rather than whether they have a problem avoids leading the answer.
+**Rationale:** Traffic pattern informs capacity planning on the target **already chosen by Q6**. Q6 always wins for product family: Inconvenient / Significant Issue → RDS; Mission-Critical / Catastrophic → Aurora. This question does **not** upgrade a Significant Issue customer to Aurora because they have read-heavy traffic.
 
-**Context for user:** When asking, give concrete examples so the user can pattern-match to their situation:
+**Context for user:** Give concrete examples so the user can pattern-match:
 
 - **Steady, predictable load** — consistent query volume day-to-day, no major spikes (e.g., internal CRUD app, content CMS)
 - **Read-heavy with occasional write spikes** — mostly reads with bursts of writes at certain times (e.g., reporting dashboards, catalog browsing with periodic bulk imports)
 - **Write-heavy or globally distributed writes** — high write throughput or writes coming from multiple regions (e.g., IoT ingestion, multi-region user-generated content, event logging)
 - **Rapidly growing** — traffic is noticeably increasing month over month, doubling every few months (e.g., post-launch growth, viral product)
 
-> Understanding your database traffic pattern helps me recommend the right Aurora configuration — standard vs I/O-Optimized, read replicas, or Serverless v2.
+> Understanding your database traffic pattern helps me recommend the right sizing on AWS — within the RDS or Aurora family Q6 already selected.
 >
 > A) Steady, predictable load — consistent volume, no major spikes
 > B) Read-heavy with occasional write spikes — mostly reads, periodic write bursts
@@ -49,22 +49,22 @@ _Fire when:_ Cloud SQL present in inventory. Skip when: no Cloud SQL.
 > E) N/A — We don't use Cloud SQL
 > F) I don't know
 
-| Answer                              | Recommendation Impact                                                                                            |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Steady, predictable                 | Standard Aurora Multi-AZ; straightforward sizing from current Cloud SQL config                                   |
-| Read-heavy with write spikes        | Aurora with read replicas; auto-scaling read capacity                                                            |
-| Write-heavy or globally distributed | **Aurora DSQL considered** for global active-active; architecture review flagged                                 |
-| Rapidly growing                     | Aurora with headroom planning; **Aurora Serverless v2** for elastic scaling; revisit sizing at 6-month intervals |
+| Answer                              | When Q6 = Inconvenient or Significant Issue (**RDS** path)                    | When Q6 = Mission-Critical or Catastrophic (**Aurora** path)                     |
+| ----------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Steady, predictable                 | Size **RDS** from Cloud SQL config; single-AZ or Multi-AZ per Q6              | **Aurora** standard Multi-AZ; size from Cloud SQL config                         |
+| Read-heavy with write spikes        | **RDS** with read replicas where justified; size writer for spikes            | **Aurora** with read replicas; auto-scaling read capacity where supported        |
+| Write-heavy or globally distributed | Size **RDS** writer; flag architecture review if multi-region writes required | **Aurora DSQL** considered for global active-active; architecture review flagged |
+| Rapidly growing                     | **RDS** with headroom on instance class; plan capacity reviews                | **Aurora** with headroom; **Aurora Serverless v2** for elastic scaling           |
 
 Interpret:
 
 ```
-A -> database_traffic: "steady" — Standard Aurora Multi-AZ
-B -> database_traffic: "read-heavy" — Aurora with read replicas; auto-scaling read capacity
-C -> database_traffic: "write-heavy-global" — Aurora DSQL considered; architecture review flagged
-D -> database_traffic: "rapidly-growing" — Aurora Serverless v2 for elastic scaling
+A -> database_traffic: "steady"
+B -> database_traffic: "read-heavy"
+C -> database_traffic: "write-heavy-global"
+D -> database_traffic: "rapidly-growing"
 E -> (no constraint written)
-F -> same as default (A) — assume steady traffic
+F -> same as default (A)
 ```
 
 Default: A — `database_traffic: "steady"`.
@@ -73,32 +73,30 @@ Default: A — `database_traffic: "steady"`.
 
 ## Q13 — What's your typical database I/O workload?
 
-_Fire when:_ Cloud SQL present in inventory. Skip when: no Cloud SQL.
+_Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL.
 
-**Rationale:** Aurora has two pricing modes — standard and I/O-Optimized. The right choice depends on actual I/O intensity. Choosing wrong can mean paying 40% more than necessary.
+**Rationale:** On AWS, storage and I/O billing differ between RDS and Aurora. This captures how disk-heavy the workload is. **Q6 still governs RDS vs Aurora** — this question only selects storage/I/O options within that family.
 
-> Aurora has two pricing modes — standard and I/O-Optimized. Choosing wrong can mean paying 40% more than necessary.
->
 > A) Low (< 1,000 IOPS) — Mostly reads, infrequent writes
 > B) Medium (1,000–10,000 IOPS) — Balanced workload
 > C) High (> 10,000 IOPS) — Write-heavy, high transactions
 > D) N/A — We don't use Cloud SQL
 > E) I don't know
 
-| Answer                     | Recommendation Impact                                                                     |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| Low (< 1,000 IOPS)         | Aurora standard pricing recommended                                                       |
-| Medium (1,000–10,000 IOPS) | Aurora standard pricing; flag I/O-Optimized as option if workload grows                   |
-| High (> 10,000 IOPS)       | **Aurora I/O-Optimized recommended** — can save up to 40% vs standard at high I/O volumes |
+| Answer                     | When Q6 = Inconvenient or Significant Issue (**RDS** path) | When Q6 = Mission-Critical or Catastrophic (**Aurora** path) |
+| -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| Low (< 1,000 IOPS)         | **gp3** (default RDS storage)                              | **Aurora Standard** storage/I/O billing                      |
+| Medium (1,000–10,000 IOPS) | **gp3**; note optional Provisioned IOPS if I/O grows       | **Aurora Standard**; note optional switch to I/O-Optimized   |
+| High (> 10,000 IOPS)       | **io2** or Provisioned IOPS on RDS                         | **Aurora I/O-Optimized**                                     |
 
 Interpret:
 
 ```
-A -> db_io_workload: "low" — Aurora standard pricing
-B -> db_io_workload: "medium" — Aurora standard; flag I/O-Optimized as option if workload grows
-C -> db_io_workload: "high" — Aurora I/O-Optimized recommended (up to 40% savings at high I/O)
+A -> db_io_workload: "low"
+B -> db_io_workload: "medium"
+C -> db_io_workload: "high"
 D -> (no constraint written)
-E -> same as default (B) — assume medium I/O
+E -> same as default (B)
 ```
 
 Default: B — `db_io_workload: "medium"`.
@@ -109,7 +107,7 @@ Default: B — `db_io_workload: "medium"`.
 
 _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL, or engine is SQL Server (DMS is always recommended for SQL Server regardless of size).
 
-**Rationale:** Database size is the primary driver of migration tooling selection. pg_dump/pg_restore is sufficient for small databases but becomes impractically slow above ~10GB within a typical maintenance window. pgcopydb's parallel copy cuts migration time by 3–5x for medium databases. Very large databases (>500GB) require DMS for continuous replication regardless of whether a maintenance window exists — a single-pass export/import at that scale carries too much risk.
+**Rationale:** Database size is the primary driver of migration tooling selection. pg_dump/pg_restore is sufficient for small databases but becomes impractically slow above ~10GB within a typical maintenance window. pgcopydb's parallel copy cuts migration time by 3–5x for medium databases. Very large databases (>500GB) require DMS for continuous replication regardless of whether a maintenance window exists.
 
 **Auto-detect signal:** If `gcp_config.disk_size_gb` is present on `google_sql_database_instance`, use it as the default answer and confirm with the user rather than asking from scratch.
 
