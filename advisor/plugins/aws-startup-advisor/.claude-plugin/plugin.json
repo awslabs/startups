@@ -1,10 +1,38 @@
 {
   "name": "aws-startup-advisor",
-  "version": "1.2.0",
-  "description": "Three sibling skills for startups building on AWS: 'knowledge-base-for-startups' (Activate FAQ, credits, programs, partner offers, sample architectures, 277 learn articles), 'prompt-library-for-startups' (30 copy-paste prompts + 4 downloadable installable agents), and 'start-building-for-startups' (interactive discovery workflow that scaffolds an AWS architecture).",
+  "displayName": "AWS Startup Advisor",
+  "version": "1.4.1",
+  "description": "Personalized architecture, cost, security, and migration guidance for startups. From day-one account setup and security baselines to production-ready infrastructure, cost optimization, and beyond. Includes AWS Activate Credits eligibility, 60+ exclusive startup offers, and multi-account multi-region support. Built on expertise from AWS Startup Solutions Architects and patterns from 350,000+ startups.",
   "author": {
     "name": "Amazon Web Services"
   },
   "license": "MIT-0",
-  "keywords": ["aws", "startups", "activate", "knowledge-base", "prompt-library"]
+  "keywords": [
+    "aws",
+    "startups",
+    "activate",
+    "knowledge-base",
+    "prompt-library",
+    "gcp",
+    "google-cloud",
+    "migration",
+    "cloud-migration",
+    "terraform",
+    "fargate",
+    "rds",
+    "aurora",
+    "eks",
+    "bedrock",
+    "ai-migration",
+    "openai",
+    "openai-to-bedrock",
+    "langchain",
+    "langgraph",
+    "crewai",
+    "autogen",
+    "agentic",
+    "agents",
+    "llm-migration",
+    "cost-estimation"
+  ]
 }

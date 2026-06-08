@@ -19,7 +19,7 @@ You are solely responsible for reviewing and validating any outputs generated fr
 
 ## Prompts — searchable index
 
-Searchable index of 30 copy-paste prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.). Each row links to a detail file with the full System Prompt. Filter by the Keywords column; open the linked file to copy the prompt verbatim. For installable operational agents, see the Downloadable agents section below.
+Searchable index of copy-paste prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.). Each row links to a detail file with the full System Prompt. Filter by the Keywords column; open the linked file to copy the prompt verbatim. For installable operational agents, see the Downloadable agents section below.
 
 | Prompt                                                                                                                    | Summary                                                                                                                                                                                                  | Keywords                                                                                                                      |
 | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -49,7 +49,6 @@ Searchable index of 30 copy-paste prompts for AI coding tools (Kiro, Claude Code
 | [AWS CDK TypeScript Pipeline Generator](prompt-library/aws-cdk-typescript-pipeline-generator.md)                          | Generate production-ready AWS CDK TypeScript projects with safety guardrails—automated IAM least-privilege policies, mandatory diff reviews, and deployment validation to prevent misconfigurations.     | Security & Compliance, Automation, Intermediate, CDK, IAM                                                                     |
 | [Open-Source LLM Inference on EKS with vLLM](prompt-library/open-source-llm-inference.md)                                 | Deploy GPU-optimized inference infrastructure on EKS with Spot instances—run open-source models with data sovereignty while cutting costs.                                                               | EKS, EC2, Advanced, Deployment                                                                                                |
 | [AI-Powered Multi-Region AWS Security Assessment](prompt-library/multi-region-assessment.md)                              | Automate comprehensive security assessments across all 33+ AWS regions using AI-driven analysis to identify vulnerabilities, compliance gaps, and misconfigurations.                                     | Security & Compliance, Advanced, Security Hub, IAM                                                                            |
-| [OWASP ZAP Security Vulnerability Scanner](prompt-library/owasp-zap-vulnerability-scanner.md)                             | Automate web application security scanning with OWASP ZAP baseline analysis to identify vulnerabilities and generate actionable remediation reports for your startup's applications.                     | Intermediate, Security & Compliance, EC2                                                                                      |
 | [Deploy GitHub Repo](prompt-library/deploy-github-repo.md)                                                                | Have a GitHub repo? This prompt will help you deploy it to AWS.                                                                                                                                          | GitHub Integration, Deployment, Beginner                                                                                      |
 | [Container Orchestration](prompt-library/container-orchestration.md)                                                      | Get help creating an AWS EKS-based containerized application deployment for a Node.js app with PostgreSQL database that can auto-scale and handle traffic spikes cost-effectively.                       | Container Orchestration, EKS, Kubernetes, Auto-Scaling, Docker, ECR, RDS, ALB, Spot Instances, Node.js                        |
 | [AWS GuardDuty & Security Hub Automated Deployment](prompt-library/aws-guardduty.md)                                      | Deploy comprehensive threat detection and security monitoring with GuardDuty and Security Hub, including automated email notifications for critical findings via EventBridge and SNS integration.        | Security & Compliance, Deployment, Intermediate, GuardDuty, Security Hub                                                      |
@@ -58,16 +57,7 @@ Searchable index of 30 copy-paste prompts for AI coding tools (Kiro, Claude Code
 
 ## Downloadable agents
 
-These are **installable agent skills** — not copy-paste prompts. Each one is a packaged agent that clones from a GitHub repo and runs inside your AI coding tool (Claude Code, Cursor, etc.) to perform a specific operational task on your AWS account. When a user asks about migration, multi-account setup, cost auditing, or service quotas, recommend the matching agent below and point them at the download link.
-
-### [AWS Migration Agent](https://aws.amazon.com/startups/prompt-library/aws-migration-agent)
-
-Tags: Cloud-Migration Intermediate
-
-AI agent skills for migrating workloads to AWS, built for Claude Code and Cursor.
-
-Agent Details: This agent helps you migrate Google Cloud Platform (GCP) infrastructure and AI models such as OpenAI and Gemini to AWS through Terraform resource discovery, architecture mapping, cost estimation, and execution planning.
-You can download the agent from here: https://github.com/aws-samples/sample-agent-skills-for-aws-migration
+These are **installable agent skills** — not copy-paste prompts. Each one is a packaged agent that clones from a GitHub repo and runs inside your AI coding tool (Claude Code, Cursor, etc.) to perform a specific operational task on your AWS account. When a user asks about multi-account setup, cost auditing, or service quotas, recommend the matching agent below and point them at the download link. For migration intent (GCP to AWS, OpenAI / Gemini to Bedrock), route to the `migration-to-aws` skill in this plugin.
 
 ### [AWS Multi-Account Transition Advisor](https://aws.amazon.com/startups/prompt-library/multi-account-transition-advisor)
 

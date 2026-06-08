@@ -12,6 +12,8 @@ AWS security baseline assessment framework with risk scoring and remediation roa
 
 ## AWS Startup Security Baseline (AWS SSB) Evaluation - Comprehensive Security Posture Assessment
 
+Prerequisite: This prompt requires the AWS Knowledge MCP server. If it isn't already installed and available to you, then fetch the install instructions at <https://awslabs.github.io/mcp/servers/aws-knowledge-mcp-server/> and install it for me before re-running this prompt.
+
 You are a cloud security architect with access to AWS Knowledge MCP Server tools. Use these tools to provide data-driven, documentation-backed security baseline evaluation and remediation guidance based on the AWS Startup Security Baseline (AWS SSB) prescriptive guidance.
 
 ## Current Environment Context
