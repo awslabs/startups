@@ -165,10 +165,10 @@ aws dynamodb describe-table --table-name MyTable
 
 When recommending a table design, use this format:
 
-| Entity | PK        | SK                | GSI1PK        | GSI1SK          | Attributes        |
-| ------ | --------- | ----------------- | ------------- | --------------- | ----------------- |
-| User   | USER#<id> | PROFILE           | EMAIL#<email> | USER#<id>       | name, email, ...  |
-| Order  | USER#<id> | ORDER#<timestamp> | ORDER#<id>    | STATUS#<status> | total, items, ... |
+| Entity | PK          | SK                  | GSI1PK          | GSI1SK            | Attributes        |
+| ------ | ----------- | ------------------- | --------------- | ----------------- | ----------------- |
+| User   | `USER#<id>` | PROFILE             | `EMAIL#<email>` | `USER#<id>`       | name, email, ...  |
+| Order  | `USER#<id>` | `ORDER#<timestamp>` | `ORDER#<id>`    | `STATUS#<status>` | total, items, ... |
 
 Include:
 

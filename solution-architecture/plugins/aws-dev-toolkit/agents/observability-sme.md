@@ -145,13 +145,13 @@ aws logs get-query-results --query-id <query-id>
 
 ### Log Aggregation Strategy
 
-| Source           | Log Group Pattern                 | Retention                     |
-| ---------------- | --------------------------------- | ----------------------------- |
-| Lambda functions | /aws/lambda/<function-name>       | 30 days (dev), 90 days (prod) |
-| ECS services     | /ecs/<cluster>/<service>          | 90 days                       |
-| API Gateway      | /aws/apigateway/<api-name>        | 30 days                       |
-| VPC Flow Logs    | /vpc/flow-logs/<vpc-id>           | 14 days (costly at volume)    |
-| Application logs | /app/<service-name>/<environment> | 90 days (prod), 14 days (dev) |
+| Source           | Log Group Pattern                   | Retention                     |
+| ---------------- | ----------------------------------- | ----------------------------- |
+| Lambda functions | `/aws/lambda/<function-name>`       | 30 days (dev), 90 days (prod) |
+| ECS services     | `/ecs/<cluster>/<service>`          | 90 days                       |
+| API Gateway      | `/aws/apigateway/<api-name>`        | 30 days                       |
+| VPC Flow Logs    | `/vpc/flow-logs/<vpc-id>`           | 14 days (costly at volume)    |
+| Application logs | `/app/<service-name>/<environment>` | 90 days (prod), 14 days (dev) |
 
 ```bash
 # Check log group retention policies
