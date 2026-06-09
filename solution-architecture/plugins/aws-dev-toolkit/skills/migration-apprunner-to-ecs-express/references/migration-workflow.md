@@ -42,6 +42,7 @@ Present commands for the user to check if suitable roles already exist before cr
 **If no VPC connector was found in Step 1:** Express Mode will need a VPC. Present commands for the user to verify the default VPC exists in the target region. If the default VPC has been deleted, the user must specify a VPC, subnets, and security groups explicitly.
 
 **If a VPC connector was found:** Present commands for the user to:
+
 - Get the VPC connector's subnets and security groups
 - Verify subnets span at least 2 AZs with sufficient free IPs
 - Verify internet access exists (NAT Gateway or VPC endpoints)
@@ -55,6 +56,7 @@ Record the network configuration for Step 4.
 **Goal:** Create the Express Mode service with matching configuration.
 
 Use `awsknowledge` MCP tools to look up the current `create-express-gateway-service` API parameters. Present the create command with:
+
 - Container image, port, environment variables, and secrets from Step 1
 - CPU and memory in Fargate units from Step 1
 - Health check path from Step 1 (set explicitly if different from Express Mode default)
@@ -99,22 +101,24 @@ Check:
 Present Route 53 weighted routing commands for DNS between App Runner and Express Mode.
 
 **Key rules:**
+
 - Both DNS records must use the **same record type** (both CNAME, or both Alias A). Mixing types breaks weighted routing.
 - Zone apex domains (e.g., `example.com`) cannot use CNAME — use Alias A or a subdomain.
 - Start with a small percentage on Express Mode and increase gradually.
 
 **Tiered cutover — pick the ramp that matches the service:**
 
-| Service profile | Recommended ramp | Dwell per stage |
-|---|---|---|
+| Service profile                                                              | Recommended ramp                  | Dwell per stage                                   |
+| ---------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------- |
 | **High-traffic / revenue-critical** (>100 req/sec sustained, payments, auth) | 5% → 10% → 25% → 50% → 75% → 100% | 30–60 min, then 24 hr at 100% before decommission |
-| **Standard production** (10–100 req/sec, user-facing) | 10% → 50% → 100% | 15–30 min per stage |
-| **Low-traffic / internal / staging** (<10 req/sec, tolerant of brief errors) | 50% → 100% **or** single flip | 5–15 min, or skip tiering entirely |
-| **Zero live traffic** (cron jobs, async workers, pre-launch services) | Single flip | n/a |
+| **Standard production** (10–100 req/sec, user-facing)                        | 10% → 50% → 100%                  | 15–30 min per stage                               |
+| **Low-traffic / internal / staging** (<10 req/sec, tolerant of brief errors) | 50% → 100% **or** single flip     | 5–15 min, or skip tiering entirely                |
+| **Zero live traffic** (cron jobs, async workers, pre-launch services)        | Single flip                       | n/a                                               |
 
 Default to the high-traffic ramp if unsure. Only downgrade to a faster ramp when the user confirms the service profile.
 
 **At each stage, monitor via `ecs-mcp`:**
+
 - ALB 5xx error rate
 - ALB target response time
 - Target health (healthy host count)
@@ -166,6 +170,7 @@ For each item the user approves, execute one at a time with confirmation.
 ## Migration Complete
 
 Confirm with the user:
+
 - ✅ Express Mode service is ACTIVE and serving all traffic
 - ✅ App Runner service is deleted
 - ✅ CI/CD pipelines target Express Mode

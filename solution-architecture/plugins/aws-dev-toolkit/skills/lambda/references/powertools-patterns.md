@@ -29,12 +29,12 @@ def handler(event, context):
 
 ### Key Decorators (Python)
 
-| Decorator | Purpose |
-|---|---|
-| `@logger.inject_lambda_context` | Auto-adds request_id, function_name to every log line |
-| `@tracer.capture_lambda_handler` | Creates X-Ray subsegment for the handler |
-| `@tracer.capture_method` | Creates X-Ray subsegment for individual methods |
-| `@metrics.log_metrics` | Flushes metrics to CloudWatch at the end of invocation |
+| Decorator                        | Purpose                                                |
+| -------------------------------- | ------------------------------------------------------ |
+| `@logger.inject_lambda_context`  | Auto-adds request_id, function_name to every log line  |
+| `@tracer.capture_lambda_handler` | Creates X-Ray subsegment for the handler               |
+| `@tracer.capture_method`         | Creates X-Ray subsegment for individual methods        |
+| `@metrics.log_metrics`           | Flushes metrics to CloudWatch at the end of invocation |
 
 ### Structured Logging (Python)
 

@@ -36,6 +36,7 @@ The `--provision true` flag auto-creates the thing, certificate, and policy in I
 This component reads sensor data, aggregates it, and publishes summaries to IoT Core via the local MQTT bridge.
 
 **Recipe (`recipe.yaml`):**
+
 ```yaml
 ---
 RecipeFormatVersion: "2020-01-25"
@@ -83,6 +84,7 @@ Manifests:
 Runs a pre-trained model at the edge for anomaly detection on sensor data.
 
 **Recipe (`recipe.yaml`):**
+
 ```yaml
 ---
 RecipeFormatVersion: "2020-01-25"
@@ -133,6 +135,7 @@ Manifests:
 Runs a containerized application on the Greengrass core device.
 
 **Recipe (`recipe.yaml`):**
+
 ```yaml
 ---
 RecipeFormatVersion: "2020-01-25"
@@ -263,12 +266,12 @@ This configuration starts rolling out at 5 devices/minute, doubles the rate afte
 }
 ```
 
-| Parameter | Recommended Value | Why |
-|---|---|---|
-| `STREAM_MANAGER_STORE_ROOT_DIR` | `/greengrass/v2/streams` | Dedicated directory for stream data; use an SSD for high throughput |
-| `STREAM_MANAGER_SERVER_PORT` | 8088 | Default port; change if conflicting with other services |
-| `STREAM_MANAGER_AUTHENTICATE_CLIENT` | `true` | Only Greengrass components can interact with streams; prevents unauthorized local processes from reading/writing |
-| `STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH` | 5242880 (5 MB/s) | Limits upload bandwidth so telemetry does not saturate the network link, leaving headroom for control-plane traffic |
+| Parameter                               | Recommended Value        | Why                                                                                                                 |
+| --------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `STREAM_MANAGER_STORE_ROOT_DIR`         | `/greengrass/v2/streams` | Dedicated directory for stream data; use an SSD for high throughput                                                 |
+| `STREAM_MANAGER_SERVER_PORT`            | 8088                     | Default port; change if conflicting with other services                                                             |
+| `STREAM_MANAGER_AUTHENTICATE_CLIENT`    | `true`                   | Only Greengrass components can interact with streams; prevents unauthorized local processes from reading/writing    |
+| `STREAM_MANAGER_EXPORTER_MAX_BANDWIDTH` | 5242880 (5 MB/s)         | Limits upload bandwidth so telemetry does not saturate the network link, leaving headroom for control-plane traffic |
 
 ### Create and Write to a Stream (Python SDK)
 
@@ -321,12 +324,12 @@ client.append_message("sensor-telemetry-stream", data.encode())
 
 ### Stream Export Destinations
 
-| Destination | Use Case | Configuration Class |
-|---|---|---|
-| Kinesis Data Streams | Real-time analytics pipeline | `KinesisConfig` |
-| S3 | Bulk archival of edge data | `S3ExportTaskExecutorConfig` |
-| IoT Analytics | Channel ingestion for IoT Analytics pipelines | `IoTAnalyticsConfig` |
-| IoT SiteWise | Industrial asset property values | `IoTSiteWiseConfig` |
+| Destination          | Use Case                                      | Configuration Class          |
+| -------------------- | --------------------------------------------- | ---------------------------- |
+| Kinesis Data Streams | Real-time analytics pipeline                  | `KinesisConfig`              |
+| S3                   | Bulk archival of edge data                    | `S3ExportTaskExecutorConfig` |
+| IoT Analytics        | Channel ingestion for IoT Analytics pipelines | `IoTAnalyticsConfig`         |
+| IoT SiteWise         | Industrial asset property values              | `IoTSiteWiseConfig`          |
 
 ### Stream Manager Best Practices
 
@@ -352,11 +355,11 @@ The MQTT bridge connects local MQTT topics (Moquette broker on the core device) 
 }
 ```
 
-| Mapping | Source | Target | Purpose |
-|---|---|---|---|
-| `sensorTelemetryToCloud` | LocalMqtt | IotCore | Forward sensor data from local devices to AWS IoT Core |
-| `cloudCommandsToLocal` | IotCore | LocalMqtt | Deliver cloud commands to local actuators |
-| `localDeviceToDevice` | LocalMqtt | LocalMqtt | Enable local device-to-device communication without cloud round-trip |
+| Mapping                  | Source    | Target    | Purpose                                                              |
+| ------------------------ | --------- | --------- | -------------------------------------------------------------------- |
+| `sensorTelemetryToCloud` | LocalMqtt | IotCore   | Forward sensor data from local devices to AWS IoT Core               |
+| `cloudCommandsToLocal`   | IotCore   | LocalMqtt | Deliver cloud commands to local actuators                            |
+| `localDeviceToDevice`    | LocalMqtt | LocalMqtt | Enable local device-to-device communication without cloud round-trip |
 
 ### Client Device Authentication
 
@@ -377,15 +380,15 @@ Greengrass core authenticates local client devices using their certificates. Con
 
 For a typical edge gateway setup, deploy these components together:
 
-| Component | Purpose |
-|---|---|
-| `aws.greengrass.Nucleus` | Core runtime (always present) |
-| `aws.greengrass.clientdevices.mqtt.Moquette` | Local MQTT broker for client devices |
-| `aws.greengrass.clientdevices.mqtt.Bridge` | Routes messages between local broker and IoT Core |
-| `aws.greengrass.clientdevices.Auth` | Authenticates local client devices |
-| `aws.greengrass.StreamManager` | Reliable edge-to-cloud data transfer |
-| `aws.greengrass.LogManager` | Uploads component logs to CloudWatch |
-| `aws.greengrass.TokenExchangeService` | Provides temporary AWS credentials to components |
+| Component                                    | Purpose                                           |
+| -------------------------------------------- | ------------------------------------------------- |
+| `aws.greengrass.Nucleus`                     | Core runtime (always present)                     |
+| `aws.greengrass.clientdevices.mqtt.Moquette` | Local MQTT broker for client devices              |
+| `aws.greengrass.clientdevices.mqtt.Bridge`   | Routes messages between local broker and IoT Core |
+| `aws.greengrass.clientdevices.Auth`          | Authenticates local client devices                |
+| `aws.greengrass.StreamManager`               | Reliable edge-to-cloud data transfer              |
+| `aws.greengrass.LogManager`                  | Uploads component logs to CloudWatch              |
+| `aws.greengrass.TokenExchangeService`        | Provides temporary AWS credentials to components  |
 
 ## Monitoring Greengrass Deployments
 
@@ -422,10 +425,10 @@ aws greengrassv2 list-core-devices \
 
 ### Key Metrics to Monitor
 
-| What to Check | How | Alarm Threshold |
-|---|---|---|
-| Component deployment status | `greengrassv2:list-installed-components` | Any component in ERRORED state |
-| Core device connectivity | IoT Core lifecycle events (`$aws/events/presence/connected`) | Device disconnected > 5 minutes |
-| Stream manager export failures | CloudWatch Logs for `ExportTaskFailure` | Any failure in production |
-| Disk usage on core device | Custom component publishing to CloudWatch | > 80% disk utilization |
-| Component crash loops | CloudWatch Logs for rapid restart patterns | > 3 restarts in 10 minutes |
+| What to Check                  | How                                                          | Alarm Threshold                 |
+| ------------------------------ | ------------------------------------------------------------ | ------------------------------- |
+| Component deployment status    | `greengrassv2:list-installed-components`                     | Any component in ERRORED state  |
+| Core device connectivity       | IoT Core lifecycle events (`$aws/events/presence/connected`) | Device disconnected > 5 minutes |
+| Stream manager export failures | CloudWatch Logs for `ExportTaskFailure`                      | Any failure in production       |
+| Disk usage on core device      | Custom component publishing to CloudWatch                    | > 80% disk utilization          |
+| Component crash loops          | CloudWatch Logs for rapid restart patterns                   | > 3 restarts in 10 minutes      |

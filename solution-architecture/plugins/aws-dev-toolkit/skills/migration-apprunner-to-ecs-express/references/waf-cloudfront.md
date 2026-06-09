@@ -7,15 +7,18 @@ The WAF and CloudFront attachment points differ between App Runner and ECS Expre
 ## WAF
 
 **Attachment point differs:**
+
 - **App Runner:** WAF attaches to the App Runner service directly (service-level WebACL association).
 - **ECS Express Mode:** WAF attaches to the **ALB** created by Express Mode, not the service. Because one ALB is shared across up to 25 services, a WebACL on the ALB applies to **all** services behind it.
 
 **Migration steps:**
+
 1. Get the new ALB ARN via `ecs-mcp`.
 2. Look up the current `wafv2 associate-web-acl` syntax via `awsknowledge` MCP tools.
 3. Present the command for the user to re-associate the WebACL to the new ALB ARN.
 
 **If different services need different WAF rules:**
+
 - Use multiple ALBs (separate Express Mode deployments), or
 - Scope rules via host-header match conditions inside the WebACL.
 

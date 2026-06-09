@@ -177,6 +177,7 @@ exports.handler = async (event) => {
 **Cause:** The client is sending a header not listed in `AllowHeaders`.
 
 **Fix:** Add the missing header to `AllowHeaders`. Common headers that must be explicitly allowed:
+
 - `Authorization`
 - `Content-Type`
 - `X-Amz-Date`
@@ -211,6 +212,7 @@ AllowOrigins="https://example.com",AllowCredentials=true
 **Cause:** Both the API Gateway CORS configuration and the Lambda function return CORS headers, leading to duplicate headers that some browsers reject.
 
 **Fix:** Choose one approach:
+
 - **Option A (recommended):** Use Lambda proxy integration and return CORS headers from your Lambda only. Do not add CORS headers in the API Gateway integration response.
 - **Option B:** Use non-proxy integration and handle CORS entirely in API Gateway mapping templates.
 

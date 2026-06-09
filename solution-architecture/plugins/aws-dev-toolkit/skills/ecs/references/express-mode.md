@@ -29,20 +29,20 @@ ECS Express Mode provisions a complete production application stack from a singl
 
 All underlying resources remain accessible for direct management.
 
-| Resource | Default | Customizable via Express Mode? |
-|----------|---------|-------------------------------|
-| Launch type | Fargate capacity provider | No |
-| Task CPU/Memory | 1 vCPU / 2 GB | Yes (`--cpu`, `--memory`) |
-| Deployment strategy | Canary | No (locked) |
-| AZ rebalancing | Enabled | No (editable on service directly) |
-| Auto-scaling metric | CPU at 60% target | Yes (`--scaling-target`) |
-| Min/Max tasks | 1 / 20 | Yes (`--scaling-target`) |
-| Health check grace | 300s | No (editable on service directly) |
-| Container port | 80 | Yes (`--primary-container`) |
-| Health check path | `/` | Yes (`--health-check-path`) |
-| Logging | CloudWatch Logs, non-blocking, 25MB buffer | Yes (log group, prefix) |
-| Subnets | Default VPC public subnets | Yes (`--network-configuration`) |
-| ALB scheme | Internet-facing (public) or Internal (private) | Based on subnet type |
+| Resource            | Default                                        | Customizable via Express Mode?    |
+| ------------------- | ---------------------------------------------- | --------------------------------- |
+| Launch type         | Fargate capacity provider                      | No                                |
+| Task CPU/Memory     | 1 vCPU / 2 GB                                  | Yes (`--cpu`, `--memory`)         |
+| Deployment strategy | Canary                                         | No (locked)                       |
+| AZ rebalancing      | Enabled                                        | No (editable on service directly) |
+| Auto-scaling metric | CPU at 60% target                              | Yes (`--scaling-target`)          |
+| Min/Max tasks       | 1 / 20                                         | Yes (`--scaling-target`)          |
+| Health check grace  | 300s                                           | No (editable on service directly) |
+| Container port      | 80                                             | Yes (`--primary-container`)       |
+| Health check path   | `/`                                            | Yes (`--health-check-path`)       |
+| Logging             | CloudWatch Logs, non-blocking, 25MB buffer     | Yes (log group, prefix)           |
+| Subnets             | Default VPC public subnets                     | Yes (`--network-configuration`)   |
+| ALB scheme          | Internet-facing (public) or Internal (private) | Based on subnet type              |
 
 ## Resources Created by Express Mode
 
@@ -66,11 +66,11 @@ Express Mode automatically provisions and configures:
 
 ## IAM Roles
 
-| Role | Required? | Purpose |
-|------|-----------|---------|
-| `ecsTaskExecutionRole` | Yes | Pull images from ECR, send logs to CloudWatch, retrieve secrets |
-| `ecsInfrastructureRoleForExpressServices` | Yes | Manage AWS resources (ALB, SGs, scaling) on your behalf |
-| Task Role (`--task-role-arn`) | Optional | Allow application code to call other AWS services (S3, DynamoDB, etc.) |
+| Role                                      | Required? | Purpose                                                                |
+| ----------------------------------------- | --------- | ---------------------------------------------------------------------- |
+| `ecsTaskExecutionRole`                    | Yes       | Pull images from ECR, send logs to CloudWatch, retrieve secrets        |
+| `ecsInfrastructureRoleForExpressServices` | Yes       | Manage AWS resources (ALB, SGs, scaling) on your behalf                |
+| Task Role (`--task-role-arn`)             | Optional  | Allow application code to call other AWS services (S3, DynamoDB, etc.) |
 
 Auto-created service-linked roles: `ecsServiceRoleForECS`, `AWSServiceRoleForElasticLoadBalancing`, `AWSServiceRoleForApplicationAutoScaling_ECSService`.
 
@@ -106,19 +106,19 @@ aws ecs delete-express-gateway-service --service <service-name-or-arn>
 
 ## When to Use Express Mode vs Standard ECS
 
-| Scenario | Express Mode | Standard ECS |
-|----------|-------------|-------------|
-| Stateless HTTP/HTTPS web apps and APIs | Yes | Yes |
-| Rapid prototyping | Yes (fastest path) | Possible but more config |
-| App Runner migration | Yes (recommended) | Possible |
-| TCP/UDP services | No | Yes (NLB) |
-| Queue workers / batch jobs | No | Yes |
-| GPU workloads | No | Yes (EC2 launch type) |
-| Graviton / ARM | No (x86 default, manual change) | Yes |
-| Custom deployment strategy | No (Canary locked) | Yes (Rolling, Blue/Green, Canary) |
-| Sidecar containers | No (manual post-creation) | Yes |
-| NLB or custom LB config | No | Yes |
-| Service-to-service (non-HTTP) | No | Yes (Service Connect, NLB) |
+| Scenario                               | Express Mode                    | Standard ECS                      |
+| -------------------------------------- | ------------------------------- | --------------------------------- |
+| Stateless HTTP/HTTPS web apps and APIs | Yes                             | Yes                               |
+| Rapid prototyping                      | Yes (fastest path)              | Possible but more config          |
+| App Runner migration                   | Yes (recommended)               | Possible                          |
+| TCP/UDP services                       | No                              | Yes (NLB)                         |
+| Queue workers / batch jobs             | No                              | Yes                               |
+| GPU workloads                          | No                              | Yes (EC2 launch type)             |
+| Graviton / ARM                         | No (x86 default, manual change) | Yes                               |
+| Custom deployment strategy             | No (Canary locked)              | Yes (Rolling, Blue/Green, Canary) |
+| Sidecar containers                     | No (manual post-creation)       | Yes                               |
+| NLB or custom LB config                | No                              | Yes                               |
+| Service-to-service (non-HTTP)          | No                              | Yes (Service Connect, NLB)        |
 
 ## Official Documentation
 

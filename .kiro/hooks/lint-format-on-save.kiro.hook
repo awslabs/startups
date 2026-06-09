@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Lint & Format on Save",
+  "description": "Runs dprint formatting and markdown lint fix via mise when files are saved",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.md"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "mise run fmt && mise run lint:md:fix",
+    "timeout": 30
+  }
+}

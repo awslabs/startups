@@ -15,7 +15,7 @@ For application developers who need to build and deploy in non-production accoun
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"AWS": "arn:aws:iam::123456789012:root"},
+    "Principal": { "AWS": "arn:aws:iam::123456789012:root" },
     "Action": "sts:AssumeRole",
     "Condition": {
       "StringEquals": {
@@ -105,7 +105,7 @@ For data engineers who need to build and manage data pipelines, ETL jobs, and an
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"AWS": "arn:aws:iam::123456789012:root"},
+    "Principal": { "AWS": "arn:aws:iam::123456789012:root" },
     "Action": "sts:AssumeRole",
     "Condition": {
       "StringEquals": {
@@ -210,7 +210,7 @@ For SREs and operations engineers during incident response. Broad read access wi
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"AWS": "arn:aws:iam::123456789012:root"},
+    "Principal": { "AWS": "arn:aws:iam::123456789012:root" },
     "Action": "sts:AssumeRole",
     "Condition": {
       "Bool": {
@@ -308,7 +308,9 @@ For automated deployment pipelines (CodePipeline, GitHub Actions, GitLab CI). Sc
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Principal": {
+      "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+    },
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
       "StringEquals": {
@@ -408,7 +410,7 @@ For compliance auditors and security reviewers. Full read access across all serv
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"AWS": "arn:aws:iam::999888777666:root"},
+    "Principal": { "AWS": "arn:aws:iam::999888777666:root" },
     "Action": "sts:AssumeRole",
     "Condition": {
       "StringEquals": {

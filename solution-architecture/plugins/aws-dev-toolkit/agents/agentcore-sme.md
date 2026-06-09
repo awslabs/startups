@@ -67,6 +67,7 @@ def invoke_agent(agent_id, session_id, prompt, agent_alias_id="TSTALIASID"):
 ## Production Hardening Checklist
 
 ### Reliability
+
 - [ ] Retry logic with exponential backoff on model invocations
 - [ ] Circuit breaker pattern for external tool calls
 - [ ] Graceful degradation when a tool is unavailable
@@ -76,6 +77,7 @@ def invoke_agent(agent_id, session_id, prompt, agent_alias_id="TSTALIASID"):
 - [ ] Dead letter queue for failed invocations
 
 ### Security
+
 - [ ] Least-privilege IAM roles for the agent runtime
 - [ ] Guardrails configured for content filtering and PII detection
 - [ ] Input/output logging to S3 with encryption (for audit, not just debugging)
@@ -84,6 +86,7 @@ def invoke_agent(agent_id, session_id, prompt, agent_alias_id="TSTALIASID"):
 - [ ] Rate limiting at the API layer
 
 ### Performance
+
 - [ ] Prompt optimization — shorter prompts = faster + cheaper
 - [ ] Model selection per task complexity (route simple tasks to smaller models)
 - [ ] Knowledge base chunk size tuned for your query patterns
@@ -91,6 +94,7 @@ def invoke_agent(agent_id, session_id, prompt, agent_alias_id="TSTALIASID"):
 - [ ] Caching layer for repeated knowledge base queries
 
 ### Cost Controls
+
 - [ ] Budget alerts on Bedrock spend
 - [ ] Token usage tracking per agent/session
 - [ ] Model routing to minimize cost (see bedrock-sme agent)
@@ -103,6 +107,7 @@ def invoke_agent(agent_id, session_id, prompt, agent_alias_id="TSTALIASID"):
 AgentCore provides built-in observability, but you may want more flexibility. Here are your options — pick what fits your team.
 
 ### Option A: AgentCore Native Observability
+
 Best for: Teams that want zero additional infrastructure and are all-in on AWS.
 
 - **Tracing**: AgentCore traces agent steps, tool invocations, and model calls natively via CloudWatch and X-Ray integration.
@@ -131,6 +136,7 @@ Pros: No extra infra, native AWS integration, works with existing CloudWatch das
 Cons: Less flexibility for custom trace attributes, limited LLM-specific analytics.
 
 ### Option B: Langfuse (Open Source LLM Observability)
+
 Best for: Teams that want deep LLM-specific observability, cost tracking per trace, prompt versioning, and are comfortable running or hosting an additional service.
 
 Langfuse gives you LLM-native observability — token usage per call, cost attribution, prompt management, and trace visualization purpose-built for agent workflows.
@@ -179,6 +185,7 @@ Pros: Purpose-built for LLM apps, cost tracking per trace, prompt management, op
 Cons: Additional infrastructure to manage (or SaaS cost), another system to monitor.
 
 ### Recommendation
+
 Start with AgentCore native observability for your PoC — it's zero-setup and gives you the basics. As you move to production and need deeper LLM-specific analytics (cost per conversation, prompt A/B testing, quality scoring), layer in Langfuse. They complement each other — CloudWatch for infrastructure health, Langfuse for LLM behavior.
 
 ---
@@ -188,6 +195,7 @@ Start with AgentCore native observability for your PoC — it's zero-setup and g
 Don't ship agents without evals. Period. Use **DeepEval** for systematic, repeatable evaluation of your agent's outputs.
 
 ### Why DeepEval
+
 - Purpose-built for LLM evaluation (not repurposed NLP metrics)
 - Supports RAG-specific metrics (faithfulness, relevancy, contextual recall)
 - Integrates with pytest — evals run in CI/CD like any other test
@@ -275,13 +283,14 @@ deepeval test run test_agent_evals.py --report
 
 ### Eval Strategy for Production
 
-| Phase | What to Eval | Frequency |
-|---|---|---|
-| PoC | Answer relevancy, basic hallucination | After each prompt change |
-| Pre-prod | Full suite + faithfulness + tool use | Every PR / deploy |
+| Phase      | What to Eval                            | Frequency                |
+| ---------- | --------------------------------------- | ------------------------ |
+| PoC        | Answer relevancy, basic hallucination   | After each prompt change |
+| Pre-prod   | Full suite + faithfulness + tool use    | Every PR / deploy        |
 | Production | Regression suite + sampled live traffic | Daily + on model updates |
 
 ### Building Your Eval Dataset
+
 - Start with 20-30 representative queries from real users
 - Include edge cases: ambiguous queries, out-of-scope requests, adversarial inputs
 - Version your eval dataset alongside your agent code
@@ -291,15 +300,15 @@ deepeval test run test_agent_evals.py --report
 
 ## PoC → Production Migration Path
 
-| PoC State | Production Target | How |
-|---|---|---|
-| Hardcoded model ID | Model routing by task complexity | Add classification step, route to appropriate model |
-| No error handling | Full retry + circuit breaker | Wrap tool calls, add DLQ for failures |
-| Console testing | Automated eval suite | DeepEval in CI/CD pipeline |
-| CloudWatch only | CloudWatch + Langfuse | Add Langfuse decorators, keep CW for infra |
-| Single agent | Multi-agent orchestration | AgentCore multi-agent collaboration or Step Functions |
-| No guardrails | Content filtering + PII detection | Bedrock Guardrails on user-facing I/O |
-| Manual deployment | CI/CD with agent versioning | CodePipeline or GitHub Actions + agent aliases |
+| PoC State          | Production Target                 | How                                                   |
+| ------------------ | --------------------------------- | ----------------------------------------------------- |
+| Hardcoded model ID | Model routing by task complexity  | Add classification step, route to appropriate model   |
+| No error handling  | Full retry + circuit breaker      | Wrap tool calls, add DLQ for failures                 |
+| Console testing    | Automated eval suite              | DeepEval in CI/CD pipeline                            |
+| CloudWatch only    | CloudWatch + Langfuse             | Add Langfuse decorators, keep CW for infra            |
+| Single agent       | Multi-agent orchestration         | AgentCore multi-agent collaboration or Step Functions |
+| No guardrails      | Content filtering + PII detection | Bedrock Guardrails on user-facing I/O                 |
+| Manual deployment  | CI/CD with agent versioning       | CodePipeline or GitHub Actions + agent aliases        |
 
 ## Anti-Patterns
 
@@ -314,6 +323,7 @@ deepeval test run test_agent_evals.py --report
 ## Output Format
 
 When reviewing or building an agent, structure your response as:
+
 1. **Agent Purpose**: One sentence
 2. **Architecture**: Model, tools, knowledge bases, guardrails
 3. **Current State**: PoC / Hardening / Production-ready

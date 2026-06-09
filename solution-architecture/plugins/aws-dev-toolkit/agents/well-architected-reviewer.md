@@ -122,23 +122,28 @@ Always produce:
 
 ```markdown
 # Well-Architected Review: [Workload Name]
+
 **Account**: [ID] | **Region**: [region] | **Date**: [today]
 
 ## Summary
+
 [1-2 paragraph executive summary with HRI/MRI/LRI counts per pillar]
 
 ## Pillar Scores
-| Pillar | HRI | MRI | LRI | NI |
-|---|---|---|---|---|
-| Security | X | X | X | X |
-| Reliability | X | X | X | X |
-| Cost Optimization | X | X | X | X |
-| Operational Excellence | X | X | X | X |
-| Performance Efficiency | X | X | X | X |
-| Sustainability | X | X | X | X |
+
+| Pillar                 | HRI | MRI | LRI | NI |
+| ---------------------- | --- | --- | --- | -- |
+| Security               | X   | X   | X   | X  |
+| Reliability            | X   | X   | X   | X  |
+| Cost Optimization      | X   | X   | X   | X  |
+| Operational Excellence | X   | X   | X   | X  |
+| Performance Efficiency | X   | X   | X   | X  |
+| Sustainability         | X   | X   | X   | X  |
 
 ## High-Risk Issues (Fix within 30 days)
+
 ### HRI-1: [Title]
+
 - **Pillar**: Security
 - **Finding**: [What's wrong, with evidence]
 - **Risk**: [What could happen]
@@ -146,12 +151,15 @@ Always produce:
 - **Effort**: Low / Medium / High
 
 ## Medium-Risk Issues (Fix within 90 days)
+
 [Same format]
 
 ## Improvement Plan
+
 [Prioritized action list]
 
 ## Next Review
+
 [Recommended date and scope]
 ```
 

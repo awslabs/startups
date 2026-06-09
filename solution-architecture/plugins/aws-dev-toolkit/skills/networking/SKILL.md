@@ -31,15 +31,16 @@ Always design with three tiers:
 
 ## Security Groups vs NACLs
 
-| Feature | Security Groups | NACLs |
-|---|---|---|
-| Level | ENI (instance) | Subnet |
-| State | Stateful | Stateless |
-| Rules | Allow only | Allow and Deny |
-| Evaluation | All rules evaluated | Rules evaluated in order by number |
-| Default | Deny all inbound, allow all outbound | Allow all inbound and outbound |
+| Feature    | Security Groups                      | NACLs                              |
+| ---------- | ------------------------------------ | ---------------------------------- |
+| Level      | ENI (instance)                       | Subnet                             |
+| State      | Stateful                             | Stateless                          |
+| Rules      | Allow only                           | Allow and Deny                     |
+| Evaluation | All rules evaluated                  | Rules evaluated in order by number |
+| Default    | Deny all inbound, allow all outbound | Allow all inbound and outbound     |
 
 **Opinionated guidance:**
+
 - Security groups are your primary network control. Use them for everything.
 - NACLs are defense-in-depth only. Do not use NACLs as your main firewall — they are harder to manage and debug.
 - Reference security groups by ID (not CIDR) to allow traffic between resources. This is more maintainable and self-documenting.
@@ -48,11 +49,13 @@ Always design with three tiers:
 ## VPC Endpoints
 
 ### Gateway Endpoints (free)
+
 - **S3** and **DynamoDB** only
 - Added to route tables — no ENI, no security group
 - Always create these — they are free (no hourly charge, no per-GB data processing fee), they keep S3/DynamoDB traffic on the AWS backbone instead of traversing NAT Gateways (which charge $0.045/GB processed), and they reduce latency by avoiding the extra hop through NAT. The only cost is a route table entry.
 
 ### Interface Endpoints (cost per hour + data)
+
 - All other AWS services (STS, Secrets Manager, ECR, CloudWatch, KMS, etc.)
 - Creates an ENI in your subnet — requires a security group
 - Enable Private DNS so the default service endpoint resolves to the private IP
@@ -61,6 +64,7 @@ Always design with three tiers:
 ## Transit Gateway
 
 Use Transit Gateway when:
+
 - You have more than 2 VPCs that need to communicate
 - You need hub-and-spoke or any-to-any connectivity
 - You need centralized egress or ingress through a shared services VPC
@@ -68,6 +72,7 @@ Use Transit Gateway when:
 Do NOT use VPC peering for more than 2-3 VPCs — it does not scale (N*(N-1)/2 connections).
 
 Key Transit Gateway patterns:
+
 - **Shared Services VPC**: Central VPC with DNS, logging, security tools. All spoke VPCs route through TGW.
 - **Centralized Egress**: Single NAT Gateway in a shared VPC. All private subnets route 0.0.0.0/0 through TGW to the shared VPC.
 - **Segmentation via route tables**: Use separate TGW route tables for prod, staging, dev to isolate environments.
@@ -82,10 +87,12 @@ Key Transit Gateway patterns:
 ## Route53
 
 ### Hosted Zones
+
 - **Public hosted zone**: DNS for internet-facing resources. NS records must be registered with your domain registrar.
 - **Private hosted zone**: DNS for internal resources. Associated with one or more VPCs. Not resolvable from the internet.
 
 ### Routing Policies
+
 - **Simple**: Single resource. Default.
 - **Weighted**: Split traffic by percentage. Good for canary deployments.
 - **Latency-based**: Route to the lowest-latency region. Use for multi-region apps.
@@ -95,6 +102,7 @@ Key Transit Gateway patterns:
 - **Multivalue Answer**: Return multiple healthy IPs. Poor man's load balancer (use ALB instead).
 
 ### Health Checks
+
 - Always attach health checks to failover and latency records
 - Health checks can monitor an endpoint, a CloudWatch alarm, or other health checks (calculated)
 - Health check interval: 30s standard, 10s fast (costs more)
@@ -140,15 +148,15 @@ aws route53 list-resource-record-sets --hosted-zone-id /hostedzone/ZXXXXX
 
 ## Output Format
 
-| Field | Details |
-|-------|---------|
-| **VPC CIDR** | Primary CIDR block and any secondary CIDRs |
-| **Subnet layout** | Public, private, and isolated subnets per AZ with CIDR ranges |
-| **NAT strategy** | NAT Gateway per AZ (production) or single NAT (dev/staging) |
-| **VPC endpoints** | Gateway endpoints (S3, DynamoDB) and interface endpoints by service |
-| **Security groups summary** | SG names, purpose, and key ingress/egress rules |
-| **Transit Gateway** | TGW ID, attachments, route table segmentation (if applicable) |
-| **DNS** | Route53 hosted zones (public/private), routing policies, health checks |
+| Field                       | Details                                                                |
+| --------------------------- | ---------------------------------------------------------------------- |
+| **VPC CIDR**                | Primary CIDR block and any secondary CIDRs                             |
+| **Subnet layout**           | Public, private, and isolated subnets per AZ with CIDR ranges          |
+| **NAT strategy**            | NAT Gateway per AZ (production) or single NAT (dev/staging)            |
+| **VPC endpoints**           | Gateway endpoints (S3, DynamoDB) and interface endpoints by service    |
+| **Security groups summary** | SG names, purpose, and key ingress/egress rules                        |
+| **Transit Gateway**         | TGW ID, attachments, route table segmentation (if applicable)          |
+| **DNS**                     | Route53 hosted zones (public/private), routing policies, health checks |
 
 ## Reference Files
 

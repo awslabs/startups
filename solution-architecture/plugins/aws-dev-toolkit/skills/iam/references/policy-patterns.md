@@ -58,7 +58,7 @@ Scoped to a specific bucket prefix and region. Separate read/write into distinct
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"Service": "lambda.amazonaws.com"},
+    "Principal": { "Service": "lambda.amazonaws.com" },
     "Action": "sts:AssumeRole"
   }]
 }
@@ -71,7 +71,7 @@ Scoped to a specific bucket prefix and region. Separate read/write into distinct
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"Service": "ec2.amazonaws.com"},
+    "Principal": { "Service": "ec2.amazonaws.com" },
     "Action": "sts:AssumeRole"
   }]
 }
@@ -84,7 +84,7 @@ Scoped to a specific bucket prefix and region. Separate read/write into distinct
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"Service": "ecs-tasks.amazonaws.com"},
+    "Principal": { "Service": "ecs-tasks.amazonaws.com" },
     "Action": "sts:AssumeRole"
   }]
 }
@@ -99,7 +99,7 @@ Prevents the confused deputy problem. Always use `sts:ExternalId` for cross-acco
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"AWS": "arn:aws:iam::111122223333:root"},
+    "Principal": { "AWS": "arn:aws:iam::111122223333:root" },
     "Action": "sts:AssumeRole",
     "Condition": {
       "StringEquals": {
@@ -117,7 +117,7 @@ Prevents the confused deputy problem. Always use `sts:ExternalId` for cross-acco
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"Federated": "arn:aws:iam::123456789012:saml-provider/MyIdP"},
+    "Principal": { "Federated": "arn:aws:iam::123456789012:saml-provider/MyIdP" },
     "Action": "sts:AssumeRoleWithSAML",
     "Condition": {
       "StringEquals": {
@@ -137,7 +137,9 @@ Used with GitHub Actions to avoid storing AWS credentials as secrets.
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": {"Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Principal": {
+      "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+    },
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
       "StringEquals": {
@@ -163,7 +165,7 @@ Used with GitHub Actions to avoid storing AWS credentials as secrets.
   "Statement": [{
     "Sid": "AllowCrossAccountRead",
     "Effect": "Allow",
-    "Principal": {"AWS": "arn:aws:iam::111122223333:role/DataConsumerRole"},
+    "Principal": { "AWS": "arn:aws:iam::111122223333:role/DataConsumerRole" },
     "Action": ["s3:GetObject", "s3:ListBucket"],
     "Resource": [
       "arn:aws:s3:::shared-data-bucket",
@@ -204,14 +206,14 @@ Use `aws:PrincipalOrgID` instead of listing individual account IDs.
     {
       "Sid": "AllowKeyAdmin",
       "Effect": "Allow",
-      "Principal": {"AWS": "arn:aws:iam::123456789012:root"},
+      "Principal": { "AWS": "arn:aws:iam::123456789012:root" },
       "Action": "kms:*",
       "Resource": "*"
     },
     {
       "Sid": "AllowCrossAccountDecrypt",
       "Effect": "Allow",
-      "Principal": {"AWS": "arn:aws:iam::111122223333:role/DecryptorRole"},
+      "Principal": { "AWS": "arn:aws:iam::111122223333:role/DecryptorRole" },
       "Action": ["kms:Decrypt", "kms:DescribeKey"],
       "Resource": "*"
     }
@@ -227,7 +229,7 @@ Use `aws:PrincipalOrgID` instead of listing individual account IDs.
   "Statement": [{
     "Sid": "AllowSNSPublish",
     "Effect": "Allow",
-    "Principal": {"Service": "sns.amazonaws.com"},
+    "Principal": { "Service": "sns.amazonaws.com" },
     "Action": "sqs:SendMessage",
     "Resource": "arn:aws:sqs:us-east-1:123456789012:my-queue",
     "Condition": {
@@ -391,15 +393,15 @@ Allows broad actions but blocks privilege escalation paths.
 
 ## Condition Keys Quick Reference
 
-| Condition Key | Use Case |
-|---|---|
-| `aws:RequestedRegion` | Restrict actions to specific regions |
-| `aws:PrincipalOrgID` | Allow access from any account in your org |
-| `aws:SourceVpc` / `aws:SourceVpce` | Restrict to VPC or VPC endpoint origin |
-| `aws:PrincipalARN` | Exempt specific roles from deny statements |
-| `aws:MultiFactorAuthPresent` | Require MFA for sensitive actions |
-| `aws:PrincipalTag/*` | Attribute-based access control (ABAC) |
-| `aws:ResourceTag/*` | Restrict based on resource tags |
-| `sts:ExternalId` | Prevent confused deputy in cross-account |
-| `s3:prefix` | Scope S3 ListBucket to a key prefix |
-| `ec2:MetadataHttpTokens` | Enforce IMDSv2 |
+| Condition Key                      | Use Case                                   |
+| ---------------------------------- | ------------------------------------------ |
+| `aws:RequestedRegion`              | Restrict actions to specific regions       |
+| `aws:PrincipalOrgID`               | Allow access from any account in your org  |
+| `aws:SourceVpc` / `aws:SourceVpce` | Restrict to VPC or VPC endpoint origin     |
+| `aws:PrincipalARN`                 | Exempt specific roles from deny statements |
+| `aws:MultiFactorAuthPresent`       | Require MFA for sensitive actions          |
+| `aws:PrincipalTag/*`               | Attribute-based access control (ABAC)      |
+| `aws:ResourceTag/*`                | Restrict based on resource tags            |
+| `sts:ExternalId`                   | Prevent confused deputy in cross-account   |
+| `s3:prefix`                        | Scope S3 ListBucket to a key prefix        |
+| `ec2:MetadataHttpTokens`           | Enforce IMDSv2                             |

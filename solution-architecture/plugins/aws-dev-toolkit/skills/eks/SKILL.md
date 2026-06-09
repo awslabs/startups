@@ -57,6 +57,7 @@ Manage these as EKS add-ons (not Helm) for automatic version compatibility:
 - **Cluster Autoscaler**: Legacy. Tied to ASG min/max. Slower scaling (minutes vs seconds). Use only if Karpenter is not an option (e.g., very old clusters, org policy).
 
 Karpenter best practices:
+
 - Define `NodePool` with broad instance families (`c`, `m`, `r` families) -- let Karpenter choose the best fit.
 - Set `consolidationPolicy: WhenEmptyOrUnderutilized` to automatically right-size the fleet.
 - Use `topologySpreadConstraints` in pod specs to distribute across AZs.
@@ -108,16 +109,16 @@ kubectl logs <pod-name> -n <namespace> --previous
 
 ## Output Format
 
-| Field | Details |
-|-------|---------|
-| **Cluster version** | Kubernetes version (e.g., 1.31) |
-| **Compute strategy** | Managed node groups, Fargate profiles, or self-managed |
-| **Node groups / Karpenter config** | Instance families, NodePool limits, consolidation policy |
-| **Add-ons** | Managed add-ons and versions (vpc-cni, CoreDNS, kube-proxy, CSI drivers) |
-| **Autoscaling approach** | Karpenter or Cluster Autoscaler, NodePool/ASG config |
-| **Ingress** | AWS Load Balancer Controller, ALB Ingress, or NLB |
-| **IAM (IRSA / Pod Identity)** | Pod Identity associations or IRSA OIDC setup per workload |
-| **Monitoring** | Container Insights, Prometheus, control plane logging, X-Ray |
+| Field                              | Details                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| **Cluster version**                | Kubernetes version (e.g., 1.31)                                          |
+| **Compute strategy**               | Managed node groups, Fargate profiles, or self-managed                   |
+| **Node groups / Karpenter config** | Instance families, NodePool limits, consolidation policy                 |
+| **Add-ons**                        | Managed add-ons and versions (vpc-cni, CoreDNS, kube-proxy, CSI drivers) |
+| **Autoscaling approach**           | Karpenter or Cluster Autoscaler, NodePool/ASG config                     |
+| **Ingress**                        | AWS Load Balancer Controller, ALB Ingress, or NLB                        |
+| **IAM (IRSA / Pod Identity)**      | Pod Identity associations or IRSA OIDC setup per workload                |
+| **Monitoring**                     | Container Insights, Prometheus, control plane logging, X-Ray             |
 
 ## Related Skills
 

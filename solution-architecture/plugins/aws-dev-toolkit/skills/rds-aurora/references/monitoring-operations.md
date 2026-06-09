@@ -4,32 +4,33 @@
 
 ### Critical Metrics — Monitor with Alarms
 
-| Metric | Alarm Threshold | Action |
-|---|---|---|
-| `CPUUtilization` | >80% sustained 5 min | Scale up instance or optimize queries |
-| `FreeableMemory` | <10% of total memory | Scale up or reduce max_connections/work_mem |
-| `DatabaseConnections` | >80% of max_connections | Add RDS Proxy, increase limit, or fix connection leaks |
-| `FreeStorageSpace` (RDS) | <20% of allocated | Enable storage auto-scaling or increase allocated storage |
-| `ReplicaLag` | >1 second sustained | Writer overloaded, reader undersized, or network issue |
-| `DiskQueueDepth` (RDS) | >10 sustained | IOPS bottleneck — provision more IOPS or move to io2 |
-| `SwapUsage` | >0 for extended periods | Instance memory insufficient — scale up |
-| `AuroraReplicaLagMaximum` | >100ms sustained | Write pressure exceeding replica capacity |
+| Metric                    | Alarm Threshold         | Action                                                    |
+| ------------------------- | ----------------------- | --------------------------------------------------------- |
+| `CPUUtilization`          | >80% sustained 5 min    | Scale up instance or optimize queries                     |
+| `FreeableMemory`          | <10% of total memory    | Scale up or reduce max_connections/work_mem               |
+| `DatabaseConnections`     | >80% of max_connections | Add RDS Proxy, increase limit, or fix connection leaks    |
+| `FreeStorageSpace` (RDS)  | <20% of allocated       | Enable storage auto-scaling or increase allocated storage |
+| `ReplicaLag`              | >1 second sustained     | Writer overloaded, reader undersized, or network issue    |
+| `DiskQueueDepth` (RDS)    | >10 sustained           | IOPS bottleneck — provision more IOPS or move to io2      |
+| `SwapUsage`               | >0 for extended periods | Instance memory insufficient — scale up                   |
+| `AuroraReplicaLagMaximum` | >100ms sustained        | Write pressure exceeding replica capacity                 |
 
 ### Important Metrics — Review Weekly
 
-| Metric | What to Look For | Notes |
-|---|---|---|
-| `ReadIOPS` / `WriteIOPS` | Approaching provisioned IOPS limit | gp3 baseline is 3,000 IOPS |
-| `ReadThroughput` / `WriteThroughput` | Approaching throughput limit | gp3 baseline is 125 MiB/s |
-| `ServerlessDatabaseCapacity` | Min/max ACU utilization patterns | Right-size Serverless v2 scaling config |
-| `ACUUtilization` | Consistently >90% | Max ACU may be too low |
-| `BufferCacheHitRatio` | <95% | Working set exceeds buffer pool — scale up memory |
-| `Deadlocks` | Any occurrence | Investigate application transaction patterns |
-| `LoginFailures` | Spikes | Possible credential issues or brute-force attempts |
+| Metric                               | What to Look For                   | Notes                                              |
+| ------------------------------------ | ---------------------------------- | -------------------------------------------------- |
+| `ReadIOPS` / `WriteIOPS`             | Approaching provisioned IOPS limit | gp3 baseline is 3,000 IOPS                         |
+| `ReadThroughput` / `WriteThroughput` | Approaching throughput limit       | gp3 baseline is 125 MiB/s                          |
+| `ServerlessDatabaseCapacity`         | Min/max ACU utilization patterns   | Right-size Serverless v2 scaling config            |
+| `ACUUtilization`                     | Consistently >90%                  | Max ACU may be too low                             |
+| `BufferCacheHitRatio`                | <95%                               | Working set exceeds buffer pool — scale up memory  |
+| `Deadlocks`                          | Any occurrence                     | Investigate application transaction patterns       |
+| `LoginFailures`                      | Spikes                             | Possible credential issues or brute-force attempts |
 
 ## Performance Insights
 
 ### Setup
+
 - Enable at instance creation or via `modify-db-instance --enable-performance-insights`
 - Free tier: 7 days retention (sufficient for most troubleshooting)
 - Paid: up to 24 months retention ($0.068/vCPU/month) — use for trend analysis
@@ -37,23 +38,26 @@
 ### Key Concepts
 
 **db.load**: The average number of active sessions. Compare to vCPU count:
+
 - db.load < vCPU count → database is not CPU-constrained
 - db.load > vCPU count → queries are waiting (bottleneck)
 - db.load >> vCPU count → significant contention, immediate action needed
 
 **Wait Events** (what queries are waiting on):
-| Wait Event | Engine | Meaning | Fix |
-|---|---|---|---|
-| `CPU` | Both | Query is actively executing | Optimize query or scale up |
-| `IO:DataFileRead` | PostgreSQL | Reading from disk | Increase shared_buffers or scale up memory |
-| `wait/io/table/sql/handler` | MySQL | Table I/O wait | Add indexes, optimize queries |
-| `Lock:Relation` | PostgreSQL | Table lock contention | Reduce long transactions, check autovacuum |
-| `wait/synch/mutex/innodb/...` | MySQL | InnoDB mutex contention | Increase buffer pool instances |
-| `LWLock:BufferMapping` | PostgreSQL | Buffer pool contention | Scale up instance (more memory) |
-| `Client:ClientRead` | PostgreSQL | Waiting for client to send data | Application or network issue |
-| `IO:XactSync` | PostgreSQL | Waiting for WAL sync | Storage throughput limit (RDS only) |
+
+| Wait Event                    | Engine     | Meaning                         | Fix                                        |
+| ----------------------------- | ---------- | ------------------------------- | ------------------------------------------ |
+| `CPU`                         | Both       | Query is actively executing     | Optimize query or scale up                 |
+| `IO:DataFileRead`             | PostgreSQL | Reading from disk               | Increase shared_buffers or scale up memory |
+| `wait/io/table/sql/handler`   | MySQL      | Table I/O wait                  | Add indexes, optimize queries              |
+| `Lock:Relation`               | PostgreSQL | Table lock contention           | Reduce long transactions, check autovacuum |
+| `wait/synch/mutex/innodb/...` | MySQL      | InnoDB mutex contention         | Increase buffer pool instances             |
+| `LWLock:BufferMapping`        | PostgreSQL | Buffer pool contention          | Scale up instance (more memory)            |
+| `Client:ClientRead`           | PostgreSQL | Waiting for client to send data | Application or network issue               |
+| `IO:XactSync`                 | PostgreSQL | Waiting for WAL sync            | Storage throughput limit (RDS only)        |
 
 ### Top SQL Analysis
+
 1. Sort by `db.load` contribution to find the most resource-consuming queries
 2. Check execution plan with `EXPLAIN (ANALYZE, BUFFERS)` for the top offenders
 3. Look for sequential scans on large tables, nested loops with large row counts, and sort operations spilling to disk
@@ -66,13 +70,14 @@
 - Essential for distinguishing database issues from OS/instance issues
 
 ### Key OS Metrics
-| Metric | What to Look For |
-|---|---|
-| CPU per core | Uneven core utilization (single-threaded bottleneck) |
-| Memory breakdown | Shared buffers vs free vs cached |
-| Swap | Any swap activity indicates memory pressure |
-| Disk I/O latency | >5ms average indicates storage bottleneck |
-| Network throughput | Approaching instance network bandwidth limit |
+
+| Metric             | What to Look For                                     |
+| ------------------ | ---------------------------------------------------- |
+| CPU per core       | Uneven core utilization (single-threaded bottleneck) |
+| Memory breakdown   | Shared buffers vs free vs cached                     |
+| Swap               | Any swap activity indicates memory pressure          |
+| Disk I/O latency   | >5ms average indicates storage bottleneck            |
+| Network throughput | Approaching instance network bandwidth limit         |
 
 ## Operational Procedures
 
@@ -86,6 +91,7 @@
 ### Backup Verification
 
 Quarterly backup verification procedure:
+
 1. Restore from the latest automated backup to a test instance
 2. Run application smoke tests against the restored instance
 3. Verify point-in-time recovery (PITR) works by restoring to a specific timestamp
@@ -95,6 +101,7 @@ Quarterly backup verification procedure:
 ### Connection Management
 
 #### Diagnosing Connection Issues
+
 ```sql
 -- PostgreSQL: active connections by state
 SELECT state, count(*) FROM pg_stat_activity GROUP BY state;
@@ -123,6 +130,7 @@ WHERE TIME > 300 AND COMMAND != 'Sleep';
 ```
 
 #### Connection Leak Prevention
+
 - Set `idle_in_transaction_session_timeout` (PostgreSQL) or `wait_timeout` (MySQL) to kill idle connections
 - Monitor `DatabaseConnections` metric trend — steady increase indicates a leak
 - Use RDS Proxy to absorb connection spikes and multiplex connections
@@ -130,6 +138,7 @@ WHERE TIME > 300 AND COMMAND != 'Sleep';
 ### Failover Testing
 
 Quarterly failover drill:
+
 1. Initiate failover via `aws rds failover-db-cluster` (Aurora) or `aws rds reboot-db-instance --force-failover` (RDS Multi-AZ)
 2. Measure actual failover time (Aurora target: <30s, RDS Multi-AZ target: <120s)
 3. Verify application reconnects without manual intervention

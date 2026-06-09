@@ -6,24 +6,24 @@ Key design examples, GSI/LSI strategies, and single-table design patterns.
 
 ### Access Patterns
 
-| # | Access Pattern | Key Condition | Index |
-|---|---|---|---|
-| 1 | Get user profile | PK=USER#\<id\> SK=PROFILE | Base table |
-| 2 | List user's orders | PK=USER#\<id\> SK begins_with ORDER# | Base table |
-| 3 | Get order by ID | PK=ORDER#\<id\> SK=METADATA | Base table |
-| 4 | Get order items | PK=ORDER#\<id\> SK begins_with ITEM# | Base table |
-| 5 | Orders by status | GSI1PK=STATUS#\<status\> GSI1SK=\<timestamp\> | GSI1 |
-| 6 | Look up user by email | GSI2PK=EMAIL#\<email\> GSI2SK=USER#\<id\> | GSI2 |
-| 7 | Recent orders (global) | GSI1PK=ORDER GSI1SK=\<timestamp\> | GSI1 (overloaded) |
+| # | Access Pattern         | Key Condition                                 | Index             |
+| - | ---------------------- | --------------------------------------------- | ----------------- |
+| 1 | Get user profile       | PK=USER#\<id\> SK=PROFILE                     | Base table        |
+| 2 | List user's orders     | PK=USER#\<id\> SK begins_with ORDER#          | Base table        |
+| 3 | Get order by ID        | PK=ORDER#\<id\> SK=METADATA                   | Base table        |
+| 4 | Get order items        | PK=ORDER#\<id\> SK begins_with ITEM#          | Base table        |
+| 5 | Orders by status       | GSI1PK=STATUS#\<status\> GSI1SK=\<timestamp\> | GSI1              |
+| 6 | Look up user by email  | GSI2PK=EMAIL#\<email\> GSI2SK=USER#\<id\>     | GSI2              |
+| 7 | Recent orders (global) | GSI1PK=ORDER GSI1SK=\<timestamp\>             | GSI1 (overloaded) |
 
 ### Table Schema
 
-| Entity | PK | SK | GSI1PK | GSI1SK | GSI2PK | GSI2SK | Attributes |
-|---|---|---|---|---|---|---|---|
-| User | USER#\<id\> | PROFILE | - | - | EMAIL#\<email\> | USER#\<id\> | name, email, plan |
-| Order | USER#\<id\> | ORDER#\<timestamp\>#\<orderId\> | STATUS#\<status\> | \<timestamp\> | - | - | total, status |
-| Order (by ID) | ORDER#\<id\> | METADATA | ORDER | \<timestamp\> | - | - | userId, total, status |
-| Order Item | ORDER#\<id\> | ITEM#\<sku\> | - | - | - | - | quantity, price, name |
+| Entity        | PK           | SK                              | GSI1PK            | GSI1SK        | GSI2PK          | GSI2SK      | Attributes            |
+| ------------- | ------------ | ------------------------------- | ----------------- | ------------- | --------------- | ----------- | --------------------- |
+| User          | USER#\<id\>  | PROFILE                         | -                 | -             | EMAIL#\<email\> | USER#\<id\> | name, email, plan     |
+| Order         | USER#\<id\>  | ORDER#\<timestamp\>#\<orderId\> | STATUS#\<status\> | \<timestamp\> | -               | -           | total, status         |
+| Order (by ID) | ORDER#\<id\> | METADATA                        | ORDER             | \<timestamp\> | -               | -           | userId, total, status |
+| Order Item    | ORDER#\<id\> | ITEM#\<sku\>                    | -                 | -             | -               | -           | quantity, price, name |
 
 ### Key Design Decisions
 
@@ -36,23 +36,23 @@ Key design examples, GSI/LSI strategies, and single-table design patterns.
 
 ### Access Patterns
 
-| # | Access Pattern | Key Condition | Index |
-|---|---|---|---|
-| 1 | Get tenant settings | PK=TENANT#\<id\> SK=SETTINGS | Base table |
-| 2 | List tenant users | PK=TENANT#\<id\> SK begins_with USER# | Base table |
-| 3 | Get user by ID | PK=TENANT#\<id\> SK=USER#\<userId\> | Base table |
-| 4 | User's projects | PK=TENANT#\<id\>#USER#\<userId\> SK begins_with PROJECT# | Base table |
-| 5 | Look up user by email (cross-tenant) | GSI1PK=EMAIL#\<email\> | GSI1 |
-| 6 | List projects by status | GSI2PK=TENANT#\<id\>#STATUS#\<status\> GSI2SK=\<timestamp\> | GSI2 |
-| 7 | All items for a tenant (export) | PK begins_with TENANT#\<id\> | Scan with filter (offline only) |
+| # | Access Pattern                       | Key Condition                                               | Index                           |
+| - | ------------------------------------ | ----------------------------------------------------------- | ------------------------------- |
+| 1 | Get tenant settings                  | PK=TENANT#\<id\> SK=SETTINGS                                | Base table                      |
+| 2 | List tenant users                    | PK=TENANT#\<id\> SK begins_with USER#                       | Base table                      |
+| 3 | Get user by ID                       | PK=TENANT#\<id\> SK=USER#\<userId\>                         | Base table                      |
+| 4 | User's projects                      | PK=TENANT#\<id\>#USER#\<userId\> SK begins_with PROJECT#    | Base table                      |
+| 5 | Look up user by email (cross-tenant) | GSI1PK=EMAIL#\<email\>                                      | GSI1                            |
+| 6 | List projects by status              | GSI2PK=TENANT#\<id\>#STATUS#\<status\> GSI2SK=\<timestamp\> | GSI2                            |
+| 7 | All items for a tenant (export)      | PK begins_with TENANT#\<id\>                                | Scan with filter (offline only) |
 
 ### Table Schema
 
-| Entity | PK | SK | GSI1PK | GSI1SK | GSI2PK | GSI2SK |
-|---|---|---|---|---|---|---|
-| Tenant | TENANT#\<id\> | SETTINGS | - | - | - | - |
-| User | TENANT#\<id\> | USER#\<userId\> | EMAIL#\<email\> | TENANT#\<id\> | - | - |
-| Project | TENANT#\<id\>#USER#\<userId\> | PROJECT#\<timestamp\> | - | - | TENANT#\<id\>#STATUS#\<status\> | \<timestamp\> |
+| Entity  | PK                            | SK                    | GSI1PK          | GSI1SK        | GSI2PK                          | GSI2SK        |
+| ------- | ----------------------------- | --------------------- | --------------- | ------------- | ------------------------------- | ------------- |
+| Tenant  | TENANT#\<id\>                 | SETTINGS              | -               | -             | -                               | -             |
+| User    | TENANT#\<id\>                 | USER#\<userId\>       | EMAIL#\<email\> | TENANT#\<id\> | -                               | -             |
+| Project | TENANT#\<id\>#USER#\<userId\> | PROJECT#\<timestamp\> | -               | -             | TENANT#\<id\>#STATUS#\<status\> | \<timestamp\> |
 
 ### Key Design Decisions
 
@@ -73,6 +73,7 @@ CATEGORY#electronics        PRICE#0000099.99        Product (by category+price)
 ```
 
 **Rules for GSI overloading:**
+
 - Use generic names: `GSI1PK`, `GSI1SK`
 - Only project attributes needed for that access pattern (saves storage and WCU)
 - Document which entity types use which GSI and what the key values mean
@@ -125,6 +126,7 @@ GROUP#admins    USER#bob        {joinedAt: "2024-02-01", role: "member"}
 ```
 
 **Access patterns served:**
+
 - Get user profile: PK=USER#alice, SK=USER#alice
 - List user's groups: PK=USER#alice, SK begins_with GROUP#
 - List group members: PK=GROUP#admins, SK begins_with USER#
@@ -165,6 +167,7 @@ To read the total: Query all 10 shards and sum the values.
 **When to use:** Global counters, leaderboards, or any item that receives hundreds of writes per second.
 
 **Implementation:**
+
 ```python
 # Write: pick a random shard
 shard = random.randint(0, NUM_SHARDS - 1)
@@ -184,13 +187,13 @@ for shard in range(NUM_SHARDS):
 
 ## Pattern Selection Quick Reference
 
-| Problem | Pattern | Notes |
-|---|---|---|
-| Multiple entity types, shared partition key | Single-table design | Use generic PK/SK names |
-| Multiple access patterns, different partition keys | GSI per access pattern | Max 20 GSIs per table |
-| Same GSI serves multiple entity types | GSI overloading | Document the key semantics |
-| Hierarchical data | Hierarchical sort keys | `begins_with` for prefix queries |
-| Many-to-many relationships | Adjacency list | Duplicate entries for both directions |
-| Query only a subset of items | Sparse index | Only items with GSI attrs appear |
-| Hot write partition | Write sharding | Random suffix on PK, aggregate on read |
-| Large items (>400 KB) | Store in S3, pointer in DynamoDB | Claim-check pattern |
+| Problem                                            | Pattern                          | Notes                                  |
+| -------------------------------------------------- | -------------------------------- | -------------------------------------- |
+| Multiple entity types, shared partition key        | Single-table design              | Use generic PK/SK names                |
+| Multiple access patterns, different partition keys | GSI per access pattern           | Max 20 GSIs per table                  |
+| Same GSI serves multiple entity types              | GSI overloading                  | Document the key semantics             |
+| Hierarchical data                                  | Hierarchical sort keys           | `begins_with` for prefix queries       |
+| Many-to-many relationships                         | Adjacency list                   | Duplicate entries for both directions  |
+| Query only a subset of items                       | Sparse index                     | Only items with GSI attrs appear       |
+| Hot write partition                                | Write sharding                   | Random suffix on PK, aggregate on read |
+| Large items (>400 KB)                              | Store in S3, pointer in DynamoDB | Claim-check pattern                    |

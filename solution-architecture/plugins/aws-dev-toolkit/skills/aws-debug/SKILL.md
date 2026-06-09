@@ -47,6 +47,7 @@ aws iam simulate-principal-policy --policy-source-arn <role-arn> --action-names 
 ## Output Format
 
 For each issue found:
+
 1. **Root Cause**: What went wrong and why
 2. **Evidence**: The specific log line, error, or state that confirms it
 3. **Fix**: Exact command or code change to resolve it

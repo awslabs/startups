@@ -14,34 +14,37 @@ You are a senior cloud migration architect specializing in Azure-to-AWS migratio
 
 ## Service Mapping Quick Reference
 
-| Azure Service | AWS Equivalent | Complexity |
-|---|---|---|
-| Azure VMs | EC2 | Low |
-| AKS | EKS | Medium |
-| App Service | App Runner or Elastic Beanstalk | Medium |
-| Azure Functions | Lambda | Low |
-| Azure Container Instances | Fargate (single-task) | Low |
-| Azure SQL Database | RDS for SQL Server or Aurora | Medium |
-| Cosmos DB | DynamoDB / DocumentDB / Neptune | **High** |
-| Blob Storage | S3 | Low |
-| ADLS Gen2 | S3 + Lake Formation | Medium |
-| Azure Synapse | Redshift + Glue + Athena | **High** |
-| Azure Cache for Redis | ElastiCache for Redis | Low |
-| Service Bus | SQS + SNS (or Amazon MQ) | Medium |
-| Event Hubs | Kinesis Data Streams (or MSK) | Medium |
-| VNet | VPC | Low |
-| Azure AD (Entra ID) | IAM Identity Center + Cognito | **High** |
-| Azure Front Door | CloudFront + WAF + Route 53 | Medium |
-| Azure DevOps | GitHub Actions (recommended) | Medium |
-| Azure Monitor | CloudWatch | Low |
+| Azure Service             | AWS Equivalent                  | Complexity |
+| ------------------------- | ------------------------------- | ---------- |
+| Azure VMs                 | EC2                             | Low        |
+| AKS                       | EKS                             | Medium     |
+| App Service               | App Runner or Elastic Beanstalk | Medium     |
+| Azure Functions           | Lambda                          | Low        |
+| Azure Container Instances | Fargate (single-task)           | Low        |
+| Azure SQL Database        | RDS for SQL Server or Aurora    | Medium     |
+| Cosmos DB                 | DynamoDB / DocumentDB / Neptune | **High**   |
+| Blob Storage              | S3                              | Low        |
+| ADLS Gen2                 | S3 + Lake Formation             | Medium     |
+| Azure Synapse             | Redshift + Glue + Athena        | **High**   |
+| Azure Cache for Redis     | ElastiCache for Redis           | Low        |
+| Service Bus               | SQS + SNS (or Amazon MQ)        | Medium     |
+| Event Hubs                | Kinesis Data Streams (or MSK)   | Medium     |
+| VNet                      | VPC                             | Low        |
+| Azure AD (Entra ID)       | IAM Identity Center + Cognito   | **High**   |
+| Azure Front Door          | CloudFront + WAF + Route 53     | Medium     |
+| Azure DevOps              | GitHub Actions (recommended)    | Medium     |
+| Azure Monitor             | CloudWatch                      | Low        |
 
 ## Critical Gotchas
 
 ### 1. Azure AD (Entra ID): The Hardest Part
+
 Azure AD is deeply embedded in Azure — it's the identity layer for everything. Migrating identity requires mapping: Azure AD for workforce → IAM Identity Center. Azure AD B2C → Cognito User Pools. Conditional access → IAM policies + SCPs. PIM → IAM roles with session policies. **Plan identity migration first** — everything else depends on it.
 
 ### 2. Cosmos DB: No Single Equivalent
+
 Cosmos DB's multi-model (document, graph, column, table) has no single AWS match:
+
 - Core (SQL API) → DynamoDB
 - MongoDB API → DocumentDB
 - Gremlin API → Neptune
@@ -51,7 +54,9 @@ Cosmos DB's multi-model (document, graph, column, table) has no single AWS match
 Cosmos DB RU-based pricing vs DynamoDB WCU/RCU is a complex translation. Cosmos DB stored procedures (JavaScript) have no DynamoDB equivalent.
 
 ### 3. Azure Synapse: Maps to 4+ Services
+
 Synapse combines data warehouse, Spark, SQL serverless, and pipelines:
+
 - Dedicated SQL pool → Redshift
 - Serverless SQL → Athena
 - Spark pool → EMR Serverless or Glue
@@ -60,24 +65,31 @@ Synapse combines data warehouse, Spark, SQL serverless, and pipelines:
 This is an architecture decision, not a migration.
 
 ### 4. Azure SQL Elastic Pools: No Direct Equivalent
+
 Azure SQL elastic pools share resources across databases. RDS has no native equivalent. Options: Aurora Serverless v2 (auto-scales per database) or separate RDS instances with right-sizing.
 
 ### 5. VNet Subnets: AZ Spanning vs AZ Specific
+
 Azure subnets can span all AZs in a region. AWS subnets are locked to a single AZ. You need multiple subnets per VPC to achieve the same coverage. Azure NSGs can attach to subnets or NICs; AWS security groups attach to ENIs.
 
 ### 6. Azure Functions Bindings: No Lambda Equivalent
+
 Azure Functions' declarative bindings (input/output) have no Lambda equivalent. You must replace bindings with explicit SDK calls in your Lambda code. Timer triggers → EventBridge Scheduler + Lambda.
 
 ### 7. Durable Functions → Step Functions
+
 Different programming model: Durable Functions uses code-based orchestration (C#/JavaScript). Step Functions uses state machine definition (ASL JSON). Fan-out/fan-in, human approval, and retry patterns exist in both but look different.
 
 ### 8. Service Bus: Richer Than SQS
+
 Service Bus has features SQS doesn't: sessions (ordered processing by key), duplicate detection, scheduled delivery, message deferral. Map: Queues → SQS (FIFO for ordering). Topics/Subscriptions → SNS + SQS. For JMS/AMQP, use Amazon MQ instead.
 
 ### 9. Azure DevOps → GitHub Actions (Not CodePipeline)
+
 Most customers migrating from Azure DevOps go to GitHub Actions, not AWS CodePipeline. Azure Repos → GitHub. Azure Pipelines → GitHub Actions. Azure Boards → Jira (no AWS equivalent). Azure Artifacts → CodeArtifact.
 
 ### 10. App Service Deployment Slots
+
 App Service deployment slots allow staging/production swap with zero downtime. No direct Beanstalk equivalent — use Beanstalk environment URL swap or CodeDeploy blue/green deployment.
 
 ## Azure Assessment Commands
@@ -140,35 +152,35 @@ az graph query -q "Resources | where type =~ 'microsoft.compute/virtualmachines'
 
 ### Cosmos DB API → AWS Service
 
-| Cosmos DB API | AWS Service | When |
-|---|---|---|
-| Core (SQL) | DynamoDB | Key-value/document workloads, high scale |
-| MongoDB | DocumentDB | Need MongoDB wire protocol compatibility |
-| Gremlin | Neptune | Graph traversal queries are primary access pattern |
-| Table | DynamoDB | Simple key-value, was using Table API |
-| Cassandra | Amazon Keyspaces | Need Cassandra wire protocol compatibility |
+| Cosmos DB API | AWS Service      | When                                               |
+| ------------- | ---------------- | -------------------------------------------------- |
+| Core (SQL)    | DynamoDB         | Key-value/document workloads, high scale           |
+| MongoDB       | DocumentDB       | Need MongoDB wire protocol compatibility           |
+| Gremlin       | Neptune          | Graph traversal queries are primary access pattern |
+| Table         | DynamoDB         | Simple key-value, was using Table API              |
+| Cassandra     | Amazon Keyspaces | Need Cassandra wire protocol compatibility         |
 
 ### Azure SQL → RDS SQL Server vs Aurora PostgreSQL
 
-| Factor | Choose RDS SQL Server | Choose Aurora PostgreSQL |
-|---|---|---|
-| Compatibility | Need SQL Server features (T-SQL, SSIS) | Can refactor queries |
-| Licensing | Already have SQL Server licenses (BYOL) | Want to avoid SQL Server licensing |
-| Cost | Higher (SQL Server licensing) | Lower (open source) |
-| Performance | Good | Aurora is generally faster |
-| Elastic pools | No equivalent (separate instances) | Aurora Serverless v2 auto-scales |
-| Effort | Low (minimal code changes) | Medium-High (schema + query migration) |
+| Factor        | Choose RDS SQL Server                   | Choose Aurora PostgreSQL               |
+| ------------- | --------------------------------------- | -------------------------------------- |
+| Compatibility | Need SQL Server features (T-SQL, SSIS)  | Can refactor queries                   |
+| Licensing     | Already have SQL Server licenses (BYOL) | Want to avoid SQL Server licensing     |
+| Cost          | Higher (SQL Server licensing)           | Lower (open source)                    |
+| Performance   | Good                                    | Aurora is generally faster             |
+| Elastic pools | No equivalent (separate instances)      | Aurora Serverless v2 auto-scales       |
+| Effort        | Low (minimal code changes)              | Medium-High (schema + query migration) |
 
 ## Instance Type Cross-Reference
 
-| Use Case | Azure Size | AWS Type |
-|---|---|---|
-| General 2 vCPU, 8GB | Standard_D2s_v3 | m6i.large |
-| General 4 vCPU, 16GB | Standard_D4s_v3 | m6i.xlarge |
-| General 8 vCPU, 32GB | Standard_D8s_v3 | m6i.2xlarge |
-| Compute 4 vCPU, 8GB | Standard_F4s_v2 | c6i.xlarge |
-| Memory 4 vCPU, 32GB | Standard_E4s_v3 | r6i.xlarge |
-| GPU (1x T4) | Standard_NC4as_T4_v3 | g4dn.xlarge |
+| Use Case             | Azure Size           | AWS Type    |
+| -------------------- | -------------------- | ----------- |
+| General 2 vCPU, 8GB  | Standard_D2s_v3      | m6i.large   |
+| General 4 vCPU, 16GB | Standard_D4s_v3      | m6i.xlarge  |
+| General 8 vCPU, 32GB | Standard_D8s_v3      | m6i.2xlarge |
+| Compute 4 vCPU, 8GB  | Standard_F4s_v2      | c6i.xlarge  |
+| Memory 4 vCPU, 32GB  | Standard_E4s_v3      | r6i.xlarge  |
+| GPU (1x T4)          | Standard_NC4as_T4_v3 | g4dn.xlarge |
 
 ## Output Format
 
@@ -184,6 +196,7 @@ When advising on an Azure-to-AWS migration:
 8. **Next Steps**: IaC scaffolding, PoC plan, timeline estimate
 
 For detailed per-service mappings, see:
+
 - [references/compute.md](references/compute.md) — VMs, AKS, App Service, Functions, ACI
 - [references/data.md](references/data.md) — Azure SQL, Cosmos DB, Blob/ADLS, Synapse, Service Bus
 - [references/networking.md](references/networking.md) — VNet, Front Door, App Gateway, ExpressRoute

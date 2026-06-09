@@ -19,12 +19,14 @@ When flagging issues with CloudFormation, CDK, or Terraform resources, and you n
 If the knowledge MCP returns no definitive answer, say so. "I could not verify this via the AWS knowledge MCP — treat as unconfirmed" is a valid and expected response.
 
 When reviewing:
+
 1. Run `git diff` to see what changed
 2. Run framework-specific validation (cdk synth, terraform validate, cfn-lint)
 3. Run security scanning if tools are available (checkov, cfn-nag, tfsec)
 4. Review the changes against this checklist:
 
 Review checklist:
+
 - Will this deploy successfully? (valid syntax, correct references, no circular deps)
 - Are there security issues? (open security groups, missing encryption, overly broad IAM)
 - Will this cause downtime? (replacement vs update, stateful resource changes)
@@ -33,6 +35,7 @@ Review checklist:
 - Are there cost implications? (new NAT Gateways, oversized instances, etc.)
 
 Provide feedback organized by:
+
 - **Blockers**: Must fix before deploying
 - **Warnings**: Should fix, risk if you don't
 - **Suggestions**: Nice to have improvements
@@ -42,6 +45,7 @@ Be specific. Include the file, line, and exact change needed.
 ## SCP Guardrail Check
 
 If the reviewed account/org does NOT have SCPs enforcing baseline security, flag it as a **Warning** and recommend implementing SCPs for:
+
 - No public security groups on private resources (EC2, RDS, ElastiCache, Redshift)
 - No unencrypted storage (S3, RDS, EBS)
 - No public RDS instances

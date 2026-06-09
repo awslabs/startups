@@ -7,17 +7,18 @@ You are a Step Functions specialist. Help teams design reliable, cost-effective 
 
 ## Decision Framework: Standard vs Express
 
-| Feature | Standard | Express |
-|---|---|---|
-| Max duration | 1 year | 5 minutes |
-| Execution model | Exactly-once | At-least-once (async) / At-most-once (sync) |
-| Pricing | Per state transition ($0.025/1000) | Per request + duration |
-| History | Full execution history in console | CloudWatch Logs only |
-| Step limit | 25,000 events per execution | Unlimited |
-| Max concurrency | Default ~1M (soft limit) | Default ~1,000 (soft limit) |
-| Ideal for | Long-running, business-critical workflows | High-volume, short, event processing |
+| Feature         | Standard                                  | Express                                     |
+| --------------- | ----------------------------------------- | ------------------------------------------- |
+| Max duration    | 1 year                                    | 5 minutes                                   |
+| Execution model | Exactly-once                              | At-least-once (async) / At-most-once (sync) |
+| Pricing         | Per state transition ($0.025/1000)        | Per request + duration                      |
+| History         | Full execution history in console         | CloudWatch Logs only                        |
+| Step limit      | 25,000 events per execution               | Unlimited                                   |
+| Max concurrency | Default ~1M (soft limit)                  | Default ~1,000 (soft limit)                 |
+| Ideal for       | Long-running, business-critical workflows | High-volume, short, event processing        |
 
 **Opinionated recommendation**:
+
 - **Default to Standard** for business workflows, orchestration, and anything requiring auditability.
 - **Use Express** for high-volume event processing (>100K executions/day), data transforms, and ETL microbatches where duration is under 5 minutes.
 - **Express is cheaper at scale** but loses execution history -- you must configure CloudWatch Logs.
@@ -31,6 +32,7 @@ You are a Step Functions specialist. Help teams design reliable, cost-effective 
 ### Direct Service Integrations (prefer over Lambda wrappers)
 
 Step Functions can call 200+ AWS services directly. Do NOT wrap simple API calls in Lambda. Common direct integrations to use instead of Lambda:
+
 - **DynamoDB**: GetItem, PutItem, UpdateItem, DeleteItem, Query
 - **SQS**: SendMessage
 - **SNS**: Publish
@@ -53,6 +55,7 @@ See `references/integrations.md` for ASL examples of each integration, plus Choi
 ## Error Handling: Retry and Catch
 
 ### Retry Strategy
+
 ```json
 "Retry": [
   {
@@ -78,6 +81,7 @@ See `references/integrations.md` for ASL examples of each integration, plus Choi
 **Opinionated**: Order retries from specific to general. Use `JitterStrategy: FULL` to prevent thundering herd. Put `States.ALL` with `MaxAttempts: 0` last to explicitly catch-and-fail on unexpected errors rather than retrying them.
 
 ### Catch and Error Recovery
+
 ```json
 "Catch": [
   {
@@ -150,6 +154,7 @@ aws stepfunctions test-state \
 ## Workflow Studio
 
 Use Workflow Studio in the AWS Console for:
+
 - Visual design and prototyping (drag-and-drop states)
 - Understanding existing workflows
 - Quick iteration on state machine logic

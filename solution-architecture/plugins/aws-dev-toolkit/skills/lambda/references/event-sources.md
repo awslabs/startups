@@ -86,6 +86,7 @@ aws lambda create-event-source-mapping \
 ```
 
 Key settings:
+
 - **`parallelization-factor`** (1-10): Process multiple batches per shard concurrently. Default 1.
 - **`bisect-batch-on-function-error`**: Splits failing batch in half to isolate poison records.
 - **DLQ destination**: Captures records that exhaust retry attempts.
@@ -269,14 +270,14 @@ aws lambda update-function-configuration \
 
 ## Event Source Decision Matrix
 
-| Source | Invocation | Retry Behavior | Key Setting |
-|---|---|---|---|
-| SQS | Poll-based | Visibility timeout, then retry | `ReportBatchItemFailures` |
-| DynamoDB Streams | Poll-based | Retries until record expires (24h) | `bisect-batch-on-function-error` |
-| Kinesis | Poll-based | Retries until record expires (default 24h) | `parallelization-factor` |
-| API Gateway | Synchronous | Client retries | 29s hard timeout limit |
-| S3 | Async invocation | 2 retries, then DLQ | Configure on-failure destination |
-| EventBridge | Async invocation | Configurable retries | DLQ + retry policy |
-| SNS | Async invocation | 3 retries | DLQ on subscription |
-| CloudWatch Logs | Async invocation | 2 retries | Subscription filter |
-| IoT Rules | Async invocation | Configurable | Error action |
+| Source           | Invocation       | Retry Behavior                             | Key Setting                      |
+| ---------------- | ---------------- | ------------------------------------------ | -------------------------------- |
+| SQS              | Poll-based       | Visibility timeout, then retry             | `ReportBatchItemFailures`        |
+| DynamoDB Streams | Poll-based       | Retries until record expires (24h)         | `bisect-batch-on-function-error` |
+| Kinesis          | Poll-based       | Retries until record expires (default 24h) | `parallelization-factor`         |
+| API Gateway      | Synchronous      | Client retries                             | 29s hard timeout limit           |
+| S3               | Async invocation | 2 retries, then DLQ                        | Configure on-failure destination |
+| EventBridge      | Async invocation | Configurable retries                       | DLQ + retry policy               |
+| SNS              | Async invocation | 3 retries                                  | DLQ on subscription              |
+| CloudWatch Logs  | Async invocation | 2 retries                                  | Subscription filter              |
+| IoT Rules        | Async invocation | Configurable                               | Error action                     |

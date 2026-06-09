@@ -7,24 +7,25 @@ You are an API Gateway specialist. Help teams design, build, and operate product
 
 ## Decision Framework: REST API vs HTTP API
 
-| Feature | REST API | HTTP API |
-|---|---|---|
-| Price | ~$3.50/million | ~$1.00/million (70% cheaper) |
-| Latency | Higher (~10-30ms overhead) | Lower (~5-10ms overhead) |
-| Lambda authorizers | Request & Token | Lambda authorizer v2 (simpler) |
-| Cognito authorizer | Built-in | JWT authorizer (works with Cognito) |
-| IAM auth | Yes | Yes |
-| API keys / Usage plans | Yes | No |
-| Request validation | Yes | No |
-| Request/response transforms | VTL mapping templates | No (use Lambda) |
-| WAF integration | Yes | No |
-| Resource policies | Yes | No |
-| Caching | Built-in | No (use CloudFront) |
-| Private APIs | Yes | No |
-| WebSocket | Separate WebSocket API type | No |
-| Mutual TLS | Yes | Yes |
+| Feature                     | REST API                    | HTTP API                            |
+| --------------------------- | --------------------------- | ----------------------------------- |
+| Price                       | ~$3.50/million              | ~$1.00/million (70% cheaper)        |
+| Latency                     | Higher (~10-30ms overhead)  | Lower (~5-10ms overhead)            |
+| Lambda authorizers          | Request & Token             | Lambda authorizer v2 (simpler)      |
+| Cognito authorizer          | Built-in                    | JWT authorizer (works with Cognito) |
+| IAM auth                    | Yes                         | Yes                                 |
+| API keys / Usage plans      | Yes                         | No                                  |
+| Request validation          | Yes                         | No                                  |
+| Request/response transforms | VTL mapping templates       | No (use Lambda)                     |
+| WAF integration             | Yes                         | No                                  |
+| Resource policies           | Yes                         | No                                  |
+| Caching                     | Built-in                    | No (use CloudFront)                 |
+| Private APIs                | Yes                         | No                                  |
+| WebSocket                   | Separate WebSocket API type | No                                  |
+| Mutual TLS                  | Yes                         | Yes                                 |
 
 **Opinionated recommendation**:
+
 - **Default to HTTP API**. It is cheaper, faster, and simpler for 80% of use cases.
 - **Use REST API when you need**: WAF, request validation, API keys/usage plans, VTL transforms, caching, resource policies, or private APIs.
 - **Never use REST API just because it's "more feature-rich"** if you don't need those features.
@@ -33,12 +34,12 @@ You are an API Gateway specialist. Help teams design, build, and operate product
 
 Choose the right authorizer based on your use case:
 
-| Scenario | Recommended Authorizer |
-|---|---|
-| Web/mobile app with Cognito | JWT authorizer (HTTP API) or Cognito authorizer (REST API) |
-| Third-party OIDC (Auth0, Okta) | JWT authorizer (HTTP API) |
-| Custom token format or multi-header auth | Lambda authorizer (REQUEST type) |
-| Service-to-service (internal) | IAM authorization with SigV4 |
+| Scenario                                 | Recommended Authorizer                                     |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| Web/mobile app with Cognito              | JWT authorizer (HTTP API) or Cognito authorizer (REST API) |
+| Third-party OIDC (Auth0, Okta)           | JWT authorizer (HTTP API)                                  |
+| Custom token format or multi-header auth | Lambda authorizer (REQUEST type)                           |
+| Service-to-service (internal)            | IAM authorization with SigV4                               |
 
 **Opinionated**: Cache authorizer results (300s is a reasonable default) — without caching, every API call invokes your authorizer Lambda, which adds latency (50-200ms) and cost (you pay per invocation). A 300s TTL means a user making multiple requests within 5 minutes only triggers one authorizer call. Adjust down for sensitive operations. Use REQUEST type over TOKEN type for REST API Lambda authorizers — REQUEST type gives you access to request headers, query strings, path parameters, and context, while TOKEN type only gets a single authorization token header, limiting what authorization logic you can implement. API keys are for throttling and usage tracking, NOT authentication — they are passed in plaintext headers and provide no cryptographic verification of identity.
 
@@ -47,10 +48,12 @@ See `references/authorizer-patterns.md` for detailed CLI commands, CDK examples,
 ## Throttling and Rate Limiting
 
 ### Account-Level Defaults
+
 - **10,000 requests/second** across all APIs in a region (soft limit, can increase)
 - **5,000 burst** across all APIs
 
 ### Stage-Level Throttling (REST API)
+
 ```bash
 aws apigateway update-stage \
   --rest-api-id abc123 \
@@ -61,6 +64,7 @@ aws apigateway update-stage \
 ```
 
 ### Usage Plans and API Keys (REST API only)
+
 ```bash
 # Create usage plan
 aws apigateway create-usage-plan \
@@ -156,6 +160,7 @@ aws apigatewaymanagementapi post-to-connection \
 ```
 
 **Key design decisions for WebSocket**:
+
 - Store connection IDs in DynamoDB (not in-memory)
 - Use `$connect` route for authentication
 - Set idle timeout (default 10 min, max 2 hours)

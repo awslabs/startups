@@ -312,12 +312,12 @@ This policy uses `${iot:Connection.Thing.ThingName}` to dynamically scope permis
 
 ### Key Policy Variables
 
-| Variable | Value | Use For |
-|---|---|---|
-| `${iot:Connection.Thing.ThingName}` | Thing name of the connected device | Scoping topics, shadows, and jobs to the connected device |
-| `${iot:Connection.Thing.IsAttached}` | `true` if cert is attached to a thing | Requiring certificate-to-thing binding before allowing connect |
-| `${iot:Connection.Thing.Attributes[key]}` | Thing attribute value | Scoping by device type, location, or other custom attributes |
-| `${iot:ClientId}` | MQTT client ID | Enforcing client ID matches thing name |
+| Variable                                  | Value                                 | Use For                                                        |
+| ----------------------------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `${iot:Connection.Thing.ThingName}`       | Thing name of the connected device    | Scoping topics, shadows, and jobs to the connected device      |
+| `${iot:Connection.Thing.IsAttached}`      | `true` if cert is attached to a thing | Requiring certificate-to-thing binding before allowing connect |
+| `${iot:Connection.Thing.Attributes[key]}` | Thing attribute value                 | Scoping by device type, location, or other custom attributes   |
+| `${iot:ClientId}`                         | MQTT client ID                        | Enforcing client ID matches thing name                         |
 
 ### Policy Best Practices
 
@@ -503,6 +503,7 @@ aws iot create-mitigation-action \
 ```
 
 The quarantine thing group should have a restrictive group policy that:
+
 1. Allows only `iot:Connect` (so the device can be reached for remediation)
 2. Allows subscribe/receive only on the jobs topic (to receive certificate rotation or firmware update)
 3. Denies all publish except to a quarantine status topic

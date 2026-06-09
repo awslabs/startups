@@ -23,11 +23,11 @@ It ships no runtime binaries, no background processes, and no remote services op
 
 When you enable the plugin, it configures three MCP servers that run locally on your machine. These servers make outbound requests on your behalf using credentials and configuration you provide:
 
-| MCP Server | Upstream Destination | What is sent | Whose policy governs |
-|---|---|---|---|
-| `awsiac` | `awslabs.aws-iac-mcp-server` (runs locally) | Template content you ask it to lint | Runs on your machine; sends nothing to Anthropic or AWS |
-| `awsknowledge` | `knowledge-mcp.global.api.aws` | Your documentation search queries | [AWS Privacy Notice](https://aws.amazon.com/privacy/) |
-| `awspricing` | `awslabs.aws-pricing-mcp-server` (runs locally, queries AWS Pricing API) | Service / region filter requests | [AWS Privacy Notice](https://aws.amazon.com/privacy/) |
+| MCP Server     | Upstream Destination                                                     | What is sent                        | Whose policy governs                                    |
+| -------------- | ------------------------------------------------------------------------ | ----------------------------------- | ------------------------------------------------------- |
+| `awsiac`       | `awslabs.aws-iac-mcp-server` (runs locally)                              | Template content you ask it to lint | Runs on your machine; sends nothing to Anthropic or AWS |
+| `awsknowledge` | `knowledge-mcp.global.api.aws`                                           | Your documentation search queries   | [AWS Privacy Notice](https://aws.amazon.com/privacy/)   |
+| `awspricing`   | `awslabs.aws-pricing-mcp-server` (runs locally, queries AWS Pricing API) | Service / region filter requests    | [AWS Privacy Notice](https://aws.amazon.com/privacy/)   |
 
 Skills and agents in the plugin may also suggest or issue AWS CLI calls. Those calls use **your** AWS credentials and are governed by your agreement with AWS, not by the plugin maintainers.
 

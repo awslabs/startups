@@ -8,22 +8,22 @@ App Runner and ECS Express Mode use different billing models. Understanding the 
 
 ## Billing Models
 
-| Factor | App Runner | ECS Express Mode |
-|---|---|---|
-| Compute billing | Per-request + provisioned memory | Per-second (vCPU + memory) while tasks run |
-| Load balancer | Included (internal, not accessible) | ALB hourly + LCU charges (visible, shared across up to 25 services) |
-| Scale-to-zero | Yes — no charge when idle | Minimum 1 task running |
-| Auto scaling | Included | Included (Application Auto Scaling) |
-| HTTPS/TLS | Included | Included (ACM certificate auto-provisioned) |
+| Factor          | App Runner                          | ECS Express Mode                                                    |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------- |
+| Compute billing | Per-request + provisioned memory    | Per-second (vCPU + memory) while tasks run                          |
+| Load balancer   | Included (internal, not accessible) | ALB hourly + LCU charges (visible, shared across up to 25 services) |
+| Scale-to-zero   | Yes — no charge when idle           | Minimum 1 task running                                              |
+| Auto scaling    | Included                            | Included (Application Auto Scaling)                                 |
+| HTTPS/TLS       | Included                            | Included (ACM certificate auto-provisioned)                         |
 
 ## Choosing the Right Approach by Workload
 
-| Workload pattern | Guidance |
-|---|---|
-| **Steady or high-traffic** (consistent request volume) | ECS Express Mode is well-suited — predictable per-second billing aligns with sustained utilization |
-| **Bursty with idle periods** (spikes then quiet) | Consider consolidating multiple services onto a shared ALB to optimize costs, or schedule scaling to match traffic patterns |
-| **Multiple services in the same account** | Express Mode shines here — a single ALB is shared across up to 25 services, spreading the fixed cost |
-| **Single low-traffic service** | Run the cost comparison below to find the best fit. Existing App Runner services continue to run, so there is no urgency to migrate immediately |
+| Workload pattern                                       | Guidance                                                                                                                                        |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Steady or high-traffic** (consistent request volume) | ECS Express Mode is well-suited — predictable per-second billing aligns with sustained utilization                                              |
+| **Bursty with idle periods** (spikes then quiet)       | Consider consolidating multiple services onto a shared ALB to optimize costs, or schedule scaling to match traffic patterns                     |
+| **Multiple services in the same account**              | Express Mode shines here — a single ALB is shared across up to 25 services, spreading the fixed cost                                            |
+| **Single low-traffic service**                         | Run the cost comparison below to find the best fit. Existing App Runner services continue to run, so there is no urgency to migrate immediately |
 
 ## Before Migrating
 

@@ -8,13 +8,13 @@
 {org}/{env}/{device-type}/{device-id}/{data-category}
 ```
 
-| Segment | Example | Purpose |
-|---|---|---|
-| org | `acme` | Multi-tenant isolation |
-| env | `prod`, `staging` | Environment separation |
-| device-type | `temp-sensor`, `valve` | Type-based rule targeting |
-| device-id | `sensor-001` | Per-device access control via policy variables |
-| data-category | `telemetry`, `alerts`, `commands`, `status` | Separate data streams for targeted rules |
+| Segment       | Example                                     | Purpose                                        |
+| ------------- | ------------------------------------------- | ---------------------------------------------- |
+| org           | `acme`                                      | Multi-tenant isolation                         |
+| env           | `prod`, `staging`                           | Environment separation                         |
+| device-type   | `temp-sensor`, `valve`                      | Type-based rule targeting                      |
+| device-id     | `sensor-001`                                | Per-device access control via policy variables |
+| data-category | `telemetry`, `alerts`, `commands`, `status` | Separate data streams for targeted rules       |
 
 ### Reserved Prefixes
 
@@ -40,6 +40,7 @@ WHERE temperature IS NOT NULL
 ```
 
 **Timestream action configuration:**
+
 ```json
 {
   "timestream": {
@@ -81,6 +82,7 @@ FROM '$aws/things/+/shadow/update/documents'
 ```
 
 **DynamoDBv2 action configuration:**
+
 ```json
 {
   "dynamoDBv2": {
@@ -104,6 +106,7 @@ FROM 'acme/prod/+/+/telemetry'
 ```
 
 **Kinesis action configuration:**
+
 ```json
 {
   "kinesis": {
@@ -123,6 +126,7 @@ SELECT * FROM 'acme/prod/+/+/telemetry'
 ```
 
 **S3 action configuration:**
+
 ```json
 {
   "s3": {
@@ -148,6 +152,7 @@ WHERE temperature > 100
 ```
 
 **Republish action configuration:**
+
 ```json
 {
   "republish": {
@@ -171,6 +176,7 @@ WHERE battery_pct < 10
 ```
 
 **SNS action configuration:**
+
 ```json
 {
   "sns": {
@@ -193,6 +199,7 @@ FROM 'acme/prod/motor/+/telemetry'
 ```
 
 **IoT Events action configuration:**
+
 ```json
 {
   "iotEvents": {
@@ -223,6 +230,7 @@ Every rule should have an error action. S3 is the cheapest destination for error
 ```
 
 The error payload includes:
+
 - `ruleName`: Which rule failed
 - `topic`: The original MQTT topic
 - `clientId`: The device that published
@@ -276,11 +284,13 @@ Devices publish to `$aws/rules/<rule-name>/<custom-topic>` instead of the custom
 ### Example
 
 Device publishes to:
+
 ```
 $aws/rules/telemetry-to-timestream/acme/prod/temp-sensor/sensor-001/telemetry
 ```
 
 The rule SQL references the custom topic portion:
+
 ```sql
 SELECT
   topic(4) as device_id,
@@ -326,6 +336,7 @@ Every rule action needs an IAM role that grants the rules engine permission to i
 ```
 
 **Trust policy:**
+
 ```json
 {
   "Version": "2012-10-17",
@@ -352,11 +363,11 @@ Always include the `aws:SourceAccount` condition to prevent cross-account confus
 
 ### CloudWatch Metrics to Alarm On
 
-| Metric | Alarm Threshold | Why |
-|---|---|---|
-| `RuleMessageThrottled` | > 0 for 5 minutes | Messages are being dropped due to account-level throttling |
-| `TopicMatch` | Sudden drop > 50% | Devices may have stopped publishing or topic structure changed |
-| `Failure` | > 0 for 5 minutes | Rule action is failing (IAM, target service issue) |
-| `ErrorActionFailure` | > 0 | Even the error action is failing; data loss is occurring |
+| Metric                 | Alarm Threshold   | Why                                                            |
+| ---------------------- | ----------------- | -------------------------------------------------------------- |
+| `RuleMessageThrottled` | > 0 for 5 minutes | Messages are being dropped due to account-level throttling     |
+| `TopicMatch`           | Sudden drop > 50% | Devices may have stopped publishing or topic structure changed |
+| `Failure`              | > 0 for 5 minutes | Rule action is failing (IAM, target service issue)             |
+| `ErrorActionFailure`   | > 0               | Even the error action is failing; data loss is occurring       |
 
 Enable IoT Core logging (set to INFO for development, ERROR for production) to get detailed rule execution logs in CloudWatch Logs at `/aws/iot/logs`.

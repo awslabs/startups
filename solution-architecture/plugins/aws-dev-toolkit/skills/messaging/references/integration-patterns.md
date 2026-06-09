@@ -19,16 +19,18 @@ Producer ──> SNS Topic ───┼─ [Filter: standard] ──> SQS Queue 
 **AWS services:** SNS + SQS (high throughput), or EventBridge rules (complex routing, <10K events/sec).
 
 **Implementation notes:**
+
 - Apply SNS filter policies on each subscription to avoid delivering irrelevant messages
 - Each SQS queue scales independently and processes at its own pace
 - Add a DLQ to every queue
 - For EventBridge: use one rule per consumer with the event pattern as the filter
 
 **SNS filter policy example:**
+
 ```json
 {
   "order_type": ["premium"],
-  "amount": [{"numeric": [">", 100]}]
+  "amount": [{ "numeric": [">", 100] }]
 }
 ```
 
@@ -54,6 +56,7 @@ Order Service                   Payment Service                 Shipping Service
 **AWS services:** EventBridge as the event bus. Each service publishes events to EventBridge and subscribes to events it cares about.
 
 **Implementation notes:**
+
 - Every service must handle compensating actions (rollback) when a downstream step fails
 - Add a DLQ on every consumer for unprocessable events
 - Use correlation IDs (e.g., `orderId`) across all events to trace the saga
@@ -61,6 +64,7 @@ Order Service                   Payment Service                 Shipping Service
 - Set up a "saga monitor" that subscribes to all events and tracks saga state for observability
 
 **Failure handling:**
+
 - Service B fails: publishes a failure event. Service A reacts with compensation.
 - Service B is down: EventBridge retries. DLQ catches persistent failures. Alarm on DLQ depth.
 - Duplicate events: every service must be idempotent. Use `orderId` + `eventType` as deduplication key.
@@ -70,16 +74,16 @@ Order Service                   Payment Service                 Shipping Service
 A central coordinator (Step Functions) manages the workflow and handles retries and compensation.
 
 ```
-                     Step Functions (Orchestrator)
-                              │
-                ┌─────────────┼─────────────┐
-                ▼             ▼              ▼
-          Order Service  Payment Service  Shipping Service
-                              │
-                        (on failure)
-                              ▼
-                     Compensation Steps
-                     (reverse previous)
+           Step Functions (Orchestrator)
+                    │
+      ┌─────────────┼─────────────┐
+      ▼             ▼              ▼
+Order Service  Payment Service  Shipping Service
+                    │
+              (on failure)
+                    ▼
+           Compensation Steps
+           (reverse previous)
 ```
 
 **When to use:** Complex workflows with many steps, conditional logic, or when you need centralized visibility and error handling.
@@ -87,6 +91,7 @@ A central coordinator (Step Functions) manages the workflow and handles retries 
 **AWS services:** Step Functions as orchestrator, invoking Lambda/ECS/SQS/other services as task states.
 
 **When to prefer orchestration over choreography:**
+
 - More than 5 services in the saga
 - Complex conditional branching
 - Need centralized monitoring of all saga instances
@@ -107,6 +112,7 @@ API Gateway ──> SQS Queue ──> Lambda (reserved concurrency = 10)
 **AWS services:** SQS (Standard or FIFO) + Lambda event source mapping, or SQS + ECS consumer.
 
 **Implementation notes:**
+
 - Set Lambda reserved concurrency to limit downstream pressure (e.g., database connection pool size)
 - Configure Lambda event source mapping batch size (1-10,000) and batch window (0-300s) for throughput tuning
 - Use SQS `ApproximateAgeOfOldestMessage` alarm to detect when the queue cannot keep up
@@ -114,12 +120,13 @@ API Gateway ──> SQS Queue ──> Lambda (reserved concurrency = 10)
 - Always configure a DLQ with `maxReceiveCount` of 3-5
 
 **Scaling knobs:**
-| Parameter | Effect |
-|---|---|
-| Lambda reserved concurrency | Max parallel consumers |
-| Batch size | Messages per Lambda invocation |
-| Batch window | Max wait before invoking (fills partial batches) |
-| Visibility timeout | How long a message is hidden while being processed |
+
+| Parameter                   | Effect                                             |
+| --------------------------- | -------------------------------------------------- |
+| Lambda reserved concurrency | Max parallel consumers                             |
+| Batch size                  | Messages per Lambda invocation                     |
+| Batch window                | Max wait before invoking (fills partial batches)   |
+| Visibility timeout          | How long a message is hidden while being processed |
 
 ## CQRS (Command Query Responsibility Segregation)
 
@@ -136,11 +143,13 @@ API ──> Lambda ──> DynamoDB (commands)   API ──> Lambda ──> Elas
 **When to use:** Read and write patterns have fundamentally different requirements (e.g., writes are simple key-value, reads need full-text search or complex aggregations).
 
 **AWS services:**
+
 - Write side: DynamoDB or RDS
 - Change capture: DynamoDB Streams or RDS event notifications
 - Read side: ElastiCache (Redis) for key lookups, OpenSearch for full-text search, another DynamoDB table for pre-computed views
 
 **Implementation notes:**
+
 - The read model is eventually consistent with the write model (seconds, not minutes)
 - Use DynamoDB Streams + Lambda to project changes to the read store
 - Idempotent projections: processing the same stream record twice must produce the same result
@@ -162,6 +171,7 @@ Command ──> Lambda ──> Append to event store (DynamoDB)
 **AWS services:** DynamoDB as event store (partition key = entity ID, sort key = version/timestamp), DynamoDB Streams for projections.
 
 **Implementation notes:**
+
 - Events are immutable and append-only. Never update or delete an event.
 - DynamoDB conditional writes (`attribute_not_exists` or version check) prevent conflicting appends
 - Keep events small. Store only what changed, not the full entity state.
@@ -195,19 +205,20 @@ SQS Queue ──────────┼──> Consumer B (Lambda invocation
 **AWS services:** SQS + Lambda (auto-scales consumers), or SQS + ECS service (manual scaling).
 
 **Implementation notes:**
+
 - SQS Standard: messages may be delivered out of order and duplicated. Consumers must be idempotent.
 - SQS FIFO with message groups: messages within the same group are processed in order by one consumer. Different groups are processed in parallel.
 - Lambda automatically scales to match queue depth (up to 1,000 concurrent for Standard, limited for FIFO).
 
 ## Pattern Selection Guide
 
-| Scenario | Pattern | Primary Services |
-|---|---|---|
-| One event, many consumers | Fan-out | SNS + SQS or EventBridge |
-| Multi-service transaction (simple) | Saga (choreography) | EventBridge |
-| Multi-service transaction (complex) | Saga (orchestration) | Step Functions |
-| Bursty traffic, rate-limited backend | Queue-based load leveling | SQS + Lambda |
-| Different read/write requirements | CQRS | DynamoDB Streams + read store |
-| Full audit trail required | Event sourcing | DynamoDB + Streams |
-| Large payloads through messaging | Claim-check | S3 + SQS |
-| High-throughput parallel processing | Competing consumers | SQS + Lambda/ECS |
+| Scenario                             | Pattern                   | Primary Services              |
+| ------------------------------------ | ------------------------- | ----------------------------- |
+| One event, many consumers            | Fan-out                   | SNS + SQS or EventBridge      |
+| Multi-service transaction (simple)   | Saga (choreography)       | EventBridge                   |
+| Multi-service transaction (complex)  | Saga (orchestration)      | Step Functions                |
+| Bursty traffic, rate-limited backend | Queue-based load leveling | SQS + Lambda                  |
+| Different read/write requirements    | CQRS                      | DynamoDB Streams + read store |
+| Full audit trail required            | Event sourcing            | DynamoDB + Streams            |
+| Large payloads through messaging     | Claim-check               | S3 + SQS                      |
+| High-throughput parallel processing  | Competing consumers       | SQS + Lambda/ECS              |

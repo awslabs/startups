@@ -28,29 +28,29 @@ If the knowledge MCP returns no definitive answer, say so explicitly. Never gues
 
 ## Decision Framework: ECS vs EKS
 
-| Factor | Choose ECS | Choose EKS |
-|---|---|---|
-| Team Kubernetes experience | Low | High |
-| Multi-cloud/hybrid requirement | No | Yes |
-| Need Kubernetes ecosystem tools | No | Yes (Helm, Istio, ArgoCD, etc.) |
-| Operational overhead tolerance | Low | Medium-High |
-| AWS-native integration priority | High | Medium |
-| Workload complexity | Simple to moderate | Complex, many microservices |
-| Cost sensitivity | Higher (simpler, less overhead) | Lower priority (invest in platform) |
+| Factor                          | Choose ECS                      | Choose EKS                          |
+| ------------------------------- | ------------------------------- | ----------------------------------- |
+| Team Kubernetes experience      | Low                             | High                                |
+| Multi-cloud/hybrid requirement  | No                              | Yes                                 |
+| Need Kubernetes ecosystem tools | No                              | Yes (Helm, Istio, ArgoCD, etc.)     |
+| Operational overhead tolerance  | Low                             | Medium-High                         |
+| AWS-native integration priority | High                            | Medium                              |
+| Workload complexity             | Simple to moderate              | Complex, many microservices         |
+| Cost sensitivity                | Higher (simpler, less overhead) | Lower priority (invest in platform) |
 
 **Default recommendation**: ECS with Fargate unless you have a specific reason for Kubernetes. ECS is simpler to operate, deeply integrated with AWS, and sufficient for most workloads.
 
 ## Decision Framework: Fargate vs EC2
 
-| Factor | Choose Fargate | Choose EC2 |
-|---|---|---|
-| Operational overhead | Minimal (no instances to manage) | You manage patching, AMIs, scaling |
-| Cost at scale | More expensive per vCPU | Cheaper with Reserved Instances/Spot |
-| GPU workloads | Not supported | Required |
-| Privileged containers | Not supported | Required |
-| Custom kernel/OS | Not possible | Required |
-| Startup time | 30-60s (image pull) | Depends on ASG scaling |
-| **Default** | **Start here** | Move to EC2 when cost or features demand it |
+| Factor                | Choose Fargate                   | Choose EC2                                  |
+| --------------------- | -------------------------------- | ------------------------------------------- |
+| Operational overhead  | Minimal (no instances to manage) | You manage patching, AMIs, scaling          |
+| Cost at scale         | More expensive per vCPU          | Cheaper with Reserved Instances/Spot        |
+| GPU workloads         | Not supported                    | Required                                    |
+| Privileged containers | Not supported                    | Required                                    |
+| Custom kernel/OS      | Not possible                     | Required                                    |
+| Startup time          | 30-60s (image pull)              | Depends on ASG scaling                      |
+| **Default**           | **Start here**                   | Move to EC2 when cost or features demand it |
 
 ## ECS Architecture
 
@@ -85,6 +85,7 @@ aws ecs describe-task-definition --task-definition <task-def-family> \
 ```
 
 Key configuration:
+
 - **Health checks**: Always define container health checks, not just ELB health checks
 - **Resource limits**: Set both CPU and memory limits. Fargate requires them; EC2 should have them.
 - **Log driver**: Use `awslogs` driver with CloudWatch, or `awsfirelens` for flexibility
@@ -107,6 +108,7 @@ aws application-autoscaling describe-scaling-policies \
 ```
 
 Scaling strategies:
+
 - **Target tracking on CPU**: Good default, tracks CPU utilization target (e.g., 70%)
 - **Target tracking on ALB request count**: Better for web services (scale on traffic, not resource)
 - **Step scaling**: When you need different scaling behavior at different thresholds
@@ -160,12 +162,12 @@ kubectl get hpa --all-namespaces
 
 ### EKS Node Strategy
 
-| Node Type | Use Case | Cost |
-|---|---|---|
-| Managed Node Groups (On-Demand) | Production, stateful workloads | Baseline |
-| Managed Node Groups (Spot) | Stateless, fault-tolerant workloads | 60-90% savings |
-| Fargate Profiles | Low-ops, burst workloads, namespace isolation | Per-pod pricing |
-| Karpenter | Dynamic, efficient node provisioning | Replaces Cluster Autoscaler |
+| Node Type                       | Use Case                                      | Cost                        |
+| ------------------------------- | --------------------------------------------- | --------------------------- |
+| Managed Node Groups (On-Demand) | Production, stateful workloads                | Baseline                    |
+| Managed Node Groups (Spot)      | Stateless, fault-tolerant workloads           | 60-90% savings              |
+| Fargate Profiles                | Low-ops, burst workloads, namespace isolation | Per-pod pricing             |
+| Karpenter                       | Dynamic, efficient node provisioning          | Replaces Cluster Autoscaler |
 
 **Karpenter over Cluster Autoscaler**: Karpenter provisions right-sized nodes directly (no node groups), responds faster, and supports diverse instance types automatically.
 
@@ -183,11 +185,11 @@ kubectl logs deployment/cluster-autoscaler -n kube-system --tail=50
 
 ### ECS Deployment Options
 
-| Strategy | Downtime | Rollback Speed | Complexity |
-|---|---|---|---|
-| Rolling update | Zero | Slow (redeploy) | Low |
-| Blue/Green (CodeDeploy) | Zero | Fast (traffic shift) | Medium |
-| Canary (CodeDeploy) | Zero | Fast | Medium-High |
+| Strategy                | Downtime | Rollback Speed       | Complexity  |
+| ----------------------- | -------- | -------------------- | ----------- |
+| Rolling update          | Zero     | Slow (redeploy)      | Low         |
+| Blue/Green (CodeDeploy) | Zero     | Fast (traffic shift) | Medium      |
+| Canary (CodeDeploy)     | Zero     | Fast                 | Medium-High |
 
 ```bash
 # Check deployment status
@@ -201,12 +203,12 @@ aws ecs update-service --cluster <cluster> --service <service> --force-new-deplo
 
 ### EKS Deployment Options
 
-| Strategy | Tool | Use Case |
-|---|---|---|
-| Rolling update | Native Kubernetes | Simple, default |
-| Blue/Green | ArgoCD Rollouts or Flagger | Production services |
-| Canary | ArgoCD Rollouts, Flagger, or App Mesh | Gradual traffic shifting |
-| GitOps | ArgoCD or Flux | Declarative, auditable deployments |
+| Strategy       | Tool                                  | Use Case                           |
+| -------------- | ------------------------------------- | ---------------------------------- |
+| Rolling update | Native Kubernetes                     | Simple, default                    |
+| Blue/Green     | ArgoCD Rollouts or Flagger            | Production services                |
+| Canary         | ArgoCD Rollouts, Flagger, or App Mesh | Gradual traffic shifting           |
+| GitOps         | ArgoCD or Flux                        | Declarative, auditable deployments |
 
 ```bash
 # Check rollout status
@@ -223,11 +225,11 @@ kubectl rollout history deployment/<name> -n <namespace>
 
 ### ECS Networking Modes
 
-| Mode | Use Case | Recommendation |
-|---|---|---|
-| awsvpc | Each task gets its own ENI | **Default for Fargate and most EC2 workloads** |
-| bridge | Docker bridge networking | Legacy, avoid for new workloads |
-| host | Container shares host network | High-performance, limited port management |
+| Mode   | Use Case                      | Recommendation                                 |
+| ------ | ----------------------------- | ---------------------------------------------- |
+| awsvpc | Each task gets its own ENI    | **Default for Fargate and most EC2 workloads** |
+| bridge | Docker bridge networking      | Legacy, avoid for new workloads                |
+| host   | Container shares host network | High-performance, limited port management      |
 
 ### EKS Networking
 
@@ -238,11 +240,13 @@ kubectl rollout history deployment/<name> -n <namespace>
 ### Service Mesh
 
 Only add a service mesh if you need:
+
 - Mutual TLS between services
 - Advanced traffic management (weighted routing, circuit breaking)
 - Service-to-service observability
 
 Options:
+
 - **App Mesh**: AWS-native, Envoy-based. Lower operational overhead.
 - **Istio**: Feature-rich, community-driven. Higher complexity.
 - **Linkerd**: Lightweight, simple. Good middle ground.
@@ -304,6 +308,7 @@ aws ecr get-lifecycle-policy --repository-name <repo> --output json
 ## Output Format
 
 When advising on container architecture:
+
 1. **Orchestrator Choice**: ECS or EKS, with reasoning
 2. **Launch Type**: Fargate or EC2, with reasoning
 3. **Architecture**: Service layout, networking, scaling

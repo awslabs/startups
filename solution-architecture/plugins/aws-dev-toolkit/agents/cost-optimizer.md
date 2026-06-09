@@ -107,13 +107,13 @@ aws cloudwatch get-metric-statistics \
 
 ### Rightsizing Decision Framework
 
-| Avg CPU | Max CPU | Memory Pressure | Action |
-|---|---|---|---|
-| < 10% | < 30% | Low | Downsize by 2 tiers or consider Spot/Fargate |
-| 10-40% | < 70% | Low | Downsize by 1 tier |
-| 10-40% | < 70% | High | Change instance family (compute -> memory optimized) |
-| 40-70% | < 90% | Normal | Right-sized, consider graviton |
-| > 70% | > 90% | Any | Upsize or investigate application issues |
+| Avg CPU | Max CPU | Memory Pressure | Action                                               |
+| ------- | ------- | --------------- | ---------------------------------------------------- |
+| < 10%   | < 30%   | Low             | Downsize by 2 tiers or consider Spot/Fargate         |
+| 10-40%  | < 70%   | Low             | Downsize by 1 tier                                   |
+| 10-40%  | < 70%   | High            | Change instance family (compute -> memory optimized) |
+| 40-70%  | < 90%   | Normal          | Right-sized, consider graviton                       |
+| > 70%   | > 90%   | Any             | Upsize or investigate application issues             |
 
 ### RDS Rightsizing
 
@@ -145,12 +145,12 @@ aws cloudwatch get-metric-statistics \
 
 ### Savings Plans vs Reserved Instances
 
-| Feature | Savings Plans | Reserved Instances |
-|---|---|---|
-| Flexibility | Applies across instance families, regions, OS | Locked to specific instance type |
-| Discount | Up to 72% | Up to 72% |
-| Best for | Variable workloads, multi-service | Stable, predictable workloads |
-| Recommendation | **Default choice** | Only if you need capacity reservation |
+| Feature        | Savings Plans                                 | Reserved Instances                    |
+| -------------- | --------------------------------------------- | ------------------------------------- |
+| Flexibility    | Applies across instance families, regions, OS | Locked to specific instance type      |
+| Discount       | Up to 72%                                     | Up to 72%                             |
+| Best for       | Variable workloads, multi-service             | Stable, predictable workloads         |
+| Recommendation | **Default choice**                            | Only if you need capacity reservation |
 
 ### Commitment Analysis
 
@@ -214,14 +214,14 @@ aws ec2 describe-spot-price-history \
 
 ### S3 Storage Tiering
 
-| Tier | Use Case | Cost vs Standard |
-|---|---|---|
-| S3 Standard | Frequently accessed | Baseline |
-| S3 Intelligent-Tiering | Unknown/changing access patterns | +monitoring fee, auto-tiers |
-| S3 Standard-IA | Infrequent but needs ms access | ~45% cheaper storage |
-| S3 Glacier Instant | Archive with ms retrieval | ~68% cheaper storage |
-| S3 Glacier Flexible | Archive, minutes-hours retrieval | ~78% cheaper storage |
-| S3 Glacier Deep Archive | Compliance/long-term archive | ~95% cheaper storage |
+| Tier                    | Use Case                         | Cost vs Standard            |
+| ----------------------- | -------------------------------- | --------------------------- |
+| S3 Standard             | Frequently accessed              | Baseline                    |
+| S3 Intelligent-Tiering  | Unknown/changing access patterns | +monitoring fee, auto-tiers |
+| S3 Standard-IA          | Infrequent but needs ms access   | ~45% cheaper storage        |
+| S3 Glacier Instant      | Archive with ms retrieval        | ~68% cheaper storage        |
+| S3 Glacier Flexible     | Archive, minutes-hours retrieval | ~78% cheaper storage        |
+| S3 Glacier Deep Archive | Compliance/long-term archive     | ~95% cheaper storage        |
 
 ```bash
 # Check S3 bucket sizes and object counts
@@ -272,13 +272,13 @@ Data transfer is the hidden cost killer. Know where your bytes are flowing.
 
 ### Common Data Transfer Costs
 
-| Path | Cost | Optimization |
-|---|---|---|
-| Internet egress | $0.09/GB (first 10TB) | CloudFront ($0.085/GB, cheaper at scale) |
-| Cross-AZ | $0.01/GB each way | Minimize cross-AZ traffic, use VPC endpoints |
-| Cross-Region | $0.02/GB | Replicate data strategically, use regional endpoints |
-| NAT Gateway processing | $0.045/GB | VPC endpoints for AWS services (S3, DynamoDB = free) |
-| VPN data transfer | $0.09/GB | Consider Direct Connect for high volume |
+| Path                   | Cost                  | Optimization                                         |
+| ---------------------- | --------------------- | ---------------------------------------------------- |
+| Internet egress        | $0.09/GB (first 10TB) | CloudFront ($0.085/GB, cheaper at scale)             |
+| Cross-AZ               | $0.01/GB each way     | Minimize cross-AZ traffic, use VPC endpoints         |
+| Cross-Region           | $0.02/GB              | Replicate data strategically, use regional endpoints |
+| NAT Gateway processing | $0.045/GB             | VPC endpoints for AWS services (S3, DynamoDB = free) |
+| VPN data transfer      | $0.09/GB              | Consider Direct Connect for high volume              |
 
 ### Quick Wins
 
@@ -305,6 +305,7 @@ aws ec2 describe-vpc-endpoints \
 ### Tagging Strategy
 
 Enforce tags or you cannot attribute costs. Minimum required tags:
+
 - `Environment` (prod, staging, dev)
 - `Team` or `Owner`
 - `Project` or `Application`
@@ -325,6 +326,7 @@ aws budgets describe-budgets --account-id <account-id> --output table
 ```
 
 Set budgets at:
+
 - Account level (overall spend cap)
 - Service level (catch runaway services)
 - Tag level (per-team or per-project budgets)
@@ -332,13 +334,13 @@ Set budgets at:
 
 ## Optimization Priority Matrix
 
-| Impact | Effort | Action |
-|---|---|---|
-| High | Low | Delete unused resources, gp2->gp3, rightsizing |
-| High | Medium | Savings Plans, Spot adoption, S3 lifecycle policies |
-| High | High | Architecture changes (serverless, containerization) |
-| Medium | Low | VPC endpoints, CloudFront for egress |
-| Low | Low | Tag enforcement, budget alerts |
+| Impact | Effort | Action                                              |
+| ------ | ------ | --------------------------------------------------- |
+| High   | Low    | Delete unused resources, gp2->gp3, rightsizing      |
+| High   | Medium | Savings Plans, Spot adoption, S3 lifecycle policies |
+| High   | High   | Architecture changes (serverless, containerization) |
+| Medium | Low    | VPC endpoints, CloudFront for egress                |
+| Low    | Low    | Tag enforcement, budget alerts                      |
 
 Always start top-left and work your way down.
 
@@ -355,6 +357,7 @@ Always start top-left and work your way down.
 ## Output Format
 
 When presenting cost optimization findings:
+
 1. **Current Spend Summary**: Top services, trend, anomalies
 2. **Quick Wins**: Changes that save money this week with minimal effort
 3. **Medium-Term Optimizations**: Commitments, architecture tweaks (1-3 month horizon)

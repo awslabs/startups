@@ -7,6 +7,7 @@ AgentCore Observability provides OpenTelemetry-compatible tracing, metrics, and 
 ### Automatic Instrumentation
 
 Agents deployed on AgentCore Runtime with the AWS OpenTelemetry Distro are automatically instrumented. Traces capture:
+
 - Agent invocation start/end
 - Model inference calls (model ID, latency, token usage)
 - Tool calls (tool name, parameters, duration, success/failure)
@@ -37,22 +38,22 @@ def process_order(order_id: str):
 
 #### Critical Metrics — Alarm on These
 
-| Metric | Namespace | Alarm Threshold | Action |
-|---|---|---|---|
-| `InvocationCount` | AWS/BedrockAgentCore | Sudden drop >50% | Agent may be unhealthy or unreachable |
-| `InvocationErrors` | AWS/BedrockAgentCore | >5% error rate sustained 5 min | Check agent logs, model availability |
-| `InvocationLatency` (p99) | AWS/BedrockAgentCore | >30s for real-time agents | Model overloaded, tool calls slow, or session state bloated |
-| `ThrottleCount` | AWS/BedrockAgentCore | Any sustained occurrence | Approaching quota limits — request increase |
-| `SessionCount` | AWS/BedrockAgentCore | >80% of active session quota | Scale quota or optimize session TTLs |
+| Metric                    | Namespace            | Alarm Threshold                | Action                                                      |
+| ------------------------- | -------------------- | ------------------------------ | ----------------------------------------------------------- |
+| `InvocationCount`         | AWS/BedrockAgentCore | Sudden drop >50%               | Agent may be unhealthy or unreachable                       |
+| `InvocationErrors`        | AWS/BedrockAgentCore | >5% error rate sustained 5 min | Check agent logs, model availability                        |
+| `InvocationLatency` (p99) | AWS/BedrockAgentCore | >30s for real-time agents      | Model overloaded, tool calls slow, or session state bloated |
+| `ThrottleCount`           | AWS/BedrockAgentCore | Any sustained occurrence       | Approaching quota limits — request increase                 |
+| `SessionCount`            | AWS/BedrockAgentCore | >80% of active session quota   | Scale quota or optimize session TTLs                        |
 
 #### Important Metrics — Review Weekly
 
-| Metric | What to Look For | Notes |
-|---|---|---|
-| `TokenUsage` (input/output) | Cost trends, unexpected spikes | Prompt drift or reasoning loops can explode token usage |
-| `ToolCallDuration` | Slow tools degrading agent performance | Optimize the slowest tool first |
-| `ToolCallErrors` | Failing tool integrations | May indicate upstream service issues |
-| `MemoryOperations` | Read/write patterns | High write volume may indicate memory strategy misconfiguration |
+| Metric                      | What to Look For                       | Notes                                                           |
+| --------------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| `TokenUsage` (input/output) | Cost trends, unexpected spikes         | Prompt drift or reasoning loops can explode token usage         |
+| `ToolCallDuration`          | Slow tools degrading agent performance | Optimize the slowest tool first                                 |
+| `ToolCallErrors`            | Failing tool integrations              | May indicate upstream service issues                            |
+| `MemoryOperations`          | Read/write patterns                    | High write volume may indicate memory strategy misconfiguration |
 
 ### CloudWatch Dashboard Template
 
@@ -154,11 +155,11 @@ def run_agent(user_input):
 
 ### Observability Stack Recommendation
 
-| Phase | Stack | Why |
-|---|---|---|
-| PoC | AgentCore native (CloudWatch + X-Ray) | Zero setup, included with Runtime |
-| Pre-production | + Langfuse | Add LLM-specific analytics (cost per trace, prompt management) |
-| Production | CloudWatch + X-Ray + Langfuse + custom dashboards | Full stack: infra health + LLM behavior + business metrics |
+| Phase          | Stack                                             | Why                                                            |
+| -------------- | ------------------------------------------------- | -------------------------------------------------------------- |
+| PoC            | AgentCore native (CloudWatch + X-Ray)             | Zero setup, included with Runtime                              |
+| Pre-production | + Langfuse                                        | Add LLM-specific analytics (cost per trace, prompt management) |
+| Production     | CloudWatch + X-Ray + Langfuse + custom dashboards | Full stack: infra health + LLM behavior + business metrics     |
 
 ---
 
@@ -168,14 +169,14 @@ def run_agent(user_input):
 
 AgentCore provides 13 built-in evaluators covering common quality dimensions:
 
-| Category | Evaluators | What They Measure |
-|---|---|---|
-| **Relevancy** | Answer relevancy, Context relevancy | Does the response address the question? Is retrieved context relevant? |
-| **Faithfulness** | Faithfulness, Groundedness | Is the response grounded in provided context? |
-| **Hallucination** | Hallucination detection | Does the response contain fabricated information? |
-| **Safety** | Toxicity, Harmfulness | Does the response contain harmful or toxic content? |
-| **Quality** | Coherence, Fluency | Is the response well-structured and readable? |
-| **Tool use** | Tool selection accuracy, Parameter correctness | Did the agent pick the right tool with right parameters? |
+| Category          | Evaluators                                     | What They Measure                                                      |
+| ----------------- | ---------------------------------------------- | ---------------------------------------------------------------------- |
+| **Relevancy**     | Answer relevancy, Context relevancy            | Does the response address the question? Is retrieved context relevant? |
+| **Faithfulness**  | Faithfulness, Groundedness                     | Is the response grounded in provided context?                          |
+| **Hallucination** | Hallucination detection                        | Does the response contain fabricated information?                      |
+| **Safety**        | Toxicity, Harmfulness                          | Does the response contain harmful or toxic content?                    |
+| **Quality**       | Coherence, Fluency                             | Is the response well-structured and readable?                          |
+| **Tool use**      | Tool selection accuracy, Parameter correctness | Did the agent pick the right tool with right parameters?               |
 
 ### On-Demand Evaluation
 
@@ -270,11 +271,11 @@ def test_tool_use_correctness():
 
 ### Eval Strategy by Phase
 
-| Phase | What to Eval | Frequency | Tool |
-|---|---|---|---|
-| PoC | Answer relevancy, basic hallucination | After each prompt change | DeepEval locally |
-| Pre-production | Full suite + faithfulness + tool use | Every PR / deploy | DeepEval in CI + AgentCore on-demand |
-| Production | Regression suite + sampled live traffic | Daily + on model updates | AgentCore online evals + DeepEval regression |
+| Phase          | What to Eval                            | Frequency                | Tool                                         |
+| -------------- | --------------------------------------- | ------------------------ | -------------------------------------------- |
+| PoC            | Answer relevancy, basic hallucination   | After each prompt change | DeepEval locally                             |
+| Pre-production | Full suite + faithfulness + tool use    | Every PR / deploy        | DeepEval in CI + AgentCore on-demand         |
+| Production     | Regression suite + sampled live traffic | Daily + on model updates | AgentCore online evals + DeepEval regression |
 
 ### Building Your Eval Dataset
 
@@ -286,35 +287,39 @@ def test_tool_use_correctness():
 
 ### Evaluation Quotas
 
-| Resource | Default Limit |
-|---|---|
+| Resource                                      | Default Limit     |
+| --------------------------------------------- | ----------------- |
 | Input tokens per minute (built-in evaluators) | Check latest docs |
-| Evaluations per minute (built-in evaluators) | Check latest docs |
-| Spans per on-demand evaluation | Check latest docs |
-| Evaluators per on-demand evaluation | Check latest docs |
+| Evaluations per minute (built-in evaluators)  | Check latest docs |
+| Spans per on-demand evaluation                | Check latest docs |
+| Evaluators per on-demand evaluation           | Check latest docs |
 
 ---
 
 ## Production Monitoring Playbook
 
 ### Daily Checks
+
 1. Review CloudWatch dashboard for invocation count, error rate, latency trends
 2. Check for any Policy DENY spikes (may indicate agent behavior drift)
 3. Review Langfuse cost-per-conversation trends
 
 ### Weekly Checks
+
 1. Review online evaluation scores — any degradation?
 2. Audit token usage trends — any unexpected growth?
 3. Check session TTL utilization — are sessions timing out prematurely?
 4. Review tool call error rates by tool — any upstream service degradation?
 
 ### On Model Update
+
 1. Run full DeepEval regression suite before switching models
 2. Deploy new model version behind canary alias (10% traffic)
 3. Monitor online eval scores for canary vs production for 24-48 hours
 4. Promote or rollback based on eval scores
 
 ### Incident Response
+
 1. Check X-Ray traces for the failing session
 2. Review Policy decisions — was a tool call incorrectly denied/allowed?
 3. Check CloudWatch Logs for agent-level errors

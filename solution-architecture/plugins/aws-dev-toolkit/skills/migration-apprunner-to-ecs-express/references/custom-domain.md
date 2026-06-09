@@ -29,6 +29,7 @@ Present the command for the user to add the ACM certificate to the ALB HTTPS lis
 ## Step 5: Create DNS Record
 
 Present the command for the user to create a Route 53 record pointing the custom domain to the ALB:
+
 - **Route 53:** Alias A record (preferred — no user-configurable TTL, resolved at the authoritative nameserver)
 - **External DNS:** CNAME record pointing to the ALB DNS name
 

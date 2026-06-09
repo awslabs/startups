@@ -31,28 +31,28 @@ agentcore destroy --force           # No confirmation
 
 ## Configure Options
 
-| Flag | Description |
-|---|---|
-| `--entrypoint, -e` | Python file of agent (required) |
-| `--name, -n` | Agent name |
-| `--deployment-type, -dt` | `direct_code_deploy` (default) or `container` |
-| `--runtime, -rt` | Python version: PYTHON_3_10 through PYTHON_3_13 |
-| `--disable-memory, -dm` | Skip memory setup |
-| `--disable-otel, -do` | Disable OpenTelemetry |
-| `--idle-timeout, -it` | Seconds before idle termination (60-28800, default 900) |
-| `--max-lifetime, -ml` | Max instance lifetime seconds (60-28800, default 28800) |
-| `--region, -r` | AWS region |
-| `--non-interactive, -ni` | Skip prompts, use defaults |
-| `--vpc` | Enable VPC networking (requires --subnets and --security-groups) |
+| Flag                     | Description                                                      |
+| ------------------------ | ---------------------------------------------------------------- |
+| `--entrypoint, -e`       | Python file of agent (required)                                  |
+| `--name, -n`             | Agent name                                                       |
+| `--deployment-type, -dt` | `direct_code_deploy` (default) or `container`                    |
+| `--runtime, -rt`         | Python version: PYTHON_3_10 through PYTHON_3_13                  |
+| `--disable-memory, -dm`  | Skip memory setup                                                |
+| `--disable-otel, -do`    | Disable OpenTelemetry                                            |
+| `--idle-timeout, -it`    | Seconds before idle termination (60-28800, default 900)          |
+| `--max-lifetime, -ml`    | Max instance lifetime seconds (60-28800, default 28800)          |
+| `--region, -r`           | AWS region                                                       |
+| `--non-interactive, -ni` | Skip prompts, use defaults                                       |
+| `--vpc`                  | Enable VPC networking (requires --subnets and --security-groups) |
 
 ## Memory Configuration
 
 Memory is opt-in. Three modes:
 
-| Mode | Description |
-|---|---|
-| `NO_MEMORY` | Default. No memory resources. |
-| `STM_ONLY` | Short-term memory. 30-day retention. Conversations within sessions. |
+| Mode          | Description                                                                     |
+| ------------- | ------------------------------------------------------------------------------- |
+| `NO_MEMORY`   | Default. No memory resources.                                                   |
+| `STM_ONLY`    | Short-term memory. 30-day retention. Conversations within sessions.             |
 | `STM_AND_LTM` | Short-term + Long-term. Extracts preferences, facts, summaries across sessions. |
 
 ```bash
@@ -78,13 +78,13 @@ agentcore memory delete <memory-id> --wait           # Delete
 
 ## Deploy Options
 
-| Flag | Description |
-|---|---|
-| `--local, -l` | Build and run locally (needs Docker) |
-| `--local-build, -lb` | Build locally, deploy to cloud |
-| `--image-tag, -t` | Custom image tag for versioning |
+| Flag                              | Description                              |
+| --------------------------------- | ---------------------------------------- |
+| `--local, -l`                     | Build and run locally (needs Docker)     |
+| `--local-build, -lb`              | Build locally, deploy to cloud           |
+| `--image-tag, -t`                 | Custom image tag for versioning          |
 | `--auto-update-on-conflict, -auc` | Update existing agent instead of failing |
-| `--env, -env` | Environment variables (KEY=VALUE) |
+| `--env, -env`                     | Environment variables (KEY=VALUE)        |
 
 ## Gateway (MCP Gateway)
 

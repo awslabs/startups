@@ -4,10 +4,10 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 
 ## Plugins
 
-| Plugin                           | Description                                                                                                                                   | Status    |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **[migration-to-aws](migrate/)** | Migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning | Available |
-| **[aws-dev-toolkit](solution-architecture/)** | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS | Available |
+| Plugin                                        | Description                                                                                                                                   | Status    |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **[migration-to-aws](migrate/)**              | Migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning | Available |
+| **[aws-dev-toolkit](solution-architecture/)** | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS                    | Available |
 
 ## Installation
 

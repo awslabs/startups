@@ -21,18 +21,19 @@ The effective permission is the **intersection** of all applicable policy types 
 
 ## Identity-Based vs Resource-Based Policies
 
-| Feature | Identity-Based | Resource-Based |
-|---|---|---|
-| Attached to | IAM user, group, or role | AWS resource (S3, SQS, KMS, etc.) |
-| Principal | Implicit (the entity it's attached to) | Must specify Principal |
-| Cross-account | Requires both sides to allow | Can grant access alone (no identity policy needed on the other side) |
-| Use when | Defining what an entity can do | Defining who can access a resource |
+| Feature       | Identity-Based                         | Resource-Based                                                       |
+| ------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| Attached to   | IAM user, group, or role               | AWS resource (S3, SQS, KMS, etc.)                                    |
+| Principal     | Implicit (the entity it's attached to) | Must specify Principal                                               |
+| Cross-account | Requires both sides to allow           | Can grant access alone (no identity policy needed on the other side) |
+| Use when      | Defining what an entity can do         | Defining who can access a resource                                   |
 
 **Key insight**: For cross-account access, a resource-based policy alone can grant access without any identity policy on the caller's side. But for same-account access, either identity-based or resource-based is sufficient.
 
 ## Roles
 
 ### When to Use Roles
+
 - **Always**. IAM users with long-lived credentials are an anti-pattern for workloads.
 - EC2: Instance profiles
 - Lambda: Execution roles
@@ -41,15 +42,18 @@ The effective permission is the **intersection** of all applicable policy types 
 - Human access: Identity Center (SSO) or federated roles
 
 ### Trust Policies
+
 Every role has a trust policy that defines **who can assume it**. See `references/policy-patterns.md` for trust policy examples (Lambda, EC2, ECS, cross-account, SAML, GitHub Actions OIDC).
 
 **Opinionated guidance:**
+
 - Always specify the most restrictive principal possible
 - For cross-account: use `sts:ExternalId` condition to prevent confused deputy
 - For federated: use `sts:RoleSessionName` condition for auditability
 - Never use `"Principal": "*"` in a trust policy without conditions
 
 ### Session Duration
+
 - Default: 1 hour
 - Max: 12 hours (configurable per role)
 - STS tokens cannot be revoked — keep session duration short
@@ -57,6 +61,7 @@ Every role has a trust policy that defines **who can assume it**. See `reference
 ## Least Privilege Patterns
 
 ### Start Broad, Then Narrow
+
 1. Start with AWS managed policies (e.g., `ReadOnlyAccess`) during development
 2. Use Access Analyzer to generate a policy based on actual CloudTrail activity
 3. Replace the managed policy with the generated one
@@ -67,6 +72,7 @@ Every role has a trust policy that defines **who can assume it**. See `reference
 Scope each statement to specific actions, resources (by ARN), and conditions. Separate read and write into distinct statements. See `references/policy-patterns.md` for a full least-privilege S3 example.
 
 **Rules:**
+
 - Never use `"Action": "*"` or `"Resource": "*"` without conditions in production
 - Scope resources to the specific ARN, not `*`
 - Use conditions: `aws:RequestedRegion`, `aws:PrincipalOrgID`, `aws:SourceVpc`
@@ -77,6 +83,7 @@ Scope each statement to specific actions, resources (by ARN), and conditions. Se
 Permission boundaries set a **ceiling** on what an identity-based policy can grant. The effective permission is the intersection.
 
 **Use cases:**
+
 - Delegating IAM admin: Allow developers to create roles, but only up to the boundary
 - Limiting scope of auto-created roles (e.g., CDK bootstrap roles)
 
@@ -93,6 +100,7 @@ SCPs are guardrails for an AWS Organization. They restrict what **member account
 Common SCP deny statements: region restriction, deny leaving org, require IMDSv2, deny public RDS, deny unencrypted EBS, deny root access keys. See `references/policy-patterns.md` for individual JSON examples of each.
 
 **SCP principles:**
+
 - SCPs are deny-only in practice. Start with `FullAWSAccess` and add deny statements.
 - Always exempt a break-glass admin role from SCP denies (via condition)
 - SCPs do not affect the management account — use it only for billing and org management
@@ -103,11 +111,13 @@ Common SCP deny statements: region restriction, deny leaving org, require IMDSv2
 Identity Center is the recommended way for humans to access AWS accounts.
 
 ### Architecture
+
 - **Identity source**: Identity Center directory, Active Directory, or external IdP (Okta, Azure AD)
 - **Permission sets**: Define what users can do in an account (maps to an IAM role)
 - **Account assignments**: Connect groups/users to accounts with a permission set
 
 ### Best Practices
+
 - Use groups, never assign users directly
 - Create permission sets that match job functions: `AdminAccess`, `DeveloperAccess`, `ReadOnlyAccess`
 - Use managed policies in permission sets when possible, custom inline for fine-grained control
@@ -117,17 +127,20 @@ Identity Center is the recommended way for humans to access AWS accounts.
 ## Access Analyzer
 
 ### Policy Generation
+
 - Access Analyzer reviews CloudTrail logs and generates a least-privilege policy based on actual usage
 - Requires CloudTrail enabled with management events (at minimum)
 - Generation period: 1-90 days of CloudTrail data. Use at least 30 days for production roles.
 
 ### External Access Findings
+
 - Detects resources shared with external principals (other accounts, public access)
 - Analyzers: account-level or organization-level
 - Resource types: S3 buckets, IAM roles, KMS keys, Lambda functions, SQS queues, Secrets Manager
 - Review findings regularly — archive expected cross-account sharing, remediate unexpected
 
 ### Policy Validation
+
 - Validates IAM policies against best practices
 - Integrates into CI/CD to catch policy issues before deployment
 - Checks for: overly permissive actions, missing resource constraints, syntax errors
@@ -135,6 +148,7 @@ Identity Center is the recommended way for humans to access AWS accounts.
 ## Cross-Account Access
 
 ### Pattern 1: AssumeRole (Preferred)
+
 1. Target account: Create role with trust policy allowing source account
 2. Source account: Grant `sts:AssumeRole` on the target role ARN
 3. Application calls `sts:AssumeRole`, gets temporary credentials
@@ -142,11 +156,13 @@ Identity Center is the recommended way for humans to access AWS accounts.
 Always use `sts:ExternalId` condition to prevent confused deputy attacks.
 
 ### Pattern 2: Resource-Based Policy
+
 - Attach policy on the resource (S3, SQS, KMS) granting access to the external principal
 - Simpler but less flexible — not all services support resource-based policies
 - Caller does not need to assume a role
 
 ### Pattern 3: AWS Organizations
+
 - Use `aws:PrincipalOrgID` condition to allow access from any account in the organization
 - Cleaner than listing individual account IDs
 
@@ -207,10 +223,10 @@ aws organizations list-policies --filter SERVICE_CONTROL_POLICY --query 'Policie
 
 ## Reference Files
 
-| File | Contents |
-|---|---|
+| File                            | Contents                                                                                                                                                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `references/policy-patterns.md` | Identity-based policies, trust policies (Lambda, EC2, ECS, cross-account, SAML, GitHub Actions OIDC), resource-based policies (S3, KMS, SQS), permission boundaries, SCP examples, condition keys reference |
-| `references/role-templates.md` | Persona-based role templates with trust and identity policies: Developer, Data Engineer, On-Call/Operations, CI/CD Pipeline, Read-Only Auditor, plus a shared permission boundary |
+| `references/role-templates.md`  | Persona-based role templates with trust and identity policies: Developer, Data Engineer, On-Call/Operations, CI/CD Pipeline, Read-Only Auditor, plus a shared permission boundary                           |
 
 ## Related Skills
 

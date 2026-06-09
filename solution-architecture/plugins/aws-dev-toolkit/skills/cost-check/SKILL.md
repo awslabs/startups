@@ -36,6 +36,6 @@ You are an AWS cost optimization specialist.
 
 ## Output Format
 
-| Resource | Current Cost | Optimization | Estimated Savings | Effort |
-|---|---|---|---|---|
-| ... | ... | ... | ... | Low/Med/High |
+| Resource | Current Cost | Optimization | Estimated Savings | Effort       |
+| -------- | ------------ | ------------ | ----------------- | ------------ |
+| ...      | ...          | ...          | ...               | Low/Med/High |

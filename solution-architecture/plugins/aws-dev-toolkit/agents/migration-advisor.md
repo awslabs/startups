@@ -186,6 +186,7 @@ terraform show -json | jq '.values.root_module.resources[] | {type, name, provid
 ### MCP Tool Discovery
 
 Before falling back to CLIs, check for available MCP tools that may provide richer source cloud access:
+
 - Cloud provider MCP servers (Azure, GCP, OCI)
 - Kubernetes MCP tools
 - Terraform/IaC MCP tools
@@ -210,18 +211,19 @@ Use monitoring/tracing data when available — it reveals dependencies that docu
 
 Every workload gets classified. No exceptions.
 
-| Strategy | When to Use | Effort | Risk |
-|---|---|---|---|
-| **Rehost** (Lift & Shift) | Time-sensitive, no immediate optimization needed | Low | Low |
-| **Replatform** (Lift & Reshape) | Quick wins available (e.g., managed DB instead of self-managed) | Low-Medium | Low |
-| **Repurchase** (Drop & Shop) | Commercial SaaS replacement exists | Medium | Medium |
-| **Refactor** (Re-architect) | Application needs modernization, business justifies investment | High | Medium-High |
-| **Retire** | Application is redundant, unused, or can be consolidated | None | None |
-| **Retain** | Not ready to migrate — regulatory, technical, or business constraints | None | None |
+| Strategy                        | When to Use                                                           | Effort     | Risk        |
+| ------------------------------- | --------------------------------------------------------------------- | ---------- | ----------- |
+| **Rehost** (Lift & Shift)       | Time-sensitive, no immediate optimization needed                      | Low        | Low         |
+| **Replatform** (Lift & Reshape) | Quick wins available (e.g., managed DB instead of self-managed)       | Low-Medium | Low         |
+| **Repurchase** (Drop & Shop)    | Commercial SaaS replacement exists                                    | Medium     | Medium      |
+| **Refactor** (Re-architect)     | Application needs modernization, business justifies investment        | High       | Medium-High |
+| **Retire**                      | Application is redundant, unused, or can be consolidated              | None       | None        |
+| **Retain**                      | Not ready to migrate — regulatory, technical, or business constraints | None       | None        |
 
 ### Classification Workflow
 
 For each workload, answer these questions:
+
 1. **Business criticality**: What happens if this goes down for 1 hour? 1 day? 1 week?
 2. **Technical complexity**: How many dependencies? Custom middleware? Legacy protocols?
 3. **Compliance requirements**: Data residency? Regulatory frameworks (HIPAA, PCI, SOX)?
@@ -245,13 +247,13 @@ Only after discovery, mapping, and classification — now you can recommend AWS 
 
 ### Execution Tools (use where appropriate, not by default)
 
-| Tool | Purpose | When to Actually Use |
-|---|---|---|
-| **MGN** | Automated server rehost | Large VM fleets with no refactoring planned |
-| **DMS** | Database migration | Heterogeneous DB migrations or zero-downtime requirements |
-| **DataSync** | Large-scale data transfer | NFS/SMB/object storage moves |
-| **Snow Family** | Offline data transfer | Petabyte-scale with limited bandwidth |
-| **Transfer Family** | SFTP/FTPS migration | File transfer workloads |
+| Tool                | Purpose                   | When to Actually Use                                      |
+| ------------------- | ------------------------- | --------------------------------------------------------- |
+| **MGN**             | Automated server rehost   | Large VM fleets with no refactoring planned               |
+| **DMS**             | Database migration        | Heterogeneous DB migrations or zero-downtime requirements |
+| **DataSync**        | Large-scale data transfer | NFS/SMB/object storage moves                              |
+| **Snow Family**     | Offline data transfer     | Petabyte-scale with limited bandwidth                     |
+| **Transfer Family** | SFTP/FTPS migration       | File transfer workloads                                   |
 
 ### What NOT to default to
 
@@ -260,6 +262,7 @@ Only after discovery, mapping, and classification — now you can recommend AWS 
 - **Migration Evaluator** — only for executive TCO business cases, not technical planning
 
 Many migrations are better served by:
+
 - Direct CLI-based inventory + IaC (Terraform/CDK) for the target
 - Container-based replatforming (source K8s → EKS, source containers → Fargate)
 - Database-native export/import instead of DMS for simple cases
@@ -269,13 +272,13 @@ Many migrations are better served by:
 
 ### Per-Workload Estimate
 
-| Factor | Low (1-2 weeks) | Medium (2-6 weeks) | High (6+ weeks) |
-|---|---|---|---|
-| Dependencies | Standalone | 2-5 dependencies | 5+ or circular |
-| Data volume | < 100 GB | 100 GB - 1 TB | > 1 TB |
-| Compliance | None | Standard (SOC2) | Regulated (HIPAA, PCI) |
+| Factor       | Low (1-2 weeks)        | Medium (2-6 weeks)      | High (6+ weeks)              |
+| ------------ | ---------------------- | ----------------------- | ---------------------------- |
+| Dependencies | Standalone             | 2-5 dependencies        | 5+ or circular               |
+| Data volume  | < 100 GB               | 100 GB - 1 TB           | > 1 TB                       |
+| Compliance   | None                   | Standard (SOC2)         | Regulated (HIPAA, PCI)       |
 | Architecture | Stateless, cloud-ready | Some refactoring needed | Monolithic, legacy protocols |
-| Team skill | AWS experienced | Some AWS experience | No AWS experience |
+| Team skill   | AWS experienced        | Some AWS experience     | No AWS experience            |
 
 ### Migration Factory Velocity
 
@@ -313,6 +316,7 @@ Expect 30% overhead for unexpected issues. Always pad estimates.
 ## Output Format
 
 When advising on a migration:
+
 1. **Source Discovery Results**: What we found running in the source environment (from CLI/MCP discovery)
 2. **Dependency Map**: How services connect to each other
 3. **6R Classification**: Each workload with its recommended strategy and rationale

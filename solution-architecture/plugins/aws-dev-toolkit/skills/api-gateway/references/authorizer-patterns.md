@@ -16,6 +16,7 @@ aws apigatewayv2 create-authorizer \
 ```
 
 **Key points:**
+
 - `Audience` is your Cognito App Client ID (or OIDC client ID)
 - `Issuer` must be the exact URL of the Cognito User Pool or OIDC provider
 - Identity source defaults to `$request.header.Authorization` (Bearer token)
@@ -230,11 +231,11 @@ response = requests.get(request.url, headers=dict(request.headers))
 
 ## Decision Matrix: Which Authorizer to Use
 
-| Scenario | Recommended Authorizer |
-|---|---|
-| Web/mobile app with Cognito | JWT authorizer (HTTP API) or Cognito authorizer (REST API) |
-| Third-party OIDC (Auth0, Okta) | JWT authorizer (HTTP API) |
-| Custom token format | Lambda authorizer |
-| Multi-header auth (API key + token) | Lambda authorizer (REQUEST type) |
-| Service-to-service (internal) | IAM authorization |
-| Public API with rate limiting | API keys (for tracking) + any authorizer above |
+| Scenario                            | Recommended Authorizer                                     |
+| ----------------------------------- | ---------------------------------------------------------- |
+| Web/mobile app with Cognito         | JWT authorizer (HTTP API) or Cognito authorizer (REST API) |
+| Third-party OIDC (Auth0, Okta)      | JWT authorizer (HTTP API)                                  |
+| Custom token format                 | Lambda authorizer                                          |
+| Multi-header auth (API key + token) | Lambda authorizer (REQUEST type)                           |
+| Service-to-service (internal)       | IAM authorization                                          |
+| Public API with rate limiting       | API keys (for tracking) + any authorizer above             |

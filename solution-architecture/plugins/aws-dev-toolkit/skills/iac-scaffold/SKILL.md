@@ -20,23 +20,27 @@ Scaffold a new AWS IaC project.
 ## Framework-Specific Guidance
 
 ### CDK (TypeScript default)
+
 - Use `cdk init app --language typescript` patterns
 - Separate stacks by lifecycle (networking, data, compute)
 - Use `cdk-nag` for compliance checks
 - Outputs for cross-stack references
 
 ### Terraform
+
 - Module-per-service structure
 - Remote state in S3 + DynamoDB locking
 - Use `terraform-aws-modules` where they exist
 - Separate tfvars per environment
 
 ### SAM
+
 - template.yaml at root
 - Globals section for shared Lambda config
 - Use SAM Accelerate for fast iteration
 
 ### CloudFormation
+
 - Nested stacks for reuse
 - Parameters with AllowedValues for guardrails
 - Conditions for multi-environment templates
@@ -53,6 +57,7 @@ Scaffold a new AWS IaC project.
 ## Output
 
 Generate the complete project structure with:
+
 1. Entry point / main config file
 2. At least one example resource
 3. Environment-specific configuration

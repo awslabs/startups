@@ -70,19 +70,19 @@ aws bedrock-agentcore start-memory-extraction-job \
 
 ### Memory Strategies
 
-| Strategy Type | Use Case | Example |
-|---|---|---|
-| **Semantic** | Extract structured insights from conversations | User preferences, past issues, product ownership |
-| **Summary** | Compress long conversations into summaries | Meeting notes, support ticket summaries |
-| **User profile** | Build evolving user models | Communication style, expertise level, role |
+| Strategy Type    | Use Case                                       | Example                                          |
+| ---------------- | ---------------------------------------------- | ------------------------------------------------ |
+| **Semantic**     | Extract structured insights from conversations | User preferences, past issues, product ownership |
+| **Summary**      | Compress long conversations into summaries     | Meeting notes, support ticket summaries          |
+| **User profile** | Build evolving user models                     | Communication style, expertise level, role       |
 
 ### Memory Quotas
 
-| Resource | Default Limit |
-|---|---|
-| Memory resources per account | Check latest docs |
+| Resource                       | Default Limit     |
+| ------------------------------ | ----------------- |
+| Memory resources per account   | Check latest docs |
 | Strategies per memory resource | Check latest docs |
-| Strategies per account | Check latest docs |
+| Strategies per account         | Check latest docs |
 
 ---
 
@@ -183,11 +183,11 @@ agent = Agent(
 
 ### Gateway Quotas
 
-| Resource | Default Limit |
-|---|---|
+| Resource             | Default Limit     |
+| -------------------- | ----------------- |
 | Gateways per account | Check latest docs |
-| Targets per gateway | Check latest docs |
-| Tools per target | Check latest docs |
+| Targets per gateway  | Check latest docs |
+| Tools per target     | Check latest docs |
 
 ---
 
@@ -323,11 +323,11 @@ aws logs filter-log-events \
 
 ### Policy vs Other Guardrail Mechanisms
 
-| Mechanism | What It Controls | Enforcement | Use For |
-|---|---|---|---|
-| **AgentCore Policy** | Tool calls and parameters | Deterministic (Cedar) | "Agent X cannot call tool Y with parameter Z" |
-| **Bedrock Guardrails** | Content generation | LLM-based | "Agent cannot produce PII or harmful content" |
-| **IAM Policies** | AWS API access | Deterministic | "Agent role cannot access S3 bucket X" |
-| **SCPs** | Account-wide AWS actions | Deterministic | "No one in this account can create public S3 buckets" |
+| Mechanism              | What It Controls          | Enforcement           | Use For                                               |
+| ---------------------- | ------------------------- | --------------------- | ----------------------------------------------------- |
+| **AgentCore Policy**   | Tool calls and parameters | Deterministic (Cedar) | "Agent X cannot call tool Y with parameter Z"         |
+| **Bedrock Guardrails** | Content generation        | LLM-based             | "Agent cannot produce PII or harmful content"         |
+| **IAM Policies**       | AWS API access            | Deterministic         | "Agent role cannot access S3 bucket X"                |
+| **SCPs**               | Account-wide AWS actions  | Deterministic         | "No one in this account can create public S3 buckets" |
 
 Use all four layers together for defense in depth.

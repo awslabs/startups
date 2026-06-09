@@ -70,6 +70,7 @@ aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[?MinSize
 
 ```markdown
 # AWS Account Health Check
+
 **Account**: [ID] | **Region**: [region] | **Date**: [today]
 
 ## Score: [X/10]
@@ -77,20 +78,25 @@ aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[?MinSize
 ## Findings
 
 ### Critical (fix now)
+
 - ...
 
 ### Warning (fix soon)
+
 - ...
 
 ### Good (keep doing this)
+
 - ...
 
 ## Quick Wins
+
 1. [Easiest high-impact fix]
 2. [Next easiest]
 3. [...]
 
 ## SCP Gaps
+
 [If no SCPs detected, recommend baseline guardrails per CLAUDE.md]
 ```
 

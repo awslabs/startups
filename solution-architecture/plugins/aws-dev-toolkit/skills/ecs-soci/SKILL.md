@@ -12,6 +12,7 @@ You generate all code dynamically based on the user's answers. There are no temp
 SOCI (Seekable OCI) enables lazy-loading of container images on Amazon ECS Fargate. Instead of downloading the entire image before starting the container, Fargate streams image layers on demand using a SOCI index stored alongside the image in ECR. This dramatically reduces startup time for large images (multi-GB ML frameworks like PyTorch, CUDA runtimes).
 
 **Key facts:**
+
 - SOCI v2 produces an OCI image index with two sibling manifests: the image and the SOCI index (containing zTOCs for each large layer)
 - Only works with images stored in Amazon ECR (same region as the ECS task)
 - Only works on Fargate platform version 1.4.0+
@@ -44,19 +45,19 @@ Then generate all files in a single pass.
 
 Generate these files, writing each one with `Write` tool:
 
-| Path | Purpose |
-|------|---------|
-| `app/main.py` | FastAPI inference server |
-| `app/requirements.txt` | Python ML dependencies |
-| `Dockerfile` | Python 3.12 + PyTorch + ML stack |
-| `terraform/main.tf` | ECS cluster, two task defs (no services), ECR, log groups |
-| `terraform/variables.tf` | All input variables with the user's account ID as default |
-| `terraform/outputs.tf` | ECR login command, run-task commands, comparison script command |
-| `terraform/iam.tf` | Execution role + task role (skip if user has existing roles) |
-| `terraform/terraform.tfvars` | Pre-filled with user's values |
-| `scripts/build-and-push.sh` | Build, push, create SOCI index |
-| `scripts/run-and-compare.sh` | Run both tasks and compare pull times |
-| `README.md` | Setup instructions |
+| Path                         | Purpose                                                         |
+| ---------------------------- | --------------------------------------------------------------- |
+| `app/main.py`                | FastAPI inference server                                        |
+| `app/requirements.txt`       | Python ML dependencies                                          |
+| `Dockerfile`                 | Python 3.12 + PyTorch + ML stack                                |
+| `terraform/main.tf`          | ECS cluster, two task defs (no services), ECR, log groups       |
+| `terraform/variables.tf`     | All input variables with the user's account ID as default       |
+| `terraform/outputs.tf`       | ECR login command, run-task commands, comparison script command |
+| `terraform/iam.tf`           | Execution role + task role (skip if user has existing roles)    |
+| `terraform/terraform.tfvars` | Pre-filled with user's values                                   |
+| `scripts/build-and-push.sh`  | Build, push, create SOCI index                                  |
+| `scripts/run-and-compare.sh` | Run both tasks and compare pull times                           |
+| `README.md`                  | Setup instructions                                              |
 
 ## Code Generation Specifications
 
@@ -122,6 +123,7 @@ filelock==3.16.1
 **ECS Cluster:** Container Insights enabled. Fargate capacity provider.
 
 **Two Task Definitions (no services):**
+
 - `soci-demo-with-soci` — image tag `latest-soci`
 - `soci-demo-without-soci` — image tag `latest-no-soci`
 - Both: Fargate, awsvpc, runtime platform LINUX/X86_64
@@ -132,6 +134,7 @@ filelock==3.16.1
 **No services, no security groups.** Tasks are launched via `aws ecs run-task` in the comparison script. The user provides subnet IDs and security group at run time (not in Terraform).
 
 **Variables must include:**
+
 - `aws_account_id` (string, validated 12 digits)
 - `aws_region` (string, default "us-east-1")
 - `subnet_ids` (list(string) — at least one, used in run-and-compare script)
@@ -206,6 +209,7 @@ If user provides existing role ARNs, use variables instead and skip iam.tf.
 ## Comparison Methodology
 
 With SOCI v2, `latest-soci` is an OCI image index containing two sibling manifests:
+
 1. The image manifest (same layers as `latest-no-soci`)
 2. The SOCI index manifest (`artifactType: application/vnd.amazon.soci.index.v2+json`) with zTOCs for each layer > 10 MB
 
@@ -216,10 +220,12 @@ Fargate detects the SOCI index via the `com.amazon.soci.index-digest` annotation
 Both tasks are launched via `aws ecs run-task` (no long-running services). The comparison script runs them, waits for completion, and extracts timing data.
 
 Startup time is measured via ECS task metadata:
+
 - `pullStartedAt` → `pullStoppedAt` = image pull duration
 - These are available in `describe-tasks` output
 
 Observed results for a ~4 GB compressed PyTorch image:
+
 - Without SOCI: ~85 seconds image pull time
 - With SOCI: ~4 seconds image pull time (~21x speedup)
 

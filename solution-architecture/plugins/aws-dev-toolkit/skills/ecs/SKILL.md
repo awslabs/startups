@@ -109,16 +109,16 @@ aws ecs describe-services --cluster my-cluster --services my-svc --query "servic
 
 ## Output Format
 
-| Field | Details |
-|-------|---------|
-| **Service name** | ECS service name and cluster |
-| **Launch type** | Fargate, Fargate Spot, EC2, or External |
-| **Task CPU/Memory** | vCPU and memory allocation (e.g., 0.5 vCPU / 1 GB) |
-| **Desired count** | Number of tasks, min/max for auto-scaling |
+| Field                   | Details                                            |
+| ----------------------- | -------------------------------------------------- |
+| **Service name**        | ECS service name and cluster                       |
+| **Launch type**         | Fargate, Fargate Spot, EC2, or External            |
+| **Task CPU/Memory**     | vCPU and memory allocation (e.g., 0.5 vCPU / 1 GB) |
+| **Desired count**       | Number of tasks, min/max for auto-scaling          |
 | **Deployment strategy** | Rolling update, Blue/Green (CodeDeploy), or Canary |
-| **Load balancer** | ALB or NLB, target group health check config |
-| **Auto-scaling** | Scaling metric, target value, min/max capacity |
-| **Logging** | Log driver, log group, retention period |
+| **Load balancer**       | ALB or NLB, target group health check config       |
+| **Auto-scaling**        | Scaling metric, target value, min/max capacity     |
+| **Logging**             | Log driver, log group, retention period            |
 
 ## Related Skills
 
@@ -145,4 +145,5 @@ aws ecs describe-services --cluster my-cluster --services my-svc --query "servic
 ### Reference Files
 
 For detailed documentation and decision guidance, consult:
+
 - **`references/express-mode.md`** — Full Express Mode pros/cons, defaults table, IAM roles, CLI commands, resource sharing details, Express Mode vs standard ECS decision matrix, and official AWS documentation links

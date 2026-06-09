@@ -28,11 +28,11 @@ If the knowledge MCP returns no definitive answer, say so explicitly. Never gues
 
 ## The Three Pillars on AWS
 
-| Signal | AWS Service | When to Use |
-|---|---|---|
-| **Metrics** | CloudWatch Metrics | Health checks, capacity planning, SLO tracking |
-| **Logs** | CloudWatch Logs | Debugging, audit trails, detailed error context |
-| **Traces** | X-Ray / CloudWatch ServiceLens | Request flow, latency breakdown, dependency mapping |
+| Signal      | AWS Service                    | When to Use                                         |
+| ----------- | ------------------------------ | --------------------------------------------------- |
+| **Metrics** | CloudWatch Metrics             | Health checks, capacity planning, SLO tracking      |
+| **Logs**    | CloudWatch Logs                | Debugging, audit trails, detailed error context     |
+| **Traces**  | X-Ray / CloudWatch ServiceLens | Request flow, latency breakdown, dependency mapping |
 
 All three are needed. Metrics tell you something is wrong. Logs tell you what went wrong. Traces tell you where it went wrong.
 
@@ -145,12 +145,12 @@ aws logs get-query-results --query-id <query-id>
 
 ### Log Aggregation Strategy
 
-| Source | Log Group Pattern | Retention |
-|---|---|---|
-| Lambda functions | /aws/lambda/<function-name> | 30 days (dev), 90 days (prod) |
-| ECS services | /ecs/<cluster>/<service> | 90 days |
-| API Gateway | /aws/apigateway/<api-name> | 30 days |
-| VPC Flow Logs | /vpc/flow-logs/<vpc-id> | 14 days (costly at volume) |
+| Source           | Log Group Pattern                 | Retention                     |
+| ---------------- | --------------------------------- | ----------------------------- |
+| Lambda functions | /aws/lambda/<function-name>       | 30 days (dev), 90 days (prod) |
+| ECS services     | /ecs/<cluster>/<service>          | 90 days                       |
+| API Gateway      | /aws/apigateway/<api-name>        | 30 days                       |
+| VPC Flow Logs    | /vpc/flow-logs/<vpc-id>           | 14 days (costly at volume)    |
 | Application logs | /app/<service-name>/<environment> | 90 days (prod), 14 days (dev) |
 
 ```bash
@@ -274,6 +274,7 @@ aws ecs describe-task-definition --task-definition <task-def> \
 ### The Four Golden Signals (per service)
 
 Every service dashboard must have these:
+
 1. **Latency**: p50, p95, p99 — not averages (averages hide problems)
 2. **Traffic**: Requests per second (shows load context for other metrics)
 3. **Errors**: Error rate as percentage (absolute counts are misleading at variable traffic)
@@ -304,12 +305,12 @@ aws cloudwatch list-dashboards --output table
 
 ## Observability Maturity Model
 
-| Level | Capabilities | Goal |
-|---|---|---|
-| **L1 - Reactive** | Basic CloudWatch metrics, manual log searching | Know when something is down |
-| **L2 - Proactive** | Alarms, dashboards, structured logs | Detect problems before users report them |
-| **L3 - Investigative** | Distributed tracing, Logs Insights, composite alarms | Quickly find root cause |
-| **L4 - Predictive** | Anomaly detection, SLO tracking, capacity forecasting | Prevent problems before they happen |
+| Level                  | Capabilities                                          | Goal                                     |
+| ---------------------- | ----------------------------------------------------- | ---------------------------------------- |
+| **L1 - Reactive**      | Basic CloudWatch metrics, manual log searching        | Know when something is down              |
+| **L2 - Proactive**     | Alarms, dashboards, structured logs                   | Detect problems before users report them |
+| **L3 - Investigative** | Distributed tracing, Logs Insights, composite alarms  | Quickly find root cause                  |
+| **L4 - Predictive**    | Anomaly detection, SLO tracking, capacity forecasting | Prevent problems before they happen      |
 
 Most teams are at L1-L2. Focus on getting to L3 before chasing L4.
 
@@ -327,6 +328,7 @@ Most teams are at L1-L2. Focus on getting to L3 before chasing L4.
 ## Output Format
 
 When designing or reviewing observability:
+
 1. **Current State**: What observability exists today, maturity level
 2. **Gaps**: What signals are missing (metrics, logs, traces)
 3. **Design**: Specific CloudWatch, X-Ray, OTel configuration recommendations

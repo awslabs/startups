@@ -19,37 +19,37 @@ Specialist guidance for MLOps on AWS. Covers platform selection, training job co
 
 ## Platform Selection Decision Matrix
 
-| Requirement | Recommendation | Why |
-|---|---|---|
-| End-to-end ML platform, team wants managed infrastructure | SageMaker (full) | Integrated training, tuning, deployment, monitoring, and model registry in one service; eliminates infrastructure management |
-| CI/CD for ML with automated retraining and approval workflows | SageMaker Pipelines | Native step types for Processing, Training, Tuning, Transform, Model, Condition, and Callback; integrates with Model Registry for approval gates |
-| Team already uses MLflow, needs portability across clouds | MLflow on SageMaker (managed) | Zero-infrastructure MLflow tracking server with automatic SageMaker Model Registry sync; preserves existing MLflow workflows |
-| Customizing a foundation model without managing training infra | Bedrock fine-tuning / continued pre-training | No instance selection, no distributed training config, no checkpointing — AWS manages all training infrastructure; pay per training token |
-| Kubernetes-native teams with existing EKS clusters | Kubeflow on EKS | Leverages existing K8s expertise and cluster; full control over scheduling, GPU sharing, and custom operators; but significant operational overhead |
-| Simple orchestration for inference-only or lightweight training | Step Functions + Lambda | Event-driven, serverless, pay-per-execution; appropriate when training is infrequent and models are small enough for Lambda memory limits |
-| Large-scale foundation model training (billions of parameters) | SageMaker HyperPod | Persistent managed clusters with automatic fault detection and repair; checkpointless recovery; supports Slurm and EKS orchestration |
+| Requirement                                                     | Recommendation                               | Why                                                                                                                                                 |
+| --------------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| End-to-end ML platform, team wants managed infrastructure       | SageMaker (full)                             | Integrated training, tuning, deployment, monitoring, and model registry in one service; eliminates infrastructure management                        |
+| CI/CD for ML with automated retraining and approval workflows   | SageMaker Pipelines                          | Native step types for Processing, Training, Tuning, Transform, Model, Condition, and Callback; integrates with Model Registry for approval gates    |
+| Team already uses MLflow, needs portability across clouds       | MLflow on SageMaker (managed)                | Zero-infrastructure MLflow tracking server with automatic SageMaker Model Registry sync; preserves existing MLflow workflows                        |
+| Customizing a foundation model without managing training infra  | Bedrock fine-tuning / continued pre-training | No instance selection, no distributed training config, no checkpointing — AWS manages all training infrastructure; pay per training token           |
+| Kubernetes-native teams with existing EKS clusters              | Kubeflow on EKS                              | Leverages existing K8s expertise and cluster; full control over scheduling, GPU sharing, and custom operators; but significant operational overhead |
+| Simple orchestration for inference-only or lightweight training | Step Functions + Lambda                      | Event-driven, serverless, pay-per-execution; appropriate when training is infrequent and models are small enough for Lambda memory limits           |
+| Large-scale foundation model training (billions of parameters)  | SageMaker HyperPod                           | Persistent managed clusters with automatic fault detection and repair; checkpointless recovery; supports Slurm and EKS orchestration                |
 
 ## Training Instance Selection
 
 ### Training Instances
 
-| Instance Family | Accelerator | Use Case | Price-Performance Notes |
-|---|---|---|---|
-| **ml.trn1 / ml.trn1n** | AWS Trainium | Large model training (LLMs, diffusion) | Up to 50% cheaper than comparable GPU instances for supported architectures; requires Neuron SDK |
-| **ml.p5.48xlarge** | 8x NVIDIA H100 | Largest models, highest performance | Most powerful GPU option; use when Trainium does not support the model architecture |
-| **ml.p4d.24xlarge** | 8x NVIDIA A100 | Large model training | Previous-gen flagship; still strong for most distributed training |
-| **ml.g5.xlarge-48xlarge** | NVIDIA A10G | Medium models, fine-tuning | Good balance of cost and capability for fine-tuning and smaller training jobs |
-| **ml.m5.large-24xlarge** | CPU only | Classical ML (XGBoost, sklearn) | No GPU overhead; appropriate for tree-based models and tabular data |
+| Instance Family           | Accelerator    | Use Case                               | Price-Performance Notes                                                                          |
+| ------------------------- | -------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **ml.trn1 / ml.trn1n**    | AWS Trainium   | Large model training (LLMs, diffusion) | Up to 50% cheaper than comparable GPU instances for supported architectures; requires Neuron SDK |
+| **ml.p5.48xlarge**        | 8x NVIDIA H100 | Largest models, highest performance    | Most powerful GPU option; use when Trainium does not support the model architecture              |
+| **ml.p4d.24xlarge**       | 8x NVIDIA A100 | Large model training                   | Previous-gen flagship; still strong for most distributed training                                |
+| **ml.g5.xlarge-48xlarge** | NVIDIA A10G    | Medium models, fine-tuning             | Good balance of cost and capability for fine-tuning and smaller training jobs                    |
+| **ml.m5.large-24xlarge**  | CPU only       | Classical ML (XGBoost, sklearn)        | No GPU overhead; appropriate for tree-based models and tabular data                              |
 
 ### Inference Instances
 
-| Instance Family | Accelerator | Use Case | Price-Performance Notes |
-|---|---|---|---|
-| **ml.inf2** | AWS Inferentia2 | LLM and generative AI inference | Up to 4x higher throughput and 10x lower latency vs Inf1; 50%+ cheaper than GPU for supported models |
-| **ml.g5** | NVIDIA A10G | General-purpose GPU inference | Broad framework support; use when Inferentia does not support the model |
-| **ml.g4dn** | NVIDIA T4 | Cost-effective GPU inference | Previous-gen but still the cheapest GPU option for small-medium models |
-| **ml.c7g / ml.c6g** | Graviton (CPU) | CPU inference for classical ML | Best price-performance for models that do not need GPU (XGBoost, sklearn, small NLP) |
-| **Serverless** | Auto-managed | Sporadic or unpredictable traffic | No idle cost; 1-6 GB memory; cold start latency of seconds; max 60s processing time |
+| Instance Family     | Accelerator     | Use Case                          | Price-Performance Notes                                                                              |
+| ------------------- | --------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **ml.inf2**         | AWS Inferentia2 | LLM and generative AI inference   | Up to 4x higher throughput and 10x lower latency vs Inf1; 50%+ cheaper than GPU for supported models |
+| **ml.g5**           | NVIDIA A10G     | General-purpose GPU inference     | Broad framework support; use when Inferentia does not support the model                              |
+| **ml.g4dn**         | NVIDIA T4       | Cost-effective GPU inference      | Previous-gen but still the cheapest GPU option for small-medium models                               |
+| **ml.c7g / ml.c6g** | Graviton (CPU)  | CPU inference for classical ML    | Best price-performance for models that do not need GPU (XGBoost, sklearn, small NLP)                 |
+| **Serverless**      | Auto-managed    | Sporadic or unpredictable traffic | No idle cost; 1-6 GB memory; cold start latency of seconds; max 60s processing time                  |
 
 ### Default to Trainium/Inferentia When Possible
 
@@ -57,12 +57,12 @@ Always evaluate ml.trn1 for training and ml.inf2 for inference before selecting 
 
 ## Inference Deployment Decision Matrix
 
-| Pattern | Latency | Max Payload | Timeout | Cost Model | When to Use |
-|---|---|---|---|---|---|
-| **Real-time endpoint** | Low (ms) | 25 MB | 60s (8 min streaming) | Per-instance-hour (always running) | Consistent traffic with latency SLAs; use auto-scaling to match demand |
-| **Serverless inference** | Medium (cold start) | 4 MB | 60s | Per-request + per-ms compute | Sporadic traffic with idle periods; eliminates idle instance cost entirely |
-| **Batch transform** | High (minutes-hours) | 100 MB/record | Days | Per-instance-hour (job duration) | Offline scoring of large datasets; no persistent endpoint needed |
-| **Async inference** | Medium-high | 1 GB | 1 hour | Per-instance-hour (scale to 0) | Large payloads or long processing; queue-based with SNS notifications |
+| Pattern                  | Latency              | Max Payload   | Timeout               | Cost Model                         | When to Use                                                                |
+| ------------------------ | -------------------- | ------------- | --------------------- | ---------------------------------- | -------------------------------------------------------------------------- |
+| **Real-time endpoint**   | Low (ms)             | 25 MB         | 60s (8 min streaming) | Per-instance-hour (always running) | Consistent traffic with latency SLAs; use auto-scaling to match demand     |
+| **Serverless inference** | Medium (cold start)  | 4 MB          | 60s                   | Per-request + per-ms compute       | Sporadic traffic with idle periods; eliminates idle instance cost entirely |
+| **Batch transform**      | High (minutes-hours) | 100 MB/record | Days                  | Per-instance-hour (job duration)   | Offline scoring of large datasets; no persistent endpoint needed           |
+| **Async inference**      | Medium-high          | 1 GB          | 1 hour                | Per-instance-hour (scale to 0)     | Large payloads or long processing; queue-based with SNS notifications      |
 
 ### Real-time Endpoint Patterns
 
@@ -87,23 +87,24 @@ Use Inference Recommender before production deployment to benchmark instance typ
 
 ### Pipeline Step Types
 
-| Step | Purpose | Notes |
-|---|---|---|
-| **Processing** | Data prep, feature engineering, evaluation | Runs a processing container (sklearn, Spark, custom) |
-| **Training** | Model training | Supports all SageMaker training job features including Spot |
-| **Tuning** | Hyperparameter optimization | Bayesian, Random, Grid, or Hyperband strategies |
-| **Transform** | Batch inference | Run batch predictions as a pipeline step |
-| **Model** | Create/register model | Register in Model Registry with metadata |
-| **Condition** | Branching logic | Route pipeline based on metrics (e.g., accuracy threshold) |
-| **Callback** | External integration | Wait for external approval or process completion |
-| **Lambda** | Run a Lambda function | Lightweight compute for custom logic |
-| **QualityCheck** | Data/model quality check | Integrates with Model Monitor baselines |
-| **ClarifyCheck** | Bias and explainability | Integrates with SageMaker Clarify |
-| **Fail** | Terminate with error | Explicit failure with message for debugging |
+| Step             | Purpose                                    | Notes                                                       |
+| ---------------- | ------------------------------------------ | ----------------------------------------------------------- |
+| **Processing**   | Data prep, feature engineering, evaluation | Runs a processing container (sklearn, Spark, custom)        |
+| **Training**     | Model training                             | Supports all SageMaker training job features including Spot |
+| **Tuning**       | Hyperparameter optimization                | Bayesian, Random, Grid, or Hyperband strategies             |
+| **Transform**    | Batch inference                            | Run batch predictions as a pipeline step                    |
+| **Model**        | Create/register model                      | Register in Model Registry with metadata                    |
+| **Condition**    | Branching logic                            | Route pipeline based on metrics (e.g., accuracy threshold)  |
+| **Callback**     | External integration                       | Wait for external approval or process completion            |
+| **Lambda**       | Run a Lambda function                      | Lightweight compute for custom logic                        |
+| **QualityCheck** | Data/model quality check                   | Integrates with Model Monitor baselines                     |
+| **ClarifyCheck** | Bias and explainability                    | Integrates with SageMaker Clarify                           |
+| **Fail**         | Terminate with error                       | Explicit failure with message for debugging                 |
 
 ### Model Registry
 
 The Model Registry is the central artifact store for production ML. Always register models through the registry because it provides:
+
 - **Version tracking**: Every model gets an immutable version number with metadata (metrics, parameters, data lineage)
 - **Approval workflows**: Models must be explicitly approved (manual or automated) before deployment, preventing untested models from reaching production
 - **Lineage**: Links model versions to the training job, dataset, pipeline execution, and code commit that produced them
@@ -150,12 +151,12 @@ Only choose self-hosted MLflow when you need custom plugins, specific MLflow ver
 
 ### Four Monitoring Dimensions
 
-| Monitor Type | What It Detects | Baseline Source | When to Use |
-|---|---|---|---|
-| **Data Quality** | Schema violations, missing values, statistical drift in input features | Training dataset statistics | Always — this is the earliest signal that something changed |
-| **Model Quality** | Accuracy/precision/recall/RMSE degradation | Baseline predictions + ground truth | When ground truth labels are available (even delayed) |
-| **Bias Drift** | Changes in model fairness across demographic groups | Pre-deployment bias metrics from Clarify | When the model makes decisions affecting people (lending, hiring, content) |
-| **Feature Attribution Drift** | Shifts in which features drive predictions | SHAP values from Clarify baseline | When you need to explain why predictions changed, not just that they changed |
+| Monitor Type                  | What It Detects                                                        | Baseline Source                          | When to Use                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- |
+| **Data Quality**              | Schema violations, missing values, statistical drift in input features | Training dataset statistics              | Always — this is the earliest signal that something changed                  |
+| **Model Quality**             | Accuracy/precision/recall/RMSE degradation                             | Baseline predictions + ground truth      | When ground truth labels are available (even delayed)                        |
+| **Bias Drift**                | Changes in model fairness across demographic groups                    | Pre-deployment bias metrics from Clarify | When the model makes decisions affecting people (lending, hiring, content)   |
+| **Feature Attribution Drift** | Shifts in which features drive predictions                             | SHAP values from Clarify baseline        | When you need to explain why predictions changed, not just that they changed |
 
 ### Monitoring Setup
 
@@ -182,12 +183,12 @@ Use model parallel training when the model does not fit in a single GPU's memory
 
 ### Hyperparameter Tuning Strategies
 
-| Strategy | When to Use | Notes |
-|---|---|---|
-| **Bayesian** (default) | Most cases | Uses prior results to choose next trials; converges faster with fewer trials |
-| **Random** | Large search spaces with many parameters | Good baseline; easy to parallelize |
-| **Grid** | Small discrete search spaces | Exhaustive; only practical with few parameters and few values each |
-| **Hyperband** | Need results fast on a budget | Early-stops poor configurations; allocates more resources to promising ones |
+| Strategy               | When to Use                              | Notes                                                                        |
+| ---------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- |
+| **Bayesian** (default) | Most cases                               | Uses prior results to choose next trials; converges faster with fewer trials |
+| **Random**             | Large search spaces with many parameters | Good baseline; easy to parallelize                                           |
+| **Grid**               | Small discrete search spaces             | Exhaustive; only practical with few parameters and few values each           |
+| **Hyperband**          | Need results fast on a budget            | Early-stops poor configurations; allocates more resources to promising ones  |
 
 Always use Bayesian optimization as the default because it typically finds better hyperparameters in fewer trials than random search, directly reducing training cost.
 
@@ -249,11 +250,13 @@ Evaluate Trainium (ml.trn1) for training and Inferentia2 (ml.inf2) for inference
 ### Reference Files
 
 For detailed configurations, CLI commands, and code examples, consult:
+
 - **`references/training-patterns.md`** — Training job configurations (single-instance, distributed, Spot), hyperparameter tuning setup, checkpointing, SageMaker Processing examples, and distributed training strategies
 - **`references/inference-deployment.md`** — Real-time endpoint configurations, serverless inference, batch transform, async inference, auto-scaling policies, multi-model endpoints, shadow testing, and Inference Recommender usage
 - **`references/pipeline-recipes.md`** — SageMaker Pipeline definitions (Python SDK), Model Registry workflows, CI/CD integration with CodePipeline, MLflow experiment tracking setup, and monitoring configuration
 
 ### Related Skills
+
 - **`bedrock`** — Foundation model customization, fine-tuning, and Bedrock-native inference
 - **`eks`** — Kubernetes cluster design for Kubeflow or self-hosted MLflow deployments
 - **`lambda`** — Serverless compute for lightweight ML inference or pipeline triggers
@@ -268,15 +271,15 @@ For detailed configurations, CLI commands, and code examples, consult:
 
 When recommending an MLOps architecture, include:
 
-| Component | Choice | Rationale |
-|---|---|---|
-| Platform | SageMaker Pipelines + MLflow | CI/CD for ML with experiment tracking |
-| Training Instance | ml.trn1.32xlarge (Spot) | Trainium for 50% savings; Spot for additional 60-90% |
-| Inference Instance | ml.inf2.xlarge | Inferentia2 for cost-effective LLM serving |
-| Inference Pattern | Real-time endpoint with auto-scaling | Consistent traffic with latency SLA |
-| Experiment Tracking | Managed MLflow on SageMaker | Zero-infra setup, auto-sync with Model Registry |
-| Monitoring | Model Monitor (data quality + model quality) | Detect drift before business impact |
-| CI/CD | CodePipeline triggering SageMaker Pipeline | Automated training on code merge |
-| Cost Optimization | Spot training + Savings Plan on inference | Minimize both training and serving costs |
+| Component           | Choice                                       | Rationale                                            |
+| ------------------- | -------------------------------------------- | ---------------------------------------------------- |
+| Platform            | SageMaker Pipelines + MLflow                 | CI/CD for ML with experiment tracking                |
+| Training Instance   | ml.trn1.32xlarge (Spot)                      | Trainium for 50% savings; Spot for additional 60-90% |
+| Inference Instance  | ml.inf2.xlarge                               | Inferentia2 for cost-effective LLM serving           |
+| Inference Pattern   | Real-time endpoint with auto-scaling         | Consistent traffic with latency SLA                  |
+| Experiment Tracking | Managed MLflow on SageMaker                  | Zero-infra setup, auto-sync with Model Registry      |
+| Monitoring          | Model Monitor (data quality + model quality) | Detect drift before business impact                  |
+| CI/CD               | CodePipeline triggering SageMaker Pipeline   | Automated training on code merge                     |
+| Cost Optimization   | Spot training + Savings Plan on inference    | Minimize both training and serving costs             |
 
 Include estimated monthly cost range using the `cost-check` skill.

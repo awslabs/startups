@@ -14,9 +14,9 @@ Step Functions can call 200+ AWS services directly. Prefer direct integrations o
     "Parameters": {
       "TableName": "Orders",
       "Item": {
-        "orderId": {"S.$": "$.orderId"},
-        "status": {"S": "PENDING"},
-        "createdAt": {"S.$": "$$.State.EnteredTime"}
+        "orderId": { "S.$": "$.orderId" },
+        "status": { "S": "PENDING" },
+        "createdAt": { "S.$": "$$.State.EnteredTime" }
       }
     },
     "Next": "NotifyCustomer"
@@ -34,7 +34,7 @@ Step Functions can call 200+ AWS services directly. Prefer direct integrations o
     "Parameters": {
       "TableName": "Orders",
       "Key": {
-        "orderId": {"S.$": "$.orderId"}
+        "orderId": { "S.$": "$.orderId" }
       }
     },
     "ResultSelector": {
@@ -176,18 +176,18 @@ Step Functions can call 200+ AWS services directly. Prefer direct integrations o
 
 ## Common Direct Integrations Reference
 
-| Service | Actions | Use Instead of Lambda When... |
-|---------|---------|-------------------------------|
-| **DynamoDB** | GetItem, PutItem, UpdateItem, DeleteItem, Query | Simple CRUD operations |
-| **SQS** | SendMessage | Enqueuing messages |
-| **SNS** | Publish | Sending notifications |
-| **EventBridge** | PutEvents | Emitting domain events |
-| **ECS/Fargate** | RunTask | Long-running container tasks |
-| **Glue** | StartJobRun | ETL jobs |
-| **SageMaker** | CreateTransformJob, CreateTrainingJob | ML pipeline steps |
-| **Bedrock** | InvokeModel | LLM inference calls |
-| **S3** | GetObject, PutObject, CopyObject | File operations |
-| **Lambda** | Invoke | Complex business logic that needs code |
+| Service         | Actions                                         | Use Instead of Lambda When...          |
+| --------------- | ----------------------------------------------- | -------------------------------------- |
+| **DynamoDB**    | GetItem, PutItem, UpdateItem, DeleteItem, Query | Simple CRUD operations                 |
+| **SQS**         | SendMessage                                     | Enqueuing messages                     |
+| **SNS**         | Publish                                         | Sending notifications                  |
+| **EventBridge** | PutEvents                                       | Emitting domain events                 |
+| **ECS/Fargate** | RunTask                                         | Long-running container tasks           |
+| **Glue**        | StartJobRun                                     | ETL jobs                               |
+| **SageMaker**   | CreateTransformJob, CreateTrainingJob           | ML pipeline steps                      |
+| **Bedrock**     | InvokeModel                                     | LLM inference calls                    |
+| **S3**          | GetObject, PutObject, CopyObject                | File operations                        |
+| **Lambda**      | Invoke                                          | Complex business logic that needs code |
 
 ## Input/Output Processing Pipeline
 
@@ -242,7 +242,7 @@ Reshapes the task result before merging back. Use to trim large API responses.
     "Resource": "arn:aws:states:::dynamodb:getItem",
     "Parameters": {
       "TableName": "Orders",
-      "Key": { "orderId": {"S.$": "$.orderId"} }
+      "Key": { "orderId": { "S.$": "$.orderId" } }
     },
     "ResultSelector": {
       "orderId.$": "$.Item.orderId.S",
@@ -340,7 +340,7 @@ Filters what gets passed to the next state.
         }
       }
     ],
-    "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "RollbackAll"}],
+    "Catch": [{ "ErrorEquals": ["States.ALL"], "Next": "RollbackAll" }],
     "Next": "ConfirmOrder"
   }
 }

@@ -32,11 +32,11 @@ If the knowledge MCP returns no definitive answer, say so explicitly. Never gues
 
 For most production workloads, use a 3-tier architecture:
 
-| Tier | Subnet Type | Purpose | Example |
-|---|---|---|---|
-| Public | Public (IGW route) | Load balancers, NAT gateways, bastion hosts | 10.0.0.0/24, 10.0.1.0/24 |
-| Private | Private (NAT route) | Application servers, containers, Lambda | 10.0.10.0/24, 10.0.11.0/24 |
-| Isolated | Isolated (no internet) | Databases, caches, internal services | 10.0.20.0/24, 10.0.21.0/24 |
+| Tier     | Subnet Type            | Purpose                                     | Example                    |
+| -------- | ---------------------- | ------------------------------------------- | -------------------------- |
+| Public   | Public (IGW route)     | Load balancers, NAT gateways, bastion hosts | 10.0.0.0/24, 10.0.1.0/24   |
+| Private  | Private (NAT route)    | Application servers, containers, Lambda     | 10.0.10.0/24, 10.0.11.0/24 |
+| Isolated | Isolated (no internet) | Databases, caches, internal services        | 10.0.20.0/24, 10.0.21.0/24 |
 
 ### CIDR Planning
 
@@ -66,12 +66,12 @@ aws ec2 describe-route-tables \
 
 ### Multi-Account VPC Strategy
 
-| Pattern | When to Use |
-|---|---|
-| VPC per account | Default. Clean blast radius isolation. |
-| Shared VPC (RAM) | Centralized networking team, many small workloads |
-| Transit Gateway hub | 5+ VPCs that need to communicate |
-| VPC Peering | 2-3 VPCs with simple connectivity needs |
+| Pattern             | When to Use                                       |
+| ------------------- | ------------------------------------------------- |
+| VPC per account     | Default. Clean blast radius isolation.            |
+| Shared VPC (RAM)    | Centralized networking team, many small workloads |
+| Transit Gateway hub | 5+ VPCs that need to communicate                  |
+| VPC Peering         | 2-3 VPCs with simple connectivity needs           |
 
 ## Transit Gateway
 
@@ -111,15 +111,15 @@ aws ec2 search-transit-gateway-routes \
 
 ### Site-to-Site VPN vs Direct Connect
 
-| Factor | Site-to-Site VPN | Direct Connect |
-|---|---|---|
-| Setup time | Minutes | Weeks to months |
-| Bandwidth | Up to 1.25 Gbps per tunnel | 1 Gbps, 10 Gbps, 100 Gbps |
-| Latency | Variable (internet) | Consistent, low |
-| Cost | Low ($0.05/hour + data transfer) | Higher (port fee + data transfer) |
-| Encryption | IPsec (built-in) | MACsec or VPN overlay |
-| Redundancy | Dual tunnels per connection | Need 2 connections on different devices |
-| **Use when** | PoC, low bandwidth, backup | Production, high bandwidth, consistent latency |
+| Factor       | Site-to-Site VPN                 | Direct Connect                                 |
+| ------------ | -------------------------------- | ---------------------------------------------- |
+| Setup time   | Minutes                          | Weeks to months                                |
+| Bandwidth    | Up to 1.25 Gbps per tunnel       | 1 Gbps, 10 Gbps, 100 Gbps                      |
+| Latency      | Variable (internet)              | Consistent, low                                |
+| Cost         | Low ($0.05/hour + data transfer) | Higher (port fee + data transfer)              |
+| Encryption   | IPsec (built-in)                 | MACsec or VPN overlay                          |
+| Redundancy   | Dual tunnels per connection      | Need 2 connections on different devices        |
+| **Use when** | PoC, low bandwidth, backup       | Production, high bandwidth, consistent latency |
 
 ```bash
 # List VPN connections
@@ -155,13 +155,13 @@ aws directconnect describe-virtual-interfaces \
 
 ### Route 53 Capabilities
 
-| Feature | Use Case |
-|---|---|
-| Public hosted zones | Internet-facing DNS |
-| Private hosted zones | Internal service discovery within VPCs |
-| Resolver endpoints | Hybrid DNS (on-premises <-> AWS resolution) |
-| Health checks | DNS-level failover and routing |
-| Traffic Flow | Complex routing policies (geo, latency, weighted) |
+| Feature              | Use Case                                          |
+| -------------------- | ------------------------------------------------- |
+| Public hosted zones  | Internet-facing DNS                               |
+| Private hosted zones | Internal service discovery within VPCs            |
+| Resolver endpoints   | Hybrid DNS (on-premises <-> AWS resolution)       |
+| Health checks        | DNS-level failover and routing                    |
+| Traffic Flow         | Complex routing policies (geo, latency, weighted) |
 
 ```bash
 # List hosted zones
@@ -196,13 +196,13 @@ aws route53resolver list-resolver-endpoints \
 
 ### ALB vs NLB vs GWLB
 
-| Feature | ALB | NLB | GWLB |
-|---|---|---|---|
-| Layer | 7 (HTTP/HTTPS) | 4 (TCP/UDP/TLS) | 3 (IP packets) |
-| Use case | Web apps, APIs, microservices | High performance, static IP, non-HTTP | Firewalls, IDS/IPS, traffic inspection |
-| Latency | Moderate | Very low | Adds hop to appliance |
-| Cost | Per LCU | Per NLCU | Per GWLCU |
-| **Default** | **Most web workloads** | gRPC, IoT, gaming, extreme perf | Network appliances |
+| Feature     | ALB                           | NLB                                   | GWLB                                   |
+| ----------- | ----------------------------- | ------------------------------------- | -------------------------------------- |
+| Layer       | 7 (HTTP/HTTPS)                | 4 (TCP/UDP/TLS)                       | 3 (IP packets)                         |
+| Use case    | Web apps, APIs, microservices | High performance, static IP, non-HTTP | Firewalls, IDS/IPS, traffic inspection |
+| Latency     | Moderate                      | Very low                              | Adds hop to appliance                  |
+| Cost        | Per LCU                       | Per NLCU                              | Per GWLCU                              |
+| **Default** | **Most web workloads**        | gRPC, IoT, gaming, extreme perf       | Network appliances                     |
 
 ```bash
 # List load balancers
@@ -277,6 +277,7 @@ aws ec2 describe-vpc-endpoint-services \
 ### PrivateLink for Service Exposure
 
 Use PrivateLink when:
+
 - Exposing a service to other VPCs/accounts without VPC peering
 - Consuming third-party SaaS services privately
 - Zero trust networking (no internet exposure)
@@ -329,14 +330,14 @@ aws logs start-query \
 
 ## Network Security Layers
 
-| Layer | Tool | Purpose |
-|---|---|---|
-| Edge | CloudFront + WAF + Shield | DDoS, bot protection, OWASP rules |
-| VPC perimeter | NACLs | Subnet-level stateless firewall |
-| Instance/Task | Security Groups | Stateful firewall per resource |
-| Application | ALB + WAF | HTTP-level filtering |
-| East-West | Security Groups + Network Policies | Service-to-service control |
-| Inspection | GWLB + Network Firewall | Deep packet inspection, IDS/IPS |
+| Layer         | Tool                               | Purpose                           |
+| ------------- | ---------------------------------- | --------------------------------- |
+| Edge          | CloudFront + WAF + Shield          | DDoS, bot protection, OWASP rules |
+| VPC perimeter | NACLs                              | Subnet-level stateless firewall   |
+| Instance/Task | Security Groups                    | Stateful firewall per resource    |
+| Application   | ALB + WAF                          | HTTP-level filtering              |
+| East-West     | Security Groups + Network Policies | Service-to-service control        |
+| Inspection    | GWLB + Network Firewall            | Deep packet inspection, IDS/IPS   |
 
 ## Anti-Patterns
 
@@ -353,6 +354,7 @@ aws logs start-query \
 ## Output Format
 
 When designing or reviewing network architecture:
+
 1. **Network Topology**: VPC layout, subnets, connectivity
 2. **Connectivity**: How traffic flows (internet, cross-VPC, hybrid)
 3. **DNS Strategy**: Public/private zones, resolver configuration

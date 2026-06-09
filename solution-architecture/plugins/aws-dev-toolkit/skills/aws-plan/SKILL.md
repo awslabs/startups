@@ -16,6 +16,7 @@ DISCOVER → DESIGN → REVIEW → ESTIMATE → DELIVER
 Use the discovery questions from the `customer-ideation` skill as your reference menu.
 
 **Start with 3-5 high-signal questions:**
+
 - What business problem are you solving?
 - Who are the users and how many? (10, 1K, 100K, 1M+)
 - What are your hard constraints? (budget, timeline, compliance, team skills)
@@ -27,6 +28,7 @@ Use the discovery questions from the `customer-ideation` skill as your reference
 ### Phase 2: Design
 
 Apply the `aws-architect` skill's process:
+
 1. Evaluate against the six Well-Architected pillars
 2. Propose architecture with specific AWS services and configurations
 3. Call out trade-offs explicitly (cost vs performance, simplicity vs resilience)
@@ -40,6 +42,7 @@ Apply the `aws-architect` skill's process:
 **This phase is mandatory — never skip it.**
 
 Spawn the `iac-reviewer` agent (`subagent_type: "aws-dev-toolkit:iac-reviewer"`) or invoke the `security-review` skill to validate the proposed architecture. Review should cover:
+
 - IAM least privilege
 - Encryption at rest and in transit
 - Network isolation (VPC, security groups, NACLs)
@@ -47,6 +50,7 @@ Spawn the `iac-reviewer` agent (`subagent_type: "aws-dev-toolkit:iac-reviewer"`)
 - Secrets management
 
 Also recommend baseline SCP guardrails:
+
 - No public security groups on private resources (EC2, RDS, ElastiCache)
 - No unencrypted storage (S3, RDS, EBS)
 - No public RDS instances
@@ -57,6 +61,7 @@ Also recommend baseline SCP guardrails:
 ### Phase 4: Cost Estimate
 
 Use the `cost-check` skill or `aws-pricing` MCP tools to produce a rough monthly cost range. Include:
+
 - Baseline cost (steady state)
 - Scale cost (at projected peak)
 - Cost optimization opportunities (Savings Plans, Spot, right-sizing)
@@ -71,41 +76,53 @@ Present the final plan as:
 # AWS Architecture Plan: [Project Name]
 
 ## Summary
+
 [1 paragraph overview]
 
 ## Discovery Summary
+
 [Key requirements, constraints, and decisions from discovery]
 
 ## Architecture
+
 ### Services
+
 | Service | Purpose | Configuration | Monthly Est. |
-|---------|---------|---------------|-------------|
+| ------- | ------- | ------------- | ------------ |
 
 ### Architecture Flow
+
 [Data/request path description]
 
 ### Diagram
+
 [Mermaid or ASCII diagram]
 
 ## Security Review
+
 [Findings from Phase 3 — blockers, warnings, suggestions]
 
 ## SCP Guardrails
+
 [Recommended SCPs for the account/org]
 
 ## Cost Estimate
+
 | Scenario | Monthly Estimate |
-|----------|-----------------|
-| Baseline | $X - $Y |
-| At scale | $X - $Y |
+| -------- | ---------------- |
+| Baseline | $X - $Y          |
+| At scale | $X - $Y          |
 
 ## Trade-offs & Decisions
+
 [Key choices made and why]
 
 ## Risks & Mitigations
+
 [What could go wrong and how to handle it]
 
 ## Next Steps
+
 1. [Scaffold IaC with `/aws-dev-toolkit:iac-scaffold`]
 2. [Set up CI/CD]
 3. [Configure monitoring]

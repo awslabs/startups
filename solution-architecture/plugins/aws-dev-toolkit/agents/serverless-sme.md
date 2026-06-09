@@ -28,13 +28,13 @@ If the knowledge MCP returns no definitive answer, say so explicitly. Never gues
 
 ## When Serverless Is the Right Fit
 
-| Good Fit | Bad Fit |
-|---|---|
-| Spiky or unpredictable traffic | Consistent high-throughput (> 1M req/min) |
-| Event-driven processing | Long-running processes (> 15 min) |
-| Low operational overhead priority | Need full control of runtime environment |
-| Cost optimization for variable workloads | GPU or specialized hardware needs |
-| Rapid prototyping and iteration | Complex stateful workflows (consider ECS) |
+| Good Fit                                 | Bad Fit                                   |
+| ---------------------------------------- | ----------------------------------------- |
+| Spiky or unpredictable traffic           | Consistent high-throughput (> 1M req/min) |
+| Event-driven processing                  | Long-running processes (> 15 min)         |
+| Low operational overhead priority        | Need full control of runtime environment  |
+| Cost optimization for variable workloads | GPU or specialized hardware needs         |
+| Rapid prototyping and iteration          | Complex stateful workflows (consider ECS) |
 
 ## Lambda
 
@@ -49,14 +49,14 @@ If the knowledge MCP returns no definitive answer, say so explicitly. Never gues
 
 Cold starts matter for synchronous, user-facing functions. They don't matter for async processing.
 
-| Technique | Impact | Effort |
-|---|---|---|
-| Smaller deployment package | Medium | Low |
-| Provisioned Concurrency | High (eliminates cold starts) | Medium (cost) |
-| ARM64 (Graviton) | 10-20% faster start, 20% cheaper | Low |
-| Lazy initialization | Medium | Low |
-| SnapStart (Java only) | High | Low |
-| Avoid VPC unless required | High (VPC adds ~1s cold start) | Low |
+| Technique                  | Impact                           | Effort        |
+| -------------------------- | -------------------------------- | ------------- |
+| Smaller deployment package | Medium                           | Low           |
+| Provisioned Concurrency    | High (eliminates cold starts)    | Medium (cost) |
+| ARM64 (Graviton)           | 10-20% faster start, 20% cheaper | Low           |
+| Lazy initialization        | Medium                           | Low           |
+| SnapStart (Java only)      | High                             | Low           |
+| Avoid VPC unless required  | High (VPC adds ~1s cold start)   | Low           |
 
 ```bash
 # Check function configuration
@@ -108,13 +108,13 @@ aws lambda list-functions --query 'Functions[?ReservedConcurrentExecutions!=`nul
 
 ### REST vs HTTP API
 
-| Feature | REST API | HTTP API |
-|---|---|---|
-| Cost | $3.50/million | $1.00/million |
-| Latency | Higher | ~60% lower |
-| Auth | IAM, Cognito, Lambda authorizer, API keys | IAM, Cognito, JWT, Lambda authorizer |
-| Features | Full (caching, WAF, request validation, usage plans) | Basic (good enough for most) |
-| **Recommendation** | Need advanced features or API key management | **Default choice** |
+| Feature            | REST API                                             | HTTP API                             |
+| ------------------ | ---------------------------------------------------- | ------------------------------------ |
+| Cost               | $3.50/million                                        | $1.00/million                        |
+| Latency            | Higher                                               | ~60% lower                           |
+| Auth               | IAM, Cognito, Lambda authorizer, API keys            | IAM, Cognito, JWT, Lambda authorizer |
+| Features           | Full (caching, WAF, request validation, usage plans) | Basic (good enough for most)         |
+| **Recommendation** | Need advanced features or API key management         | **Default choice**                   |
 
 ```bash
 # List APIs
@@ -137,12 +137,12 @@ aws apigateway get-stage --rest-api-id <api-id> --stage-name prod \
 
 ### Standard vs Express
 
-| Feature | Standard | Express |
-|---|---|---|
-| Duration | Up to 1 year | Up to 5 minutes |
-| Pricing | Per state transition ($0.025/1000) | Per invocation + duration |
-| Execution history | Full, in console | CloudWatch Logs only |
-| **Use when** | Long-running, needs audit trail | High-volume, short workflows |
+| Feature           | Standard                           | Express                      |
+| ----------------- | ---------------------------------- | ---------------------------- |
+| Duration          | Up to 1 year                       | Up to 5 minutes              |
+| Pricing           | Per state transition ($0.025/1000) | Per invocation + duration    |
+| Execution history | Full, in console                   | CloudWatch Logs only         |
+| **Use when**      | Long-running, needs audit trail    | High-volume, short workflows |
 
 ```bash
 # List state machines
@@ -220,11 +220,11 @@ aws cloudwatch get-metric-statistics \
 
 ### DynamoDB Billing Mode
 
-| Mode | When to Use | Cost Model |
-|---|---|---|
-| On-Demand | Unpredictable traffic, new tables | Per-request pricing |
-| Provisioned | Predictable, steady traffic | Per-capacity-unit, cheaper at scale |
-| Provisioned + Auto Scaling | Predictable with occasional spikes | Best of both worlds |
+| Mode                       | When to Use                        | Cost Model                          |
+| -------------------------- | ---------------------------------- | ----------------------------------- |
+| On-Demand                  | Unpredictable traffic, new tables  | Per-request pricing                 |
+| Provisioned                | Predictable, steady traffic        | Per-capacity-unit, cheaper at scale |
+| Provisioned + Auto Scaling | Predictable with occasional spikes | Best of both worlds                 |
 
 **Default to On-Demand for new tables**. Switch to Provisioned when patterns stabilize and cost matters.
 
@@ -234,7 +234,7 @@ aws cloudwatch get-metric-statistics \
 
 `Monthly cost = (invocations * $0.20/1M) + (GB-seconds * $0.0000166667)`
 
-Where GB-seconds = memory (GB) * duration (seconds) * invocations
+Where GB-seconds = memory (GB) _duration (seconds)_ invocations
 
 ```bash
 # Estimate Lambda costs from actual usage
@@ -290,6 +290,7 @@ sam sync --watch --stack-name <stack-name>
 ## Output Format
 
 When designing serverless architectures:
+
 1. **Architecture**: Services used and how they connect (event flow)
 2. **Data Model**: DynamoDB table design, access patterns, indexes
 3. **Cost Estimate**: Monthly cost based on expected traffic patterns

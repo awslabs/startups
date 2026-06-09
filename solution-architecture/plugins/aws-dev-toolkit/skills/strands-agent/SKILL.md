@@ -107,11 +107,11 @@ See [references/agentcore-integrations.md](references/agentcore-integrations.md)
 
 ## Memory Decision Guide
 
-| Scenario | Memory Mode | Notes |
-|---|---|---|
-| Stateless tool-calling agent | NO_MEMORY | Simplest, cheapest |
-| Multi-turn conversation within a session | STM_ONLY | 30-day retention, stores conversation history |
-| Personalization across sessions | STM_AND_LTM | Extracts preferences, facts, summaries across sessions |
+| Scenario                                 | Memory Mode | Notes                                                  |
+| ---------------------------------------- | ----------- | ------------------------------------------------------ |
+| Stateless tool-calling agent             | NO_MEMORY   | Simplest, cheapest                                     |
+| Multi-turn conversation within a session | STM_ONLY    | 30-day retention, stores conversation history          |
+| Personalization across sessions          | STM_AND_LTM | Extracts preferences, facts, summaries across sessions |
 
 Memory is opt-in. Start without it, add when you need it.
 
@@ -135,6 +135,7 @@ Memory is opt-in. Start without it, add when you need it.
 ## Output
 
 When scaffolding a new agent project, generate:
+
 1. Complete project structure with all files
 2. Agent entrypoint with at least one custom tool
 3. Observability setup (OTel endpoint config, env vars)

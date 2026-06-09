@@ -429,6 +429,7 @@ data_capture_config = {
 ```
 
 After collecting sufficient data (recommend at least 1 week of production traffic), compare metrics:
+
 - Prediction distribution differences
 - Latency p50/p95/p99
 - Error rates

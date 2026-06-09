@@ -152,11 +152,11 @@ jobs:
 
 Aliases decouple consumers from specific agent versions. Use them for:
 
-| Alias | Purpose | Traffic |
-|---|---|---|
-| `production` | Stable, tested version | 100% production traffic |
-| `canary` | New version under test | 5-10% via traffic splitting |
-| `staging` | Pre-production testing | Internal test traffic only |
+| Alias        | Purpose                | Traffic                     |
+| ------------ | ---------------------- | --------------------------- |
+| `production` | Stable, tested version | 100% production traffic     |
+| `canary`     | New version under test | 5-10% via traffic splitting |
+| `staging`    | Pre-production testing | Internal test traffic only  |
 
 ### Traffic Splitting for Canary Deployments
 
@@ -182,6 +182,7 @@ aws bedrock-agentcore update-agent-runtime-endpoint \
 ## VPC Configuration
 
 Enable VPC connectivity when agents need to access:
+
 - Private databases (RDS, DynamoDB via VPC endpoint)
 - Internal APIs behind an ALB
 - On-premises resources via VPN/Direct Connect
@@ -199,6 +200,7 @@ aws bedrock-agentcore update-agent-runtime \
 ```
 
 ### VPC Security Group Rules
+
 - **Outbound**: Allow HTTPS (443) to Bedrock endpoints, your APIs, and any external services
 - **Inbound**: Not required — AgentCore Runtime initiates all connections
 - Place in private subnets with NAT Gateway for internet access (model API calls)
@@ -206,31 +208,34 @@ aws bedrock-agentcore update-agent-runtime \
 ## Scaling Patterns
 
 ### Real-Time Conversational Agents
+
 - CPU: 1 vCPU, Memory: 2 GiB
 - Session TTL: 300-600s
 - Expect sub-second response initiation with streaming
 
 ### Long-Running Async Agents (Research, Data Processing)
+
 - CPU: 2-4 vCPU, Memory: 4-8 GiB
 - Session TTL: up to 28,800s (8 hours)
 - Use async invocation API for fire-and-forget patterns
 
 ### High-Concurrency Agents
+
 - AgentCore auto-scales based on concurrent sessions
 - Default quota: 1,000 active session workloads per account (us-east-1), 500 in other regions
 - Request quota increase for high-traffic agents before launch
 
 ## Resource Quotas (Key Limits)
 
-| Resource | Default Limit | Adjustable |
-|---|---|---|
-| Active session workloads per account | 1,000 (us-east-1) / 500 (other) | Yes |
-| Total agents per account | 1,000 | Yes |
-| Versions per agent | 1,000 | Yes |
-| Docker image size | Check latest docs | Yes |
-| Request timeout | Check latest docs | Yes |
-| Max payload size | Check latest docs | - |
-| Streaming max duration | Check latest docs | - |
-| Async job max duration | Check latest docs | - |
+| Resource                             | Default Limit                   | Adjustable |
+| ------------------------------------ | ------------------------------- | ---------- |
+| Active session workloads per account | 1,000 (us-east-1) / 500 (other) | Yes        |
+| Total agents per account             | 1,000                           | Yes        |
+| Versions per agent                   | 1,000                           | Yes        |
+| Docker image size                    | Check latest docs               | Yes        |
+| Request timeout                      | Check latest docs               | Yes        |
+| Max payload size                     | Check latest docs               | -          |
+| Streaming max duration               | Check latest docs               | -          |
+| Async job max duration               | Check latest docs               | -          |
 
 Always verify current limits via `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) — quotas are updated frequently.

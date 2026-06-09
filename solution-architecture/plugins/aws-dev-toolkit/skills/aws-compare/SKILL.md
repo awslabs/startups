@@ -14,15 +14,15 @@ You are comparing AWS architecture options. Your job is to make the trade-offs c
 
 ## Comparison Dimensions
 
-| Dimension | What to Evaluate |
-|-----------|-----------------|
-| **Cost** | Monthly baseline, cost at scale, pricing model (per-request vs provisioned), cost optimization options |
-| **Complexity** | Setup effort, learning curve, operational overhead, number of moving parts |
-| **Performance** | Latency, throughput, cold starts, scaling speed |
-| **Security** | Attack surface, encryption defaults, IAM complexity, compliance posture |
-| **Reliability** | Failure modes, blast radius, recovery time, multi-AZ/region support |
-| **Team Fit** | Required skills, hiring market, existing team expertise |
-| **Vendor Lock-in** | Portability, open standards, exit cost |
+| Dimension          | What to Evaluate                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Cost**           | Monthly baseline, cost at scale, pricing model (per-request vs provisioned), cost optimization options |
+| **Complexity**     | Setup effort, learning curve, operational overhead, number of moving parts                             |
+| **Performance**    | Latency, throughput, cold starts, scaling speed                                                        |
+| **Security**       | Attack surface, encryption defaults, IAM complexity, compliance posture                                |
+| **Reliability**    | Failure modes, blast radius, recovery time, multi-AZ/region support                                    |
+| **Team Fit**       | Required skills, hiring market, existing team expertise                                                |
+| **Vendor Lock-in** | Portability, open standards, exit cost                                                                 |
 
 ## Output Format
 
@@ -32,40 +32,46 @@ You are comparing AWS architecture options. Your job is to make the trade-offs c
 ## Options
 
 ### Option A: [Name]
+
 [1-2 sentence description]
 
 ### Option B: [Name]
+
 [1-2 sentence description]
 
 ### Option C: [Name] (if applicable)
+
 [1-2 sentence description]
 
 ## Side-by-Side
 
-| Dimension | Option A | Option B | Option C |
-|-----------|----------|----------|----------|
-| Monthly cost (baseline) | $X | $X | $X |
-| Monthly cost (at scale) | $X | $X | $X |
-| Setup complexity | Low/Med/High | ... | ... |
-| Operational burden | Low/Med/High | ... | ... |
-| Latency (p99) | Xms | Xms | Xms |
-| Scaling speed | seconds/minutes | ... | ... |
-| Cold start risk | Yes/No | ... | ... |
-| Security posture | Good/Better/Best | ... | ... |
-| Team skill match | Good/Better/Best | ... | ... |
-| Vendor lock-in | Low/Med/High | ... | ... |
+| Dimension               | Option A         | Option B | Option C |
+| ----------------------- | ---------------- | -------- | -------- |
+| Monthly cost (baseline) | $X               | $X       | $X       |
+| Monthly cost (at scale) | $X               | $X       | $X       |
+| Setup complexity        | Low/Med/High     | ...      | ...      |
+| Operational burden      | Low/Med/High     | ...      | ...      |
+| Latency (p99)           | Xms              | Xms      | Xms      |
+| Scaling speed           | seconds/minutes  | ...      | ...      |
+| Cold start risk         | Yes/No           | ...      | ...      |
+| Security posture        | Good/Better/Best | ...      | ...      |
+| Team skill match        | Good/Better/Best | ...      | ...      |
+| Vendor lock-in          | Low/Med/High     | ...      | ...      |
 
 ## Detailed Analysis
 
 ### Cost
+
 [Deep dive on pricing differences]
 
 ### When to Choose Each
+
 - **Choose A when**: [specific scenarios]
 - **Choose B when**: [specific scenarios]
 - **Choose C when**: [specific scenarios]
 
 ## Recommendation
+
 **Go with [Option X]** because [specific reasoning tied to the user's constraints from discovery].
 
 Caveat: [When this recommendation would change]

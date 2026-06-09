@@ -19,6 +19,7 @@ You are generating an AWS architecture diagram. Produce clear, readable diagrams
 Use `graph LR` (left-to-right) for request flows, `graph TD` (top-down) for hierarchical architectures.
 
 ### Conventions
+
 - **Users/Clients**: Stadium shape `([User])`
 - **AWS Services**: Rectangle `[Service Name]`
 - **Databases**: Cylinder `[(Database)]`
@@ -76,6 +77,7 @@ For environments that don't render Mermaid:
 ## From IaC Reverse Engineering
 
 When `from-iac` is specified:
+
 1. Glob for `*.tf`, `*.ts` (CDK), `template.yaml` (SAM), `*.template.json` (CFN)
 2. Extract resources, their relationships, and networking config
 3. Map to diagram nodes and edges
@@ -84,6 +86,7 @@ When `from-iac` is specified:
 ## Output
 
 Always provide:
+
 1. **Mermaid diagram** (in a ```mermaid code block)
 2. **ASCII fallback** (in a ``` code block)
 3. **Flow description** (1-2 sentences explaining the request/data path)

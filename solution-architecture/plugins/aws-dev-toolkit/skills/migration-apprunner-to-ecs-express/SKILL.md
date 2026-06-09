@@ -16,6 +16,7 @@ AWS App Runner is closing to new customers on April 30, 2026. Existing services 
 Configured in the plugin's `.mcp.json` and available automatically. Provides read-only access to AWS documentation. Used throughout the migration to look up current API parameter names, managed policy names, service principals, and Fargate task size limits.
 
 Key tools:
+
 - `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation` — search AWS docs
 - `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation` — read a doc page
 - `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend` — get related doc recommendations
@@ -41,8 +42,10 @@ The user should add the following to their MCP config (e.g., `~/.claude/mcp.json
       "args": [
         "mcp-proxy-for-aws@latest",
         "https://ecs-mcp.us-east-1.api.aws/mcp",
-        "--service", "ecs-mcp",
-        "--region", "us-east-1"
+        "--service",
+        "ecs-mcp",
+        "--region",
+        "us-east-1"
       ]
     }
   }
@@ -76,13 +79,14 @@ Use `awsknowledge` MCP tools to verify current API syntax, managed policy names,
 
 This skill follows a **guide-and-inform model**. The read/write boundary is enforced by the skill's own instructions:
 
-| Category | Examples | Who executes |
-|---|---|---|
-| **Read** | `describe-service`, `list-services`, `get-role`, ECS MCP inspect tools | Skill runs directly |
-| **Write** | Creating IAM roles, creating the Express service, updating DNS | Skill produces the command; **user runs it** |
+| Category        | Examples                                                               | Who executes                                             |
+| --------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
+| **Read**        | `describe-service`, `list-services`, `get-role`, ECS MCP inspect tools | Skill runs directly                                      |
+| **Write**       | Creating IAM roles, creating the Express service, updating DNS         | Skill produces the command; **user runs it**             |
 | **Destructive** | `delete-service`, `delete-role`, `pause-service`, removing DNS records | Skill presents a checklist; **user explicitly confirms** |
 
 Additional guardrails:
+
 - **Looks up API syntax at the time of use.** Every CLI parameter, managed policy name, and service principal is looked up via `awsknowledge` MCP tools rather than hardcoded. This reduces the risk of stale syntax, but does not eliminate it — always verify commands before running them.
 - **Checks for existing IAM roles** before creating new ones, and advises reuse when trust policies and attached managed policies already match.
 - **Recommends keeping App Runner running after cutover.** Default recommendation: 24–48 hours as a rollback net before deleting.
@@ -101,32 +105,33 @@ ECS cluster, task definition, service with canary deployment, ALB with HTTPS, se
 
 ## Key Differences from App Runner
 
-| Aspect | App Runner | ECS Express Mode |
-|--------|-----------|-----------------|
-| Auto scaling metric | Concurrent requests | CPU utilization (60% default) |
-| Deployment | Blue/green (internal) | Canary (verify exact behavior via docs) |
-| Health check default | TCP on port | HTTP on `/ping` |
-| VPC | Via VPC connector | VPC-native (awsvpc) |
-| Load balancer | Internal NLB, not accessible | ALB, fully accessible, shared up to 25 services |
-| Source code deploy | Supported | Container image based (containerize source-code services first) |
+| Aspect               | App Runner                   | ECS Express Mode                                                |
+| -------------------- | ---------------------------- | --------------------------------------------------------------- |
+| Auto scaling metric  | Concurrent requests          | CPU utilization (60% default)                                   |
+| Deployment           | Blue/green (internal)        | Canary (verify exact behavior via docs)                         |
+| Health check default | TCP on port                  | HTTP on `/ping`                                                 |
+| VPC                  | Via VPC connector            | VPC-native (awsvpc)                                             |
+| Load balancer        | Internal NLB, not accessible | ALB, fully accessible, shared up to 25 services                 |
+| Source code deploy   | Supported                    | Container image based (containerize source-code services first) |
 
 ## App Runner CPU/Memory → Fargate Mapping
 
-| App Runner | Fargate CPU | Fargate Memory |
-|-----------|------------|---------------|
-| 0.25 vCPU / 0.5 GB | 256 | 512 |
-| 0.5 vCPU / 1 GB | 512 | 1024 |
-| 1 vCPU / 2 GB | 1024 | 2048 |
-| 1 vCPU / 3 GB | 1024 | 3072 |
-| 2 vCPU / 4 GB | 2048 | 4096 |
-| 4 vCPU / 8 GB | 4096 | 8192 |
-| 4 vCPU / 12 GB | 4096 | 12288 |
+| App Runner         | Fargate CPU | Fargate Memory |
+| ------------------ | ----------- | -------------- |
+| 0.25 vCPU / 0.5 GB | 256         | 512            |
+| 0.5 vCPU / 1 GB    | 512         | 1024           |
+| 1 vCPU / 2 GB      | 1024        | 2048           |
+| 1 vCPU / 3 GB      | 1024        | 3072           |
+| 2 vCPU / 4 GB      | 2048        | 4096           |
+| 4 vCPU / 8 GB      | 4096        | 8192           |
+| 4 vCPU / 12 GB     | 4096        | 12288          |
 
 ## Quick Migrate (Happy Path)
 
 For simple App Runner services — **image-based, public, no VPC connector, no custom domain, non-critical or low-traffic** — use this condensed path. Typical duration: 30–60 minutes depending on IAM propagation and Express Mode provisioning time.
 
 **Eligibility check:** `describe-service` on the App Runner service. Confirm all:
+
 - `SourceConfiguration.ImageRepository` is set (not `CodeRepository`)
 - No `NetworkConfiguration.EgressConfiguration.VpcConnectorArn`
 - No custom domains (`list-custom-domains` returns empty)

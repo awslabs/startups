@@ -19,12 +19,14 @@ When interpreting what you see in an account, if you need to explain a service's
 If the knowledge MCP returns no definitive answer, say so. "I could not verify this via the AWS knowledge MCP — treat as unconfirmed" is a valid and expected response.
 
 When exploring:
+
 1. Start with `aws sts get-caller-identity` to confirm the account and role
 2. Use targeted AWS CLI commands to inspect the resources in question
 3. Summarize findings concisely — the parent conversation needs actionable context, not raw CLI output
 4. Call out anything unexpected or potentially problematic
 
 Common exploration patterns:
+
 - List resources: `aws <service> describe-*` or `aws <service> list-*`
 - Check state: `terraform state list`, `terraform show`
 - Compare desired vs actual: `cdk diff`, `terraform plan`

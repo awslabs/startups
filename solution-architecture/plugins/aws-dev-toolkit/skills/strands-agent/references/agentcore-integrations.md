@@ -17,6 +17,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ```
 
 Strands automatically creates spans for:
+
 - Agent invocations (full request lifecycle)
 - Model calls (input/output tokens, latency, model ID)
 - Tool executions (tool name, input, output, duration)
@@ -57,14 +58,14 @@ aws cloudwatch get-metric-statistics \
 
 Strands OTel traces are vendor-neutral. Route them to any backend:
 
-| Backend | How | Notes |
-|---|---|---|
-| CloudWatch + X-Ray | Default on AgentCore | Zero config, GenAI dashboard included |
-| Langfuse | Set OTLP endpoint to Langfuse collector | LLM-native: cost per trace, prompt versioning |
-| Grafana | OTel collector → Grafana Cloud | Rich dashboards, alerting |
-| Datadog | OTel collector → Datadog | APM integration, anomaly detection |
-| Elastic | OTel collector → Elastic APM | Full-stack correlation |
-| Arize Phoenix | `openinference-instrumentation-strands-agents` | OpenInference format, trace visualization |
+| Backend            | How                                            | Notes                                         |
+| ------------------ | ---------------------------------------------- | --------------------------------------------- |
+| CloudWatch + X-Ray | Default on AgentCore                           | Zero config, GenAI dashboard included         |
+| Langfuse           | Set OTLP endpoint to Langfuse collector        | LLM-native: cost per trace, prompt versioning |
+| Grafana            | OTel collector → Grafana Cloud                 | Rich dashboards, alerting                     |
+| Datadog            | OTel collector → Datadog                       | APM integration, anomaly detection            |
+| Elastic            | OTel collector → Elastic APM                   | Full-stack correlation                        |
+| Arize Phoenix      | `openinference-instrumentation-strands-agents` | OpenInference format, trace visualization     |
 
 ### Trace Attributes
 
@@ -76,6 +77,7 @@ export OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental,gen_ai_tool_defi
 ```
 
 This adds:
+
 - `gen_ai.system`: Model provider
 - `gen_ai.request.model`: Model ID
 - `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens`: Token counts
@@ -96,17 +98,17 @@ pip install strands-agents-evals
 
 ### Built-in Evaluators
 
-| Evaluator | Level | What It Measures |
-|---|---|---|
-| `OutputEvaluator` | Response | Custom rubric-based quality scoring |
-| `TrajectoryEvaluator` | Trajectory | Tool selection sequence and efficiency |
-| `HelpfulnessEvaluator` | Response | 7-point helpfulness scale |
-| `FaithfulnessEvaluator` | Response | Grounded in context (anti-hallucination) |
-| `HarmfulnessEvaluator` | Response | Safety check (binary) |
-| `ToolSelectionAccuracyEvaluator` | Tool | Was the right tool chosen? |
-| `ToolParameterAccuracyEvaluator` | Tool | Were tool parameters correct? |
-| `GoalSuccessRateEvaluator` | Session | Did the user achieve their goal? |
-| `InteractionsEvaluator` | Multi-agent | Quality of agent-to-agent interactions |
+| Evaluator                        | Level       | What It Measures                         |
+| -------------------------------- | ----------- | ---------------------------------------- |
+| `OutputEvaluator`                | Response    | Custom rubric-based quality scoring      |
+| `TrajectoryEvaluator`            | Trajectory  | Tool selection sequence and efficiency   |
+| `HelpfulnessEvaluator`           | Response    | 7-point helpfulness scale                |
+| `FaithfulnessEvaluator`          | Response    | Grounded in context (anti-hallucination) |
+| `HarmfulnessEvaluator`           | Response    | Safety check (binary)                    |
+| `ToolSelectionAccuracyEvaluator` | Tool        | Was the right tool chosen?               |
+| `ToolParameterAccuracyEvaluator` | Tool        | Were tool parameters correct?            |
+| `GoalSuccessRateEvaluator`       | Session     | Did the user achieve their goal?         |
+| `InteractionsEvaluator`          | Multi-agent | Quality of agent-to-agent interactions   |
 
 ### Quick Eval Example
 
@@ -227,11 +229,11 @@ experiment.to_file("generated_evals")
 
 ### Eval Strategy
 
-| Phase | What to Eval | Evaluators | Frequency |
-|---|---|---|---|
-| Dev | Output quality, tool usage | OutputEvaluator, TrajectoryEvaluator | Every prompt change |
-| Pre-prod | Full suite + faithfulness + safety | All + HarmfulnessEvaluator | Every PR / deploy |
-| Production | Offline traces + goal success | GoalSuccessRateEvaluator, HelpfulnessEvaluator | Daily / on model updates |
+| Phase      | What to Eval                       | Evaluators                                     | Frequency                |
+| ---------- | ---------------------------------- | ---------------------------------------------- | ------------------------ |
+| Dev        | Output quality, tool usage         | OutputEvaluator, TrajectoryEvaluator           | Every prompt change      |
+| Pre-prod   | Full suite + faithfulness + safety | All + HarmfulnessEvaluator                     | Every PR / deploy        |
+| Production | Offline traces + goal success      | GoalSuccessRateEvaluator, HelpfulnessEvaluator | Daily / on model updates |
 
 ---
 
@@ -241,11 +243,11 @@ See [python-patterns.md](python-patterns.md) for the code patterns. Key decision
 
 ### Memory Modes
 
-| Mode | What It Stores | Use Case |
-|---|---|---|
-| `NO_MEMORY` | Nothing | Stateless tool agents |
-| `STM_ONLY` | Conversation history within sessions (30-day retention) | Multi-turn chat |
-| `STM_AND_LTM` | STM + extracted preferences, facts, summaries across sessions | Personalization |
+| Mode          | What It Stores                                                | Use Case              |
+| ------------- | ------------------------------------------------------------- | --------------------- |
+| `NO_MEMORY`   | Nothing                                                       | Stateless tool agents |
+| `STM_ONLY`    | Conversation history within sessions (30-day retention)       | Multi-turn chat       |
+| `STM_AND_LTM` | STM + extracted preferences, facts, summaries across sessions | Personalization       |
 
 ### LTM Strategies
 

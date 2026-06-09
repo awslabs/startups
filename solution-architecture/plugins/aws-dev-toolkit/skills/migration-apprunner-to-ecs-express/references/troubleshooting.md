@@ -27,6 +27,7 @@ If stuck beyond 10 minutes, present a CloudTrail lookup command to check recent 
 **Service ACTIVE but health check fails:** Express Mode defaults to HTTP on `/ping`. If the app uses a different path, update the service. Use `ecs-mcp` to read container logs for startup errors.
 
 **Tasks keep restarting:** Use `ecs-mcp` to get the stopped task reason and exit code:
+
 - 137 → OOMKilled → increase memory
 - 1 → application error → read logs
 - 0 with restart → health check failing → check path and port

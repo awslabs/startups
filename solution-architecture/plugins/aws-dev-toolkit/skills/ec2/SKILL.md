@@ -31,9 +31,11 @@ Follow this decision tree:
 
 - **Always use launch templates**, never launch configurations (deprecated).
 - Pin the AMI ID in the template. Use SSM Parameter Store to resolve the latest AMI at deploy time:
+
   ```
   /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
   ```
+
 - Set `InstanceInitiatedShutdownBehavior: terminate` for ephemeral workloads.
 - Use `MetadataOptions` to enforce IMDSv2: `HttpTokens: required`, `HttpPutResponseHopLimit: 1`.
 - Configure `TagSpecifications` to tag instances, volumes, and ENIs at launch for cost allocation.
@@ -71,6 +73,7 @@ Use Spot for fault-tolerant, stateless, or flexible-schedule workloads. Up to 90
 **Default to EBS** unless you need maximum IOPS.
 
 ### EBS
+
 - **gp3**: Default. 3,000 IOPS / 125 MiB/s baseline, independently scalable. Always use gp3 over gp2 (cheaper and more flexible).
 - **io2 Block Express**: Databases requiring > 16,000 IOPS or sub-ms latency. Up to 256,000 IOPS and 4,000 MiB/s.
 - **st1**: Throughput-optimized HDD for sequential reads (big data, log processing). Not for boot volumes.
@@ -80,6 +83,7 @@ Use Spot for fault-tolerant, stateless, or flexible-schedule workloads. Up to 90
 - Size EBS volumes for IOPS and throughput, not just capacity. gp3 can scale IOPS independently of size.
 
 ### Instance Store
+
 - Ephemeral NVMe attached to the host. Data lost on stop/terminate/hardware failure.
 - Use for: caches, buffers, scratch data, temporary storage. I4i instances deliver up to 2.5M IOPS.
 - Never store data you cannot afford to lose.
@@ -120,16 +124,16 @@ aws ssm start-session --target i-xxx
 
 ## Output Format
 
-| Field | Details |
-|-------|---------|
-| **Instance type** | Family, size, and architecture (e.g., m7g.large / arm64) |
-| **AMI** | AMI source (AL2023, custom), resolution method (SSM parameter) |
-| **Storage (EBS type/size)** | Volume type (gp3, io2), size, IOPS, throughput |
-| **ASG config** | Min/max/desired, health check type, instance warmup |
-| **Spot strategy** | On-demand base capacity, Spot allocation strategy, instance diversity |
-| **Key pair / SSM** | SSM Session Manager (preferred) or key pair for access |
-| **Security group** | Inbound/outbound rules, referenced SG IDs |
-| **Monitoring** | CloudWatch agent config, detailed monitoring, custom metrics |
+| Field                       | Details                                                               |
+| --------------------------- | --------------------------------------------------------------------- |
+| **Instance type**           | Family, size, and architecture (e.g., m7g.large / arm64)              |
+| **AMI**                     | AMI source (AL2023, custom), resolution method (SSM parameter)        |
+| **Storage (EBS type/size)** | Volume type (gp3, io2), size, IOPS, throughput                        |
+| **ASG config**              | Min/max/desired, health check type, instance warmup                   |
+| **Spot strategy**           | On-demand base capacity, Spot allocation strategy, instance diversity |
+| **Key pair / SSM**          | SSM Session Manager (preferred) or key pair for access                |
+| **Security group**          | Inbound/outbound rules, referenced SG IDs                             |
+| **Monitoring**              | CloudWatch agent config, detailed monitoring, custom metrics          |
 
 ## Related Skills
 
