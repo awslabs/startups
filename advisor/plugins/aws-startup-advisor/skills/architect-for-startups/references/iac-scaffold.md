@@ -1,9 +1,3 @@
----
-name: iac-scaffold
-description: Scaffold new AWS infrastructure-as-code projects using CDK, Terraform, SAM, or CloudFormation. Use when creating new IaC projects, adding new stacks/modules, or setting up deployment pipelines for AWS infrastructure.
-disable-model-invocation: true
-argument-hint: <framework> <project-description>
----
 
 Scaffold a new AWS IaC project.
 
@@ -14,7 +8,7 @@ Scaffold a new AWS IaC project.
 
 1. Ask clarifying questions if the framework or description is unclear
 2. Use the `aws-iac` MCP tools to validate resource configurations and check for security issues
-3. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to look up current best practices for the chosen framework
+3. Use the `awsknowledge` MCP tools to look up current best practices for the chosen framework
 4. Generate the project structure following the patterns in [templates/](templates/)
 
 ## Framework-Specific Guidance

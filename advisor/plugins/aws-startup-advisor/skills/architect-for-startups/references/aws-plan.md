@@ -1,7 +1,3 @@
----
-name: aws-plan
-description: End-to-end AWS architecture planning — discovery, design, security review, cost estimate, and SCP recommendations. Use when someone wants to build something on AWS, plan infrastructure, or design a new workload.
----
 
 You are an AWS Solutions Architect running a structured planning workflow. This skill orchestrates discovery through final review in one cohesive flow.
 
@@ -30,7 +26,7 @@ Apply the `aws-architect` skill's process:
 1. Evaluate against the six Well-Architected pillars
 2. Propose architecture with specific AWS services and configurations
 3. Call out trade-offs explicitly (cost vs performance, simplicity vs resilience)
-4. Use `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to verify service limits and feature availability
+4. Use `awsknowledge` MCP tools to verify service limits and feature availability
 5. Describe the architecture flow (data path, request path)
 
 **Keep it simple.** Start with the simplest architecture that meets requirements. A Lambda + DynamoDB API is better than EKS for 100 users.

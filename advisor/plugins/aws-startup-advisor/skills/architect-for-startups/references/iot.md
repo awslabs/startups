@@ -1,36 +1,21 @@
----
-name: iot
-description: Deep-dive into AWS IoT architecture, device connectivity, edge computing, and fleet management. This skill should be used when the user asks to "design an IoT solution", "connect devices to AWS", "set up MQTT messaging", "configure IoT rules", "provision a device fleet", "use Greengrass at the edge", "build a device shadow", "set up IoT security", "manage OTA updates", "store telemetry data", "create IoT topic rules", "configure fleet provisioning", or mentions IoT Core, MQTT, Greengrass, Device Shadow, IoT Rules Engine, IoT Events, IoT SiteWise, fleet indexing, or device certificates.
----
-
-Specialist guidance for AWS IoT. Covers IoT Core (MQTT, shadows, rules engine), Greengrass v2 edge compute, fleet provisioning, security, data storage patterns, and fleet management.
-
+# IOT
 ## Process
-
-1. Identify the IoT workload characteristics: device count, message frequency, payload size, connectivity (always-on vs intermittent), edge processing needs
-2. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to verify current IoT Core limits, Greengrass component versions, and service quotas
-3. Select the appropriate IoT services using the decision matrix below
-4. Design the communication and data ingestion topology (protocols, topics, rules)
-5. Configure security (X.509 certificates, IoT policies, fleet provisioning method)
-6. Design data storage and analytics pipeline
-7. Plan fleet management (jobs, indexing, Device Defender)
-8. Recommend operational best practices (monitoring, OTA updates, edge deployments)
 
 ## IoT Service Selection Decision Matrix
 
-| Requirement | Recommendation | Why |
-|---|---|---|
-| Devices sending telemetry to cloud | IoT Core (MQTT) | Persistent connections, sub-second latency, bidirectional, scales to millions of concurrent connections |
-| Request/response from constrained devices | IoT Core (HTTPS) | Stateless, no persistent connection needed, but higher latency and no server-to-device push |
-| Browser or mobile app to IoT backend | IoT Core (MQTT over WebSocket) | Works through firewalls/proxies, uses IAM or Cognito auth instead of X.509 certificates |
-| Edge preprocessing before cloud upload | Greengrass v2 | Reduces bandwidth cost and cloud ingestion volume by filtering/aggregating at the edge |
-| Local device control when internet is down | Greengrass v2 | Local MQTT broker keeps device-to-device communication working during cloud disconnection |
-| Industrial OPC-UA data collection | IoT SiteWise | Purpose-built for industrial protocols, asset modeling, and time-series with SiteWise Edge gateway |
-| State machine on device events | IoT Events | Detector models react to patterns across multiple devices without custom Lambda logic |
-| Time-series telemetry storage | Timestream | Purpose-built for time-series with automatic tiering (memory to magnetic), built-in interpolation and aggregation functions |
-| Device metadata and state lookups | DynamoDB | Single-digit ms latency for key-value access to device config, state, and registry data |
-| Bulk telemetry archival | S3 | Cheapest storage for raw telemetry; query with Athena when needed |
-| Telemetry search and dashboards | OpenSearch | Full-text search and Kibana/OpenSearch Dashboards for operational visibility |
+| Requirement                                | Recommendation                 | Why                                                                                                                         |
+|--------------------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| Devices sending telemetry to cloud         | IoT Core (MQTT)                | Persistent connections, sub-second latency, bidirectional, scales to millions of concurrent connections                     |
+| Request/response from constrained devices  | IoT Core (HTTPS)               | Stateless, no persistent connection needed, but higher latency and no server-to-device push                                 |
+| Browser or mobile app to IoT backend       | IoT Core (MQTT over WebSocket) | Works through firewalls/proxies, uses IAM or Cognito auth instead of X.509 certificates                                     |
+| Edge preprocessing before cloud upload     | Greengrass v2                  | Reduces bandwidth cost and cloud ingestion volume by filtering/aggregating at the edge                                      |
+| Local device control when internet is down | Greengrass v2                  | Local MQTT broker keeps device-to-device communication working during cloud disconnection                                   |
+| Industrial OPC-UA data collection          | IoT SiteWise                   | Purpose-built for industrial protocols, asset modeling, and time-series with SiteWise Edge gateway                          |
+| State machine on device events             | IoT Events                     | Detector models react to patterns across multiple devices without custom Lambda logic                                       |
+| Time-series telemetry storage              | Timestream                     | Purpose-built for time-series with automatic tiering (memory to magnetic), built-in interpolation and aggregation functions |
+| Device metadata and state lookups          | DynamoDB                       | Single-digit ms latency for key-value access to device config, state, and registry data                                     |
+| Bulk telemetry archival                    | S3                             | Cheapest storage for raw telemetry; query with Athena when needed                                                           |
+| Telemetry search and dashboards            | OpenSearch                     | Full-text search and Kibana/OpenSearch Dashboards for operational visibility                                                |
 
 ## Protocol Selection
 
@@ -120,24 +105,22 @@ WHERE temperature > 0 AND temperature < 150
 
 ### Action Selection Guide
 
-| Data Destination | Rule Action | When to Use |
-|---|---|---|
-| Real-time processing | Lambda | Custom transformation, enrichment, or fan-out logic |
-| Time-series storage | Timestream | Telemetry that needs time-range queries and aggregation |
-| Key-value lookups | DynamoDB / DynamoDBv2 | Device metadata, latest state, configuration |
-| Streaming analytics | Kinesis Data Streams | High-throughput ingestion for real-time analytics pipelines |
-| Bulk archival | S3 | Raw telemetry archival for compliance or batch analytics |
-| Notifications | SNS | Alert routing to email, SMS, or HTTP endpoints |
-| Decoupled processing | SQS | Buffer messages for downstream consumers that process at their own rate |
-| State machine triggers | IoT Events | Multi-device event correlation and complex event processing |
-| Republish | IoT Core republish | Route to another MQTT topic for device-to-device via cloud |
-| Search and dashboards | OpenSearch | Operational dashboards and full-text search over telemetry |
+| Data Destination       | Rule Action           | When to Use                                                             |
+|------------------------|-----------------------|-------------------------------------------------------------------------|
+| Real-time processing   | Lambda                | Custom transformation, enrichment, or fan-out logic                     |
+| Time-series storage    | Timestream            | Telemetry that needs time-range queries and aggregation                 |
+| Key-value lookups      | DynamoDB / DynamoDBv2 | Device metadata, latest state, configuration                            |
+| Streaming analytics    | Kinesis Data Streams  | High-throughput ingestion for real-time analytics pipelines             |
+| Bulk archival          | S3                    | Raw telemetry archival for compliance or batch analytics                |
+| Notifications          | SNS                   | Alert routing to email, SMS, or HTTP endpoints                          |
+| Decoupled processing   | SQS                   | Buffer messages for downstream consumers that process at their own rate |
+| State machine triggers | IoT Events            | Multi-device event correlation and complex event processing             |
+| Republish              | IoT Core republish    | Route to another MQTT topic for device-to-device via cloud              |
+| Search and dashboards  | OpenSearch            | Operational dashboards and full-text search over telemetry              |
 
 ### Error Actions (Always Configure)
 
 Every rule must have an error action. Without one, failed rule actions silently drop data with no notification and no retry. Configure error actions to route failures to S3 or SQS for later reprocessing.
-
-See `references/rules-engine-patterns.md` for detailed SQL examples and error action configuration.
 
 ## IoT SiteWise (Industrial IoT)
 
@@ -171,20 +154,18 @@ Use IoT Events when device telemetry needs to trigger state-machine logic across
 
 ### Method Selection
 
-| Scenario | Method | Why |
-|---|---|---|
-| Factory installs unique certs per device | JITP (Just-in-Time Provisioning) | Simplest: device connects, CA is recognized, thing is auto-created. Requires trusted manufacturing chain. |
-| Factory installs unique certs, need custom validation | JITR (Just-in-Time Registration) | Lambda hook validates additional attributes before activating the certificate |
-| Cannot install unique certs during manufacturing | Fleet Provisioning by Claim | Devices share a claim certificate, exchange it for a unique identity on first boot. Use pre-provisioning Lambda hook to validate serial numbers against an allow-list. |
-| End user or installer provisions device | Fleet Provisioning by Trusted User | Mobile app generates temporary credentials for the device. Highest security for consumer devices. |
+| Scenario                                              | Method                             | Why                                                                                                                                                                    |
+|-------------------------------------------------------|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Factory installs unique certs per device              | JITP (Just-in-Time Provisioning)   | Simplest: device connects, CA is recognized, thing is auto-created. Requires trusted manufacturing chain.                                                              |
+| Factory installs unique certs, need custom validation | JITR (Just-in-Time Registration)   | Lambda hook validates additional attributes before activating the certificate                                                                                          |
+| Cannot install unique certs during manufacturing      | Fleet Provisioning by Claim        | Devices share a claim certificate, exchange it for a unique identity on first boot. Use pre-provisioning Lambda hook to validate serial numbers against an allow-list. |
+| End user or installer provisions device               | Fleet Provisioning by Trusted User | Mobile app generates temporary credentials for the device. Highest security for consumer devices.                                                                      |
 
 ### Provisioning Best Practices
 
 - Always use a pre-provisioning Lambda hook with fleet provisioning by claim to validate the device identity against an allow-list. Without this, anyone with the claim certificate can provision unlimited devices.
 - Scope provisioning templates to create minimal IoT policies. The provisioned policy should grant access only to that device's topics, using `${iot:Connection.Thing.ThingName}` policy variables.
 - Store device private keys in hardware security modules (HSM) or secure elements when available. Software-stored keys are extractable.
-
-See `references/security-provisioning.md` for provisioning templates, certificate management, and IoT policy examples.
 
 ## Security
 
@@ -197,29 +178,6 @@ See `references/security-provisioning.md` for provisioning templates, certificat
 ### IoT Policies
 
 IoT policies control what MQTT topics a device can publish/subscribe to and what shadows/jobs it can access. Always use policy variables to scope per-device.
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "iot:Connect",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:client/${iot:Connection.Thing.ThingName}"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iot:Publish",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:topic/acme/prod/*/${iot:Connection.Thing.ThingName}/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iot:Subscribe",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:topicfilter/acme/prod/*/${iot:Connection.Thing.ThingName}/*"
-    }
-  ]
-}
-```
 
 ### Custom Authorizers
 
@@ -289,8 +247,6 @@ Use Stream Manager for reliable edge-to-cloud data transfer. It handles bufferin
 - Set bandwidth limits to prevent telemetry uploads from starving control-plane traffic
 - Minimum 70 MB RAM overhead for the stream manager component
 
-See `references/greengrass-patterns.md` for component recipes, deployment configurations, and stream manager setup.
-
 ## Fleet Management
 
 ### IoT Jobs (OTA Updates)
@@ -308,22 +264,6 @@ See `references/greengrass-patterns.md` for component recipes, deployment config
 - Example: `thingName:sensor-* AND shadow.reported.firmware:v2.1 AND connectivity.connected:false` finds all disconnected sensors on old firmware.
 - Use fleet metrics to push aggregated fleet statistics to CloudWatch for dashboards and alarms.
 
-### Key Limits (IoT Core)
-
-| Resource | Default Limit | Notes |
-|---|---|---|
-| Maximum concurrent connections | 500,000 per account | Requestable increase |
-| Maximum MQTT message size | 128 KB | Hard limit |
-| Maximum publishes per second (per account) | 20,000 | Requestable increase |
-| Maximum inbound publishes per second (per connection) | 100 | Per-device throttle |
-| Persistent session expiry | 1 hour (default), up to 7 days | Configure per client |
-| Maximum rules per account | 1,000 | Requestable increase |
-| Maximum actions per rule | 10 | Hard limit |
-| Maximum shadow document size | 8 KB (classic), 8 KB (named) | Hard limit |
-| Named shadows per thing | 10 | Hard limit |
-| Fleet provisioning templates per account | 256 | Requestable increase |
-| Thing groups depth | 7 levels | Hard limit |
-
 ## Anti-Patterns
 
 - **Polling instead of MQTT.** Devices that HTTP poll for commands waste battery, bandwidth, and IoT Core request costs. A device polling every 5 seconds generates 17,280 requests/day; MQTT keeps a persistent connection with near-zero overhead when idle, and the server pushes commands instantly.
@@ -338,41 +278,3 @@ See `references/greengrass-patterns.md` for component recipes, deployment config
 - **No rollout controls on IoT Jobs.** Pushing a firmware update to all devices simultaneously risks fleet-wide failure. Always configure max concurrent targets, rollout rate, and abort thresholds (e.g., abort if >5% of devices fail).
 - **Ignoring Basic Ingest for high-volume telemetry.** Standard publish costs $1.00 per million messages. Basic Ingest ($0.00 publish cost, rules actions still charged) saves this entirely for telemetry that only needs to flow to rules engine actions.
 - **Not setting MQTT session expiry.** Default persistent session expiry is 1 hour. Devices that reconnect after longer disconnections lose queued messages. Set session expiry to match the device's expected offline duration (up to 7 days max).
-
-## Additional Resources
-
-### Reference Files
-
-For detailed operational guidance, consult:
-- **`references/rules-engine-patterns.md`** -- Rule SQL examples for common routing patterns, error action configuration, topic structure best practices, and Basic Ingest setup
-- **`references/security-provisioning.md`** -- X.509 certificate management, fleet provisioning templates (JITP, bulk, by claim), IoT policies with variables, and custom authorizer setup
-- **`references/greengrass-patterns.md`** -- Greengrass v2 component recipes, deployment configurations, stream manager setup, and local MQTT bridge configuration
-
-### Related Skills
-- **`lambda`** -- Lambda functions as IoT rule actions and Greengrass components
-- **`step-functions`** -- Orchestrating multi-step device provisioning and remediation workflows
-- **`dynamodb`** -- Device metadata storage design, partition key strategy, TTL configuration
-- **`s3`** -- Telemetry archival, lifecycle policies, Athena integration for batch queries
-- **`messaging`** -- SQS/SNS integration with IoT rules for decoupled processing and alerting
-- **`observability`** -- CloudWatch metrics, alarms, and dashboards for IoT fleet monitoring
-- **`iam`** -- IAM roles for IoT rules engine actions, Greengrass token exchange, and fleet provisioning
-- **`networking`** -- VPC endpoints for IoT Core, private connectivity for Greengrass core devices
-- **`security-review`** -- Security audit of IoT policies, certificate management, and Device Defender configuration
-
-## Output Format
-
-When recommending an IoT architecture, include:
-
-| Component | Choice | Rationale |
-|---|---|---|
-| Protocol | MQTT v5 over TLS 8883 | Bidirectional, persistent, low overhead |
-| Authentication | X.509 per-device certificates via AWS Private CA | Hardware-bound identity, scalable revocation |
-| Provisioning | Fleet Provisioning by Claim with pre-provisioning hook | Devices cannot be provisioned in factory |
-| Topic Structure | `{org}/prod/{type}/{device-id}/{category}` | Per-device access control, rule targeting |
-| Telemetry Ingestion | IoT Rules Engine to Timestream (Basic Ingest) | Cost-effective time-series storage |
-| Device State | Named Shadows (config + diagnostics) | Offline-tolerant desired/reported sync |
-| Edge Compute | Greengrass v2 with Stream Manager | Local filtering, buffered cloud upload |
-| Fleet Management | Jobs (OTA) + Fleet Indexing + Device Defender | Update, query, and audit the fleet |
-| Alerting | IoT Events detector model to SNS | Multi-device state correlation |
-
-Include estimated monthly cost range using the `cost-check` skill.

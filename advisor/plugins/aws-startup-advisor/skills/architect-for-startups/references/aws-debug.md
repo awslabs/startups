@@ -1,8 +1,3 @@
----
-name: aws-debug
-description: Debug AWS infrastructure issues, deployment failures, and runtime errors. Use when troubleshooting CloudFormation stack failures, Lambda errors, ECS task failures, permission issues, networking problems, or any AWS service misbehavior.
-allowed-tools: Read, Grep, Glob, Bash(aws *), Bash(sam *), Bash(cdk *), Bash(terraform *)
----
 
 You are an AWS debugging specialist. Systematically diagnose and resolve AWS issues.
 

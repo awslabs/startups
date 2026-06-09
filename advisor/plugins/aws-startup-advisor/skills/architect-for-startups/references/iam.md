@@ -1,32 +1,5 @@
----
-name: iam
-description: Design and review AWS IAM configurations. Use when creating IAM policies, roles, permission boundaries, SCPs, configuring Identity Center (SSO), analyzing access with Access Analyzer, implementing least privilege, or debugging permission issues.
-allowed-tools: Read, Grep, Glob, Bash(aws *), mcp__plugin_aws-dev-toolkit_awsknowledge__*
----
-
-You are an AWS IAM specialist. Design, review, and troubleshoot IAM policies, roles, and access patterns.
-
-## Policy Evaluation Logic
-
-AWS evaluates policies in this order:
-
-1. **Explicit Deny** — if any policy says Deny, it's denied. Full stop.
-2. **SCPs** — Organization-level guardrails. Must Allow (implicit deny by default if SCP exists).
-3. **Resource-based policies** — can grant cross-account access without identity policy.
-4. **Permission boundaries** — ceiling on identity-based permissions.
-5. **Session policies** — for assumed roles / federated sessions.
-6. **Identity-based policies** — the attached policies on the user/role.
-
-The effective permission is the **intersection** of all applicable policy types (except resource-based policies, which can be additive for same-account access).
-
+# IAM
 ## Identity-Based vs Resource-Based Policies
-
-| Feature | Identity-Based | Resource-Based |
-|---|---|---|
-| Attached to | IAM user, group, or role | AWS resource (S3, SQS, KMS, etc.) |
-| Principal | Implicit (the entity it's attached to) | Must specify Principal |
-| Cross-account | Requires both sides to allow | Can grant access alone (no identity policy needed on the other side) |
-| Use when | Defining what an entity can do | Defining who can access a resource |
 
 **Key insight**: For cross-account access, a resource-based policy alone can grant access without any identity policy on the caller's side. But for same-account access, either identity-based or resource-based is sufficient.
 
@@ -114,24 +87,6 @@ Identity Center is the recommended way for humans to access AWS accounts.
 - Session duration: 4-8 hours for developers, 1 hour for admin access
 - Require MFA for all users (enforce at Identity Center level)
 
-## Access Analyzer
-
-### Policy Generation
-- Access Analyzer reviews CloudTrail logs and generates a least-privilege policy based on actual usage
-- Requires CloudTrail enabled with management events (at minimum)
-- Generation period: 1-90 days of CloudTrail data. Use at least 30 days for production roles.
-
-### External Access Findings
-- Detects resources shared with external principals (other accounts, public access)
-- Analyzers: account-level or organization-level
-- Resource types: S3 buckets, IAM roles, KMS keys, Lambda functions, SQS queues, Secrets Manager
-- Review findings regularly — archive expected cross-account sharing, remediate unexpected
-
-### Policy Validation
-- Validates IAM policies against best practices
-- Integrates into CI/CD to catch policy issues before deployment
-- Checks for: overly permissive actions, missing resource constraints, syntax errors
-
 ## Cross-Account Access
 
 ### Pattern 1: AssumeRole (Preferred)
@@ -150,47 +105,6 @@ Always use `sts:ExternalId` condition to prevent confused deputy attacks.
 - Use `aws:PrincipalOrgID` condition to allow access from any account in the organization
 - Cleaner than listing individual account IDs
 
-## Common CLI Commands
-
-```bash
-# List roles
-aws iam list-roles --query 'Roles[*].{Name:RoleName,Arn:Arn}' --output table
-
-# Get role's attached policies
-aws iam list-attached-role-policies --role-name my-role
-
-# Get inline policy document
-aws iam get-role-policy --role-name my-role --policy-name my-policy
-
-# Simulate policy evaluation
-aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::123456789012:role/my-role \
-  --action-names s3:GetObject --resource-arns arn:aws:s3:::my-bucket/*
-
-# Generate policy from Access Analyzer
-aws accessanalyzer start-policy-generation --policy-generation-details '{"principalArn":"arn:aws:iam::123456789012:role/my-role"}'
-
-# List Access Analyzer findings
-aws accessanalyzer list-findings --analyzer-arn arn:aws:accessanalyzer:us-east-1:123456789012:analyzer/my-analyzer \
-  --query 'findings[?status==`ACTIVE`]'
-
-# Validate a policy
-aws accessanalyzer validate-policy --policy-document file://policy.json --policy-type IDENTITY_POLICY
-
-# Get credential report
-aws iam generate-credential-report && sleep 5 && aws iam get-credential-report --query Content --output text | base64 -d
-
-# List users with access keys
-aws iam list-users --query 'Users[*].UserName' --output text | xargs -I{} aws iam list-access-keys --user-name {}
-
-# Get last accessed services for a role
-aws iam generate-service-last-accessed-details --arn arn:aws:iam::123456789012:role/my-role
-
-# List Identity Center permission sets
-aws sso-admin list-permission-sets --instance-arn arn:aws:sso:::instance/ssoins-xxx
-
-# List SCPs
-aws organizations list-policies --filter SERVICE_CONTROL_POLICY --query 'Policies[*].{Name:Name,Id:Id}'
-```
 
 ## Anti-Patterns
 
@@ -204,19 +118,3 @@ aws organizations list-policies --filter SERVICE_CONTROL_POLICY --query 'Policie
 - **Not using `aws:PrincipalOrgID`**: When granting cross-account access within an org, use this condition instead of listing individual account IDs. Easier to maintain and automatically includes new accounts.
 - **Ignoring Access Analyzer findings**: External access findings tell you what's shared outside your account. Unreviewed findings are unmanaged risk.
 - **MFA not enforced for console access**: All human users must have MFA. Enforce it via Identity Center or with an IAM policy condition `aws:MultiFactorAuthPresent`.
-
-## Reference Files
-
-| File | Contents |
-|---|---|
-| `references/policy-patterns.md` | Identity-based policies, trust policies (Lambda, EC2, ECS, cross-account, SAML, GitHub Actions OIDC), resource-based policies (S3, KMS, SQS), permission boundaries, SCP examples, condition keys reference |
-| `references/role-templates.md` | Persona-based role templates with trust and identity policies: Developer, Data Engineer, On-Call/Operations, CI/CD Pipeline, Read-Only Auditor, plus a shared permission boundary |
-
-## Related Skills
-
-- `security-review` -- comprehensive security audit and IaC review
-- `aws-architect` -- well-architected design guidance
-- `networking` -- VPC, subnets, security groups, NACLs
-- `lambda` -- Lambda execution roles and resource policies
-- `ecs` -- ECS task roles vs task execution roles
-- `eks` -- Kubernetes RBAC and IRSA (IAM Roles for Service Accounts)

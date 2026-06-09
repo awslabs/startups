@@ -1,18 +1,5 @@
----
-name: eks
-description: Design, deploy, and troubleshoot Amazon EKS clusters. Use when working with Kubernetes on AWS, configuring managed node groups or Fargate profiles, setting up IRSA or Pod Identity, managing EKS add-ons, autoscaling with Karpenter, or troubleshooting cluster issues.
----
-
-You are an AWS EKS specialist. When advising on EKS workloads:
-
+# EKS
 ## Process
-
-1. Clarify requirements: team Kubernetes maturity, workload types, multi-tenancy needs, compliance constraints
-2. Recommend compute strategy (managed node groups, Fargate profiles, or self-managed)
-3. Design cluster networking, IAM, and add-on configuration
-4. Configure autoscaling, observability, and upgrade strategy
-5. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to verify current EKS versions, add-on compatibility, or feature availability
-
 ## Compute Strategy
 
 **Default to managed node groups** for most workloads.
@@ -63,41 +50,6 @@ Karpenter best practices:
 - Set `expireAfter` (e.g., 720h) to rotate nodes and pick up new AMIs.
 - Always set `limits` on the NodePool (max CPU/memory) to prevent runaway scaling.
 
-## Common CLI Commands
-
-```bash
-# Create a cluster with eksctl
-eksctl create cluster --name my-cluster --region us-east-1 --version 1.31 --managed --node-type m6i.large --nodes 3
-
-# Update kubeconfig
-aws eks update-kubeconfig --name my-cluster --region us-east-1
-
-# Check cluster status
-aws eks describe-cluster --name my-cluster --query "cluster.status"
-
-# List node groups
-aws eks list-nodegroups --cluster-name my-cluster
-
-# Update a node group AMI
-aws eks update-nodegroup-version --cluster-name my-cluster --nodegroup-name my-ng
-
-# Install Karpenter (via Helm)
-helm install karpenter oci://public.ecr.aws/karpenter/karpenter --namespace kube-system --set clusterName=my-cluster --set clusterEndpoint=$(aws eks describe-cluster --name my-cluster --query "cluster.endpoint" --output text)
-
-# Get pods with node info
-kubectl get pods -o wide -A
-
-# Check EKS add-on versions
-aws eks describe-addon-versions --addon-name vpc-cni --kubernetes-version 1.31
-
-# View Pod Identity associations
-aws eks list-pod-identity-associations --cluster-name my-cluster
-
-# Debug a failing pod
-kubectl describe pod <pod-name> -n <namespace>
-kubectl logs <pod-name> -n <namespace> --previous
-```
-
 ## Upgrade Strategy
 
 - EKS supports N-1 version skew. Upgrade **one minor version at a time**.
@@ -105,28 +57,6 @@ kubectl logs <pod-name> -n <namespace> --previous
 - Use `eksctl` or Terraform to orchestrate. Never skip versions.
 - Test upgrades in a non-prod cluster first. Check the [EKS version changelog](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html) for deprecations.
 - Blue/green node group upgrades: create a new node group, cordon/drain old nodes, delete old node group.
-
-## Output Format
-
-| Field | Details |
-|-------|---------|
-| **Cluster version** | Kubernetes version (e.g., 1.31) |
-| **Compute strategy** | Managed node groups, Fargate profiles, or self-managed |
-| **Node groups / Karpenter config** | Instance families, NodePool limits, consolidation policy |
-| **Add-ons** | Managed add-ons and versions (vpc-cni, CoreDNS, kube-proxy, CSI drivers) |
-| **Autoscaling approach** | Karpenter or Cluster Autoscaler, NodePool/ASG config |
-| **Ingress** | AWS Load Balancer Controller, ALB Ingress, or NLB |
-| **IAM (IRSA / Pod Identity)** | Pod Identity associations or IRSA OIDC setup per workload |
-| **Monitoring** | Container Insights, Prometheus, control plane logging, X-Ray |
-
-## Related Skills
-
-- `ecs` — Simpler container orchestration alternative when Kubernetes is not required
-- `ec2` — Instance types, Spot strategy, and ASG config for self-managed nodes
-- `networking` — VPC design, pod networking (secondary CIDRs), and security groups
-- `iam` — IRSA, Pod Identity, and node role configuration
-- `observability` — CloudWatch Container Insights, Prometheus, and control plane logging
-- `lambda` — Serverless alternative for event-driven or low-traffic workloads
 
 ## Anti-Patterns
 

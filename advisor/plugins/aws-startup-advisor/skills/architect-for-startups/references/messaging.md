@@ -1,30 +1,16 @@
----
-name: messaging
-description: Deep-dive into AWS messaging services including SQS, SNS, and EventBridge. Use when designing event-driven architectures, choosing between messaging services, configuring queues and topics, implementing fan-out patterns, setting up dead-letter queues, or troubleshooting message delivery issues.
----
-
-You are an AWS messaging specialist. Help teams design reliable, scalable event-driven architectures using SQS, SNS, and EventBridge.
-
-## Process
-
-1. Identify the communication pattern (point-to-point, fan-out, event bus, request-reply)
-2. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to verify current service limits and features
-3. Select the right service(s) for the pattern
-4. Design for failure: DLQs, retries, idempotency
-5. Recommend monitoring and alerting
-
+# Messaging
 ## Service Selection Guide
 
-| Requirement | Use |
-|---|---|
-| Decouple producer from consumer, 1-to-1 | SQS |
-| One message, multiple subscribers | SNS + SQS (fan-out) |
-| Ordered, exactly-once processing | SQS FIFO |
-| Event routing based on content | EventBridge |
-| Cross-account/cross-region events | EventBridge |
-| Schema registry and discovery | EventBridge |
-| Simple mobile/email push notifications | SNS |
-| Replay past events | EventBridge Archive + Replay |
+| Requirement                             | Use                          |
+|-----------------------------------------|------------------------------|
+| Decouple producer from consumer, 1-to-1 | SQS                          |
+| One message, multiple subscribers       | SNS + SQS (fan-out)          |
+| Ordered, exactly-once processing        | SQS FIFO                     |
+| Event routing based on content          | EventBridge                  |
+| Cross-account/cross-region events       | EventBridge                  |
+| Schema registry and discovery           | EventBridge                  |
+| Simple mobile/email push notifications  | SNS                          |
+| Replay past events                      | EventBridge Archive + Replay |
 
 **Opinionated guidance:**
 - Default to **EventBridge** for new event-driven architectures — it's more flexible than SNS for routing and filtering
@@ -35,20 +21,12 @@ You are an AWS messaging specialist. Help teams design reliable, scalable event-
 
 ### Standard vs FIFO
 
-| Feature | Standard | FIFO |
-|---|---|---|
-| Throughput | Unlimited | 300 msg/s (3,000 with batching, or high-throughput mode for higher) |
-| Ordering | Best-effort | Strict within message group |
-| Delivery | At-least-once (rare duplicates) | Exactly-once |
-| Deduplication | None | 5-minute dedup window (content or ID based) |
-
 **Use Standard unless you need ordering or exactly-once.** The throughput difference is significant.
 
 ### Visibility Timeout
 - Default: 30 seconds. Set it to at least 6x your average processing time.
 - If processing takes longer, call `ChangeMessageVisibility` to extend it before timeout expires.
 - If messages reappear in the queue, your visibility timeout is too short.
-- Maximum: 12 hours.
 
 ### Dead-Letter Queues (DLQs)
 - **Always configure a DLQ.** Messages that fail processing silently retry forever without one.
@@ -62,44 +40,7 @@ You are an AWS messaging specialist. Help teams design reliable, scalable event-
 - Use batch operations: `ReceiveMessage` with `MaxNumberOfMessages=10` and `SendMessageBatch` for up to 10 messages.
 - Delete messages immediately after successful processing.
 
-### Message Size
-- Maximum message size: 256 KB.
-- For larger payloads, use the **SQS Extended Client Library** — it stores the payload in S3 and puts a pointer in the message.
-
 ## Amazon SNS
-
-### Topics
-- Standard topics: best-effort ordering, at-least-once delivery
-- FIFO topics: strict ordering, exactly-once delivery (only SQS FIFO subscribers)
-- Maximum 12.5 million subscriptions per topic (Standard)
-- Maximum 100,000 topics per account
-
-### Subscription Types
-- **SQS** — Most common. Use for decoupled processing.
-- **Lambda** — Direct invocation. Good for lightweight processing.
-- **HTTP/HTTPS** — Webhooks. Must handle retries and confirmations.
-- **Email/SMS** — Notifications to humans. Not for machine-to-machine.
-- **Kinesis Data Firehose** — Stream to S3, Redshift, OpenSearch.
-
-### Message Filtering
-- Apply filter policies on subscriptions to route messages without code
-- Filter on message attributes (default) or message body
-- Reduces cost — filtered messages don't invoke subscribers
-- Use `prefix`, `anything-but`, `numeric`, `exists` operators for flexible matching
-
-```json
-{
-  "order_type": ["premium"],
-  "amount": [{"numeric": [">", 100]}],
-  "region": [{"prefix": "us-"}]
-}
-```
-
-### Fan-Out Pattern (SNS + SQS)
-- Publish once to an SNS topic, deliver to multiple SQS queues
-- Each queue processes independently and at its own pace
-- Apply different filter policies per subscription for content-based routing
-- This is the standard pattern for 1-to-many async communication on AWS
 
 ## Amazon EventBridge
 
@@ -165,63 +106,6 @@ Producer --> SNS Topic --> SQS Queue A (filter: premium)
                       --> Lambda (filter: all, for analytics)
 ```
 
-## Common CLI Commands
-
-```bash
-# SQS: Create standard queue with DLQ
-aws sqs create-queue --queue-name my-dlq
-aws sqs create-queue --queue-name my-queue \
-  --attributes '{
-    "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:123456789012:my-dlq\",\"maxReceiveCount\":\"3\"}",
-    "VisibilityTimeout": "300",
-    "ReceiveMessageWaitTimeSeconds": "20"
-  }'
-
-# SQS: Send and receive
-aws sqs send-message --queue-url <url> --message-body '{"key":"value"}'
-aws sqs receive-message --queue-url <url> --wait-time-seconds 20 --max-number-of-messages 10
-
-# SQS: Check queue depth
-aws sqs get-queue-attributes --queue-url <url> \
-  --attribute-names ApproximateNumberOfMessages ApproximateNumberOfMessagesNotVisible
-
-# SQS: Purge queue (deletes all messages)
-aws sqs purge-queue --queue-url <url>
-
-# SNS: Create topic and subscribe SQS
-aws sns create-topic --name my-topic
-aws sns subscribe --topic-arn <topic-arn> --protocol sqs --notification-endpoint <queue-arn>
-
-# SNS: Publish with attributes (for filtering)
-aws sns publish --topic-arn <topic-arn> \
-  --message '{"order":"123"}' \
-  --message-attributes '{"order_type":{"DataType":"String","StringValue":"premium"}}'
-
-# SNS: Set filter policy on subscription
-aws sns set-subscription-attributes \
-  --subscription-arn <sub-arn> \
-  --attribute-name FilterPolicy \
-  --attribute-value '{"order_type":["premium"]}'
-
-# EventBridge: Put custom event
-aws events put-events --entries '[{
-  "Source": "my.application",
-  "DetailType": "OrderPlaced",
-  "Detail": "{\"orderId\":\"123\",\"amount\":150}",
-  "EventBusName": "default"
-}]'
-
-# EventBridge: Create rule
-aws events put-rule --name my-rule \
-  --event-pattern '{"source":["my.application"],"detail-type":["OrderPlaced"]}'
-
-# EventBridge: Add target to rule
-aws events put-targets --rule my-rule \
-  --targets '[{"Id":"1","Arn":"arn:aws:sqs:us-east-1:123456789012:my-queue"}]'
-
-# EventBridge: List rules
-aws events list-rules --event-bus-name default
-```
 
 ## Anti-Patterns
 
@@ -234,15 +118,3 @@ aws events list-rules --event-bus-name default
 - **Using EventBridge for high-throughput streaming.** EventBridge is for event routing, not high-volume data streaming. Use Kinesis or MSK for >10K events/sec sustained.
 - **Polling SQS from multiple consumers without proper visibility timeout.** If visibility timeout is too short, multiple consumers process the same message. Set timeout to 6x processing time.
 - **No monitoring on DLQs.** A DLQ without an alarm is just a message graveyard. Alert on `ApproximateNumberOfMessagesVisible > 0`.
-
-## Reference Files
-
-- `references/integration-patterns.md` — Architectural patterns (fan-out, saga choreography/orchestration, CQRS, queue-based load leveling, event sourcing, claim-check, competing consumers) with diagrams and service mappings
-
-## Related Skills
-
-- `lambda` — Lambda as SQS/SNS/EventBridge consumer, event source mappings
-- `step-functions` — Orchestrated saga pattern, workflow coordination
-- `dynamodb` — DynamoDB Streams as event source, event sourcing store
-- `observability` — Queue depth alarms, DLQ monitoring, message age alerts
-- `api-gateway` — API Gateway to SQS/SNS integration for async APIs

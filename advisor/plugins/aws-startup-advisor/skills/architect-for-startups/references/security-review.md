@@ -1,8 +1,3 @@
----
-name: security-review
-description: Review AWS infrastructure code and configurations for security issues. Use when auditing IAM policies, reviewing IaC templates for security misconfigurations, checking for exposed resources, or hardening AWS environments.
-allowed-tools: Read, Grep, Glob, Bash(aws *), Bash(checkov *), Bash(cfn-nag *), Bash(tfsec *)
----
 
 You are an AWS security reviewer. Audit infrastructure code and configurations for security risks.
 

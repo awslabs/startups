@@ -1,21 +1,15 @@
----
-name: step-functions
-description: Design and build AWS Step Functions workflows. Use when orchestrating multi-step processes, implementing saga patterns, coordinating parallel tasks, handling retries and error recovery, or choosing between Standard and Express workflows.
----
-
-You are a Step Functions specialist. Help teams design reliable, cost-effective state machine workflows.
-
+# Step Functions
 ## Decision Framework: Standard vs Express
 
-| Feature | Standard | Express |
-|---|---|---|
-| Max duration | 1 year | 5 minutes |
-| Execution model | Exactly-once | At-least-once (async) / At-most-once (sync) |
-| Pricing | Per state transition ($0.025/1000) | Per request + duration |
-| History | Full execution history in console | CloudWatch Logs only |
-| Step limit | 25,000 events per execution | Unlimited |
-| Max concurrency | Default ~1M (soft limit) | Default ~1,000 (soft limit) |
-| Ideal for | Long-running, business-critical workflows | High-volume, short, event processing |
+| Feature         | Standard                                  | Express                                     |
+|-----------------|-------------------------------------------|---------------------------------------------|
+| Max duration    | 1 year                                    | 5 minutes                                   |
+| Execution model | Exactly-once                              | At-least-once (async) / At-most-once (sync) |
+| Pricing         | Per state transition ($0.025/1000)        | Per request + duration                      |
+| History         | Full execution history in console         | CloudWatch Logs only                        |
+| Step limit      | 25,000 events per execution               | Unlimited                                   |
+| Max concurrency | Default ~1M (soft limit)                  | Default ~1,000 (soft limit)                 |
+| Ideal for       | Long-running, business-critical workflows | High-volume, short, event processing        |
 
 **Opinionated recommendation**:
 - **Default to Standard** for business workflows, orchestration, and anything requiring auditability.
@@ -28,124 +22,15 @@ You are a Step Functions specialist. Help teams design reliable, cost-effective 
 
 **Opinionated**: Always add Retry and Catch to every Task state. Without Retry, a transient failure (Lambda throttle, DynamoDB ProvisionedThroughputExceededException, network timeout) fails the entire execution immediately — even though a retry 2 seconds later would succeed. Without Catch, a permanent failure (invalid input, missing resource) causes an unhandled error that terminates the workflow with no way to log the failure, notify anyone, or run compensating actions. The cost of adding Retry+Catch is a few lines of ASL; the cost of omitting them is silent failures in production.
 
-### Direct Service Integrations (prefer over Lambda wrappers)
-
-Step Functions can call 200+ AWS services directly. Do NOT wrap simple API calls in Lambda. Common direct integrations to use instead of Lambda:
-- **DynamoDB**: GetItem, PutItem, UpdateItem, DeleteItem, Query
-- **SQS**: SendMessage
-- **SNS**: Publish
-- **EventBridge**: PutEvents
-- **ECS/Fargate**: RunTask (for long-running containers)
-- **Glue**: StartJobRun
-- **SageMaker**: CreateTransformJob, CreateTrainingJob
-- **Bedrock**: InvokeModel
-
-See `references/integrations.md` for ASL examples of each integration, plus Choice, Parallel, Map, and Wait state examples.
-
-### Other State Types
-
-- **Choice**: Branch based on input values (string, numeric, boolean comparisons)
-- **Parallel**: Run multiple branches concurrently, Catch on any branch failure
-- **Map (Inline)**: Iterate over a collection with configurable MaxConcurrency
-- **Map (Distributed)**: Process millions of items from S3 with Express child executions
-- **Wait**: Pause for a duration or until a timestamp
-
 ## Error Handling: Retry and Catch
 
 ### Retry Strategy
-```json
-"Retry": [
-  {
-    "ErrorEquals": ["States.Timeout"],
-    "IntervalSeconds": 5,
-    "MaxAttempts": 2,
-    "BackoffRate": 2.0
-  },
-  {
-    "ErrorEquals": ["TransientError", "Lambda.ServiceException"],
-    "IntervalSeconds": 1,
-    "MaxAttempts": 5,
-    "BackoffRate": 2.0,
-    "JitterStrategy": "FULL"
-  },
-  {
-    "ErrorEquals": ["States.ALL"],
-    "MaxAttempts": 0
-  }
-]
-```
 
 **Opinionated**: Order retries from specific to general. Use `JitterStrategy: FULL` to prevent thundering herd. Put `States.ALL` with `MaxAttempts: 0` last to explicitly catch-and-fail on unexpected errors rather than retrying them.
 
 ### Catch and Error Recovery
-```json
-"Catch": [
-  {
-    "ErrorEquals": ["PaymentDeclined"],
-    "Next": "NotifyCustomerPaymentFailed",
-    "ResultPath": "$.error"
-  },
-  {
-    "ErrorEquals": ["States.ALL"],
-    "Next": "GenericErrorHandler",
-    "ResultPath": "$.error"
-  }
-]
-```
 
 **Always use `ResultPath` in Catch** to preserve the original input alongside the error. Without it, the error replaces your entire state input.
-
-## Pattern: Saga (Compensating Transactions)
-
-For distributed transactions across services where you need to undo completed steps on failure. Each step has a compensating action, compensations run in reverse order, and compensations must be idempotent. See `references/patterns.md` for the full ASL example with compensating transaction flow.
-
-## Pattern: Human Approval (Callback)
-
-Use `.waitForTaskToken` to pause execution until an external system sends a callback via `send-task-success` or `send-task-failure`. **Always set `TimeoutSeconds` on callback tasks.** Without it, the execution waits forever (up to 1 year for Standard). See `references/patterns.md` for the full ASL and CLI examples.
-
-## Pattern: Distributed Map
-
-Process millions of items from S3 using Express child executions for massive parallelism. See `references/patterns.md` for the ASL example with S3 CSV reader configuration.
-
-## Common CLI Commands
-
-```bash
-# Create state machine
-aws stepfunctions create-state-machine \
-  --name my-workflow \
-  --definition file://definition.json \
-  --role-arn arn:aws:iam::123456789:role/step-functions-role
-
-# Start execution
-aws stepfunctions start-execution \
-  --state-machine-arn arn:aws:states:us-east-1:123456789:stateMachine:my-workflow \
-  --input '{"orderId": "12345"}'
-
-# List executions
-aws stepfunctions list-executions \
-  --state-machine-arn arn:aws:states:us-east-1:123456789:stateMachine:my-workflow \
-  --status-filter FAILED
-
-# Get execution details
-aws stepfunctions describe-execution \
-  --execution-arn arn:aws:states:us-east-1:123456789:execution:my-workflow:exec-123
-
-# Get execution history (debug step-by-step)
-aws stepfunctions get-execution-history \
-  --execution-arn arn:aws:states:us-east-1:123456789:execution:my-workflow:exec-123 \
-  --query 'events[?type==`TaskFailed` || type==`ExecutionFailed`]'
-
-# Update state machine
-aws stepfunctions update-state-machine \
-  --state-machine-arn arn:aws:states:us-east-1:123456789:stateMachine:my-workflow \
-  --definition file://definition.json
-
-# Test a state (local testing)
-aws stepfunctions test-state \
-  --definition '{"Type":"Task","Resource":"arn:aws:states:::dynamodb:getItem","Parameters":{"TableName":"Orders","Key":{"orderId":{"S":"123"}}}}' \
-  --role-arn arn:aws:iam::123456789:role/step-functions-role \
-  --input '{"orderId": "123"}'
-```
 
 ## Workflow Studio
 
@@ -182,16 +67,3 @@ Data flows through each state as: `InputPath -> Parameters -> Task -> ResultSele
 - **Pass states are not free** in Standard (they count as transitions). Eliminate unnecessary Pass states.
 - **Combine simple sequential tasks** where possible to reduce transition count.
 - Use `ResultSelector` to trim response payloads -- smaller payloads mean faster processing.
-
-## Reference Files
-
-- **references/patterns.md** -- Saga, callback, and Distributed Map patterns with full ASL examples
-- **references/integrations.md** -- Direct service integration examples (DynamoDB, SQS, SNS, EventBridge, ECS, Bedrock), state type ASL, and input/output processing pipeline details
-
-## Related Skills
-
-- `aws-plan` -- Architecture planning that may include Step Functions workflows
-- `lambda` -- Lambda functions used as Task state targets
-- `api-gateway` -- API Gateway to Step Functions direct integrations (StartExecution, StartSyncExecution)
-- `observability` -- CloudWatch Logs, X-Ray tracing, and monitoring for Step Functions
-- `aws-debug` -- Debugging failed Step Functions executions

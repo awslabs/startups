@@ -1,11 +1,4 @@
----
-name: networking
-description: Design and troubleshoot AWS networking. Use when planning VPC architectures, configuring subnets, security groups, NACLs, VPC endpoints, Transit Gateway, VPC peering, Route53, NAT Gateways, or debugging connectivity issues.
-allowed-tools: Read, Grep, Glob, Bash(aws *), mcp__plugin_aws-dev-toolkit_awsknowledge__*
----
-
-You are an AWS networking architect. Design, review, and troubleshoot VPC architectures and network configurations.
-
+# Networking
 ## VPC Design Principles
 
 ### Subnet Tiers
@@ -16,14 +9,6 @@ Always design with three tiers:
 - **Private subnets**: Application workloads (EC2, ECS, Lambda). Route table has 0.0.0.0/0 -> NAT Gateway. Can reach the internet but are not reachable from it.
 - **Isolated subnets**: Databases and sensitive workloads. No route to the internet at all. Access AWS services only through VPC endpoints.
 
-### CIDR Planning
-
-- Use /16 for the VPC (65,536 IPs) unless you have a reason not to
-- Use /20 or /24 per subnet depending on expected scale
-- Reserve CIDR space for future expansion — you cannot resize a VPC CIDR easily
-- Avoid overlapping CIDRs across VPCs if you ever plan to peer them or use Transit Gateway
-- Use RFC 1918 ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
-
 ### Availability Zones
 
 - Minimum 2 AZs for production. 3 AZs is the standard for high availability.
@@ -31,13 +16,13 @@ Always design with three tiers:
 
 ## Security Groups vs NACLs
 
-| Feature | Security Groups | NACLs |
-|---|---|---|
-| Level | ENI (instance) | Subnet |
-| State | Stateful | Stateless |
-| Rules | Allow only | Allow and Deny |
-| Evaluation | All rules evaluated | Rules evaluated in order by number |
-| Default | Deny all inbound, allow all outbound | Allow all inbound and outbound |
+| Feature    | Security Groups                      | NACLs                              |
+|------------|--------------------------------------|------------------------------------|
+| Level      | ENI (instance)                       | Subnet                             |
+| State      | Stateful                             | Stateless                          |
+| Rules      | Allow only                           | Allow and Deny                     |
+| Evaluation | All rules evaluated                  | Rules evaluated in order by number |
+| Default    | Deny all inbound, allow all outbound | Allow all inbound and outbound     |
 
 **Opinionated guidance:**
 - Security groups are your primary network control. Use them for everything.
@@ -85,15 +70,6 @@ Key Transit Gateway patterns:
 - **Public hosted zone**: DNS for internet-facing resources. NS records must be registered with your domain registrar.
 - **Private hosted zone**: DNS for internal resources. Associated with one or more VPCs. Not resolvable from the internet.
 
-### Routing Policies
-- **Simple**: Single resource. Default.
-- **Weighted**: Split traffic by percentage. Good for canary deployments.
-- **Latency-based**: Route to the lowest-latency region. Use for multi-region apps.
-- **Failover**: Active/passive. Requires health checks.
-- **Geolocation**: Route by user's country/continent. Good for compliance (data residency).
-- **Geoproximity**: Route by geographic distance with bias. Use Traffic Flow.
-- **Multivalue Answer**: Return multiple healthy IPs. Poor man's load balancer (use ALB instead).
-
 ### Health Checks
 - Always attach health checks to failover and latency records
 - Health checks can monitor an endpoint, a CloudWatch alarm, or other health checks (calculated)
@@ -106,64 +82,6 @@ Key Transit Gateway patterns:
 - Costs: per-hour charge + per-GB data processing. This adds up fast.
 - For cost savings in dev/staging: use a single NAT Gateway (accept the AZ risk) or use NAT instances
 - If you only need AWS service access (not general internet), use VPC endpoints instead — cheaper and more secure
-
-## Common CLI Commands
-
-```bash
-# Describe VPCs
-aws ec2 describe-vpcs --query 'Vpcs[*].{ID:VpcId,CIDR:CidrBlock,Name:Tags[?Key==`Name`].Value|[0]}'
-
-# Describe subnets in a VPC
-aws ec2 describe-subnets --filters "Name=vpc-id,Values=vpc-xxx" --query 'Subnets[*].{ID:SubnetId,AZ:AvailabilityZone,CIDR:CidrBlock,Public:MapPublicIpOnLaunch}'
-
-# List security group rules
-aws ec2 describe-security-group-rules --filter "Name=group-id,Values=sg-xxx"
-
-# List VPC endpoints
-aws ec2 describe-vpc-endpoints --filters "Name=vpc-id,Values=vpc-xxx" --query 'VpcEndpoints[*].{ID:VpcEndpointId,Service:ServiceName,Type:VpcEndpointType}'
-
-# Check route tables
-aws ec2 describe-route-tables --filters "Name=vpc-id,Values=vpc-xxx" --query 'RouteTables[*].{ID:RouteTableId,Routes:Routes}'
-
-# List Transit Gateway attachments
-aws ec2 describe-transit-gateway-attachments --query 'TransitGatewayAttachments[*].{ID:TransitGatewayAttachmentId,ResourceType:ResourceType,State:State}'
-
-# Test connectivity (VPC Reachability Analyzer)
-aws ec2 create-network-insights-path --source eni-xxx --destination eni-yyy --protocol TCP --destination-port 443
-
-# Route53 — list hosted zones
-aws route53 list-hosted-zones --query 'HostedZones[*].{Name:Name,ID:Id,Private:Config.PrivateZone}'
-
-# Route53 — list records
-aws route53 list-resource-record-sets --hosted-zone-id /hostedzone/ZXXXXX
-```
-
-## Output Format
-
-| Field | Details |
-|-------|---------|
-| **VPC CIDR** | Primary CIDR block and any secondary CIDRs |
-| **Subnet layout** | Public, private, and isolated subnets per AZ with CIDR ranges |
-| **NAT strategy** | NAT Gateway per AZ (production) or single NAT (dev/staging) |
-| **VPC endpoints** | Gateway endpoints (S3, DynamoDB) and interface endpoints by service |
-| **Security groups summary** | SG names, purpose, and key ingress/egress rules |
-| **Transit Gateway** | TGW ID, attachments, route table segmentation (if applicable) |
-| **DNS** | Route53 hosted zones (public/private), routing policies, health checks |
-
-## Reference Files
-
-- `references/cidr-planning.md` — CIDR allocation strategies, worked examples for three-tier VPCs, multi-account planning, EKS/Lambda IP considerations, secondary CIDRs, and AWS VPC IPAM
-- `references/vpc-endpoint-catalog.md` — Catalog of commonly used VPC endpoints organized by priority, with configuration guidance, security groups, cost analysis, and endpoint policies
-
-## Related Skills
-
-- `security-review` — Network security posture, security group audits, NACLs
-- `iam` — VPC endpoint policies, resource-based access control
-- `ec2` — Instance placement, security groups, and subnet selection
-- `ecs` — awsvpc networking, task-level security groups, service discovery, ECR endpoint requirements
-- `eks` — Pod networking, secondary CIDRs, CNI configuration, IP address planning
-- `lambda` — Lambda VPC configuration, ENI usage, endpoint requirements
-- `rds-aurora` — Database subnet groups, isolated subnet placement
 
 ## Anti-Patterns
 

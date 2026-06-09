@@ -1,17 +1,5 @@
----
-name: ec2
-description: Design, configure, and optimize Amazon EC2 workloads. Use when selecting instance types, configuring auto-scaling groups, working with launch templates, managing Spot instances, choosing storage (EBS vs instance store), or troubleshooting EC2 issues.
----
-
-You are an AWS EC2 specialist. When advising on EC2 workloads:
-
+# EC2
 ## Process
-
-1. Clarify the workload: compute-bound, memory-bound, storage-bound, GPU, or general-purpose
-2. Recommend instance type family and size based on requirements
-3. Design launch template, ASG, and scaling configuration
-4. Configure storage, networking, and cost optimization
-5. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to verify current instance types, pricing, or feature availability
 
 ## Instance Type Selection
 
@@ -70,53 +58,10 @@ Use Spot for fault-tolerant, stateless, or flexible-schedule workloads. Up to 90
 
 **Default to EBS** unless you need maximum IOPS.
 
-### EBS
-- **gp3**: Default. 3,000 IOPS / 125 MiB/s baseline, independently scalable. Always use gp3 over gp2 (cheaper and more flexible).
-- **io2 Block Express**: Databases requiring > 16,000 IOPS or sub-ms latency. Up to 256,000 IOPS and 4,000 MiB/s.
-- **st1**: Throughput-optimized HDD for sequential reads (big data, log processing). Not for boot volumes.
-- **sc1**: Cold HDD. Cheapest. Infrequent access.
-- Enable **EBS encryption by default** at the account level. No performance penalty on modern instance types.
-- Snapshot lifecycle: Use Data Lifecycle Manager (DLM) to automate snapshots and retention.
-- Size EBS volumes for IOPS and throughput, not just capacity. gp3 can scale IOPS independently of size.
-
 ### Instance Store
 - Ephemeral NVMe attached to the host. Data lost on stop/terminate/hardware failure.
 - Use for: caches, buffers, scratch data, temporary storage. I4i instances deliver up to 2.5M IOPS.
 - Never store data you cannot afford to lose.
-
-## Common CLI Commands
-
-```bash
-# Launch an instance
-aws ec2 run-instances --launch-template LaunchTemplateId=lt-xxx,Version='$Latest' --count 1 --subnet-id subnet-xxx
-
-# Describe instances with filters
-aws ec2 describe-instances --filters "Name=tag:Environment,Values=prod" --query "Reservations[].Instances[].{ID:InstanceId,Type:InstanceType,State:State.Name}"
-
-# Get latest AL2023 AMI
-aws ssm get-parameters-by-path --path /aws/service/ami-amazon-linux-latest --query "Parameters[?contains(Name,'al2023')].{Name:Name,Value:Value}"
-
-# Create a launch template
-aws ec2 create-launch-template --launch-template-name my-template --launch-template-data file://lt-data.json
-
-# Update ASG to use new launch template version
-aws autoscaling update-auto-scaling-group --auto-scaling-group-name my-asg --launch-template LaunchTemplateId=lt-xxx,Version='$Latest'
-
-# Start instance refresh (rolling AMI update)
-aws autoscaling start-instance-refresh --auto-scaling-group-name my-asg --preferences '{"MinHealthyPercentage":90,"InstanceWarmup":300}'
-
-# Get Spot pricing history
-aws ec2 describe-spot-price-history --instance-types m7g.large c7g.large --product-descriptions "Linux/UNIX" --start-time $(date -u +%Y-%m-%dT%H:%M:%S)
-
-# Get Spot placement scores
-aws ec2 get-spot-placement-scores --target-capacity 10 --instance-types-with-spot-max-price-override "InstanceType=m7g.large" --region-names us-east-1 us-west-2
-
-# Check Compute Optimizer recommendations
-aws compute-optimizer get-ec2-instance-recommendations --instance-arns arn:aws:ec2:us-east-1:123456789012:instance/i-xxx
-
-# Connect via SSM (no SSH keys needed)
-aws ssm start-session --target i-xxx
-```
 
 ## Output Format
 
@@ -130,14 +75,6 @@ aws ssm start-session --target i-xxx
 | **Key pair / SSM** | SSM Session Manager (preferred) or key pair for access |
 | **Security group** | Inbound/outbound rules, referenced SG IDs |
 | **Monitoring** | CloudWatch agent config, detailed monitoring, custom metrics |
-
-## Related Skills
-
-- `networking` — VPC, subnets, security groups, and NAT strategy for EC2 instances
-- `iam` — Instance profiles, least-privilege policies, and SSM permissions
-- `s3` — Storage integration, instance backups, and bootstrap scripts
-- `observability` — CloudWatch agent, alarms, dashboards, and Compute Optimizer
-- `cloudfront` — CDN in front of EC2-backed web applications
 
 ## Anti-Patterns
 

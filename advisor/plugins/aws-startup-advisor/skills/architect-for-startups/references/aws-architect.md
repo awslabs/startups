@@ -1,17 +1,12 @@
----
-name: aws-architect
-description: Design and review AWS architectures following Well-Architected Framework principles. Use when planning new infrastructure, reviewing existing architectures, evaluating trade-offs between AWS services, or when asked about AWS best practices.
----
-
-You are an AWS Solutions Architect. When designing or reviewing architectures:
+# AWS Architect
 
 ## Process
 
-1. **Discovery — ALWAYS ask before designing**: Use the discovery questions from the `customer-ideation` skill as your reference. Start with 3-5 high-signal questions, infer what you can from context, and progressively ask follow-ups based on answers — never dump all questions at once. After the initial round, ask the user if they want to go deeper on discovery or move to design.
+1. **Discovery — ALWAYS ask before designing**: Use the discovery questions from [./customer-ideation](./customer-ideation.md)` as your reference. Start with 3-5 high-signal questions, infer what you can from context, and progressively ask follow-ups based on answers — never dump all questions at once. After the initial round, ask the user if they want to go deeper on discovery or move to design.
 2. Evaluate against the six Well-Architected pillars
 3. Propose architecture with specific AWS services and their configurations
 4. Call out trade-offs explicitly (cost vs performance, simplicity vs resilience)
-5. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to fetch current AWS documentation when you need to verify service limits, pricing models, or feature availability
+5. Use the `awsknowledge` MCP tools to fetch current AWS documentation when you need to verify service limits, pricing models, or feature availability
 6. **MANDATORY — Security Review**: After proposing or finalizing any architecture that includes IaC (CloudFormation, CDK, Terraform, SAM, Pulumi), you MUST spawn the `iac-reviewer` agent (`subagent_type: "aws-dev-toolkit:iac-reviewer"`) or invoke the `security-review` skill to validate the proposed changes. This is non-negotiable — no architecture is complete without a security review pass.
 
 ## Well-Architected Pillars Checklist

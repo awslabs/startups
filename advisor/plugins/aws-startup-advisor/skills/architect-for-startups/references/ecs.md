@@ -1,18 +1,4 @@
----
-name: ecs
-description: This skill should be used when the user asks to "deploy containers on ECS", "set up an ECS service", "choose between Fargate and EC2", "configure ECS task definitions", "set up ECS auto-scaling", "use ECS Express Mode", "migrate from App Runner", or mentions ECS load balancing, deployment strategies, or container orchestration on AWS.
----
-
-You are an AWS ECS specialist. When advising on ECS workloads:
-
-## Process
-
-1. Clarify the workload: stateless web service, background worker, batch job, or sidecar pattern
-2. Recommend launch type (Fargate vs EC2) based on requirements
-3. Define task definition, service configuration, and networking
-4. Configure scaling, deployment strategy, and observability
-5. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) to verify current ECS limits, pricing, or feature availability
-
+# ECS
 ## Launch Type Selection
 
 **Default to Fargate** unless you have a specific reason to manage instances yourself. Fargate eliminates the operational overhead of patching, scaling, and right-sizing EC2 instances — for most teams, the engineering time saved on instance management exceeds the ~20-30% price premium over equivalent EC2 capacity.
@@ -51,83 +37,12 @@ You are an AWS ECS specialist. When advising on ECS workloads:
 - Set `minCapacity` >= 2 for production services (multi-AZ resilience).
 - Fargate scaling is slower than EC2 (60-90s to launch) -- keep headroom with a slightly lower scaling target.
 
-## Express Mode
-
-**ECS Express Mode** deploys a production-ready, load-balanced Fargate service from a single API call with just three parameters: container image, task execution role, and infrastructure role. No additional charge. AWS recommends Express Mode as the App Runner replacement (closing to new customers April 30, 2026).
-
-**Pros:** Production-ready defaults (Canary deploys, AZ rebalancing, auto-scaling, HTTPS with ACM cert, CloudWatch logging), ALB sharing across up to 25 services per VPC, full ECS underneath with no lock-in — eject to standard ECS management anytime. Supports Console, CLI, SDKs, CloudFormation, Terraform, and MCP Server.
-
-**Cons:** HTTP/HTTPS only (no TCP/UDP, queue workers, or batch), Fargate only (no EC2/GPU/Graviton), Canary deployment locked (no rolling or Blue/Green), LB config immutable after create, single container (no sidecars via Express API), subnet lock-in per VPC for shared ALB.
-
-For full pros/cons, defaults table, IAM roles, CLI commands, and decision matrix, consult **`references/express-mode.md`**.
-
-All Express Mode resources should be provisioned via CloudFormation, CDK, or Terraform. Use the `awsknowledge` MCP tools (`mcp__plugin_aws-dev-toolkit_awsknowledge__aws___search_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___read_documentation`, `mcp__plugin_aws-dev-toolkit_awsknowledge__aws___recommend`) or consult **`references/express-mode.md`** for API parameters and IaC examples.
-
 ## Deployment Strategies
 
 - **Rolling update** (default): Good for most workloads. Set `minimumHealthyPercent: 100` and `maximumPercent: 200` to deploy with zero downtime.
 - **Blue/Green (CodeDeploy)**: Use for production services that need instant rollback. Requires ALB. Configure `terminateAfterMinutes` to keep the old task set alive during validation.
 - **Canary**: Use CodeDeploy with `CodeDeployDefault.ECSCanary10Percent5Minutes` for high-risk changes.
 - Circuit breaker: Always enable `deploymentCircuitBreaker` with `rollback: true` to auto-rollback failed deployments.
-
-## Provisioning
-
-All ECS resources (clusters, task definitions, services, load balancers, auto-scaling) should be provisioned via IaC — CloudFormation, CDK, or Terraform. Never create or mutate infrastructure with imperative CLI commands. Use the `cdk-docs` or `cloudformation-docs` MCP tools for current resource properties.
-
-## Observability & Debugging CLI
-
-CLI usage should be limited to read-only operations, observability, and interactive debugging:
-
-```bash
-# Describe cluster status
-aws ecs describe-clusters --clusters my-cluster --include STATISTICS ATTACHMENTS
-
-# List services in a cluster
-aws ecs list-services --cluster my-cluster
-
-# Describe a service (deployment status, events, task counts)
-aws ecs describe-services --cluster my-cluster --services my-svc
-
-# List running tasks
-aws ecs list-tasks --cluster my-cluster --service-name my-svc --desired-status RUNNING
-
-# Describe a task (container status, stopped reason, network)
-aws ecs describe-tasks --cluster my-cluster --tasks <task-id>
-
-# Exec into a running container (requires ECS Exec enabled)
-aws ecs execute-command --cluster my-cluster --task <task-id> --container my-container --interactive --command "/bin/sh"
-
-# Tail logs
-aws logs tail /ecs/my-task --follow
-
-# Describe task definition (inspect current config)
-aws ecs describe-task-definition --task-definition my-task
-
-# Check service events for deployment issues
-aws ecs describe-services --cluster my-cluster --services my-svc --query "services[].events[:5]"
-```
-
-## Output Format
-
-| Field | Details |
-|-------|---------|
-| **Service name** | ECS service name and cluster |
-| **Launch type** | Fargate, Fargate Spot, EC2, or External |
-| **Task CPU/Memory** | vCPU and memory allocation (e.g., 0.5 vCPU / 1 GB) |
-| **Desired count** | Number of tasks, min/max for auto-scaling |
-| **Deployment strategy** | Rolling update, Blue/Green (CodeDeploy), or Canary |
-| **Load balancer** | ALB or NLB, target group health check config |
-| **Auto-scaling** | Scaling metric, target value, min/max capacity |
-| **Logging** | Log driver, log group, retention period |
-
-## Related Skills
-
-- `eks` — Kubernetes-based alternative to ECS for container orchestration
-- `ec2` — EC2 launch type compute, instance selection, and Spot strategy
-- `networking` — VPC, subnet, and security group design for ECS tasks
-- `iam` — Task execution roles and task roles for least-privilege access
-- `cloudfront` — CDN in front of ECS-backed services
-- `observability` — CloudWatch Container Insights, alarms, and dashboards
 
 ## Anti-Patterns
 
@@ -139,10 +54,3 @@ aws ecs describe-services --cluster my-cluster --services my-svc --query "servic
 - **No deployment circuit breaker**: Without it, a bad deployment will keep cycling failing tasks indefinitely, consuming capacity and generating noise.
 - **Putting secrets in environment variables**: Use the `secrets` field with Secrets Manager or SSM Parameter Store references. Environment variables are visible in the console and API.
 - **Running as root**: Set `user` in the task definition to a non-root user. Combine with `readonlyRootFilesystem` for defense in depth.
-
-## Additional Resources
-
-### Reference Files
-
-For detailed documentation and decision guidance, consult:
-- **`references/express-mode.md`** — Full Express Mode pros/cons, defaults table, IAM roles, CLI commands, resource sharing details, Express Mode vs standard ECS decision matrix, and official AWS documentation links
