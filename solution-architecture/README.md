@@ -38,10 +38,9 @@ claude --plugin-dir ./solution-architecture/plugins/aws-dev-toolkit
 
 ## Prerequisites
 
-- [Claude Code](https://code.claude.com) v1.0.33+
+- [Claude Code](https://code.claude.com)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (for MCP servers via `uvx`)
 - AWS CLI configured with appropriate credentials
-- (Optional) `checkov`, `cfn-nag`, `tfsec` for security scanning
 
 ## License
 
