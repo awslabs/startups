@@ -123,4 +123,4 @@ Some skills benefit from additional MCP servers that are not bundled with the pl
 
 ## License
 
-MIT-0
+Apache-2.0

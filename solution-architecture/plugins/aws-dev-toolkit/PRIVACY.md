@@ -2,7 +2,7 @@
 
 Last updated: 2026-04-24
 
-This document describes how the `aws-dev-toolkit` Claude Code plugin handles data. The plugin is maintained by Amazon Web Services and distributed under the MIT-0 license.
+This document describes how the `aws-dev-toolkit` Claude Code plugin handles data. The plugin is maintained by Amazon Web Services and distributed under the Apache-2.0 license.
 
 ## What this plugin is
 

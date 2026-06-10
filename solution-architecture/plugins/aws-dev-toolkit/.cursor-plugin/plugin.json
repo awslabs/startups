@@ -6,7 +6,7 @@
   "author": {
     "name": "Amazon Web Services"
   },
-  "license": "MIT-0",
+  "license": "Apache-2.0",
   "keywords": [
     "aws",
     "cdk",
