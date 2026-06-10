@@ -28,6 +28,7 @@ Read from the context block prepended to this prompt:
 - **Source code location** — the repository path provided in your context (the `Repository:` line). The orchestration skill has already located/cloned the source repository and provides its path here.
 - **Migration plan dir** — the `Migration plan dir:` line. Used by §6 (read plan) and §10 (validate target model IDs).
 - **AWS region** — the `AWS region:` line. Used for Bedrock validation in §10.
+- **AWS profile** — the `AWS profile` line, when present. Pass it to the resolve-bedrock-model-id skill and add `--profile` to any aws CLI call you run; omit when absent.
 - **Model mapping** — the `Target Bedrock model(s):` line (and the `Resolved target model id:` line, if present), plus the model-mapping artifacts in the plan directory. Drives §7 framework detection and §10 ID validation.
 
 # 4. Skills to load

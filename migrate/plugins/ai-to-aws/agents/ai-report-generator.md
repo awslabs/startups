@@ -32,6 +32,7 @@ Read accumulated state from prompt context (forwarded from every prior Track 2 p
 - **`<reportDateSuffix>`** — the run's date suffix in `YYYY-MM-DD` form, the `Report date suffix:` line in your context. The orchestrator passes the run-context value (which on a resume is the ORIGINAL run's date); do NOT compute today's date yourself.
 - **`<repo>`** — the repository path (the `Repository:` line in your context). Used for all reads, the diff baseline, and the report write location.
 - **`<REGION>`** — AWS region for Bedrock (the `AWS region:` line in your context).
+- **AWS profile** — the `AWS profile` line, when present: prepend `AWS_PROFILE=<profile>` inline to the §6.1 pricing-script invocation and any other aws/boto3 command; omit when absent.
 - **`<scriptsDir>`** — the pinned-toolchain scripts directory, the `Scripts directory (pinned uv toolchain):` line in your context. Used to run `bedrock_pricing.py`.
 - **From `ai-code-analyzer` (`AiAnalysisData`)** — `source_provider`, `ai_framework`, `source_models`, `target_models` (`<source-model> -> <bedrock-model>` pairs), `coverage_level`, `use_case_type`, `errors`.
 - **From `ai-log-ingestor` (`LogIngestionData`)** — `total_golden_cases`, `coverage_level`, `gaps`. Drives the Risk Assessment + Coverage sections.
@@ -529,12 +530,12 @@ Do NOT invent a strict schema or emit a YAML/JSON payload as the canonical outpu
 
 ## Status mapping
 
-Map the overall status per banner case + signals (use the **evaluator's** `pass_rate` for thresholds). Default whenever no rule fires: `"needs-review"`. `"blocked"` only fires on rewriter `errors` non-empty OR an unresolved FAIL prompt that ai-prompt-evaluator could not adapt.
+Map the overall status per banner case + signals (use the **evaluator's** `pass_rate` for thresholds). Default whenever no rule fires: `"needs-review"`. `"blocked"` only fires on a rewriter failure signal OR an unresolved FAIL prompt that ai-prompt-evaluator could not adapt. **Rewriter failure signal** (the rewrite schema has no `errors` field — derive it from `rewrite.notes`): the notes contain any of "failed", "blocked", "needs human", "manual review", "gate blocked", or a test count where passing < total (e.g. "8/10 passing"). Treat a matching notes line as the failure signal; quote it in the Risk Assessment section.
 
 - **Case 1 (no_golden_cases)** → `"needs-review"` — connectivity passed but no quality signal.
 - **Case 2 (same_model_family connectivity-only)** → `"ready-to-merge"` if connectivity pass_rate >= 0.95; else `"needs-review"`. (Threshold matches Case 4/6 — connectivity is a weaker signal so it gets the same bar, not a stricter one.)
-- **Case 3 (no live baseline)** → `"blocked"` if any unresolved FAIL prompt or rewriter `errors` non-empty; `"ready-to-merge"` if `evaluator.pass_rate >= 0.9` AND no FAIL AND no REVIEW; `"needs-review"` otherwise.
-- **Case 4 / 6 (substitute or undisclosed model)** → `"blocked"` if any unresolved FAIL or rewriter `errors`; `"ready-to-merge"` only if `evaluator.pass_rate >= 0.95` AND no REVIEW/FAIL; `"needs-review"` otherwise. The weaker baseline signal raises the bar.
+- **Case 3 (no live baseline)** → `"blocked"` if any unresolved FAIL prompt or the rewriter failure signal fires; `"ready-to-merge"` if `evaluator.pass_rate >= 0.9` AND no FAIL AND no REVIEW; `"needs-review"` otherwise.
+- **Case 4 / 6 (substitute or undisclosed model)** → `"blocked"` if any unresolved FAIL or the rewriter failure signal fires; `"ready-to-merge"` only if `evaluator.pass_rate >= 0.95` AND no REVIEW/FAIL; `"needs-review"` otherwise. The weaker baseline signal raises the bar.
 - **Case 5 (full live same-model)** → same thresholds as Case 3.
 
 ## Reported values

@@ -121,3 +121,24 @@ def test_aggregate_failure_lifts_first_failing_reason_to_top_level():
 
 def test_aggregate_failure_empty_when_all_ok():
     assert p.aggregate_failure([{"ok": True, "reason": "ok", "detail": "", "model_id": "m"}]) == {}
+
+
+def test_access_denied_model_access_variant_routes_to_console_fix():
+    # Bedrock's "model access not enabled" also surfaces as AccessDeniedException;
+    # sending the user to IAM for it is the wrong fix.
+    v = p.classify_invoke_error(
+        "AccessDeniedException",
+        "You don't have access to the model with the specified model ID. "
+        "Enable model access in the Amazon Bedrock console.")
+    assert v["ok"] is False
+    assert v["reason"] == "model_access"
+    assert "console" in v["detail"].lower()
+
+
+def test_access_denied_iam_variant_still_routes_to_authz():
+    v = p.classify_invoke_error(
+        "AccessDeniedException",
+        "User: arn:aws:iam::123:user/x is not authorized to perform: "
+        "bedrock:InvokeModel on resource ...")
+    assert v["reason"] == "authz"
+    assert "bedrock:InvokeModel" in v["detail"]

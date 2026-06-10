@@ -173,7 +173,7 @@ If `special_patterns.function_calling == true`:
 
 ## 9.4 Path D — embeddings ONLY (no other capability matched)
 
-If `special_patterns.embeddings == true` AND `special_patterns.vision == false` AND `special_patterns.function_calling == false` **AND no text-chat golden cases were produced by §7 or §9.1** (i.e. embeddings is the app's sole LLM use): embedding outputs (vectors) cannot be meaningfully scored as text in `assistant_response`. Set `use_case_type: "embeddings"` and add to `gaps`: `"Embedding quality is not scored as text — evaluator will run format/dimension validation only"`. Then run only §11 (template save) and §13–§15 with the **embeddings-path payload** under §15; §12 / §13's empty-file guards short-circuit on the missing JSONL.
+If `special_patterns.embeddings == true` AND `special_patterns.vision == false` AND `special_patterns.function_calling == false` **AND no text-chat golden cases were produced by §7 or §9.1** (i.e. embeddings is the app's sole LLM use): embedding outputs (vectors) cannot be meaningfully scored as text in `assistant_response`. Set `use_case_type: "embeddings"` and add to `gaps`: `"Embedding quality is not scored as text — evaluator will run a one-probe InvokeModel format/dimension validation (its §5.0)"`. Then run only §11 (template save) and §13–§15 with the **embeddings-path payload** under §15; §12 / §13's empty-file guards short-circuit on the missing JSONL.
 
 If the app has BOTH text chat AND embeddings (e.g. a RAG app): Paths A/§7 own the dataset — do NOT use the embeddings-path payload; just add the embeddings `gaps` line to the normal payload.
 

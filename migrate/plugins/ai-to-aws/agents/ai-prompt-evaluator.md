@@ -22,7 +22,7 @@ The source repository is already present on the local machine. AWS credentials a
 
 ## Placeholder syntax
 
-- `<NAME>` (angle brackets, ALL CAPS) — runtime values you substitute from prompt context, command output, or skill output. Examples: `<GOLDEN_DATASET_PATH>`, `<TARGET_MODEL_ID>`, `<REGION>`, `<SOURCE_MODEL_ID>`, `<scriptsDir>`, `<repo>`. Replace BEFORE running. `<repo>` is the `Repository:` line in your context; `<REGION>` is the `AWS region:` line; `<TARGET_MODEL_ID>` is the `Resolved target model id:` line (fall back to the plan's `Target Bedrock model(s):` line if no resolved id is present — that line may list SEVERAL comma-separated ids: pick the FIRST chat model, i.e. the first id without `embed` in its name; never pass the whole comma-joined list as one modelId, and never pick an embedding model — embeddings don't speak the Converse API and are validated by preflight, not by you); `<scriptsDir>` is the `Scripts directory (pinned uv toolchain):` line in your context.
+- `<NAME>` (angle brackets, ALL CAPS) — runtime values you substitute from prompt context, command output, or skill output. Examples: `<GOLDEN_DATASET_PATH>`, `<TARGET_MODEL_ID>`, `<REGION>`, `<SOURCE_MODEL_ID>`, `<scriptsDir>`, `<repo>`. Replace BEFORE running. `<repo>` is the `Repository:` line in your context; `<REGION>` is the `AWS region:` line; `<TARGET_MODEL_ID>` is the `Resolved target model id:` line (fall back to the plan's `Target Bedrock model(s):` line if no resolved id is present — that line may list SEVERAL comma-separated ids: pick the FIRST chat model, i.e. the first id without `embed` in its name; never pass the whole comma-joined list as one modelId. When EVERY id is an embedding model (embeddings-only app), there is no chat model to pick — §5.0's embeddings-only branch applies instead of the Converse-based layers); `<scriptsDir>` is the `Scripts directory (pinned uv toolchain):` line in your context. `<profile>` is the `AWS profile` line in your context — when present, EVERY aws CLI call gets `--profile <profile>` and EVERY `uv run ... python` boto3 invocation gets an inline `AWS_PROFILE=<profile>` prefix (env vars do not persist between Bash calls, so the prefix must be on each command); when the line is absent, omit it and the default credential chain applies.
 
 # 2. Track scope
 
@@ -57,6 +57,47 @@ Load on demand at the indicated step:
 
 # 5. Evaluation Strategy
 
+## 5.0 Embeddings-only branch (checked FIRST)
+
+If EVERY target model id contains `embed` (the ingestor signalled this with
+`use_case_type: "embeddings"` and `total_golden_cases: 0`), the Converse-based
+layers below do not apply — embedding models reject the Converse API. Instead:
+
+1. Run ONE InvokeModel probe per embedding target and validate the vector shape:
+
+```bash
+AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
+import json, os, sys, boto3
+client = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+model_id = "<TARGET_EMBED_MODEL_ID>"  # substitute each embedding target in turn
+parts = model_id.split(".")
+vendor = parts[1] if parts[0] in ("us", "eu", "apac", "global") and len(parts) > 1 else parts[0]
+body = {"inputText": "ping"} if vendor == "amazon" else {"texts": ["ping"], "input_type": "search_document"}
+try:
+    resp = client.invoke_model(modelId=model_id, body=json.dumps(body),
+                               contentType="application/json", accept="application/json")
+    data = json.loads(resp["body"].read())
+    vec = data.get("embedding") or (data.get("embeddings") or [[]])[0]
+    if isinstance(vec, list) and len(vec) > 0 and all(isinstance(x, (int, float)) for x in vec[:8]):
+        print(f"EMBED_OK: {model_id} dimension={len(vec)}")
+    else:
+        print(f"EMBED_BAD_SHAPE: {model_id} keys={list(data)[:5]}", file=sys.stderr); sys.exit(1)
+except Exception as e:
+    print(f"EMBED_FAIL [{type(e).__name__}]: {e}", file=sys.stderr); sys.exit(1)
+PY
+```
+
+2. `EMBED_OK` for all targets → write the **zero-cases payload** (§14) with a
+   notes prefix `embeddings_validated: <model>=<dimension>, ...` so the report
+   can state the dimension check passed. `EMBED_FAIL` with AccessDenied →
+   `{ blocked: { reason: 'model_access', ... } }`; any other failure → notes +
+   `source_baseline_quality: 'unknown'`, still the zero-cases payload.
+3. Skip §6–§13 entirely (no Converse ping, no golden eval, no baseline).
+
+For mixed apps (chat + embeddings), the chat layers below run normally against
+the chat model; embedding targets get the same one-probe validation as an
+extra step after §6, with results appended to `notes`.
+
 The evaluation has THREE layers, run in order. Each provides value independently:
 
 ## 5.1 Layer 1 — Format validation (always run; satisfied by §6's connectivity ping)
@@ -85,7 +126,7 @@ target model using the SAME API path Step 4 will use (`boto3.converse`).
 ```bash
 mkdir -p <repo>/.saws-migrate/eval-results
 
-AWS_REGION=<REGION> uv run --project <scriptsDir> python - <<'PY'
+AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
 import os, sys, boto3
 c = boto3.client('bedrock-runtime', region_name=os.environ.get('AWS_REGION', 'us-east-1'))
 try:
@@ -198,7 +239,7 @@ If `special_patterns.vision == false`, SKIP this section.
 Otherwise, run a one-shot Bedrock call against a public Wikipedia image to prove the SDK accepts image input before §10 attempts it on every golden prompt. If the public CDN isn't reachable, the smoke is INCONCLUSIVE — do NOT attempt an inline-fixture fallback (tiny synthetic JPEGs trip Claude's minimum-dimension validators and produce false `VISION_FAIL` even when the SDK is fine):
 
 ```bash
-AWS_REGION=<REGION> uv run --project <scriptsDir> python - <<'PY'
+AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
 import os, sys, boto3
 try:
     import urllib.request
@@ -238,7 +279,7 @@ Outcomes:
 For each prompt in the golden dataset, run the evaluation via `python` stdin (avoids the brittle nested-heredoc + escaped-quote pattern that breaks on any literal `'` inside the script):
 
 ```bash
-AWS_REGION=<REGION> uv run --project <scriptsDir> python - <<'PY'
+AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
 import json
 import os
 import random

@@ -24,6 +24,7 @@ the user to choose when the match is ambiguous.
 ```bash
 aws bedrock list-inference-profiles \
   --region <region> \
+  <add --profile <profile> when your context has an `AWS profile` line> \
   --query 'inferenceProfileSummaries[].[inferenceProfileId,inferenceProfileName]' \
   --output json
 ```
@@ -74,10 +75,14 @@ ID or abort.
 
 ### Step 5: Return
 
-When an exact or token-ranked match resolves cleanly, return the chosen ID.
-When resolution needs human input, return the `blocked` signal from Step 4 —
-the orchestration skill asks the user and re-invokes resolution with the
-chosen (or pasted) ID, or stops on abort.
+ONLY an exact match (Step 2) returns an ID directly. Token ranking (Step 3)
+exists solely to produce the candidate list inside Step 4's `blocked` detail —
+a token-ranked match is NEVER auto-applied, because silently substituting a
+different model than the plan named would make every downstream eval and
+rewrite target the wrong model without the user knowing. Anything short of an
+exact match returns the `blocked` signal from Step 4 — the orchestration skill
+asks the user and re-invokes resolution with the chosen (or pasted) ID, or
+stops on abort.
 
 ## Notes
 

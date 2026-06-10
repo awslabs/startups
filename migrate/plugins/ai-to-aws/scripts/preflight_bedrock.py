@@ -16,8 +16,22 @@ import argparse, json, sys
 def classify_invoke_error(code: str, message: str) -> dict:
     """Pure: map a botocore error code to a structured preflight verdict."""
     if code in ("AccessDeniedException",):
+        # Bedrock raises AccessDeniedException for two distinct problems:
+        # (a) model access not enabled in the Bedrock console (message mentions
+        #     model access / "use the model"), fixed in the console, not IAM;
+        # (b) the IAM principal lacks bedrock:InvokeModel, fixed in IAM.
+        # Sending the user to the wrong fix wastes their time — disambiguate
+        # on the message text.
+        lowered = message.lower()
+        if ("model access" in lowered or "access to the model" in lowered
+                or "use the model" in lowered or "model is not" in lowered):
+            return {"ok": False, "reason": "model_access",
+                    "detail": f"Bedrock model access not enabled for this model — {message}. "
+                              f"Enable it in the Bedrock console (Model access page); "
+                              f"this is separate from IAM."}
         return {"ok": False, "reason": "authz",
-                "detail": f"Missing bedrock:InvokeModel — {message}"}
+                "detail": f"IAM denies bedrock:InvokeModel — {message}. "
+                          f"Grant bedrock:InvokeModel to this principal."}
     if code in ("ValidationException", "ResourceNotFoundException"):
         return {"ok": False, "reason": "model_unavailable",
                 "detail": f"Model not available in this region — {message}. "

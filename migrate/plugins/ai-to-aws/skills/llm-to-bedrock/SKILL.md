@@ -232,7 +232,8 @@ uv run --project $SCRIPTS python $SCRIPTS/preflight_bedrock.py --region $REGION 
 Parse the JSON output. On failure the TOP LEVEL carries `reason`/`detail` (lifted from the
 first failing model) plus `failing_models` (all failing ids); per-model verdicts are in `models[]`:
 - `ok == false` + `reason: credentials` → show the detail (configure/refresh credentials), stop; user re-runs after fixing.
-- `ok == false` + `reason: authz` → tell user the IAM action to grant (`bedrock:InvokeModel`); stop.
+- `ok == false` + `reason: model_access` → model access not enabled in the Bedrock console (NOT an IAM problem): point the user at the console Model access page for the failing models, stop; re-run B4 after they enable it.
+- `ok == false` + `reason: authz` → IAM denies `bedrock:InvokeModel`: tell user the IAM action to grant; stop.
 - `ok == false` + `reason: model_unavailable` → load `resolve-bedrock-model-id` skill with each ID from `failing_models` + region. AskUserQuestion with the candidates: "Use `<candidate>` (cross-region inference profile)" / "Paste a different model ID" / "Abort". On a choice, replace the ID in `$TARGET_MODELS` and re-run B4.
 - `ok == false` + any other `reason` → show `detail` and stop.
 - `ok == true` → proceed. Surface any `quota_warning`, and any model whose `reason` is
