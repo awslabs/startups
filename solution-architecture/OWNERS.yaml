@@ -6,5 +6,4 @@ cti:
   item: dev-toolkit-plugin
 contacts:
   primary: rsmets
-  oncall: startups-solution-architecture-oncall
 github_team: "@awslabs/startups-solution-architects"
