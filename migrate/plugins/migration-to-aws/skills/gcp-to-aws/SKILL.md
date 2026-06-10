@@ -197,7 +197,7 @@ Replace `MMDD-HHMM` with the actual migration ID, generate the `last_updated` IS
 | **Discover** | `.tf` files, app source code, and/or billing exports (at least one required)                                                                                             | `gcp-resource-inventory.json`, `gcp-resource-clusters.json`, `ai-workload-profile.json`, `billing-profile.json`, `.phase-status.json` updated (outputs vary by input)                                                                         | `references/phases/discover/discover.md` |
 | **Clarify**  | Discovery artifacts (`gcp-resource-inventory.json`, `gcp-resource-clusters.json`, `ai-workload-profile.json`, `billing-profile.json` — whichever exist)                  | `preferences.json`, `.phase-status.json` updated                                                                                                                                                                                              | `references/phases/clarify/clarify.md`   |
 | **Design**   | `preferences.json` + discovery artifacts                                                                                                                                 | `aws-design.json` (infra), `aws-design-ai.json` (AI), `aws-design-billing.json` (billing-only)                                                                                                                                                | `references/phases/design/design.md`     |
-| **Estimate** | `aws-design.json` or `aws-design-billing.json` or `aws-design-ai.json`, `preferences.json`                                                                               | `estimation-infra.json` or `estimation-ai.json` or `estimation-billing.json`, `.phase-status.json` updated                                                                                                                                    | `references/phases/estimate/estimate.md` |
+| **Estimate** | `aws-design.json` or `aws-design-billing.json` or `aws-design-ai.json`, `preferences.json`                                                                               | `estimation-infra.json` or `estimation-ai.json` or `estimation-billing.json`, AWS Pricing Calculator URL (shareable), `.phase-status.json` updated                                                                                            | `references/phases/estimate/estimate.md` |
 | **Generate** | `estimation-infra.json` or `estimation-ai.json` or `estimation-billing.json`, `aws-design.json` or `aws-design-billing.json` or `aws-design-ai.json`, `preferences.json` | `generation-infra.json` or `generation-ai.json` or `generation-billing.json` + `terraform/`, `scripts/`, `ai-migration/`, `validation-report.json` (when infra route active), `MIGRATION_GUIDE.md`, `README.md`, `.phase-status.json` updated | `references/phases/generate/generate.md` |
 | **Feedback** | `.phase-status.json` (discover completed minimum), all existing migration artifacts                                                                                      | `feedback.json`, `trace.json`, `.phase-status.json` updated                                                                                                                                                                                   | `references/phases/feedback/feedback.md` |
 
@@ -210,6 +210,31 @@ Replace `MMDD-HHMM` with the actual migration ID, generate the `last_updated` IS
 - Provides `get_pricing`, `get_pricing_service_codes`, `get_pricing_service_attributes` tools
 - Only needed during Estimate phase. Discover and Design do not require it.
 - Primary pricing source: `references/shared/pricing-cache.md` (cached 2026 rates, ±5-10% for infrastructure, ±15-25% for AI models). MCP is secondary — used only for services not found in the cache.
+
+**aws-pricing-calculator-mcp-server** (for shareable estimate URLs):
+
+- Provides `search_services`, `get_service_fields`, `create_estimate`, `add_service`, `export_estimate`, `import_estimate`, `get_server_info` tools
+- Used during the Estimate phase (after cost calculation) to generate a shareable AWS Pricing Calculator URL
+- No AWS credentials required — uses the public calculator API
+- Costs are calculated server-side by AWS when the exported URL is opened
+- The generated estimate mirrors the services and configurations from the cost report so stakeholders can explore, modify instance types, adjust quantities, or compare pricing models interactively
+
+### AWS Pricing Calculator Integration Workflow
+
+During the Estimate phase, after all AWS costs have been calculated and the cost report is generated:
+
+1. **Create estimate**: Call `create_estimate` with name `"GCP to AWS Migration - {region}"`.
+2. **Discover service fields**: Call `search_services` to find correct service keys, then `get_service_fields` to discover required field IDs and valid values.
+3. **Add services in batch**: Call `add_service` with a JSON array of all mapped AWS services. Organize into groups matching report categories (Compute, Database, Networking, Storage, etc.).
+4. **Export estimate**: Call `export_estimate` to get the shareable `calculator.aws` URL.
+
+**Configuration rules**:
+- Always set `"region"` in every service config to match the target AWS region.
+- Add a `"description"` field identifying the GCP source (e.g., "GCP n2-standard-4 mapped to m6g.xlarge"). Descriptions must NOT contain `<`, `>`, or `&` characters.
+- Organize services into named groups: "Compute", "Database", "Networking", "Storage", "Monitoring", etc.
+- For EC2, use `"quantity"` for number of instances; configure `pricingStrategy` to match Spot or RI where supported.
+- For RDS On-Demand utilization, set hours/month to the actual consumed hours from GCP billing data (not 100%) using `"undefined": {"unit": "<actual hours>", "selectedId": "Hours/Month"}` in `columnFormIPM`.
+- **EC2 utilization limitation**: The AWS Pricing Calculator MCP forces EC2 On-Demand to 100% utilization (730 hrs/month) and ignores custom hours. Document this in the discrepancies section when actual consumed hours differ.
 
 ---
 
@@ -291,6 +316,7 @@ gcp-to-aws/
 | No GCP sources found (no `.tf`, no app code, no billing data) | Stop. Output: "No GCP sources detected. Provide at least one source type (Terraform files, application code, or billing exports) and try again."        |
 | `.phase-status.json` missing phase gate                       | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                  |
 | awspricing unavailable after 3 attempts                       | Display user warning about ±5-25% accuracy. Use `pricing-cache.md`. Add `pricing_source: "cached_fallback"` to the applicable `estimation-*.json` file. |
+| aws-pricing-calculator-mcp-server unavailable                 | Skip calculator URL generation. Inform the user that AWS pricing calculator MCP is not configured and the step will be skipped. In the report, retain the section for AWS Pricing Calculator but add a note: "AWS Pricing Calculator link unavailable — calculator MCP server not configured or unreachable." The report cost figures remain valid without it. |
 | User skips questions or says "use defaults for the rest"      | Apply documented defaults for remaining questions in the current batch and all subsequent batches. Phase 2 completes either way.                        |
 | `aws-design.json` missing required clusters                   | Stop Phase 4. Output: "Re-run Phase 3 to generate missing cluster designs."                                                                             |
 
@@ -350,6 +376,45 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 User can invoke the skill again to resume from `current_phase` (or deterministic ordered evaluation when `current_phase` is absent).
 
+---
+
+## Cost Report: AWS Pricing Calculator Link Section
+
+When the Estimate phase generates an HTML or Markdown cost report, include a dedicated section after the Notes & Assumptions containing the shareable AWS Pricing Calculator URL. This section must include:
+
+- A styled card or banner with the `calculator.aws` URL as a clickable hyperlink
+- Label: **"View full estimate in AWS Pricing Calculator"**
+- Brief explanation: "This interactive estimate mirrors the services and configurations shown above. Click to explore, modify instance types, adjust quantities, or compare pricing models."
+- The estimate name used (e.g., "GCP to AWS Migration - us-east-1")
+
+---
+
+## Cost Report: Discrepancies Section (HTML Report vs AWS Pricing Calculator)
+
+If there are differences between the costs shown in the generated report and what the AWS Pricing Calculator computes, include a dedicated section titled **"Cost Discrepancies: Report vs AWS Pricing Calculator"** at the bottom of the report (before the footer). This section must:
+
+1. **List main discrepancies** in a table with columns: Service, Report Cost, Calculator Cost (if known), Reason.
+
+2. **Explain the root cause** for main differences. Common reasons include:
+
+   | Reason | Explanation |
+   |--------|-------------|
+   | **Rounding** | The report uses AWS Pricing MCP unit prices (e.g., $0.1234/hr × hours), while the calculator uses its own server-side rate tables which may differ by fractions of a cent |
+   | **Pricing model differences** | The report applies Spot or Reserved Instance (1-yr, no upfront) rates, while the calculator entry may be configured On-Demand. Note where the report uses Spot/RI and the calculator uses On-Demand |
+   | **EC2 utilization (MCP limitation)** | The AWS Pricing Calculator MCP forces EC2 On-Demand to 100% utilization (730 hrs/month) and ignores custom hours. EC2 in the calculator reflects full utilization while the report uses CPU-normalized actual consumed hours which may be lower |
+   | **Utilization assumptions** | For services where actual hours are unavailable, the calculator assumes 730 hrs/month (100% utilization) while the report uses actual GCP consumed hours |
+   | **Unsupported services** | Some GCP services may not have a direct calculator equivalent (e.g., Vertex AI mapped to Bedrock Nova Lite may not be configurable in the calculator) |
+   | **Bundled vs itemized** | The calculator may bundle storage with compute or split services differently than the report |
+   | **Missing calculator support** | Certain AWS services or configurations may not yet be available in the pricing calculator tool |
+
+3. **State the total variance**: Show the difference between the report grand total and the calculator grand total as both an absolute amount and a percentage.
+
+4. **Recommendation**: Note that the report figures (derived from AWS Pricing MCP) are the authoritative cost estimate, and the calculator URL is provided as a complementary interactive tool for stakeholders.
+
+If there are NO discrepancies (all services mapped cleanly and costs align), include a brief note: "All services in this report have been mapped to the AWS Pricing Calculator. Costs are expected to align within minor rounding differences (typically less than 1%)."
+
+---
+
 ## Scope Notes
 
 **v1.0 includes:**
@@ -361,4 +426,5 @@ User can invoke the skill again to resume from `current_phase` (or deterministic
 - Multi-path Design (infrastructure, AI workloads, billing-only fallback)
 - AWS cost estimation (from pricing API or fallback)
 - Migration artifact generation (Terraform, scripts, AI adapters, documentation)
+- Shareable AWS Pricing Calculator URL generation (via aws-pricing-calculator-mcp-server)
 - Optional feedback collection with anonymized telemetry
