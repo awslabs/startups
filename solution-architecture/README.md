@@ -45,4 +45,4 @@ claude --plugin-dir ./solution-architecture/plugins/aws-dev-toolkit
 
 ## License
 
-MIT-0
+Apache-2.0
