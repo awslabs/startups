@@ -8,7 +8,7 @@
   },
   "homepage": "https://github.com/awslabs/startups/tree/main/advisor",
   "repository": "https://github.com/awslabs/startups",
-  "license": "MIT-0",
+  "license": "Apache-2.0",
   "keywords": [
     "aws",
     "startups",
