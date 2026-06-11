@@ -1,0 +1,8 @@
+[bandit]
+# B101 (assert_used): the only Python in this repo is plugin tooling and its
+# pytest suites — assert is pytest's assertion mechanism, not production guard
+# logic, so this check is pure noise here.
+# B105 (hardcoded_password_string): trips on string literals that merely start
+# with "pass" (e.g. report lines like "pass rate: ..." and golden-payload test
+# fixtures). Real secret detection is covered by the gitleaks job in CI.
+skips = B101,B105

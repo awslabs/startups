@@ -21,6 +21,13 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 - **Gives honest pricing comparisons** — finds the best Bedrock option for your workload with current pricing data, including side-by-side cost comparisons against your existing OpenAI/Gemini spend
 - **Generates runnable AI artifacts** — `harness.json`, provider adapters, deployment scripts, incremental migration scripts — tailored to your specific models, tools, and architecture
 
+## Plugins
+
+| Plugin               | Description                                                                                                              | Status    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning                               | Available |
+| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
+
 ## Installation
 
 ### Claude Code
@@ -29,8 +36,9 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 # Add the marketplace
 /plugin marketplace add awslabs/startups --sparse migrate/plugins
 
-# Install the plugin
+# Install the plugins
 /plugin install migration-to-aws@startups
+/plugin install ai-to-aws@startups
 ```
 
 ### Codex
@@ -38,6 +46,7 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 ```bash
 codex plugin marketplace add awslabs/startups
 codex plugin install migration-to-aws
+codex plugin install ai-to-aws
 ```
 
 ### Cursor

@@ -1,0 +1,9 @@
+{
+  "name": "ai-to-aws",
+  "version": "1.0.1",
+  "description": "End-to-end AI migration to Amazon Bedrock: assess your codebase, design the architecture, then execute — rewriting SDK calls, evaluating quality, and delivering a ready-to-merge git branch. Requires the migration-to-aws plugin (it powers the Assess phase).",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "license": "MIT-0"
+}
