@@ -54,7 +54,7 @@ run = [
 
 [tasks."security:bandit"]
 description = "Run Bandit"
-run = ["bandit -r . -x ./.tmp,./node_modules"]
+run = ["bandit -r . -x ./.tmp,./node_modules,./migrate/plugins/ai-to-aws/scripts/.venv"]
 
 [tasks."security:semgrep"]
 description = "Run SemGrep OSS"
