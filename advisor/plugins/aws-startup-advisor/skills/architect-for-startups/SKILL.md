@@ -26,7 +26,7 @@ Before giving any architecture advice, determine these four things. Infer from c
 4. Current traffic/data volume + 12-month optimistic projection?
 5. What's the one thing that, if it breaks, kills your company? (This gets redundancy; everything else gets the cheapest option)
 
-If you can infer answers from context, don't ask. If you're missing 2+ of these, ask before recommending.
+If you can infer answers from context or memory, don't ask. If you're missing 2+ of these, ask before recommending.
 
 ### Stage Detection
 
@@ -49,17 +49,12 @@ If the user is at Series B+ with 15+ engineers, the startup-specific framing add
 
 ## Step 2: Apply Stage-Appropriate Constraints
 
-Once you know the stage, apply the framework from [references/stage-frameworks.md](references/stage-frameworks.md). Key principles:
-
-- **Pre-revenue**: Managed services only. Zero ops. Free tier first. Ship over perfection.
-- **Seed**: Serverless default. Credits-aware cost modeling. Single-region. Minimal IAM.
-- **Series A**: Start hardening. Multi-AZ for production. CI/CD pipeline. Basic observability.
-- **Series B+**: Full Well-Architected applies. Multi-region if needed. Dedicated platform team.
+Once you know the stage, apply the [Stage Framework](references/stage-frameworks.md).
 
 ## Step 3: Route to Service Guidance
 
-You MUST read these service-specific references whenever their technology type is applicable. 
-These reference will ensure you're architecting through a startup's lens and using the best possible startup-specific 
+You MUST read these service-specific references whenever their technology type is applicable.
+These reference will ensure you're architecting through a startup's lens and using the best possible startup-specific
 guidance.
 
 ### Compute
@@ -67,11 +62,11 @@ guidance.
 - [Serverless functions (default for pre-revenue and seed)](references/lambda.md)
 - [Container orchestration (Series A+)](references/ecs.md)
 - [Virtual machines (rarely needed before Series B)](references/ec2.md)
-- [Kubernetes (Series B+ only, requires dedicated platform team)](references/eks.md) 
+- [Kubernetes (Series B+ only, requires dedicated platform team)](references/eks.md)
 
 ### Data
 
-- [NoSQL (when access patterns are clear)](references/dynamodb.md) — 
+- [NoSQL (when access patterns are clear)](references/dynamodb.md) —
 - [Relational databases (when you need SQL)](references/rds-aurora.md)
 - [Object storage](references/s3.md)
 
@@ -88,8 +83,8 @@ guidance.
 
 ### Messaging & Orchestration
 
-- [SQS, SNS, EventBridge](references/messaging.md) 
-- [Workflow orchestration](references/step-functions.md) 
+- [SQS, SNS, EventBridge](references/messaging.md)
+- [Workflow orchestration](references/step-functions.md)
 
 ### Observability
 
@@ -100,7 +95,7 @@ guidance.
 - [Foundation models and AI agents](references/bedrock.md)
 - [Agent runtime platform](references/agentcore.md)
 - [ML pipelines and model serving](references/mlops.md)
-- [Strands SDK agent scaffolding](references/strands-agent.md) 
+- [Strands SDK agent scaffolding](references/strands-agent.md)
 
 ### Cost
 
@@ -163,7 +158,7 @@ Trigger this overlay when ANY of these signals appear in the conversation:
 
 ## Step 6: Security Baseline Check
 
-See [Well Architected](references/well-architected.md) and [Security Reivew](references/security-review.md).
+See [Well Architected](references/well-architected.md) and [Security Review](references/security-review.md).
 
 ## Anti-Patterns for Startups
 
