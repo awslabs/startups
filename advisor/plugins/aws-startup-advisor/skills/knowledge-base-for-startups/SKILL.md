@@ -7,7 +7,7 @@ description: "AWS Startups reference content — Activate FAQ, credits guide, pr
 
 Reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups) for AWS Activate programs, credits, partner offers, sample build architectures, and a large learn-article corpus covering technical guides, business strategy, and real-world case studies.
 
-**Last updated:** 2026-05-12
+**Last updated:** 2026-06-12
 
 ---
 
@@ -27,13 +27,13 @@ Three files are indexes, not articles. They have a **Keywords column** — filte
 
 ## Reference pages — full-topic content, read directly
 
-| File                                                 | Topic                                                                                                              |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [references/faq.md](references/faq.md)               | Comprehensive Activate FAQ — membership, Builder ID, credits, providers, offers, events, showcase, troubleshooting |
-| [references/credits.md](references/credits.md)       | AWS Activate Credits — how to apply, eligibility, package tiers, terms                                             |
-| [references/programs.md](references/programs.md)     | AWS Startups programs — Accelerators and Lofts currently running                                                   |
-| [references/providers.md](references/providers.md)   | AWS Activate Providers — accelerators, VCs, Provider Central, how to apply                                         |
-| [references/contact-us.md](references/contact-us.md) | Support channels and the Ask AWS Startups assistant                                                                |
+| File                                                 | Topic                                                                                                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [references/faq.md](references/faq.md)               | Comprehensive Activate FAQ — membership, Builder ID, credits, providers, AWS Startup Advisor, migration capability, offers, events, showcase, troubleshooting |
+| [references/credits.md](references/credits.md)       | AWS Activate Credits — how to apply, eligibility, package tiers, terms                                                                                        |
+| [references/programs.md](references/programs.md)     | AWS Startups programs — Accelerators and Lofts currently running                                                                                              |
+| [references/providers.md](references/providers.md)   | AWS Activate Providers — accelerators, VCs, Provider Central, how to apply                                                                                    |
+| [references/contact-us.md](references/contact-us.md) | Support channels and the Ask AWS Startups assistant                                                                                                           |
 
 ## Live-URL redirects — point users at the live page
 
