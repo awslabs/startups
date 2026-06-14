@@ -1,6 +1,6 @@
 # AWS Pricing Cache
 
-**Last updated:** 2026-05-20
+**Last updated:** 2026-06-14
 **Region:** us-east-1
 **Currency:** USD
 **Accuracy:** ±5-10% for infrastructure services (sourced from AWS Price List API), ±15-25% for AI models (sourced from public pricing pages)
@@ -359,10 +359,11 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Claude Sonnet 4.5                | —                                        | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                     |
 | Claude Sonnet 4.5 — Long Context | —                                        | Anthropic | 6.00       | 22.50       | 200K+   | flagship  | active                     |
 | Claude Haiku 4.5                 | anthropic.claude-haiku-4-5-20251001-v1:0 | Anthropic | 1.00       | 5.00        | 200K    | fast      | active                     |
+| Claude Sonnet 4                  | anthropic.claude-sonnet-4-20250514-v1:0  | Anthropic | 3.00       | 15.00       | 200K    | flagship  | legacy (EOL Oct 14, 2026)  |
 | Llama 4 Maverick                 | meta.llama4-maverick-17b-instruct-v1:0   | Meta      | 0.24       | 0.97        | 1M      | mid       | active                     |
 | Llama 4 Scout                    | meta.llama4-scout-17b-instruct-v1:0      | Meta      | 0.17       | 0.66        | 10M     | efficient | active                     |
 | Llama 3.3 70B                    | meta.llama3-3-70b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | active                     |
-| Llama 3.2 90B                    | meta.llama3-2-90b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | excluded (EOL Jul 7, 2026) |
+| Llama 3.2 90B                    | meta.llama3-2-90b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | excluded (EOL Jul 7, 2026)  |
 | Nova 2 Lite                      | amazon.nova-2-lite-v1:0                  | Amazon    | 0.33       | 2.75        | 1M      | mid       | active                     |
 | Nova 2 Pro (Preview)             | amazon.nova-2-pro-v1:0                   | Amazon    | 1.375      | 11.00       | 1M      | flagship  | active                     |
 | Nova Pro                         | amazon.nova-pro-v1:0                     | Amazon    | 0.80       | 3.20        | 300K    | mid       | active                     |
@@ -378,11 +379,25 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Gemma 3 4B IT                    | google.gemma-3-4b-it                     | Google    | 0.04       | 0.08        | 128K    | budget    | active                     |
 | Gemma 3 12B IT                   | google.gemma-3-12b-it                    | Google    | 0.09       | 0.29        | 128K    | budget    | active                     |
 | Gemma 3 27B IT                   | google.gemma-3-27b-it                    | Google    | 0.23       | 0.38        | 128K    | efficient | active                     |
-| Jamba 1.5 Large                  | —                                        | AI21 Labs | 2.00       | 8.00        | —       | mid       | active                     |
-| Jamba 1.5 Mini                   | —                                        | AI21 Labs | 0.20       | 0.40        | —       | efficient | active                     |
+| Jamba 1.5 Large                  | ai21.jamba-1-5-large-v1:0                | AI21 Labs | 2.00       | 8.00        | —       | mid       | legacy (EOL Nov 26, 2026)  |
+| Jamba 1.5 Mini                   | ai21.jamba-1-5-mini-v1:0                 | AI21 Labs | 0.20       | 0.40        | —       | efficient | legacy (EOL Nov 26, 2026)  |
 | Jurassic-2 Mid                   | —                                        | AI21 Labs | 12.50      | 12.50       | —       | legacy    | legacy                     |
 | Jurassic-2 Ultra                 | —                                        | AI21 Labs | 18.80      | 18.80       | —       | legacy    | legacy                     |
 | Jamba-Instruct                   | —                                        | AI21 Labs | 0.50       | 0.70        | —       | mid       | active                     |
+
+### Stability AI — Image Generation (per image, US East)
+
+Active image generation models on Bedrock. Priced **per image** (not per token). Use for `image_generation` capability workloads.
+
+| Model                   | Model ID                            | Price/image | Resolution  | Tier    | Status |
+| ----------------------- | ----------------------------------- | ----------- | ----------- | ------- | ------ |
+| Stable Image Ultra      | stability.stable-image-ultra-v1:0   | $0.08       | up to 4MP   | premium | active |
+| Stable Diffusion 3.5 Large | stability.sd3-5-large-v1:0       | $0.065      | up to 1MP   | flagship | active |
+| Stable Image Core       | stability.stable-image-core-v1:0    | $0.04       | up to 1MP   | fast    | active |
+
+Image editing services (inpaint, erase, upscale, etc.) are priced at $0.03–$0.60/operation. See [Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) for full list.
+
+> **Cost comparison note:** DALL-E 3 (OpenAI) charges $0.04–$0.12/image depending on resolution. Google Imagen charges per character of prompt. When comparing, use per-image cost directly — do not convert Stability AI prices to per-token equivalents.
 
 ### Anthropic Claude — batch & prompt cache (Standard, US East N. Virginia)
 
