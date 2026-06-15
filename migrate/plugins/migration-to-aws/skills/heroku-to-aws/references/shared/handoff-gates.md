@@ -1,0 +1,1 @@
+../../../gcp-to-aws/references/shared/handoff-gates.md
