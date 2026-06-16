@@ -10,7 +10,7 @@
 
 Read `$MIGRATION_DIR/ai-workload-profile.json`:
 
-- `summary.ai_source` — `"gemini"`, `"openai"`, `"both"`, `"other"`
+- `summary.ai_source` — `"gemini"`, `"openai"`, `"anthropic"`, `"both"`, `"other"`
 - `models[]` — Detected AI models with service, capabilities, evidence
 - `integration` — SDK, frameworks, languages, gateway type, capability summary
 - `infrastructure[]` — Terraform resources related to AI (may be empty)
@@ -24,8 +24,9 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 - `"gemini"` → load `references/design-refs/ai-gemini-to-bedrock.md`
 - `"openai"` → load `references/design-refs/ai-openai-to-bedrock.md`
-- `"both"` → load both files
-- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric)
+- `"anthropic"` → load `references/design-refs/ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use ai-openai-to-bedrock.md for Anthropic SDK users)
+- `"both"` → load both `ai-gemini-to-bedrock.md` and `ai-openai-to-bedrock.md`
+- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
 
 ---
 
@@ -71,6 +72,56 @@ If `agentic_profile.is_agentic == true`:
 ---
 
 ## Part 1: Bedrock Model Selection
+
+**Multi-workload iteration (when `workloads[]` is present):**
+
+If `preferences.json` contains a non-empty `workloads[]` array (written by Clarify after user confirmation), iterate per workload instead of per model. **Design MUST read workloads from `preferences.json` (not `ai-workload-profile.json`)** because Clarify may have edited, dropped, or re-confirmed rows.
+
+Fallback: if `preferences.json` has no `workloads[]` field but `ai-workload-profile.json` does, use the profile's `workloads[]` directly (no user edits were made).
+
+For each `workloads[]` entry:
+
+1. **Use the workload's `capability` to select the Bedrock target class:**
+
+   | Capability          | Target Class                                           | Default Model                  |
+   | ------------------- | ------------------------------------------------------ | ------------------------------ |
+   | `text_generation`   | Text/reasoning                                         | Apply override hierarchy below |
+   | `structured_output` | Text/reasoning (same models support structured output) | Apply override hierarchy below |
+   | `image_generation`  | Image generation                                       | Amazon Nova Canvas             |
+   | `embedding`         | Embedding                                              | Amazon Titan Embed Text v2     |
+   | `speech_to_text`    | Speech-to-text                                         | Amazon Transcribe              |
+   | `text_to_speech`    | Text-to-speech                                         | Amazon Polly                   |
+   | `unknown`           | Text/reasoning (default)                               | Apply override hierarchy below |
+
+2. **For text/reasoning capabilities:** Apply the existing override hierarchy from `ai_constraints`:
+   - Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > source model baseline
+   - This ensures single-workload sophistication is preserved per workload
+
+3. **Emit one `design_block` per workload** in `aws-design-ai.json`:
+
+   ```json
+   "design_blocks": [
+     {
+       "workload_id": "wl_3a1f2c",
+       "model_id": "gemini-2.5-flash",
+       "target_bedrock_model": "amazon.nova-lite-v1:0",
+       "capability": "text_generation",
+       "capability_confidence": "medium",
+       "rationale": "text_generation + medium confidence + balanced priority → Nova Lite",
+       "confidence_warning": null
+     }
+   ]
+   ```
+
+4. **Confidence warning:** Set `confidence_warning` to a non-null string (identifying the workload and noting manual review required) when `capability_confidence == "low"`. Null for `high` and `medium`.
+
+5. **Preserve input order:** `design_blocks[]` order matches `workloads[]` order.
+
+6. **Empty workloads:** If `workloads[]` is empty, emit `aws-design-ai.json` with `"design_blocks": []` and proceed with the existing `models[]` path below as fallback.
+
+**Fallback (no `workloads[]` or single entry):** If `workloads[]` is absent or has exactly one entry, fall through to the existing per-model logic below (backward compatible).
+
+---
 
 For each model in `models[]`, select the best-fit Bedrock model using the loaded design reference mapping tables. Do NOT use a hardcoded mapping — the design-ref files contain tier-organized tables with pricing and competitive analysis.
 
@@ -124,6 +175,18 @@ If `ai_token_volume` is `"high"`, generate a `tiered_strategy`:
 | 3    | 10%     | Claude Sonnet 4.6            | Reasoning, long-form, agentic tasks, tool use        |
 
 Set `tiered_strategy: null` for low/medium volume.
+
+**Intelligent Prompt Routing — automated alternative to manual tiering:**
+If `ai_token_volume` is `"high"` AND the selected models are within the same family
+(e.g., Claude Haiku + Claude Sonnet, or Nova Lite + Nova Pro), note Bedrock Intelligent
+Prompt Routing as an option. It automatically routes each request to the cheapest model
+that can handle it at adequate quality — the AWS-native automation of the tiered strategy above.
+
+> Intelligent Prompt Routing only routes within a single model family. It does NOT replace
+> cross-provider routing (e.g., Claude ↔ GPT-4o). If the startup was using OpenRouter or
+> LiteLLM to route across providers, they still need app-level routing for cross-family calls.
+> One-line caveat: adds a routing-prediction latency hop; verify model support at
+> docs.aws.amazon.com/bedrock/latest/userguide/prompt-routing.html before recommending.
 
 ---
 
@@ -219,6 +282,7 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 | Direct SDK (OpenAI)  | OpenAI                    | Mantle (OpenAI-compat) | Change `OPENAI_BASE_URL` + `OPENAI_API_KEY` + model string (zero code changes)                       |
 | Direct SDK           | Vertex AI                 | boto3 Converse API     | `generate_content()` → `converse()`                                                                  |
 | Direct SDK           | OpenAI                    | boto3 Converse API     | `completions.create()` → `converse()` (use if Mantle region unavailable or Converse features needed) |
+| Direct SDK           | Anthropic                 | boto3 Converse API     | `messages.create()` → `converse()` with Claude model ID on Bedrock                                   |
 | LangChain            | ChatVertexAI / ChatOpenAI | ChatBedrock            | Swap import and model_id                                                                             |
 | LlamaIndex           | Vertex / OpenAI LLM       | BedrockConverse        | Swap import                                                                                          |
 | LLM Router (LiteLLM) | Any                       | Config change          | `model="bedrock/<model_id>"` (1 line)                                                                |
@@ -236,6 +300,12 @@ Generate concrete code examples using actual model IDs from the selected Bedrock
 **OpenRouter-specific guidance** (if `gateway_type == "llm_router"` AND `detection_signals` contains OpenRouter evidence):
 
 OpenRouter is a hosted routing service (not self-hosted like LiteLLM). It adds a margin on top of provider pricing. Present three options to the user:
+
+> **If the startup was using OpenRouter primarily for cost-based routing within one model family**
+> (e.g., routing between Claude Haiku and Claude Sonnet, or Nova Lite and Nova Pro),
+> Bedrock Intelligent Prompt Routing is the AWS-native replacement — no routing infrastructure
+> needed. If they routed across providers (e.g., Claude ↔ GPT-4o), they still need
+> app-level or LiteLLM routing after migration.
 
 | Option                          | Action                                                    | Effort    | Trade-off                                                                  |
 | ------------------------------- | --------------------------------------------------------- | --------- | -------------------------------------------------------------------------- |

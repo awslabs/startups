@@ -10,27 +10,28 @@ Verify all pricing via AWS Pricing MCP or `references/shared/pricing-cache.md`.
 
 ---
 
-## Competitive Reality (March 2026)
+## Competitive Reality (May 2026)
 
-Gemini 3.1 Pro Preview (Feb 19, 2026) has shifted the landscape. Be honest with users:
+Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemini 3.1 Pro is the current Pro tier. Be honest with users:
 
 - Gemini 3.1 Pro leads 13/16 Google-reported benchmarks and 6/10 on the Artificial Analysis Intelligence Index
-- ARC-AGI-2: 77.1% (2.5x jump over Gemini 3 Pro), SWE-Bench: 80.6% (tied with Opus 4.6 at 80.8%)
-- Costs $2/$12 per 1M tokens — less than half of Opus 4.6 / 4.7 ($5/$25), cheaper than Sonnet 4.6 ($3/$15)
-- ~119 tokens/sec — faster than any Bedrock model at this quality tier
+- ARC-AGI-2: 77.1%, SWE-Bench: 80.6% (tied with Opus 4.6 at 80.8%)
+- Gemini 3.1 Pro costs $2/$12 per 1M tokens — less than half of Opus 4.6 ($5/$25), cheaper than Sonnet 4.6 ($3/$15)
+- Gemini 3.5 Flash at $1.50/$9.00 is 5x more expensive than the old Gemini 2.5 Flash ($0.30/$2.50) — the Bedrock cost savings case is now much stronger for Flash-tier users
 
 **Where Bedrock still wins:**
 
 - Claude Sonnet 4.6 / Opus 4.x lead on real-world agentic tasks (GDPval evaluation) — the gap between benchmarks and production agent reliability is real
-- Claude prompt caching (90% savings on repeated content) has no Gemini equivalent at Preview tier
+- Claude prompt caching (90% savings on repeated content) has no Gemini equivalent
 - Claude function calling remains best-in-class for complex multi-turn tool use
 - AWS ecosystem integration (Bedrock Agents, Knowledge Bases, Guardrails) has no Gemini equivalent
 
 **Migration case by tier:**
 
-- Gemini Pro → Bedrock: driven by AWS consolidation, agentic reliability, or ecosystem — NOT cost or general benchmarks
-- Gemini Flash/Lite → Nova Lite/Micro: still 64-88% cheaper, strong cost case
-- Gemini 2.5 Pro → Bedrock: moderate case (older model, higher price than 3.1 Pro)
+- Gemini 3.5 Flash → Bedrock: **strong cost case** — Nova Lite is 94% cheaper; even Claude Sonnet 4.6 is comparable at $3/$15 vs $1.50/$9.00
+- Gemini 3.1 Pro → Bedrock: driven by AWS consolidation, agentic reliability, or ecosystem — NOT cost or general benchmarks
+- Gemini 3.1 Flash-Lite → Nova Lite/Micro: still 76-88% cheaper, strong cost case
+- Gemini 2.5 Pro → Bedrock: moderate case (older model)
 
 ---
 
@@ -58,26 +59,32 @@ Gemini 3.1 Pro Preview (Feb 19, 2026) has shifted the landscape. Be honest with 
 
 ### Gemini Pro Tier
 
-| Gemini Model           | Price (in/out per 1M) | Best Bedrock Match    | Bedrock Price  | Winner              |
-| ---------------------- | --------------------- | --------------------- | -------------- | ------------------- |
-| Gemini 3.1 Pro Preview | $2.00 / $12.00        | Claude Sonnet 4.6     | $3.00 / $15.00 | Gemini 24% cheaper  |
-| Gemini 3.1 Pro Preview | $2.00 / $12.00        | Claude Opus 4.7 / 4.6 | $5.00 / $25.00 | Gemini 54% cheaper  |
-| Gemini 3 Pro           | $0.50 / $3.00         | Llama 4 Maverick      | $0.24 / $0.97  | Bedrock 64% cheaper |
-| Gemini 3 Pro           | $0.50 / $3.00         | Llama 4 Scout         | $0.17 / $0.66  | Bedrock 75% cheaper |
-| Gemini 3 Pro           | $0.50 / $3.00         | Nova Pro              | $0.80 / $3.20  | Gemini 17% cheaper  |
-| Gemini 2.5 Pro         | $1.25 / $10.00        | Claude Sonnet 4.6     | $3.00 / $15.00 | Gemini 40% cheaper  |
-| Gemini 2.5 Pro         | $1.25 / $10.00        | Nova Pro              | $0.80 / $3.20  | Bedrock 62% cheaper |
-| Gemini 3.1 Pro Preview | $2.00 / $12.00        | Nova 2 Pro            | $1.38 / $11.00 | Bedrock 14% cheaper |
-| Gemini 2.5 Pro         | $1.25 / $10.00        | Nova 2 Pro            | $1.38 / $11.00 | Gemini 9% cheaper   |
+| Gemini Model   | Price (in/out per 1M) | Best Bedrock Match    | Bedrock Price  | Winner              |
+| -------------- | --------------------- | --------------------- | -------------- | ------------------- |
+| Gemini 3.1 Pro | $2.00 / $12.00        | Claude Sonnet 4.6     | $3.00 / $15.00 | Gemini 24% cheaper  |
+| Gemini 3.1 Pro | $2.00 / $12.00        | Claude Opus 4.7 / 4.6 | $5.00 / $25.00 | Gemini 54% cheaper  |
+| Gemini 3.1 Pro | $2.00 / $12.00        | Nova 2 Pro            | $1.38 / $11.00 | Bedrock 14% cheaper |
+| Gemini 3 Pro   | $0.50 / $3.00         | Llama 4 Maverick      | $0.24 / $0.97  | Bedrock 64% cheaper |
+| Gemini 3 Pro   | $0.50 / $3.00         | Llama 4 Scout         | $0.17 / $0.66  | Bedrock 75% cheaper |
+| Gemini 3 Pro   | $0.50 / $3.00         | Nova Pro              | $0.80 / $3.20  | Gemini 17% cheaper  |
+| Gemini 2.5 Pro | $1.25 / $10.00        | Claude Sonnet 4.6     | $3.00 / $15.00 | Gemini 40% cheaper  |
+| Gemini 2.5 Pro | $1.25 / $10.00        | Nova Pro              | $0.80 / $3.20  | Bedrock 62% cheaper |
+| Gemini 2.5 Pro | $1.25 / $10.00        | Nova 2 Pro            | $1.38 / $11.00 | Gemini 9% cheaper   |
+
+> **Gemini 3.1 Pro breakpoint:** $4.00/$18.00 per 1M for prompts >200k tokens. Table above uses ≤200k rates.
 
 ### Gemini Flash/Lite Tier
 
 | Gemini Model              | Price (in/out per 1M)                                       | Best Bedrock Match                       | Bedrock Price  | Winner                                                                                                                                                                                                |
 | ------------------------- | ----------------------------------------------------------- | ---------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gemini 3.5 Flash (GA)     | $1.50 / $9.00                                               | Nova Lite                                | $0.06 / $0.24  | Bedrock 94% cheaper — strong migration case; 3.5 Flash is 5x more expensive than old 2.5 Flash                                                                                                        |
+| Gemini 3.5 Flash (GA)     | $1.50 / $9.00                                               | Claude Sonnet 4.6                        | $3.00 / $15.00 | Gemini 33% cheaper — but Sonnet leads on agentic reliability                                                                                                                                          |
+| Gemini 3.1 Flash-Lite     | $0.25 / $1.50                                               | Nova Lite                                | $0.06 / $0.24  | Bedrock 76% cheaper                                                                                                                                                                                   |
+| Gemini 3.1 Flash-Lite     | $0.25 / $1.50                                               | Nova Micro                               | $0.035 / $0.14 | Bedrock 88% cheaper                                                                                                                                                                                   |
 | Gemini 2.5 Flash          | $0.30 / $2.50                                               | Nova Lite                                | $0.06 / $0.24  | Bedrock 88% cheaper                                                                                                                                                                                   |
 | Gemini 2.5 Flash Thinking | $0.30 / $0.60–$3.50 (varies by thinking budget)             | Claude Sonnet 4.6 with extended thinking | $3.00 / $15.00 | Depends on thinking budget — at full thinking ($3.50/M output) Sonnet 4.6 is comparable; at low thinking ($0.60/M output) Gemini is cheaper. Profile actual thinking token usage before recommending. |
 | Gemini 2.0 Flash          | $0.10 / $0.40                                               | Nova Micro                               | $0.035 / $0.14 | Bedrock 65% cheaper                                                                                                                                                                                   |
-| Gemini Flash 1.5          | **Legacy — EOL Sep 24, 2025. Migrate to Gemini 2.5 Flash.** | Nova Lite                                | $0.06 / $0.24  | If still in use, migrate source model first; strong Bedrock cost case once on 2.5 Flash                                                                                                               |
+| Gemini Flash 1.5          | **Legacy — EOL Sep 24, 2025. Migrate to Gemini 3.5 Flash.** | Nova Lite                                | $0.06 / $0.24  | If still in use, migrate source model first; strong Bedrock cost case once on 3.5 Flash                                                                                                               |
 
 ### Legacy/Specialized
 

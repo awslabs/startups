@@ -41,8 +41,8 @@ For each billing service, attempt lookup in order:
 1. Look up `gcp_service_type` in `design-refs/fast-path.md` → Direct Mappings table
 2. If found: assign AWS service
 3. Enrich with SKU hints:
-   - If `top_skus` mention "PostgreSQL" → specify "RDS Aurora PostgreSQL"
-   - If `top_skus` mention "MySQL" → specify "RDS Aurora MySQL"
+   - If `top_skus` mention "PostgreSQL" → **RDS PostgreSQL** or **Aurora PostgreSQL** per `design_constraints.availability` in `preferences.json` (same Q6 gate as `design-infra.md` step 7b). Default to **RDS PostgreSQL single-AZ** when availability unknown (billing-only path has no HA signal — do not assume Multi-AZ).
+   - If `top_skus` mention "MySQL" → **RDS MySQL** or **Aurora MySQL** per Q6 gate. Default to **RDS MySQL single-AZ** when availability unknown.
    - If `top_skus` mention "CPU Allocation" → indicates compute (Fargate)
    - If `top_skus` mention "Storage" → check if object storage (S3) or block storage (EBS)
 
@@ -135,15 +135,16 @@ Write to `$MIGRATION_DIR/aws-design-billing.json`:
     {
       "gcp_service": "Cloud SQL",
       "gcp_service_type": "google_sql_database_instance",
-      "aws_service": "RDS Aurora PostgreSQL",
+      "aws_service": "RDS PostgreSQL",
       "aws_config": {
         "region": "us-east-1",
         "high_availability": false,
+        "multi_az": false,
         "inventory_clarifications_applied": true
       },
       "monthly_cost": 800.00,
       "confidence": "billing_inferred",
-      "rationale": "Fast-path: Cloud SQL → RDS Aurora. SKU hints: PostgreSQL engine. User confirmed single-zone (Category B).",
+      "rationale": "Cloud SQL PostgreSQL → RDS PostgreSQL (single-AZ). SKU hints: PostgreSQL engine. User confirmed single-zone (Category B).",
       "sku_hints": ["DB custom CORE", "DB custom RAM"]
     }
   ],

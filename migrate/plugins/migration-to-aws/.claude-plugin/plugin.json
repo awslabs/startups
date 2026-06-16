@@ -10,8 +10,14 @@
     "aws",
     "gcp",
     "google-cloud",
+    "cloud-run",
+    "cloud-sql",
+    "vertex-ai",
+    "gemini",
     "migration",
     "cloud-migration",
+    "move-to-aws",
+    "switch-to-aws",
     "terraform",
     "fargate",
     "rds",
@@ -28,6 +34,8 @@
     "agentic",
     "agents",
     "llm-migration",
-    "cost-estimation"
+    "cost-estimation",
+    "cost-comparison",
+    "pricing-comparison"
   ]
 }

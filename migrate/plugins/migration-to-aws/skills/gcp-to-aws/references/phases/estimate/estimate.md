@@ -22,6 +22,17 @@ Attempt to reach awspricing with **up to 2 retries** (3 total attempts):
 3. **If still fails**: Wait 2 seconds, retry (Attempt 3)
 4. **If all 3 attempts fail**: Use cached prices with staleness warning
 
+### Step 0c: MCP Preflight — Surface Status to User (ALWAYS run)
+
+**Before any sub-estimate file runs**, display the pricing mode to the user so they know what to expect:
+
+- **If cache ≤ 90 days and MCP not needed**: "Pricing source: cached (updated [date], ±5-25% accuracy). Live pricing API not required."
+- **If cache > 90 days and MCP available**: "Pricing source: live API (awspricing MCP). Cache is stale ([date]) — using real-time pricing."
+- **If cache > 90 days and MCP unavailable**: "⚠️ Pricing source: stale cache only (updated [date]). The awspricing MCP server is unreachable — ensure `uvx` is installed (`pip install uv` or `brew install uv`) and AWS credentials are configured. Proceeding with cached pricing; accuracy may be ±15-25% for AI models."
+- **If cache ≤ 90 days but a required service is NOT in cache and MCP unavailable**: "⚠️ Some services not in pricing cache and MCP unreachable. Those services will show `pricing_source: unavailable` in the estimate."
+
+This prevents silent failures — the user sees the pricing constraint upfront, not after 5 minutes of estimation work.
+
 ### Pricing Hierarchy
 
 Each sub-estimate file uses this lookup order per service:
@@ -104,7 +115,23 @@ Before marking Estimate complete, enforce route output gates (fail closed):
    - AI route -> `estimation-ai.json`
 4. If any active route is missing its expected output: STOP and output: "Estimate route [name] did not produce required artifact(s). Re-run the failed sub-estimate before completing Phase 4."
 
-After all active route gates pass, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+## Completion Handoff Gate (Fail Closed)
+
+Load `shared/handoff-gates.md`. **Re-read from disk** each active estimate artifact before checking.
+
+**Re-entry guard:** If `generation-infra.json` (or sibling generation artifacts) exists and `phases.generate` is not `"pending"`: STOP unless the user explicitly confirms re-running Estimate. Emit `GATE_FAIL | phase=estimate | field=generation-infra.json | reason=stale_downstream`.
+
+**Infra route additional checks** (when `estimation-infra.json` exists):
+
+- `recommendation.path` ∈ `{migrate_optimized, migrate_phased, stay}`
+- `recommendation.path_label` is non-empty
+- `recommendation.migrate_if` and `recommendation.stay_if` are non-empty arrays
+
+**On any FAIL:** Emit `GATE_FAIL | phase=estimate | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to re-run `estimate-infra.md` Part 7 (recommendation block).
+
+**On PASS:** Emit `HANDOFF_OK | phase=estimate | artifacts=<comma-separated active estimate files>`.
+
+After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
 
 - Set `phases.estimate` to `"completed"`
 - Set `current_phase` to `"generate"`

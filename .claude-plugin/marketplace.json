@@ -1,21 +1,27 @@
 {
   "name": "startups-for-aws",
   "owner": {
-    "name": "AWS Startups"
+    "name": "Amazon Web Services"
   },
-  "description": "AI agent plugins and tools for AWS Startups",
+  "description": "AI-powered build and migrate guidance from AWS, built for startups at any stage.",
   "plugins": [
     {
       "name": "migration-to-aws",
       "source": "./migrate/plugins/migration-to-aws",
-      "version": "1.2.0",
-      "description": "This no-cost tool assesses your current cloud provider's usage, geography, and billing data to estimate and compare AWS services and pricing, and recommends migration or continued use of your current provider. AWS pricing is based on current published pricing and may vary over time. The tool may generate a .migration folder containing comparison and migration execution data, which you may delete upon completion or use to migrate to AWS."
+      "version": "1.4.0",
+      "description": "Migrate from GCP to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Cloud SQL → Aurora, GKE → EKS), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't."
     },
     {
       "name": "aws-startup-advisor",
       "source": "./advisor/plugins/aws-startup-advisor",
-      "version": "1.4.0",
-      "description": "AI-powered build and migrate guidance from AWS, built for startups at any stage."
+      "version": "1.5.0",
+      "description": "Three sibling skills for startups building on AWS: knowledge-base-for-startups (Activate FAQ, credits, programs, partner offers, sample architectures, learn articles), prompt-library-for-startups (copy-paste prompts + downloadable installable agents), and start-building-for-startups (interactive discovery workflow that scaffolds an AWS architecture)"
+    },
+    {
+      "name": "aws-dev-toolkit",
+      "source": "./solution-architecture/plugins/aws-dev-toolkit",
+      "version": "1.0.0",
+      "description": "AWS development toolkit for building, migrating, cost optimizing and performing architecture reviews on AWS. Authored by the Startup Solution Architects by distilling hard won lessons from speaking with countless orgs. You'll find insights for building on AWS that are not publicly documented elsewhere."
     }
   ]
 }

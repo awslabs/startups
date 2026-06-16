@@ -37,12 +37,29 @@ Each phase loads reference files on demand. To keep per-turn context manageable 
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | `design-refs/ai-gemini-to-bedrock.md`            | `ai-workload-profile.json` exists AND `summary.ai_source` = `"gemini"` or `"both"`                 |
 | `design-refs/ai-openai-to-bedrock.md`            | `ai-workload-profile.json` exists AND `summary.ai_source` = `"openai"` or `"both"`                 |
+| `design-refs/ai-anthropic-to-bedrock.md`         | `ai-workload-profile.json` exists AND `summary.ai_source` = `"anthropic"`                          |
 | `design-refs/ai.md`                              | `ai-workload-profile.json` exists AND `summary.ai_source` = `"other"`                              |
 | `design-refs/design-ref-harness.md`              | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "harness"`  |
 | `design-refs/design-ref-agentic-to-agentcore.md` | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "strands"`  |
 | `shared/retarget-gotchas.md`                     | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "retarget"` |
 
 When adding new reference files, verify the phase's total loaded instructions remain under budget. If a new file would exceed ~800 lines when combined with other loaded refs, split it or make it conditional.
+
+**Hybrid stack budget warning:**
+
+When both `gcp-resource-inventory.json` AND `ai-workload-profile.json` exist, the combined design refs will approach the ~800-line budget. Output this warning to the user **before** loading the AI design refs:
+
+> "⚠️ This is a large hybrid stack (infrastructure + AI workloads). To ensure complete and accurate recommendations, consider running the migration in two separate passes:
+>
+> **Pass 1 — Infrastructure:** Run with only your Terraform files to get infra mapping, Terraform generation, and cost estimates.
+>
+> **Pass 2 — AI workloads:** Run with only your application code to get Bedrock model recommendations, provider adapters, and AI migration artifacts.
+>
+> Continue with the combined run? (Y/N)"
+
+If the user chooses to continue, proceed with the combined run. Load AI refs **after** infra refs to preserve infra instruction fidelity. If the user declines, stop and instruct them to re-run with a single input source type.
+
+**This warning is advisory only** — it does not block the run.
 
 ---
 
@@ -84,6 +101,18 @@ This is the execution controller. After completing each phase, consult this tabl
 **Clarify is mandatory:** Do not load `references/phases/design/design.md`, `references/phases/estimate/estimate.md`, or `references/phases/generate/generate.md` unless `$MIGRATION_DIR/.phase-status.json` exists and `phases.clarify` is exactly `"completed"`. A `preferences.json` file alone is **not** sufficient proof that Clarify ran. If the user asks to skip Clarify or jump straight to Design, cost estimate, or artifact generation, refuse briefly, then load `references/phases/clarify/clarify.md` and run Phase 2. There is no exception for "quick" or "obvious" migrations.
 
 **Feedback checkpoints**: Feedback is not a sequential phase — it is offered at two interleaved checkpoints (after Discover and after Estimate). See the **Feedback Checkpoints** section below for details.
+
+### Handoff Gate Orchestration (Fail Closed)
+
+Load `references/shared/handoff-gates.md` when executing any phase completion step.
+
+1. **Single `$MIGRATION_DIR`**: Use one run directory for the entire migration. Do not mix artifacts across `.migration/*/` sessions.
+2. **Re-read from disk**: Before each phase (and before each handoff gate), Read required artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
+3. **Advance only on `HANDOFF_OK`**: A phase is complete only when its orchestrator emits `HANDOFF_OK | phase=<name> | artifacts=...`. Do not load the next phase without it.
+4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Tell the user which phase to re-run.
+5. **Re-entry**: Re-running an earlier phase after downstream phases completed requires explicit user confirmation; downstream phases must be reset to `"pending"`. See `handoff-gates.md` re-entry table.
+
+Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`.
 
 ---
 
@@ -201,7 +230,7 @@ gcp-to-aws/
 │   │   │   ├── clarify.md                     # Phase 2: Clarify orchestrator
 │   │   │   ├── clarify-global.md              # Category A: Global/Strategic (Q1-Q7)
 │   │   │   ├── clarify-compute.md             # Categories B+C: Config Gaps + Compute (Q8-Q11)
-│   │   │   ├── clarify-database.md            # Category D: Database (Q12-Q13)
+│   │   │   ├── clarify-database.md            # Category D: Database (Q12–Q13b)
 │   │   │   ├── clarify-ai.md                  # Category F: AI/Bedrock (Q14-Q22)
 │   │   │   └── clarify-ai-only.md             # Standalone AI-only migration flow
 │   │   ├── design/
@@ -250,6 +279,8 @@ gcp-to-aws/
 │       ├── schema-discover-ai.md               # ai-workload-profile schema (loaded by discover-app-code.md and discover-iac.md Step 7d)
 │       ├── schema-discover-billing.md          # billing-profile schema (loaded by discover-billing.md)
 │       ├── schema-estimate-infra.md            # estimation-infra.json schema (loaded by estimate-infra.md at write time)
+│       ├── handoff-gates.md                    # Fail-closed phase handoff protocol (GATE_FAIL / HANDOFF_OK)
+│       ├── validate-artifacts.md               # Pre-report validation (Generate Step 0; read-only)
 │       ├── migration-complexity.md             # Complexity tier definitions (small/medium/large) for timeline scaling
 │       ├── pricing-cache.md                    # Cached AWS + source provider pricing (±5-25%, primary source)
 │       └── bedrock-quotas.md                   # Bedrock TPM/RPM quota awareness, burndown rates, capacity planning
@@ -289,11 +320,13 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 4. **Execute ALL steps in order**: Follow every numbered step in the reference file. **Do not skip, optimize, or deviate.**
 
-5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding.
+5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding. Phase orchestrators run **Completion Handoff Gate** checks per `shared/handoff-gates.md`.
 
-6. **Update phase status**: Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
+6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `shared/handoff-gates.md`. On `GATE_FAIL`, stop — do not update phase status or load the next phase.
 
-7. **Feedback checkpoint**: After a phase completes, check if feedback is due (see rules below). This runs **before** advancing to the next phase.
+7. **Update phase status**: Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
+
+8. **Feedback checkpoint**: After a phase completes, check if feedback is due (see rules below). This runs **before** advancing to the next phase.
 
    - **After Discover** (if `phases.feedback` is `"pending"`): Output to user:
      "Would you like to share quick feedback (5 optional questions + anonymized usage data) to help improve this tool? Your data never includes resource names, file paths, or account IDs.
@@ -311,7 +344,7 @@ When invoked, the agent **MUST follow this exact sequence**:
 
    - **After Generate**: No feedback offer. If `phases.feedback` is still `"pending"`, use the Phase Status Update Protocol to set it to `"completed"` (user had two chances and chose to defer/skip).
 
-8. **Display summary**: Show user what was accomplished, highlight next phase, or confirm migration completion.
+9. **Display summary**: Show user what was accomplished, highlight next phase, or confirm migration completion.
 
 **Critical constraint**: Agent must strictly adhere to the reference file's workflow. If unable to complete a step, stop and report the exact step that failed.
 

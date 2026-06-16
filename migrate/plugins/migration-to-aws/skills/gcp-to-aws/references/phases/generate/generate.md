@@ -129,9 +129,11 @@ AFTER generate-artifacts-docs.md completes:
 
 Produces: `migration-report.html`
 
-**Non-blocking:** If report generation fails, log a warning and continue to Phase Completion. Do not fail the phase.
+**Validation gate:** Report generation runs `shared/validate-artifacts.md` first. If validation emits `GATE_FAIL`: log the failure to the user, **do not write** `migration-report.html`, and continue to Phase Completion (report is optional output; validation failure is not a silent skip). Do **NOT** patch artifacts to pass validation.
 
 ## Phase Completion
+
+Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 
 Verify both stages are complete:
 
@@ -145,9 +147,11 @@ Verify both stages are complete:
    - If billing artifact route is active (`generation-billing.json` AND `aws-design-billing.json`) -> require `terraform/skeleton.tf`
 3. **Documentation gate (always)**:
    - Require `MIGRATION_GUIDE.md` and `README.md`
-4. If any active route is missing expected outputs: STOP and output: "Generate route [name] missing required artifacts. Re-run the failed generator before completing Phase 5."
+4. If any active route is missing expected outputs: Emit `GATE_FAIL | phase=generate | field=<artifact> | reason=missing`. **Do NOT modify artifacts.** STOP — do not mark phase complete.
 
-After all gates pass, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the summary below:
+**On PASS:** Emit `HANDOFF_OK | phase=generate | artifacts=<key files verified>`.
+
+After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the summary below:
 
 - Set `phases.generate` to `"completed"`
 - Set `current_phase` to `"complete"`
