@@ -20,7 +20,7 @@ Reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups
 Three files are indexes, not articles. They have a **Keywords column** — filter by keyword first, then open the linked detail file.
 
 - **[references/learn.md](references/learn.md)** — hundreds of learn articles across a dozen categories (genai, general, getting-started, architecture, business-growth, case-studies, cost-optimization, security, and more). Each row: title, one-line summary, keywords, link into `references/learn/<category>/<slug>.md`.
-- **[references/offers.md](references/offers.md)** — publicly-viewable AWS Activate partner offers with keywords + links into `references/offers/<slug>.md`. Offers that require Activate sign-in are not captured here; direct the user to `<https://aws.amazon.com/startups/offers>` for the full list.
+- **[references/offers.md](references/offers.md)** — AWS Activate partner offers with keywords + links into `references/offers/<slug>.md`. For the latest authoritative list, direct the user to `<https://aws.amazon.com/startups/offers>`.
 - **[references/build.md](references/build.md)** — sample architectures and solution guides. Two sub-sections:
   - **Publicly-viewable solutions** link to local `references/build/<slug>.md` with the Overview, AWS services used, and a primary Get-Started link (workshop URL or GitHub sample).
   - **Sign-in required** entries are gated. Recommend them by title + keywords and hand over the Live URL: _"There's a Build sample that might be useful — please sign in to view it at [URL]."_
