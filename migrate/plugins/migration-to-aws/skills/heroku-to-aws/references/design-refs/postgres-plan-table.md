@@ -8,6 +8,9 @@ This table maps Heroku Postgres plan tiers to recommended AWS RDS PostgreSQL and
 
 | Heroku Plan | RAM | Storage | Connections | HA | Connection Pooling | Recommended RDS Instance Class | Recommended Aurora Instance Class |
 |------------|-----|---------|-------------|----|--------------------|-------------------------------|----------------------------------|
+| essential-0 | 0 MB (shared) | 1 GB | 20 | No | No | db.t4g.micro | db.t4g.medium |
+| essential-1 | 0 MB (shared) | 10 GB | 20 | No | No | db.t4g.micro | db.t4g.medium |
+| essential-2 | 0 MB (shared) | 32 GB | 40 | No | No | db.t4g.micro | db.t4g.medium |
 | hobby-dev | 0 MB (shared) | 1 GB | 20 | No | No | db.t4g.micro | db.t4g.medium |
 | hobby-basic | 0 MB (shared) | 10 GB | 20 | No | No | db.t4g.micro | db.t4g.medium |
 | standard-0 | 4 GB | 64 GB | 120 | No | Yes | db.t4g.medium | db.t4g.medium |
