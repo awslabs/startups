@@ -437,6 +437,123 @@ Ask AWS Startups is our 24/7 assistant designed to answer your questions about A
 
 Navigate to the [Contact Us](https://aws.amazon.com/startups/contact-us) page and click on “Get Help” in the lower right hand corner.
 
+## AWS Startup Advisor
+
+### What is AWS Startup Advisor?
+
+AWS Startup Advisor is an AI-powered build assistant that helps startups optimize architecture, costs, security, and scalability on AWS. It delivers Solution Architect-curated expertise through your IDE or on the web, using your startup's context so you're never starting from scratch.
+
+### How does it work?
+
+AWS Startup Advisor picks up where your AWS Activate Credit application leaves off. It uses your application data and your startup's website to understand your technology stack and stage on startups.aws. From there, you can download an IDE extension or plugin that will deliver guidance through a skills-based experience: scaffold an architecture, optimize costs, set up your environment, or deploy an AI agent, each step shaped by what you're actually building.
+
+### How much does AWS Startup Advisor cost?
+
+There is no charge to use AWS Startup Advisor itself. Generating recommendations, invoking skills, and getting guidance are all included as part of the AWS Activate experience. If you choose to deploy the resources AWS Startup Advisor recommends, standard AWS service pricing applies.
+
+### Where can I access AWS Startup Advisor?
+
+On the web at startups.aws, as an IDE extension for Kiro, VS Code, and Cursor, and as a terminal plugin for Claude Code via github.com/awslabs/startups. All three options deliver curated skills and recommendations. Use whichever fits your workflow.
+
+### Do I need an AWS Account to use AWS Startup Advisor?
+
+You only need a Builder ID to log in to brainstorm with AWS Startup Advisor on startups.aws. If you've completed an AWS Activate Credit application, Advisor uses that data to tailor guidance to your stack and stage.
+
+As you transition to the IDE, you need to log in with your AWS account to get alerts personalized to your environment.
+
+### What data does AWS Startup Advisor access?
+
+On the web, AWS Startup Advisor uses (1) the information you provide in your AWS Activate Credit application and (2) your startup's website. This data is used to tailor your experience. Advisor does not store your source code and does not share your data with third parties. In the IDE extension or plugin, AWS Startup Advisor will access information in your account to alert customers to cost optimization opportunities, security warnings, and scalability issues.
+
+### Can I use AWS Startup Advisor if I'm already building on AWS?
+
+Yes. Cost optimization, security hardening, and architecture skills are designed for startups at any stage, whether you're deploying your first service or running production infrastructure.
+
+### Does AWS Startup Advisor include proactive alerts?
+
+Yes. The Alerts tab in the IDE extension surfaces optimization opportunities and recommended actions. It uses your AWS profile permissions to monitor configured resources and proactively flag what to fix, so you stay ahead of issues.
+
+## Migration Capability
+
+### What is the new migration capability on the AWS Startups experience?
+
+A new AI-powered capability that generates a personalized migration plan from GCP, OpenAI, or Gemini to AWS, then helps you execute it. Get a plan quickly, including service mapping, cost estimates, architecture diagrams, Terraform templates, credit eligibility, and a step-by-step runbook. Then choose the execution path that fits your workload: AI-agent guided, work with an AWS expert, or connect with a certified AWS Partner.
+
+### Which cloud providers and workloads are supported?
+
+The new migration capability supports Google Cloud Platform (GCP) infrastructure migrations - including, for example, Kubernetes to EKS/ECS/Fargate, PostgreSQL/MySQL to RDS/Aurora, and Google Cloud Storage to S3, as well as AI/LLM inference migrations from OpenAI or Gemini to Amazon Bedrock.
+
+### How much does the migration capability on AWS Startups cost?
+
+There is no charge for using the migration capability. There are no usage limits for generating migration plans. You only pay for the AWS resources you provision during your actual migration. If you choose the AI-Agent Guided path, you select your own inference provider (Amazon Bedrock, OpenAI, or Anthropic). LLM inference costs are billed by whichever provider you choose.
+
+### How do I generate my migration plan?
+
+You can pick the experience that fits your workflow:
+
+1. **Web Experience —** Start from your browser at aws.amazon.com/startups/migrate/wizard. Answer a few questions, upload relevant data, and get a complete migration plan.
+2. **IDE Plugin —** Generate your migration plan without leaving your IDE. Available for Kiro, Claude Code, and Cursor. When you're ready to execute, your plan routes to the migration capability on AWS Startups web experience.
+
+### How long does it take to generate a plan?
+
+Generating a migration plan typically takes under 15 minutes, though larger or more complex codebases may require additional processing time. Actual migration timelines depend on your infrastructure complexity and readiness.
+
+### What's included in my migration plan?
+
+Architecture recommendations, cost estimates, infrastructure diagrams, deployment runbooks, IaC templates, and an AI migration guide (if applicable).
+
+### Am I guaranteed to receive the credit amount displayed?
+
+No. The credit amount shown is based on your estimates and the information you provided during the assessment. Final eligibility will be determined by AWS based on standard eligibility and verification checks.
+
+### How do I execute the migration plan?
+
+Once your plan is generated, choose the execution path that fits your workload. You can always change your mind later.
+
+**AI-Agent Guided:** Run the migration with the AI agent directly from your IDE (Kiro, Claude Code, or Cursor). The agent handles provisioning, data migration, configuration updates, and testing. You confirm key decisions at each step. Migrate your full workload or start with a proof of concept (POC).
+
+**Work with AWS Experts:** Share your migration plan with an AWS expert. Get guidance on architecture decisions, edge cases, and execution.
+
+**Work with an AWS Partner:** Get matched with a certified AWS Partner. They handle execution end-to-end.
+
+Your migration includes intelligent service recommendations, cost comparison, Terraform deployment templates, a phased migration runbook, architecture diagrams, and guided deployment support at every step.
+
+### How does the AI Agent guided migration agent work?
+
+You download your migration plan and install the agent via your terminal (macOS Terminal or Windows PowerShell). Once you configure your AWS credentials and select a foundation model through Amazon Bedrock as your inference backend, the agent uses it to reason through and execute your migration tasks: provisioning infrastructure, setting up data transfer, migrating storage, updating configurations, and running post-migration tests.
+
+### Are there any prerequisites to using the AI Agent guided execution path?
+
+Yes. You need Docker Desktop running on your machine and an active AWS account before you can install and use the migration agent.
+
+### What if I get stuck during AI Agent guided execution?
+
+The migration capability provides progress tracking and automated blocker identification throughout AI Agent guided execution. If you get stuck, you can switch to working with an AWS specialist or an AWS Partner.
+
+### What if I need hands-on help?
+
+Click "Request Support" from your plan to connect with an AWS specialist or an AWS Partner.
+
+### What if my AWS Partner doesn't respond?
+
+If you haven't heard back from your selected AWS Partner, please let us know through Contact Us. In the meantime, you can reach out to another Partner from the list, or connect with an AWS expert who can also pair you with an expert to keep your migration moving.
+
+### How does AWS secure my data?
+
+The new migration capability uses your data only to generate your migration plan. Any code you provide is deleted after 180 days, and all data is encrypted in transit.
+
+### Is my code used to train AI models?
+
+No. Your data is used solely to generate your migration plan and is not used for model training.
+
+### Can I delete data that I upload?
+
+Yes. You can delete your data and individual plans, and all uploaded files are automatically removed after 180 days.
+
+### Why can't I upload my file?
+
+Check that it's a .csv (billing) or .zip (code), isn't password-protected, and is within the size limit.
+
 ## AWS Support
 
 ### What are AWS Support Plans?
