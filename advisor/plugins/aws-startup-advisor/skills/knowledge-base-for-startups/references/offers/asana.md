@@ -27,4 +27,4 @@ organizations currently on paid plans or who have upgraded to a paid plan
 
 within the last 60 days are not eligible.
 
-**Click "Claim Offer" and use AWS Activate  discount code:  a4s-awsactivate-90annual-discount**
+**Click "Claim Offer" and use the AWS Activate discount code shown on the offer page.** For the discount code, visit the offer URL (see `source_url`).
