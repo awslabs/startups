@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -10,6 +11,8 @@ from pathlib import Path
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = PLUGIN_ROOT / "scripts" / "validate-migration-report.py"
 FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-reference.html"
+FIXTURE_EST_INFRA = PLUGIN_ROOT / "fixtures" / "estimation-infra-reference.json"
+FIXTURE_EST_AI = PLUGIN_ROOT / "fixtures" / "estimation-ai-reference.json"
 SF_BEACH_STUB = Path(
     "/Users/lkleier/Downloads/sf-beach-terraform-validated/.migration/0611-0606/migration-report.html"
 )
@@ -68,9 +71,36 @@ def run_validator(
 
 def test_reference_fixture_passes() -> None:
     assert FIXTURE.is_file(), "reference fixture missing"
-    code, out = run_validator(FIXTURE)
+    assert FIXTURE_EST_INFRA.is_file(), "estimation-infra reference fixture missing"
+    assert FIXTURE_EST_AI.is_file(), "estimation-ai reference fixture missing"
+    code, out = run_validator(FIXTURE, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
     assert code == 0, out
     assert "REPORT_OK" in out
+    assert "structure=complete" in out
+    assert "verify dollar figures" in out
+
+
+def test_reference_passes_dollar_only_security_without_guardduty_name(tmp_path: Path) -> None:
+    """Component dollar amounts satisfy security check when GuardDuty label is omitted."""
+    html = FIXTURE.read_text(encoding="utf-8")
+    html = re.sub(r"GuardDuty", "ThreatDetection", html, flags=re.IGNORECASE)
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+
+
+def test_reference_fails_without_component_dollars(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8")
+    html = re.sub(r"GuardDuty", "", html, flags=re.IGNORECASE)
+    html = re.sub(r"\$13(?:\.00)?(?:/mo)?", "", html)
+    html = re.sub(r"\$1\.50", "", html)
+    html = re.sub(r"\$0\.50", "", html)
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "component costs" in out.lower() or "GuardDuty" in out
 
 
 def test_minimal_html_passes_without_toc(tmp_path: Path) -> None:
@@ -133,6 +163,31 @@ def test_broken_toc_fails(tmp_path: Path) -> None:
     code, out = run_validator(path)
     assert code == 1, out
     assert "broken link" in out.lower() or "missing link" in out.lower()
+
+
+def test_security_baseline_accepts_dollar_component_without_label(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace("GuardDuty $13", "CloudTrail S3 $1.50")
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est = tmp_path / "estimation-infra.json"
+    est.write_text(
+        json.dumps(
+            {
+                "projected_costs": {
+                    "aws_monthly_balanced": 118,
+                    "breakdown": {
+                        "security_baseline": {
+                            "mid": 15,
+                            "components": {"guardduty": 13, "cloudtrail_s3": 1.5},
+                        }
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 0, out
 
 
 def test_security_baseline_rejects_css_false_positive(tmp_path: Path) -> None:

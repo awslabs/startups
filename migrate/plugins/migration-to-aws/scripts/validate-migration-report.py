@@ -174,6 +174,18 @@ def _security_scoped_html(html: str) -> str:
     return "\n".join(chunks)
 
 
+def _dollar_amount_present(amount: float | int, text: str) -> bool:
+    """True when a dollar-formatted value appears in text (not bare CSS integers)."""
+    normalized = text.replace(",", "")
+    v = float(amount)
+    candidates: list[str] = []
+    if v == int(v):
+        i = int(v)
+        candidates.extend([f"${i}", f"${i}.00", f"${i}.0"])
+    candidates.append(f"${v:.2f}")
+    return any(c in normalized for c in candidates)
+
+
 def _has_guardduty_or_baseline(html: str, estimation_infra: dict | None) -> tuple[bool, str]:
     scope = _security_scoped_html(html)
     if not scope:
@@ -191,18 +203,14 @@ def _has_guardduty_or_baseline(html: str, estimation_infra: dict | None) -> tupl
         return True, ""  # no baseline in estimate — nothing to cross-check
 
     components = baseline.get("components") or {}
-    guardduty_cost = components.get("guardduty")
-    if guardduty_cost is not None:
-        # Require dollar-formatted GuardDuty cost or label in scoped sections (not bare "15" in CSS)
-        cost_pattern = rf"(GuardDuty[^\d]*\$?\s*{re.escape(str(guardduty_cost))}(\.\d{{2}})?)"
-        if re.search(cost_pattern, scope, re.IGNORECASE):
-            return True, ""
-        if re.search(r"Security Baseline|security_baseline", scope, re.IGNORECASE):
+    for _key, val in components.items():
+        if val is not None and float(val) > 0 and _dollar_amount_present(val, scope):
             return True, ""
 
     return False, (
-        "appendix-security/appendix-costs must mention GuardDuty or security baseline "
-        "component costs from estimation-infra.json (not bare numbers from unrelated CSS)"
+        "appendix-security/appendix-costs must mention GuardDuty or include dollar-formatted "
+        "security_baseline component costs from estimation-infra.json "
+        "(e.g. GuardDuty $13.00, CloudTrail $1.50)"
     )
 
 
@@ -307,10 +315,11 @@ def main() -> int:
     counts = _section_id_counts(html)
     optional_present = [sid for sid in OPTIONAL_SECTION_IDS if counts.get(sid, 0) >= 1]
     print(
-        "REPORT_OK | sections="
+        "REPORT_OK | structure=complete | sections="
         + str(len(REQUIRED_SECTION_IDS))
         + f"/{len(REQUIRED_SECTION_IDS)}"
         + (f" | optional={','.join(optional_present)}" if optional_present else "")
+        + " | note=verify dollar figures against estimation JSON before sign-off"
     )
     return 0
 

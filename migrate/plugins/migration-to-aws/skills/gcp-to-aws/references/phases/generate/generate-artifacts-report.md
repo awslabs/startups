@@ -611,7 +611,7 @@ After generating the HTML file, verify:
 3. **Appendix not a stub**: Appendix B contains ≥3 cost line items with dollar amounts; Appendix A contains per-cluster or per-service mappings (not only JSON file links).
 4. **Security baseline surfaced**: When `projected_costs.breakdown.security_baseline` exists, GuardDuty or dollar-formatted component costs appear in `appendix-security` / `appendix-costs`.
 5. **Combined TCO**: When **both** `estimation-infra.json` and `estimation-ai.json` exist, exactly one `exec-tco` section with summed totals.
-6. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly
+6. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly — **manual / agent self-check**; the automated validator does not verify numerics (see `validate-migration-report.md` scope).
 7. **Conditional sections**: AI appendix only present if AI artifacts exist; billing caveats shown when billing_data_available is false; Bedrock monitoring row only when `bedrock_monitoring.tf` exists; startup credits callout only when `STARTUP_PROGRAMS.md` or preference indicates eligibility
 8. **Section 0**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present
 9. **Human expertise flags**: Warning callouts appear for all services with `human_expertise_required: true`

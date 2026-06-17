@@ -27,6 +27,12 @@ The script also exposes its path via `Path(__file__)` when invoked directly from
 
 ---
 
+## Scope
+
+This validator is a **structural completeness gate**. It does **not** verify that every dollar figure in the HTML matches estimation JSON. Self-check item #6 in `generate-artifacts-report.md` (numeric accuracy) remains a manual step. `REPORT_OK | structure=complete` means the report is ready for human review, not financially audited.
+
+---
+
 ## Required checks (REPORT_FAIL on any failure)
 
 | # | Check | PASS when |
@@ -61,8 +67,10 @@ The script also exposes its path via `Path(__file__)` when invoked directly from
 **Pass:**
 
 ```
-REPORT_OK | sections=9/9 | optional=exec-tco,appendix-ai,appendix-security-gap
+REPORT_OK | structure=complete | sections=9/9 | optional=exec-tco,appendix-ai | note=verify dollar figures against estimation JSON before sign-off
 ```
+
+`structure=complete` does **not** mean dollar figures were cross-checked against JSON — only that sections, TOC, appendix depth, and artifact-driven gates passed.
 
 **Fail:**
 
@@ -80,5 +88,7 @@ REPORT_FAIL | migration-report.html
 
 ```bash
 python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
-  "$PLUGIN_ROOT/fixtures/migration-report-reference.html"
+  "$PLUGIN_ROOT/fixtures/migration-report-reference.html" \
+  --estimation-infra "$PLUGIN_ROOT/fixtures/estimation-infra-reference.json" \
+  --estimation-ai "$PLUGIN_ROOT/fixtures/estimation-ai-reference.json"
 ```
