@@ -597,10 +597,23 @@ The inline CSS must include:
 ### Content Rules
 
 1. **All data must come from artifacts** — do not invent numbers or services. If an artifact field is missing, omit that section.
-2. **Currency formatting**: All cost values displayed as `$X,XXX.XX` with dollar sign and commas.
+2. **Currency formatting**: Monthly figures as whole dollars with thousands separators (`$1,415`, `$118`). Use cents only where sub-dollar precision is meaningful (`$1.50`, `$0.40`). Be consistent within the report — do not mix `$118.00` and `$118`.
 3. **Percentage formatting**: Include `+` or `-` prefix. Use green styling for savings, red for increases.
 4. **No external resources**: No CDN links, no external fonts, no images. Everything inline.
 5. **Valid HTML5**: Output must be valid, well-formed HTML5.
+
+### Readability Conventions (enforced by `validate-migration-report.py`)
+
+These move from "example in the fixture" to enforced gate. See `references/shared/validate-migration-report.md` and `fixtures/migration-report-reference.html`.
+
+1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Total Cost of Ownership"), never `Section N — …`. The "Section N" labels used elsewhere in *this spec* are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading.
+2. **No internal scoring trace.** Per-cluster mapping rationale goes in a collapsible `<details class="why">` ("Why this mapping?") block — never a bare `Rubric:` line. The validator fails on a literal `Rubric:` in the body.
+3. **Security teaser up top, full detail in the appendix.** `exec-security-teaser` carries a 2–3 line summary that links down to `appendix-security` (full control table) and `appendix-security-gap`. Do not render the full control table in the executive flow.
+4. **Expand acronyms** on first use and include a glossary (TCO, DMS, OAI, RTO, CUD, SCC, IMDSv2, P95, RAG) in the assumptions section — the audience is startup founders, not AWS specialists.
+5. **Accessible tables and diagrams.** Every table has a `<caption>` and `scope="col"` on header cells. The architecture diagram is wrapped in `<figure role="img" aria-label="…">` with a `<figcaption>` text alternative.
+6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate, phased over 10 weeks — ~$497/mo savings, BigQuery deferred") in addition to the `path_label` badges.
+
+> **Section IDs are stable anchors, not placement hints.** Some `appendix-*` IDs render in the executive flow on purpose (notably `appendix-assumptions`). Do not rename IDs to match position — the validator and TOC key on them.
 
 ## Step 4: Self-Check and Post-Write Validation
 
@@ -613,11 +626,12 @@ After generating the HTML file, verify:
 5. **Combined TCO**: When **both** `estimation-infra.json` and `estimation-ai.json` exist, exactly one `exec-tco` section with summed totals.
 6. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly — **manual / agent self-check**; the automated validator does not verify numerics (see `validate-migration-report.md` scope).
 7. **Conditional sections**: AI appendix only present if AI artifacts exist; billing caveats shown when billing_data_available is false; Bedrock monitoring row only when `bedrock_monitoring.tf` exists; startup credits callout only when `STARTUP_PROGRAMS.md` or preference indicates eligibility
-8. **Section 0**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present
+8. **Decision summary**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present, plus a one-sentence recommendation banner
 9. **Human expertise flags**: Warning callouts appear for all services with `human_expertise_required: true`
 10. **Valid HTML**: Opening and closing tags match, no broken table structures
 11. **No placeholders**: No `[placeholder]` or `TODO` text in the report output
 12. **Footer disclaimer**: Footer contains "draft for review"
+13. **Readability**: No literal `Rubric:` and no numbered headings (`Section 0`, `Section 1b`, `<hN>Section N — …`); security teaser up top with full table in the appendix; tables have `<caption>`/`scope`; acronyms expanded; one-sentence recommendation banner in decision summary
 
 **Run automated validator (mandatory when HTML was written):**
 
@@ -630,10 +644,10 @@ python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
 ```
 
-Pass `--estimation-infra` / `--estimation-ai` only when those files exist in `$MIGRATION_DIR`.
+Pass `--estimation-infra` / `--estimation-ai` only when those files exist in `$MIGRATION_DIR`. Use `--no-readability` only for non-customer test fixtures — not for normal Generate runs.
 
 - On `REPORT_OK`: proceed to Step 5.
-- On `REPORT_FAIL`: **rename** to `migration-report.incomplete.html` (default; do not delete), emit all failure lines to the user, and report to parent: "Report generation incomplete — re-run report step or expand appendix per fixtures/migration-report-reference.html". Do **not** claim a complete report was delivered.
+- On `REPORT_FAIL`: **rename** to `migration-report.incomplete.html` (default; do not delete), emit all failure lines to the user, and report to parent: "Report generation incomplete — re-run report step or expand appendix per fixtures/migration-report-reference.html". Do **not** claim a complete report was delivered or present a stub/numbered/jargon report as complete.
 
 ## Step 5: Open Report in Browser
 

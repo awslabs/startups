@@ -2,7 +2,8 @@
 """Validate migration-report.html completeness after Generate phase.
 
 Checks required section IDs, TOC anchor integrity, minimum appendix content,
-and artifact-derived cost markers. Exit 0 on PASS, 1 on FAIL.
+artifact-derived cost markers, and customer-facing readability rules. Exit 0
+on PASS, 1 on FAIL.
 
 Usage:
   python3 validate-migration-report.py /path/to/migration-report.html
@@ -53,6 +54,28 @@ OPTIONAL_SECTION_IDS = [
 FORBIDDEN_PATTERNS = [
     (r"\[placeholder\]", "placeholder text"),
     (r"\bTODO\b", "TODO marker"),
+]
+
+# Customer-facing readability rules (enforced unless --no-readability).
+# These move the de-jargoning and no-numbering conventions from "example in the
+# fixture" to "enforced gate", so a stray internal scoring trace or a patched
+# "Section 0/1b" heading fails the report instead of silently shipping.
+READABILITY_PATTERNS = [
+    (
+        r"Rubric:",
+        'internal scoring trace ("Rubric:") — drop it or gate behind a '
+        '<details> "Why this mapping?" block',
+    ),
+    (
+        r"Section\s+0\b",
+        'literal "Section 0" heading — drop numeric "Section N" prefixes from '
+        "customer-facing headings; let the table of contents carry structure",
+    ),
+    (
+        r"<h[1-6][^>]*>\s*Section\s+\d+[a-z]?\s*[—-]",
+        'numbered "Section N —" heading — drop numeric prefixes from headings; '
+        "let the table of contents carry structure",
+    ),
 ]
 
 APPENDIX_STUB_PATTERNS = [
@@ -109,9 +132,9 @@ def _validate_required_sections(html: str) -> list[str]:
     for section_id in REQUIRED_SECTION_IDS:
         n = counts.get(section_id, 0)
         if n == 0:
-            errors.append(f"missing required <section id=\"{section_id}\">")
+            errors.append(f'missing required <section id="{section_id}">')
         elif n > 1:
-            errors.append(f"duplicate <section id=\"{section_id}\"> ({n} occurrences)")
+            errors.append(f'duplicate <section id="{section_id}"> ({n} occurrences)')
     return errors
 
 
@@ -135,14 +158,14 @@ def _validate_toc(html: str) -> list[str]:
     section_ids = set(_section_id_counts(html).keys())
     for href in hrefs:
         if href not in section_ids:
-            errors.append(f"TOC broken link href=\"#{href}\" — no matching <section id=\"{href}\">")
+            errors.append(f'TOC broken link href="#{href}" — no matching <section id="{href}">')
 
-    # Every TOC target must be reachable; also warn on orphan required sections not in TOC
+    # Every required section must be linked from the TOC.
     for section_id in REQUIRED_SECTION_IDS:
         if section_id in section_ids and section_id not in hrefs and hrefs:
             errors.append(
-                f"TOC missing link to required section id=\"{section_id}\" "
-                f"(add <a href=\"#{section_id}\">)"
+                f'TOC missing link to required section id="{section_id}" '
+                f'(add <a href="#{section_id}">)'
             )
     return errors
 
@@ -175,19 +198,15 @@ def _security_scoped_html(html: str) -> str:
 
 
 def _dollar_amount_present(amount: float | int, text: str) -> bool:
-    """True when a dollar-formatted value appears in text with numeric boundaries."""
+    """True when a dollar-formatted value appears in text (not bare CSS integers)."""
     normalized = text.replace(",", "")
     v = float(amount)
+    candidates: list[str] = []
     if v == int(v):
         i = int(v)
-        patterns = [
-            rf"(?<![0-9.])\${i}(?:\.00)?(?![0-9])",
-            rf"(?<![0-9.])\${i}\.0(?![0-9])",
-        ]
-    else:
-        whole, frac = f"{v:.2f}".split(".")
-        patterns = [rf"(?<![0-9.])\${whole}\.{frac}(?![0-9])"]
-    return any(re.search(p, normalized) for p in patterns)
+        candidates.extend([f"${i}", f"${i}.00", f"${i}.0"])
+    candidates.append(f"${v:.2f}")
+    return any(c in normalized for c in candidates)
 
 
 def _has_guardduty_or_baseline(html: str, estimation_infra: dict | None) -> tuple[bool, str]:
@@ -218,12 +237,30 @@ def _has_guardduty_or_baseline(html: str, estimation_infra: dict | None) -> tupl
     )
 
 
+def _readability_scope(html: str) -> str:
+    """Body only, excluding <style> blocks so CSS class names like .rubric or
+    selectors never trip the readability patterns."""
+    no_style = re.sub(r"<style\b.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
+    body = re.search(r"<body\b[^>]*>(.*?)</body>", no_style, re.DOTALL | re.IGNORECASE)
+    return body.group(1) if body else no_style
+
+
+def _validate_readability(html: str) -> list[str]:
+    errors: list[str] = []
+    scope = _readability_scope(html)
+    for pattern, label in READABILITY_PATTERNS:
+        if re.search(pattern, scope, re.IGNORECASE):
+            errors.append(f"readability: {label}")
+    return errors
+
+
 def validate_report(
     html: str,
     estimation_infra: dict | None = None,
     estimation_ai: dict | None = None,
     *,
     require_toc: bool = True,
+    check_readability: bool = True,
 ) -> list[str]:
     errors: list[str] = []
 
@@ -237,6 +274,9 @@ def validate_report(
     for pattern, label in FORBIDDEN_PATTERNS:
         if re.search(pattern, html, re.IGNORECASE):
             errors.append(f"forbidden content: {label}")
+
+    if check_readability:
+        errors.extend(_validate_readability(html))
 
     for section_id, min_depth in MIN_CONTENT_DEPTH.items():
         section = _section_html(html, section_id)
@@ -271,7 +311,7 @@ def validate_report(
         counts = _section_id_counts(html)
         if counts.get("exec-tco", 0) != 1:
             errors.append(
-                'when both estimation-infra.json and estimation-ai.json exist, '
+                "when both estimation-infra.json and estimation-ai.json exist, "
                 'include exactly one <section id="exec-tco"> with combined infra+AI TCO'
             )
 
@@ -287,6 +327,11 @@ def main() -> int:
         "--no-require-toc",
         action="store_true",
         help="Skip TOC requirement (for minimal test fixtures)",
+    )
+    parser.add_argument(
+        "--no-readability",
+        action="store_true",
+        help="Skip customer-facing readability checks (Rubric:/Section N)",
     )
     args = parser.parse_args()
 
@@ -309,6 +354,7 @@ def main() -> int:
         estimation_infra,
         estimation_ai,
         require_toc=not args.no_require_toc,
+        check_readability=not args.no_readability,
     )
     if errors:
         print("REPORT_FAIL | migration-report.html", file=sys.stderr)

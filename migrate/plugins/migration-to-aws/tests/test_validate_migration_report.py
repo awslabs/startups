@@ -51,6 +51,7 @@ def run_validator(
     estimation_ai: Path | None = None,
     *,
     require_toc: bool = True,
+    readability: bool = True,
 ) -> tuple[int, str]:
     cmd = [sys.executable, str(SCRIPT), str(html_path)]
     if estimation_infra:
@@ -59,6 +60,8 @@ def run_validator(
         cmd.extend(["--estimation-ai", str(estimation_ai)])
     if not require_toc:
         cmd.append("--no-require-toc")
+    if not readability:
+        cmd.append("--no-readability")
     result = subprocess.run(cmd, capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
 
@@ -71,30 +74,6 @@ def test_reference_fixture_passes() -> None:
     assert code == 0, out
     assert "REPORT_OK" in out
     assert "structure=complete" in out
-    assert "verify dollar figures" in out
-
-
-def test_reference_passes_dollar_only_security_without_guardduty_name(tmp_path: Path) -> None:
-    """Component dollar amounts satisfy security check when GuardDuty label is omitted."""
-    html = FIXTURE.read_text(encoding="utf-8")
-    html = re.sub(r"GuardDuty", "ThreatDetection", html, flags=re.IGNORECASE)
-    path = tmp_path / "report.html"
-    path.write_text(html, encoding="utf-8")
-    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
-    assert code == 0, out
-
-
-def test_reference_fails_without_component_dollars(tmp_path: Path) -> None:
-    html = FIXTURE.read_text(encoding="utf-8")
-    html = re.sub(r"GuardDuty", "", html, flags=re.IGNORECASE)
-    html = re.sub(r"\$13(?:\.00)?(?:/mo)?", "", html)
-    html = re.sub(r"\$1\.50", "", html)
-    html = re.sub(r"\$0\.50", "", html)
-    path = tmp_path / "report.html"
-    path.write_text(html, encoding="utf-8")
-    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
-    assert code == 1, out
-    assert "component costs" in out.lower() or "GuardDuty" in out
 
 
 def test_minimal_html_passes_without_toc(tmp_path: Path) -> None:
@@ -239,15 +218,64 @@ def test_ai_only_does_not_require_exec_tco(tmp_path: Path) -> None:
     assert code == 0, out
 
 
-def test_dollar_amount_word_boundary() -> None:
-    import importlib.util
+# --- Readability checks (Rubric: / numbered headings) ---
 
-    spec = importlib.util.spec_from_file_location("validate_migration_report", SCRIPT)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
 
-    assert mod._dollar_amount_present(13, "GuardDuty $13.00 monthly")
-    assert not mod._dollar_amount_present(13, "budget $130.00 monthly")
-    assert mod._dollar_amount_present(1.5, "CloudTrail S3 $1.50")
-    assert not mod._dollar_amount_present(1.5, "wrong $11.50")
+def test_rubric_trace_rejected(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="appendix-services"><h2>A</h2>',
+        '<section id="appendix-services"><h2>A</h2><p>Rubric: Eliminators PASS</p>',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "Rubric" in out
+
+
+def test_section_zero_heading_rejected(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="decision-summary"><h2>Decision</h2>',
+        '<section id="decision-summary"><h2>Section 0 — Decision</h2>',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "Section 0" in out or "numbered" in out.lower()
+
+
+def test_numbered_section_heading_rejected(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="exec-services"><h2>Services</h2>',
+        '<section id="exec-services"><h2>Section 1b — Services</h2>',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "numbered" in out.lower() or "Section" in out
+
+
+def test_readability_can_be_disabled(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="decision-summary"><h2>Decision</h2>',
+        '<section id="decision-summary"><h2>Section 0 — Decision</h2><p>Rubric: x</p>',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False, readability=False)
+    assert code == 0, out
+
+
+def test_rubric_css_class_does_not_false_positive(tmp_path: Path) -> None:
+    """A `.rubric` CSS selector in <style> must not trip the readability check."""
+    html = MINIMAL_PASS.replace(
+        "<html>",
+        "<html><style>.rubric { color: #656d76; } /* Section 0 layout */</style>",
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 0, out

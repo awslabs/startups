@@ -1,19 +1,10 @@
-# Migration report reference fixtures
+# Migration report reference fixture
 
-| File | Purpose |
-| --- | --- |
-| `migration-report-reference.html` | Complete report shape (passes validator with estimation JSON below) |
-| `migration-report-stub.html` | Executive-summary-only stub (172 lines) — **must fail** manual validation |
-| `estimation-infra-reference.json` | Trimmed infra estimate aligned with reference HTML |
-| `estimation-ai-reference.json` | Trimmed AI estimate aligned with reference HTML |
-
-`migration-report-reference.html` is a **structural reference** for the comprehensive `migration-report.html` output. It uses canonical section IDs checked by `scripts/validate-migration-report.py`.
-
-`migration-report-stub.html` is a **before** artifact: summary-only HTML with a JSON-link appendix stub. Use the CLI command below to confirm incomplete reports fail loudly (not exercised by pytest — see `STUB_FAIL` in `tests/test_validate_migration_report.py`).
+`migration-report-reference.html` is a **structural reference** for the comprehensive `migration-report.html` output. It was derived from SF Beach migration artifacts (`0611-0606`) and uses canonical section IDs checked by `scripts/validate-migration-report.py`.
 
 **Do not copy dollar figures** into customer reports unless they match the current `$MIGRATION_DIR` estimation artifacts.
 
-## Validate (full contract — must pass)
+## Validate (full contract)
 
 ```bash
 python3 scripts/validate-migration-report.py \
@@ -22,17 +13,22 @@ python3 scripts/validate-migration-report.py \
   --estimation-ai fixtures/estimation-ai-reference.json
 ```
 
-## Validate stub (must fail)
+`estimation-*-reference.json` are trimmed snapshots aligned with the HTML fixture. Together they exercise security-baseline cross-checks and combined-TCO (`exec-tco`) requirements.
 
-```bash
-python3 scripts/validate-migration-report.py \
-  fixtures/migration-report-stub.html \
-  --estimation-infra fixtures/estimation-infra-reference.json \
-  --estimation-ai fixtures/estimation-ai-reference.json
-```
+## Readability conventions enforced by the validator
 
-`estimation-*-reference.json` are trimmed snapshots aligned with the reference HTML. Together they exercise security-baseline cross-checks and combined-TCO (`exec-tco`) requirements.
+The fixture is also the worked example for the readability rules the validator now enforces (not just documents):
+
+- **No numeric "Section N" headings.** Customer-facing `<h2>`/`<h3>` headings use plain titles (e.g. "Total Cost of Ownership", not "Section 1 — …"). The table of contents carries structure: executive sections in an ordered list, appendices in a separate lettered list to avoid double-numbering.
+- **No internal scoring trace.** Per-cluster mapping rationale lives in a collapsible `<details class="why">` ("Why this mapping?") block, never a bare `Rubric:` line.
+- **Security teaser up top, full detail in the appendix.** `exec-security-teaser` carries a 2–3 line summary; the full control table and gap analysis are `appendix-security` / `appendix-security-gap`.
+- **Consistent money formatting** (whole-dollar monthly figures; cents only where sub-dollar precision matters) and **expanded acronyms** (glossary in the assumptions section).
+- **Accessible tables and diagram**: `<caption>` + `scope="col"` on tables; the ASCII architecture diagram is wrapped in a `<figure role="img">` with an `aria-label` text alternative and a `<figcaption>`.
+
+## Section IDs are stable anchors, not placement hints
+
+A few sections carry `appendix-` IDs but render in the executive flow by design — most notably `appendix-assumptions` (exclusions and pricing confidence are exec-relevant). IDs are stable validator/TOC anchors; **do not rename them to match position**. `appendix-security` and `appendix-security-gap` do render in the appendix in this revision, so their IDs now also match placement.
 
 ## What REPORT_OK means
 
-`REPORT_OK | structure=complete` means required sections, TOC links, and appendix depth checks passed. It does **not** verify that every dollar figure in the HTML matches the JSON — verify numerics manually or in a future accuracy gate before executive sign-off.
+`REPORT_OK | structure=complete` means required sections, TOC links, appendix depth, readability rules, and artifact-driven cost/TCO checks passed. It does **not** verify that every dollar figure in the HTML matches the JSON — verify numerics manually or in a future accuracy gate before executive sign-off.

@@ -12,8 +12,6 @@ The validator script ships with the plugin at:
 
 `migrate/plugins/migration-to-aws/scripts/validate-migration-report.py`
 
-**From `$MIGRATION_DIR`** (e.g. `.migration/0611-0606/`), resolve the script relative to the installed plugin root. If the agent knows the plugin checkout path `$PLUGIN_ROOT`:
-
 ```bash
 python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   "$MIGRATION_DIR/migration-report.html" \
@@ -21,15 +19,16 @@ python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
 ```
 
-Pass `--estimation-ai` only when that file exists. Omit flags for artifacts that were not generated.
+Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Flags:
 
-The script also exposes its path via `Path(__file__)` when invoked directly from the plugin copy.
+- `--no-require-toc` — skip the TOC requirement (for minimal test fixtures only).
+- `--no-readability` — skip the customer-facing readability checks (escape hatch; not for normal Generate runs).
 
 ---
 
 ## Scope
 
-This validator is a **structural completeness gate**. It does **not** verify that every dollar figure in the HTML matches estimation JSON. Self-check item #6 in `generate-artifacts-report.md` (numeric accuracy) remains a manual step. `REPORT_OK | structure=complete` means the report is ready for human review, not financially audited.
+This validator is a **structural + readability completeness gate**. It does **not** verify that every dollar figure in the HTML matches estimation JSON. Self-check item for numeric accuracy in `generate-artifacts-report.md` remains a manual step. `REPORT_OK | structure=complete` means the report is ready for human review, not financially audited.
 
 ---
 
@@ -45,20 +44,30 @@ This validator is a **structural completeness gate**. It does **not** verify tha
 | 6 | Footer | Contains "draft for review" |
 | 7 | No placeholders | No `[placeholder]` or `TODO` in report body |
 | 8 | Combined TCO | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">` |
+| 9 | Readability — no scoring trace | No literal `Rubric:` in the body. Render per-cluster rationale in a `<details>` "Why this mapping?" block instead |
+| 10 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure |
+
+Checks 9–10 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Disable with `--no-readability` only for non-customer fixtures.
 
 ---
 
-## Optional sections (recommended — warn if missing when data exists)
+## Optional sections (recommended — include when data exists)
 
 | Section ID | Include when |
 |------------|--------------|
 | `exec-tco` | Both `estimation-infra.json` and `estimation-ai.json` exist |
 | `exec-architecture` | `aws-design.json` with clusters exists |
-| `exec-security-teaser` | `estimation-infra.json` has `security_baseline` breakdown |
+| `exec-security-teaser` | `estimation-infra.json` has `security_baseline` breakdown (compact summary; full table in `appendix-security`) |
 | `appendix-ai` | `estimation-ai.json` or `aws-design-ai.json` exists |
-| `appendix-security` | Full security capabilities table |
-| `appendix-security-gap` | Infra track ran |
-| `appendix-assumptions` | Pricing confidence, exclusions, validation status |
+| `appendix-security` | Full security capabilities table (rendered in the appendix) |
+| `appendix-security-gap` | Infra track ran (rendered in the appendix) |
+| `appendix-assumptions` | Pricing confidence, exclusions, validation status, glossary (rendered in the executive flow by design) |
+
+---
+
+## Section IDs are stable anchors, not placement hints
+
+Some `appendix-*` IDs render in the executive flow on purpose — `appendix-assumptions` especially, since exclusions and pricing confidence are executive-relevant. **Do not rename IDs to match position**; the validator and TOC key on them. `appendix-security` and `appendix-security-gap` render in the appendix and so their IDs match placement; `exec-security-teaser` is the compact executive summary that links down to them.
 
 ---
 
@@ -67,28 +76,20 @@ This validator is a **structural completeness gate**. It does **not** verify tha
 **Pass:**
 
 ```
-REPORT_OK | structure=complete | sections=9/9 | optional=exec-tco,appendix-ai | note=verify dollar figures against estimation JSON before sign-off
+REPORT_OK | structure=complete | sections=9/9 | optional=exec-tco,exec-security-teaser,appendix-ai | note=verify dollar figures against estimation JSON before sign-off
 ```
-
-`structure=complete` does **not** mean dollar figures were cross-checked against JSON — only that sections, TOC, appendix depth, and artifact-driven gates passed.
 
 **Fail:**
 
 ```
 REPORT_FAIL | migration-report.html
+  - readability: internal scoring trace ("Rubric:") — drop it or gate behind a <details> "Why this mapping?" block
+  - readability: literal "Section 0" heading — drop numeric "Section N" prefixes from customer-facing headings; let the table of contents carry structure
   - TOC broken link href="#decision" — no matching <section id="decision">
-  - duplicate <section id="exec-costs"> (2 occurrences)
 ```
 
 ---
 
 ## Reference fixture
 
-`migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html` — TOC `href` values match `section id` attributes exactly. Validate with:
-
-```bash
-python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
-  "$PLUGIN_ROOT/fixtures/migration-report-reference.html" \
-  --estimation-infra "$PLUGIN_ROOT/fixtures/estimation-infra-reference.json" \
-  --estimation-ai "$PLUGIN_ROOT/fixtures/estimation-ai-reference.json"
-```
+`migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html` — TOC `href` values match `section id` attributes exactly, security detail lives in the appendix behind a teaser, mapping rationale is in `<details>` blocks, and headings carry no numbers. Validate with the full-contract command above.
