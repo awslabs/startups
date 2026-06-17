@@ -58,6 +58,12 @@ Gather data from all available artifacts. Each section below notes which artifac
 | AI capabilities and integration         | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile`                                                                               | —                                                    |
 | Deferred services                       | Design artifact `resources[].aws_service == "Deferred — specialist engagement"`                                                                         | —                                                    |
 | Observability cost callout              | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`) | —                                                    |
+| **Combined TCO (infra + AI)**           | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`)       | —                                                    |
+| **Security baseline component costs**   | `estimation-infra.json` → `projected_costs.breakdown.security_baseline.components` (GuardDuty, cloudtrail_s3, etc.)                                     | Static ranges in Appendix G when JSON absent         |
+| **Engineering effort**                  | `generation-infra.json` + `generation-ai.json` → `recommendation.estimated_total_effort_hours`                                                          | —                                                    |
+| **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                   | —                                                    |
+| **Pricing confidence / staleness**      | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                       | `estimation-ai.json` accuracy fields                 |
+| **AI optimization opportunities**       | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                             | —                                                    |
 
 ## Step 1: Build Executive Summary Section
 
@@ -67,7 +73,11 @@ The executive summary is the first thing visible when opening the report. Design
 
 **Header:** "GCP to AWS Migration Assessment" with subtitle "Executive Summary" and generation date.
 
-**Target length:** approximately 1–2 printed pages. If content exceeds 2 pages, move the Security Capabilities table to Appendix G and keep only the teaser in the exec summary.
+**Table of contents (required):** Linked `<nav class="toc">` listing all executive sections and appendix sections present in this report. Omit links to sections not rendered.
+
+**Target length:** approximately 2–4 printed pages for executive summary. **Do NOT truncate appendices** to fit page count — appendices may be long.
+
+**Anti-stub rule (mandatory):** The appendix MUST render artifact data as HTML tables and prose. **Forbidden:** appendix sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html`.
 
 **Section 0 — Migration Decision Summary (REQUIRED):**
 
@@ -98,6 +108,22 @@ Do not show this callout if none of the conditions are met.
 
 Source: estimation artifact `recommendation`, `migration-preview.json`, design artifact
 
+- Source: estimation artifact
+
+**Section 1b — Total Cost of Ownership (`exec-tco`, REQUIRED when both `estimation-infra.json` AND `estimation-ai.json` exist):**
+
+Combined monthly and annual view **excluding** deferred services (e.g. BigQuery):
+
+| Row | GCP | AWS Balanced | Notes |
+| --- | --- | --- | --- |
+| Infrastructure | `current_costs.gcp_monthly` | `projected_costs.aws_monthly_balanced` | From infra estimate |
+| AI / ML | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate |
+| **Total** | sum | sum | Show monthly Δ and % change |
+
+If `estimation-ai.json` → `optimized_projection` exists, footnote the optimized AI path separately.
+
+Source: `estimation-infra.json`, `estimation-ai.json`
+
 **Section 1 — Current Stack Overview:**
 
 - Count of PRIMARY GCP services detected (from design artifact — filter to primary classification only; exclude secondary/supporting resources like default VPC firewalls)
@@ -111,6 +137,14 @@ Source: estimation artifact `recommendation`, `migration-preview.json`, design a
 - One row per mapped service
 - If any service has `human_expertise_required: true`, mark it with a warning indicator and footnote: "Specialist guidance recommended — contact your AWS account team"
 - Source: design artifact
+
+**Section 2b — Architecture diagram (`exec-architecture`, REQUIRED when `aws-design.json` clusters exist):**
+
+ASCII or structured diagram showing: users → ALB → compute → database/storage/AI; security baseline box; deferred services called out.
+
+Include **migration cluster order** from `generation-infra.json` → `migration_plan.cluster_order`.
+
+Source: `aws-design.json`, `generation-infra.json`
 
 **Section 3 — Cost Comparison:**
 
@@ -169,8 +203,9 @@ Source: static template filtered by design artifact service types
 
 **Section 6 — Timeline:**
 
-- Total migration weeks
+- Total migration weeks (infra + note parallel AI weeks if applicable)
 - Migration approach (phased/fast-track/conservative)
+- **Engineering effort:** sum `generation-infra.json` and `generation-ai.json` → `recommendation.estimated_total_effort_hours` when both exist
 - Source: generation plan
 
 **Section 7 — Top Risks:**
@@ -198,9 +233,20 @@ Source: design artifact (aws-design.json or aws-design-billing.json)
 
 ### Appendix Section B — Cost Estimates
 
-**Per-service cost breakdown table** with columns: Service Category, AWS Service, Monthly Cost (Balanced), Alternative, Alternative Cost, Potential Savings.
+**Per-service cost breakdown table** with columns: Service Category, AWS Service, Monthly Cost (Balanced), Calculation/Notes.
 
-Source: estimation artifact projected_costs.breakdown
+**Mandatory rows when present in `projected_costs.breakdown`:**
+
+- compute, database, storage, networking
+- **security_baseline** — include `mid` cost AND component sub-rows from `components` (e.g. GuardDuty, cloudtrail_s3, budgets)
+- **observability** — include `mid` and `note` (GCP free-tier comparison)
+- supporting (Secrets Manager, ECR, etc.)
+
+Do NOT collapse security_baseline into "other". Surface GuardDuty explicitly.
+
+**GCP baseline breakdown** (when `current_costs.breakdown` exists): table of compute/database/storage/networking/other vs infra total.
+
+Source: estimation artifact projected_costs.breakdown, current_costs.breakdown
 
 **Three-tier comparison table** with columns: **Tier** (name + subtitle as in Section 3), Monthly Cost, vs GCP Monthly, Annual Difference.
 
@@ -210,9 +256,11 @@ Source: estimation artifact cost_comparison
 
 **Optimization opportunities table** with columns: Optimization, Target Services, Monthly Savings, Commitment, Effort.
 
+Merge infra (`estimation-infra.json`) and AI (`estimation-ai.json`) optimization rows when both exist.
+
 Source: estimation artifact optimization_opportunities
 
-> **Security baseline costs** are included as a line item in the breakdown above. For what each control does and GCP equivalents, see Section 4 (exec summary teaser) or Appendix G (full capabilities table).
+> **Security baseline costs** are included as a line item in the breakdown above. For Terraform resource names and GCP equivalents, see Appendix G.
 
 ### Appendix Section C — Migration Steps
 
@@ -389,6 +437,35 @@ These are detective controls, not spend caps. You will know within ~24 hours if 
 
 Source: static content + `preferences.json` compliance values
 
+### Appendix Section H — Security Gap Analysis (`appendix-security-gap`, REQUIRED when infra track ran)
+
+Table: Capability | GCP (detected) | AWS (generated) | Gap / action
+
+Minimum rows:
+
+- Network perimeter (firewall rules → security groups)
+- Identity & access (service accounts → IAM roles)
+- Audit logging (Cloud Audit Logs → CloudTrail)
+- Threat detection (SCC optional → GuardDuty in baseline.tf)
+- Public data exposure (if public GCS/S3 detected in design)
+- Observability cost shift (Cloud Operations free tiers → CloudWatch)
+
+Source: `aws-design.json`, `terraform/baseline.tf`, `estimation-infra.json` observability note
+
+### Appendix Section I — Assumptions & Validation (`appendix-assumptions`, REQUIRED)
+
+**Pricing confidence table:** domain, source, accuracy band, last updated (from `pricing_source` / `accuracy_confidence`).
+
+**Exclusions list:**
+
+- Deferred services (`deferred_services[]`, `excluded_from_totals`)
+- GCP egress when `migration_cost_considerations.billing_data_available === false`
+- Professional services / dual-run period (not modeled)
+
+**Terraform validation:** from `validation-report.json` when present (`status`, provider version).
+
+Source: estimation artifacts, `validation-report.json`, design warnings
+
 ## Step 3: Generate HTML
 
 ### Pre-Write Sanity Check (mandatory)
@@ -411,15 +488,15 @@ The output MUST include these `id` attributes (content from Steps 1–2; gates c
 | -------------------- | -------------------------------------- |
 | `decision-summary`   | Section 0 — Migration Decision Summary |
 | `exec-services`      | Primary services summary               |
-| `exec-costs`         | Cost comparison headline               |
-| `exec-timeline`      | Timeline                               |
+| `exec-costs`         | Cost comparison headline / tier table  |
+| `exec-timeline`      | Timeline + effort                      |
 | `exec-risks`         | Top risks                              |
 | `appendix-services`  | Appendix A                             |
 | `appendix-costs`     | Appendix B                             |
 | `appendix-steps`     | Appendix C                             |
 | `appendix-artifacts` | Appendix E                             |
 
-Optional IDs (include when data exists): `appendix-ai`, `appendix-config`, `appendix-security`.
+Optional IDs (include when data exists): `exec-tco`, `exec-architecture`, `exec-security-teaser`, `appendix-ai`, `appendix-config`, `appendix-security`, `appendix-security-gap`, `appendix-assumptions`.
 
 ```html
 <!DOCTYPE html>
@@ -525,18 +602,36 @@ The inline CSS must include:
 4. **No external resources**: No CDN links, no external fonts, no images. Everything inline.
 5. **Valid HTML5**: Output must be valid, well-formed HTML5.
 
-## Step 4: Self-Check
+## Step 4: Self-Check and Post-Write Validation
 
 After generating the HTML file, verify:
 
 1. **Required section IDs**: `decision-summary`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks`, `appendix-services`, `appendix-costs`, `appendix-steps`, `appendix-artifacts` each appear exactly once as `<section id="...">`. If any missing: treat as build failure (warn user; do not fail Generate phase).
-2. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly
-3. **Conditional sections**: AI appendix only present if AI artifacts exist; billing caveats shown when billing_data_available is false; Bedrock monitoring row only when `bedrock_monitoring.tf` exists; startup credits callout only when `STARTUP_PROGRAMS.md` or preference indicates eligibility
-4. **Section 0**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present
-5. **Human expertise flags**: Warning callouts appear for all services with `human_expertise_required: true`
-6. **Valid HTML**: Opening and closing tags match, no broken table structures
-7. **No placeholders**: No `[placeholder]` or `TODO` text in the report output
-8. **Footer disclaimer**: Footer contains "draft for review"
+2. **Appendix not a stub**: Appendix B contains ≥3 cost line items with dollar amounts; Appendix A contains per-cluster or per-service mappings (not only JSON file links).
+3. **Security baseline surfaced**: When `projected_costs.breakdown.security_baseline` exists, report mentions GuardDuty or lists component costs from `components`.
+4. **Combined TCO**: When both infra and AI estimates exist, `exec-tco` section present with summed totals.
+5. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly
+6. **Conditional sections**: AI appendix only present if AI artifacts exist; billing caveats shown when billing_data_available is false; Bedrock monitoring row only when `bedrock_monitoring.tf` exists; startup credits callout only when `STARTUP_PROGRAMS.md` or preference indicates eligibility
+7. **Section 0**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present
+8. **Human expertise flags**: Warning callouts appear for all services with `human_expertise_required: true`
+9. **Valid HTML**: Opening and closing tags match, no broken table structures
+10. **No placeholders**: No `[placeholder]` or `TODO` text in the report output
+11. **Footer disclaimer**: Footer contains "draft for review"
+
+**Run automated validator (mandatory when HTML was written):**
+
+Load `shared/validate-migration-report.md` and run:
+
+```bash
+python3 migrate/plugins/migration-to-aws/scripts/validate-migration-report.py \
+  "$MIGRATION_DIR/migration-report.html" \
+  --estimation-infra "$MIGRATION_DIR/estimation-infra.json"
+```
+
+(Use the plugin-relative path from repo root, or absolute path to `scripts/validate-migration-report.py` in the installed plugin copy.)
+
+- On `REPORT_OK`: proceed to Step 5.
+- On `REPORT_FAIL`: delete the incomplete HTML (or rename to `migration-report.incomplete.html`), emit all failure lines to the user, and report to parent: "Report generation incomplete — re-run report step or expand appendix per fixtures/migration-report-reference.html". Do **not** claim a complete report was delivered.
 
 ## Step 5: Open Report in Browser
 
@@ -569,4 +664,6 @@ Report sections:
 - Appendix E: Artifacts Catalog
 - [Appendix F: Your Configuration — if preferences.json exists]
 - Appendix G: Security Capabilities
+- [Appendix H: Security Gap Analysis — when infra track ran]
+- [Appendix I: Assumptions & Validation — always recommended]
 ```

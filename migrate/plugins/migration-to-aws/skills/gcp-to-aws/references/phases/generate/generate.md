@@ -131,6 +131,8 @@ Produces: `migration-report.html`
 
 **Validation gate:** Report generation runs `shared/validate-artifacts.md` first. If validation emits `GATE_FAIL`: log the failure to the user, **do not write** `migration-report.html`, and continue to Phase Completion (report is optional output; validation failure is not a silent skip). Do **NOT** patch artifacts to pass validation.
 
+After writing `migration-report.html`, run `shared/validate-migration-report.md` (automated script). On `REPORT_FAIL`: remove or rename incomplete HTML and warn the user — do not present a stub report as complete.
+
 ## Phase Completion
 
 Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
