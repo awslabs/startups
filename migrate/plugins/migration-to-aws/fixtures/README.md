@@ -7,7 +7,7 @@
 | `estimation-infra-reference.json` | Trimmed infra estimate aligned with reference HTML |
 | `estimation-ai-reference.json` | Trimmed AI estimate aligned with reference HTML |
 
-`migration-report-reference.html` is a **structural reference** for the comprehensive `migration-report.html` output. It was derived from SF Beach migration artifacts (`0611-0606`) and uses canonical section IDs checked by `scripts/validate-migration-report.py`.
+`migration-report-reference.html` is a **structural reference** for the comprehensive `migration-report.html` output. It uses canonical section IDs checked by `scripts/validate-migration-report.py`.
 
 `migration-report-stub.html` is a **before** artifact: summary-only HTML with a JSON-link appendix stub. Use the CLI command below to confirm incomplete reports fail loudly (not exercised by pytest — see `STUB_FAIL` in `tests/test_validate_migration_report.py`).
 
