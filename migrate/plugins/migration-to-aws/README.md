@@ -24,6 +24,7 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 | Framework gotchas        | Not covered                       | Documents real issues: LangGraph checkpointer incompatibility, CrewAI hierarchical process failures with smaller models, async thread pool exhaustion |
 | Regional validation      | Outdated region lists             | Live `get_regional_availability` MCP call — catches "AgentCore Harness isn't in your target region" before you commit                                 |
 | Cost estimation          | Stale pricing                     | Three-tier pricing: cached current rates, live AWS Pricing API, fallback. Shows ±5-10% accuracy.                                                      |
+| Migration report         | Generic summary or missing detail | `migration-report.html` with cost tiers, security baseline (GuardDuty, etc.), combined TCO, and appendices — validated for structural completeness      |
 | Generated code           | Generic templates                 | Your model IDs, your tool names, your system prompts, your region — in runnable scripts                                                               |
 | Incremental migration    | Not suggested                     | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident                               |
 
@@ -67,8 +68,30 @@ codex plugin install migration-to-aws
 2. **Clarify** — Ask targeted questions about migration preferences, AI priorities, agentic migration approach, memory requirements, and timeline.
 3. **Design** — Map GCP services to AWS equivalents. For AI workloads: select Bedrock models with honest pricing comparison. For agentic workloads: design AgentCore Harness config or Strands architecture.
 4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current GCP/OpenAI spend.
-5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, and documentation.
+5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, `MIGRATION_GUIDE.md`, `README.md`, and **`migration-report.html`** (self-contained HTML assessment).
 6. **Feedback** _(optional)_ — Collect anonymized feedback to improve the tool.
+
+### Migration report (`migration-report.html`)
+
+The Generate phase produces a browser-ready HTML report with:
+
+- Executive summary (verdict, cost tiers, timeline, risks)
+- Combined infra + AI total cost of ownership (when both tracks ran)
+- Security baseline line items (GuardDuty, CloudTrail, budgets, etc.)
+- Detailed appendices: service mappings, per-service costs, migration steps, AI migration, artifacts catalog
+
+After the report is written, run the post-write validator:
+
+```bash
+python3 migrate/plugins/migration-to-aws/scripts/validate-migration-report.py \
+  "$MIGRATION_DIR/migration-report.html" \
+  --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
+```
+
+Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resolve the script from the plugin root (`$PLUGIN_ROOT/scripts/validate-migration-report.py` in an installed copy).
+
+**`REPORT_OK | structure=complete`** means required sections, TOC links, and appendix depth checks passed. It does **not** verify that every dollar figure matches the JSON — review numerics before executive sign-off. See [fixtures/README.md](fixtures/README.md) for the reference HTML + estimation JSON contract.
 
 ### What It Detects
 
@@ -123,7 +146,7 @@ mise run security      # All security scanners
 ### Evaluating Changes
 
 Prompt files are the source code of this plugin. Changes to files under
-`features/migration-to-aws/skills/gcp-to-aws/` can alter migration behavior
+`migrate/plugins/migration-to-aws/skills/gcp-to-aws/` can alter migration behavior
 in subtle ways. Run the evaluation harness before submitting a PR:
 
 ```bash
@@ -143,6 +166,23 @@ python tools/eval_check.py \
 git add .eval-results.json
 ```
 
+### Migration report validator (unit tests)
+
+When changing `generate-artifacts-report.md`, `scripts/validate-migration-report.py`, or `fixtures/migration-report-reference.html`:
+
+```bash
+cd migrate/plugins/migration-to-aws
+
+pytest tests/test_validate_migration_report.py -q
+
+python3 scripts/validate-migration-report.py \
+  fixtures/migration-report-reference.html \
+  --estimation-infra fixtures/estimation-infra-reference.json \
+  --estimation-ai fixtures/estimation-ai-reference.json
+```
+
+See [fixtures/README.md](fixtures/README.md) for what `REPORT_OK` does and does not guarantee.
+
 #### Test Fixtures
 
 Pick the fixture that covers your change area. For broad changes, run
@@ -156,7 +196,7 @@ Pick the fixture that covers your change area. For broad changes, run
 | `user-preferences`         | Clarify question flow, preference schema, Design preference consumption | 10         |
 | `negative-services`        | Classification rules, auth exclusion, forbidden service mappings        | 8          |
 
-See [docs/evaluation-guide.md](docs/evaluation-guide.md) for the full workflow
+See [migrate/docs/evaluation-guide.md](../../docs/evaluation-guide.md) for the full workflow
 and how to add new invariants.
 
 ## Security
