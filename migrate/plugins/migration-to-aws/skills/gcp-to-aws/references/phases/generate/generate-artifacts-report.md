@@ -73,7 +73,7 @@ The executive summary is the first thing visible when opening the report. Design
 
 **Header:** "GCP to AWS Migration Assessment" with subtitle "Executive Summary" and generation date.
 
-**Table of contents (required):** Linked `<nav class="toc">` listing all executive sections and appendix sections present in this report. Omit links to sections not rendered.
+**Table of contents (required):** Linked `<nav class="toc">` listing all executive sections and appendix sections present in this report. **Every `href="#section-id"` MUST match a `<section id="section-id">` on the page exactly** (same string, including hyphens). Omit TOC links only for sections not rendered.
 
 **Target length:** approximately 2–4 printed pages for executive summary. **Do NOT truncate appendices** to fit page count — appendices may be long.
 
@@ -606,32 +606,34 @@ The inline CSS must include:
 
 After generating the HTML file, verify:
 
-1. **Required section IDs**: `decision-summary`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks`, `appendix-services`, `appendix-costs`, `appendix-steps`, `appendix-artifacts` each appear exactly once as `<section id="...">`. If any missing: treat as build failure (warn user; do not fail Generate phase).
-2. **Appendix not a stub**: Appendix B contains ≥3 cost line items with dollar amounts; Appendix A contains per-cluster or per-service mappings (not only JSON file links).
-3. **Security baseline surfaced**: When `projected_costs.breakdown.security_baseline` exists, report mentions GuardDuty or lists component costs from `components`.
-4. **Combined TCO**: When both infra and AI estimates exist, `exec-tco` section present with summed totals.
-5. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly
-6. **Conditional sections**: AI appendix only present if AI artifacts exist; billing caveats shown when billing_data_available is false; Bedrock monitoring row only when `bedrock_monitoring.tf` exists; startup credits callout only when `STARTUP_PROGRAMS.md` or preference indicates eligibility
-7. **Section 0**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present
-8. **Human expertise flags**: Warning callouts appear for all services with `human_expertise_required: true`
-9. **Valid HTML**: Opening and closing tags match, no broken table structures
-10. **No placeholders**: No `[placeholder]` or `TODO` text in the report output
-11. **Footer disclaimer**: Footer contains "draft for review"
+1. **Required section IDs**: Each required ID appears **exactly once** on `<section id="...">` (not on `<div>` or other elements). See validator script.
+2. **TOC integrity**: Every `<nav class="toc">` link `href="#id"` resolves to a `<section id="id">`; all required sections are linked.
+3. **Appendix not a stub**: Appendix B contains ≥3 cost line items with dollar amounts; Appendix A contains per-cluster or per-service mappings (not only JSON file links).
+4. **Security baseline surfaced**: When `projected_costs.breakdown.security_baseline` exists, GuardDuty or dollar-formatted component costs appear in `appendix-security` / `appendix-costs`.
+5. **Combined TCO**: When **both** `estimation-infra.json` and `estimation-ai.json` exist, exactly one `exec-tco` section with summed totals.
+6. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly
+7. **Conditional sections**: AI appendix only present if AI artifacts exist; billing caveats shown when billing_data_available is false; Bedrock monitoring row only when `bedrock_monitoring.tf` exists; startup credits callout only when `STARTUP_PROGRAMS.md` or preference indicates eligibility
+8. **Section 0**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present
+9. **Human expertise flags**: Warning callouts appear for all services with `human_expertise_required: true`
+10. **Valid HTML**: Opening and closing tags match, no broken table structures
+11. **No placeholders**: No `[placeholder]` or `TODO` text in the report output
+12. **Footer disclaimer**: Footer contains "draft for review"
 
 **Run automated validator (mandatory when HTML was written):**
 
-Load `shared/validate-migration-report.md` and run:
+Load `shared/validate-migration-report.md`. Resolve script from plugin root: `$PLUGIN_ROOT/scripts/validate-migration-report.py`.
 
 ```bash
-python3 migrate/plugins/migration-to-aws/scripts/validate-migration-report.py \
+python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   "$MIGRATION_DIR/migration-report.html" \
-  --estimation-infra "$MIGRATION_DIR/estimation-infra.json"
+  --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
 ```
 
-(Use the plugin-relative path from repo root, or absolute path to `scripts/validate-migration-report.py` in the installed plugin copy.)
+Pass `--estimation-infra` / `--estimation-ai` only when those files exist in `$MIGRATION_DIR`.
 
 - On `REPORT_OK`: proceed to Step 5.
-- On `REPORT_FAIL`: delete the incomplete HTML (or rename to `migration-report.incomplete.html`), emit all failure lines to the user, and report to parent: "Report generation incomplete — re-run report step or expand appendix per fixtures/migration-report-reference.html". Do **not** claim a complete report was delivered.
+- On `REPORT_FAIL`: **rename** to `migration-report.incomplete.html` (default; do not delete), emit all failure lines to the user, and report to parent: "Report generation incomplete — re-run report step or expand appendix per fixtures/migration-report-reference.html". Do **not** claim a complete report was delivered.
 
 ## Step 5: Open Report in Browser
 

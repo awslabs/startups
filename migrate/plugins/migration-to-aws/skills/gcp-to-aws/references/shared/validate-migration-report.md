@@ -2,21 +2,28 @@
 
 > **Read-only validation.** Run immediately after writing `migration-report.html` in `generate-artifacts-report.md` Step 4. Do NOT modify JSON artifacts.
 
-If validation fails: **delete or do not ship** the incomplete HTML, emit failures to the user, and retry report generation. The Generate phase still completes (report is optional), but the user MUST see `REPORT_FAIL` — never silently accept a stub report.
+If validation fails: **rename** the incomplete HTML to `migration-report.incomplete.html` (default — preserves output for inspection), emit failures to the user, and retry report generation. Do **not** delete unless the user asks. The Generate phase still completes (report is optional), but the user MUST see `REPORT_FAIL` — never silently accept a stub report.
 
 ---
 
-## How to run
+## How to run (deterministic script path)
 
-From the plugin root (or with absolute paths):
+The validator script ships with the plugin at:
+
+`migrate/plugins/migration-to-aws/scripts/validate-migration-report.py`
+
+**From `$MIGRATION_DIR`** (e.g. `.migration/0611-0606/`), resolve the script relative to the installed plugin root. If the agent knows the plugin checkout path `$PLUGIN_ROOT`:
 
 ```bash
-python3 migrate/plugins/migration-to-aws/scripts/validate-migration-report.py \
+python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   "$MIGRATION_DIR/migration-report.html" \
-  --estimation-infra "$MIGRATION_DIR/estimation-infra.json"
+  --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
 ```
 
-On macOS/Linux when `$MIGRATION_DIR` is the migration output folder (e.g. `.migration/0611-0606/`).
+Pass `--estimation-ai` only when that file exists. Omit flags for artifacts that were not generated.
+
+The script also exposes its path via `Path(__file__)` when invoked directly from the plugin copy.
 
 ---
 
@@ -24,13 +31,14 @@ On macOS/Linux when `$MIGRATION_DIR` is the migration output folder (e.g. `.migr
 
 | # | Check | PASS when |
 |---|-------|-----------|
-| 1 | Section IDs | All required IDs present exactly once: `decision-summary`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks`, `appendix-services`, `appendix-costs`, `appendix-steps`, `appendix-artifacts` |
-| 2 | Appendix tables | `appendix-costs` has ≥3 `<tr>` in `<tbody>`; `appendix-services` ≥2; `appendix-steps` ≥2 |
-| 3 | No stubs | Appendix B is not only "see estimation-infra.json"; appendix must render numeric costs from artifacts |
-| 4 | Security costs | If `estimation-infra.json` → `projected_costs.breakdown.security_baseline` exists: report mentions **GuardDuty** OR includes `security_baseline` mid cost |
-| 5 | Footer | Contains "draft for review" |
-| 6 | No placeholders | No `[placeholder]` or `TODO` in report body |
-| 7 | Combined TCO | If `estimation-ai.json` exists AND `appendix-ai` section present: `exec-tco` section exists with infra + AI totals |
+| 1 | Section IDs | Each required ID appears **exactly once** on a `<section id="...">` element (not `<div>`) |
+| 2 | Table of contents | `<nav class="toc">` exists; every `href="#id"` matches a `<section id="id">`; every required section is linked |
+| 3 | Appendix content | `appendix-costs` ≥3 data rows; `appendix-services` ≥2 mappings; `appendix-steps` ≥2 phases/rows |
+| 4 | No stubs | Appendix B is not only "see estimation-infra.json"; appendix must render numeric costs from artifacts |
+| 5 | Security costs | If `security_baseline` in estimate: **GuardDuty** or dollar-formatted component costs appear in `appendix-security` / `appendix-costs` (bare `15` in CSS does not count) |
+| 6 | Footer | Contains "draft for review" |
+| 7 | No placeholders | No `[placeholder]` or `TODO` in report body |
+| 8 | Combined TCO | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">` |
 
 ---
 
@@ -42,17 +50,9 @@ On macOS/Linux when `$MIGRATION_DIR` is the migration output folder (e.g. `.migr
 | `exec-architecture` | `aws-design.json` with clusters exists |
 | `exec-security-teaser` | `estimation-infra.json` has `security_baseline` breakdown |
 | `appendix-ai` | `estimation-ai.json` or `aws-design-ai.json` exists |
-| `appendix-security` | Appendix G full capabilities table (or merge into `appendix-security`) |
+| `appendix-security` | Full security capabilities table |
 | `appendix-security-gap` | Infra track ran |
-| `appendix-assumptions` | Always recommended: pricing confidence, exclusions, `validation-report.json` status |
-
-If optional sections are missing but data exists, log:
-
-```
-REPORT_WARN | section=<id> | reason=recommended_for_complete_report
-```
-
-Do **not** fail Generate on `REPORT_WARN` alone.
+| `appendix-assumptions` | Pricing confidence, exclusions, validation status |
 
 ---
 
@@ -68,12 +68,17 @@ REPORT_OK | sections=9/9 | optional=exec-tco,appendix-ai,appendix-security-gap
 
 ```
 REPORT_FAIL | migration-report.html
-  - missing required section id=appendix-costs
-  - appendix section id=appendix-services has 0 table rows, need >= 2
+  - TOC broken link href="#decision" — no matching <section id="decision">
+  - duplicate <section id="exec-costs"> (2 occurrences)
 ```
 
 ---
 
 ## Reference fixture
 
-See `migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html` for a complete report shape derived from SF Beach migration artifacts. Use it as a structural reference when generating HTML — **do not copy numbers** unless they match the current `$MIGRATION_DIR` artifacts.
+`migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html` — TOC `href` values match `section id` attributes exactly. Validate with:
+
+```bash
+python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
+  "$PLUGIN_ROOT/fixtures/migration-report-reference.html"
+```

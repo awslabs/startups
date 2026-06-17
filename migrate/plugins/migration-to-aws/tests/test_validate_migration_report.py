@@ -10,6 +10,12 @@ from pathlib import Path
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = PLUGIN_ROOT / "scripts" / "validate-migration-report.py"
 FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-reference.html"
+SF_BEACH_STUB = Path(
+    "/Users/lkleier/Downloads/sf-beach-terraform-validated/.migration/0611-0606/migration-report.html"
+)
+SF_BEACH_EST_INFRA = Path(
+    "/Users/lkleier/Downloads/sf-beach-terraform-validated/.migration/0611-0606/estimation-infra.json"
+)
 
 MINIMAL_PASS = """<!DOCTYPE html>
 <html><body>
@@ -42,10 +48,20 @@ STUB_FAIL = """<!DOCTYPE html>
 """
 
 
-def run_validator(html_path: Path, estimation_infra: Path | None = None) -> tuple[int, str]:
+def run_validator(
+    html_path: Path,
+    estimation_infra: Path | None = None,
+    estimation_ai: Path | None = None,
+    *,
+    require_toc: bool = True,
+) -> tuple[int, str]:
     cmd = [sys.executable, str(SCRIPT), str(html_path)]
     if estimation_infra:
         cmd.extend(["--estimation-infra", str(estimation_infra)])
+    if estimation_ai:
+        cmd.extend(["--estimation-ai", str(estimation_ai)])
+    if not require_toc:
+        cmd.append("--no-require-toc")
     result = subprocess.run(cmd, capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
 
@@ -57,23 +73,71 @@ def test_reference_fixture_passes() -> None:
     assert "REPORT_OK" in out
 
 
-def test_minimal_html_passes(tmp_path: Path) -> None:
+def test_minimal_html_passes_without_toc(tmp_path: Path) -> None:
     path = tmp_path / "report.html"
     path.write_text(MINIMAL_PASS, encoding="utf-8")
-    code, out = run_validator(path)
+    code, out = run_validator(path, require_toc=False)
     assert code == 0, out
 
 
 def test_stub_appendix_fails(tmp_path: Path) -> None:
     path = tmp_path / "report.html"
     path.write_text(STUB_FAIL, encoding="utf-8")
-    code, out = run_validator(path)
+    code, out = run_validator(path, require_toc=False)
     assert code == 1, out
     assert "REPORT_FAIL" in out
 
 
-def test_security_baseline_check(tmp_path: Path) -> None:
+def test_missing_required_section_fails(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace('<section id="exec-risks">', "")
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "exec-risks" in out
+
+
+def test_duplicate_section_fails(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="exec-costs">',
+        '<section id="exec-costs"><section id="exec-costs">',
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "duplicate" in out.lower()
+
+
+def test_todo_rejected(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "<footer>draft for review</footer>",
+        "<p>TODO fix costs</p><footer>draft for review</footer>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "TODO" in out
+
+
+def test_broken_toc_fails(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "<body>",
+        '<body><nav class="toc"><a href="#wrong-id">Bad</a></nav>',
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path)
+    assert code == 1, out
+    assert "broken link" in out.lower() or "missing link" in out.lower()
+
+
+def test_security_baseline_rejects_css_false_positive(tmp_path: Path) -> None:
     html = MINIMAL_PASS.replace("GuardDuty $13", "compute only")
+    html = html.replace("<html>", '<html><style>body{font-size:15px;line-height:1.55}</style>', 1)
     path = tmp_path / "report.html"
     path.write_text(html, encoding="utf-8")
     est = tmp_path / "estimation-infra.json"
@@ -88,6 +152,51 @@ def test_security_baseline_check(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    code, out = run_validator(path, est)
+    code, out = run_validator(path, est, require_toc=False)
     assert code == 1, out
-    assert "GuardDuty" in out or "security_baseline" in out
+    assert "GuardDuty" in out or "security baseline" in out.lower()
+
+
+def test_exec_tco_required_when_both_estimates(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "</body>",
+        '<section id="appendix-ai"><h2>AI</h2></section></body>',
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est_infra = tmp_path / "estimation-infra.json"
+    est_ai = tmp_path / "estimation-ai.json"
+    est_infra.write_text('{"projected_costs": {"aws_monthly_balanced": 100}}', encoding="utf-8")
+    est_ai.write_text('{"cost_comparison": {"projected_bedrock_monthly": 50}}', encoding="utf-8")
+    code, out = run_validator(path, est_infra, est_ai, require_toc=False)
+    assert code == 1, out
+    assert "exec-tco" in out
+
+
+def test_ai_only_does_not_require_exec_tco(tmp_path: Path) -> None:
+    path = tmp_path / "report.html"
+    path.write_text(
+        MINIMAL_PASS.replace(
+            "</body>",
+            '<section id="appendix-ai"><h2>AI</h2></section></body>',
+            1,
+        ),
+        encoding="utf-8",
+    )
+    est_ai = tmp_path / "estimation-ai.json"
+    est_ai.write_text("{}", encoding="utf-8")
+    code, out = run_validator(path, estimation_ai=est_ai, require_toc=False)
+    assert code == 0, out
+
+
+def test_sf_beach_stub_report_fails() -> None:
+    if not SF_BEACH_STUB.is_file():
+        return  # skip when fixture not on disk
+    code, out = run_validator(
+        SF_BEACH_STUB,
+        SF_BEACH_EST_INFRA if SF_BEACH_EST_INFRA.is_file() else None,
+        require_toc=False,
+    )
+    assert code == 1, out
+    assert "REPORT_FAIL" in out
