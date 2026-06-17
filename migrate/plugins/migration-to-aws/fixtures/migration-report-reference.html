@@ -159,7 +159,7 @@
       </div>
 
       <div class="callout callout-warn">
-        <strong>Specialist engagement required:</strong> BigQuery (<code>sf_beach_analytics</code>) has no automated AWS mapping. Analytics costs and timeline are excluded from TCO totals until your AWS account team or a data partner defines the target architecture.
+        <strong>Specialist engagement required:</strong> BigQuery (<code>sf_beach_analytics</code>) has no automated AWS mapping from this plugin — engage your AWS account team or a data partner to evaluate the best analytics migration path. Analytics costs are excluded from TCO totals until that path is defined. <strong>This does not block</strong> phased migration of compute, database, storage, and AI; BigQuery planning runs in parallel on the timeline below.
       </div>
 
       <div class="callout callout-info">
@@ -175,7 +175,7 @@
 
       <h3>Stay if</h3>
       <ul class="compact">
-        <li>BigQuery analytics is mission-critical and cannot wait for specialist planning</li>
+        <li>You require BigQuery analytics in the <strong>same cutover window</strong> as app infra and cannot run a phased analytics track with specialist planning</li>
         <li>GCP Committed Use Discounts (CUDs) or team GCP expertise outweigh savings</li>
         <li>Cost is the only metric and a dual-run period must be avoided</li>
       </ul>
@@ -412,7 +412,7 @@
         <caption>Highest-severity migration risks and mitigations.</caption>
         <thead><tr><th scope="col">Risk</th><th scope="col">Severity</th><th scope="col">Mitigation</th></tr></thead>
         <tbody>
-          <tr><td>BigQuery analytics undefined</td><td>High</td><td>Engage AWS account team before including analytics in cutover scope</td></tr>
+          <tr><td>BigQuery AWS target not yet selected</td><td>Medium</td><td>Engage AWS account team to define the analytics migration path; does not block phased migration of compute, database, and AI</td></tr>
           <tr><td>Database replication lag at cutover</td><td>Medium</td><td>DMS with lag monitoring; maintenance window cutover</td></tr>
           <tr><td>Public S3 bucket security</td><td>Medium</td><td>Add CloudFront with Origin Access Identity (OAI); restrict direct S3 public access post-migration</td></tr>
           <tr><td>Subjective image quality (Imagen &rarr; Nova Canvas)</td><td>Medium</td><td>Human eval before cutover; feature-flag rollback</td></tr>
@@ -439,7 +439,7 @@
 
       <h3>Exclusions</h3>
       <ul class="compact">
-        <li><strong>BigQuery analytics</strong> — costs and AWS target unknown; excluded from TCO totals</li>
+        <li><strong>BigQuery analytics</strong> — AWS target path not yet selected by specialist; costs excluded from TCO totals (does not block other services)</li>
         <li><strong>GCP egress during migration</strong> — billing export not available (<code>billing_data_available: false</code>)</li>
         <li><strong>Professional services / labor</strong> — engineering hours estimated but not priced</li>
         <li><strong>Dual-run period</strong> — temporary cost of running GCP + AWS concurrently not modeled</li>
@@ -552,8 +552,8 @@
 
       <div class="cluster-block">
         <h4>Cluster: analytics_bigquery_us_001 — <span class="badge-conf badge-defer">Deferred</span></h4>
-        <p><strong>BigQuery</strong> <code>sf_beach_analytics</code> / <code>beach_ratings_history</code> &rarr; specialist engagement required.</p>
-        <p>No automated Athena/Redshift/Glue recommendation. Contact AWS account team or data analytics migration partner.</p>
+        <p><strong>BigQuery</strong> <code>sf_beach_analytics</code> / <code>beach_ratings_history</code> &rarr; specialist evaluates best AWS analytics path (no automated plugin mapping).</p>
+        <p>Contact AWS account team or data analytics migration partner to assess query patterns, data movement, and BI integration. Phased migration of other clusters can proceed in parallel.</p>
       </div>
     </section>
 

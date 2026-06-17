@@ -92,13 +92,13 @@ Content when `recommendation` block exists:
 2. **Complexity:** from `migration-preview.json` → `complexity_signal` ("Simple", "Moderate", "Complex") — colored badge
 3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
 4. **Timeline:** from `generation-infra.json` → `migration_plan.total_weeks` (preferred), OR `migration-preview.json` → `timeline_hint`. Do NOT use `recommendation.next_steps` as timeline — those are action items, not duration.
-5. **Migrate if / Stay if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists.
+5. **Migrate if / Stay if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists. For BigQuery/deferred analytics: **do not** frame specialist engagement as a reason to stay on GCP unless the user must cut over analytics in the **same window** as app infra. Prefer migrate-if bullets that mention parallel specialist planning.
 6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — bullet list
 7. **Next steps (optional):** from `recommendation.next_steps` — compact bullet list separate from timeline
 
 **Deferred services flag:** If ANY resource in the design artifact has `aws_service == "Deferred — specialist engagement"`, add a prominent callout:
 
-> ⚠️ **Specialist engagement required:** [service name] does not have an automated AWS mapping. Engage your AWS account team before including this in cost projections or migration timelines.
+> ⚠️ **Specialist engagement required:** [service name] does not have an automated AWS mapping from this plugin. Engage your AWS account team and/or a data analytics migration partner to evaluate the best AWS analytics path. This does **not** block phased migration of other services; exclude [service name] from combined TCO until the target architecture is defined.
 
 **Startup credits callout:** If `STARTUP_PROGRAMS.md` exists in `$MIGRATION_DIR/` OR `$MIGRATION_DIR/ai-migration/STARTUP_PROGRAMS.md` OR `preferences.json` contains `startup_program_status.value` other than `"unknown"`:
 

@@ -22,7 +22,7 @@
   "recommendation": {
     "path_label": "migrate_phased",
     "migrate_if": ["unified AWS operations"],
-    "stay_if": ["BigQuery is mission-critical"]
+    "stay_if": ["BigQuery must cut over in the same window as app infra and cannot use a phased analytics track"]
   },
   "cost_comparison": {
     "option_b_balanced": {
