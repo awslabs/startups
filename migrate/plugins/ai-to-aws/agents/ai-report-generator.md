@@ -197,6 +197,22 @@ If the plan has only ONE model pair, `MODEL_PAIRS` simply has one tuple — the 
 
 When writing the final report, include `pricing_source` per model (the `note` field distinguishes a live API rate from a "(pricing unavailable)" fallback) so readers know how fresh the Bedrock pricing is.
 
+# 6.4 Generate scoped IAM policy artifact
+
+Generate a least-privilege IAM policy scoped to the exact model ARNs selected during this migration. Run the bundled helper:
+
+```bash
+uv run --project <scriptsDir> python <scriptsDir>/iam_policy.py \
+  --models <comma-separated target model ids> \
+  --region <REGION> \
+  --account-id <AWS account id from run-context> \
+  --output <repo>/.saws-migrate/iam-policy.json
+```
+
+The script handles the dual-ARN pattern: foundation-model ARNs for plain model IDs and inference-profile ARNs for geo-prefixed IDs (e.g. `us.anthropic.claude-sonnet-4-20250514-v1:0`). The output is a ready-to-use IAM policy JSON file.
+
+If the account ID is unavailable (run-context `aws_account` is empty), skip this step and note it in the Risk Assessment section as "IAM policy not generated — AWS account ID unavailable".
+
 # 7. Generate report
 
 Write the migration report as Markdown into the repository root using the `Write` tool. Name the report file `MIGRATION_REPORT_<reportDateSuffix>.md` where `<reportDateSuffix>` is the value provided in your context (e.g., `MIGRATION_REPORT_2026-04-14.md`). Do NOT compute today's date yourself; use the provided suffix. Write it with the `Write` tool into the repository root (`<repo>/MIGRATION_REPORT_<reportDateSuffix>.md`).
@@ -465,6 +481,8 @@ per-1M-token rates and the sample cost only, with the line
 1. **Set up AWS credentials:**
    - Configure AWS credentials with Bedrock access
    - Set environment variables per `.env.example`
+   - Apply the generated least-privilege IAM policy: `.saws-migrate/iam-policy.json`
+     (scoped to the exact model ARNs used in this migration — review before attaching to a role)
 
 2. **Run tests:**
 

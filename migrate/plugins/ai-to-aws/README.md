@@ -8,7 +8,10 @@ Single `/ai-to-aws:llm-to-bedrock` command that assesses AI workloads (OpenAI, G
   `/plugin install migration-to-aws@startups-for-aws`
 - Python 3.10+ and [uv](https://docs.astral.sh/uv/)
 - AWS CLI configured (`aws configure` or SSO)
-- AWS credentials with `bedrock:InvokeModel*` permissions (covers both `InvokeModel` and `InvokeModelWithResponseStream` — the latter is required for streaming migrations)
+- AWS credentials with `bedrock:InvokeModel*` permissions (covers both `InvokeModel` and
+  `InvokeModelWithResponseStream` — the latter is required for streaming migrations). After
+  the migration completes, replace broad grants with the generated scoped policy at
+  `.saws-migrate/iam-policy.json`
 - **Bedrock model access enabled** for your target models — this is a separate console step
   from IAM: [Bedrock console → Model access](https://console.aws.amazon.com/bedrock/home#/modelaccess)
 - Your source code in a **git repository** (the deliverable is a git branch)
@@ -60,6 +63,9 @@ progress is checkpointed to disk after every phase either way).
 
 - Writes assessment artifacts to `.migration/` and evaluation data to `.saws-migrate/`
   (both kept out of git via self-ignoring `.gitignore` files)
+- Generates a least-privilege IAM policy (`.saws-migrate/iam-policy.json`) scoped to the
+  exact foundation-model and inference-profile ARNs selected during the migration — attach
+  it to your execution role instead of a wildcard `bedrock:InvokeModel*` grant
 - Creates a `bedrock-migration` branch with the rewritten code, regenerated lockfiles,
   and generated tests — your checked-out branch is not modified
 - Writes `MIGRATION_REPORT_<date>.md` to the repo root (left uncommitted; it contains
