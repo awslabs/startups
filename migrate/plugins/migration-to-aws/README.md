@@ -179,6 +179,13 @@ python3 scripts/validate-migration-report.py \
   fixtures/migration-report-reference.html \
   --estimation-infra fixtures/estimation-infra-reference.json \
   --estimation-ai fixtures/estimation-ai-reference.json
+
+# Stub must fail (executive summary only — regression guard)
+python3 scripts/validate-migration-report.py \
+  fixtures/migration-report-stub.html \
+  --estimation-infra fixtures/estimation-infra-reference.json \
+  --estimation-ai fixtures/estimation-ai-reference.json \
+  && exit 1 || true
 ```
 
 See [fixtures/README.md](fixtures/README.md) for what `REPORT_OK` does and does not guarantee.

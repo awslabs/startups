@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GCP to AWS Migration Assessment — SF Beach</title>
+  <style>
+    :root { --green: #1a7f37; --blue: #0969da; --amber: #bf8700; --bg: #f6f8fa; --text: #1f2328; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.25rem; margin-top: 2rem; border-bottom: 1px solid #d0d7de; padding-bottom: 0.5rem; }
+    .subtitle { color: #656d76; margin-bottom: 1.5rem; }
+    .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem; font-weight: 600; font-size: 0.875rem; color: #fff; }
+    .badge-migrate { background: var(--green); }
+    .badge-phased { background: var(--blue); }
+    .badge-complex { background: #8250df; }
+    .callout { padding: 1rem; border-radius: 6px; margin: 1rem 0; }
+    .callout-warn { background: #fff8c5; border: 1px solid #d4a72c; }
+    .callout-info { background: #ddf4ff; border: 1px solid #54aeff; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; background: #fff; }
+    th, td { border: 1px solid #d0d7de; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f6f8fa; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .metric { background: #fff; border: 1px solid #d0d7de; border-radius: 6px; padding: 1rem; }
+    .metric strong { display: block; font-size: 1.5rem; }
+    ul.compact { margin: 0.5rem 0; padding-left: 1.25rem; }
+    section { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .appendix { margin-top: 3rem; }
+    .tier-sub { font-size: 0.8rem; color: #656d76; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GCP to AWS Migration Assessment</h1>
+    <p class="subtitle">Executive Summary — Generated 2026-06-11 — Migration ID 0611-0606</p>
+
+    <section id="decision-summary">
+      <h2>Section 0 — Migration Decision Summary</h2>
+      <p>
+        <span class="badge badge-phased">Phased Migration</span>
+        <span class="badge badge-complex">Complex</span>
+      </p>
+      <div class="metrics">
+        <div class="metric">
+          <span>Balanced vs GCP</span>
+          <strong>-28%</strong>
+          <small>$118/mo AWS vs $165/mo GCP infra</small>
+        </div>
+        <div class="metric">
+          <span>Timeline</span>
+          <strong>10 weeks</strong>
+          <small>Phased infra + 3-week AI track</small>
+        </div>
+        <div class="metric">
+          <span>AI projection</span>
+          <strong>-36%</strong>
+          <small>~$800/mo Bedrock vs $1,250/mo GCP AI band</small>
+        </div>
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>Specialist engagement required:</strong> BigQuery (<code>sf_beach_analytics</code>) does not have an automated AWS mapping. Engage your AWS account team and/or a data analytics migration partner before including analytics in cost projections or migration timelines.
+      </div>
+
+      <div class="callout callout-info">
+        <strong>AWS Activate credits:</strong> You may be eligible for up to $5,000 in AWS Activate Founders credits (eligible_founders, AI spend $500–$2K). See <code>STARTUP_PROGRAMS.md</code> for application links.
+      </div>
+
+      <h3>Migrate if</h3>
+      <ul class="compact">
+        <li>You want unified AWS operations for containers, database, and Bedrock AI</li>
+        <li>Balanced-tier infra savings (~$47/month) and AWS Activate credits offset migration effort</li>
+        <li>You can engage AWS account team for BigQuery analytics target selection in parallel</li>
+      </ul>
+
+      <h3>Stay if</h3>
+      <ul class="compact">
+        <li>BigQuery analytics is mission-critical and you cannot pause specialist planning</li>
+        <li>GCP CUD commitments or team GCP expertise outweigh the modest infra savings</li>
+        <li>Cost is the only metric and you need to avoid any near-term dual-run period</li>
+      </ul>
+
+      <h3>Key decisions ahead</h3>
+      <ul class="compact">
+        <li>Target region and deployment model (Fargate vs EKS)</li>
+        <li>Database migration tooling and cutover window</li>
+        <li>Bedrock model selection for gemini-2.5-flash, imagen-3.0-generate-001</li>
+        <li>BigQuery analytics target (specialist engagement required)</li>
+      </ul>
+
+      <h3>Next steps</h3>
+      <ul class="compact">
+        <li>Review financial case with stakeholders</li>
+        <li>Engage AWS account team for BigQuery analytics migration path</li>
+        <li>Confirm Bedrock model access and quota in us-west-2</li>
+        <li>Apply for AWS Activate Founders credits before ramping usage</li>
+        <li>Schedule phased cutover per cluster creation order</li>
+      </ul>
+    </section>
+
+    <section id="stack-overview">
+      <h2>Section 1 — Current Stack Overview</h2>
+      <p><strong>5 primary GCP services</strong> detected:</p>
+      <ul class="compact">
+        <li>Cloud Run (compute) — sf-beach-ratings</li>
+        <li>Cloud SQL PostgreSQL (database) — sf-beach-db</li>
+        <li>Cloud Storage (storage) — beach images + cloudbuild</li>
+        <li>BigQuery (analytics) — sf_beach_analytics <em>(deferred)</em></li>
+        <li>Vertex AI (AI) — Gemini + Imagen via application code</li>
+      </ul>
+    </section>
+
+    <section id="architecture">
+      <h2>Section 2 — Recommended AWS Architecture</h2>
+      <table>
+        <thead><tr><th>GCP Service</th><th>AWS Service</th><th>How we chose this</th></tr></thead>
+        <tbody>
+          <tr><td>Cloud Run</td><td>Fargate + ALB</td><td><strong>Standard pairing</strong></td></tr>
+          <tr><td>Cloud SQL PostgreSQL</td><td>RDS PostgreSQL db.t4g.micro</td><td><strong>Tailored to your setup</strong> (single-AZ)</td></tr>
+          <tr><td>Cloud Storage</td><td>S3</td><td><strong>Standard pairing</strong></td></tr>
+          <tr><td>BigQuery</td><td>Deferred — specialist engagement</td><td><strong>Tailored to your setup</strong> ⚠️</td></tr>
+          <tr><td>Vertex AI / Gemini</td><td>Bedrock Claude Sonnet 4.6</td><td><strong>Tailored to your setup</strong> (quality priority)</td></tr>
+          <tr><td>Vertex AI Imagen</td><td>Bedrock Nova Canvas</td><td><strong>Tailored to your setup</strong></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="cost-comparison">
+      <h2>Section 3 — Cost Comparison</h2>
+      <div class="callout callout-info">
+        <strong>How to read cost tiers:</strong> Premium, Balanced, and Optimized are <em>pricing scenarios</em> for the same mapped architecture — not three Terraform stacks. <strong>Balanced</strong> is the primary row vs GCP. Generated <code>terraform/</code> implements the Balanced baseline.
+      </div>
+      <table>
+        <thead><tr><th>Tier</th><th>Monthly AWS</th><th>vs GCP ($165)</th></tr></thead>
+        <tbody>
+          <tr><td>Premium<br><span class="tier-sub">Highest resilience / highest monthly estimate</span></td><td>$198</td><td>+20%</td></tr>
+          <tr><td><strong>Balanced</strong><br><span class="tier-sub">Default scenario; compare GCP to this first</span></td><td><strong>$118</strong></td><td><strong>-28%</strong></td></tr>
+          <tr><td>Optimized<br><span class="tier-sub">Lower estimate; Spot/reservation assumptions</span></td><td>$82</td><td>-50%</td></tr>
+        </tbody>
+      </table>
+      <p><em>Footnote: Only one Terraform configuration is generated (Balanced-aligned). Premium and Optimized are what-if models in estimation-infra.json.</em></p>
+      <p><strong>Observability cost note:</strong> GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch charges from the first GB.</p>
+      <p><em>GCP data transfer egress estimates require billing data and the infra estimate path.</em></p>
+    </section>
+
+    <section id="timeline">
+      <h2>Section 6 — Timeline</h2>
+      <p><strong>10 weeks</strong> phased infrastructure migration + <strong>3 weeks</strong> AI SDK migration (parallel track possible).</p>
+    </section>
+
+    <section id="risks">
+      <h2>Section 7 — Top Risks</h2>
+      <table>
+        <thead><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr><td>BigQuery analytics undefined</td><td>High</td><td>Engage AWS account team before cutover scope</td></tr>
+          <tr><td>Database replication lag</td><td>Medium</td><td>DMS monitoring; maintenance window cutover</td></tr>
+          <tr><td>Image quality subjective</td><td>Medium</td><td>Human eval for Imagen → Nova Canvas</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="appendix">
+      <h2>Appendix: Detailed Migration Analysis</h2>
+      <p>Full artifacts: <code>aws-design.json</code>, <code>estimation-infra.json</code>, <code>generation-infra.json</code>, <code>MIGRATION_GUIDE.md</code>, <code>terraform/</code></p>
+    </div>
+  </div>
+</body>
+</html>

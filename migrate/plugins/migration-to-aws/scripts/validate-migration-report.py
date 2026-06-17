@@ -175,15 +175,19 @@ def _security_scoped_html(html: str) -> str:
 
 
 def _dollar_amount_present(amount: float | int, text: str) -> bool:
-    """True when a dollar-formatted value appears in text (not bare CSS integers)."""
+    """True when a dollar-formatted value appears in text with numeric boundaries."""
     normalized = text.replace(",", "")
     v = float(amount)
-    candidates: list[str] = []
     if v == int(v):
         i = int(v)
-        candidates.extend([f"${i}", f"${i}.00", f"${i}.0"])
-    candidates.append(f"${v:.2f}")
-    return any(c in normalized for c in candidates)
+        patterns = [
+            rf"(?<![0-9.])\${i}(?:\.00)?(?![0-9])",
+            rf"(?<![0-9.])\${i}\.0(?![0-9])",
+        ]
+    else:
+        whole, frac = f"{v:.2f}".split(".")
+        patterns = [rf"(?<![0-9.])\${whole}\.{frac}(?![0-9])"]
+    return any(re.search(p, normalized) for p in patterns)
 
 
 def _has_guardduty_or_baseline(html: str, estimation_infra: dict | None) -> tuple[bool, str]:

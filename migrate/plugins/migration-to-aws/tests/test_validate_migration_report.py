@@ -13,12 +13,6 @@ SCRIPT = PLUGIN_ROOT / "scripts" / "validate-migration-report.py"
 FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-reference.html"
 FIXTURE_EST_INFRA = PLUGIN_ROOT / "fixtures" / "estimation-infra-reference.json"
 FIXTURE_EST_AI = PLUGIN_ROOT / "fixtures" / "estimation-ai-reference.json"
-SF_BEACH_STUB = Path(
-    "/Users/lkleier/Downloads/sf-beach-terraform-validated/.migration/0611-0606/migration-report.html"
-)
-SF_BEACH_EST_INFRA = Path(
-    "/Users/lkleier/Downloads/sf-beach-terraform-validated/.migration/0611-0606/estimation-infra.json"
-)
 
 MINIMAL_PASS = """<!DOCTYPE html>
 <html><body>
@@ -245,13 +239,15 @@ def test_ai_only_does_not_require_exec_tco(tmp_path: Path) -> None:
     assert code == 0, out
 
 
-def test_sf_beach_stub_report_fails() -> None:
-    if not SF_BEACH_STUB.is_file():
-        return  # skip when fixture not on disk
-    code, out = run_validator(
-        SF_BEACH_STUB,
-        SF_BEACH_EST_INFRA if SF_BEACH_EST_INFRA.is_file() else None,
-        require_toc=False,
-    )
-    assert code == 1, out
-    assert "REPORT_FAIL" in out
+def test_dollar_amount_word_boundary() -> None:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("validate_migration_report", SCRIPT)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    assert mod._dollar_amount_present(13, "GuardDuty $13.00 monthly")
+    assert not mod._dollar_amount_present(13, "budget $130.00 monthly")
+    assert mod._dollar_amount_present(1.5, "CloudTrail S3 $1.50")
+    assert not mod._dollar_amount_present(1.5, "wrong $11.50")
