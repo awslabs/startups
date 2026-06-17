@@ -19,6 +19,11 @@
   "current_costs": {
     "gcp_monthly": 165
   },
+  "recommendation": {
+    "path_label": "migrate_phased",
+    "migrate_if": ["unified AWS operations"],
+    "stay_if": ["BigQuery is mission-critical"]
+  },
   "cost_comparison": {
     "option_b_balanced": {
       "aws_monthly": 118,

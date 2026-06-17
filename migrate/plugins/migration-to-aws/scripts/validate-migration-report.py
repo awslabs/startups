@@ -100,6 +100,11 @@ SECTION_OPEN = re.compile(
     re.IGNORECASE,
 )
 
+# Migration ID baked into the reference fixture. If this appears in a real
+# $MIGRATION_DIR run, the agent copied the golden file verbatim (fixture bleed).
+FIXTURE_CANARY_ID = "0611-0606"
+MIGRATION_ID_RE = re.compile(r"\b(\d{4}-\d{4})\b")
+
 # NOTE: _section_html uses non-greedy match to first </section>. This assumes
 # sections are NOT nested. Do not nest <section> elements in migration reports.
 
@@ -254,6 +259,72 @@ def _validate_readability(html: str) -> list[str]:
     return errors
 
 
+def _has_security_baseline(estimation_infra: dict | None) -> bool:
+    if not estimation_infra:
+        return False
+    return bool(
+        estimation_infra.get("projected_costs", {}).get("breakdown", {}).get("security_baseline")
+    )
+
+
+def _validate_security_teaser(html: str, estimation_infra: dict | None) -> list[str]:
+    """When a security baseline exists, the executive flow must carry a compact
+    teaser (exec-security-teaser) — not the full control table inline."""
+    if not _has_security_baseline(estimation_infra):
+        return []
+    if _section_id_counts(html).get("exec-security-teaser", 0) >= 1:
+        return []
+    return [
+        'security_baseline exists but no <section id="exec-security-teaser"> — keep a compact '
+        "teaser in the executive flow and the full control table in appendix-security"
+    ]
+
+
+def _validate_verdict(html: str, estimation_infra: dict | None) -> list[str]:
+    """When a recommendation block exists, the decision summary must state a
+    one-sentence verdict (class="verdict" or 'Recommendation:' text), not only badges."""
+    if not estimation_infra or not estimation_infra.get("recommendation"):
+        return []
+    summary = _section_html(html, "decision-summary") or ""
+    if re.search(r'class="[^"]*\bverdict\b[^"]*"', summary, re.IGNORECASE):
+        return []
+    if re.search(r"Recommendation:", summary):
+        return []
+    return [
+        "recommendation block exists but decision-summary has no verdict banner "
+        '(add an element with class="verdict" or a "Recommendation:" sentence)'
+    ]
+
+
+def _validate_fixture_bleed(html: str, migration_dir: Path | None) -> list[str]:
+    """Catch agents that copied the reference fixture verbatim into a real run.
+
+    Only active when --migration-dir is passed (i.e. validating a real
+    $MIGRATION_DIR report, not the fixture itself). Fails if the fixture canary
+    ID appears, or if the report's stated migration ID does not match the run dir.
+    """
+    if migration_dir is None:
+        return []  # fixture-self-exemption: no run dir → don't flag the canary
+
+    errors: list[str] = []
+    dir_name = migration_dir.name
+    body = _readability_scope(html)
+
+    if FIXTURE_CANARY_ID in body and dir_name != FIXTURE_CANARY_ID:
+        errors.append(
+            f'fixture bleed: reference canary migration ID "{FIXTURE_CANARY_ID}" appears in a '
+            f'real run (--migration-dir={dir_name}) — the report was copied from the fixture'
+        )
+
+    ids_in_report = {m.group(1) for m in MIGRATION_ID_RE.finditer(body)}
+    if re.fullmatch(r"\d{4}-\d{4}", dir_name) and ids_in_report and dir_name not in ids_in_report:
+        errors.append(
+            f'migration ID mismatch: report references {sorted(ids_in_report)} but '
+            f"--migration-dir is {dir_name} — verify the report belongs to this run"
+        )
+    return errors
+
+
 def validate_report(
     html: str,
     estimation_infra: dict | None = None,
@@ -261,6 +332,7 @@ def validate_report(
     *,
     require_toc: bool = True,
     check_readability: bool = True,
+    migration_dir: Path | None = None,
 ) -> list[str]:
     errors: list[str] = []
 
@@ -315,6 +387,15 @@ def validate_report(
                 'include exactly one <section id="exec-tco"> with combined infra+AI TCO'
             )
 
+    # Security teaser must exist in the exec flow when a baseline is estimated.
+    errors.extend(_validate_security_teaser(html, estimation_infra))
+
+    # Decision summary must state a one-sentence verdict when a recommendation exists.
+    errors.extend(_validate_verdict(html, estimation_infra))
+
+    # Catch verbatim copies of the reference fixture into a real run.
+    errors.extend(_validate_fixture_bleed(html, migration_dir))
+
     return errors
 
 
@@ -323,6 +404,14 @@ def main() -> int:
     parser.add_argument("report_path", type=Path, help="Path to migration-report.html")
     parser.add_argument("--estimation-infra", type=Path, default=None)
     parser.add_argument("--estimation-ai", type=Path, default=None)
+    parser.add_argument(
+        "--migration-dir",
+        type=Path,
+        default=None,
+        help="Migration output dir ($MIGRATION_DIR). Enables fixture-bleed detection: "
+        "the report's migration ID must match this folder, and the reference fixture's "
+        "canary ID must not appear in a real run.",
+    )
     parser.add_argument(
         "--no-require-toc",
         action="store_true",
@@ -355,6 +444,7 @@ def main() -> int:
         estimation_ai,
         require_toc=not args.no_require_toc,
         check_readability=not args.no_readability,
+        migration_dir=args.migration_dir,
     )
     if errors:
         print("REPORT_FAIL | migration-report.html", file=sys.stderr)

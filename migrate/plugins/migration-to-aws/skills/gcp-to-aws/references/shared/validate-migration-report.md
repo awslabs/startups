@@ -21,6 +21,7 @@ python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
 
 Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Flags:
 
+- `--migration-dir "$MIGRATION_DIR"` — enables **fixture-bleed detection** on real runs (the reference canary ID must not appear, and the report's migration ID must match the run folder). Omit it when validating the reference fixture itself.
 - `--no-require-toc` — skip the TOC requirement (for minimal test fixtures only).
 - `--no-readability` — skip the customer-facing readability checks (escape hatch; not for normal Generate runs).
 
@@ -46,8 +47,11 @@ This validator is a **structural + readability completeness gate**. It does **no
 | 8 | Combined TCO | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">` |
 | 9 | Readability — no scoring trace | No literal `Rubric:` in the body. Render per-cluster rationale in a `<details>` "Why this mapping?" block instead |
 | 10 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure |
+| 11 | Security teaser present | If `security_baseline` is in the estimate: exactly the compact `exec-security-teaser` carries it in the exec flow (full table stays in `appendix-security`) |
+| 12 | Verdict banner | If `estimation-infra.json` has a `recommendation` block: `decision-summary` contains a `class="verdict"` element or a "Recommendation:" sentence — not only badges |
+| 13 | No fixture bleed | With `--migration-dir`: the reference canary migration ID does not appear in a real run, and the report's migration ID matches the run folder |
 
-Checks 9–10 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Disable with `--no-readability` only for non-customer fixtures.
+Checks 9–10 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Disable with `--no-readability` only for non-customer fixtures. Check 13 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips.
 
 ---
 

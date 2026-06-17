@@ -13,7 +13,11 @@ python3 scripts/validate-migration-report.py \
   --estimation-ai fixtures/estimation-ai-reference.json
 ```
 
-`estimation-*-reference.json` are trimmed snapshots aligned with the HTML fixture. Together they exercise security-baseline cross-checks and combined-TCO (`exec-tco`) requirements.
+`estimation-*-reference.json` are trimmed snapshots aligned with the HTML fixture. Together they exercise security-baseline cross-checks, the security teaser, the verdict banner, and combined-TCO (`exec-tco`) requirements.
+
+## Regression stub
+
+`migration-report-stub.html` is the inverse fixture: a deliberately non-compliant report (numbered headings, a bare `Rubric:` trace, stub appendices, no security teaser, no verdict). It **must fail** the validator — the test suite asserts this, so the "bad report" path runs in CI. Do not "fix" it.
 
 ## Readability conventions enforced by the validator
 

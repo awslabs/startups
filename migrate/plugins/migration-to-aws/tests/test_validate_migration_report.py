@@ -13,6 +13,7 @@ SCRIPT = PLUGIN_ROOT / "scripts" / "validate-migration-report.py"
 FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-reference.html"
 FIXTURE_EST_INFRA = PLUGIN_ROOT / "fixtures" / "estimation-infra-reference.json"
 FIXTURE_EST_AI = PLUGIN_ROOT / "fixtures" / "estimation-ai-reference.json"
+STUB_FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-stub.html"
 
 MINIMAL_PASS = """<!DOCTYPE html>
 <html><body>
@@ -52,12 +53,15 @@ def run_validator(
     *,
     require_toc: bool = True,
     readability: bool = True,
+    migration_dir: Path | None = None,
 ) -> tuple[int, str]:
     cmd = [sys.executable, str(SCRIPT), str(html_path)]
     if estimation_infra:
         cmd.extend(["--estimation-infra", str(estimation_infra)])
     if estimation_ai:
         cmd.extend(["--estimation-ai", str(estimation_ai)])
+    if migration_dir:
+        cmd.extend(["--migration-dir", str(migration_dir)])
     if not require_toc:
         cmd.append("--no-require-toc")
     if not readability:
@@ -140,6 +144,11 @@ def test_broken_toc_fails(tmp_path: Path) -> None:
 
 def test_security_baseline_accepts_dollar_component_without_label(tmp_path: Path) -> None:
     html = MINIMAL_PASS.replace("GuardDuty $13", "CloudTrail S3 $1.50")
+    html = html.replace(
+        "</body>",
+        '<section id="exec-security-teaser"><h2>Security Posture</h2></section></body>',
+        1,
+    )
     path = tmp_path / "report.html"
     path.write_text(html, encoding="utf-8")
     est = tmp_path / "estimation-infra.json"
@@ -166,6 +175,11 @@ def test_security_baseline_accepts_dollar_component_without_label(tmp_path: Path
 def test_security_baseline_rejects_css_false_positive(tmp_path: Path) -> None:
     html = MINIMAL_PASS.replace("GuardDuty $13", "compute only")
     html = html.replace("<html>", '<html><style>body{font-size:15px;line-height:1.55}</style>', 1)
+    html = html.replace(
+        "</body>",
+        '<section id="exec-security-teaser"><h2>Security Posture</h2></section></body>',
+        1,
+    )
     path = tmp_path / "report.html"
     path.write_text(html, encoding="utf-8")
     est = tmp_path / "estimation-infra.json"
@@ -279,3 +293,128 @@ def test_rubric_css_class_does_not_false_positive(tmp_path: Path) -> None:
     path.write_text(html, encoding="utf-8")
     code, out = run_validator(path, require_toc=False)
     assert code == 0, out
+
+
+# --- #2 security teaser required when baseline exists ---
+
+
+def _infra_with_baseline(tmp_path: Path) -> Path:
+    est = tmp_path / "estimation-infra.json"
+    est.write_text(
+        json.dumps(
+            {
+                "projected_costs": {
+                    "aws_monthly_balanced": 118,
+                    "breakdown": {"security_baseline": {"mid": 15, "components": {"guardduty": 13}}},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    return est
+
+
+def test_security_teaser_required_when_baseline(tmp_path: Path) -> None:
+    path = tmp_path / "report.html"
+    path.write_text(MINIMAL_PASS, encoding="utf-8")  # GuardDuty present, but no teaser section
+    code, out = run_validator(path, _infra_with_baseline(tmp_path), require_toc=False)
+    assert code == 1, out
+    assert "exec-security-teaser" in out
+
+
+def test_security_teaser_present_passes(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "</body>",
+        '<section id="exec-security-teaser"><h2>Security Posture</h2>'
+        "<p>GuardDuty $13</p></section></body>",
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, _infra_with_baseline(tmp_path), require_toc=False)
+    assert code == 0, out
+
+
+# --- #3 verdict banner required when recommendation exists ---
+
+
+def _infra_with_recommendation(tmp_path: Path) -> Path:
+    est = tmp_path / "estimation-infra.json"
+    est.write_text(
+        json.dumps({"recommendation": {"path_label": "migrate_phased"}}),
+        encoding="utf-8",
+    )
+    return est
+
+
+def test_verdict_required_when_recommendation(tmp_path: Path) -> None:
+    path = tmp_path / "report.html"
+    path.write_text(MINIMAL_PASS, encoding="utf-8")  # decision-summary has no verdict
+    code, out = run_validator(path, _infra_with_recommendation(tmp_path), require_toc=False)
+    assert code == 1, out
+    assert "verdict" in out.lower()
+
+
+def test_verdict_class_satisfies(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="decision-summary"><h2>Decision</h2>',
+        '<section id="decision-summary"><h2>Decision</h2>'
+        '<div class="verdict">Recommendation: migrate phased</div>',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, _infra_with_recommendation(tmp_path), require_toc=False)
+    assert code == 0, out
+
+
+# --- #4 fixture-bleed canary + self-exemption ---
+
+
+def test_fixture_bleed_flagged_on_real_run(tmp_path: Path) -> None:
+    run_dir = tmp_path / "0612-0900"
+    run_dir.mkdir()
+    html = MINIMAL_PASS.replace(
+        "<footer>", "<p>Migration ID 0611-0606 generated today</p><footer>"
+    )
+    path = run_dir / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False, migration_dir=run_dir)
+    assert code == 1, out
+    assert "fixture bleed" in out.lower() or "0611-0606" in out
+
+
+def test_no_migration_dir_exempts_canary(tmp_path: Path) -> None:
+    """Validating the fixture itself (no --migration-dir) must not flag its own ID."""
+    html = MINIMAL_PASS.replace(
+        "<footer>", "<p>Migration ID 0611-0606</p><footer>"
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 0, out
+
+
+def test_reference_fixture_not_flagged_with_matching_dir(tmp_path: Path) -> None:
+    run_dir = tmp_path / "0611-0606"
+    run_dir.mkdir()
+    path = run_dir / "migration-report.html"
+    path.write_text(FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+    code, out = run_validator(
+        path, FIXTURE_EST_INFRA, FIXTURE_EST_AI, migration_dir=run_dir
+    )
+    assert code == 0, out
+
+
+# --- #12 committed stub fixture must fail loudly (runs in CI) ---
+
+
+def test_stub_fixture_fails() -> None:
+    assert STUB_FIXTURE.is_file(), "stub regression fixture missing"
+    code, out = run_validator(STUB_FIXTURE, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "REPORT_FAIL" in out
+    # It should trip multiple new gates, not just one.
+    assert "Rubric" in out
+    assert "Section 0" in out or "numbered" in out.lower()
+    assert "exec-security-teaser" in out
+    assert "verdict" in out.lower()

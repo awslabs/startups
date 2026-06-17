@@ -641,7 +641,8 @@ Load `shared/validate-migration-report.md`. Resolve script from plugin root: `$P
 python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   "$MIGRATION_DIR/migration-report.html" \
   --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
-  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json" \
+  --migration-dir "$MIGRATION_DIR"
 ```
 
 Pass `--estimation-infra` / `--estimation-ai` only when those files exist in `$MIGRATION_DIR`. Use `--no-readability` only for non-customer test fixtures — not for normal Generate runs.
