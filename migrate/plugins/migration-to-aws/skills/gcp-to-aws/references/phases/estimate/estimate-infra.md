@@ -128,7 +128,7 @@ Show calculation breakdown per service: rate × quantity = cost. Present all 3 t
 
 ## Part 2B: Observability Cost Estimation (CloudWatch)
 
-GCP Cloud Operations Suite has generous free tiers (50 GB/month logging free, 150M metric samples free, alerting free, profiling free). AWS CloudWatch charges from the first GB and first custom metric. This section ensures observability costs are not a surprise post-migration.
+GCP Cloud Operations includes a larger free tier for logging (50 GB/month), metrics (150M samples), alerting, and profiling. CloudWatch also has an always-free tier (5 GB logs, 10 custom metrics, 10 alarms, 1M API requests/month — see [AWS CloudWatch pricing](https://aws.amazon.com/cloudwatch/pricing/)), but allowances are smaller. This section estimates costs **above** those free-tier limits so observability is not a surprise post-migration.
 
 **Relationship to Part 2 "Supporting" line item:** The observability entry produced by this section REPLACES any CloudWatch/log/metric portion that would otherwise appear in the "Supporting" row of Part 2. Do NOT include CloudWatch log ingestion, metrics, or alarms in the Supporting line item — they are fully covered here. Supporting retains only Secrets Manager and any non-observability per-unit charges.
 
@@ -218,11 +218,14 @@ Set `observability.tracing_source: "heuristic"`.
 
 Default estimate uses Standard log class ($0.50/GB) for all logs. Infrequent Access ($0.25/GB) is an optimization opportunity surfaced in Step 6, not the baseline assumption.
 
+**Always-free tier (apply before billing):** 5 GB logs (ingestion + archive combined), 10 custom metrics, 10 alarms, 1M API requests/month. Subtract these allowances from derived volumes before applying rates.
+
 ```
-log_ingestion_cost    = monthly_log_gb × $0.50
-log_storage_cost      = monthly_log_gb × $0.03 × retention_months (default: 1)
-custom_metrics_cost   = custom_metrics_count × $0.30  (flat rate; valid for ≤10K metrics at startup scale)
-alarms_cost           = alarm_count × $0.10
+billable_log_gb       = max(0, monthly_log_gb - 5)
+log_ingestion_cost    = billable_log_gb × $0.50
+log_storage_cost      = billable_log_gb × $0.03 × retention_months (default: 1)
+custom_metrics_cost   = max(0, custom_metrics_count - 10) × $0.30  (flat rate; valid for ≤10K metrics at startup scale)
+alarms_cost           = max(0, alarm_count - 10) × $0.10
 tracing_cost          = max(0, monthly_spans - 100_000) / 1_000_000 × $5.00  (honors X-Ray 100K/month free tier)
 dashboard_cost        = max(0, dashboards - 3) × $3.00  (default: 0 — assume ≤3)
 
@@ -249,7 +252,7 @@ Add an `observability` entry to `projected_costs.breakdown`. This entry REPLACES
     "tracing": <tracing_cost>
   },
   "volume_source": "<billing|heuristic>  (reflects log volume source — the largest cost component; metrics are always heuristic regardless of this field)",
-  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch charges from the first GB. Tracing is significantly more expensive on X-Ray ($5/M) vs Cloud Trace ($0.20/M). Actual costs depend on log verbosity and retention policy."
+  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch always-free tier includes 5 GB logs, 10 custom metrics, and 10 alarms per month. This estimate assumes workload volume above those limits (especially custom metrics). X-Ray tracing is more expensive than Cloud Trace at scale ($5/M vs $0.20/M). Actual costs depend on log verbosity and retention."
 }
 ```
 
@@ -257,7 +260,7 @@ Add an `observability` entry to `projected_costs.breakdown`. This entry REPLACES
 
 In Part 3 (Cost Comparison), if observability costs exceed $20/month, add a callout:
 
-> **Observability cost note:** Your GCP Cloud Operations costs may appear low or zero due to generous free tiers (50 GB/month logging, 150M metric samples, free alerting). The CloudWatch estimate of $X/month reflects the same workload without those free tiers. Consider:
+> **Observability cost note:** Your GCP Cloud Operations costs may appear low or zero due to generous free tiers (50 GB/month logging, 150M metric samples, free alerting). CloudWatch also has always-free allowances (5 GB logs, 10 metrics, 10 alarms), but they are narrower than GCP's. The CloudWatch estimate of $X/month reflects this workload **above those limits**. Consider:
 >
 > - Reducing log verbosity (WARN-only for production services) to lower ingestion costs
 > - Using CloudWatch Logs Infrequent Access class for non-critical logs ($0.25/GB — 50% cheaper than Standard)
@@ -266,8 +269,8 @@ In Part 3 (Cost Comparison), if observability costs exceed $20/month, add a call
 
 ### Estimation rules
 
-- Do NOT emit observability costs as $0 — even minimal apps produce logs on AWS
-- Floor: $5/month (absolute minimum for any running Fargate + RDS workload)
+- Do NOT emit observability costs as $0 without running Step 4 — apply CloudWatch always-free allowances first
+- After free-tier adjustments, use the computed total (no artificial floor for small dev stacks within billable limits)
 - If tracing is not detected in source, do NOT add X-Ray costs (don't upsell)
 - Container Insights is NOT included by default — add only if source uses Cloud Monitoring with per-container metrics or if production-tier observability is required
 - The observability line item REPLACES CloudWatch entries in the "Supporting" row — never double-count

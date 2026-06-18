@@ -120,7 +120,7 @@
       </p>
 
       <div class="verdict">
-        <strong>Recommendation:</strong> Migrate, phased over 10 weeks — about $497/month
+        <strong>Recommendation:</strong> Migrate, phased over 10 weeks — about $503/month
         (-35%) combined infrastructure + AI savings, with BigQuery analytics deferred to a
         specialist engagement. Eligible for up to $5K AWS Activate credits.
       </div>
@@ -128,13 +128,13 @@
       <div class="metrics">
         <div class="metric">
           <span>Infra (Balanced vs GCP)</span>
-          <strong class="savings">-28%</strong>
-          <small>$118/mo AWS vs $165/mo GCP infra</small>
+          <strong class="savings">-32%</strong>
+          <small>$112/mo AWS vs $165/mo GCP infra</small>
         </div>
         <div class="metric">
           <span>Combined TCO (Balanced)</span>
           <strong class="savings">-35%</strong>
-          <small>$918/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
+          <small>$912/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
         </div>
         <div class="metric">
           <span>Timeline</span>
@@ -169,7 +169,7 @@
       <h3>Migrate if</h3>
       <ul class="compact">
         <li>You want unified AWS operations for containers, database, and Bedrock AI</li>
-        <li>Combined TCO savings (~$497/month) and AWS Activate credits offset migration effort</li>
+        <li>Combined TCO savings (~$503/month) and AWS Activate credits offset migration effort</li>
         <li>You can engage AWS account team for BigQuery analytics in parallel</li>
       </ul>
 
@@ -210,7 +210,7 @@
           <tr>
             <td>Infrastructure</td>
             <td>$165</td>
-            <td>$118</td>
+            <td>$112</td>
             <td>$82</td>
             <td class="savings">-$47</td>
           </tr>
@@ -224,16 +224,16 @@
           <tr>
             <td><strong>Total (excl. BigQuery)</strong></td>
             <td><strong>$1,415</strong></td>
-            <td><strong>$918</strong></td>
+            <td><strong>$912</strong></td>
             <td><strong>$116*</strong></td>
-            <td class="savings"><strong>-$497 (-35%)</strong></td>
+            <td class="savings"><strong>-$503 (-35%)</strong></td>
           </tr>
           <tr>
             <td>Annual (Balanced)</td>
             <td>$16,980</td>
-            <td>$11,016</td>
+            <td>$10,944</td>
             <td>&mdash;</td>
-            <td class="savings">-$5,964</td>
+            <td class="savings">-$6,036</td>
           </tr>
         </tbody>
       </table>
@@ -292,9 +292,9 @@
           </tr>
           <tr>
             <td><strong>Balanced</strong><br><span class="tier-sub">Default scenario; Terraform implements this tier</span></td>
-            <td><strong>$118</strong></td>
-            <td class="savings"><strong>-28% (-$47)</strong></td>
-            <td class="savings"><strong>-$564</strong></td>
+            <td><strong>$112</strong></td>
+            <td class="savings"><strong>-32% (-$53)</strong></td>
+            <td class="savings"><strong>-$636</strong></td>
           </tr>
           <tr>
             <td>Optimized<br><span class="tier-sub">Spot, reservations, storage trade-offs assumed</span></td>
@@ -605,8 +605,8 @@
           <tr>
             <td>Observability</td>
             <td>CloudWatch + X-Ray</td>
-            <td>$10</td>
-            <td>Logs $2 &middot; storage $0.12 &middot; metrics $7.50 &middot; alarms $0.50 &middot; tracing $0</td>
+            <td>$4</td>
+            <td>Logs $1 &middot; storage $0.06 &middot; metrics $3 &middot; alarms $0 &middot; tracing $0 (above 5 GB / 10 metric / 10 alarm free tier)</td>
           </tr>
           <tr>
             <td>Supporting</td>
@@ -617,8 +617,8 @@
           <tr>
             <td><strong>Infra subtotal</strong></td>
             <td>&mdash;</td>
-            <td><strong>$118</strong></td>
-            <td>Range $95–$155 (low/mid/high)</td>
+            <td><strong>$112</strong></td>
+            <td>Range $91–$146 (low/mid/high)</td>
           </tr>
         </tbody>
       </table>
@@ -924,8 +924,8 @@ terraform apply</pre>
           <tr>
             <td>Observability</td>
             <td>Cloud Operations (50 GB logs free)</td>
-            <td>CloudWatch (~$10/mo mid)</td>
-            <td><span class="increase">Cost shift:</span> no free logging tier on AWS</td>
+            <td>CloudWatch (~$4/mo mid)</td>
+            <td><span class="increase">Cost shift:</span> GCP logging free tier is larger (50 GB vs CloudWatch 5 GB always-free); estimate assumes usage above free-tier limits (especially custom metrics)</td>
           </tr>
         </tbody>
       </table>

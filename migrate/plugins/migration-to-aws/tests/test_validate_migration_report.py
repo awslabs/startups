@@ -156,7 +156,7 @@ def test_security_baseline_accepts_dollar_component_without_label(tmp_path: Path
         json.dumps(
             {
                 "projected_costs": {
-                    "aws_monthly_balanced": 118,
+                    "aws_monthly_balanced": 112,
                     "breakdown": {
                         "security_baseline": {
                             "mid": 15,
@@ -187,7 +187,7 @@ def test_security_baseline_rejects_css_false_positive(tmp_path: Path) -> None:
         json.dumps(
             {
                 "projected_costs": {
-                    "aws_monthly_balanced": 118,
+                    "aws_monthly_balanced": 112,
                     "breakdown": {"security_baseline": {"mid": 15, "components": {"guardduty": 13}}},
                 }
             }
@@ -304,7 +304,7 @@ def _infra_with_baseline(tmp_path: Path) -> Path:
         json.dumps(
             {
                 "projected_costs": {
-                    "aws_monthly_balanced": 118,
+                    "aws_monthly_balanced": 112,
                     "breakdown": {"security_baseline": {"mid": 15, "components": {"guardduty": 13}}},
                 }
             }

@@ -1,6 +1,6 @@
 {
   "projected_costs": {
-    "aws_monthly_balanced": 118,
+    "aws_monthly_balanced": 112,
     "aws_monthly_premium": 198,
     "aws_monthly_optimized": 82,
     "breakdown": {
@@ -26,8 +26,8 @@
   },
   "cost_comparison": {
     "option_b_balanced": {
-      "aws_monthly": 118,
-      "percent_change": "-28%"
+      "aws_monthly": 112,
+      "percent_change": "-32%"
     }
   }
 }

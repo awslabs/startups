@@ -448,9 +448,9 @@ Minimum rows:
 - Audit logging (Cloud Audit Logs → CloudTrail)
 - Threat detection (SCC optional → GuardDuty in baseline.tf)
 - Public data exposure (if public GCS/S3 detected in design)
-- Observability cost shift (Cloud Operations free tiers → CloudWatch)
+- Observability cost shift (GCP larger free tier vs CloudWatch always-free tier; pull gap text from `estimation-infra.json` observability `note` — do **not** say CloudWatch has no free tier)
 
-Source: `aws-design.json`, `terraform/baseline.tf`, `estimation-infra.json` observability note
+Source: `aws-design.json`, `terraform/baseline.tf`, `estimation-infra.json` observability note. Gap/action column should compare tier sizes (e.g. 50 GB GCP logging vs 5 GB CloudWatch always-free) and note the estimate assumes usage above free-tier limits — never "no free logging tier on AWS."
 
 ### Appendix Section I — Assumptions & Validation (`appendix-assumptions`, REQUIRED)
 
