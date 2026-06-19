@@ -100,7 +100,6 @@ should_run() {
 }
 
 rollback_status=()
-
 ```
 
 ### Section: DNS & Load Balancer Rollback — IF rollback_dns OR rollback_loadbalancer
@@ -109,10 +108,10 @@ rollback_status=()
 # === STEP 1: DNS & Load Balancer Rollback ===
 if should_run "dns" || should_run "lb"; then
   echo "--- DNS / Load Balancer Rollback ---"
-  
+
   # Pre-check: Verify GCP endpoint is still reachable
   GCP_ENDPOINT="" # TODO: Set from original GCP config
-  
+
   if [ "$DRY_RUN" = true ]; then
     echo "[DRY RUN] Would update DNS records to point back to GCP endpoint: $GCP_ENDPOINT"
     echo "[DRY RUN] Would update ALB/NLB target group to drain AWS targets"
@@ -124,15 +123,14 @@ if should_run "dns" || should_run "lb"; then
       echo "ABORTED: Wait for DNS TTL to expire before rollback."
       exit 1
     fi
-    
+
     # TODO: Update Route 53 records back to GCP IP
     # aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch ...
     echo "DNS records updated to point to GCP."
   fi
-  
+
   rollback_status+=("dns: $([ "$DRY_RUN" = true ] && echo 'dry-run' || echo 'rolled-back')")
 fi
-
 ```
 
 ### Section: Container Rollback — IF rollback_containers
@@ -141,26 +139,25 @@ fi
 # === STEP 2: Container Rollback ===
 if should_run "containers"; then
   echo "--- Container Rollback ---"
-  
+
   # Pre-check: Verify Cloud Run service still exists
   # gcloud run services describe $SERVICE_NAME --region $GCP_REGION 2>/dev/null
-  
+
   if [ "$DRY_RUN" = true ]; then
     echo "[DRY RUN] Would scale down ECS service to 0 desired tasks"
     echo "[DRY RUN] Would restore Cloud Run traffic allocation to 100%"
   else
     # Scale down ECS (don't destroy — leave for potential retry)
     # aws ecs update-service --cluster $CLUSTER --service $SERVICE --desired-count 0
-    
+
     # Restore Cloud Run traffic (if traffic was split during migration)
     # gcloud run services update-traffic $SERVICE --to-revisions=LATEST=100 --region $GCP_REGION
-    
+
     echo "ECS scaled to 0. Cloud Run restored to 100% traffic."
   fi
-  
+
   rollback_status+=("containers: $([ "$DRY_RUN" = true ] && echo 'dry-run' || echo 'rolled-back')")
 fi
-
 ```
 
 ### Section: Database Rollback — IF rollback_database
@@ -169,10 +166,10 @@ fi
 # === STEP 3: Database Rollback ===
 if should_run "database"; then
   echo "--- Database Rollback ---"
-  
+
   # Pre-check: Verify Cloud SQL instance still exists and is accessible
   # gcloud sql instances describe $INSTANCE_NAME 2>/dev/null
-  
+
   if [ "$DRY_RUN" = true ]; then
     echo "[DRY RUN] Would verify GCP Cloud SQL is still primary (writable)"
     echo "[DRY RUN] Would update application DATABASE_URL to GCP endpoint"
@@ -193,10 +190,9 @@ if should_run "database"; then
       rollback_status+=("database: rolled-back")
     fi
   fi
-  
+
   [ -z "${rollback_status[*]##*database*}" ] || rollback_status+=("database: $([ "$DRY_RUN" = true ] && echo 'dry-run' || echo 'rolled-back')")
 fi
-
 ```
 
 ### Section: Secrets Rollback — IF rollback_secrets
@@ -205,7 +201,7 @@ fi
 # === STEP 4: Secrets Rollback ===
 if should_run "secrets"; then
   echo "--- Secrets Rollback ---"
-  
+
   if [ "$DRY_RUN" = true ]; then
     echo "[DRY RUN] Would update application config to reference GCP Secret Manager"
     echo "[DRY RUN] AWS Secrets Manager entries will be preserved (not deleted)"
@@ -215,10 +211,9 @@ if should_run "secrets"; then
     echo "Application secret references restored to GCP Secret Manager."
     echo "AWS Secrets Manager entries preserved for potential retry."
   fi
-  
+
   rollback_status+=("secrets: $([ "$DRY_RUN" = true ] && echo 'dry-run' || echo 'rolled-back')")
 fi
-
 ```
 
 ### Section: Summary
@@ -247,39 +242,42 @@ else
 fi
 echo "========================================="
 echo "Log saved to: $LOG_FILE"
-
 ```
 
 ## Step 3: Generate ROLLBACK_GUIDE.md
 
 Create a human-readable decision tree at `scripts/ROLLBACK_GUIDE.md`:
 
-```markdown
+````markdown
 # Rollback Guide
 
 ## When to Roll Back
 
-| Symptom | Action |
-|---------|--------|
-| 05-validate-migration.sh reports failures | Run `06-rollback-migration.sh --only <failed-service>` |
-| Application errors after DNS cutover | Run `06-rollback-migration.sh --only dns` first, then investigate |
-| Data integrity issues found | Run `06-rollback-migration.sh --only database` — WARNING: AWS writes lost |
-| Performance degradation on AWS | Investigate before rollback — may be config/sizing issue, not migration failure |
-| Customer/business decision to abort | Run `06-rollback-migration.sh --execute` (full rollback) |
+| Symptom                                   | Action                                                                          |
+| ----------------------------------------- | ------------------------------------------------------------------------------- |
+| 05-validate-migration.sh reports failures | Run `06-rollback-migration.sh --only <failed-service>`                          |
+| Application errors after DNS cutover      | Run `06-rollback-migration.sh --only dns` first, then investigate               |
+| Data integrity issues found               | Run `06-rollback-migration.sh --only database` — WARNING: AWS writes lost       |
+| Performance degradation on AWS            | Investigate before rollback — may be config/sizing issue, not migration failure  |
+| Customer/business decision to abort       | Run `06-rollback-migration.sh --execute` (full rollback)                        |
 
 ## Rollback Decision Tree
 
 ```
-
-Migration failed validation? ├── YES → Which service failed? │ ├── DNS/networking → rollback dns only, investigate │ ├── Database → check data integrity, then rollback database │ ├── Containers → check logs, may be config issue │ └── Multiple services → full rollback └── NO (business decision) → full rollback
-
+Migration failed validation?
+├── YES → Which service failed?
+│   ├── DNS/networking → rollback dns only, investigate
+│   ├── Database → check data integrity, then rollback database
+│   ├── Containers → check logs, may be config issue
+│   └── Multiple services → full rollback
+└── NO (business decision) → full rollback
 ```
 
 ## Partial vs Full Rollback
 
 - **Partial**: `./06-rollback-migration.sh --execute --only dns`
   Use when one service failed but others are healthy.
-  
+
 - **Full**: `./06-rollback-migration.sh --execute`
   Use when aborting the entire migration.
 
@@ -296,8 +294,7 @@ Migration failed validation? ├── YES → Which service failed? │ ├─�
 2. AWS resources remain running (billing continues) — destroy with `terraform destroy` when ready
 3. Migration can be retried later without re-provisioning AWS infra
 4. Review `$MIGRATION_DIR/logs/rollback-*.log` for details
-
-```
+````
 
 ## Step 4: Self-Check
 
@@ -319,7 +316,6 @@ Add to the generate.md orchestrator's execution order (after `generate-artifacts
 ```
 Step N: Load `references/phases/generate/generate-artifacts-rollback.md`
         Condition: Always (rollback is generated for every infra migration)
-
 ```
 
 Update `generation-infra.json` schema to include:
@@ -333,5 +329,5 @@ Update `generation-infra.json` schema to include:
     "script_path": "scripts/06-rollback-migration.sh"
   }
 }
-
 ```
+`````
