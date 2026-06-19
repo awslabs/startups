@@ -1,6 +1,6 @@
 """Tests for iam_policy.py — scoped IAM policy generation."""
 import json
-import subprocess
+import subprocess  # nosec B404 — test-only, inputs are hardcoded literals
 import sys
 from pathlib import Path
 
@@ -85,7 +85,7 @@ class TestGeneratePolicy:
 
 class TestCLI:
     def test_stdout_output(self):
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [
                 sys.executable, str(Path(__file__).parent / "iam_policy.py"),
                 "--models", "amazon.nova-lite-v1:0",
@@ -100,7 +100,7 @@ class TestCLI:
 
     def test_file_output(self, tmp_path):
         out = tmp_path / "policy.json"
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [
                 sys.executable, str(Path(__file__).parent / "iam_policy.py"),
                 "--models", "us.anthropic.claude-sonnet-4-20250514-v1:0,amazon.nova-lite-v1:0",
