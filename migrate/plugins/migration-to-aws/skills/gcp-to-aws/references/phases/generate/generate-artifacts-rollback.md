@@ -248,7 +248,7 @@ echo "Log saved to: $LOG_FILE"
 
 Create a human-readable decision tree at `scripts/ROLLBACK_GUIDE.md`:
 
-````markdown
+<!-- begin ROLLBACK_GUIDE.md content -->
 # Rollback Guide
 
 ## When to Roll Back
@@ -294,7 +294,7 @@ Migration failed validation?
 2. AWS resources remain running (billing continues) — destroy with `terraform destroy` when ready
 3. Migration can be retried later without re-provisioning AWS infra
 4. Review `$MIGRATION_DIR/logs/rollback-*.log` for details
-````
+<!-- end ROLLBACK_GUIDE.md content -->
 
 ## Step 4: Self-Check
 
@@ -330,4 +330,4 @@ Update `generation-infra.json` schema to include:
   }
 }
 ```
-`````
+````
