@@ -335,5 +335,3 @@ Update `generation-infra.json` schema to include:
 }
 
 ```
-
-````
