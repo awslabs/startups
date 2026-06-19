@@ -97,6 +97,11 @@ load `generate-artifacts-scripts.md` to generate migration scripts.
 
 Produces: `scripts/` directory
 
+After generate-artifacts-scripts.md completes (migration scripts generated),
+load `generate-artifacts-rollback.md` to generate rollback scripts.
+
+Produces: `scripts/06-rollback-migration.sh`, `scripts/ROLLBACK_GUIDE.md`
+
 ### AI Artifacts
 
 IF `generation-ai.json` AND `aws-design-ai.json` exist:
