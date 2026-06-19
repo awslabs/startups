@@ -246,12 +246,9 @@ echo "Log saved to: $LOG_FILE"
 
 ## Step 3: Generate ROLLBACK_GUIDE.md
 
-Create a human-readable decision tree at `scripts/ROLLBACK_GUIDE.md`:
+Create a human-readable decision tree at `scripts/ROLLBACK_GUIDE.md` with the following content:
 
-<!-- begin ROLLBACK_GUIDE.md content -->
-# Rollback Guide
-
-## When to Roll Back
+### When to Roll Back
 
 | Symptom                                   | Action                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------- |
@@ -261,19 +258,19 @@ Create a human-readable decision tree at `scripts/ROLLBACK_GUIDE.md`:
 | Performance degradation on AWS            | Investigate before rollback — may be config/sizing issue, not migration failure  |
 | Customer/business decision to abort       | Run `06-rollback-migration.sh --execute` (full rollback)                        |
 
-## Rollback Decision Tree
+### Rollback Decision Tree
 
-```
-Migration failed validation?
-├── YES → Which service failed?
-│   ├── DNS/networking → rollback dns only, investigate
-│   ├── Database → check data integrity, then rollback database
-│   ├── Containers → check logs, may be config issue
-│   └── Multiple services → full rollback
-└── NO (business decision) → full rollback
-```
+The generated file should include this decision tree:
 
-## Partial vs Full Rollback
+    Migration failed validation?
+    ├── YES → Which service failed?
+    │   ├── DNS/networking → rollback dns only, investigate
+    │   ├── Database → check data integrity, then rollback database
+    │   ├── Containers → check logs, may be config issue
+    │   └── Multiple services → full rollback
+    └── NO (business decision) → full rollback
+
+### Partial vs Full Rollback
 
 - **Partial**: `./06-rollback-migration.sh --execute --only dns`
   Use when one service failed but others are healthy.
@@ -281,20 +278,19 @@ Migration failed validation?
 - **Full**: `./06-rollback-migration.sh --execute`
   Use when aborting the entire migration.
 
-## Data Loss Warnings
+### Data Loss Warnings
 
 - **Database**: Any data written to AWS RDS/Aurora *after* the forward migration will be lost on rollback. If the cutover was recent (< 1 hour), consider a reverse `pg_dump` first.
 - **Secrets**: No data loss — secrets exist in both providers.
 - **Containers**: No data loss — images exist in both GCR and ECR.
 - **DNS**: No data loss — just pointer changes.
 
-## After Rollback
+### After Rollback
 
 1. Verify all GCP services are healthy
 2. AWS resources remain running (billing continues) — destroy with `terraform destroy` when ready
 3. Migration can be retried later without re-provisioning AWS infra
 4. Review `$MIGRATION_DIR/logs/rollback-*.log` for details
-<!-- end ROLLBACK_GUIDE.md content -->
 
 ## Step 4: Self-Check
 
@@ -311,12 +307,12 @@ Before marking this step complete, verify:
 
 ## Integration with generate.md
 
-Add to the generate.md orchestrator's execution order (after `generate-artifacts-scripts.md`):
+Add to the generate.md orchestrator's execution order after `generate-artifacts-scripts.md`:
 
-```
-Step N: Load `references/phases/generate/generate-artifacts-rollback.md`
-        Condition: Always (rollback is generated for every infra migration)
-```
+After generate-artifacts-scripts.md completes (migration scripts generated),
+load `generate-artifacts-rollback.md` to generate rollback scripts.
+
+Produces: `scripts/06-rollback-migration.sh`, `scripts/ROLLBACK_GUIDE.md`
 
 Update `generation-infra.json` schema to include:
 
@@ -330,4 +326,3 @@ Update `generation-infra.json` schema to include:
   }
 }
 ```
-````
