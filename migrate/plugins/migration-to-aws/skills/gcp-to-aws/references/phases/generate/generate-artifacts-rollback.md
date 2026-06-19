@@ -262,13 +262,15 @@ Create a human-readable decision tree at `scripts/ROLLBACK_GUIDE.md` with the fo
 
 The generated file should include this decision tree:
 
-    Migration failed validation?
-    ├── YES → Which service failed?
-    │   ├── DNS/networking → rollback dns only, investigate
-    │   ├── Database → check data integrity, then rollback database
-    │   ├── Containers → check logs, may be config issue
-    │   └── Multiple services → full rollback
-    └── NO (business decision) → full rollback
+```text
+Migration failed validation?
+├── YES → Which service failed?
+│   ├── DNS/networking → rollback dns only, investigate
+│   ├── Database → check data integrity, then rollback database
+│   ├── Containers → check logs, may be config issue
+│   └── Multiple services → full rollback
+└── NO (business decision) → full rollback
+```
 
 ### Partial vs Full Rollback
 
