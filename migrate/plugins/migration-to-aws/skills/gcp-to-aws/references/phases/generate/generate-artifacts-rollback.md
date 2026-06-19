@@ -255,7 +255,7 @@ Create a human-readable decision tree at `scripts/ROLLBACK_GUIDE.md` with the fo
 | 05-validate-migration.sh reports failures | Run `06-rollback-migration.sh --only <failed-service>`                          |
 | Application errors after DNS cutover      | Run `06-rollback-migration.sh --only dns` first, then investigate               |
 | Data integrity issues found               | Run `06-rollback-migration.sh --only database` — WARNING: AWS writes lost       |
-| Performance degradation on AWS            | Investigate before rollback — may be config/sizing issue, not migration failure  |
+| Performance degradation on AWS            | Investigate before rollback — may be config/sizing issue, not migration failure |
 | Customer/business decision to abort       | Run `06-rollback-migration.sh --execute` (full rollback)                        |
 
 ### Rollback Decision Tree
@@ -282,7 +282,7 @@ Migration failed validation?
 
 ### Data Loss Warnings
 
-- **Database**: Any data written to AWS RDS/Aurora *after* the forward migration will be lost on rollback. If the cutover was recent (< 1 hour), consider a reverse `pg_dump` first.
+- **Database**: Any data written to AWS RDS/Aurora _after_ the forward migration will be lost on rollback. If the cutover was recent (< 1 hour), consider a reverse `pg_dump` first.
 - **Secrets**: No data loss — secrets exist in both providers.
 - **Containers**: No data loss — images exist in both GCR and ECR.
 - **DNS**: No data loss — just pointer changes.
