@@ -1,6 +1,6 @@
 # Graviton (ARM64) Cost Optimization
 
-> **Conditionally loaded.** Load this file during Design and Estimate only when the inventory contains compute, database, or cache resources, OR when a `graviton_profile` is present in discovery output. Do not load for billing-only or AI-only runs.
+> **Conditionally loaded.** Load this file during Design, Estimate, and Generate when the inventory contains compute, database, or cache resources, OR when a `graviton_profile` is present in discovery output. Do not load for billing-only or AI-only runs.
 
 AWS Graviton (ARM64) instances cost **~15–20% less per hour** than same-spec x86 instances and are the default target for eligible workloads. This file is the single source of truth for Graviton compatibility tiering, instance mapping, and per-phase behavior. Other files reference it; they do not duplicate its tables.
 
