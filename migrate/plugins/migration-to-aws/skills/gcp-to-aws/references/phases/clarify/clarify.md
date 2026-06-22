@@ -311,14 +311,14 @@ When user confirms: mark all rows `"confirmed": true` in `metadata.detected_sett
 
 ### Category Definitions and Firing Rules
 
-| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                           |
-| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q4 (funding stage), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance) |
-| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                    |
+| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                                                                                       |
+| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q4 (funding stage), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance)                                                             |
+| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                                                                                |
 | **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
-| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                              |
-| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                           |
-| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q26 (Q14–Q22 always; Q23–Q26 only when `agentic_profile.is_agentic == true`)                                    |
+| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                                                                          |
+| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                                                                       |
+| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q26 (Q14–Q22 always; Q23–Q26 only when `agentic_profile.is_agentic == true`)                                                                                                |
 
 **Apply firing rules to determine which categories are active:**
 
@@ -370,11 +370,11 @@ Apply these before presenting questions:
 
 After determining active categories, organize questions into **up to three batches** presented sequentially with intermediate saves:
 
-| Batch | Name                   | Categories                                 | Questions                         | Fires When                                |
-| ----- | ---------------------- | ------------------------------------------ | --------------------------------- | ----------------------------------------- |
-| **1** | Strategic Requirements | A (Global/Strategic)                       | Q1–Q7 (minus Q4)                  | Always                                    |
-| **2** | Infrastructure         | B (Config Gaps), C (Compute), D (Database) | Q8–Q13b + Category B prompts      | Any compute or database resources present |
-| **3** | AI Workloads           | F (AI/Bedrock)                             | Q14–Q26 (Q23–Q26 only if agentic) | `ai-workload-profile.json` exists         |
+| Batch | Name                   | Categories                                 | Questions                                          | Fires When                                |
+| ----- | ---------------------- | ------------------------------------------ | -------------------------------------------------- | ----------------------------------------- |
+| **1** | Strategic Requirements | A (Global/Strategic)                       | Q1–Q7 (minus Q4)                                   | Always                                    |
+| **2** | Infrastructure         | B (Config Gaps), C (Compute), D (Database) | Q8–Q13b (incl. Q11b Graviton) + Category B prompts | Any compute or database resources present |
+| **3** | AI Workloads           | F (AI/Bedrock)                             | Q14–Q26 (Q23–Q26 only if agentic)                  | `ai-workload-profile.json` exists         |
 
 **Determine active batches:**
 
@@ -667,31 +667,32 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 
 ## Defaults Table
 
-| Question                | Default              | Constraint                                        |
-| ----------------------- | -------------------- | ------------------------------------------------- |
-| Q1 — Location           | A (single region)    | `target_region`: closest AWS region to GCP region |
-| Q2 — Compliance         | A (none)             | no constraint                                     |
-| Q3 — GCP spend          | B ($1K–$5K)          | `gcp_monthly_spend: "$1K-$5K"`                    |
-| Q4 — Funding stage      | _(skip in IDE mode)_ | no constraint                                     |
-| Q5 — Multi-cloud        | B (AWS-only)         | no constraint                                     |
-| Q6 — Uptime             | B (significant)      | `availability: "multi-az"`                        |
-| Q7 — Maintenance        | D (flexible)         | `cutover_strategy: "flexible"`                    |
-| Q8 — K8s sentiment      | B (neutral)          | `kubernetes: "eks-or-ecs"`                        |
-| Q9 — WebSocket          | B (no)               | no constraint                                     |
-| Q10 — Cloud Run traffic | C (24/7)             | `cloud_run_traffic_pattern: "constant-24-7"`      |
-| Q11 — Cloud Run spend   | B ($100–$500)        | `cloud_run_monthly_spend: "$100-$500"`            |
-| Q12 — DB traffic        | A (steady)           | `database_traffic: "steady"`                      |
-| Q13 — DB I/O            | B (medium)           | `db_io_workload: "medium"`                        |
-| Q13b — DB size          | E (unknown)          | `db_size: "unknown"` → default to pgcopydb        |
-| Q14 — AI framework      | _(auto-detect)_      | `ai_framework` from code detection                |
-| Q15 — AI spend          | B ($500–$2K)         | `ai_monthly_spend: "$500-$2K"`                    |
-| Q16 — AI priority       | E (balanced)         | `ai_priority: "balanced"`                         |
-| Q17 — Critical feature  | J (none)             | no additional override                            |
-| Q18 — Volume + cost     | A (low + quality)    | `ai_token_volume: "low"`                          |
-| Q19 — Current model     | _(auto-detect)_      | `ai_model_baseline` from code detection           |
-| Q20 — Input types       | A (text only)        | no constraint                                     |
-| Q21 — AI latency        | B (important)        | `ai_latency: "important"`                         |
-| Q22 — Task complexity   | B (moderate)         | `ai_complexity: "moderate"`                       |
+| Question                | Default              | Constraint                                                                                                                                                                                           |
+| ----------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1 — Location           | A (single region)    | `target_region`: closest AWS region to GCP region                                                                                                                                                    |
+| Q2 — Compliance         | A (none)             | no constraint                                                                                                                                                                                        |
+| Q3 — GCP spend          | B ($1K–$5K)          | `gcp_monthly_spend: "$1K-$5K"`                                                                                                                                                                       |
+| Q4 — Funding stage      | _(skip in IDE mode)_ | no constraint                                                                                                                                                                                        |
+| Q5 — Multi-cloud        | B (AWS-only)         | no constraint                                                                                                                                                                                        |
+| Q6 — Uptime             | B (significant)      | `availability: "multi-az"`                                                                                                                                                                           |
+| Q7 — Maintenance        | D (flexible)         | `cutover_strategy: "flexible"`                                                                                                                                                                       |
+| Q8 — K8s sentiment      | B (neutral)          | `kubernetes: "eks-or-ecs"`                                                                                                                                                                           |
+| Q9 — WebSocket          | B (no)               | no constraint                                                                                                                                                                                        |
+| Q10 — Cloud Run traffic | C (24/7)             | `cloud_run_traffic_pattern: "constant-24-7"`                                                                                                                                                         |
+| Q11 — Cloud Run spend   | B ($100–$500)        | `cloud_run_monthly_spend: "$100-$500"`                                                                                                                                                               |
+| Q11b — CPU architecture | A (Graviton)         | `cpu_architecture: "graviton"` (or `"mixed"` if any service is incompatible; `"x86"` if no compatible compute) — usually auto-defaulted without asking; see `clarify-compute.md` Q11b decision table |
+| Q12 — DB traffic        | A (steady)           | `database_traffic: "steady"`                                                                                                                                                                         |
+| Q13 — DB I/O            | B (medium)           | `db_io_workload: "medium"`                                                                                                                                                                           |
+| Q13b — DB size          | E (unknown)          | `db_size: "unknown"` → default to pgcopydb                                                                                                                                                           |
+| Q14 — AI framework      | _(auto-detect)_      | `ai_framework` from code detection                                                                                                                                                                   |
+| Q15 — AI spend          | B ($500–$2K)         | `ai_monthly_spend: "$500-$2K"`                                                                                                                                                                       |
+| Q16 — AI priority       | E (balanced)         | `ai_priority: "balanced"`                                                                                                                                                                            |
+| Q17 — Critical feature  | J (none)             | no additional override                                                                                                                                                                               |
+| Q18 — Volume + cost     | A (low + quality)    | `ai_token_volume: "low"`                                                                                                                                                                             |
+| Q19 — Current model     | _(auto-detect)_      | `ai_model_baseline` from code detection                                                                                                                                                              |
+| Q20 — Input types       | A (text only)        | no constraint                                                                                                                                                                                        |
+| Q21 — AI latency        | B (important)        | `ai_latency: "important"`                                                                                                                                                                            |
+| Q22 — Task complexity   | B (moderate)         | `ai_complexity: "moderate"`                                                                                                                                                                          |
 
 ---
 
