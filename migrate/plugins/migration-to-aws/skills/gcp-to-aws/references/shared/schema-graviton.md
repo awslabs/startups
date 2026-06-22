@@ -119,4 +119,4 @@ When all compute services are `tier: ready` and the user is not asked, write `va
 | `savings_percent`        | `savings_amount / x86_equivalent_monthly × 100`, one decimal |
 | `note`                   | Required; states that only hourly price discount is modeled  |
 
-**Report consistency:** when the migration report renders Graviton savings, the figures MUST equal these fields (no recomputation in the report layer). Aligns with the report post-write numeric validation.
+**Report consistency:** when the migration report renders Graviton savings, the figures MUST equal these fields (no recomputation in the report layer). This is a **manual self-check** today; PR #78's post-write report validator is structural/readability only and does not audit dollar figures. An automated numeric assertion is a tracked follow-up (see `shared/graviton.md` → "Report rendering").

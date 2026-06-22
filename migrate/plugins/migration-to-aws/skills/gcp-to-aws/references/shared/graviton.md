@@ -73,6 +73,15 @@ Branch on `preferences.design_constraints.cpu_architecture`:
 
 Model **only** the hourly price discount. Use `pricing-cache.md` Graviton rows when present; otherwise query the `awspricing` MCP for both the Graviton SKU and its x86 equivalent. Emit an `architecture_comparison` block (schema in `schema-graviton.md`). Do **not** add Graviton as a fourth pricing tier — it is the architecture within Balanced/Premium/Optimized. Balanced tier uses Graviton pricing when selected.
 
+### Report rendering (follow-up — lands on top of PR #78)
+
+The cost report should surface Graviton savings, but the report generator and its validator are owned by PR #78 (`generate-artifacts-report.md`, `shared/validate-migration-report.md`, `scripts/validate-migration-report.py`). To avoid colliding with that open PR, this change does **not** edit those files. Once PR #78 merges, a follow-up should:
+
+- Render `architecture_comparison` in the report's cost breakdown / decision summary (a "Graviton savings" line: `graviton_monthly` vs `x86_equivalent_monthly`, `savings_percent`), reusing #78's section-ID and table conventions.
+- Add a numeric assertion to `validate-migration-report.py` that the rendered Graviton savings match `estimation-infra.json` → `architecture_comparison` (`savings_amount` / `savings_percent`). PR #78's validator is intentionally structural-only today, so this is a net-new check, not a modification of existing behavior.
+
+Until then, numeric agreement between report and `architecture_comparison` is a manual self-check.
+
 ### Generate (`generate-artifacts-infra.md`)
 
 Emit ARM64 in Terraform:

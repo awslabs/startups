@@ -292,7 +292,7 @@ Model **only the hourly price discount** — never the performance uplift. For t
 
 Emit an `architecture_comparison` block in `estimation-infra.json` per the `schema-graviton.md` schema. This is **not** a fourth pricing tier — Graviton is the architecture within the Balanced/Premium/Optimized tiers, and the Balanced tier totals already reflect Graviton pricing when selected.
 
-**Report consistency:** the migration report must render these exact figures (no recomputation). When the report post-write validator runs, the report's Graviton savings line is checked against `architecture_comparison.savings_amount` / `savings_percent`.
+**Report consistency:** the migration report must render these exact figures (no recomputation in the report layer). Numeric agreement is currently a **manual self-check** — the post-write report validator (`shared/validate-migration-report.md`, added by PR #78) is a structural/readability gate and explicitly does not audit dollar figures. Rendering the Graviton savings in the report and adding an automated `architecture_comparison` numeric assertion to `validate-migration-report.py` are tracked as a **follow-up** that lands on top of PR #78 (see `shared/graviton.md` → "Report rendering").
 
 ---
 
