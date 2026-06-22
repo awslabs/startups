@@ -14,21 +14,27 @@
 
 ### Fargate
 
-| Metric             | Rate      |
-| ------------------ | --------- |
-| Per vCPU-hour      | $0.04048  |
-| Per GB memory-hour | $0.004445 |
+| Metric                     | Rate      |
+| -------------------------- | --------- |
+| Per vCPU-hour (x86)        | $0.04048  |
+| Per GB memory-hour (x86)   | $0.004445 |
+| Per vCPU-hour (ARM64)      | $0.03238  |
+| Per GB memory-hour (ARM64) | $0.003556 |
 
-Linux/x86, on-demand.
+Linux, on-demand. ARM64 (Graviton) is ~20% below x86 per AWS Fargate pricing. Default dev-tier sizing is 0.5 vCPU.
 
 ### Lambda
 
-| Metric                   | Rate                            |
-| ------------------------ | ------------------------------- |
-| Per request              | $0.0000002                      |
-| Per GB-second (first 6B) | $0.0000166667                   |
-| Per GB-second (over 6B)  | $0.000015                       |
-| Free tier                | 1M requests + 400K GB-sec/month |
+| Metric                          | Rate                            |
+| ------------------------------- | ------------------------------- |
+| Per request                     | $0.0000002                      |
+| Per GB-second (x86, first 6B)   | $0.0000166667                   |
+| Per GB-second (x86, over 6B)    | $0.000015                       |
+| Per GB-second (arm64, first 6B) | $0.0000133334                   |
+| Per GB-second (arm64, over 6B)  | $0.000012                       |
+| Free tier                       | 1M requests + 400K GB-sec/month |
+
+arm64 (Graviton) is ~20% below x86 per GB-second; per-request price is the same for both architectures.
 
 ### EKS
 
@@ -39,7 +45,7 @@ Linux/x86, on-demand.
 
 Worker nodes billed separately as EC2 or Fargate.
 
-### EC2 (On-Demand, Linux)
+### EC2 (On-Demand, Linux, x86)
 
 | Instance  | $/hour | $/month |
 | --------- | ------ | ------- |
@@ -51,6 +57,23 @@ Worker nodes billed separately as EC2 or Fargate.
 | m5.xlarge | 0.192  | 140.16  |
 | c5.large  | 0.085  | 62.05   |
 | c5.xlarge | 0.17   | 124.10  |
+
+### EC2 (On-Demand, Linux, Graviton/ARM64)
+
+~15–20% below the x86 equivalent at the same vCPU/memory. Dev-tier rows cached below; query the `awspricing` MCP for any family or size not listed.
+
+| Instance   | $/hour | $/month | x86 equivalent |
+| ---------- | ------ | ------- | -------------- |
+| t4g.micro  | 0.0084 | 6.13    | t3.micro       |
+| t4g.small  | 0.0168 | 12.26   | t3.small       |
+| t4g.medium | 0.0336 | 24.53   | t3.medium      |
+| t4g.large  | 0.0672 | 49.06   | t3.large       |
+| m7g.large  | 0.0816 | 59.57   | m5.large       |
+| m7g.xlarge | 0.1632 | 119.14  | m5.xlarge      |
+| c7g.large  | 0.0725 | 52.93   | c5.large       |
+| c7g.xlarge | 0.145  | 105.85  | c5.xlarge      |
+| r7g.large  | 0.1071 | 78.18   | r6i.large      |
+| r7g.xlarge | 0.2142 | 156.37  | r6i.xlarge     |
 
 ---
 

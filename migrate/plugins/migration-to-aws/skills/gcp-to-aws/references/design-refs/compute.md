@@ -43,6 +43,19 @@
 - **Default / no explicit K8s preference** (`kubernetes = "ecs-fargate"` or absent):
   - → **Fargate** (absent kubernetes preference resolves to Fargate, not EKS — teams that want EKS answer A or B in Clarify)
 
+## CPU Architecture (Graviton vs x86)
+
+After selecting the AWS compute service, set its CPU architecture. **Load** `references/shared/graviton.md` (tier behavior) and `references/shared/schema-graviton.md` (the `graviton` block schema).
+
+Branch on `preferences.json` → `design_constraints.cpu_architecture.value` (set by Clarify; defaults to `graviton` when all compute services were `tier: ready`):
+
+- **`graviton`** (or absent when the matching `graviton_profile.tier` is `ready`): emit the Graviton instance type for EC2 (e.g., `m7g.xlarge`), Fargate ARM64, Lambda `arm64`, and Graviton families for managed services. Map x86 → Graviton via the table in `graviton.md`.
+- **`graviton` with `graviton_profile.tier == "conditional"`**: still target Graviton, but copy the profile's `caveats[]` into the design and add `"validate compatibility with a load test after migration"`.
+- **`x86` or `graviton_profile.tier == "incompatible"`**: emit the x86 instance type; record the blocker in the rationale.
+- Containers default to **arm64-only** builds; use multi-arch only when `cpu_architecture.value == "mixed"` or the user chose per-service.
+
+Add a `graviton` block (see `schema-graviton.md`) to the service's output. GPU/CUDA workloads are always x86 here and routed to G5/G6 in the rubric eliminators.
+
 ## 6-Criteria Rubric
 
 Apply in order; first match wins:
@@ -117,6 +130,11 @@ Apply in order; first match wins:
     "cpu": "0.5",
     "memory_mb": 1024,
     "region": "us-east-1"
+  },
+  "graviton": {
+    "compatibility": "ready",
+    "target_architecture": "arm64",
+    "caveats": []
   },
   "confidence": "inferred",
   "rationale": "Rubric: Cloud Run (stateless, <15min) → Fargate (always-on, managed)",

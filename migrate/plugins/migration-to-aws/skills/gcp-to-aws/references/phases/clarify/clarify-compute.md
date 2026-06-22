@@ -184,3 +184,36 @@ F -> same as default (B)
 ```
 
 Default: B — `cloud_run_monthly_spend: "$100-$500"`.
+
+---
+
+## Q11b — Target Graviton (ARM64) for eligible compute?
+
+_Fire when:_ Compute resources present AND any `graviton_profile` entry has `tier` of `conditional` or `unknown` with risk signals.
+_Skip when:_ ALL `graviton_profile` entries are `tier: ready` (auto-default — see below), OR no compute resources present.
+
+**Auto-default (no question asked):** If every compute service is `tier: ready` (per `graviton_profile` from Discover), do **not** ask. Write `design_constraints.cpu_architecture = {"value": "graviton", "chosen_by": "default"}` and continue. This matches the existing `db.t4g` Graviton default for databases.
+
+**Rationale:** Graviton (ARM64) is ~15–20% cheaper per hour at the same vCPU/memory. The question is only worth asking when a service has a compatibility caveat (native extensions, JNI, recompile-required language, or an undetectable architecture).
+
+> Some of your services have ARM64 compatibility considerations. Graviton (ARM64) instances are ~15–20% cheaper per hour. Your [language] workloads appear compatible; [service X] has [caveat]. How would you like to proceed?
+>
+> A) Yes — target Graviton for all eligible services (recommended)
+> B) No — stay on x86 for everything
+> C) Let me decide per-service (Graviton where ready, x86 for flagged services)
+
+| Answer             | Recommendation Impact                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| Yes — all eligible | Graviton for ready + conditional services; x86 only for incompatible ones              |
+| No — stay x86      | x86 everywhere; forgoes the ~15–20% hourly discount                                    |
+| Per-service        | Graviton for `ready`; flagged `conditional`/`unknown` services stay x86 pending review |
+
+Interpret:
+
+```
+A -> cpu_architecture: {"value": "graviton", "chosen_by": "user"}
+B -> cpu_architecture: {"value": "x86", "chosen_by": "user"}
+C -> cpu_architecture: {"value": "mixed", "chosen_by": "user"}
+```
+
+Default (if skipped/unsure): `{"value": "graviton", "chosen_by": "default"}` when all-ready; otherwise `{"value": "mixed", "chosen_by": "default"}`. See `references/shared/graviton.md` and `references/shared/schema-graviton.md`.
