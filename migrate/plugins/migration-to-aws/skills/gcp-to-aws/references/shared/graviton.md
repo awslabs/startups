@@ -73,6 +73,11 @@ Branch on `preferences.design_constraints.cpu_architecture`:
 
 Model **only** the hourly price discount. Use `pricing-cache.md` Graviton rows when present; otherwise query the `awspricing` MCP for both the Graviton SKU and its x86 equivalent. Emit an `architecture_comparison` block (schema in `schema-graviton.md`). Do **not** add Graviton as a fourth pricing tier — it is the architecture within Balanced/Premium/Optimized. Balanced tier uses Graviton pricing when selected.
 
+### Known limitations (v1 — tracked follow-ups)
+
+- **Database/cache opt-out not yet propagated.** Only `design-refs/compute.md` branches on `cpu_architecture`. Managed databases and caches already default to Graviton families (`db.t4g`, `cache.t4g`) regardless, so there is **no compatibility risk** — but an explicit `x86`/`mixed` choice does not yet flow into `design-refs/database.md` or the cache mapping. Follow-up: have those refs honor `cpu_architecture` for full consistency. (Graviton on managed DB/cache has no code impact, so this is a consistency gap, not a correctness one.)
+- **Billing-only Discover** does not yet emit `graviton_profile` (see `schema-graviton.md` § Billing only). The Q11b decision table covers billing-sourced compute by asking when no profile exists.
+
 ### Report rendering (follow-up — lands on top of PR #78)
 
 The cost report should surface Graviton savings, but the report generator and its validator are owned by PR #78 (`generate-artifacts-report.md`, `shared/validate-migration-report.md`, `scripts/validate-migration-report.py`). To avoid colliding with that open PR, this change does **not** edit those files. Once PR #78 merges, a follow-up should:

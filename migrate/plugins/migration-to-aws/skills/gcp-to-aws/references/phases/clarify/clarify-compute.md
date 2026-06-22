@@ -200,7 +200,8 @@ _Applies when:_ Compute resources are present in the inventory. (If no compute r
 | No `graviton_profile` emitted at all (e.g., billing-only, or Discover produced none) but compute is present | **Ask** Q11b — architecture is unconfirmed |
 | ALL compute entries `tier: ready` | **Skip.** Write `cpu_architecture = {"value": "graviton", "chosen_by": "default"}` (matches existing `db.t4g` default) |
 | Mix of `ready` + `incompatible` only (no `conditional`/`unknown`) | **Skip the question** but write `cpu_architecture = {"value": "mixed", "chosen_by": "default"}` (Graviton where ready, x86 for incompatible) and state this in the AI/Clarify summary so the user is informed |
-| Any entry `conditional` or `unknown` with a risk signal (incl. IaC-only/`unknown` runs) | **Ask** Q11b |
+| All profiles for not-all-`ready` compute are `source: "iac"` with no `app_code` profile for the same service (architecture unconfirmed by code — e.g. a `conditional` from a `machine_type` signal alone) | **Ask** Q11b |
+| Any entry `conditional` or `unknown` with a risk signal | **Ask** Q11b |
 | Any entry `incompatible` only, no `ready` compute at all | **Skip.** Write `cpu_architecture = {"value": "x86", "chosen_by": "default"}` |
 
 **Rationale:** Graviton (ARM64) is ~15–20% cheaper per hour at the same vCPU/memory, so we default to it whenever every service is confirmed compatible. We only spend a question when a service has a real compatibility caveat or the architecture is unconfirmed — never defaulting Graviton onto an `unknown` workload without asking.

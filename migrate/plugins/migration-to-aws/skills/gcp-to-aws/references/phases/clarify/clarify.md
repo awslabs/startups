@@ -13,7 +13,7 @@ Questions are organized into **six named categories (A–F)** with documented fi
 | File                  | Category                     | Questions | Loaded When                                     |
 | --------------------- | ---------------------------- | --------- | ----------------------------------------------- |
 | `clarify-global.md`   | A — Global/Strategic         | Q1–Q7     | Always                                          |
-| `clarify-compute.md`  | B — Config Gaps, C — Compute | Q8–Q11    | Compute or billing-source resources present     |
+| `clarify-compute.md`  | B — Config Gaps, C — Compute | Q8–Q11b   | Compute or billing-source resources present     |
 | `clarify-database.md` | D — Database                 | Q12–Q13b  | Database resources present                      |
 | `clarify-ai.md`       | F — AI/Bedrock               | Q14–Q26   | `ai-workload-profile.json` exists               |
 | `clarify-ai-only.md`  | _(standalone)_               | Q1–Q10    | AI-only migration (no infrastructure artifacts) |
@@ -315,7 +315,7 @@ When user confirms: mark all rows `"confirmed": true` in `metadata.detected_sett
 | -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q4 (funding stage), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance) |
 | **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                    |
-| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend)                                  |
+| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
 | **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                              |
 | **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                           |
 | **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q26 (Q14–Q22 always; Q23–Q26 only when `agentic_profile.is_agentic == true`)                                    |
@@ -730,6 +730,7 @@ Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 1. `preferences.json` exists and parses as JSON.
 2. Step 5 validation checklist items all pass (including `metadata.clarify_mode`).
 3. If `gcp-resource-inventory.json` contains `google_sql_database_instance` → `design_constraints.availability.value` is set (non-null, non-empty).
+4. If compute resources are present (Cloud Run, Cloud Functions, GKE, GCE in `gcp-resource-inventory.json`, or billing-source compute) → `design_constraints.cpu_architecture.value` is set (`graviton` | `x86` | `mixed`), per the Q11b decision table in `clarify-compute.md` — written even when Q11b was auto-defaulted (not asked).
 
 **On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
 

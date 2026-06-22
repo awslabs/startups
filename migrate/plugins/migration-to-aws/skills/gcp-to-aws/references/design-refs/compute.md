@@ -112,7 +112,7 @@ Apply in order; first match wins:
 - Criterion 1 (Eliminators): PASS
 - Criterion 2 (Operational Model): EC2 (explicit compute control)
 - Criterion 3 (User Preference): If `design_constraints.gcp_monthly_spend` indicates cost sensitivity, prefer auto-scaling → EC2 + ASG (scale to 0)
-- → **AWS: EC2 t3.medium + Auto Scaling Group (min=0 in dev)**
+- → **AWS: EC2 t4g.medium + Auto Scaling Group (min=0 in dev)** (Graviton default; use t3.medium if `cpu_architecture` is `x86` or the workload is incompatible — see CPU Architecture section)
 - Confidence: `inferred`
 
 ## Output Schema

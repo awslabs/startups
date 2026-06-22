@@ -56,6 +56,8 @@ Write `graviton_profile` entries into an array under the discovery output. `grav
 
 ### Billing only (`discover-billing.md`) — coarse
 
+> **Status: planned, not yet emitted.** `discover-billing.md` does not yet write `graviton_profile`. Until it does, billing-only runs with compute reach Clarify with no profile, and the Q11b decision table (row 1: "no profile but compute present → ask") covers them. The tiers below are the target behavior for the follow-up that wires `discover-billing.md`.
+
 | Service in billing             | Default tier                                            |
 | ------------------------------ | ------------------------------------------------------- |
 | Cloud SQL / managed DB         | `ready` (all major managed DB engines support Graviton) |
