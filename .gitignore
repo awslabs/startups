@@ -29,6 +29,9 @@ Thumbs.db
 .env
 .env.local
 
+# npm config (may contain registry auth tokens; never commit)
+.npmrc
+
 # Claude
 .claude/settings.local.json
 

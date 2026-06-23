@@ -1,0 +1,46 @@
+{
+  "name": "aws-dev-toolkit",
+  "version": "1.0.0",
+  "description": "AWS development toolkit for building, migrating, cost optimizing and performing architecture reviews on AWS. Authored by the Startup Solution Architects by distilling hard won lessons from speaking with countless orgs. You'll find insights for building on AWS that are not publicly documented elsewhere.",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://aws.amazon.com"
+  },
+  "homepage": "https://github.com/awslabs/startups/tree/main/solution-architecture",
+  "repository": "https://github.com/awslabs/startups",
+  "license": "Apache-2.0",
+  "keywords": [
+    "aws",
+    "cdk",
+    "cloudformation",
+    "terraform",
+    "serverless",
+    "well-architected",
+    "iac",
+    "migration",
+    "gcp",
+    "azure",
+    "bedrock"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "AWS Dev Toolkit",
+    "shortDescription": "Build, migrate, and review architectures on AWS with 35 skills, 11 sub-agents, and 3 MCP servers.",
+    "longDescription": "A toolkit for building, migrating, and performing architecture reviews on AWS. Most skills activate automatically from context — ask naturally to review an architecture against the Well-Architected Framework, debug a failing CloudFormation stack, compare ECS vs EKS, or optimize your AWS bill.\n\nScaffolding skills generate CDK, Terraform, SAM, or CloudFormation projects and Strands Agents SDK projects on Bedrock AgentCore. Deep service skills cover Lambda, EC2, ECS, EKS, S3, DynamoDB, API Gateway, CloudFront, IAM, networking, messaging, observability, Step Functions, RDS/Aurora, IoT, MLOps, Bedrock, and AgentCore.\n\nEleven sub-agents provide specialist depth (cost optimizer, Well-Architected reviewer, IaC reviewer, migration advisor, and service SMEs), backed by AWS IaC, Knowledge, and Pricing MCP servers.",
+    "developerName": "Amazon Web Services",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/awslabs/startups/tree/main/solution-architecture",
+    "defaultPrompt": [
+      "Review this architecture for Well-Architected best practices",
+      "Why is my CloudFormation stack failing?",
+      "Compare ECS vs EKS for my workload",
+      "Help me optimize my AWS bill",
+      "Scaffold a serverless API with Lambda and DynamoDB"
+    ]
+  }
+}

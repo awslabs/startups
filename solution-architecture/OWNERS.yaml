@@ -1,0 +1,9 @@
+team: AWS-Startups-Solution-Architecture
+resolver_group: Startups-SA-Plugin
+cti:
+  category: AWS Startups
+  type: Solution Architecture
+  item: dev-toolkit-plugin
+contacts:
+  primary: rsmets
+github_team: "@awslabs/startups-solution-architects"

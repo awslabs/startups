@@ -1,0 +1,27 @@
+{
+  "name": "aws-dev-toolkit",
+  "displayName": "AWS Dev Toolkit",
+  "version": "1.0.0",
+  "description": "AWS development toolkit for building, migrating, cost optimizing and performing architecture reviews on AWS. Authored by the Startup Solution Architects by distilling hard won lessons from speaking with countless orgs. You'll find insights for building on AWS that are not publicly documented elsewhere.",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "homepage": "https://github.com/awslabs/startups/tree/main/solution-architecture",
+  "repository": "https://github.com/awslabs/startups",
+  "keywords": [
+    "aws",
+    "cdk",
+    "cloudformation",
+    "terraform",
+    "serverless",
+    "well-architected",
+    "iac",
+    "migration",
+    "gcp",
+    "azure",
+    "bedrock"
+  ],
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
