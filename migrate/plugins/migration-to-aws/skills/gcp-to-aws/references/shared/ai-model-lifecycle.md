@@ -65,7 +65,7 @@ Check the [model lifecycle page](https://docs.aws.amazon.com/bedrock/latest/user
 | Nova Premier v1          | `amazon.nova-premier-v1:0`                  | Sep 14, 2026 | 92          | legacy       | Nova 2 Pro (Preview)     |
 | Nova Sonic v1            | `amazon.nova-sonic-v1:0`                    | Sep 14, 2026 | 92          | legacy       | Nova 2 Sonic             |
 | Nova Canvas v1           | `amazon.nova-canvas-v1:0`                   | Sep 30, 2026 | 108         | legacy       | Stability AI (see note)  |
-| Nova Reel v1             | `amazon.nova-reel-v1:0` / `v1:1`           | Sep 30, 2026 | 108         | legacy       | —                        |
+| Nova Reel v1             | `amazon.nova-reel-v1:0` / `v1:1`            | Sep 30, 2026 | 108         | legacy       | —                        |
 | Claude Sonnet 4          | `anthropic.claude-sonnet-4-20250514-v1:0`   | Oct 14, 2026 | 122         | legacy       | Claude Sonnet 4.5 / 4.6  |
 | Jamba 1.5 Large          | `ai21.jamba-1-5-large-v1:0`                 | Nov 26, 2026 | 165         | legacy       | —                        |
 | Jamba 1.5 Mini           | `ai21.jamba-1-5-mini-v1:0`                  | Nov 26, 2026 | 165         | legacy       | —                        |
@@ -74,11 +74,11 @@ Check the [model lifecycle page](https://docs.aws.amazon.com/bedrock/latest/user
 
 **⚠️ Image generation — Active successor is Stability AI:** Nova Canvas v1 is Legacy (EOL Sep 30, 2026). The Active image generation models on Bedrock are **Stability AI** models:
 
-| Model | Model ID | Pricing | Tier | Use case |
-| ----- | -------- | ------- | ---- | -------- |
-| Stable Image Ultra | `stability.stable-image-ultra-v1:0` | ~$0.08/image | premium | Photorealistic, high-end visuals |
-| Stable Diffusion 3.5 Large | `stability.sd3-5-large-v1:0` | ~$0.065/image | flagship | High volume creative assets |
-| Stable Image Core | `stability.stable-image-core-v1:0` | ~$0.04/image | fast | Rapid, affordable generation at scale |
+| Model                      | Model ID                            | Pricing       | Tier     | Use case                              |
+| -------------------------- | ----------------------------------- | ------------- | -------- | ------------------------------------- |
+| Stable Image Ultra         | `stability.stable-image-ultra-v1:0` | ~$0.08/image  | premium  | Photorealistic, high-end visuals      |
+| Stable Diffusion 3.5 Large | `stability.sd3-5-large-v1:0`        | ~$0.065/image | flagship | High volume creative assets           |
+| Stable Image Core          | `stability.stable-image-core-v1:0`  | ~$0.04/image  | fast     | Rapid, affordable generation at scale |
 
 When `image_generation` capability is detected:
 

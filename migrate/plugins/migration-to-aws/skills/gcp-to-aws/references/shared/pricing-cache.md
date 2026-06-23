@@ -363,7 +363,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Llama 4 Maverick                 | meta.llama4-maverick-17b-instruct-v1:0   | Meta      | 0.24       | 0.97        | 1M      | mid       | active                     |
 | Llama 4 Scout                    | meta.llama4-scout-17b-instruct-v1:0      | Meta      | 0.17       | 0.66        | 10M     | efficient | active                     |
 | Llama 3.3 70B                    | meta.llama3-3-70b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | active                     |
-| Llama 3.2 90B                    | meta.llama3-2-90b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | excluded (EOL Jul 7, 2026)  |
+| Llama 3.2 90B                    | meta.llama3-2-90b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | excluded (EOL Jul 7, 2026) |
 | Nova 2 Lite                      | amazon.nova-2-lite-v1:0                  | Amazon    | 0.33       | 2.75        | 1M      | mid       | active                     |
 | Nova 2 Pro (Preview)             | amazon.nova-2-pro-v1:0                   | Amazon    | 1.375      | 11.00       | 1M      | flagship  | active                     |
 | Nova Pro                         | amazon.nova-pro-v1:0                     | Amazon    | 0.80       | 3.20        | 300K    | mid       | active                     |
@@ -389,11 +389,11 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 
 Active image generation models on Bedrock. Priced **per image** (not per token). Use for `image_generation` capability workloads.
 
-| Model                   | Model ID                            | Price/image | Resolution  | Tier    | Status |
-| ----------------------- | ----------------------------------- | ----------- | ----------- | ------- | ------ |
-| Stable Image Ultra      | stability.stable-image-ultra-v1:0   | $0.08       | up to 4MP   | premium | active |
-| Stable Diffusion 3.5 Large | stability.sd3-5-large-v1:0       | $0.065      | up to 1MP   | flagship | active |
-| Stable Image Core       | stability.stable-image-core-v1:0    | $0.04       | up to 1MP   | fast    | active |
+| Model                      | Model ID                          | Price/image | Resolution | Tier     | Status |
+| -------------------------- | --------------------------------- | ----------- | ---------- | -------- | ------ |
+| Stable Image Ultra         | stability.stable-image-ultra-v1:0 | $0.08       | up to 4MP  | premium  | active |
+| Stable Diffusion 3.5 Large | stability.sd3-5-large-v1:0        | $0.065      | up to 1MP  | flagship | active |
+| Stable Image Core          | stability.stable-image-core-v1:0  | $0.04       | up to 1MP  | fast     | active |
 
 Image editing services (inpaint, erase, upscale, etc.) are priced at $0.03–$0.60/operation. See [Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) for full list.
 
