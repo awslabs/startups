@@ -101,16 +101,9 @@ from `references/shared/pricing-cache.md` (Source Provider Pricing + Bedrock Mod
 | `tts-*`, text-to-speech                         | Amazon Polly               | (non-token service — note separately)      |
 | Unknown / other                                 | Amazon Nova Pro            | `amazon.nova-pro-v1:0`                     |
 
-For each mapped model pair, compute:
-
-- `source_input_per_1m` and `source_output_per_1m` from pricing-cache.md Source Provider Pricing
-- `bedrock_input_per_1m` and `bedrock_output_per_1m` from pricing-cache.md Bedrock Models
-- `cost_direction`: `"lower"` if both Bedrock prices ≤ source, `"higher"` if both > source, `"mixed"` otherwise
-- `savings_pct`: percentage difference on output price — only include if `cost_direction` is `"lower"` or `"higher"`
-
-**No monthly total is computed at this step.** Monthly estimate requires usage volume
-from Clarify (Q3 `ai_monthly_spend`, Q7 `ai_token_volume`). Set `cost_preview.monthly_estimate: null`
-and note that it will be available after Clarify.
+For each mapped model pair, record `source_model` and `bedrock_equivalent` (model name only).
+Do NOT compute or display per-token pricing comparisons at this stage — cost analysis
+belongs in the Estimate phase where full usage volume context is available.
 
 ---
 
@@ -221,10 +214,9 @@ Output this block as part of `discover.md` Step 3's user message (chat only — 
 | | |
 |---|---|
 | **Models detected** | [model_ids joined by ", "] |
-| **Bedrock targets** | [for each bedrock_target: "source_model → bedrock_equivalent (input: $X/1M → $Y/1M [higher/lower/same])"] |
+| **Bedrock targets** | [for each bedrock_target: "source_model → bedrock_equivalent"] |
 | **Routing** | [if has_multi_model_routing: gateway_type + " (multi-model routing)" else "Direct SDK"] |
-| **Per-token cost** | [if any cost_direction == "lower": "Cost savings available — see Estimate" / if all "higher": "Bedrock rates higher per token — migration case is AWS consolidation" / if "mixed": "Mixed — some models cheaper, some higher on Bedrock"] |
-| **Monthly estimate** | Available after Clarify (we'll ask about your usage volume) |
+| **Monthly estimate** | Available after Estimate phase |
 | **Timeline (rough)** | [timeline_hint] |
 | **Decisions ahead** | [key_decisions_ahead joined by "; "] |
 
