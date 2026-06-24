@@ -35,7 +35,7 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 - **Landing page**: `references/home.md` — for broad "what is AWS Startups" questions.
 - **Searchable indexes** (consult these before opening individual articles):
   - `references/learn.md` — hundreds of learn articles across a dozen categories, with keywords.
-  - `references/offers.md` — publicly-viewable AWS Activate partner offers, with keywords.
+  - `references/offers.md` — AWS Activate partner offers, with keywords.
   - `references/build.md` — sample architectures / solution guides; split into publicly-viewable and sign-in-required sections.
 - **Reference pages**: `references/faq.md` (comprehensive Activate Q&A), `references/credits.md`, `references/programs.md`, `references/providers.md`, `references/contact-us.md`.
 - **Live-URL redirect stubs**: `references/events.md` and `references/showcase.md`. Hand over the live URL from the stub.
@@ -66,7 +66,7 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 
 ## Known limitations
 
-- Some offer-detail pages and a few build solutions require an AWS Activate sign-in; those are either excluded (offers) or marked in a "Sign-in required" table with a live URL (`build.md`). Recommend by title + keywords and hand over the URL.
+- A few build solutions require an AWS Activate sign-in; those are marked in a "Sign-in required" table with a live URL (`build.md`). Recommend by title + keywords and hand over the URL.
 - The skills are public-content snapshots. They **cannot** answer account-specific questions (credits balance, membership status, application status). For those, direct the user to `<https://aws.amazon.com/startups>` to sign in.
 - Content freshness varies — see `Last updated` in each `SKILL.md`. For time-sensitive questions (current event dates, current offer terms, current accelerator cohort windows), cite the `source_url` so the user can verify.
 

@@ -1,6 +1,10 @@
-## Description
+## Problem
 
-<!-- Brief description of the changes -->
+<!-- Description of the problem being solved -->
+
+## Solution
+
+<!-- Description of how this pull request solves that problem -->
 
 ## Type of Change
 
@@ -14,6 +18,7 @@
 
 <!-- Which top-level folder does this PR affect? -->
 
+- [ ] `advisor/`
 - [ ] `migrate/`
 - [ ] Other: ___
 

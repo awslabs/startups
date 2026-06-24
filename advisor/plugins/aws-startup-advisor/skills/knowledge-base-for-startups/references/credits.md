@@ -1,85 +1,87 @@
 ---
 source_url: https://aws.amazon.com/startups/credits
-title: "Apply for Activate Credits"
+title: "AWS Activate Credits"
 ---
 
-## Apply for Activate Credits
+## AWS Activate Credits
 
-Fuel your startup's growth with AWS Activate Credits. Get started by creating an account.
+Built for startups from pre-seed to scale
 
 [Apply now](https://aws.amazon.com/startups/join?destination=/credits/apply)
 
-## Accelerate your startup journey
+## How today’s startups build for tomorrow
 
-AWS helps startups turn bold ideas into reality. With AWS Activate Credits, startups can harness the power of AWS technology, including infrastructure, data services, and leading AI and ML models. Eligible startups can apply to receive up to $100,000 in credits to build, grow, and scale.
+Move from prototype to production faster. Apply for up to $200,000 in AWS Activate Credits, with additional credits available for AI startups ready to scale.
 
-## AWS Activate Credits eligibility requirements
+## Find the right tier for you
 
-To be eligible for AWS Activate Credits, startups must be pre-series B, have a company website or company profile, be founded in the last 10 years and have an AWS Account on Paid Tier Plan. Review the details below to select the package that is right for your startup today.
+AWS offers promotional credits based on your startup's funding stage. Apply for the tier that matches your stage. Eligibility for AWS Activate: Pre-series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received
 
-| Package type                                                                                           | Benefits                                  | Eligibility requirements                                                                                                                                                                                                   |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Activate Founders — Start here if your startup is self-funded                                          | $1,000 USD AWS Activate Credits\*         | ✓ Early-stage, self-funded startup — ✓ Either new to Activate Credits or requesting more credits than previously received                                                                                                  |
-| Activate Portfolio — Start here if you have an Org ID from an Activate Provider (e.g., VC or Investor) | Up to $100,000 USD AWS Activate Credits\* | ✓ Associated with an [Activate Provider](https://aws.amazon.com/startups/lp/aws-activate-provider) and have their Organizational ID — ✓ Either new to Activate Credits or requesting more credits than previously received |
+| Tier                                                                                          | Credits                                                                                                                                                                           | How to Access                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Activate Founders — Self-funded                                                               | Up to 5,000 USD in Activate Credits. \*Start with 1,000 USD in Activate Credits. Select participants may qualify for additional credits up to 5,000 USD.                          | Apply directly if you’re bootstrapped or self-funded. [Apply here](https://aws.amazon.com/startups/join?destination=/credits/apply)                                             |
+| Activate Portfolio — Pre-Series B                                                             | Up to 200,000 USD in Activate Credits. \*You must have an Organization ID (Org ID) from your Activate Provider, such as an accelerator, angel investor, and venture capital firm. | Apply directly with your [Activate Provider](https://aws.amazon.com/startups/providers)’s Org ID. [Apply here](https://aws.amazon.com/startups/join?destination=/credits/apply) |
+| AWS Credits for AI Startups — Invite only for startups ready to scale post Activate Portfolio | 200,000+ USD in AWS Credits                                                                                                                                                       | Talk with your Account Manager. If you need additional support, [contact us](https://aws.amazon.com/startups/contact-us).                                                       |
 
-\*All AWS Activate Credits are in USD and subject to the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/activate/terms/).
+\*All AWS Activate Credits are in USD and subject to the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/activate/terms/).
 
-## Start your AI journey with AWS
+## Your investors and accelerators are already here
 
-AWS Activate Credits are redeemable on third-party models on Amazon Bedrock, our fully-managed service that offers a choice of high-performing foundation models (FMs) from leading AI companies, like AI21 Labs, Anthropic, Cohere, Meta, Mistral AI, Stability AI, and Amazon via a single API.
+Thousands of venture capital firms, accelerators, and startup-enabling organizations are part of the AWS network of Activate Providers. Andreessen Horowitz, Brex, Carta, Greylock Partners, Sequoia, and Y Combinator are just a few examples.
 
-[Get started](https://aws.amazon.com/startups/join?destination=/credits/apply)
+## How to apply
 
-## Featured AWS Activate Providers
+Here's what you need to know to apply for Activate Credits:
 
-Our network of VCs and accelerators help eligible startups access enhanced AWS Activate benefits.
+### 1. Create your AWS Builder ID
 
-## Frequently asked questions
+Create a Builder ID with your professional email or sign in if you already have one. Once verified, you'll complete your profile.
 
-Learn more about the application process, requirements, credit usage, credit management, and more.
+### 2. Choose your credit tier
 
-[Read full FAQs](https://aws.amazon.com/startups/faq)
+Self-funded? Apply for Activate Founders. Backed by a VC or accelerator? Check if they're an Activate Provider and use their Org ID to apply for the Activate Portfolio.
 
-## Page topics
+### 3. Tell us about your startup
 
-- [What can I use AWS Activate Credits for?](https://aws.amazon.com/startups/credits/#what-can-i-use-aws-activate-credits-for--ksjf6n)
-- [What is not covered by AWS Activate Credits?](https://aws.amazon.com/startups/credits/#what-is-not-covered-by-aws-activate-credits--ksjf6n)
-- [How do I use my AWS Activate Credits?](https://aws.amazon.com/startups/credits/#how-do-i-use-my-aws-activate-credits--ksjf6n)
-- [What is an Organization ID (Org ID)?](https://aws.amazon.com/startups/credits/#what-is-an-organization-id-org-id--ksjf6n)
-- [What is an Activate Provider?](https://aws.amazon.com/startups/credits/#what-is-an-activate-provider--ksjf6n)
-- [Where can I find details about my credits including usage and expiration dates?](https://aws.amazon.com/startups/credits/#where-can-i-find-details-about-my-credits-including-usage-and-expiration-dates--ksjf6n)
-- [How are my credits applied to Reserved Instances or Saving Plans?](https://aws.amazon.com/startups/credits/#how-are-my-credits-applied-to-reserved-instances-or-saving-plans--ksjf6n)
+We'll ask a few details about your product, funding stage, and company profile to confirm eligibility.
 
-## What can I use AWS Activate Credits for?
+### 4. Link your AWS account and submit
 
-AWS offers the world’s most comprehensive and broadly adopted cloud services, offering over 200 fully featured services from data centers globally. You can use your AWS Activate Credits for eligible AWS services and support from infrastructure technologies like compute, storage, and databases–to emerging technologies, such as machine learning and artificial intelligence, data lakes and analytics, and Internet of Things. For a comprehensive list of eligible services, please review the lowermost section of the [credits page](https://console.aws.amazon.com/billing/home#/credits) after receiving your AWS Activate Credit approval email. Note that the [AWS Activate Terms & Conditions](https://aws.amazon.com/activate/terms/) provide additional information regarding the eligible services.
+Create or link an AWS account to your Builder ID and submit. You'll hear back within 5–10 business days.
 
-## What is not covered by AWS Activate Credits?
+Helpful resources:
 
-AWS Activate Credits cannot be applied to any fees or charges for Amazon Mechanical Turk, AWS Managed Services, Ineligible AWS Support, AWS Marketplace (with the exception of charges incurred through the use of third-party foundation models available on Amazon Bedrock), AWS Professional Services, AWS Training, AWS Certification, Amazon Route 53 domain name registration or transfer, any Services for mining for cryptocurrency, or any upfront fee for any Services such as Savings Plans and Reserved Instances. For information regarding eligible and ineligible services, please visit the [AWS Promotional Credit Terms & Conditions](https://aws.amazon.com/awscredits/) and the [AWS Activate Terms & Conditions](https://aws.amazon.com/activate/terms/). Any other service not listed in the [AWS Billing and Cost Management Console](https://console.aws.amazon.com/billing/home?#/account) is not covered by AWS Activate Credits.
+- [Applying for AWS Activate Credits: A step-by-step guide](https://aws.amazon.com/startups/learn/applying-for-aws-activate-credits-a-step-by-step-guide/)
+- [Everything you need to know about AWS Activate Credits](https://aws.amazon.com/startups/learn/everything-you-need-to-know-about-aws-activate-credits/)
 
-## How do I use my AWS Activate Credits?
+## Build AI, move your infrastructure, and ship faster with promotional credits
 
-No action is required from you to activate your AWS Activate Credits. AWS Activate Credits offset charges for AWS Eligible Services incurred during or following the billing cycle in which you receive the credits. You can view, track, and monitor your AWS Activate Credits in the [AWS Billing and Cost Management Console](https://console.aws.amazon.com/billing/home?#/account).
+Use credits to cover the tools you need to go from idea to production.
 
-## What is an Organization ID (Org ID)?
+### From foundation models to production infrastructure
 
-An organization ID (Org ID) is a unique, confidential code used to identify AWS Activate Providers affiliated with Activate Credits. Each venture capital firm, accelerator, incubator, or other startup-enabling organization that is an AWS Activate Provider has its own Org ID.
+Whether you're building an AI-native product with Amazon Bedrock or using Kiro to accelerate development, promotional credits help you get from idea to launch. Start building on day one.
 
-If you're a startup applying for the Activate Portfolio package (offering up to $100,000 USD in credits), you'll need to enter an Org ID during the application process. This ID should be provided to you by your AWS Activate Provider. If you're associated with a provider but don't have their Org ID, reach out to them directly to request it.
+[Explore AI tools for startups](https://aws.amazon.com/startups/ai-for-startups/)
 
-For the Activate Founder package ($1,000 USD in credits), an Org ID is not required. If you're not associated with an AWS Activate Provider, you may be eligible for this package.
+### Move to AWS with AI-powered tools and expert support
 
-It's important to note that an Org ID is not a promotional code and should not be shared publicly. If you're unsure about your eligibility or which package to apply for, consider reaching out to AWS Activate support for guidance.
+AI-powered assessments and end-to-end expert guidance make moving to AWS simple. Get AWS investments, in the form AWS credits or partner investments, to help customers offset one-time migration expenses. Focus on building, not logistics.
 
-## What is an Activate Provider?
+[Start your assessment](https://aws.amazon.com/aws-startups/migrate/)
 
-AWS Activate works with hundreds of accelerators, angel investors, seed/venture capital firms, and startup enabling organizations across the world, whom we call Activate Providers. Some notable providers include Sequoia, Andreessen Horowitz, Y Combinator, Greylock Partners, Carta, Brex, and more. Startups associated with an Activate Provider are able to apply for the Activate Portfolio package using the provider’s organization ID.
+### Build faster with Kiro
 
-## Where can I find details about my credits including usage and expiration dates?
+Turn prompts into working code, structured designs, and implementation tasks with an agentic development environment built on frontier models. Start with Kiro Startup Credits, then grow into Activate Credits.
 
-You can find details about your AWS Activate Credits, including the exact credit amount, their expiration date, remaining balance, and the applicable AWS services on the [AWS Billing and Cost Management Console](https://console.aws.amazon.com/billing/home?#/account). AWS Activate also informs startups when their credits are going to expire or exhaust via email: 1) credits are expiring (60 days prior expiration, 30 days prior expiration, expired) and 2) Account credits are exhausting (75% credits exhausted, 100% exhausted).
+[Apply for Kiro Startup Credits](https://kiro.dev/startups/)
+(Available to eligible startups without current Activate Credits)
 
-## How are my credits applied to Reserved Instances or Saving Plans?
+## See what founders are building with AWS Activate Credits
 
-AWS Activate credits are applied to Reserved Instances and Saving Plans the same way as other AWS Services. Upfront fees for Reserved Instances and Savings Plans are not covered by AWS Activate credits.
+[Explore more founder stories](https://aws.amazon.com/startups/learn/featured-customers)
+
+## Next steps
+
+- [Everything you need to know about Activate Credits](https://aws.amazon.com/startups/learn/everything-you-need-to-know-about-aws-activate-credits/)
+- [Exclusive offers to help you build and scale faster](https://aws.amazon.com/startups/offers)
