@@ -16,4 +16,4 @@ groundcover for Startups provides eligible AWS startup customers with exclusive 
 - Predictable pricing that scales with your infrastructure, not your data volume
 - Full AWS native integration with CloudWatch, S3, and EKS
 
-[Claim Offer](https://www.groundcover.com)
+[Claim Offer](https://aws.amazon.com/startups/offers/groundcover-inc)

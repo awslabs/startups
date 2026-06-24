@@ -17,4 +17,4 @@ Apono for Startups provides eligible AWS startup customers with exclusive benefi
 - Full audit trail and compliance reporting for SOC2, ISO 27001, and HIPAA
 - Self-service access requests that eliminate ticket backlogs
 
-[Claim Offer](https://activate.aws.amazon.com/offers/apono)
+[Claim Offer](https://aws.amazon.com/startups/offers/apono)

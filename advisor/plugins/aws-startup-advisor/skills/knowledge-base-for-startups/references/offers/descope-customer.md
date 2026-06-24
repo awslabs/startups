@@ -18,4 +18,4 @@ Descope is the leading, developer-friendly customer identity and access manageme
 - RBAC and fine-grained authorization: Roles, permissions, and access policies
 - No-code flow builder: Drag-and-drop auth journeys, no codebase changes required
 
-[Claim Offer](https://activate.aws.amazon.com/offers/descope-customer)
+[Claim Offer](https://aws.amazon.com/startups/offers/descope-customer)

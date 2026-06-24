@@ -19,4 +19,4 @@ Descope is the leading identity platform for AI-native applications, purpose-bui
 - Enforce enterprise-grade access policies: Define policies using context from the agent, user/tenant, MCP server, and target service
 - Human-in-the-loop AI flows: Implement step-up authentication for sensitive actions your AI agents may take
 
-[Claim Offer](https://activate.aws.amazon.com/offers/descope-agentic)
+[Claim Offer](https://aws.amazon.com/startups/offers/descope-agentic)

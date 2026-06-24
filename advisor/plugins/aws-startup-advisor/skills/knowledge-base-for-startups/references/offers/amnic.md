@@ -15,4 +15,4 @@ Amnic helps businesses gain complete visibility into their engineering infrastru
 
 **Accountability at scale:** Attribute every token to the right team or cost center, enabling accurate internal chargeback and giving finance and engineering a single source of truth for AI spend.
 
-[Claim Offer](https://aws.amazon.com/marketplace/pp/prodview-5g4ow525wz56a)
+[Claim Offer](https://aws.amazon.com/startups/offers/amnic)

@@ -15,4 +15,4 @@ Maze is the AI-native cloud vulnerability management platform for teams that shi
 - Direct Slack channel with the Maze team for setup, tuning, and exploitability questions
 - Co-marketing opportunities including joint case studies and content
 
-[Claim Offer](https://aws.amazon.com/marketplace/pp/prodview-7ucqo6vdncj5c)
+[Claim Offer](https://aws.amazon.com/startups/offers/maze-ai)
