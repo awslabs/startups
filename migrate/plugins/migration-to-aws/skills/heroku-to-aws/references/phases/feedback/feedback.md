@@ -105,7 +105,7 @@ Required artifacts: `preferences.json`, `estimation-infra.json`. If missing, out
     "currency": "USD"
   },
   "detected_services": ["<addon_service values from inventory>"],
-  "resource_names": [{"type": "<resource_type>", "name": "<heroku_app>"}],
+  "resource_names": [{ "type": "<resource_type>", "name": "<heroku_app>" }],
   "workload_types": ["infra"],
   "spend_band": "<under-10k|10k-50k|50k-100k|over-100k|unknown>",
   "share_checkpoint": "<after_estimate|after_generate>",
@@ -148,17 +148,20 @@ Write `$MIGRATION_DIR/feedback.json`:
 ## Step 5: Update Phase Status and Mark Complete
 
 **Output gate** — verify before updating:
+
 - `feedback.json` exists
 - If `trace_included` is true, `trace.json` exists
 
 If gate fails: **STOP**. Output: "Feedback outputs are incomplete. Fix feedback artifacts before completion."
 
 Phase Status Update (read-merge-write):
+
 - `phases.feedback` → `"completed"`
 - `current_phase` → `"complete"`
 - `last_updated` → current ISO 8601
 
 Emit:
+
 ```
 HANDOFF_OK | phase=feedback | artifacts=feedback.json,trace.json
 ```

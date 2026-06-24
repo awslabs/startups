@@ -23,17 +23,17 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 
 Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only emit domain files that have resources in `aws-design.json`:
 
-| File             | Domain     | Contains                                                    |
-| ---------------- | ---------- | ----------------------------------------------------------- |
-| `main.tf`        | core       | Provider config, backend, data sources                      |
-| `variables.tf`   | core       | All input variables with types and defaults                 |
-| `outputs.tf`     | core       | Resource outputs and migration summary                      |
-| `vpc.tf`         | networking | VPC, subnets, route tables, internet gateway, NAT, peering  |
-| `compute.tf`     | compute    | ECS cluster, Fargate task definitions, services, ALBs       |
-| `database.tf`    | database   | RDS/Aurora instances, parameter groups, RDS Proxy           |
-| `cache.tf`       | cache      | ElastiCache replication groups, subnet groups               |
-| `messaging.tf`   | messaging  | MSK clusters, configurations                                |
-| `security.tf`    | security   | Security groups, IAM roles/policies                         |
+| File           | Domain     | Contains                                                   |
+| -------------- | ---------- | ---------------------------------------------------------- |
+| `main.tf`      | core       | Provider config, backend, data sources                     |
+| `variables.tf` | core       | All input variables with types and defaults                |
+| `outputs.tf`   | core       | Resource outputs and migration summary                     |
+| `vpc.tf`       | networking | VPC, subnets, route tables, internet gateway, NAT, peering |
+| `compute.tf`   | compute    | ECS cluster, Fargate task definitions, services, ALBs      |
+| `database.tf`  | database   | RDS/Aurora instances, parameter groups, RDS Proxy          |
+| `cache.tf`     | cache      | ElastiCache replication groups, subnet groups              |
+| `messaging.tf` | messaging  | MSK clusters, configurations                               |
+| `security.tf`  | security   | Security groups, IAM roles/policies                        |
 
 **File emission rules:**
 
@@ -47,15 +47,15 @@ Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only 
 
 **Service-to-file routing:**
 
-| AWS Service in `aws-design.json`   | Target File     |
-| ----------------------------------- | --------------- |
-| Fargate, ALB                        | `compute.tf`    |
-| RDS PostgreSQL, Aurora PostgreSQL   | `database.tf`   |
-| ElastiCache Redis                   | `cache.tf`      |
-| Amazon MSK                          | `messaging.tf`  |
-| VPC, Subnet, Route Table, IGW, NAT  | `vpc.tf`        |
-| Security Group, IAM Role/Policy      | `security.tf`   |
-| CloudWatch Logs                     | `compute.tf`    |
+| AWS Service in `aws-design.json`   | Target File    |
+| ---------------------------------- | -------------- |
+| Fargate, ALB                       | `compute.tf`   |
+| RDS PostgreSQL, Aurora PostgreSQL  | `database.tf`  |
+| ElastiCache Redis                  | `cache.tf`     |
+| Amazon MSK                         | `messaging.tf` |
+| VPC, Subnet, Route Table, IGW, NAT | `vpc.tf`       |
+| Security Group, IAM Role/Policy    | `security.tf`  |
+| CloudWatch Logs                    | `compute.tf`   |
 
 **Unmapped services:** If `aws-design.json` contains a `service_id` with an `aws_service` value that has no Terraform resource mapping in this file (e.g., CloudWatch + X-Ray composite, Amazon SES, Amazon SNS), **skip** that resource and log a warning to `generation-warnings.json`. Do NOT halt generation.
 
@@ -107,6 +107,7 @@ data "aws_availability_zones" "available" {
 ```
 
 **Customization rules:**
+
 - `region` value: Use `var.aws_region` (populated from `preferences.json.global.target_region`)
 - `MigrationId` tag: Use the migration run ID from `.phase-status.json`
 
@@ -374,6 +375,7 @@ resource "aws_route_table_association" "private" {
 ```
 
 **VPC rules:**
+
 - Always use at least 2 subnets across separate AZs (per Requirement 9.4)
 - Public subnets host ALBs; private subnets host Fargate, databases, caches, and messaging
 - Single NAT gateway for cost optimization (user can expand for HA post-apply)
@@ -622,6 +624,7 @@ resource "aws_security_group" "messaging" {
 ```
 
 **Security group rules:**
+
 - Only emit security groups for services present in `aws-design.json`
 - Fargate SG allows traffic from ALB SG only (not open CIDR)
 - Database/Cache/MSK SGs allow traffic from Fargate SG only
@@ -764,6 +767,7 @@ resource "aws_ecs_task_definition" "<app_sanitized>_<process_type>" {
 ```
 
 **Task definition rules:**
+
 - `cpu` and `memory` come from `aws_config.task_cpu` and `aws_config.task_memory` (mapped from Dyno Type Table)
 - `portMappings` included only for `web` process types (port 8080 default)
 - Workers, release, clock, and custom process types: no `portMappings`
@@ -804,6 +808,7 @@ resource "aws_ecs_service" "<app_sanitized>_<process_type>" {
 ```
 
 **Service rules:**
+
 - `desired_count` from `aws_config.desired_count` (maps directly from Heroku formation quantity, 0–100)
 - `load_balancer` block included ONLY when `aws_config.load_balancer == true` (web process types)
 - Workers, release, clock processes: omit `load_balancer` block and `depends_on`
@@ -888,6 +893,7 @@ variable "acm_certificate_arn" {
 ```
 
 **ALB rules:**
+
 - `scheme` from `aws_config.scheme` in `aws-design.json` (default: "internet-facing")
 - HTTP listener always redirects to HTTPS
 - TLS 1.3 policy for new deployments
@@ -1130,6 +1136,7 @@ resource "aws_iam_role_policy" "rds_proxy_secrets" {
 ```
 
 **Database rules:**
+
 - Storage encrypted by default (`storage_encrypted = true`)
 - Final snapshot enabled (`skip_final_snapshot = false`)
 - `max_allocated_storage` set to 2× initial for auto-scaling headroom
@@ -1208,6 +1215,7 @@ resource "aws_elasticache_parameter_group" "<app_sanitized>_redis" {
 ```
 
 **ElastiCache rules:**
+
 - `automatic_failover_enabled` and `multi_az_enabled`: Set to `true` if and only if source Heroku Redis has HA enabled (`aws_config.automatic_failover == true`)
 - `transit_encryption_enabled`: Set to `true` if and only if source has encryption-in-transit (`aws_config.transit_encryption == true`)
 - `at_rest_encryption_enabled`: Always `true` (security best practice)
@@ -1296,6 +1304,7 @@ resource "aws_cloudwatch_log_group" "msk" {
 ```
 
 **MSK rules:**
+
 - `number_of_broker_nodes`: Minimum 2, always spread across ≥ 2 AZs (per Requirement 7.4)
 - `broker_instance_type`: From `aws_config.broker_instance_type` (mapped from Kafka Plan Table)
 - `volume_size`: From `aws_config.storage_gb` (meets or exceeds source plan storage)
@@ -1336,6 +1345,7 @@ For any `service_id` in `aws-design.json` whose `aws_service` does not have a Te
 ```
 
 **Warning scenarios that produce entries:**
+
 - CloudWatch Logs mapped from Papertrail (no standalone Terraform needed — integrated into `compute.tf` log configuration)
 - CloudWatch + X-Ray composite mappings (Scout APM, New Relic)
 - Amazon SES (SendGrid mapping)

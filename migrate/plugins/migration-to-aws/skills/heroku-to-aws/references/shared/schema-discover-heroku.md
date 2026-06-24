@@ -54,68 +54,68 @@ Complete inventory of discovered Heroku resources. Uses a **flat resource model*
 
 Report-level information about the discovery run.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `discovery_timestamp` | string (ISO 8601) | ✅ | When discovery was executed |
-| `total_apps_discovered` | integer | ✅ | Count of Heroku apps found |
-| `discovery_sources` | string[] | ✅ | Sources used: `"terraform"`, `"procfile"`, `"billing"` |
-| `confidence` | string | ✅ | `"full"` (Terraform files present and parsed successfully) or `"reduced"` (Partial data, e.g., Terraform parse errors on some files, missing expected resources) |
-| `confidence_note` | string | ❌ | Explanation when confidence is `"reduced"` |
+| Field                   | Type              | Required | Description                                                                                                                                                      |
+| ----------------------- | ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discovery_timestamp`   | string (ISO 8601) | ✅       | When discovery was executed                                                                                                                                      |
+| `total_apps_discovered` | integer           | ✅       | Count of Heroku apps found                                                                                                                                       |
+| `discovery_sources`     | string[]          | ✅       | Sources used: `"terraform"`, `"procfile"`, `"billing"`                                                                                                           |
+| `confidence`            | string            | ✅       | `"full"` (Terraform files present and parsed successfully) or `"reduced"` (Partial data, e.g., Terraform parse errors on some files, missing expected resources) |
+| `confidence_note`       | string            | ❌       | Explanation when confidence is `"reduced"`                                                                                                                       |
 
 ### `apps[]` (REQUIRED)
 
 Per-app metadata entries. One entry per discovered Heroku app.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `app_name` | string | ✅ | Heroku app name |
-| `app_id` | string (UUID) | ✅ | Heroku app UUID |
-| `heroku_generation` | string | ✅ | `"cedar"`, `"fir"`, or `"unknown"` |
-| `generation_action` | string | ✅ | Always `"detect_only"` in v1 |
-| `generation_diagnostics` | string[] | ✅ | Diagnostic reasons (empty array if resolved cleanly; contains `"generation_unresolved"` on timeout/error) |
-| `space` | string \| null | ✅ | Private Space name, or `null` if not in a space |
-| `discovery_status` | string | ✅ | `"success"` or `"discovery_failed"` |
-| `failure_reason` | string \| null | ✅ | Error description when `discovery_status` is `"discovery_failed"`, otherwise `null` |
-| `procfile_parse_warning` | string \| null | ✅ | Warning text if Procfile parsing failed, otherwise `null` |
-| `app_json_parse_warning` | string \| null | ✅ | Warning text if app.json parsing failed, otherwise `null` |
+| Field                    | Type           | Required | Description                                                                                               |
+| ------------------------ | -------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `app_name`               | string         | ✅       | Heroku app name                                                                                           |
+| `app_id`                 | string (UUID)  | ✅       | Heroku app UUID                                                                                           |
+| `heroku_generation`      | string         | ✅       | `"cedar"`, `"fir"`, or `"unknown"`                                                                        |
+| `generation_action`      | string         | ✅       | Always `"detect_only"` in v1                                                                              |
+| `generation_diagnostics` | string[]       | ✅       | Diagnostic reasons (empty array if resolved cleanly; contains `"generation_unresolved"` on timeout/error) |
+| `space`                  | string \| null | ✅       | Private Space name, or `null` if not in a space                                                           |
+| `discovery_status`       | string         | ✅       | `"success"` or `"discovery_failed"`                                                                       |
+| `failure_reason`         | string \| null | ✅       | Error description when `discovery_status` is `"discovery_failed"`, otherwise `null`                       |
+| `procfile_parse_warning` | string \| null | ✅       | Warning text if Procfile parsing failed, otherwise `null`                                                 |
+| `app_json_parse_warning` | string \| null | ✅       | Warning text if app.json parsing failed, otherwise `null`                                                 |
 
 ### `resources[]` (REQUIRED)
 
 Flat array of all discovered resources. **No nesting, no clustering.**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `resource_id` | string | ✅ | Unique identifier (format below) |
-| `resource_type` | string | ✅ | One of: `"formation"`, `"addon"`, `"space"`, `"pipeline"` |
-| `heroku_app` | string | ✅ | App name this resource belongs to, or `"unassociated"` |
-| `config` | object | ✅ | Type-specific configuration (see per-type schemas below) |
+| Field           | Type   | Required | Description                                               |
+| --------------- | ------ | -------- | --------------------------------------------------------- |
+| `resource_id`   | string | ✅       | Unique identifier (format below)                          |
+| `resource_type` | string | ✅       | One of: `"formation"`, `"addon"`, `"space"`, `"pipeline"` |
+| `heroku_app`    | string | ✅       | App name this resource belongs to, or `"unassociated"`    |
+| `config`        | object | ✅       | Type-specific configuration (see per-type schemas below)  |
 
 ### `billing_profile` (OPTIONAL — present when billing data available)
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `available` | boolean | ✅ | Whether billing data was successfully parsed |
-| `total_monthly_cost` | number | ✅ | Total monthly spend in declared currency |
-| `currency` | string | ✅ | ISO 4217 currency code (e.g., `"USD"`) |
-| `billing_period` | string | ✅ | YYYY-MM format billing period |
-| `line_items` | object[] | ✅ | Per-resource cost breakdown |
+| Field                | Type     | Required | Description                                  |
+| -------------------- | -------- | -------- | -------------------------------------------- |
+| `available`          | boolean  | ✅       | Whether billing data was successfully parsed |
+| `total_monthly_cost` | number   | ✅       | Total monthly spend in declared currency     |
+| `currency`           | string   | ✅       | ISO 4217 currency code (e.g., `"USD"`)       |
+| `billing_period`     | string   | ✅       | YYYY-MM format billing period                |
+| `line_items`         | object[] | ✅       | Per-resource cost breakdown                  |
 
 #### `billing_profile.line_items[]`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `resource_name` | string | ✅ | App or resource name |
-| `category` | string | ✅ | `"dyno"`, `"addon"`, or `"platform"` |
-| `cost` | number | ✅ | Cost amount in billing currency |
+| Field           | Type   | Required | Description                          |
+| --------------- | ------ | -------- | ------------------------------------ |
+| `resource_name` | string | ✅       | App or resource name                 |
+| `category`      | string | ✅       | `"dyno"`, `"addon"`, or `"platform"` |
+| `cost`          | number | ✅       | Cost amount in billing currency      |
 
 ### `terraform_metadata` (OPTIONAL — present when Terraform discovery ran)
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `found` | boolean | ✅ | Whether Terraform files with `heroku_*` resources were found |
-| `tf_files_scanned` | integer | ✅ | Number of `.tf` files scanned |
-| `resource_types_extracted` | string[] | ✅ | List of extracted resource types (e.g., `"heroku_app"`, `"heroku_addon"`) |
-| `parse_warnings` | string[] | ✅ | Any parse warnings encountered during extraction |
+| Field                      | Type     | Required | Description                                                               |
+| -------------------------- | -------- | -------- | ------------------------------------------------------------------------- |
+| `found`                    | boolean  | ✅       | Whether Terraform files with `heroku_*` resources were found              |
+| `tf_files_scanned`         | integer  | ✅       | Number of `.tf` files scanned                                             |
+| `resource_types_extracted` | string[] | ✅       | List of extracted resource types (e.g., `"heroku_app"`, `"heroku_addon"`) |
+| `parse_warnings`           | string[] | ✅       | Any parse warnings encountered during extraction                          |
 
 ---
 
@@ -123,12 +123,12 @@ Flat array of all discovered resources. **No nesting, no clustering.**
 
 Deterministic ID format per resource type:
 
-| Resource Type | ID Format | Example |
-|--------------|-----------|---------|
-| `formation` | `formation:{app_name}:{process_type}` | `formation:my-web-app:web` |
-| `addon` | `addon:{app_name}:{addon_service}:{plan}` | `addon:my-web-app:heroku-postgresql:standard-0` |
-| `space` | `space:{space_name}` | `space:my-private-space` |
-| `pipeline` | `pipeline:{pipeline_name}` | `pipeline:my-pipeline` |
+| Resource Type | ID Format                                 | Example                                         |
+| ------------- | ----------------------------------------- | ----------------------------------------------- |
+| `formation`   | `formation:{app_name}:{process_type}`     | `formation:my-web-app:web`                      |
+| `addon`       | `addon:{app_name}:{addon_service}:{plan}` | `addon:my-web-app:heroku-postgresql:standard-0` |
+| `space`       | `space:{space_name}`                      | `space:my-private-space`                        |
+| `pipeline`    | `pipeline:{pipeline_name}`                | `pipeline:my-pipeline`                          |
 
 ---
 
@@ -145,12 +145,12 @@ Deterministic ID format per resource type:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `process_type` | string | ✅ | Process type name from Procfile |
-| `command` | string | ✅ | Start command from Procfile |
-| `dyno_type` | string | ✅ | Heroku dyno size |
-| `quantity` | integer (0–100) | ✅ | Number of dynos running |
+| Field          | Type            | Required | Description                     |
+| -------------- | --------------- | -------- | ------------------------------- |
+| `process_type` | string          | ✅       | Process type name from Procfile |
+| `command`      | string          | ✅       | Start command from Procfile     |
+| `dyno_type`    | string          | ✅       | Heroku dyno size                |
+| `quantity`     | integer (0–100) | ✅       | Number of dynos running         |
 
 ### `addon` config
 
@@ -163,11 +163,11 @@ Deterministic ID format per resource type:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `addon_service` | string | ✅ | Add-on service name |
-| `plan` | string | ✅ | Plan tier name |
-| `provider` | string | ✅ | Add-on provider |
+| Field           | Type   | Required | Description         |
+| --------------- | ------ | -------- | ------------------- |
+| `addon_service` | string | ✅       | Add-on service name |
+| `plan`          | string | ✅       | Plan tier name      |
+| `provider`      | string | ✅       | Add-on provider     |
 
 **Additional fields by addon type:**
 
@@ -191,15 +191,15 @@ Deterministic ID format per resource type:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `space_name` | string | ✅ | Private Space name |
-| `region` | string | ✅ | Heroku region |
-| `shield` | boolean | ✅ | Whether Shield compliance is enabled |
-| `peering` | object | ✅ | VPC peering information |
-| `peering.detected` | boolean | ✅ | Whether VPC peering was found |
-| `peering.vpc_id` | string \| null | ✅ | Peered VPC ID (null if not detected or unavailable) |
-| `peering.peer_cidr` | string \| null | ✅ | Peer CIDR block (null if not detected) |
+| Field               | Type           | Required | Description                                         |
+| ------------------- | -------------- | -------- | --------------------------------------------------- |
+| `space_name`        | string         | ✅       | Private Space name                                  |
+| `region`            | string         | ✅       | Heroku region                                       |
+| `shield`            | boolean        | ✅       | Whether Shield compliance is enabled                |
+| `peering`           | object         | ✅       | VPC peering information                             |
+| `peering.detected`  | boolean        | ✅       | Whether VPC peering was found                       |
+| `peering.vpc_id`    | string \| null | ✅       | Peered VPC ID (null if not detected or unavailable) |
+| `peering.peer_cidr` | string \| null | ✅       | Peer CIDR block (null if not detected)              |
 
 ### `pipeline` config
 
@@ -207,23 +207,23 @@ Deterministic ID format per resource type:
 {
   "pipeline_name": "my-pipeline",
   "stages": [
-    {"stage": "development", "app": "my-web-app-dev"},
-    {"stage": "staging", "app": "my-web-app-staging"},
-    {"stage": "production", "app": "my-web-app"}
+    { "stage": "development", "app": "my-web-app-dev" },
+    { "stage": "staging", "app": "my-web-app-staging" },
+    { "stage": "production", "app": "my-web-app" }
   ],
   "review_apps_enabled": true,
   "detection_status": "detect-only"
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `pipeline_name` | string | ✅ | Pipeline name |
-| `stages` | object[] | ✅ | Stage definitions |
-| `stages[].stage` | string | ✅ | Stage name: `"review"`, `"development"`, `"staging"`, `"production"` |
-| `stages[].app` | string | ✅ | App name assigned to this stage |
-| `review_apps_enabled` | boolean | ✅ | Whether Review Apps are enabled |
-| `detection_status` | string | ✅ | Always `"detect-only"` in v1 |
+| Field                 | Type     | Required | Description                                                          |
+| --------------------- | -------- | -------- | -------------------------------------------------------------------- |
+| `pipeline_name`       | string   | ✅       | Pipeline name                                                        |
+| `stages`              | object[] | ✅       | Stage definitions                                                    |
+| `stages[].stage`      | string   | ✅       | Stage name: `"review"`, `"development"`, `"staging"`, `"production"` |
+| `stages[].app`        | string   | ✅       | App name assigned to this stage                                      |
+| `review_apps_enabled` | boolean  | ✅       | Whether Review Apps are enabled                                      |
+| `detection_status`    | string   | ✅       | Always `"detect-only"` in v1                                         |
 
 ---
 
@@ -251,9 +251,9 @@ The following fields MUST NOT appear anywhere in `heroku-resource-inventory.json
 
 ## Confidence Levels
 
-| Level | Meaning | When Used |
-|-------|---------|-----------|
-| `full` | Terraform files present and parsed successfully | Terraform discovery completed without parse errors |
+| Level     | Meaning                                                                 | When Used                                                                       |
+| --------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `full`    | Terraform files present and parsed successfully                         | Terraform discovery completed without parse errors                              |
 | `reduced` | Partial data — Terraform had parse errors or missing expected resources | Some `.tf` files could not be parsed, or expected resource types were not found |
 
 ---
@@ -373,9 +373,9 @@ The following fields MUST NOT appear anywhere in `heroku-resource-inventory.json
       "config": {
         "pipeline_name": "my-pipeline",
         "stages": [
-          {"stage": "development", "app": "my-web-app-dev"},
-          {"stage": "staging", "app": "my-web-app-staging"},
-          {"stage": "production", "app": "my-web-app"}
+          { "stage": "development", "app": "my-web-app-dev" },
+          { "stage": "staging", "app": "my-web-app-staging" },
+          { "stage": "production", "app": "my-web-app" }
         ],
         "review_apps_enabled": true,
         "detection_status": "detect-only"
@@ -388,11 +388,11 @@ The following fields MUST NOT appear anywhere in `heroku-resource-inventory.json
     "currency": "USD",
     "billing_period": "2026-02",
     "line_items": [
-      {"resource_name": "my-web-app", "category": "dyno", "cost": 100.00},
-      {"resource_name": "my-web-app", "category": "addon", "cost": 200.00},
-      {"resource_name": "my-web-app", "category": "platform", "cost": 50.00},
-      {"resource_name": "my-worker-app", "category": "dyno", "cost": 50.00},
-      {"resource_name": "my-worker-app", "category": "addon", "cost": 50.00}
+      { "resource_name": "my-web-app", "category": "dyno", "cost": 100.00 },
+      { "resource_name": "my-web-app", "category": "addon", "cost": 200.00 },
+      { "resource_name": "my-web-app", "category": "platform", "cost": 50.00 },
+      { "resource_name": "my-worker-app", "category": "dyno", "cost": 50.00 },
+      { "resource_name": "my-worker-app", "category": "addon", "cost": 50.00 }
     ]
   },
   "terraform_metadata": {

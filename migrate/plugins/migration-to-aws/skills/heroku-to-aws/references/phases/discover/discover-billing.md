@@ -30,13 +30,14 @@ For each discovered billing file, determine format by inspection:
 
 Read the first line (header row). Match against known schemas:
 
-| Header Pattern | Format Type | Source |
-|---------------|-------------|--------|
-| Contains `app`, `dyno_units`, `addon_total`, `platform_total` | `enterprise_csv` | Heroku Enterprise billing export |
-| Contains `description`, `amount`, `period_start`, `period_end` | `invoice_csv` | Heroku Dashboard invoice CSV |
-| Contains `resource_name`, `category`, `cost` | `line_item_csv` | Heroku itemized billing CSV |
+| Header Pattern                                                 | Format Type      | Source                           |
+| -------------------------------------------------------------- | ---------------- | -------------------------------- |
+| Contains `app`, `dyno_units`, `addon_total`, `platform_total`  | `enterprise_csv` | Heroku Enterprise billing export |
+| Contains `description`, `amount`, `period_start`, `period_end` | `invoice_csv`    | Heroku Dashboard invoice CSV     |
+| Contains `resource_name`, `category`, `cost`                   | `line_item_csv`  | Heroku itemized billing CSV      |
 
 **If header does not match any known pattern:**
+
 - Log warning: "Unrecognized CSV billing format in `{filename}`. Expected Heroku Enterprise or Dashboard invoice headers. Skipping file."
 - Skip this file and continue to next billing file (if any).
 
@@ -44,17 +45,19 @@ Read the first line (header row). Match against known schemas:
 
 Parse JSON and check top-level structure:
 
-| Structure Pattern | Format Type | Source |
-|------------------|-------------|--------|
-| Has `total`, `period_start`, `period_end`, and `charges` array | `invoice_json` | Heroku Dashboard invoice JSON |
-| Has `invoice_id`, `total_amount`, `line_items` array | `api_invoice_json` | Heroku Platform API invoice response |
-| Has `apps` array with nested cost objects | `enterprise_json` | Heroku Enterprise billing JSON export |
+| Structure Pattern                                              | Format Type        | Source                                |
+| -------------------------------------------------------------- | ------------------ | ------------------------------------- |
+| Has `total`, `period_start`, `period_end`, and `charges` array | `invoice_json`     | Heroku Dashboard invoice JSON         |
+| Has `invoice_id`, `total_amount`, `line_items` array           | `api_invoice_json` | Heroku Platform API invoice response  |
+| Has `apps` array with nested cost objects                      | `enterprise_json`  | Heroku Enterprise billing JSON export |
 
 **If JSON structure does not match any known pattern:**
+
 - Log warning: "Unrecognized JSON billing format in `{filename}`. Expected Heroku invoice or Enterprise export structure. Skipping file."
 - Skip this file and continue to next billing file (if any).
 
 **If JSON is malformed (parse error):**
+
 - Log warning: "Failed to parse JSON in `{filename}`: {error_message}. Skipping file."
 - Skip this file and continue to next billing file (if any).
 
@@ -68,14 +71,14 @@ Apply format-specific parsing logic. Extract normalized line items from each rec
 
 Extract from each row:
 
-| CSV Column | Maps To | Notes |
-|-----------|---------|-------|
-| `app` | `resource_name` | Heroku app name |
-| `dyno_units` or `dyno_cost` | line item with `category: "dyno"` | Compute costs |
-| `addon_total` or `addon_cost` | line item with `category: "addon"` | Add-on costs |
-| `platform_total` or `platform_cost` | line item with `category: "platform"` | Platform charges (SSL, etc.) |
-| `period` or `billing_period` | `billing_period` | Format: YYYY-MM |
-| `total` or `line_total` | Per-row total for validation | Should equal sum of dyno + addon + platform |
+| CSV Column                          | Maps To                               | Notes                                       |
+| ----------------------------------- | ------------------------------------- | ------------------------------------------- |
+| `app`                               | `resource_name`                       | Heroku app name                             |
+| `dyno_units` or `dyno_cost`         | line item with `category: "dyno"`     | Compute costs                               |
+| `addon_total` or `addon_cost`       | line item with `category: "addon"`    | Add-on costs                                |
+| `platform_total` or `platform_cost` | line item with `category: "platform"` | Platform charges (SSL, etc.)                |
+| `period` or `billing_period`        | `billing_period`                      | Format: YYYY-MM                             |
+| `total` or `line_total`             | Per-row total for validation          | Should equal sum of dyno + addon + platform |
 
 Sum all row totals to derive `total_monthly_cost`.
 
@@ -83,14 +86,15 @@ Sum all row totals to derive `total_monthly_cost`.
 
 Extract from each row:
 
-| CSV Column | Maps To | Notes |
-|-----------|---------|-------|
-| `description` | `resource_name` + `category` | Parse app name and charge type from description text |
-| `amount` | `cost` | Line item cost (USD assumed unless currency column present) |
-| `period_start` / `period_end` | `billing_period` | Derive YYYY-MM from period_start |
-| `currency` (if present) | `currency` | Default to "USD" if absent |
+| CSV Column                    | Maps To                      | Notes                                                       |
+| ----------------------------- | ---------------------------- | ----------------------------------------------------------- |
+| `description`                 | `resource_name` + `category` | Parse app name and charge type from description text        |
+| `amount`                      | `cost`                       | Line item cost (USD assumed unless currency column present) |
+| `period_start` / `period_end` | `billing_period`             | Derive YYYY-MM from period_start                            |
+| `currency` (if present)       | `currency`                   | Default to "USD" if absent                                  |
 
 **Description parsing rules:**
+
 - "Dyno usage for {app_name}" → `resource_name: app_name`, `category: "dyno"`
 - "Add-on: {addon_name} for {app_name}" or "{addon_name} ({app_name})" → `resource_name: app_name`, `category: "addon"`
 - "Platform" or "SSL" or "Support" → `resource_name: "platform"`, `category: "platform"`
@@ -224,19 +228,19 @@ Produce the `billing_profile` section for inclusion in `heroku-resource-inventor
 
 ### Field Definitions
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `available` | boolean | Yes | `true` if billing data was successfully parsed |
-| `total_monthly_cost` | number | Yes | Total monthly Heroku spend (sum of all line items) |
-| `currency` | string | Yes | Currency code (default: `"USD"`) |
-| `billing_period` | string | Yes | Billing period in YYYY-MM format |
-| `source_file` | string | Yes | Filename of the billing file used |
-| `source_format` | string | Yes | One of: `enterprise_csv`, `invoice_csv`, `line_item_csv`, `invoice_json`, `api_invoice_json`, `enterprise_json` |
-| `line_items` | array | Yes | Per-app, per-category cost breakdown |
-| `line_items[].resource_name` | string | Yes | Heroku app name or `"platform"` or `"unknown"` |
-| `line_items[].category` | string | Yes | One of: `"dyno"`, `"addon"`, `"platform"`, `"other"` |
-| `line_items[].cost` | number | Yes | Cost amount for this line item |
-| `parse_warnings` | array | Yes | Any warnings generated during parsing (empty array if none) |
+| Field                        | Type    | Required | Description                                                                                                     |
+| ---------------------------- | ------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| `available`                  | boolean | Yes      | `true` if billing data was successfully parsed                                                                  |
+| `total_monthly_cost`         | number  | Yes      | Total monthly Heroku spend (sum of all line items)                                                              |
+| `currency`                   | string  | Yes      | Currency code (default: `"USD"`)                                                                                |
+| `billing_period`             | string  | Yes      | Billing period in YYYY-MM format                                                                                |
+| `source_file`                | string  | Yes      | Filename of the billing file used                                                                               |
+| `source_format`              | string  | Yes      | One of: `enterprise_csv`, `invoice_csv`, `line_item_csv`, `invoice_json`, `api_invoice_json`, `enterprise_json` |
+| `line_items`                 | array   | Yes      | Per-app, per-category cost breakdown                                                                            |
+| `line_items[].resource_name` | string  | Yes      | Heroku app name or `"platform"` or `"unknown"`                                                                  |
+| `line_items[].category`      | string  | Yes      | One of: `"dyno"`, `"addon"`, `"platform"`, `"other"`                                                            |
+| `line_items[].cost`          | number  | Yes      | Cost amount for this line item                                                                                  |
+| `parse_warnings`             | array   | Yes      | Any warnings generated during parsing (empty array if none)                                                     |
 
 ### When Billing Profile is Unavailable
 
@@ -254,17 +258,17 @@ If no billing files are found (Step 0 exit gate), the parent orchestrator sets:
 
 ## Error Handling
 
-| Error Category | Behavior | Effect on Discovery |
-|---------------|----------|---------------------|
-| No billing files found | Exit cleanly, no output | Discovery continues with API/Terraform inventory only |
-| Unrecognized CSV header format | Log warning with filename, skip file | Try next billing file; if none remain, exit cleanly |
-| Unrecognized JSON structure | Log warning with filename, skip file | Try next billing file; if none remain, exit cleanly |
-| Malformed JSON (parse error) | Log warning with filename and error, skip file | Try next billing file; if none remain, exit cleanly |
-| CSV row missing required fields | Log warning, skip row, continue | Partial data included; warning recorded in `parse_warnings` |
-| Billing total mismatch | Log warning, use line item sum | Proceed with corrected total |
-| All billing files fail to parse | Log warning, exit cleanly | Discovery continues without billing profile |
-| Currency not recognized | Default to "USD", log warning | Proceed with USD assumption |
-| Billing period not parseable | Use filename date pattern or "unknown" | Proceed with best-effort period |
+| Error Category                  | Behavior                                       | Effect on Discovery                                         |
+| ------------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| No billing files found          | Exit cleanly, no output                        | Discovery continues with API/Terraform inventory only       |
+| Unrecognized CSV header format  | Log warning with filename, skip file           | Try next billing file; if none remain, exit cleanly         |
+| Unrecognized JSON structure     | Log warning with filename, skip file           | Try next billing file; if none remain, exit cleanly         |
+| Malformed JSON (parse error)    | Log warning with filename and error, skip file | Try next billing file; if none remain, exit cleanly         |
+| CSV row missing required fields | Log warning, skip row, continue                | Partial data included; warning recorded in `parse_warnings` |
+| Billing total mismatch          | Log warning, use line item sum                 | Proceed with corrected total                                |
+| All billing files fail to parse | Log warning, exit cleanly                      | Discovery continues without billing profile                 |
+| Currency not recognized         | Default to "USD", log warning                  | Proceed with USD assumption                                 |
+| Billing period not parseable    | Use filename date pattern or "unknown"         | Proceed with best-effort period                             |
 
 **Key principle:** Billing discovery is **always optional**. Any parse failure results in a warning and graceful skip — it NEVER blocks or fails the overall Discover phase.
 

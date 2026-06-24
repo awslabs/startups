@@ -16,6 +16,7 @@ Recursively scan the workspace directory for Terraform files containing Heroku r
 Glob pattern: `**/*.tf`
 
 Exclude directories:
+
 - `.terraform/` (provider binaries and cached modules)
 - `node_modules/`
 - `.git/`
@@ -31,6 +32,7 @@ resource "heroku_*" "..." {
 Specifically, match lines containing `resource "heroku_` (with double-quote before the provider prefix).
 
 **Target resource types:**
+
 - `heroku_app`
 - `heroku_addon`
 - `heroku_formation`
@@ -58,18 +60,19 @@ For each `.tf` file containing `heroku_*` resources, parse the Terraform HCL to 
 
 For each `resource` block with a `heroku_*` type, extract:
 
-| Field | Source | Description |
-|-------|--------|-------------|
-| `tf_resource_type` | Block type label (e.g., `heroku_app`) | The Terraform resource type |
-| `tf_resource_name` | Block name label (e.g., `"my-app"`) | The Terraform resource local name |
-| `tf_file` | File path relative to workspace root | Source file for traceability |
-| `attributes` | All key-value pairs within the block body | Configuration attributes |
+| Field              | Source                                    | Description                       |
+| ------------------ | ----------------------------------------- | --------------------------------- |
+| `tf_resource_type` | Block type label (e.g., `heroku_app`)     | The Terraform resource type       |
+| `tf_resource_name` | Block name label (e.g., `"my-app"`)       | The Terraform resource local name |
+| `tf_file`          | File path relative to workspace root      | Source file for traceability      |
+| `attributes`       | All key-value pairs within the block body | Configuration attributes          |
 
 ### 1b. Attribute Extraction Rules
 
 Extract top-level attributes from each resource block. Handle these patterns:
 
 **Simple attributes:**
+
 ```hcl
 resource "heroku_app" "my_app" {
   name   = "my-web-app"
@@ -77,9 +80,11 @@ resource "heroku_app" "my_app" {
   stack  = "heroku-22"
 }
 ```
+
 → `{ "name": "my-web-app", "region": "us", "stack": "heroku-22" }`
 
 **Nested blocks (flatten with dot notation for key fields):**
+
 ```hcl
 resource "heroku_app" "my_app" {
   name   = "my-web-app"
@@ -90,20 +95,24 @@ resource "heroku_app" "my_app" {
   }
 }
 ```
+
 → `{ "name": "my-web-app", "region": "us", "organization.name": "my-org" }`
 
 **Dynamic references and interpolations:**
+
 ```hcl
 resource "heroku_addon" "postgres" {
   app_id = heroku_app.my_app.id
   plan   = "heroku-postgresql:standard-0"
 }
 ```
+
 - Terraform references (e.g., `heroku_app.my_app.id`) → record as `"ref:heroku_app.my_app.id"`
 - Interpolations (`"${var.name}"`) → record as `"var:name"` (unresolvable, metadata only)
 - Literal values → record as-is
 
 **Lists and maps:**
+
 ```hcl
 resource "heroku_config_association" "config" {
   app_id = heroku_app.my_app.id
@@ -113,6 +122,7 @@ resource "heroku_config_association" "config" {
   }
 }
 ```
+
 - Record map keys only (values may contain secrets) → `"vars_keys": ["DATABASE_URL", "REDIS_URL"]`
 - List attributes → record as JSON arrays
 
@@ -120,69 +130,70 @@ resource "heroku_config_association" "config" {
 
 #### `heroku_app`
 
-| Attribute | Inventory Field | Required |
-|-----------|----------------|----------|
-| `name` | `app_name` | Yes |
-| `region` | `region` | Yes |
-| `stack` | `stack` (feeds Cedar/Fir detection) | No |
-| `space` | `space` (Private Space name) | No |
-| `organization.name` | `organization` | No |
-| `buildpacks` | `buildpacks` (array) | No |
-| `acm` | `acm_enabled` (boolean) | No |
+| Attribute           | Inventory Field                     | Required |
+| ------------------- | ----------------------------------- | -------- |
+| `name`              | `app_name`                          | Yes      |
+| `region`            | `region`                            | Yes      |
+| `stack`             | `stack` (feeds Cedar/Fir detection) | No       |
+| `space`             | `space` (Private Space name)        | No       |
+| `organization.name` | `organization`                      | No       |
+| `buildpacks`        | `buildpacks` (array)                | No       |
+| `acm`               | `acm_enabled` (boolean)             | No       |
 
 #### `heroku_addon`
 
-| Attribute | Inventory Field | Required |
-|-----------|----------------|----------|
-| `app_id` | resolve to `heroku_app` via reference | Yes |
-| `plan` | `plan` (format: `service:plan-tier`) | Yes |
+| Attribute | Inventory Field                       | Required |
+| --------- | ------------------------------------- | -------- |
+| `app_id`  | resolve to `heroku_app` via reference | Yes      |
+| `plan`    | `plan` (format: `service:plan-tier`)  | Yes      |
 
 Parse the `plan` attribute to split into `addon_service` and `plan_tier`:
+
 - `"heroku-postgresql:standard-0"` → `addon_service: "heroku-postgresql"`, `plan: "standard-0"`
 - `"papertrail:choklad"` → `addon_service: "papertrail"`, `plan: "choklad"`
 
 #### `heroku_formation`
 
-| Attribute | Inventory Field | Required |
-|-----------|----------------|----------|
-| `app_id` | resolve to `heroku_app` via reference | Yes |
-| `type` | `process_type` | Yes |
-| `quantity` | `quantity` (integer) | Yes |
-| `size` | `dyno_type` | Yes |
+| Attribute  | Inventory Field                       | Required |
+| ---------- | ------------------------------------- | -------- |
+| `app_id`   | resolve to `heroku_app` via reference | Yes      |
+| `type`     | `process_type`                        | Yes      |
+| `quantity` | `quantity` (integer)                  | Yes      |
+| `size`     | `dyno_type`                           | Yes      |
 
 #### `heroku_domain`
 
-| Attribute | Inventory Field | Required |
-|-----------|----------------|----------|
-| `app_id` | resolve to `heroku_app` via reference | Yes |
-| `hostname` | `hostname` | Yes |
-| `sni_endpoint_id` | `sni_endpoint` | No |
+| Attribute         | Inventory Field                       | Required |
+| ----------------- | ------------------------------------- | -------- |
+| `app_id`          | resolve to `heroku_app` via reference | Yes      |
+| `hostname`        | `hostname`                            | Yes      |
+| `sni_endpoint_id` | `sni_endpoint`                        | No       |
 
 #### `heroku_config_association`
 
-| Attribute | Inventory Field | Required |
-|-----------|----------------|----------|
-| `app_id` | resolve to `heroku_app` via reference | Yes |
-| `vars` | `config_var_keys` (keys only, values redacted) | Yes |
+| Attribute | Inventory Field                                | Required |
+| --------- | ---------------------------------------------- | -------- |
+| `app_id`  | resolve to `heroku_app` via reference          | Yes      |
+| `vars`    | `config_var_keys` (keys only, values redacted) | Yes      |
 
 **Security: Record variable KEYS ONLY from `vars` map. Redact all values.**
 
 #### `heroku_pipeline`
 
 | Attribute | Inventory Field | Required |
-|-----------|----------------|----------|
-| `name` | `pipeline_name` | Yes |
+| --------- | --------------- | -------- |
+| `name`    | `pipeline_name` | Yes      |
 
 Note: Pipeline stage assignments come from `heroku_pipeline_coupling` resources. If couplings are present, associate apps to stages. If not found, record pipeline with empty stages.
 
 #### `heroku_space`
 
-| Attribute | Inventory Field | Required |
-|-----------|----------------|----------|
-| `name` | `space_name` | Yes |
-| `region` | `region` | Yes |
-| `shield` | `shield` (boolean) | No (default: false) |
-| `organization` | `organization` | No |
+| Attribute      | Inventory Field    | Required            |
+| -------------- | ------------------ | ------------------- |
+| `name`         | `space_name`       | Yes                 |
+| `region`       | `region`           | Yes                 |
+| `shield`       | `shield` (boolean) | No (default: false) |
+| `organization` | `organization`     | No                  |
 
 ### 1d. Reference Resolution
 
@@ -213,15 +224,15 @@ Transform each extracted Terraform resource into the standard inventory resource
 
 ### 2a. Resource ID Generation
 
-| Terraform Type | Inventory `resource_id` Format | Inventory `resource_type` |
-|---------------|-------------------------------|--------------------------|
-| `heroku_app` | `app:{app_name}` | `app` |
-| `heroku_addon` | `addon:{app_name}:{addon_service}:{plan}` | `addon` |
-| `heroku_formation` | `formation:{app_name}:{process_type}` | `formation` |
-| `heroku_domain` | `domain:{app_name}:{hostname}` | `domain` |
-| `heroku_config_association` | `config:{app_name}` | `config` |
-| `heroku_pipeline` | `pipeline:{pipeline_name}` | `pipeline` |
-| `heroku_space` | `space:{space_name}` | `space` |
+| Terraform Type              | Inventory `resource_id` Format            | Inventory `resource_type` |
+| --------------------------- | ----------------------------------------- | ------------------------- |
+| `heroku_app`                | `app:{app_name}`                          | `app`                     |
+| `heroku_addon`              | `addon:{app_name}:{addon_service}:{plan}` | `addon`                   |
+| `heroku_formation`          | `formation:{app_name}:{process_type}`     | `formation`               |
+| `heroku_domain`             | `domain:{app_name}:{hostname}`            | `domain`                  |
+| `heroku_config_association` | `config:{app_name}`                       | `config`                  |
+| `heroku_pipeline`           | `pipeline:{pipeline_name}`                | `pipeline`                |
+| `heroku_space`              | `space:{space_name}`                      | `space`                   |
 
 ### 2b. Resource Entry Construction
 
@@ -442,12 +453,14 @@ After Terraform extraction, scan the workspace for Procfile and app.json to supp
 Search for `Procfile` at workspace root or in subdirectories matching Terraform-discovered app names.
 
 **If found**, parse using the Procfile format:
+
 - One process declaration per line: `<process_type>: <command>`
 - Lines starting with `#` are comments
 - Empty lines are ignored
 - Process type names: `[a-zA-Z0-9_-]+`
 
 For each parsed process type:
+
 - If a matching `formation` resource exists from Terraform (same app + process type) → add the `command` field from Procfile
 - If a process type appears in Procfile but NOT in Terraform formations → add a formation resource with `command` from Procfile and `quantity: 0`, `dyno_type: "unknown"` (declared but not in Terraform)
 
@@ -460,6 +473,7 @@ For each parsed process type:
 Search for `app.json` at workspace root or in subdirectories.
 
 **If found**, parse as JSON and extract:
+
 - `addons` → Cross-reference with Terraform-discovered add-ons. Record any add-ons declared in app.json but not in Terraform (useful for detecting intent).
 - `formation` → Formation defaults (quantity, size). Terraform values take precedence; app.json provides supplementary context.
 - `buildpacks` → Record for Cedar/Fir assessment and container build strategy.
@@ -473,6 +487,7 @@ Search for `app.json` at workspace root or in subdirectories.
 ### 3c. Cedar/Fir Detection from Stack
 
 For each `heroku_app` resource:
+
 - If `stack` attribute is present in Terraform OR app.json:
   - Stack containing `heroku-20`, `heroku-22`, `heroku-24` → `heroku_generation: "cedar"`
   - Stack containing `fir` or `cnb` → `heroku_generation: "fir"`
@@ -505,6 +520,7 @@ All Terraform-sourced resource entries are included directly in the `resources[]
 ### 4c. Confidence Metadata Contribution
 
 Terraform + repo artifacts is the primary (and only) discovery path in v1:
+
 - Set `metadata.confidence` to `"full"` when all Terraform files parsed successfully
 - Set `metadata.confidence` to `"reduced"` if any parse errors occurred or expected resources were missing
 - `metadata.discovery_sources` includes `"terraform"` and (if Procfile/app.json found) `"procfile"`
@@ -524,17 +540,17 @@ Add `"terraform"` to `metadata.discovery_sources` array. If Procfile or app.json
 
 ## Error Handling
 
-| Error Category | Behavior | Effect on Discovery |
-|---------------|----------|---------------------|
-| No `.tf` files in workspace | Exit cleanly, no output | Billing discovery may still run |
-| No `heroku_*` resources in `.tf` files | Exit cleanly, no output | Billing discovery may still run |
-| HCL parse error in one file | Log warning, skip malformed blocks, continue | Other files still processed |
-| HCL parse error in all files | Log warning, exit cleanly | Billing discovery may still run |
-| Unresolvable Terraform reference | Set `heroku_app: "unassociated"`, continue | Resource included with limited context |
-| `heroku_app` resource has no `name` | Skip resource, log warning | Other resources still processed |
-| `heroku_addon` has unparseable `plan` | Record with `plan: "unknown"`, continue | Resource included with limited plan info |
-| File read permission denied | Log warning, skip file, continue | Other files still processed |
-| Circular Terraform references | Resolve to best-effort, log warning | Resources included with available data |
+| Error Category                         | Behavior                                     | Effect on Discovery                      |
+| -------------------------------------- | -------------------------------------------- | ---------------------------------------- |
+| No `.tf` files in workspace            | Exit cleanly, no output                      | Billing discovery may still run          |
+| No `heroku_*` resources in `.tf` files | Exit cleanly, no output                      | Billing discovery may still run          |
+| HCL parse error in one file            | Log warning, skip malformed blocks, continue | Other files still processed              |
+| HCL parse error in all files           | Log warning, exit cleanly                    | Billing discovery may still run          |
+| Unresolvable Terraform reference       | Set `heroku_app: "unassociated"`, continue   | Resource included with limited context   |
+| `heroku_app` resource has no `name`    | Skip resource, log warning                   | Other resources still processed          |
+| `heroku_addon` has unparseable `plan`  | Record with `plan: "unknown"`, continue      | Resource included with limited plan info |
+| File read permission denied            | Log warning, skip file, continue             | Other files still processed              |
+| Circular Terraform references          | Resolve to best-effort, log warning          | Resources included with available data   |
 
 **Key principle:** Terraform discovery is the **primary** discovery path in v1. Any parse failure results in a warning and graceful skip for that specific block — it should NOT halt the entire discovery. Partial results are always better than no results.
 

@@ -91,17 +91,17 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 ### Heroku → AWS
 
-| Category        | Heroku → AWS                                                                                              |
-| --------------- | --------------------------------------------------------------------------------------------------------- |
-| Compute         | Dynos (all types) → Fargate (CPU/memory mapped via Dyno Type Table)                                       |
-| Databases       | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump/bucardo/wal-g migration methods)        |
-| Caching         | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                             |
-| Streaming       | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)                           |
-| Add-ons         | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate            |
-| Networking      | Private Spaces → VPC with restricted security groups; VPC peering detection and reuse                     |
-| CI/CD           | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)                   |
-| Secrets         | Config vars → AWS Secrets Manager or SSM Parameter Store                                                  |
-| Load Balancing  | Web dynos → ALB; non-web → no ALB                                                                         |
+| Category       | Heroku → AWS                                                                                       |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| Compute        | Dynos (all types) → Fargate (CPU/memory mapped via Dyno Type Table)                                |
+| Databases      | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump/bucardo/wal-g migration methods) |
+| Caching        | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                      |
+| Streaming      | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)                   |
+| Add-ons        | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate     |
+| Networking     | Private Spaces → VPC with restricted security groups; VPC peering detection and reuse              |
+| CI/CD          | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)            |
+| Secrets        | Config vars → AWS Secrets Manager or SSM Parameter Store                                           |
+| Load Balancing | Web dynos → ALB; non-web → no ALB                                                                  |
 
 ## What You Get That a Base LLM Can't
 
@@ -129,10 +129,10 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 ## Agent Skill Triggers
 
-| Agent Skill        | Triggers                                                                                                                                                                                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gcp-to-aws**     | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws**  | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
+| Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
 
 ## MCP Servers
 

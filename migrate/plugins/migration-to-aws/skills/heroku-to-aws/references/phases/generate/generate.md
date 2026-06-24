@@ -10,9 +10,11 @@
 
 1. Read `$MIGRATION_DIR/.phase-status.json`. Validate per SKILL.md State Validation rules.
 2. Confirm `phases.estimate == "completed"`. If not:
+
    ```
    GATE_FAIL | phase=generate | field=phases.estimate | reason=missing
    ```
+
 3. Confirm no other core phase is `in_progress`. If violated → GATE_FAIL.
 4. Set `phases.generate` to `"in_progress"` and `current_phase` to `"generate"`. Write `.phase-status.json`.
 5. Read all required artifacts from `$MIGRATION_DIR/`:
@@ -21,6 +23,7 @@
    - `preferences.json` (REQUIRED)
    - `heroku-resource-inventory.json` (REQUIRED)
 6. Confirm all four files exist and parse as valid JSON. If any missing:
+
    ```
    GATE_FAIL | phase=generate | field=<filename> | reason=missing
    ```
@@ -32,10 +35,12 @@
 Load `references/phases/generate/generate-terraform.md` and execute completely.
 
 This produces:
+
 - `$MIGRATION_DIR/terraform/` directory with all `.tf` files
 - `$MIGRATION_DIR/generation-warnings.json` (if any services were skipped)
 
 **Gate check after Step 1:**
+
 - `terraform/main.tf` must exist
 - `terraform/variables.tf` must exist
 - `terraform/outputs.tf` must exist
@@ -50,12 +55,14 @@ If gate fails: STOP. Output: "Terraform generation failed. Check generation-warn
 Load `references/phases/generate/generate-docs.md` and execute completely.
 
 This produces:
+
 - `$MIGRATION_DIR/MIGRATION_GUIDE.md`
 - `$MIGRATION_DIR/README.md`
 - `$MIGRATION_DIR/scripts/migrate-postgres.sh` (if Postgres in design)
 - `$MIGRATION_DIR/scripts/migrate-redis.sh` (if Redis in design)
 
 **Gate check after Step 2:**
+
 - `MIGRATION_GUIDE.md` must exist
 - `README.md` must exist
 
@@ -79,6 +86,7 @@ Load `shared/validate-artifacts.md`. Verify the complete set of generated artifa
 10. `generation-warnings.json` (if any services were skipped)
 
 **Cross-reference checks:**
+
 - Every service in `aws-design.json.services[]` is either generated in Terraform OR listed in `generation-warnings.json`
 - `README.md` references all files that actually exist
 - `MIGRATION_GUIDE.md` data migration sections match design content (no empty sections)
@@ -147,6 +155,7 @@ After this output, SKILL.md handles the post-Generate share prompt and feedback 
 4. `README.md` — artifact overview
 
 **Conditional outputs:**
+
 - `scripts/migrate-postgres.sh` — when Postgres in design
 - `scripts/migrate-redis.sh` — when Redis in design
 - `generation-warnings.json` — when any services skipped
@@ -155,13 +164,13 @@ After this output, SKILL.md handles the post-Generate share prompt and feedback 
 
 ## Error Handling
 
-| Error Category | Behavior | Status Transition |
-|---------------|----------|-------------------|
-| Predecessor phase incomplete | GATE_FAIL, halt | Remain `pending` |
-| Input artifact missing/invalid | GATE_FAIL, halt | Retain `in_progress` |
+| Error Category                       | Behavior                                  | Status Transition      |
+| ------------------------------------ | ----------------------------------------- | ---------------------- |
+| Predecessor phase incomplete         | GATE_FAIL, halt                           | Remain `pending`       |
+| Input artifact missing/invalid       | GATE_FAIL, halt                           | Retain `in_progress`   |
 | Terraform generation partial failure | Log to generation-warnings.json, continue | Continue `in_progress` |
-| Documentation generation failure | GATE_FAIL at Step 2 gate | Retain `in_progress` |
-| Handoff gate check fails | Halt pipeline, surface diagnostic | Retain `in_progress` |
+| Documentation generation failure     | GATE_FAIL at Step 2 gate                  | Retain `in_progress`   |
+| Handoff gate check fails             | Halt pipeline, surface diagnostic         | Retain `in_progress`   |
 
 ---
 
@@ -170,6 +179,7 @@ After this output, SKILL.md handles the post-Generate share prompt and feedback 
 **This phase covers artifact generation ONLY.**
 
 FORBIDDEN — Do NOT include ANY of:
+
 - Re-designing or changing AWS service selections (Phase 3 decisions are final)
 - Re-estimating costs (Phase 4 estimates are final)
 - Asking the user additional clarification questions (Phase 2 is done)

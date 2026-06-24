@@ -84,6 +84,7 @@ ELSE full question flow (12–15 questions)
 4. Proceed to Step 4 (Validation Checklist).
 
 **Fast-path default values applied when skipping questions:**
+
 - `migration_urgency`: `routine`
 - `migration_approach`: `full_cutover`
 - `migration_method`: `pg_dump_restore`
@@ -107,38 +108,38 @@ Before generating questions, scan the inventory to determine which questions app
 
 ### Conditional Question Rules
 
-| Question | Condition to Include | Skip When |
-|----------|---------------------|-----------|
-| Q1 — Target AWS region | Always | Never |
-| Q2 — Compliance | Always | Never |
-| Q3 — Availability posture | Always | Never |
-| Q4 — Maintenance window | Always | Never |
-| Q5 — Environment naming | Always | Never |
-| Q5b — Migration urgency | Always | Never |
-| Q6 — Database HA | Postgres add-on present | No Postgres in inventory |
-| Q6b — Migration approach | Postgres add-on present | No Postgres in inventory |
-| Q6c — DB migration method | Postgres add-on present | No Postgres in inventory |
-| Q7 — Redis HA | Redis add-on present | No Redis in inventory |
-| Q8 — Kafka retention | Kafka add-on present | No Kafka in inventory |
-| Q9 — VPC subnet IDs | Private Space with peering detected BUT subnet IDs not available | No Private Space or subnets already known |
-| Q9b — VPC ID | Peering detected but VPC ID not found in Terraform | VPC ID already available or no peering |
-| Q10 — DNS strategy | Always | Never |
-| Q11 — Fir intent | At least one app has `heroku_generation == "fir"` | No Fir-generation apps |
-| Q12b — Containerization status | Always | Never |
-| Q12 — Container registry | Always | Never |
-| Q13 — Log retention | Always | Never |
-| Q14 — Alerting preference | Always | Never |
-| Q15 — Cost optimization | Always | Never |
+| Question                       | Condition to Include                                             | Skip When                                 |
+| ------------------------------ | ---------------------------------------------------------------- | ----------------------------------------- |
+| Q1 — Target AWS region         | Always                                                           | Never                                     |
+| Q2 — Compliance                | Always                                                           | Never                                     |
+| Q3 — Availability posture      | Always                                                           | Never                                     |
+| Q4 — Maintenance window        | Always                                                           | Never                                     |
+| Q5 — Environment naming        | Always                                                           | Never                                     |
+| Q5b — Migration urgency        | Always                                                           | Never                                     |
+| Q6 — Database HA               | Postgres add-on present                                          | No Postgres in inventory                  |
+| Q6b — Migration approach       | Postgres add-on present                                          | No Postgres in inventory                  |
+| Q6c — DB migration method      | Postgres add-on present                                          | No Postgres in inventory                  |
+| Q7 — Redis HA                  | Redis add-on present                                             | No Redis in inventory                     |
+| Q8 — Kafka retention           | Kafka add-on present                                             | No Kafka in inventory                     |
+| Q9 — VPC subnet IDs            | Private Space with peering detected BUT subnet IDs not available | No Private Space or subnets already known |
+| Q9b — VPC ID                   | Peering detected but VPC ID not found in Terraform               | VPC ID already available or no peering    |
+| Q10 — DNS strategy             | Always                                                           | Never                                     |
+| Q11 — Fir intent               | At least one app has `heroku_generation == "fir"`                | No Fir-generation apps                    |
+| Q12b — Containerization status | Always                                                           | Never                                     |
+| Q12 — Container registry       | Always                                                           | Never                                     |
+| Q13 — Log retention            | Always                                                           | Never                                     |
+| Q14 — Alerting preference      | Always                                                           | Never                                     |
+| Q15 — Cost optimization        | Always                                                           | Never                                     |
 
 ### Batch Planning
 
 After determining active questions, organize into **three batches** (≤5 each):
 
-| Batch | Name | Questions | Content |
-|-------|------|-----------|---------|
-| **1** | Global / Strategic | Q1–Q5, Q5b | Region, compliance, availability, maintenance, environment naming, migration urgency |
-| **2** | Data / Network | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy |
-| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15 | Fir intent, containerization status, container registry, log retention, alerting, cost optimization |
+| Batch | Name                      | Questions            | Content                                                                                                    |
+| ----- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **1** | Global / Strategic        | Q1–Q5, Q5b           | Region, compliance, availability, maintenance, environment naming, migration urgency                       |
+| **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy |
+| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization        |
 
 **Batch 2 is active** if ANY of: Postgres present, Redis present, Kafka present, Private Space detected, or DNS question is needed (always true → Batch 2 always fires with at least Q10).
 
@@ -220,6 +221,7 @@ For each answered question, apply the interpretation rule. For skipped questions
 3. Re-prompt the same question without advancing.
 
 Example:
+
 > "That's not a valid option for [question topic]. Please choose from: [list valid options]"
 
 **Subnet ID validation (Q9):** If the user provides subnet IDs that do not match the format `subnet-[17 hex characters]`:
@@ -278,6 +280,7 @@ Return to **3a** for the next batch.
 > G) Other — specify a valid AWS region code
 
 **Interpret:**
+
 - A → `target_region: "us-east-1"`
 - B → `target_region: "us-west-2"`
 - C → `target_region: "eu-west-1"`
@@ -303,6 +306,7 @@ Return to **3a** for the next batch.
 > E) Multiple — specify which ones
 
 **Interpret:**
+
 - A → `compliance: "none"`
 - B → `compliance: "soc2"`
 - C → `compliance: "hipaa"`
@@ -325,6 +329,7 @@ Return to **3a** for the next batch.
 > D) Multi-Region — catastrophic tolerance (global distribution, highest cost)
 
 **Interpret:**
+
 - A → `availability: "single-az"`
 - B → `availability: "multi-az"`
 - C → `availability: "multi-az-ha"`
@@ -333,6 +338,7 @@ Return to **3a** for the next batch.
 **Default:** B → `availability: "multi-az"`
 
 **Design impact:**
+
 - `single-az` or `multi-az` → RDS PostgreSQL
 - `multi-az-ha` or `multi-region` → Aurora PostgreSQL
 - Applies to all data services (Postgres, Redis, Kafka broker distribution)
@@ -349,6 +355,7 @@ Return to **3a** for the next batch.
 > D) Flexible — no preference, use AWS defaults
 
 **Interpret:**
+
 - A → `maintenance_window: {"day": "tuesday-thursday", "hour_utc": 3}`
 - B → `maintenance_window: {"day": "saturday-sunday", "hour_utc": 3}`
 - C → `maintenance_window: {"day": "sunday", "hour_utc": 4}`
@@ -368,6 +375,7 @@ Return to **3a** for the next batch.
 > D) Other — specify
 
 **Interpret:**
+
 - A → `environment_naming: "production"`
 - B → `environment_naming: "prod"`
 - C → `environment_naming: "live"`
@@ -389,12 +397,14 @@ Return to **3a** for the next batch.
 > ⚠️ Option B requires your AWS database to be publicly accessible during the transition period (with SSL/TLS encryption). Public access is removed once the app migrates off Heroku.
 
 **Interpret:**
+
 - A → `migration_approach: "full_cutover"`
 - B → `migration_approach: "interim_cutover_data_first"`
 
 **Default:** A → `migration_approach: "full_cutover"`
 
 **If user selects B:**
+
 1. Ask follow-up: "What's your target date to complete the app migration off Heroku? (YYYY-MM-DD format)"
 2. Validate ISO 8601 date format. If invalid, re-prompt.
 3. Set `target_exit_date: "<validated date>"`
@@ -419,6 +429,7 @@ Return to **3a** for the next batch.
 > D) Match global availability posture — use same tier as Q3 answer
 
 **Interpret:**
+
 - A → `database_ha: "single-az"`
 - B → `database_ha: "multi-az"`
 - C → `database_ha: "multi-az-ha"`
@@ -427,6 +438,7 @@ Return to **3a** for the next batch.
 **Default:** D → matches Q3 availability answer
 
 **Design impact:**
+
 - `single-az` or `multi-az` → RDS PostgreSQL
 - `multi-az-ha` → Aurora PostgreSQL
 
@@ -444,6 +456,7 @@ Return to **3a** for the next batch.
 > ⚠️ Note: Option B requires your RDS instance to be publicly accessible during the interim period (with SSL/TLS enforced). Heroku is in sustaining engineering — hybrid operation should be bounded to weeks, not quarters.
 
 **Interpret:**
+
 - A → `migration_approach: "full_cutover"`
 - B → `migration_approach: "interim_cutover_data_first"` — also triggers follow-up for target exit date
 
@@ -473,11 +486,12 @@ Validate: must be valid ISO 8601 date, must be in the future.
 >
 > A) pg_dump / pg_restore — simplest method, requires application downtime during migration (recommended for databases under ~10GB)
 > B) AWS DMS (Database Migration Service) — bulk migration with shorter downtime window for large databases (recommended for databases over ~10GB)
->    ⚠️ Note: DMS cannot do continuous replication with Heroku Postgres (Heroku does not grant the REPLICATION role). This is a one-time bulk copy with a final cutover window.
+> ⚠️ Note: DMS cannot do continuous replication with Heroku Postgres (Heroku does not grant the REPLICATION role). This is a one-time bulk copy with a final cutover window.
 > C) Bucardo — trigger-based replication for near-zero downtime (requires additional EC2 infrastructure)
 > D) WAL-G — WAL-based replication for minimal downtime on large databases (requires additional EC2 infrastructure)
 
 **Interpret:**
+
 - A → `migration_method: "pg_dump_restore"`
 - B → `migration_method: "dms"`
 - C → `migration_method: "bucardo"`
@@ -486,6 +500,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 **Default:** A → `migration_method: "pg_dump_restore"`
 
 **Size-based recommendation logic:**
+
 - If estimated DB size < 10GB → recommend A (pg_dump_restore)
 - If estimated DB size ≥ 10GB and user accepts brief downtime → recommend B (dms)
 - If user requires near-zero downtime regardless of size → recommend C or D
@@ -506,6 +521,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > B) No — single-node, no replication (matches Heroku mini/premium-0 without HA)
 
 **Interpret:**
+
 - A → `redis_ha: true`
 - B → `redis_ha: false`
 
@@ -527,6 +543,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > F) Custom — specify number of days
 
 **Interpret:**
+
 - A → `kafka_retention_days: 1`
 - B → `kafka_retention_days: 3`
 - C → `kafka_retention_days: 7`
@@ -551,6 +568,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 **Interpret:** Parse comma-separated values, trim whitespace, validate each matches `^subnet-[0-9a-f]{17}$`.
 
 **Validation:** If any ID does not match the format, reject and re-prompt:
+
 > "Invalid subnet ID format. Expected format: `subnet-xxxxxxxxxxxxxxxxx` (subnet- followed by 17 hexadecimal characters). Please provide 1–6 valid subnet IDs."
 
 **Accept:** 1–6 valid subnet IDs → `subnet_ids: [<validated array>]`
@@ -568,6 +586,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 **Interpret:** Validate matches `^vpc-[0-9a-f]{17}$`.
 
 **Validation:** If format doesn't match, reject and re-prompt:
+
 > "Invalid VPC ID format. Expected format: `vpc-xxxxxxxxxxxxxxxxx` (vpc- followed by 17 hexadecimal characters). Please provide your existing AWS VPC ID."
 
 **Accept:** Valid VPC ID → `existing_vpc_id: "<validated value>"`
@@ -582,6 +601,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > B) External DNS — keep current DNS provider, update records manually during cutover
 
 **Interpret:**
+
 - A → `dns_strategy: "route53"`
 - B → `dns_strategy: "external"`
 
@@ -603,6 +623,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > B) Self-managed EKS/ECS — move to Kubernetes or ECS on AWS with your own orchestration
 
 **Interpret:**
+
 - A → `fir_intent: "exit_heroku"`
 - B → `fir_intent: "self_managed_eks_ecs"`
 
@@ -623,6 +644,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > C) Partial — some services have Dockerfiles, others use buildpacks
 
 **Interpret:**
+
 - A → `containerization_status: "containerized"`
 - B → `containerization_status: "buildpack_only"`
 - C → `containerization_status: "partial"`
@@ -641,6 +663,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > B) Existing registry — you already have a container registry (Docker Hub, GitHub Container Registry, etc.)
 
 **Interpret:**
+
 - A → `container_registry: "ecr"`
 - B → `container_registry: "external"`
 
@@ -660,6 +683,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > F) Custom — specify number of days
 
 **Interpret:**
+
 - A → `log_retention_days: 7`
 - B → `log_retention_days: 14`
 - C → `log_retention_days: 30`
@@ -681,6 +705,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > D) None for now — I'll configure alerting later
 
 **Interpret:**
+
 - A → `alerting: "cloudwatch"`
 - B → `alerting: "pagerduty"`
 - C → `alerting: "opsgenie"`
@@ -699,6 +724,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > C) Aggressive — minimize cost, accept tighter margins and potential scaling events
 
 **Interpret:**
+
 - A → `cost_optimization: "conservative"`
 - B → `cost_optimization: "balanced"`
 - C → `cost_optimization: "aggressive"`
@@ -782,27 +808,27 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 
 ## Defaults Table
 
-| Question | Default | Constraint |
-|----------|---------|-----------|
-| Q1 — Region | A (us-east-1) | `target_region: "us-east-1"` |
-| Q2 — Compliance | A (none) | `compliance: "none"` |
-| Q3 — Availability | B (multi-az) | `availability: "multi-az"` |
-| Q4 — Maintenance | D (flexible) | `maintenance_window: "flexible"` |
-| Q5 — Env naming | A (production) | `environment_naming: "production"` |
-| Q6 — Database HA | D (match Q3) | `database_ha: <Q3 value>` |
-| Q6b — Migration approach | A (full cutover) | `migration_approach: "full_cutover"` |
-| Q6c — DB migration method | A (pg_dump) | `migration_method: "pg_dump_restore"` |
-| Q7 — Redis HA | A (yes) | `redis_ha: true` |
-| Q8 — Kafka retention | C (7 days) | `kafka_retention_days: 7` |
-| Q9 — Subnet IDs | _(no default — must ask if applicable)_ | — |
-| Q9b — VPC ID | _(no default — must ask if applicable)_ | — |
-| Q10 — DNS | A (Route 53) | `dns_strategy: "route53"` |
-| Q11 — Fir intent | A (exit Heroku) | `fir_intent: "exit_heroku"` |
-| Q12b — Containerization | B (buildpack_only) | `containerization_status: "buildpack_only"` |
-| Q12 — Registry | A (ECR) | `container_registry: "ecr"` |
-| Q13 — Log retention | C (30 days) | `log_retention_days: 30` |
-| Q14 — Alerting | A (CloudWatch) | `alerting: "cloudwatch"` |
-| Q15 — Cost optimization | B (balanced) | `cost_optimization: "balanced"` |
+| Question                  | Default                                 | Constraint                                  |
+| ------------------------- | --------------------------------------- | ------------------------------------------- |
+| Q1 — Region               | A (us-east-1)                           | `target_region: "us-east-1"`                |
+| Q2 — Compliance           | A (none)                                | `compliance: "none"`                        |
+| Q3 — Availability         | B (multi-az)                            | `availability: "multi-az"`                  |
+| Q4 — Maintenance          | D (flexible)                            | `maintenance_window: "flexible"`            |
+| Q5 — Env naming           | A (production)                          | `environment_naming: "production"`          |
+| Q6 — Database HA          | D (match Q3)                            | `database_ha: <Q3 value>`                   |
+| Q6b — Migration approach  | A (full cutover)                        | `migration_approach: "full_cutover"`        |
+| Q6c — DB migration method | A (pg_dump)                             | `migration_method: "pg_dump_restore"`       |
+| Q7 — Redis HA             | A (yes)                                 | `redis_ha: true`                            |
+| Q8 — Kafka retention      | C (7 days)                              | `kafka_retention_days: 7`                   |
+| Q9 — Subnet IDs           | _(no default — must ask if applicable)_ | —                                           |
+| Q9b — VPC ID              | _(no default — must ask if applicable)_ | —                                           |
+| Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                   |
+| Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                 |
+| Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"` |
+| Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                 |
+| Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                    |
+| Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                    |
+| Q15 — Cost optimization   | B (balanced)                            | `cost_optimization: "balanced"`             |
 
 **Important:** Q9 and Q9b have no default — they are only asked when Private Space peering exists and required data is missing. If they fire, they must be answered (the system cannot proceed without subnet/VPC information for existing VPC references).
 
@@ -846,7 +872,7 @@ Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 4. If `heroku-resource-inventory.json` contains Postgres add-ons → `global.migration_approach` is set (non-null).
 5. If `global.migration_approach` is `interim_cutover_data_first` → `global.target_exit_date` is non-null and a valid future date.
 6. If Fir-generation apps detected → `global.fir_intent` is set (non-null).
-8. If Private Space peering detected and subnet IDs were required → `network.subnet_ids` is non-empty array.
+7. If Private Space peering detected and subnet IDs were required → `network.subnet_ids` is non-empty array.
 
 **On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
 

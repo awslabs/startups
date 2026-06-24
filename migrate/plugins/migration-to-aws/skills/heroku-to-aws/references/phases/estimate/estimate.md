@@ -11,11 +11,13 @@
 Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture. Produce `estimation-infra.json` conforming to `shared/schema-estimate-infra.md`. Classify migration complexity using `shared/migration-complexity.md`.
 
 **Inputs:**
+
 - `$MIGRATION_DIR/aws-design.json` (from Phase 3)
 - `$MIGRATION_DIR/preferences.json` (from Phase 2)
 - `$MIGRATION_DIR/heroku-resource-inventory.json` (from Phase 1 — for billing profile)
 
 **Outputs:**
+
 - `$MIGRATION_DIR/estimation-infra.json`
 - `.phase-status.json` updated (estimate → completed)
 
@@ -50,12 +52,12 @@ Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts, 10-s
 
 ### Pricing Hierarchy (per-service lookup order)
 
-| Priority | Source | Condition | `pricing_source` value |
-|----------|--------|-----------|------------------------|
-| 1 | `shared/pricing-cache.md` | Service found in cache | `"cached"` |
-| 2 | MCP API (`get_pricing`) | Service NOT in cache, MCP available | `"live"` |
-| 3 | Cache after MCP failure | MCP attempted but failed, service IS in cache | `"cached_fallback"` |
-| 4 | Unavailable | NOT in cache AND MCP failed | `"unavailable"` |
+| Priority | Source                    | Condition                                     | `pricing_source` value |
+| -------- | ------------------------- | --------------------------------------------- | ---------------------- |
+| 1        | `shared/pricing-cache.md` | Service found in cache                        | `"cached"`             |
+| 2        | MCP API (`get_pricing`)   | Service NOT in cache, MCP available           | `"live"`               |
+| 3        | Cache after MCP failure   | MCP attempted but failed, service IS in cache | `"cached_fallback"`    |
+| 4        | Unavailable               | NOT in cache AND MCP failed                   | `"unavailable"`        |
 
 For typical Heroku migrations (Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `pricing-cache.md`. Zero MCP calls needed.
 
@@ -102,6 +104,7 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Note: "Heroku baseline unavailable — AWS costs shown without comparison."
 
 When billing data or pricing cache is available, present the Heroku baseline as:
+
 - Total monthly cost
 - Per-app breakdown (dyno, add-on, platform charges)
 - Billing period
@@ -114,26 +117,26 @@ For each service in `aws-design.json → services[]`, calculate monthly cost usi
 
 ### Per-Service Calculation Formulas
 
-| AWS Service | Formula | Key inputs from `aws_config` |
-|-------------|---------|------------------------------|
-| **Fargate** | (task_cpu/1024 × $0.04048 + task_memory/1024 × $0.004445) × 730 hrs × desired_count | `task_cpu`, `task_memory`, `desired_count` |
-| **ALB** | $16.43/month fixed + LCU estimate ($0.008/LCU-hr × 730) | Per web service with `load_balancer: true` |
-| **RDS PostgreSQL** | instance_rate × 730 hrs + storage_gb × $0.23/GB-month | `instance_class`, `storage_gb`, `multi_az` |
-| **Aurora PostgreSQL** | instance_rate × 730 hrs + storage_gb × $0.10/GB-month + I/O estimate | `instance_class`, `storage_gb` |
-| **ElastiCache Redis** | node_rate × 730 hrs (× 2 if Multi-AZ) | `node_type`, `multi_az` |
-| **MSK** | broker_rate × 730 hrs × broker_count + storage_gb × rate | `broker_instance_type`, `broker_count`, `storage_per_broker_gb` |
-| **CloudWatch Logs** | log_volume_gb × $0.50/GB + storage × $0.03/GB-month | `retention_days`, estimated log volume |
-| **S3** | storage_gb × $0.023/GB-month + request estimates | `storage_gb` (from Bucketeer/Cloudinary mapping) |
-| **Amazon SES** | $0.10 per 1000 emails (minimal baseline) | Flat estimate from SendGrid mapping |
-| **EventBridge Scheduler** | $1.00 per million events (minimal for cron jobs) | From Heroku Scheduler mapping |
-| **Amazon MQ** | instance_rate × 730 hrs + storage | From CloudAMQP mapping |
-| **Amazon OpenSearch** | instance_rate × 730 hrs + storage | From Bonsai Elasticsearch mapping |
-| **Secrets Manager** | secret_count × $0.40/month + API calls × $0.05/10K | Config var count from inventory |
-| **NAT Gateway** | $32.85/month fixed + data processing estimate | From VPC design (if new VPC) |
-| **RDS Proxy** | $0.015 per vCPU-hour × 730 hrs × vCPUs | When connection pooling mapped |
-| **Route 53** | $0.50/hosted zone + query estimate | When DNS strategy = route53 |
-| **CloudFront** | $0.085/GB (first 10TB) + request costs | From Cloudinary composite mapping |
-| **X-Ray** | $5.00 per million traces | Only if tracing detected in source |
+| AWS Service               | Formula                                                                             | Key inputs from `aws_config`                                    |
+| ------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Fargate**               | (task_cpu/1024 × $0.04048 + task_memory/1024 × $0.004445) × 730 hrs × desired_count | `task_cpu`, `task_memory`, `desired_count`                      |
+| **ALB**                   | $16.43/month fixed + LCU estimate ($0.008/LCU-hr × 730)                             | Per web service with `load_balancer: true`                      |
+| **RDS PostgreSQL**        | instance_rate × 730 hrs + storage_gb × $0.23/GB-month                               | `instance_class`, `storage_gb`, `multi_az`                      |
+| **Aurora PostgreSQL**     | instance_rate × 730 hrs + storage_gb × $0.10/GB-month + I/O estimate                | `instance_class`, `storage_gb`                                  |
+| **ElastiCache Redis**     | node_rate × 730 hrs (× 2 if Multi-AZ)                                               | `node_type`, `multi_az`                                         |
+| **MSK**                   | broker_rate × 730 hrs × broker_count + storage_gb × rate                            | `broker_instance_type`, `broker_count`, `storage_per_broker_gb` |
+| **CloudWatch Logs**       | log_volume_gb × $0.50/GB + storage × $0.03/GB-month                                 | `retention_days`, estimated log volume                          |
+| **S3**                    | storage_gb × $0.023/GB-month + request estimates                                    | `storage_gb` (from Bucketeer/Cloudinary mapping)                |
+| **Amazon SES**            | $0.10 per 1000 emails (minimal baseline)                                            | Flat estimate from SendGrid mapping                             |
+| **EventBridge Scheduler** | $1.00 per million events (minimal for cron jobs)                                    | From Heroku Scheduler mapping                                   |
+| **Amazon MQ**             | instance_rate × 730 hrs + storage                                                   | From CloudAMQP mapping                                          |
+| **Amazon OpenSearch**     | instance_rate × 730 hrs + storage                                                   | From Bonsai Elasticsearch mapping                               |
+| **Secrets Manager**       | secret_count × $0.40/month + API calls × $0.05/10K                                  | Config var count from inventory                                 |
+| **NAT Gateway**           | $32.85/month fixed + data processing estimate                                       | From VPC design (if new VPC)                                    |
+| **RDS Proxy**             | $0.015 per vCPU-hour × 730 hrs × vCPUs                                              | When connection pooling mapped                                  |
+| **Route 53**              | $0.50/hosted zone + query estimate                                                  | When DNS strategy = route53                                     |
+| **CloudFront**            | $0.085/GB (first 10TB) + request costs                                              | From Cloudinary composite mapping                               |
+| **X-Ray**                 | $5.00 per million traces                                                            | Only if tracing detected in source                              |
 
 ### Unpriced Resource Handling
 
@@ -148,11 +151,11 @@ IF pricing data for a service is unavailable from both MCP and cache:
 
 Calculate 3 cost tiers to show the optimization range:
 
-| Tier | Description | Adjustments |
-|------|-------------|-------------|
-| **Premium** | Highest resilience | Multi-AZ everything, latest-gen instances, no Spot, enhanced monitoring |
-| **Balanced** | Standard setup (default) | On-demand pricing, Multi-AZ where configured, standard monitoring |
-| **Optimized** | Cost-minimized | Reserved pricing assumption (20-40% discount), Fargate Spot where applicable, S3-IA for cold data |
+| Tier          | Description              | Adjustments                                                                                       |
+| ------------- | ------------------------ | ------------------------------------------------------------------------------------------------- |
+| **Premium**   | Highest resilience       | Multi-AZ everything, latest-gen instances, no Spot, enhanced monitoring                           |
+| **Balanced**  | Standard setup (default) | On-demand pricing, Multi-AZ where configured, standard monitoring                                 |
+| **Optimized** | Cost-minimized           | Reserved pricing assumption (20-40% discount), Fargate Spot where applicable, S3-IA for cold data |
 
 **Balanced** is the primary comparison tier. Generated Terraform (Phase 5) aligns with **Balanced**.
 
@@ -174,14 +177,14 @@ Heroku includes basic logging via its log drain. AWS CloudWatch charges from the
 
 Use per-service heuristic (billing data not applicable for log volume since Heroku logging model differs):
 
-| AWS Service (from aws-design.json) | Estimated log volume/month | Basis |
-|------------------------------------|---------------------------|-------|
-| Fargate task | 3 GB per task | Container stdout/stderr |
-| RDS/Aurora instance | 1 GB per instance | Error log + slow query |
-| ALB | 2 GB per load balancer | Access logs |
-| NAT Gateway | 1 GB per gateway | Flow logs |
-| ElastiCache | 0.5 GB per node | Slow log |
-| MSK | 2 GB per broker | Broker logs |
+| AWS Service (from aws-design.json) | Estimated log volume/month | Basis                   |
+| ---------------------------------- | -------------------------- | ----------------------- |
+| Fargate task                       | 3 GB per task              | Container stdout/stderr |
+| RDS/Aurora instance                | 1 GB per instance          | Error log + slow query  |
+| ALB                                | 2 GB per load balancer     | Access logs             |
+| NAT Gateway                        | 1 GB per gateway           | Flow logs               |
+| ElastiCache                        | 0.5 GB per node            | Slow log                |
+| MSK                                | 2 GB per broker            | Broker logs             |
 
 Sum all applicable services.
 
@@ -349,13 +352,13 @@ Present monthly and annual cost difference between Heroku baseline and each AWS 
 
 Present applicable optimizations with estimated savings. These are **incremental post-migration actions** beyond the Balanced on-demand baseline.
 
-| Optimization | Savings Range | Applies To | When |
-|-------------|--------------|------------|------|
-| Compute Savings Plans | 20-66% | Fargate | Post-migration (after 30-90 day baseline) |
-| Database Savings Plans | Up to 35% (serverless) / ~20% (provisioned) | Aurora, RDS, ElastiCache | Post-migration or after right-sizing |
-| RDS Reserved Instances | Up to 69% | RDS, Aurora (provisioned) | Post-migration (after architecture stabilizes) |
-| S3 Intelligent-Tiering | 38-50% | S3 storage | During migration |
-| Fargate Spot | 60-70% | Non-critical/batch Fargate tasks | If worker dynos exist |
+| Optimization           | Savings Range                               | Applies To                       | When                                           |
+| ---------------------- | ------------------------------------------- | -------------------------------- | ---------------------------------------------- |
+| Compute Savings Plans  | 20-66%                                      | Fargate                          | Post-migration (after 30-90 day baseline)      |
+| Database Savings Plans | Up to 35% (serverless) / ~20% (provisioned) | Aurora, RDS, ElastiCache         | Post-migration or after right-sizing           |
+| RDS Reserved Instances | Up to 69%                                   | RDS, Aurora (provisioned)        | Post-migration (after architecture stabilizes) |
+| S3 Intelligent-Tiering | 38-50%                                      | S3 storage                       | During migration                               |
+| Fargate Spot           | 60-70%                                      | Non-critical/batch Fargate tasks | If worker dynos exist                          |
 
 **Emit in `optimization_opportunities[]`:**
 
@@ -432,31 +435,34 @@ Only include optimizations relevant to the designed architecture. Do not include
 
 Load `shared/migration-complexity.md`. Classify using these inputs from the current artifacts:
 
-| Input | Source | Key |
-|-------|--------|-----|
-| Service count | `aws-design.json` | `metadata.total_services` |
-| Monthly spend | `estimation-infra.json` (just calculated) or `billing_profile.total_monthly_cost` | Projected AWS balanced monthly |
-| Has databases | `aws-design.json → services[]` | `aws_service` in {RDS PostgreSQL, Aurora PostgreSQL, ElastiCache Redis, Amazon MQ, Amazon OpenSearch} |
-| Has stateful storage | `aws-design.json → services[]` | `aws_service` in {S3} with replication hints |
-| Availability | `preferences.json` | `global.availability` |
-| Compliance | `preferences.json` | `global.compliance` |
-| Multi-region | `aws-design.json → services[]` | More than one distinct `aws_config.region` value |
+| Input                | Source                                                                            | Key                                                                                                   |
+| -------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Service count        | `aws-design.json`                                                                 | `metadata.total_services`                                                                             |
+| Monthly spend        | `estimation-infra.json` (just calculated) or `billing_profile.total_monthly_cost` | Projected AWS balanced monthly                                                                        |
+| Has databases        | `aws-design.json → services[]`                                                    | `aws_service` in {RDS PostgreSQL, Aurora PostgreSQL, ElastiCache Redis, Amazon MQ, Amazon OpenSearch} |
+| Has stateful storage | `aws-design.json → services[]`                                                    | `aws_service` in {S3} with replication hints                                                          |
+| Availability         | `preferences.json`                                                                | `global.availability`                                                                                 |
+| Compliance           | `preferences.json`                                                                | `global.compliance`                                                                                   |
+| Multi-region         | `aws-design.json → services[]`                                                    | More than one distinct `aws_config.region` value                                                      |
 
 **Evaluate from Large down to Small (first match wins):**
 
 ### Large — ANY of:
+
 - Service count ≥ 9
 - Monthly spend > $10,000
 - Multi-region deployment (services span 2+ AWS regions)
 - Compliance requirements present (`compliance` is not `"none"`)
 
 ### Medium — NOT Large, and ANY of:
+
 - Service count 4–8
 - Monthly spend $1,000–$10,000
 - Has databases
 - Availability is `"multi-az"` or `"multi-az-ha"`
 
 ### Small — NOT Large, NOT Medium (ALL of):
+
 - Service count ≤ 3
 - Monthly spend < $1,000
 - No databases or stateful storage with replication
@@ -482,11 +488,11 @@ Include in `estimation-infra.json`:
 
 **Timeline guidance** (from `migration-complexity.md` Infrastructure Path):
 
-| Tier | Weeks | Approach |
-|------|-------|----------|
-| Small | 2-6 | Compressed |
-| Medium | 6-12 | Phased cluster migration |
-| Large | 12-18 | Phased cluster migration (extended) |
+| Tier   | Weeks | Approach                            |
+| ------ | ----- | ----------------------------------- |
+| Small  | 2-6   | Compressed                          |
+| Medium | 6-12  | Phased cluster migration            |
+| Large  | 12-18 | Phased cluster migration (extended) |
 
 ---
 
@@ -519,11 +525,11 @@ Include migrate/stay decision factors:
 
 **Path selection logic:**
 
-| Scenario | `path` value | `path_label` |
-|----------|-------------|--------------|
-| AWS cheaper or operational benefits justify | `"migrate_optimized"` | `"Migrate with Optimizations"` |
-| Complex stack, app-by-app safer | `"migrate_phased"` | `"Phased Migration"` |
-| AWS more expensive AND costs are sole metric | `"stay"` | `"Stay on Heroku"` |
+| Scenario                                     | `path` value          | `path_label`                   |
+| -------------------------------------------- | --------------------- | ------------------------------ |
+| AWS cheaper or operational benefits justify  | `"migrate_optimized"` | `"Migrate with Optimizations"` |
+| Complex stack, app-by-app safer              | `"migrate_phased"`    | `"Phased Migration"`           |
+| AWS more expensive AND costs are sole metric | `"stay"`              | `"Stay on Heroku"`             |
 
 ---
 
@@ -649,24 +655,25 @@ Keep under 25 lines. The user can ask for details or re-read `estimation-infra.j
 
 Only use these recipes when a service is NOT in `pricing-cache.md` and MCP is available. Do NOT call `get_pricing_service_codes` or `get_pricing_service_attributes` — go directly to `get_pricing`.
 
-| AWS Service | service_code | filters | output_options |
-|-------------|-------------|---------|----------------|
-| Fargate | AmazonECS | `[{"Field":"productFamily","Value":"Compute"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["usagetype","location"],"exclude_free_products":true}` |
-| Aurora PostgreSQL | AmazonRDS | `[{"Field":"databaseEngine","Value":"Aurora PostgreSQL"},{"Field":"deploymentOption","Value":"Single-AZ"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
-| RDS PostgreSQL | AmazonRDS | `[{"Field":"databaseEngine","Value":"PostgreSQL"},{"Field":"deploymentOption","Value":"Multi-AZ"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
-| ElastiCache Redis | AmazonElastiCache | `[{"Field":"cacheEngine","Value":"Redis"},{"Field":"instanceType","Value":"cache.t4g","Type":"CONTAINS"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","cacheEngine","location"],"exclude_free_products":true}` |
-| S3 | AmazonS3 | `[{"Field":"storageClass","Value":"General Purpose"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["storageClass","volumeType","location"],"exclude_free_products":true}` |
-| ALB | AWSELB | `[{"Field":"productFamily","Value":"Load Balancer-Application"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location"],"exclude_free_products":true}` |
-| NAT Gateway | AmazonEC2 | `[{"Field":"productFamily","Value":"NAT Gateway"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","group"],"exclude_free_products":true}` |
-| CloudWatch Logs | AmazonCloudWatch | `[{"Field":"usagetype","Value":"DataProcessing-Bytes"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","usagetype"],"exclude_free_products":true}` |
-| Secrets Manager | AWSSecretsManager | `[]` | `{"pricing_terms":["OnDemand"],"exclude_free_products":true}` |
-| MSK | AmazonMSK | `[{"Field":"productFamily","Value":"Managed Streaming for Apache Kafka"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","location"],"exclude_free_products":true}` |
-| Amazon MQ | AmazonMQ | `[{"Field":"productFamily","Value":"Broker Instances"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","location"],"exclude_free_products":true}` |
-| OpenSearch | AmazonES | `[{"Field":"productFamily","Value":"Compute Instance"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","location"],"exclude_free_products":true}` |
+| AWS Service       | service_code      | filters                                                                                                     | output_options                                                                                                                                     |
+| ----------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fargate           | AmazonECS         | `[{"Field":"productFamily","Value":"Compute"}]`                                                             | `{"pricing_terms":["OnDemand"],"product_attributes":["usagetype","location"],"exclude_free_products":true}`                                        |
+| Aurora PostgreSQL | AmazonRDS         | `[{"Field":"databaseEngine","Value":"Aurora PostgreSQL"},{"Field":"deploymentOption","Value":"Single-AZ"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
+| RDS PostgreSQL    | AmazonRDS         | `[{"Field":"databaseEngine","Value":"PostgreSQL"},{"Field":"deploymentOption","Value":"Multi-AZ"}]`         | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
+| ElastiCache Redis | AmazonElastiCache | `[{"Field":"cacheEngine","Value":"Redis"},{"Field":"instanceType","Value":"cache.t4g","Type":"CONTAINS"}]`  | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","cacheEngine","location"],"exclude_free_products":true}`                       |
+| S3                | AmazonS3          | `[{"Field":"storageClass","Value":"General Purpose"}]`                                                      | `{"pricing_terms":["OnDemand"],"product_attributes":["storageClass","volumeType","location"],"exclude_free_products":true}`                        |
+| ALB               | AWSELB            | `[{"Field":"productFamily","Value":"Load Balancer-Application"}]`                                           | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location"],"exclude_free_products":true}`                                    |
+| NAT Gateway       | AmazonEC2         | `[{"Field":"productFamily","Value":"NAT Gateway"}]`                                                         | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","group"],"exclude_free_products":true}`                            |
+| CloudWatch Logs   | AmazonCloudWatch  | `[{"Field":"usagetype","Value":"DataProcessing-Bytes"}]`                                                    | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","usagetype"],"exclude_free_products":true}`                        |
+| Secrets Manager   | AWSSecretsManager | `[]`                                                                                                        | `{"pricing_terms":["OnDemand"],"exclude_free_products":true}`                                                                                      |
+| MSK               | AmazonMSK         | `[{"Field":"productFamily","Value":"Managed Streaming for Apache Kafka"}]`                                  | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","location"],"exclude_free_products":true}`                                     |
+| Amazon MQ         | AmazonMQ          | `[{"Field":"productFamily","Value":"Broker Instances"}]`                                                    | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","location"],"exclude_free_products":true}`                                     |
+| OpenSearch        | AmazonES          | `[{"Field":"productFamily","Value":"Compute Instance"}]`                                                    | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","location"],"exclude_free_products":true}`                                     |
 
 **Batching rule:** Group up to 4 MCP requests in parallel per turn.
 
 **Important notes:**
+
 - **Aurora**: Use `deploymentOption=Single-AZ` — Aurora handles multi-AZ natively, no "Multi-AZ" pricing option
 - **Fargate**: Use `productFamily=Compute`, NOT EC2-style filters
 - **CloudWatch**: Filter by `usagetype=DataProcessing-Bytes` for log ingestion pricing
@@ -678,6 +685,7 @@ Only use these recipes when a service is NOT in `pricing-cache.md` and MCP is av
 **This phase covers financial analysis ONLY.**
 
 FORBIDDEN — Do NOT include ANY of:
+
 - Changes to architecture mappings from Phase 3 (Design)
 - Execution timelines or migration schedules (beyond tier classification)
 - Terraform or IaC code generation

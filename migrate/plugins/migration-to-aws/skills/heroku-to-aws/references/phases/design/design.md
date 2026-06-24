@@ -7,13 +7,13 @@ Single-pass mapping engine that translates each Heroku resource to its AWS equiv
 
 Load these reference files **only when the corresponding resource type exists in the inventory**:
 
-| Resource Type in Inventory | Reference File to Load |
-|---------------------------|----------------------|
-| `formation` (any) | `design-refs/dyno-type-table.md` |
+| Resource Type in Inventory    | Reference File to Load               |
+| ----------------------------- | ------------------------------------ |
+| `formation` (any)             | `design-refs/dyno-type-table.md`     |
 | `addon:*:heroku-postgresql:*` | `design-refs/postgres-plan-table.md` |
-| `addon:*:heroku-redis:*` | `design-refs/redis-plan-table.md` |
-| `addon:*:heroku-kafka:*` | `design-refs/kafka-plan-table.md` |
-| `addon:*` (non-core) | `design-refs/fast-path-table.md` |
+| `addon:*:heroku-redis:*`      | `design-refs/redis-plan-table.md`    |
+| `addon:*:heroku-kafka:*`      | `design-refs/kafka-plan-table.md`    |
+| `addon:*` (non-core)          | `design-refs/fast-path-table.md`     |
 
 Do NOT speculatively load tables for resource types absent from the inventory.
 
@@ -100,6 +100,7 @@ Create the `aws-design.json` output structure in memory:
 ```
 
 Extract from `preferences.json`:
+
 - `global.target_region` → used as `region` for all designed services
 - `global.availability` → drives RDS vs Aurora and HA decisions
 - `data.database_ha` → overrides availability for database specifically (if present)
@@ -386,20 +387,20 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
    **Common Terraform/app.json slug → display name mappings:**
 
    | Terraform/app.json Label | Normalized for Fast-Path Match |
-   |--------------------------|-------------------------------|
-   | `papertrail` | `papertrail` |
-   | `sendgrid` | `sendgrid` |
-   | `heroku-scheduler` | `heroku scheduler` |
-   | `memcachier` | `memcachier` |
-   | `bucketeer` | `bucketeer` |
-   | `cloudamqp` | `cloudamqp` |
-   | `bonsai` | `bonsai elasticsearch` * |
-   | `scout` | `scout apm` * |
-   | `rollbar` | `rollbar` |
-   | `newrelic` | `new relic` * |
-   | `twilio` | `twilio` |
-   | `cloudinary` | `cloudinary` |
-   | `sentry` | `sentry` |
+   | ------------------------ | ------------------------------ |
+   | `papertrail`             | `papertrail`                   |
+   | `sendgrid`               | `sendgrid`                     |
+   | `heroku-scheduler`       | `heroku scheduler`             |
+   | `memcachier`             | `memcachier`                   |
+   | `bucketeer`              | `bucketeer`                    |
+   | `cloudamqp`              | `cloudamqp`                    |
+   | `bonsai`                 | `bonsai elasticsearch` *       |
+   | `scout`                  | `scout apm` *                  |
+   | `rollbar`                | `rollbar`                      |
+   | `newrelic`               | `new relic` *                  |
+   | `twilio`                 | `twilio`                       |
+   | `cloudinary`             | `cloudinary`                   |
+   | `sentry`                 | `sentry`                       |
 
    \* These require special-case mapping because the Terraform/app.json slug differs from the display name. If the slug does not directly match after normalization, check if it is a known prefix of a fast-path entry (e.g., `bonsai` is a known prefix for `bonsai elasticsearch`). Known prefix mappings are:
    - `bonsai` → `bonsai elasticsearch`
@@ -415,7 +416,7 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
    - "Papertrail Pro" does NOT match "Papertrail"
    - "New Relic APM" does NOT match "New Relic"
 
-3. **If matched — Single mapping** (Mapping Type = "Single"):
+4. **If matched — Single mapping** (Mapping Type = "Single"):
 
    Produce one service entry:
 
@@ -436,7 +437,7 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 
    Adjust `aws_config` fields based on the specific AWS service (e.g., `log_group` and `retention_days` for CloudWatch Logs; `bucket_name` placeholder for S3; etc.).
 
-4. **If matched — Composite mapping** (Mapping Type = "Composite"):
+5. **If matched — Composite mapping** (Mapping Type = "Composite"):
 
    Produce a **single** service entry listing all AWS services in the composite:
 
@@ -456,11 +457,11 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 
    All services in the composite must appear. A single `"deterministic"` confidence covers the group.
 
-5. **If NOT matched** (no exact case-insensitive match):
+6. **If NOT matched** (no exact case-insensitive match):
 
    Route to **Specialist Gate** (Step 2F).
 
-6. Append matched entries to `services[]`. Increment `metadata.total_services`.
+7. Append matched entries to `services[]`. Increment `metadata.total_services`.
 
 ---
 
@@ -481,6 +482,7 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 ```
 
 **Required fields** (all must be present):
+
 - `addon_name`: The add-on service name
 - `addon_plan`: The specific plan tier
 - `provider`: The add-on provider
@@ -577,6 +579,7 @@ When migrating from a Private Space (regardless of peering mode), generate secur
 - Outbound allows all traffic (default egress).
 
 Determine declared dependencies from:
+
 - Space peering CIDRs (`config.peering.peer_cidr`)
 - Database ports (5432 for Postgres)
 - Redis ports (6379)
@@ -587,13 +590,13 @@ Determine declared dependencies from:
 {
   "name": "heroku-migrated-app-sg",
   "inbound_rules": [
-    {"port": 443, "protocol": "tcp", "cidr": "<peer_cidr or app CIDR>"},
-    {"port": 5432, "protocol": "tcp", "cidr": "<vpc_cidr>"},
-    {"port": 6379, "protocol": "tcp", "cidr": "<vpc_cidr>"},
-    {"port": 9092, "protocol": "tcp", "cidr": "<vpc_cidr>"}
+    { "port": 443, "protocol": "tcp", "cidr": "<peer_cidr or app CIDR>" },
+    { "port": 5432, "protocol": "tcp", "cidr": "<vpc_cidr>" },
+    { "port": 6379, "protocol": "tcp", "cidr": "<vpc_cidr>" },
+    { "port": 9092, "protocol": "tcp", "cidr": "<vpc_cidr>" }
   ],
   "outbound_rules": [
-    {"port": 0, "protocol": "-1", "cidr": "0.0.0.0/0"}
+    { "port": 0, "protocol": "-1", "cidr": "0.0.0.0/0" }
   ]
 }
 ```
@@ -608,11 +611,11 @@ If no Private Space exists, produce a standard security group:
 {
   "name": "heroku-migrated-app-sg",
   "inbound_rules": [
-    {"port": 443, "protocol": "tcp", "cidr": "0.0.0.0/0"},
-    {"port": 80, "protocol": "tcp", "cidr": "0.0.0.0/0"}
+    { "port": 443, "protocol": "tcp", "cidr": "0.0.0.0/0" },
+    { "port": 80, "protocol": "tcp", "cidr": "0.0.0.0/0" }
   ],
   "outbound_rules": [
-    {"port": 0, "protocol": "-1", "cidr": "0.0.0.0/0"}
+    { "port": 0, "protocol": "-1", "cidr": "0.0.0.0/0" }
   ]
 }
 ```
@@ -654,6 +657,7 @@ After all resources are mapped:
 Write the completed design object to `$MIGRATION_DIR/aws-design.json`.
 
 Verify the written file:
+
 1. Parses as valid JSON.
 2. Has at least one entry in `services[]` OR at least one entry in `deferred[]`.
 3. `vpc_design` section is present and non-empty.
@@ -752,19 +756,19 @@ All user communication via output messages only.
 
 ## Error Handling
 
-| Error Category | Behavior | Status Transition |
-|---------------|----------|-------------------|
-| Predecessor phase incomplete | GATE_FAIL, halt | Remain `pending` |
-| Input artifact missing/invalid | GATE_FAIL, halt | Retain `in_progress` |
-| Unrecognized dyno type | Reject formation, add warning, continue | Continue `in_progress` |
-| Empty Procfile (no process types) | Reject app formations, add warning, continue | Continue `in_progress` |
-| Unrecognized Postgres/Redis/Kafka plan | Defer to specialist gate, add warning, continue | Continue `in_progress` |
-| Unrecognized availability preference | Default to `multi-az` + RDS + warning, continue | Continue `in_progress` |
-| Add-on not in Fast-Path Table | Specialist gate (deferred), continue | Continue `in_progress` |
-| Partial match on Fast-Path Table | Specialist gate (NOT a match), continue | Continue `in_progress` |
-| No services AND no deferred entries produced | Unrecoverable error | Revert to `pending` (Rule 4) |
-| Handoff gate check fails (GATE_FAIL) | Halt pipeline, surface diagnostic | Retain `in_progress` (Rule 3) |
-| Downstream artifacts stale (re-entry) | Halt, emit GATE_FAIL stale_downstream | Retain `in_progress` (Rule 3) |
+| Error Category                               | Behavior                                        | Status Transition             |
+| -------------------------------------------- | ----------------------------------------------- | ----------------------------- |
+| Predecessor phase incomplete                 | GATE_FAIL, halt                                 | Remain `pending`              |
+| Input artifact missing/invalid               | GATE_FAIL, halt                                 | Retain `in_progress`          |
+| Unrecognized dyno type                       | Reject formation, add warning, continue         | Continue `in_progress`        |
+| Empty Procfile (no process types)            | Reject app formations, add warning, continue    | Continue `in_progress`        |
+| Unrecognized Postgres/Redis/Kafka plan       | Defer to specialist gate, add warning, continue | Continue `in_progress`        |
+| Unrecognized availability preference         | Default to `multi-az` + RDS + warning, continue | Continue `in_progress`        |
+| Add-on not in Fast-Path Table                | Specialist gate (deferred), continue            | Continue `in_progress`        |
+| Partial match on Fast-Path Table             | Specialist gate (NOT a match), continue         | Continue `in_progress`        |
+| No services AND no deferred entries produced | Unrecoverable error                             | Revert to `pending` (Rule 4)  |
+| Handoff gate check fails (GATE_FAIL)         | Halt pipeline, surface diagnostic               | Retain `in_progress` (Rule 3) |
+| Downstream artifacts stale (re-entry)        | Halt, emit GATE_FAIL stale_downstream           | Retain `in_progress` (Rule 3) |
 
 ---
 

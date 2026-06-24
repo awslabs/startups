@@ -167,6 +167,7 @@ Execute applicable sub-discoveries in order. Each produces its contribution to t
 If Terraform files with `heroku_*` resources found → Load `references/phases/discover/discover-terraform.md`
 
 This produces:
+
 - Resource extraction from `.tf` files (`heroku_app`, `heroku_addon`, `heroku_formation`, `heroku_domain`, `heroku_pipeline`, `heroku_space`)
 - Procfile and app.json parsing (integrated — supplements Terraform with commands, buildpacks, declared add-ons)
 - Cedar/Fir generation detection from `stack` attribute
@@ -177,6 +178,7 @@ This produces:
 If billing data files found → Load `references/phases/discover/discover-billing.md`
 
 This produces:
+
 - Billing profile: total monthly cost, billing period, currency, per-resource line items
 - Per-app cost breakdown when available
 
@@ -206,6 +208,7 @@ After all sub-discoveries complete, assemble `heroku-resource-inventory.json` in
 **If assembly fails** (no valid resources from any source after sub-discoveries ran):
 
 Apply **unrecoverable error behavior** (Rule 4):
+
 - Revert `phases.discover` to `"pending"`.
 - Preserve prior completed phases.
 - STOP and output: "Discovery ran but produced no valid resources. Check that your input files contain valid Heroku resources and try again."
@@ -300,17 +303,17 @@ All user communication via output messages only.
 
 ## Error Handling
 
-| Error Category | Behavior | Status Transition |
-|---------------|----------|-------------------|
-| No Heroku Terraform files (no `.tf` with `heroku_*` resources) | STOP, surface diagnostic | Revert to `pending` (Rule 4) |
-| Terraform parse error (malformed HCL) | Log warning, skip malformed blocks, continue | Continue `in_progress` |
-| Procfile/app.json parse error | Record warning per-app, continue | Continue `in_progress` |
-| Generation detection unresolvable (no stack attr) | Set `heroku_generation` to `unknown`, continue | Continue `in_progress` |
-| Pipeline detection from Terraform incomplete | Record with available data, continue | Continue `in_progress` |
-| All sub-discoveries produce no resources | STOP, surface diagnostic | Revert to `pending` (Rule 4) |
-| `.phase-status.json` invalid JSON | STOP, surface diagnostic | N/A (state corrupted) |
-| Handoff gate check fails (GATE_FAIL) | Halt pipeline, surface diagnostic | Retain `in_progress` (Rule 3) |
-| Downstream artifacts stale (re-entry) | Halt, emit GATE_FAIL stale_downstream | Retain `in_progress` (Rule 3) |
+| Error Category                                                 | Behavior                                       | Status Transition             |
+| -------------------------------------------------------------- | ---------------------------------------------- | ----------------------------- |
+| No Heroku Terraform files (no `.tf` with `heroku_*` resources) | STOP, surface diagnostic                       | Revert to `pending` (Rule 4)  |
+| Terraform parse error (malformed HCL)                          | Log warning, skip malformed blocks, continue   | Continue `in_progress`        |
+| Procfile/app.json parse error                                  | Record warning per-app, continue               | Continue `in_progress`        |
+| Generation detection unresolvable (no stack attr)              | Set `heroku_generation` to `unknown`, continue | Continue `in_progress`        |
+| Pipeline detection from Terraform incomplete                   | Record with available data, continue           | Continue `in_progress`        |
+| All sub-discoveries produce no resources                       | STOP, surface diagnostic                       | Revert to `pending` (Rule 4)  |
+| `.phase-status.json` invalid JSON                              | STOP, surface diagnostic                       | N/A (state corrupted)         |
+| Handoff gate check fails (GATE_FAIL)                           | Halt pipeline, surface diagnostic              | Retain `in_progress` (Rule 3) |
+| Downstream artifacts stale (re-entry)                          | Halt, emit GATE_FAIL stale_downstream          | Retain `in_progress` (Rule 3) |
 
 ---
 

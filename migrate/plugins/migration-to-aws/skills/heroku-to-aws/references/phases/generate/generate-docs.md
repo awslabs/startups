@@ -25,11 +25,11 @@ All four files must be valid JSON and present. If any are missing, exit cleanly 
 
 Scan `aws-design.json`.services[] to determine which data store types exist in the design:
 
-| Check | Condition | Flag |
-|-------|-----------|------|
+| Check            | Condition                                                                             | Flag                  |
+| ---------------- | ------------------------------------------------------------------------------------- | --------------------- |
 | Postgres present | Any service with `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"` | `has_postgres = true` |
-| Redis present | Any service with `aws_service == "ElastiCache Redis"` | `has_redis = true` |
-| Kafka present | Any service with `aws_service == "Amazon MSK"` | `has_kafka = true` |
+| Redis present    | Any service with `aws_service == "ElastiCache Redis"`                                 | `has_redis = true`    |
+| Kafka present    | Any service with `aws_service == "Amazon MSK"`                                        | `has_kafka = true`    |
 
 Also extract:
 
@@ -49,6 +49,7 @@ Also extract:
 Write the migration guide to `$MIGRATION_DIR/MIGRATION_GUIDE.md` using the template below.
 
 **Critical rules:**
+
 - Include a data migration procedure section ONLY for data store types where the corresponding flag is `true`.
 - OMIT the entire section (heading and content) for data store types NOT present in the design.
 - Include deferred add-ons as manual migration items if any exist.
@@ -56,7 +57,7 @@ Write the migration guide to `$MIGRATION_DIR/MIGRATION_GUIDE.md` using the templ
 
 ### Template: MIGRATION_GUIDE.md
 
-```markdown
+````markdown
 # Migration Guide: Heroku to AWS
 
 This guide provides step-by-step instructions for migrating your Heroku application(s) to AWS.
@@ -69,9 +70,9 @@ This guide provides step-by-step instructions for migrating your Heroku applicat
 - [Phase 3: Application Deployment](#phase-3-application-deployment)
 - [Phase 4: Verification](#phase-4-verification)
 - [Phase 5: Cutover](#phase-5-cutover)
-{{IF deferred_addons.length > 0}}
+  {{IF deferred_addons.length > 0}}
 - [Manual Migration Items](#manual-migration-items)
-{{ENDIF}}
+  {{ENDIF}}
 
 ---
 
@@ -90,15 +91,15 @@ Before beginning the migration, ensure the following are in place:
 
 - [ ] Heroku CLI installed and authenticated (`heroku auth:whoami`)
 - [ ] Access to source application(s): {{heroku_apps_comma_separated}}
-{{IF has_postgres}}
+      {{IF has_postgres}}
 - [ ] Database credentials for Heroku Postgres (retrieve via `heroku pg:credentials:url -a <app>`)
-{{ENDIF}}
-{{IF has_redis}}
+      {{ENDIF}}
+      {{IF has_redis}}
 - [ ] Redis connection URL from Heroku (retrieve via `heroku redis:credentials -a <app>`)
-{{ENDIF}}
-{{IF has_kafka}}
+      {{ENDIF}}
+      {{IF has_kafka}}
 - [ ] Kafka connection details from Heroku (retrieve via `heroku kafka:info -a <app>`)
-{{ENDIF}}
+      {{ENDIF}}
 
 ### Network Requirements
 
@@ -113,6 +114,7 @@ Before beginning the migration, ensure the following are in place:
 - [ ] Health check endpoints identified for each service
 
 {{IF containerization_status == "buildpack_only" OR containerization_status == "partial"}}
+
 ### Containerization Prerequisites
 
 Your application currently uses Heroku buildpacks and does not have a Dockerfile. You'll need to create one for Fargate deployment.
@@ -126,6 +128,7 @@ Your application currently uses Heroku buildpacks and does not have a Dockerfile
 - **Java** (heroku/java buildpack): `FROM eclipse-temurin:21-jre`, `COPY target/*.jar app.jar`, `CMD ["java", "-jar", "app.jar"]`
 
 **Key differences from Heroku:**
+
 - Heroku injects `PORT` automatically; set it explicitly in your task definition or Dockerfile `ENV`
 - Heroku buildpacks handle dependencies; Docker requires explicit `COPY` + install steps
 - Heroku's slug size limit (500 MB) does not apply — but keep images small for faster deploys
@@ -134,6 +137,7 @@ For detailed guidance, see your Procfile process types and match each to a Docke
 {{ENDIF}}
 
 {{IF migration_approach == "interim_cutover_data_first"}}
+
 ### ⚠️ Platform Risk Advisory
 
 > **Heroku is in sustaining engineering mode.** Salesforce has moved Heroku to stability-and-support-only — no new feature investment, enterprise contracts no longer sold to new customers.
@@ -141,7 +145,7 @@ For detailed guidance, see your Procfile process types and match each to a Docke
 > Your selected migration approach (database first, app stays on Heroku temporarily) is a **bounded interim phase**. Target exit date: **{{target_exit_date}}**.
 >
 > Hybrid operation should be limited to weeks, not quarters. Plan your compute migration promptly after data migration completes.
-{{ENDIF}}
+> {{ENDIF}}
 
 ---
 
@@ -155,6 +159,7 @@ terraform init
 terraform plan -out=tfplan
 terraform apply tfplan
 ```
+````
 
 Verify all resources are created successfully:
 
@@ -169,6 +174,7 @@ Record the output values — they are needed for data migration and application 
 ## Phase 2: Data Migration
 
 {{IF has_postgres}}
+
 ### PostgreSQL Migration (Heroku Postgres → RDS/Aurora)
 
 **Strategy:** Use `pg_dump` / `pg_restore` for a full database migration with minimal downtime.
@@ -176,11 +182,13 @@ Record the output values — they are needed for data migration and application 
 #### Pre-Migration Steps
 
 1. Enable maintenance mode on Heroku to prevent writes during migration:
+
    ```bash
    heroku maintenance:on -a {{app_name}}
    ```
 
 2. Verify source database size and estimate transfer time:
+
    ```bash
    heroku pg:info -a {{app_name}}
    ```
@@ -235,6 +243,7 @@ PGPASSWORD="{{TARGET_DB_PASSWORD}}" psql \
 Compare row counts between source and target to confirm data integrity.
 
 {{IF migration_approach == "interim_cutover_data_first"}}
+
 #### Interim Database Exposure (Public RDS + TLS)
 
 During the interim period where your Heroku app connects to the AWS database:
@@ -245,9 +254,11 @@ During the interim period where your Heroku app connects to the AWS database:
    - Download the RDS CA certificate: https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
    - Set the RDS parameter `rds.force_ssl = 1` to require all connections use TLS
    - Update your Heroku `DATABASE_URL` to include SSL parameters:
+
      ```bash
      heroku config:set DATABASE_URL="postgres://{{TARGET_DB_USER}}:{{TARGET_DB_PASSWORD}}@{{TARGET_DB_HOST}}:{{TARGET_DB_PORT}}/{{TARGET_DB_NAME}}?sslmode=verify-full&sslrootcert=config/rds-ca-bundle.pem" -a {{app_name}}
      ```
+
    - Add the RDS CA cert to your application repository (e.g., `config/rds-ca-bundle.pem`) and deploy
 
 3. **Security group:** Allow inbound on port 5432 from `0.0.0.0/0` (required for Heroku's dynamic IPs). This is temporary.
@@ -256,9 +267,10 @@ During the interim period where your Heroku app connects to the AWS database:
    - Set RDS instance to "Not publicly accessible"
    - Remove the `0.0.0.0/0` inbound rule from the security group
    - Verify the application connects via private VPC networking
-{{ENDIF}}
+     {{ENDIF}}
 
 {{IF migration_method == "dms"}}
+
 #### Alternative: AWS DMS Bulk Migration
 
 For databases over ~10GB, AWS DMS can provide a faster migration with less downtime:
@@ -266,6 +278,7 @@ For databases over ~10GB, AWS DMS can provide a faster migration with less downt
 ⚠️ **Important limitation:** AWS DMS **cannot** perform continuous replication (CDC) with Heroku Postgres. Heroku does not grant the `REPLICATION` role required for logical replication slots. DMS is for **one-time bulk data migration** with a final cutover window only.
 
 **DMS Setup Steps:**
+
 1. Create a DMS replication instance (publicly accessible, same VPC as target RDS)
 2. Create source endpoint pointing to Heroku Postgres (SSL mode: require)
 3. Create target endpoint pointing to your AWS RDS/Aurora instance
@@ -277,14 +290,16 @@ For databases over ~10GB, AWS DMS can provide a faster migration with less downt
 6. Enable pre-migration assessment and review results
 7. Start the migration task
 8. After completion, perform final cutover using the Heroku CLI sequence below
-{{ENDIF}}
+   {{ENDIF}}
 
 {{IF migration_method == "bucardo"}}
+
 #### Alternative: Bucardo (Near-Zero Downtime)
 
 For near-zero downtime migration using trigger-based replication:
 
 **Requirements:**
+
 - Dedicated EC2 instance (Ubuntu 20.04+) to run Bucardo
 - PostgreSQL client matching source version
 - Ability to create triggers on Heroku database
@@ -296,11 +311,13 @@ For near-zero downtime migration using trigger-based replication:
 {{ENDIF}}
 
 {{IF migration_method == "wal_g"}}
+
 #### Alternative: WAL-G (Minimal Downtime for Large Databases)
 
 For large databases requiring minimal downtime via WAL-based replication:
 
 **Requirements:**
+
 - Dedicated EC2 instance for WAL-G processing
 - S3 bucket for WAL archive storage
 - Network access between Heroku Postgres and your AWS infrastructure
@@ -334,6 +351,7 @@ heroku maintenance:off -a {{app_name}}
 ```
 
 **After full application migration to AWS (no longer on Heroku):**
+
 ```bash
 # Detach and optionally destroy Heroku Postgres
 heroku addons:detach DATABASE -a {{app_name}}
@@ -343,6 +361,7 @@ heroku addons:detach DATABASE -a {{app_name}}
 
 {{ENDIF}}
 {{IF has_redis}}
+
 ### Redis Migration (Heroku Redis → ElastiCache)
 
 **Strategy:** Export Redis data using `DUMP`/`RESTORE` or `redis-cli --rdb` depending on dataset size.
@@ -350,6 +369,7 @@ heroku addons:detach DATABASE -a {{app_name}}
 #### Pre-Migration Steps
 
 1. Check current Redis memory usage and key count:
+
    ```bash
    heroku redis:info -a {{app_name}}
    ```
@@ -404,6 +424,7 @@ echo "Target keys:" && redis-cli -h {{TARGET_REDIS_HOST}} -p {{TARGET_REDIS_PORT
 
 {{ENDIF}}
 {{IF has_kafka}}
+
 ### Kafka Migration (Heroku Kafka → Amazon MSK)
 
 **Strategy:** Use MirrorMaker 2 or topic recreation with producer replay for migration.
@@ -411,11 +432,13 @@ echo "Target keys:" && redis-cli -h {{TARGET_REDIS_HOST}} -p {{TARGET_REDIS_PORT
 #### Pre-Migration Steps
 
 1. Document current topic configuration:
+
    ```bash
    heroku kafka:topics -a {{app_name}}
    ```
 
 2. Record consumer group offsets for replay:
+
    ```bash
    heroku kafka:consumer-groups -a {{app_name}}
    ```
@@ -425,6 +448,7 @@ echo "Target keys:" && redis-cli -h {{TARGET_REDIS_HOST}} -p {{TARGET_REDIS_PORT
 **Option A: Topic Recreation (recommended for most cases)**
 
 1. Create topics on MSK matching source configuration:
+
    ```bash
    # For each topic, create with matching partitions and replication
    aws kafka create-topic \
@@ -462,6 +486,7 @@ kafka-consumer-groups.sh --bootstrap-server {{TARGET_MSK_BROKERS}} \
 ```
 
 {{ENDIF}}
+
 ---
 
 ## Phase 3: Application Deployment
@@ -495,6 +520,7 @@ aws ecs update-service \
 ### Update Environment Variables
 
 Ensure all environment variables from Heroku config vars are set in AWS:
+
 - Secrets → AWS Secrets Manager
 - Non-sensitive config → ECS task definition environment or Parameter Store
 
@@ -523,6 +549,7 @@ aws ssm put-parameter \
 ```
 
 Reference these in your ECS task definition:
+
 ```json
 "secrets": [
   {"name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:{{target_region}}:{{AWS_ACCOUNT_ID}}:secret:{{app_name}}/DATABASE_URL"}
@@ -548,19 +575,19 @@ Reference these in your ECS task definition:
 
 - [ ] Application responds on ALB endpoint: `https://{{ALB_DNS_NAME}}/`
 - [ ] Health check endpoint returns 200: `https://{{ALB_DNS_NAME}}/health`
-{{IF has_postgres}}
+      {{IF has_postgres}}
 - [ ] Database connectivity confirmed (application can read/write)
 - [ ] Row counts match source database
-{{ENDIF}}
-{{IF has_redis}}
+      {{ENDIF}}
+      {{IF has_redis}}
 - [ ] Redis connectivity confirmed (application can read/write cache)
 - [ ] Key counts match source Redis
-{{ENDIF}}
-{{IF has_kafka}}
+      {{ENDIF}}
+      {{IF has_kafka}}
 - [ ] Kafka producers sending to MSK successfully
 - [ ] Kafka consumers receiving from MSK successfully
 - [ ] Topic/partition configuration matches source
-{{ENDIF}}
+      {{ENDIF}}
 
 ### Functional Tests
 
@@ -581,6 +608,7 @@ Reference these in your ECS task definition:
 ### DNS Cutover
 
 1. Update DNS records to point to the AWS ALB:
+
    ```
    {{app_domain}} → CNAME → {{ALB_DNS_NAME}}
    ```
@@ -605,22 +633,26 @@ Once your application is fully running on AWS (no longer connecting from Heroku)
 After successful verification (recommend 48–72 hours of parallel running):
 
 1. Scale Heroku dynos to 0:
+
    ```bash
    heroku ps:scale web=0 worker=0 -a {{app_name}}
    ```
 
 2. Disable Heroku maintenance mode (if still on):
+
    ```bash
    heroku maintenance:off -a {{app_name}}
    ```
 
 3. Remove add-ons and delete app when confident:
+
    ```bash
    heroku addons:destroy --confirm {{app_name}} <addon_name>
    heroku apps:destroy --confirm {{app_name}}
    ```
 
 {{IF deferred_addons.length > 0}}
+
 ---
 
 ## Manual Migration Items
@@ -628,10 +660,15 @@ After successful verification (recommend 48–72 hours of parallel running):
 The following add-ons could not be automatically mapped to AWS equivalents and require manual migration:
 
 | Add-On | Plan | Provider | Reason | Recommendation |
-|--------|------|----------|--------|----------------|
+| ------ | ---- | -------- | ------ | -------------- |
+
+<!-- markdownlint-disable MD055 MD056 -->
+
 {{FOR addon IN deferred_addons}}
 | {{addon.addon_name}} | {{addon.addon_plan}} | {{addon.provider}} | {{addon.reason}} | {{addon.recommendation}} |
 {{ENDFOR}}
+
+<!-- markdownlint-enable MD055 MD056 -->
 
 ### Action Required
 
@@ -644,8 +681,8 @@ For each deferred add-on above:
 5. Verify functionality before decommissioning the Heroku add-on
 
 {{ENDIF}}
-```
 
+````
 ### Template Variable Resolution
 
 Replace template variables using these sources:
@@ -761,7 +798,7 @@ Edit `terraform/variables.tf` or create a `terraform.tfvars` file:
 aws_region     = "{{target_region}}"
 environment    = "{{environment_name}}"
 # Add VPC, subnet, and other variables as needed
-```
+````
 
 ### 3. Apply Terraform
 
@@ -784,16 +821,20 @@ terraform output > ../terraform-outputs.txt
 ### 4. Migrate Data
 
 {{IF has_postgres}}
+
 ```bash
 # Migrate PostgreSQL database
 ./scripts/migrate-postgres.sh
 ```
+
 {{ENDIF}}
 {{IF has_redis}}
+
 ```bash
 # Migrate Redis data
 ./scripts/migrate-redis.sh
 ```
+
 {{ENDIF}}
 
 ### 5. Deploy Application
@@ -812,11 +853,11 @@ Follow the verification checklist in `MIGRATION_GUIDE.md` Phase 4, then perform 
 - **Order matters:** Apply Terraform BEFORE running data migration scripts. The target infrastructure must exist first.
 - **Backup:** Always verify backups exist before performing destructive operations on Heroku.
 - **Parallel run:** Recommended 48–72 hours of parallel running before decommissioning Heroku.
-{{IF deferred_addons.length > 0}}
+  {{IF deferred_addons.length > 0}}
 - **Manual items:** {{deferred_addons.length}} add-on(s) require manual migration. See "Manual Migration Items" in `MIGRATION_GUIDE.md`.
-{{ENDIF}}
-```
+  {{ENDIF}}
 
+````
 ### Template Variable Resolution
 
 | Variable | Source |
@@ -984,7 +1025,7 @@ main() {
 }
 
 main "$@"
-```
+````
 
 ### 3B: Redis Migration Script
 
@@ -1199,6 +1240,7 @@ This sub-file contributes to `$MIGRATION_DIR/`:
 4. `scripts/migrate-redis.sh` — Redis migration script (conditional)
 
 The parent `generate.md` handles:
+
 - Merging with Terraform generation output
 - Generation warnings consolidation
 - Phase status update and handoff gate
@@ -1209,11 +1251,11 @@ The parent `generate.md` handles:
 
 ## Error Handling
 
-| Error | Behavior | Impact |
-|-------|----------|--------|
-| Input artifact missing | Exit cleanly, no output | Parent handles GATE_FAIL |
-| Template variable unresolvable | Use placeholder with `{{VARIABLE_NAME}}` format | User fills manually |
-| No data stores in design | Omit Phase 2 entirely from guide | Valid — compute-only migration |
-| No deferred add-ons | Omit Manual Migration Items section | Valid — all add-ons mapped |
-| All three data stores absent | MIGRATION_GUIDE still generated (compute-only) | Valid migration path |
-| Script write failure | Log warning, continue with remaining files | Parent captures in generation-warnings |
+| Error                          | Behavior                                        | Impact                                 |
+| ------------------------------ | ----------------------------------------------- | -------------------------------------- |
+| Input artifact missing         | Exit cleanly, no output                         | Parent handles GATE_FAIL               |
+| Template variable unresolvable | Use placeholder with `{{VARIABLE_NAME}}` format | User fills manually                    |
+| No data stores in design       | Omit Phase 2 entirely from guide                | Valid — compute-only migration         |
+| No deferred add-ons            | Omit Manual Migration Items section             | Valid — all add-ons mapped             |
+| All three data stores absent   | MIGRATION_GUIDE still generated (compute-only)  | Valid migration path                   |
+| Script write failure           | Log warning, continue with remaining files      | Parent captures in generation-warnings |

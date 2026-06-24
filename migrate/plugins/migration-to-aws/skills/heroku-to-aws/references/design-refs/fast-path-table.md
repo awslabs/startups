@@ -6,21 +6,21 @@ This table provides deterministic mappings from Heroku add-ons to AWS service eq
 
 ## Lookup Table
 
-| Heroku Add-On | AWS Service(s) | Mapping Type | Notes |
-|--------------|---------------|-------------|-------|
-| Papertrail | CloudWatch Logs | Single | Log aggregation and search |
-| SendGrid | Amazon SES | Single | Transactional and marketing email |
-| Heroku Scheduler | EventBridge Scheduler | Single | Cron-style scheduled jobs |
-| Memcachier | ElastiCache Memcached | Single | In-memory caching (Memcached protocol) |
-| Bucketeer | S3 | Single | Object/file storage |
-| CloudAMQP | Amazon MQ | Single | RabbitMQ-compatible message broker |
-| Bonsai Elasticsearch | Amazon OpenSearch | Single | Full-text search and analytics |
-| Scout APM | CloudWatch + X-Ray | Composite | Application performance monitoring + distributed tracing |
-| Rollbar | CloudWatch | Single | Error tracking via structured logs |
-| New Relic | CloudWatch + X-Ray | Composite | Full-stack observability + distributed tracing |
-| Twilio | Amazon SNS (SMS) | Single | SMS messaging |
-| Cloudinary | S3 + CloudFront | Composite | Media storage + CDN delivery |
-| Sentry | CloudWatch | Single | Error tracking via structured logs |
+| Heroku Add-On        | AWS Service(s)        | Mapping Type | Notes                                                    |
+| -------------------- | --------------------- | ------------ | -------------------------------------------------------- |
+| Papertrail           | CloudWatch Logs       | Single       | Log aggregation and search                               |
+| SendGrid             | Amazon SES            | Single       | Transactional and marketing email                        |
+| Heroku Scheduler     | EventBridge Scheduler | Single       | Cron-style scheduled jobs                                |
+| Memcachier           | ElastiCache Memcached | Single       | In-memory caching (Memcached protocol)                   |
+| Bucketeer            | S3                    | Single       | Object/file storage                                      |
+| CloudAMQP            | Amazon MQ             | Single       | RabbitMQ-compatible message broker                       |
+| Bonsai Elasticsearch | Amazon OpenSearch     | Single       | Full-text search and analytics                           |
+| Scout APM            | CloudWatch + X-Ray    | Composite    | Application performance monitoring + distributed tracing |
+| Rollbar              | CloudWatch            | Single       | Error tracking via structured logs                       |
+| New Relic            | CloudWatch + X-Ray    | Composite    | Full-stack observability + distributed tracing           |
+| Twilio               | Amazon SNS (SMS)      | Single       | SMS messaging                                            |
+| Cloudinary           | S3 + CloudFront       | Composite    | Media storage + CDN delivery                             |
+| Sentry               | CloudWatch            | Single       | Error tracking via structured logs                       |
 
 ## Interpretation Notes
 
