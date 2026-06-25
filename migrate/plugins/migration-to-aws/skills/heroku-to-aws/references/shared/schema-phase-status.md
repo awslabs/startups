@@ -1,0 +1,1 @@
+../../../gcp-to-aws/references/shared/schema-phase-status.md
