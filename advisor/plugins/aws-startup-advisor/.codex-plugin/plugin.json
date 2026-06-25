@@ -1,6 +1,6 @@
 {
   "name": "aws-startup-advisor",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Personalized architecture, cost, security, and migration guidance for startups. From day-one account setup and security baselines to production-ready infrastructure, cost optimization, and beyond. Includes AWS Activate Credits eligibility, 60+ exclusive startup offers, and multi-account multi-region support. Built on expertise from AWS Startup Solutions Architects and patterns from 350,000+ startups.",
   "author": {
     "name": "Amazon Web Services",
