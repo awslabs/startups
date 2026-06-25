@@ -4,7 +4,7 @@ AI agent skills for migrating workloads to AWS, built for [Claude Code](https://
 
 ## What This Does
 
-Point this plugin at your codebase, Terraform files, or GCP billing data. It runs a structured 6-phase migration assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+Point this plugin at your codebase, Terraform files, or GCP billing data. It runs a structured 6-phase migration assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, generating a shareable [AWS Pricing Calculator](https://calculator.aws/) link, and producing runnable migration artifacts.
 
 **For AI-focused startups**, it goes further:
 
@@ -23,7 +23,7 @@ Point this plugin at your codebase, Terraform files, or GCP billing data. It run
 | Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage                                     |
 | Framework gotchas        | Not covered                       | Documents real issues: LangGraph checkpointer incompatibility, CrewAI hierarchical process failures with smaller models, async thread pool exhaustion |
 | Regional validation      | Outdated region lists             | Live `get_regional_availability` MCP call — catches "AgentCore Harness isn't in your target region" before you commit                                 |
-| Cost estimation          | Stale pricing                     | Three-tier pricing: cached current rates, live AWS Pricing API, fallback. Shows ±5-10% accuracy.                                                      |
+| Cost estimation          | Stale pricing                     | Three-tier pricing: cached current rates, live AWS Pricing API, fallback. Shows ±5-10% accuracy. Generates shareable AWS Pricing Calculator URL.       |
 | Generated code           | Generic templates                 | Your model IDs, your tool names, your system prompts, your region — in runnable scripts                                                               |
 | Incremental migration    | Not suggested                     | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident                               |
 
@@ -66,7 +66,7 @@ codex plugin install migration-to-aws
 1. **Discover** — Scan Terraform files, application code, and/or billing data. Detects GCP resources, AI models, agentic frameworks, tools, and orchestration patterns.
 2. **Clarify** — Ask targeted questions about migration preferences, AI priorities, agentic migration approach, memory requirements, and timeline.
 3. **Design** — Map GCP services to AWS equivalents. For AI workloads: select Bedrock models with honest pricing comparison. For agentic workloads: design AgentCore Harness config or Strands architecture.
-4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current GCP/OpenAI spend.
+4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current GCP/OpenAI spend. Generate a shareable AWS Pricing Calculator URL.
 5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, and documentation.
 6. **Feedback** _(optional)_ — Collect anonymized feedback to improve the tool.
 
@@ -89,10 +89,11 @@ codex plugin install migration-to-aws
 
 ### MCP Servers
 
-| Server           | Purpose                                                         |
-| ---------------- | --------------------------------------------------------------- |
-| **awsknowledge** | AWS documentation, regional availability, architecture guidance |
-| **awspricing**   | Real-time AWS service pricing for cost estimates                |
+| Server                             | Purpose                                                                          |
+| ---------------------------------- | -------------------------------------------------------------------------------- |
+| **awsknowledge**                   | AWS documentation, regional availability, architecture guidance                  |
+| **awspricing**                     | Real-time AWS service pricing for cost estimates                                 |
+| **[aws-pricing-calculator-mcp-server](https://github.com/aws-samples/sample-aws-pricing-calculator-mcp)** | Generates shareable AWS Pricing Calculator URLs for interactive estimate sharing |
 
 ## Requirements
 
