@@ -117,26 +117,27 @@ For each service in `aws-design.json → services[]`, calculate monthly cost usi
 
 ### Per-Service Calculation Formulas
 
-| AWS Service               | Formula                                                                             | Key inputs from `aws_config`                                    |
-| ------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **Fargate**               | (task_cpu/1024 × $0.04048 + task_memory/1024 × $0.004445) × 730 hrs × desired_count | `task_cpu`, `task_memory`, `desired_count`                      |
-| **ALB**                   | $16.43/month fixed + LCU estimate ($0.008/LCU-hr × 730)                             | Per web service with `load_balancer: true`                      |
-| **RDS PostgreSQL**        | instance_rate × 730 hrs + storage_gb × $0.23/GB-month                               | `instance_class`, `storage_gb`, `multi_az`                      |
-| **Aurora PostgreSQL**     | instance_rate × 730 hrs + storage_gb × $0.10/GB-month + I/O estimate                | `instance_class`, `storage_gb`                                  |
-| **ElastiCache Redis**     | node_rate × 730 hrs (× 2 if Multi-AZ)                                               | `node_type`, `multi_az`                                         |
-| **MSK**                   | broker_rate × 730 hrs × broker_count + storage_gb × rate                            | `broker_instance_type`, `broker_count`, `storage_per_broker_gb` |
-| **CloudWatch Logs**       | log_volume_gb × $0.50/GB + storage × $0.03/GB-month                                 | `retention_days`, estimated log volume                          |
-| **S3**                    | storage_gb × $0.023/GB-month + request estimates                                    | `storage_gb` (from Bucketeer/Cloudinary mapping)                |
-| **Amazon SES**            | $0.10 per 1000 emails (minimal baseline)                                            | Flat estimate from SendGrid mapping                             |
-| **EventBridge Scheduler** | $1.00 per million events (minimal for cron jobs)                                    | From Heroku Scheduler mapping                                   |
-| **Amazon MQ**             | instance_rate × 730 hrs + storage                                                   | From CloudAMQP mapping                                          |
-| **Amazon OpenSearch**     | instance_rate × 730 hrs + storage                                                   | From Bonsai Elasticsearch mapping                               |
-| **Secrets Manager**       | secret_count × $0.40/month + API calls × $0.05/10K                                  | Config var count from inventory                                 |
-| **NAT Gateway**           | $32.85/month fixed + data processing estimate                                       | From VPC design (if new VPC)                                    |
-| **RDS Proxy**             | $0.015 per vCPU-hour × 730 hrs × vCPUs                                              | When connection pooling mapped                                  |
-| **Route 53**              | $0.50/hosted zone + query estimate                                                  | When DNS strategy = route53                                     |
-| **CloudFront**            | $0.085/GB (first 10TB) + request costs                                              | From Cloudinary composite mapping                               |
-| **X-Ray**                 | $5.00 per million traces                                                            | Only if tracing detected in source                              |
+| AWS Service               | Formula                                                                                              | Key inputs from `aws_config`                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Fargate**               | (task_cpu/1024 × $0.04048 + task_memory/1024 × $0.004445) × 730 hrs × desired_count                  | `task_cpu`, `task_memory`, `desired_count`                                    |
+| **EKS (cluster + nodes)** | $0.10/hr control plane ($73/month) + node_instance_rate × 730 hrs × node_count + ALB per web service | `eks_cluster.node_groups[].instance_types`, `desired_size`, web service count |
+| **ALB**                   | $16.43/month fixed + LCU estimate ($0.008/LCU-hr × 730)                                              | Per web service with `load_balancer: true`                                    |
+| **RDS PostgreSQL**        | instance_rate × 730 hrs + storage_gb × $0.23/GB-month                                                | `instance_class`, `storage_gb`, `multi_az`                                    |
+| **Aurora PostgreSQL**     | instance_rate × 730 hrs + storage_gb × $0.10/GB-month + I/O estimate                                 | `instance_class`, `storage_gb`                                                |
+| **ElastiCache Redis**     | node_rate × 730 hrs (× 2 if Multi-AZ)                                                                | `node_type`, `multi_az`                                                       |
+| **MSK**                   | broker_rate × 730 hrs × broker_count + storage_gb × rate                                             | `broker_instance_type`, `broker_count`, `storage_per_broker_gb`               |
+| **CloudWatch Logs**       | log_volume_gb × $0.50/GB + storage × $0.03/GB-month                                                  | `retention_days`, estimated log volume                                        |
+| **S3**                    | storage_gb × $0.023/GB-month + request estimates                                                     | `storage_gb` (from Bucketeer/Cloudinary mapping)                              |
+| **Amazon SES**            | $0.10 per 1000 emails (minimal baseline)                                                             | Flat estimate from SendGrid mapping                                           |
+| **EventBridge Scheduler** | $1.00 per million events (minimal for cron jobs)                                                     | From Heroku Scheduler mapping                                                 |
+| **Amazon MQ**             | instance_rate × 730 hrs + storage                                                                    | From CloudAMQP mapping                                                        |
+| **Amazon OpenSearch**     | instance_rate × 730 hrs + storage                                                                    | From Bonsai Elasticsearch mapping                                             |
+| **Secrets Manager**       | secret_count × $0.40/month + API calls × $0.05/10K                                                   | Config var count from inventory                                               |
+| **NAT Gateway**           | $32.85/month fixed + data processing estimate                                                        | From VPC design (if new VPC)                                                  |
+| **RDS Proxy**             | $0.015 per vCPU-hour × 730 hrs × vCPUs                                                               | When connection pooling mapped                                                |
+| **Route 53**              | $0.50/hosted zone + query estimate                                                                   | When DNS strategy = route53                                                   |
+| **CloudFront**            | $0.085/GB (first 10TB) + request costs                                                               | From Cloudinary composite mapping                                             |
+| **X-Ray**                 | $5.00 per million traces                                                                             | Only if tracing detected in source                                            |
 
 ### Unpriced Resource Handling
 
@@ -146,6 +147,31 @@ IF pricing data for a service is unavailable from both MCP and cache:
 2. **Exclude** from the total monthly cost sum
 3. Add to `warnings[]`: "Pricing unavailable for [service_id] ([aws_service]). Requires manual cost verification."
 4. Add service name to `pricing_source.services_with_missing_fallback[]`
+
+### EKS Cost Calculation
+
+When `aws-design.json` contains EKS services (`aws_service: "EKS"`):
+
+1. **EKS Control Plane**: $0.10/hour = **$73.00/month** (fixed, one cluster regardless of node count)
+2. **EC2 Node Group**: Look up instance type hourly rate × 730 hours × `desired_size` nodes
+
+   | Node Instance Type | Hourly Rate | Monthly (730 hrs) |
+   | ------------------ | ----------- | ----------------- |
+   | m6i.large          | $0.096      | $70.08/node       |
+   | m6i.xlarge         | $0.192      | $140.16/node      |
+   | m6i.4xlarge        | $0.768      | $560.64/node      |
+   | r6i.4xlarge        | $1.008      | $735.84/node      |
+   | m6i.8xlarge        | $1.536      | $1,121.28/node    |
+   | m6i.16xlarge       | $3.072      | $2,242.56/node    |
+
+3. **ALB for web services**: Same as Fargate ALB pricing ($16.43/month per web service)
+4. **NAT Gateway** (if private subnets): Same as Fargate path ($32.85/month + data processing)
+
+**Total EKS monthly cost** = control_plane + (node_rate × 730 × node_count) + ALB_costs + NAT_costs
+
+**EKS vs Fargate cost comparison note**: When presenting EKS estimates alongside the Heroku baseline, include this note:
+
+> "EKS with EC2 nodes is typically cheaper than Fargate for sustained workloads (>60% utilization) because there is no per-pod Fargate surcharge. However, EKS has a higher base cost ($73/month control plane + minimum 2 nodes) and requires Kubernetes operational expertise."
 
 ### Cost Tier Calculation
 

@@ -48,6 +48,17 @@ This produces:
 
 If gate fails: STOP. Output: "Terraform generation failed. Check generation-warnings.json for details."
 
+**EKS Generation (conditional):**
+
+If `aws-design.json` contains any service with `aws_service: "EKS"`:
+
+- Load `references/phases/generate/generate-eks.md`
+- Follow its instructions to produce `terraform/eks.tf` and `kubernetes/` directory
+- Add Helm provider to `terraform/main.tf`
+- Add EKS sections to MIGRATION_GUIDE.md
+
+If NO services have `aws_service: "EKS"`, skip EKS generation entirely.
+
 ---
 
 ## Step 2: Generate Documentation and Scripts
@@ -88,6 +99,7 @@ Load `shared/validate-artifacts.md`. Verify the complete set of generated artifa
 **Cross-reference checks:**
 
 - Every service in `aws-design.json.services[]` is either generated in Terraform OR listed in `generation-warnings.json`
+- If any service has `aws_service: "EKS"` → `terraform/eks.tf` must exist AND `kubernetes/` directory must contain at least one Deployment manifest
 - `README.md` references all files that actually exist
 - `MIGRATION_GUIDE.md` data migration sections match design content (no empty sections)
 
@@ -108,7 +120,9 @@ Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 7. If Postgres in design → `scripts/migrate-postgres.sh` exists
 8. If Redis in design → `scripts/migrate-redis.sh` exists
 9. Every designed service accounted for (generated or in warnings)
-10. No placeholder `{{VARIABLE}}` in Terraform `.tf` files (those belong in `variables.tf` as proper `var.*` references)
+10. If EKS in design → `terraform/eks.tf` exists with cluster + node group resources
+11. If EKS in design → `kubernetes/` directory exists with namespace + deployment manifests
+12. No placeholder `{{VARIABLE}}` in Terraform `.tf` files (those belong in `variables.tf` as proper `var.*` references)
 
 **On any FAIL:** Emit `GATE_FAIL | phase=generate | field=<path> | reason=<missing|invalid>`. STOP.
 

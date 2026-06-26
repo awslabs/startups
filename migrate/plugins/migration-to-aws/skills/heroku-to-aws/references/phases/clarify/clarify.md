@@ -6,7 +6,7 @@
 
 The output — `preferences.json` — is consumed directly by Design and Estimate without any further interpretation.
 
-Questions are organized into **three batches** (≤5 per batch) presented sequentially. A standalone **fast-path** mode exists for simple stacks (< 5 apps, no Private Spaces, no Kafka).
+Questions are organized into **three batches** (≤7 per batch) presented sequentially. A standalone **fast-path** mode exists for simple stacks (< 5 apps, no Private Spaces, no Kafka).
 
 ---
 
@@ -72,13 +72,13 @@ ELSE full question flow (12–15 questions)
 
 > "Your stack looks straightforward — [N] app(s), no Private Spaces, no Kafka.
 >
-> Want to use smart defaults and answer just 3–5 questions? I'll apply sensible defaults for the rest.
+> Want to use smart defaults and answer just 4–6 questions? I'll apply sensible defaults for the rest.
 >
 > **[Yes — short path]** / **[No — ask me everything]**"
 
 **If user chooses Yes:**
 
-1. Ask only: **Q1** (region), **Q2** (compliance), **Q3** (availability), **Q4** (maintenance window) — and optionally **Q11** (Fir intent, only if Fir detected).
+1. Ask only: **Q1** (region), **Q2** (compliance), **Q3** (availability), **Q4** (maintenance window), **Q12c** (Kubernetes preference) — and optionally **Q11** (Fir intent, only if Fir detected).
 2. Apply documented defaults for ALL other questions. Record each in `metadata.questions_defaulted`.
 3. Write `preferences.json` with `metadata.clarify_mode: "fast_path"`. Skip Steps 2–3 batch loop.
 4. Proceed to Step 4 (Validation Checklist).
@@ -126,6 +126,7 @@ Before generating questions, scan the inventory to determine which questions app
 | Q10 — DNS strategy             | Always                                                           | Never                                     |
 | Q11 — Fir intent               | At least one app has `heroku_generation == "fir"`                | No Fir-generation apps                    |
 | Q12b — Containerization status | Always                                                           | Never                                     |
+| Q12c — Kubernetes preference   | Always                                                           | Never                                     |
 | Q12 — Container registry       | Always                                                           | Never                                     |
 | Q13 — Log retention            | Always                                                           | Never                                     |
 | Q14 — Alerting preference      | Always                                                           | Never                                     |
@@ -135,11 +136,11 @@ Before generating questions, scan the inventory to determine which questions app
 
 After determining active questions, organize into **three batches** (≤5 each):
 
-| Batch | Name                      | Questions            | Content                                                                                                    |
-| ----- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **1** | Global / Strategic        | Q1–Q5, Q5b           | Region, compliance, availability, maintenance, environment naming, migration urgency                       |
-| **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy |
-| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization        |
+| Batch | Name                      | Questions            | Content                                                                                                     |
+| ----- | ------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **1** | Global / Strategic        | Q1–Q5, Q5b, Q12c     | Region, compliance, availability, maintenance, environment naming, migration urgency, Kubernetes preference |
+| **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy  |
+| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization         |
 
 **Batch 2 is active** if ANY of: Postgres present, Redis present, Kafka present, Private Space detected, or DNS question is needed (always true → Batch 2 always fires with at least Q10).
 
@@ -415,6 +416,34 @@ Return to **3a** for the next batch.
 
 ---
 
+#### Q12c — Kubernetes Preference
+
+> _Fires always. This question determines the compute orchestration target for all dyno formations._
+>
+> Would you prefer EKS (Kubernetes) or ECS Fargate for your containerized workloads?
+>
+> EKS gives you full Kubernetes control but requires cluster management expertise. Fargate eliminates cluster management entirely — simpler operations, no nodes to manage.
+>
+> A) EKS preferred — team has Kubernetes expertise, wants full K8s control (self-managed node groups)
+> B) EKS acceptable — team can operate K8s, prefers managed node groups to reduce burden
+> C) ECS Fargate preferred — simplest managed containers, no cluster management (default)
+> D) I don't know
+
+**Interpret:**
+
+- A → `design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }`
+- B → `design_constraints.kubernetes: { "value": "eks-or-ecs", "chosen_by": "user" }`
+- C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }`
+- D → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
+
+**Default:** C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
+
+**Design impact:** When `"eks-managed"` or `"eks-or-ecs"` is selected, ALL formation resources map to EKS Deployments with pod resource requests/limits instead of Fargate task definitions. Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected.
+
+**Fir intent precedence:** If both Q11 (Fir intent = "self_managed_eks_ecs") and Q12c (kubernetes = "ecs-fargate") are set, the global kubernetes preference takes precedence for non-Fir formations. Fir workloads remain deferred in v1 regardless of this setting.
+
+---
+
 ### Batch 2: Data / Network
 
 #### Q6 — Database HA Preference
@@ -657,7 +686,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 #### Q12 — Container Registry
 
-> Where should container images be stored for your Fargate services?
+> Where should container images be stored for your containerized workloads?
 >
 > A) Amazon ECR — fully integrated with ECS/Fargate, no cross-account config needed
 > B) Existing registry — you already have a container registry (Docker Hub, GitHub Container Registry, etc.)
@@ -783,6 +812,9 @@ Write `$MIGRATION_DIR/preferences.json`:
     "alerting": "<Q14 value>",
     "cost_optimization": "<Q15 value>"
   },
+  "design_constraints": {
+    "kubernetes": { "value": "<Q12c value>", "chosen_by": "user|default" }
+  },
   "defaults_applied": ["<list of defaulted question IDs>"],
   "sources": {
     "Q1": "user|default",
@@ -808,27 +840,28 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 
 ## Defaults Table
 
-| Question                  | Default                                 | Constraint                                  |
-| ------------------------- | --------------------------------------- | ------------------------------------------- |
-| Q1 — Region               | A (us-east-1)                           | `target_region: "us-east-1"`                |
-| Q2 — Compliance           | A (none)                                | `compliance: "none"`                        |
-| Q3 — Availability         | B (multi-az)                            | `availability: "multi-az"`                  |
-| Q4 — Maintenance          | D (flexible)                            | `maintenance_window: "flexible"`            |
-| Q5 — Env naming           | A (production)                          | `environment_naming: "production"`          |
-| Q6 — Database HA          | D (match Q3)                            | `database_ha: <Q3 value>`                   |
-| Q6b — Migration approach  | A (full cutover)                        | `migration_approach: "full_cutover"`        |
-| Q6c — DB migration method | A (pg_dump)                             | `migration_method: "pg_dump_restore"`       |
-| Q7 — Redis HA             | A (yes)                                 | `redis_ha: true`                            |
-| Q8 — Kafka retention      | C (7 days)                              | `kafka_retention_days: 7`                   |
-| Q9 — Subnet IDs           | _(no default — must ask if applicable)_ | —                                           |
-| Q9b — VPC ID              | _(no default — must ask if applicable)_ | —                                           |
-| Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                   |
-| Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                 |
-| Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"` |
-| Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                 |
-| Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                    |
-| Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                    |
-| Q15 — Cost optimization   | B (balanced)                            | `cost_optimization: "balanced"`             |
+| Question                  | Default                                 | Constraint                                           |
+| ------------------------- | --------------------------------------- | ---------------------------------------------------- |
+| Q1 — Region               | A (us-east-1)                           | `target_region: "us-east-1"`                         |
+| Q2 — Compliance           | A (none)                                | `compliance: "none"`                                 |
+| Q3 — Availability         | B (multi-az)                            | `availability: "multi-az"`                           |
+| Q4 — Maintenance          | D (flexible)                            | `maintenance_window: "flexible"`                     |
+| Q5 — Env naming           | A (production)                          | `environment_naming: "production"`                   |
+| Q6 — Database HA          | D (match Q3)                            | `database_ha: <Q3 value>`                            |
+| Q6b — Migration approach  | A (full cutover)                        | `migration_approach: "full_cutover"`                 |
+| Q6c — DB migration method | A (pg_dump)                             | `migration_method: "pg_dump_restore"`                |
+| Q7 — Redis HA             | A (yes)                                 | `redis_ha: true`                                     |
+| Q8 — Kafka retention      | C (7 days)                              | `kafka_retention_days: 7`                            |
+| Q9 — Subnet IDs           | _(no default — must ask if applicable)_ | —                                                    |
+| Q9b — VPC ID              | _(no default — must ask if applicable)_ | —                                                    |
+| Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                            |
+| Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                          |
+| Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"`          |
+| Q12c — Kubernetes pref    | C (Fargate)                             | `design_constraints.kubernetes.value: "ecs-fargate"` |
+| Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                          |
+| Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                             |
+| Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                             |
+| Q15 — Cost optimization   | B (balanced)                            | `cost_optimization: "balanced"`                      |
 
 **Important:** Q9 and Q9b have no default — they are only asked when Private Space peering exists and required data is missing. If they fire, they must be answered (the system cannot proceed without subnet/VPC information for existing VPC references).
 
@@ -850,6 +883,8 @@ Before handing off to Design:
 - [ ] If peering detected and VPC ID needed → `network.existing_vpc_id` is populated
 - [ ] If Fir apps detected → `global.fir_intent` is populated (not null)
 - [ ] `operational.containerization_status` is populated
+- [ ] `design_constraints.kubernetes.value` is one of: `"eks-managed"`, `"eks-or-ecs"`, `"ecs-fargate"`
+- [ ] `design_constraints.kubernetes.chosen_by` is `"user"` or `"default"`
 - [ ] All entries in `sources` have a value of `"user"` or `"default"`
 - [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`
 - [ ] Only keys with non-null values are present
