@@ -9,7 +9,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 **Supported migration sources:**
 
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
-- **Heroku → AWS** — Dynos, Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
+- **Heroku → AWS** — Dynos (→ Fargate or EKS), Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
 
 **For infrastructure migrations:**
 
@@ -75,6 +75,7 @@ After installation, just describe what you want to migrate:
 - "Migrate my Heroku app to AWS"
 - "Move my Heroku Postgres to RDS"
 - "Migrate from Heroku to Fargate"
+- "Migrate from Heroku to EKS"
 - "Estimate AWS costs for my Heroku workload"
 - "Migrate my Heroku Private Space to AWS"
 
@@ -102,7 +103,7 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 | Category       | Heroku → AWS                                                                                       |
 | -------------- | -------------------------------------------------------------------------------------------------- |
-| Compute        | Dynos (all types) → Fargate (CPU/memory mapped via Dyno Type Table)                                |
+| Compute        | Dynos (all types) → Fargate or EKS (user chooses; Fargate default, EKS when Kubernetes expertise available)  |
 | Databases      | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump/bucardo/wal-g migration methods) |
 | Caching        | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                      |
 | Streaming      | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)                   |
@@ -141,7 +142,7 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 | Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate dynos to EKS", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
 
 ## MCP Servers
 
