@@ -286,8 +286,23 @@ spec:
           limits:
             cpu: "<from-eks-mapping-table>"
             memory: "<from-eks-mapping-table>"
+        env:
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: <heroku-app-name>-config
+              key: DATABASE_URL
+              optional: true
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: <heroku-app-name>-config
+              key: REDIS_URL
+              optional: true
         ports:
-        - containerPort: <app-port>  # Only for web processes
+        - containerPort: 8080  # Matches PORT env var; only for web processes
 ```
 
 **`kubernetes/<app>-web-service.yaml`** (only for web process types):
@@ -307,7 +322,7 @@ spec:
     app: web
   ports:
   - port: 80
-    targetPort: <app-port>
+    targetPort: 8080
     protocol: TCP
 ```
 

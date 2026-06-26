@@ -28,7 +28,8 @@ When the Kubernetes preference indicates EKS:
 
 3. **Node group sizing:**
    - Aggregate total pod CPU/memory requests across all formations
-   - Select instance type from EKS_Mapping_Table recommended node types
+   - Select instance type using **largest-pod-class-wins** rule: pick the recommended node type for the largest dyno type present in the inventory. This ensures all pods can schedule (smaller pods fit on larger nodes, but not vice versa).
+   - If formations span multiple size classes (e.g., standard-1x web + performance-l workers), use the node type recommended for the largest class. All pods from smaller classes will fit on those nodes with room to spare.
    - Calculate: min_size = 2 (HA), max_size = ceil(total_pods / 4) + 2, desired_size = ceil(total_pods / 4)
    - System overhead per node: 500m CPU, 512Mi memory
 
