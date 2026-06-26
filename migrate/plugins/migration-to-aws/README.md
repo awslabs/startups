@@ -57,7 +57,23 @@ codex plugin install migration-to-aws
 
 ### Cursor
 
-> **Coming soon** — This plugin is not yet published on the Cursor Marketplace. In the meantime, you can use it locally by cloning this repository and pointing Cursor to the plugin directory.
+Install from the [Cursor Marketplace](https://cursor.com/marketplace) (AWS Agent Plugins collection):
+
+1. Open **Cursor Settings**
+2. Go to **Plugins**
+3. Search for **AWS** or **Migration to AWS**
+4. Click **Add to Cursor** and choose user or workspace scope
+5. Confirm it appears under **Plugins → Installed**
+
+Requires [Cursor >= 2.5](https://cursor.com/changelog/2-5). See the [Cursor plugins documentation](https://cursor.com/docs/plugins) for details.
+
+> **Note:** Cursor installs are distributed via the [Agent Plugins for AWS](https://github.com/awslabs/agent-plugins) marketplace. Claude Code and Codex installs use the `awslabs/startups` marketplace above.
+
+**Alternative (local development):** Clone this repository and symlink the plugin directory to `~/.cursor/plugins/local/migration-to-aws`, then reload Cursor:
+
+```bash
+ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
+```
 
 ## migration-to-aws
 
