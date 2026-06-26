@@ -420,6 +420,17 @@ Add these sections after Prerequisites, before Data Migration:
 
 **Omit all EKS sections** when the design contains only Fargate services.
 
+### Post-Deployment Enhancements (recommended but not generated)
+
+Include this note at the end of the "Deploy Workloads to EKS" section:
+
+```markdown
+> **Recommended next steps (not auto-generated):**
+> - Add **liveness and readiness probes** to each Deployment. Heroku performs health checks automatically; Kubernetes requires explicit probe configuration for reliable restarts and traffic routing.
+> - Consider adding a **Horizontal Pod Autoscaler (HPA)** if your workloads need dynamic scaling. The generated manifests use fixed `replicas` matching your Heroku formation quantity. HPA can replace or supplement this for traffic-driven scaling.
+> - Review **resource limits** — the generated limits allow CPU bursting (2× request). Tune after observing actual usage in production.
+```
+
 ---
 
 ## Terraform Validation

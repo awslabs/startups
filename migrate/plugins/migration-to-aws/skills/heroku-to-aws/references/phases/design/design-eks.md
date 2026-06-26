@@ -20,7 +20,7 @@ When the Kubernetes preference indicates EKS:
 
 2. **Produce single EKS cluster entry:**
    - `cluster_name`: `"heroku-migration-cluster"`
-   - `kubernetes_version`: `"1.30"`
+   - `kubernetes_version`: Use the latest EKS-supported stable version at generation time (query via `aws eks describe-addon-versions` or default to current stable: `"1.31"`). Do not hardcode — EKS deprecates older versions on a rolling basis.
    - Node group type based on preference:
      - `"eks-managed"` → `"self-managed"` node groups (more control)
      - `"eks-or-ecs"` → `"managed"` node groups (less operational burden)
@@ -79,7 +79,7 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
 {
   "eks_cluster": {
     "cluster_name": "heroku-migration-cluster",
-    "kubernetes_version": "1.30",
+    "kubernetes_version": "<latest EKS-supported stable, e.g. 1.31>",
     "node_group_type": "<managed|self-managed>",
     "node_groups": [
       {

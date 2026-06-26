@@ -138,9 +138,9 @@ After determining active questions, organize into **three batches** (≤5 each):
 
 | Batch | Name                      | Questions            | Content                                                                                                    |
 | ----- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **1** | Global / Strategic        | Q1–Q5, Q5b           | Region, compliance, availability, maintenance, environment naming, migration urgency                       |
+| **1** | Global / Strategic        | Q1–Q5, Q5b, Q12c    | Region, compliance, availability, maintenance, environment naming, migration urgency, Kubernetes preference |
 | **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy |
-| **3** | Operational / Conditional | Q11, Q12b, Q12c, Q12–Q15   | Fir intent, containerization status, Kubernetes preference, container registry, log retention, alerting, cost optimization        |
+| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization        |
 
 **Batch 2 is active** if ANY of: Postgres present, Redis present, Kafka present, Private Space detected, or DNS question is needed (always true → Batch 2 always fires with at least Q10).
 
@@ -416,6 +416,34 @@ Return to **3a** for the next batch.
 
 ---
 
+#### Q12c — Kubernetes Preference
+
+> _Fires always. This question determines the compute orchestration target for all dyno formations._
+>
+> Would you prefer EKS (Kubernetes) or ECS Fargate for your containerized workloads?
+>
+> EKS gives you full Kubernetes control but requires cluster management expertise. Fargate eliminates cluster management entirely — simpler operations, no nodes to manage.
+>
+> A) EKS preferred — team has Kubernetes expertise, wants full K8s control (self-managed node groups)
+> B) EKS acceptable — team can operate K8s, prefers managed node groups to reduce burden
+> C) ECS Fargate preferred — simplest managed containers, no cluster management (default)
+> D) I don't know
+
+**Interpret:**
+
+- A → `design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }`
+- B → `design_constraints.kubernetes: { "value": "eks-or-ecs", "chosen_by": "user" }`
+- C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }`
+- D → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
+
+**Default:** C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
+
+**Design impact:** When `"eks-managed"` or `"eks-or-ecs"` is selected, ALL formation resources map to EKS Deployments with pod resource requests/limits instead of Fargate task definitions. Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected.
+
+**Fir intent precedence:** If both Q11 (Fir intent = "self_managed_eks_ecs") and Q12c (kubernetes = "ecs-fargate") are set, the global kubernetes preference takes precedence for non-Fir formations. Fir workloads remain deferred in v1 regardless of this setting.
+
+---
+
 ### Batch 2: Data / Network
 
 #### Q6 — Database HA Preference
@@ -653,36 +681,6 @@ Validate: must be valid ISO 8601 date, must be in the future.
 **Default:** B → `containerization_status: "buildpack_only"`
 
 **Design impact:** Options B and C trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings — all compute targets are Fargate regardless.
-
----
-
-#### Q12c — Kubernetes Preference
-
-> _Fires always. This question determines the compute orchestration target for all dyno formations._
->
-> Would you prefer EKS (Kubernetes) or ECS Fargate for your containerized workloads?
->
-> EKS gives you full Kubernetes control but requires cluster management expertise. Fargate eliminates cluster management entirely — simpler operations, no nodes to manage.
->
-> A) EKS preferred — team has Kubernetes expertise, wants full K8s control (self-managed node groups)
-> B) EKS acceptable — team can operate K8s, prefers managed node groups to reduce burden
-> C) ECS Fargate preferred — simplest managed containers, no cluster management (default)
-> D) I don't know
-
-**Interpret:**
-
-- A → `design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }`
-- B → `design_constraints.kubernetes: { "value": "eks-or-ecs", "chosen_by": "user" }`
-- C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }`
-- D → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
-
-**Default:** C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
-
-**Design impact:** When `"eks-managed"` or `"eks-or-ecs"` is selected, ALL formation resources map to EKS Deployments with pod resource requests/limits instead of Fargate task definitions. Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected.
-
-**Fir intent precedence:** If both Q11 (Fir intent = "self_managed_eks_ecs") and Q12c (kubernetes = "ecs-fargate") are set, the global kubernetes preference takes precedence for non-Fir formations. Fir workloads remain deferred in v1 regardless of this setting.
-
-**Fast-path mode:** This question is still presented in fast-path mode — it cannot be safely defaulted without user input since it fundamentally changes the compute architecture.
 
 ---
 
