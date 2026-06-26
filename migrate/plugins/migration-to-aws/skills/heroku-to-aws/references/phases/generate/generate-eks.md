@@ -12,6 +12,10 @@
 
 Generate EKS cluster Terraform:
 
+**Node group selection:**
+- If `design.eks_cluster.node_group_type == "managed"` → emit `aws_eks_node_group` resource (simpler, AWS-managed)
+- If `design.eks_cluster.node_group_type == "self-managed"` → emit `aws_launch_template` + `aws_autoscaling_group` + `aws_security_group` (more control, user manages AMI updates)
+
 ```hcl
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
@@ -96,6 +100,83 @@ resource "aws_eks_node_group" "general" {
     desired_size = <from design>
     max_size     = <from design>
     min_size     = <from design>
+  }
+}
+
+# Self-Managed Node Group (when node_group_type = "self-managed")
+# Use this path when design specifies eks-managed preference (full K8s control)
+
+resource "aws_launch_template" "eks_nodes" {
+  name_prefix   = "<cluster_name>-node-"
+  instance_type = <from design instance_types[0]>
+  image_id      = data.aws_ssm_parameter.eks_ami.value
+
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    /etc/eks/bootstrap.sh ${aws_eks_cluster.main.name}
+  EOF
+  )
+
+  network_interfaces {
+    security_groups = [aws_security_group.eks_nodes.id]
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      "kubernetes.io/cluster/${aws_eks_cluster.main.name}" = "owned"
+    }
+  }
+}
+
+data "aws_ssm_parameter" "eks_ami" {
+  name = "/aws/service/eks/optimized-ami/<kubernetes_version>/amazon-linux-2/recommended/image_id"
+}
+
+resource "aws_autoscaling_group" "eks_nodes" {
+  name                = "<cluster_name>-nodes"
+  desired_capacity    = <from design desired_size>
+  max_size            = <from design max_size>
+  min_size            = <from design min_size>
+  vpc_zone_identifier = [<subnet references>]
+
+  launch_template {
+    id      = aws_launch_template.eks_nodes.id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "kubernetes.io/cluster/${aws_eks_cluster.main.name}"
+    value               = "owned"
+    propagate_at_launch = true
+  }
+}
+
+resource "aws_security_group" "eks_nodes" {
+  name_prefix = "<cluster_name>-nodes-"
+  vpc_id      = <vpc_id reference>
+
+  # Allow all traffic from the cluster security group
+  ingress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    security_groups = [aws_security_group.eks_cluster.id]
+  }
+
+  # Allow node-to-node communication
+  ingress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    self      = true
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 

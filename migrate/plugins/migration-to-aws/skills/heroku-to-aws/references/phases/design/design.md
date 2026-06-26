@@ -9,7 +9,9 @@ Load these reference files **only when the corresponding resource type exists in
 
 | Resource Type in Inventory    | Reference File to Load               |
 | ----------------------------- | ------------------------------------ |
-| `formation` (any)             | `design-refs/dyno-type-table.md`     |
+| `formation` (any) + `design_constraints.kubernetes` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
+| `formation` (any) + `design_constraints.kubernetes` = `"ecs-fargate"` or absent | `design-refs/dyno-type-table.md`     |
+| `formation` (any) + `design_constraints.kubernetes` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
 | `addon:*:heroku-postgresql:*` | `design-refs/postgres-plan-table.md` |
 | `addon:*:heroku-redis:*`      | `design-refs/redis-plan-table.md`    |
 | `addon:*:heroku-kafka:*`      | `design-refs/kafka-plan-table.md`    |
@@ -117,11 +119,22 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 
 ---
 
-### 2A: Formation Mapping (Fargate)
+### 2A: Formation Mapping (Fargate or EKS)
 
 **Trigger**: `resource_type == "formation"`
 
-**Prerequisites**: Load `design-refs/dyno-type-table.md` if not already loaded.
+**Prerequisites**:
+- Read `preferences.json → design_constraints.kubernetes` (may be absent).
+- If value is `"eks-managed"` or `"eks-or-ecs"`: Load `design-refs/eks-mapping-table.md` and `phases/design/design-eks.md`. Follow the EKS branch logic in `design-eks.md` for ALL formations. Skip the Fargate mapping below.
+- Otherwise (value is `"ecs-fargate"` or field is absent): Load `design-refs/dyno-type-table.md` if not already loaded. Follow the Fargate mapping below.
+
+#### EKS Branch
+
+When `design_constraints.kubernetes` is `"eks-managed"` or `"eks-or-ecs"`, load and follow `references/phases/design/design-eks.md`. That file contains the complete EKS mapping logic. ALL formations are mapped to EKS. Return here after EKS mapping is complete (skip the Fargate logic below).
+
+**Fir intent precedence**: If `preferences.operational.fir_intent` is `"self_managed_eks_ecs"` AND `design_constraints.kubernetes` is `"ecs-fargate"` or absent, the Fir intent does NOT automatically enable EKS for all formations. The Fir intent is compute-destination-only for Fir workloads and is handled as a deferred notation (no Terraform generation for Fir in v1). The global `design_constraints.kubernetes` preference takes precedence for non-Fir formations.
+
+#### Fargate Branch (default)
 
 **Mapping logic:**
 
@@ -675,7 +688,7 @@ Verify required artifacts exist in `$MIGRATION_DIR/`:
 
 **Route output gates (fail closed):**
 
-- If inventory had formation resources → `services[]` MUST contain at least one Fargate entry (unless all dyno types were unrecognized).
+- If inventory had formation resources → `services[]` MUST contain at least one Fargate OR EKS entry (unless all dyno types were unrecognized).
 - If inventory had `heroku-postgresql` add-ons with recognized plans → `services[]` MUST contain RDS or Aurora entries.
 - If inventory had `heroku-redis` add-ons with recognized plans → `services[]` MUST contain ElastiCache entries.
 - If inventory had `heroku-kafka` add-ons with recognized plans → `services[]` MUST contain MSK entries.
