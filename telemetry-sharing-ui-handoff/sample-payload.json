@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "plugin_version": "0.4.2",
+  "generated_at": "2026-06-14T18:30:00Z",
+
+  "clarify_answers": {
+    "migration_timeline": { "value": "3-6 months", "source": "user" },
+    "team_size": { "value": "5-10", "source": "user" },
+    "compliance_requirements": { "value": "SOC2, HIPAA", "source": "inferred" },
+    "primary_motivation": { "value": "cost_reduction", "source": "user" },
+    "downtime_tolerance": { "value": "minimal - under 1 hour", "source": "user" },
+    "existing_aws_account": { "value": "yes", "source": "user" },
+    "data_residency": { "value": "us-west-2", "source": "default" },
+    "ai_workloads": { "value": "yes - inference only", "source": "user" },
+    "ci_cd_platform": { "value": "GitHub Actions", "source": "inferred" },
+    "database_size_gb": { "value": "250", "source": "user" }
+  },
+
+  "recommendation": {
+    "path": "migrate_optimized",
+    "rationale": "Your workload is primarily compute + managed database with minimal vendor lock-in. The GCP services in use (GCE, Cloud SQL, GCS, GKE) have direct AWS equivalents. A single-phase optimized migration is feasible within your 3-6 month timeline given team size and no complex data residency constraints."
+  },
+
+  "cost_summary": {
+    "current_gcp_monthly": 12500,
+    "projected_aws_monthly": 10800,
+    "delta": -1700,
+    "currency": "USD"
+  },
+
+  "detected_services": [
+    "google_compute_instance",
+    "google_sql_database_instance",
+    "google_storage_bucket",
+    "google_container_cluster",
+    "google_cloud_run_service",
+    "google_pubsub_topic",
+    "google_monitoring_alert_policy"
+  ],
+
+  "resource_names": [
+    { "type": "google_sql_database_instance", "name": "prod-db" },
+    { "type": "google_sql_database_instance", "name": "analytics-replica" },
+    { "type": "google_compute_instance", "name": "api-server-1" },
+    { "type": "google_compute_instance", "name": "api-server-2" },
+    { "type": "google_compute_instance", "name": "worker-node-1" },
+    { "type": "google_container_cluster", "name": "app-cluster" },
+    { "type": "google_storage_bucket", "name": "user-uploads-prod" },
+    { "type": "google_storage_bucket", "name": "ml-training-data" },
+    { "type": "google_cloud_run_service", "name": "inference-api" },
+    { "type": "google_pubsub_topic", "name": "events-stream" }
+  ],
+
+  "workload_types": ["infra", "ai"],
+
+  "spend_band": "10k-50k"
+}

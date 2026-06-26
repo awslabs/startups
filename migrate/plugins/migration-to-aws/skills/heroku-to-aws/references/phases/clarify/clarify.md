@@ -126,7 +126,7 @@ Before generating questions, scan the inventory to determine which questions app
 | Q10 — DNS strategy             | Always                                                           | Never                                     |
 | Q11 — Fir intent               | At least one app has `heroku_generation == "fir"`                | No Fir-generation apps                    |
 | Q12b — Containerization status | Always                                                           | Never                                     |
-| Q12c — Kubernetes preference  | Always                                                           | Never                                     |
+| Q12c — Kubernetes preference   | Always                                                           | Never                                     |
 | Q12 — Container registry       | Always                                                           | Never                                     |
 | Q13 — Log retention            | Always                                                           | Never                                     |
 | Q14 — Alerting preference      | Always                                                           | Never                                     |
@@ -136,11 +136,11 @@ Before generating questions, scan the inventory to determine which questions app
 
 After determining active questions, organize into **three batches** (≤5 each):
 
-| Batch | Name                      | Questions            | Content                                                                                                    |
-| ----- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **1** | Global / Strategic        | Q1–Q5, Q5b, Q12c    | Region, compliance, availability, maintenance, environment naming, migration urgency, Kubernetes preference |
-| **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy |
-| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization        |
+| Batch | Name                      | Questions            | Content                                                                                                     |
+| ----- | ------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **1** | Global / Strategic        | Q1–Q5, Q5b, Q12c     | Region, compliance, availability, maintenance, environment naming, migration urgency, Kubernetes preference |
+| **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy  |
+| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization         |
 
 **Batch 2 is active** if ANY of: Postgres present, Redis present, Kafka present, Private Space detected, or DNS question is needed (always true → Batch 2 always fires with at least Q10).
 
@@ -840,28 +840,28 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 
 ## Defaults Table
 
-| Question                  | Default                                 | Constraint                                  |
-| ------------------------- | --------------------------------------- | ------------------------------------------- |
-| Q1 — Region               | A (us-east-1)                           | `target_region: "us-east-1"`                |
-| Q2 — Compliance           | A (none)                                | `compliance: "none"`                        |
-| Q3 — Availability         | B (multi-az)                            | `availability: "multi-az"`                  |
-| Q4 — Maintenance          | D (flexible)                            | `maintenance_window: "flexible"`            |
-| Q5 — Env naming           | A (production)                          | `environment_naming: "production"`          |
-| Q6 — Database HA          | D (match Q3)                            | `database_ha: <Q3 value>`                   |
-| Q6b — Migration approach  | A (full cutover)                        | `migration_approach: "full_cutover"`        |
-| Q6c — DB migration method | A (pg_dump)                             | `migration_method: "pg_dump_restore"`       |
-| Q7 — Redis HA             | A (yes)                                 | `redis_ha: true`                            |
-| Q8 — Kafka retention      | C (7 days)                              | `kafka_retention_days: 7`                   |
-| Q9 — Subnet IDs           | _(no default — must ask if applicable)_ | —                                           |
-| Q9b — VPC ID              | _(no default — must ask if applicable)_ | —                                           |
-| Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                   |
-| Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                 |
-| Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"` |
+| Question                  | Default                                 | Constraint                                           |
+| ------------------------- | --------------------------------------- | ---------------------------------------------------- |
+| Q1 — Region               | A (us-east-1)                           | `target_region: "us-east-1"`                         |
+| Q2 — Compliance           | A (none)                                | `compliance: "none"`                                 |
+| Q3 — Availability         | B (multi-az)                            | `availability: "multi-az"`                           |
+| Q4 — Maintenance          | D (flexible)                            | `maintenance_window: "flexible"`                     |
+| Q5 — Env naming           | A (production)                          | `environment_naming: "production"`                   |
+| Q6 — Database HA          | D (match Q3)                            | `database_ha: <Q3 value>`                            |
+| Q6b — Migration approach  | A (full cutover)                        | `migration_approach: "full_cutover"`                 |
+| Q6c — DB migration method | A (pg_dump)                             | `migration_method: "pg_dump_restore"`                |
+| Q7 — Redis HA             | A (yes)                                 | `redis_ha: true`                                     |
+| Q8 — Kafka retention      | C (7 days)                              | `kafka_retention_days: 7`                            |
+| Q9 — Subnet IDs           | _(no default — must ask if applicable)_ | —                                                    |
+| Q9b — VPC ID              | _(no default — must ask if applicable)_ | —                                                    |
+| Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                            |
+| Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                          |
+| Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"`          |
 | Q12c — Kubernetes pref    | C (Fargate)                             | `design_constraints.kubernetes.value: "ecs-fargate"` |
-| Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                 |
-| Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                    |
-| Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                    |
-| Q15 — Cost optimization   | B (balanced)                            | `cost_optimization: "balanced"`             |
+| Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                          |
+| Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                             |
+| Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                             |
+| Q15 — Cost optimization   | B (balanced)                            | `cost_optimization: "balanced"`                      |
 
 **Important:** Q9 and Q9b have no default — they are only asked when Private Space peering exists and required data is missing. If they fire, they must be answered (the system cannot proceed without subnet/VPC information for existing VPC references).
 

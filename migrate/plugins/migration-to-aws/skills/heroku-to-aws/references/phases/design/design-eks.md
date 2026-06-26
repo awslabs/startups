@@ -13,7 +13,7 @@ When the Kubernetes preference indicates EKS:
 1. **For EACH formation resource** in the inventory:
    - Look up dyno type in `design-refs/eks-mapping-table.md`
    - Produce an EKS Deployment entry with pod resource requests and limits
-   - Set `aws_service: "EKS"` 
+   - Set `aws_service: "EKS"`
    - Preserve dyno quantity as `replicas` (0–100)
    - If process type is `web` → include Kubernetes Service (type: LoadBalancer) with AWS LB Controller annotations
    - If process type is NOT `web` → Deployment only (no Service)

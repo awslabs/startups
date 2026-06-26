@@ -30,32 +30,32 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 **Infrastructure:**
 
-| Capability | Base LLM | This Plugin |
-| --- | --- | --- |
-| Terraform generation | Generic templates | Your actual config translated — instance classes, storage sizes, region, VPC CIDRs, security groups |
-| Security baseline | Not included | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts |
-| Database migration tooling | "Use DMS" | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script |
-| Cost estimation | Stale guesses | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your current bill |
-| Migration plan | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks |
+| Capability                 | Base LLM          | This Plugin                                                                                               |
+| -------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------- |
+| Terraform generation       | Generic templates | Your actual config translated — instance classes, storage sizes, region, VPC CIDRs, security groups       |
+| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts  |
+| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script           |
+| Cost estimation            | Stale guesses     | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your current bill |
+| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                       |
 
 **AI/Agentic:**
 
-| Capability | Base LLM | This Plugin |
-| --- | --- | --- |
-| Model recommendation | Generic "use Bedrock" | Your specific models mapped with pricing, honest stay-or-migrate recommendation per model |
-| Agentic migration | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges |
-| Multi-model coordination | Generic advice | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage |
-| Framework gotchas | Not covered | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion |
-| Regional validation | Outdated region lists | Live `get_regional_availability` MCP call — catches "AgentCore Harness isn't in your target region" before you commit |
-| Generated code | Generic templates | Your model IDs, your tool names, your system prompts, your region — in runnable scripts |
-| Incremental migration | Not suggested | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident |
+| Capability               | Base LLM                          | This Plugin                                                                                                                |
+| ------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with pricing, honest stay-or-migrate recommendation per model                                  |
+| Agentic migration        | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges |
+| Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage          |
+| Framework gotchas        | Not covered                       | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion     |
+| Regional validation      | Outdated region lists             | Live `get_regional_availability` MCP call — catches "AgentCore Harness isn't in your target region" before you commit      |
+| Generated code           | Generic templates                 | Your model IDs, your tool names, your system prompts, your region — in runnable scripts                                    |
+| Incremental migration    | Not suggested                     | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident    |
 
 ## Plugins
 
-| Plugin | Description | Status |
-| --- | --- | --- |
-| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku) | Available |
-| **ai-to-aws** | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
+| Plugin               | Description                                                                                                              | Status    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku)              | Available |
+| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
 
 ## Installation
 
@@ -120,41 +120,41 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 
 #### GCP → AWS
 
-| Category | Examples |
-| --- | --- |
-| Infrastructure | Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, DNS |
-| AI Models | OpenAI (GPT-4o, GPT-5.x, o-series, embeddings, image, speech), Gemini (Pro, Flash), Anthropic, Cohere |
-| Agentic Frameworks | LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Strands, custom agent loops |
-| Integration Patterns | Direct SDK, LangChain, LlamaIndex, LiteLLM, OpenRouter, MCP servers |
-| Agent Architecture | Single agent, hierarchical, swarm, graph, sequential orchestration |
-| Tools & Memory | Tool definitions with transport/auth classification, memory backends (Redis, Postgres, vector stores) |
+| Category             | Examples                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| Infrastructure       | Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, DNS                          |
+| AI Models            | OpenAI (GPT-4o, GPT-5.x, o-series, embeddings, image, speech), Gemini (Pro, Flash), Anthropic, Cohere |
+| Agentic Frameworks   | LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Strands, custom agent loops                            |
+| Integration Patterns | Direct SDK, LangChain, LlamaIndex, LiteLLM, OpenRouter, MCP servers                                   |
+| Agent Architecture   | Single agent, hierarchical, swarm, graph, sequential orchestration                                    |
+| Tools & Memory       | Tool definitions with transport/auth classification, memory backends (Redis, Postgres, vector stores) |
 
 #### Heroku → AWS
 
-| Category | Examples |
-| --- | --- |
-| Compute | Dynos (all types) → Fargate (default) or EKS (when user selects Kubernetes preference) |
-| Databases | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods) |
-| Caching | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved) |
-| Streaming | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved) |
-| Add-ons | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate |
-| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection |
-| CI/CD | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration) |
-| Secrets | Config vars → AWS Secrets Manager or SSM Parameter Store |
+| Category   | Examples                                                                                       |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| Compute    | Dynos (all types) → Fargate (default) or EKS (when user selects Kubernetes preference)         |
+| Databases  | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods)           |
+| Caching    | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                  |
+| Streaming  | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)               |
+| Add-ons    | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate |
+| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection                    |
+| CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)        |
+| Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                       |
 
 ### Agent Skill Triggers
 
-| Agent Skill | Triggers |
-| --- | --- |
-| **gcp-to-aws** | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app" |
+| Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
 
 ### MCP Servers
 
-| Server | Purpose |
-| --- | --- |
+| Server           | Purpose                                                         |
+| ---------------- | --------------------------------------------------------------- |
 | **awsknowledge** | AWS documentation, regional availability, architecture guidance |
-| **awspricing** | Real-time AWS service pricing for cost estimates |
+| **awspricing**   | Real-time AWS service pricing for cost estimates                |
 
 ## ai-to-aws
 
@@ -218,13 +218,13 @@ git add .eval-results.json
 Pick the fixture that covers your change area. For broad changes, run
 `minimal-cloud-run-sql` first, then any fixture specific to your change.
 
-| Fixture | Use when you changed... | Invariants |
-| --- | --- | --- |
-| `minimal-cloud-run-sql` | General prompt changes, state machine, phase ordering, generate phase | 26 |
-| `bigquery-specialist-gate` | BigQuery handling, specialist gate, analytics exclusion | 9 |
-| `ai-workload-openai` | AI detection, model mapping, lifecycle rules, Category F questions | 11 |
-| `user-preferences` | Clarify question flow, preference schema, Design preference consumption | 10 |
-| `negative-services` | Classification rules, auth exclusion, forbidden service mappings | 8 |
+| Fixture                    | Use when you changed...                                                 | Invariants |
+| -------------------------- | ----------------------------------------------------------------------- | ---------- |
+| `minimal-cloud-run-sql`    | General prompt changes, state machine, phase ordering, generate phase   | 26         |
+| `bigquery-specialist-gate` | BigQuery handling, specialist gate, analytics exclusion                 | 9          |
+| `ai-workload-openai`       | AI detection, model mapping, lifecycle rules, Category F questions      | 11         |
+| `user-preferences`         | Clarify question flow, preference schema, Design preference consumption | 10         |
+| `negative-services`        | Classification rules, auth exclusion, forbidden service mappings        | 8          |
 
 See [docs/evaluation-guide.md](docs/evaluation-guide.md) for the full workflow
 and how to add new invariants.

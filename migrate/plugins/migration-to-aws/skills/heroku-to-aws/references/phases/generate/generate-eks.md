@@ -13,6 +13,7 @@
 Generate EKS cluster Terraform:
 
 **Node group selection:**
+
 - If `design.eks_cluster.node_group_type == "managed"` → emit ONLY the `aws_eks_node_group` resource block below. Do NOT emit the self-managed resources.
 - If `design.eks_cluster.node_group_type == "self-managed"` → emit ONLY the `aws_launch_template` + `aws_autoscaling_group` + `aws_security_group` blocks below. Do NOT emit `aws_eks_node_group`.
 - **Never emit both.** The design specifies exactly one node group type.
@@ -239,6 +240,7 @@ resource "aws_security_group" "eks_cluster" {
 ```
 
 **If data stores exist in the design**, add security group rules for pod-to-service communication:
+
 - Pod → RDS: port 5432
 - Pod → ElastiCache: port 6379
 - Pod → MSK: port 9092
@@ -248,6 +250,7 @@ resource "aws_security_group" "eks_cluster" {
 Generate Kubernetes manifests:
 
 **`kubernetes/namespace.yaml`** (one per unique heroku_app):
+
 ```yaml
 apiVersion: v1
 kind: Namespace
@@ -258,6 +261,7 @@ metadata:
 ```
 
 **`kubernetes/<app>-<process-type>-deployment.yaml`** (one per formation):
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -308,6 +312,7 @@ spec:
 ```
 
 **`kubernetes/<app>-web-service.yaml`** (only for web process types):
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -333,7 +338,7 @@ spec:
 
 Add these sections after Prerequisites, before Data Migration:
 
-```markdown
+````markdown
 ## EKS Cluster Setup
 
 1. Apply EKS Terraform:
@@ -342,6 +347,7 @@ Add these sections after Prerequisites, before Data Migration:
    terraform init
    terraform apply
    ```
+````
 
 2. Configure kubectl access:
    ```bash
@@ -416,8 +422,8 @@ Add these sections after Prerequisites, before Data Migration:
          name: db-credentials
          key: DATABASE_URL
    ```
-```
 
+````
 **Omit all EKS sections** when the design contains only Fargate-only compute (no EKS services).
 
 ### Post-Deployment Enhancements (recommended but not generated)
@@ -429,7 +435,7 @@ Include this note at the end of the "Deploy Workloads to EKS" section:
 > - Add **liveness and readiness probes** to each Deployment. Heroku performs health checks automatically; Kubernetes requires explicit probe configuration for reliable restarts and traffic routing.
 > - Consider adding a **Horizontal Pod Autoscaler (HPA)** if your workloads need dynamic scaling. The generated manifests use fixed `replicas` matching your Heroku formation quantity. HPA can replace or supplement this for traffic-driven scaling.
 > - Review **resource limits** — the generated limits allow CPU bursting (2× request). Tune after observing actual usage in production.
-```
+````
 
 ---
 

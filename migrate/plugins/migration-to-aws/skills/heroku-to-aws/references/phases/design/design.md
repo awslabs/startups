@@ -7,14 +7,14 @@ Single-pass mapping engine that translates each Heroku resource to its AWS equiv
 
 Load these reference files **only when the corresponding resource type exists in the inventory**:
 
-| Resource Type in Inventory    | Reference File to Load               |
-| ----------------------------- | ------------------------------------ |
+| Resource Type in Inventory                                                                    | Reference File to Load                                             |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `formation` (any) + `design_constraints.kubernetes.value` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"` or absent | `design-refs/dyno-type-table.md`     |
-| `addon:*:heroku-postgresql:*` | `design-refs/postgres-plan-table.md` |
-| `addon:*:heroku-redis:*`      | `design-refs/redis-plan-table.md`    |
-| `addon:*:heroku-kafka:*`      | `design-refs/kafka-plan-table.md`    |
-| `addon:*` (non-core)          | `design-refs/fast-path-table.md`     |
+| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"` or absent         | `design-refs/dyno-type-table.md`                                   |
+| `addon:*:heroku-postgresql:*`                                                                 | `design-refs/postgres-plan-table.md`                               |
+| `addon:*:heroku-redis:*`                                                                      | `design-refs/redis-plan-table.md`                                  |
+| `addon:*:heroku-kafka:*`                                                                      | `design-refs/kafka-plan-table.md`                                  |
+| `addon:*` (non-core)                                                                          | `design-refs/fast-path-table.md`                                   |
 
 Do NOT speculatively load tables for resource types absent from the inventory.
 
@@ -123,6 +123,7 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 **Trigger**: `resource_type == "formation"`
 
 **Prerequisites**:
+
 - Read `preferences.json → design_constraints.kubernetes.value` (may be absent).
 - If value is `"eks-managed"` or `"eks-or-ecs"`: Load `design-refs/eks-mapping-table.md` and `phases/design/design-eks.md`. Follow the EKS branch logic in `design-eks.md` for ALL formations. Skip the Fargate mapping below.
 - Otherwise (value is `"ecs-fargate"` or field is absent): Load `design-refs/dyno-type-table.md` if not already loaded. Follow the Fargate mapping below.

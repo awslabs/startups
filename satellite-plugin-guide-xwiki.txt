@@ -1,0 +1,231 @@
+{{box title="Page metadata"}}
+**Suggested wiki path:** /AWS_Activate/Migrate/Plugin_Guide/
+**Page title:** How to Migrate from GCP to AWS Using the AWS Startup Advisor Plugin — Kiro, Claude Code, Cursor
+**Target queries:** "AWS startup advisor plugin", "migrate GCP to AWS with Kiro", "AWS migration plugin Claude Code", "GCP to AWS migration tool tutorial"
+**Tags:** gcp-to-aws, plugin, kiro, claude-code, cursor, migration, terraform, tutorial, aws-startup-advisor
+{{/box}}
+
+----
+
+= How to Migrate from GCP to AWS Using the AWS Startup Advisor Plugin =
+
+Migrate your startup from GCP to AWS directly from your IDE. The **AWS Startup Advisor plugin** works with Kiro, Claude Code, Cursor, and Codex to analyze your codebase, infrastructure, and billing data — then generates a complete GCP-to-AWS migration plan with Terraform templates, service mappings, architecture diagrams, and cost estimates.
+
+**Your data stays local** — the plugin runs analysis within your coding agent. No code or billing data is uploaded to AWS servers.
+
+🔗 **Install:** [[Kiro>>url:https://open-vsx.org/extension/amazonwebservices/aws-startup-advisor||target="_blank"]] | [[Claude Code>>url:https://claude.com/plugins/aws-startup-advisor||target="_blank"]] | [[Cursor>>url:https://open-vsx.org/extension/amazonwebservices/aws-startup-advisor||target="_blank"]] | [[Codex>>url:https://github.com/awslabs/agent-plugins||target="_blank"]] ({{code}}/plugin install migration-to-aws@agent-plugins-for-aws{{/code}})
+🔗 **Source:** [[GitHub — awslabs/startups/advisor>>url:https://github.com/awslabs/startups/tree/main/advisor||target="_blank"]]
+🔗 **Main Migrate page:** [[GCP to AWS Migration — AWS Startups Migrate>>url:https://w.amazon.com/bin/view/GCP_to_AWS_Migration%E2%80%94AWS_Startups_Migrate/]]
+
+----
+
+== Quick Start: Migrate GCP to AWS in 5 Minutes ==
+
+=== 1. Install the Plugin ===
+
+**Kiro / Cursor (VS Code-based):**
+
+{{code}}
+1. Open Extensions panel (Ctrl+Shift+X)
+2. Search "AWS Startup Advisor"
+3. Click Install
+{{/code}}
+
+**Claude Code:**
+
+{{code}}
+Visit https://claude.com/plugins/aws-startup-advisor and click "Add to Claude Code"
+{{/code}}
+
+**Codex (via agent-plugins-for-aws):**
+
+{{code}}
+/plugin install migration-to-aws@agent-plugins-for-aws
+{{/code}}
+
+=== 2. Start a Migration ===
+
+Open your terminal or chat panel and type:
+
+{{code}}
+Start a migration from GCP to AWS
+{{/code}}
+
+or more specifically:
+
+{{code}}
+Analyze my GCP infrastructure and create a migration plan to AWS
+{{/code}}
+
+**Other prompts that work:**
+
+* "Migrate my Terraform from GCP to AWS"
+* "Map my GCP services to AWS equivalents"
+* "How much would my GCP workload cost on AWS?"
+* "Migrate my OpenAI usage to Amazon Bedrock"
+* "Create a Terraform plan for migrating from GKE to EKS"
+
+=== 3. Provide Your Data ===
+
+The plugin will ask for what it needs. You can provide any combination of:
+
+|=Data Source|=How to Provide|=What It Enables
+|**Terraform / Pulumi files**|Auto-detected in workspace|Service detection, IaC generation
+|**Kubernetes manifests**|Auto-detected in workspace|Container workload mapping
+|**GCP billing export (CSV/JSON)**|Upload or point to file path|Cost comparison, right-sizing
+|**OpenAI usage CSV**|Upload or point to file path|AI cost comparison, model mapping
+|**GitHub repo**|Already connected via IDE|Code pattern analysis, SDK detection
+
+**You don't need all of these.** The plugin works with whatever you provide — more data = higher confidence recommendations.
+
+=== 4. Answer Adaptive Questions ===
+
+The plugin asks 3–8 targeted questions based on what it detects:
+
+* **Strategic:** Where do you want to deploy? What are your availability requirements? Expected traffic patterns?
+* **Service-specific:** Do your Cloud SQL databases need read replicas? Are your GKE workloads stateful?
+* **AI-specific:** What's your peak token throughput? Do you need streaming responses?
+
+=== 5. Receive Your Migration Plan ===
+
+The plugin generates:
+
+* ✅ **GCP → AWS service mapping** with rationale for each recommendation
+* ✅ **Production-ready Terraform** — run {{code}}terraform init && terraform apply{{/code}}
+* ✅ **Architecture diagrams** — before (GCP) and after (AWS)
+* ✅ **5-phase migration runbook** — with rollback procedures at each phase
+* ✅ **Cost comparison** — monthly/annual GCP vs. AWS with optimization tips
+* ✅ **Code change guidance** — specific diffs showing SDK/API changes
+* ✅ **AWS credit eligibility** — Activate, IW Migrate, or MAP qualification
+
+----
+
+== Example: Migrating a GKE + Cloud SQL + Cloud Run Stack ==
+
+Here's what a typical plugin session looks like for a startup running GKE, Cloud SQL (PostgreSQL), and Cloud Run on GCP:
+
+**Prompt:**
+
+{{code}}
+I want to migrate my GCP infrastructure to AWS. I have GKE clusters,
+Cloud SQL PostgreSQL databases, and Cloud Run services. Analyze my
+Terraform files and create a migration plan.
+{{/code}}
+
+**Plugin detects:**
+
+* 2 GKE clusters (production + staging)
+* 3 Cloud SQL PostgreSQL instances (primary + 2 read replicas)
+* 5 Cloud Run services (HTTP APIs)
+* Cloud Storage buckets for static assets
+* Pub/Sub topics for async messaging
+
+**Plugin recommends:**
+
+|=GCP|=→ AWS|=Rationale
+|GKE|Amazon EKS|Preserves K8s expertise, existing Helm charts work
+|Cloud SQL (PostgreSQL)|Amazon Aurora PostgreSQL|Auto-scaling, higher availability, compatible
+|Cloud Run|AWS App Runner|3 services (simple HTTP, no WebSocket)
+|Cloud Run|AWS Fargate|2 services (WebSocket, long-running)
+|Cloud Storage|Amazon S3|Direct equivalent
+|Pub/Sub|Amazon SNS + SQS|Fan-out + queue pattern detected
+
+**Output files generated:**
+
+{{code}}
+migration-plan/
+├── terraform/
+│   ├── landing-zone/       # VPC, IAM, KMS baseline
+│   ├── eks/                # EKS cluster + node groups
+│   ├── aurora/             # Aurora PostgreSQL cluster
+│   ├── app-runner/         # App Runner services
+│   ├── fargate/            # ECS Fargate tasks
+│   └── s3/                 # S3 buckets + policies
+├── diagrams/
+│   ├── current-gcp.png     # Current architecture
+│   └── proposed-aws.png    # Target architecture
+├── runbook.md              # 5-phase migration steps
+├── cost-comparison.md      # Side-by-side pricing
+└── code-changes.md         # SDK/API migration diffs
+{{/code}}
+
+----
+
+== Example: Migrating OpenAI to Amazon Bedrock ==
+
+**Prompt:**
+
+{{code}}
+Migrate my OpenAI API usage to Amazon Bedrock. I use GPT-4o for
+customer support and GPT-3.5-turbo for classification tasks.
+{{/code}}
+
+**Plugin recommends:**
+
+|=Current|=→ Bedrock|=Rationale
+|GPT-4o (support)|Claude Sonnet 4|Quality parity, lower cost at volume
+|GPT-3.5-turbo (classification)|Claude Haiku|3x cheaper, sufficient for classification
+
+**Code change example generated:**
+
+{{code language="python"}}
+# Before (OpenAI)
+from openai import OpenAI
+client = OpenAI()
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": prompt}]
+)
+
+# After (Bedrock)
+import boto3
+client = boto3.client("bedrock-runtime")
+response = client.converse(
+    modelId="anthropic.claude-sonnet-4-20250514-v1:0",
+    messages=[{"role": "user", "content": [{"text": prompt}]}]
+)
+{{/code}}
+
+----
+
+== Plugin vs. Web Experience — When to Use Which ==
+
+|=Scenario|=Use Plugin|=Use Web
+|Customer won't share code/bills with AWS|✅ Data stays local|❌
+|Customer wants partner-guided execution|❌|✅ Seamless handoff
+|Deep AI/agentic workload analysis|✅ Full stack detection|Basic
+|Customer already in Kiro/Claude Code/Cursor|✅ Natural workflow|Extra step
+|Customer prefers visual UI|❌|✅
+|SA doing live demo|Both work|✅ More visual
+
+----
+
+== Troubleshooting ==
+
+**Q: Plugin not detecting my Terraform files?**
+A: Ensure {{code}}.tf{{/code}} files are in your workspace root or subdirectories. The plugin scans the current workspace recursively.
+
+**Q: Can I run the plugin on a monorepo?**
+A: Yes. Open the repo root in your IDE and the plugin will scan all subdirectories for infrastructure code.
+
+**Q: Cost estimates seem off?**
+A: Provide GCP billing exports for higher accuracy. Without billing data, estimates are based on Terraform resource specifications which may not reflect actual usage.
+
+**Q: Plugin asks too many questions?**
+A: Provide more data upfront (Terraform + billing). The more the plugin can infer, the fewer questions it asks.
+
+**Q: How do I update the plugin?**
+A: Kiro/Cursor: Extensions panel → AWS Startup Advisor → Update. Claude Code: Automatic. Codex: {{code}}/plugin update migration-to-aws@agent-plugins-for-aws{{/code}}.
+
+----
+
+== Related Pages ==
+
+* [[GCP to AWS Migration — AWS Startups Migrate (main page)>>url:https://w.amazon.com/bin/view/GCP_to_AWS_Migration%E2%80%94AWS_Startups_Migrate/]] — Overview, service mapping, credits
+* [[OpenAI & Gemini to Bedrock Migration Guide>>url:https://w.amazon.com/bin/view/GCP_to_AWS_Migration%E2%80%94AWS_Startups_Migrate/AI_Migration/]] — Deep dive on AI workload migration
+* [[GitHub: awslabs/startups/advisor>>url:https://github.com/awslabs/startups/tree/main/advisor||target="_blank"]] — Plugin source code
+* [[GitHub: awslabs/agent-plugins>>url:https://github.com/awslabs/agent-plugins||target="_blank"]] — Agent plugin registry
+
+----
+
+//Last updated: June 15, 2026 | Owner: AWS Startups team (Logan Kleier, lkleier@)//
