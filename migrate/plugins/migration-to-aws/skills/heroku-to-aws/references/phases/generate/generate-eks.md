@@ -216,16 +216,17 @@ resource "helm_release" "aws_lb_controller" {
   }
 }
 
-# Security Group for EKS cluster
+# Security Group for EKS cluster API endpoint
 resource "aws_security_group" "eks_cluster" {
   name_prefix = "<cluster_name>-cluster-"
   vpc_id      = <vpc_id reference>
 
+  # Restrict API access to VPC CIDR (tighten further for production)
   ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [<vpc_cidr_block>]  # e.g. "10.0.0.0/16" from VPC design
   }
 
   egress {
@@ -289,7 +290,7 @@ spec:
             memory: "<from-eks-mapping-table>"
         env:
         - name: PORT
-          value: "8080"
+          value: "8080"  # Heroku injects $PORT dynamically; 8080 is the default here. If your app binds to a different port, update this value and the containerPort/targetPort to match.
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
