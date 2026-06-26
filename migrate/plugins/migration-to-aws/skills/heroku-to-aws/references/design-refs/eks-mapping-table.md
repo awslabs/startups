@@ -1,6 +1,6 @@
 # EKS Mapping Table
 
-**Applies to:** Heroku formations when `preferences.json → design_constraints.kubernetes` is `"eks-managed"` or `"eks-or-ecs"`.
+**Applies to:** Heroku formations when `preferences.json → design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`.
 
 Maps each Heroku dyno type to Kubernetes pod resource requests, resource limits, and a recommended EC2 node instance type for EKS managed/self-managed node groups.
 
@@ -75,4 +75,4 @@ Node types are selected to accommodate **≥4 pods** of the given dyno type on a
 
 ## Usage Context
 
-This table is consumed by the Design Engine's EKS branch. When `design_constraints.kubernetes` is `"ecs-fargate"` or absent, this table is not consulted — the existing `dyno-type-table.md` (Fargate path) is used instead.
+This table is consumed by the Design Engine's EKS branch. When `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent, this table is not consulted — the existing `dyno-type-table.md` (Fargate path) is used instead.

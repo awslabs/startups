@@ -6,7 +6,7 @@
 
 The output — `preferences.json` — is consumed directly by Design and Estimate without any further interpretation.
 
-Questions are organized into **three batches** (≤5 per batch) presented sequentially. A standalone **fast-path** mode exists for simple stacks (< 5 apps, no Private Spaces, no Kafka).
+Questions are organized into **three batches** (≤7 per batch) presented sequentially. A standalone **fast-path** mode exists for simple stacks (< 5 apps, no Private Spaces, no Kafka).
 
 ---
 
@@ -72,7 +72,7 @@ ELSE full question flow (12–15 questions)
 
 > "Your stack looks straightforward — [N] app(s), no Private Spaces, no Kafka.
 >
-> Want to use smart defaults and answer just 3–5 questions? I'll apply sensible defaults for the rest.
+> Want to use smart defaults and answer just 4–6 questions? I'll apply sensible defaults for the rest.
 >
 > **[Yes — short path]** / **[No — ask me everything]**"
 
@@ -686,7 +686,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 #### Q12 — Container Registry
 
-> Where should container images be stored for your Fargate services?
+> Where should container images be stored for your containerized workloads?
 >
 > A) Amazon ECR — fully integrated with ECS/Fargate, no cross-account config needed
 > B) Existing registry — you already have a container registry (Docker Hub, GitHub Container Registry, etc.)
