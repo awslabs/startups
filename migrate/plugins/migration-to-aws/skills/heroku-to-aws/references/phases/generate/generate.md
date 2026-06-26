@@ -48,6 +48,16 @@ This produces:
 
 If gate fails: STOP. Output: "Terraform generation failed. Check generation-warnings.json for details."
 
+**EKS Generation (conditional):**
+
+If `aws-design.json` contains any service with `aws_service: "EKS"`:
+- Load `references/phases/generate/generate-eks.md`
+- Follow its instructions to produce `terraform/eks.tf` and `kubernetes/` directory
+- Add Helm provider to `terraform/main.tf`
+- Add EKS sections to MIGRATION_GUIDE.md
+
+If NO services have `aws_service: "EKS"`, skip EKS generation entirely.
+
 ---
 
 ## Step 2: Generate Documentation and Scripts

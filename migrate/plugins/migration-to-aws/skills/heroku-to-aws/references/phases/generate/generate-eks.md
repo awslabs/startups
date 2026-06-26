@@ -13,8 +13,9 @@
 Generate EKS cluster Terraform:
 
 **Node group selection:**
-- If `design.eks_cluster.node_group_type == "managed"` → emit `aws_eks_node_group` resource (simpler, AWS-managed)
-- If `design.eks_cluster.node_group_type == "self-managed"` → emit `aws_launch_template` + `aws_autoscaling_group` + `aws_security_group` (more control, user manages AMI updates)
+- If `design.eks_cluster.node_group_type == "managed"` → emit ONLY the `aws_eks_node_group` resource block below. Do NOT emit the self-managed resources.
+- If `design.eks_cluster.node_group_type == "self-managed"` → emit ONLY the `aws_launch_template` + `aws_autoscaling_group` + `aws_security_group` blocks below. Do NOT emit `aws_eks_node_group`.
+- **Never emit both.** The design specifies exactly one node group type.
 
 ```hcl
 # EKS Cluster
@@ -314,8 +315,9 @@ metadata:
   namespace: <heroku-app-name>
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-target-type: "ip"
+    alb.ingress.kubernetes.io/target-type: "ip"
 spec:
   type: LoadBalancer
   selector:

@@ -95,6 +95,7 @@ ELSE full question flow (12–15 questions)
 - `log_retention_days`: `30`
 - `cost_optimization`: `balanced`
 - `container_registry`: `ecr`
+- `design_constraints.kubernetes`: `ecs-fargate`
 
 Users are informed: "Smart defaults applied: full cutover approach, pg_dump for database migration, routine urgency, buildpack-only containerization status. Say 'I want to change something' to override any of these."
 
@@ -126,6 +127,7 @@ Before generating questions, scan the inventory to determine which questions app
 | Q10 — DNS strategy             | Always                                                           | Never                                     |
 | Q11 — Fir intent               | At least one app has `heroku_generation == "fir"`                | No Fir-generation apps                    |
 | Q12b — Containerization status | Always                                                           | Never                                     |
+| Q12c — Kubernetes preference  | Always                                                           | Never                                     |
 | Q12 — Container registry       | Always                                                           | Never                                     |
 | Q13 — Log retention            | Always                                                           | Never                                     |
 | Q14 — Alerting preference      | Always                                                           | Never                                     |
@@ -139,7 +141,7 @@ After determining active questions, organize into **three batches** (≤5 each):
 | ----- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
 | **1** | Global / Strategic        | Q1–Q5, Q5b           | Region, compliance, availability, maintenance, environment naming, migration urgency                       |
 | **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy |
-| **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization        |
+| **3** | Operational / Conditional | Q11, Q12b, Q12c, Q12–Q15   | Fir intent, containerization status, Kubernetes preference, container registry, log retention, alerting, cost optimization        |
 
 **Batch 2 is active** if ANY of: Postgres present, Redis present, Kafka present, Private Space detected, or DNS question is needed (always true → Batch 2 always fires with at least Q10).
 
@@ -652,6 +654,36 @@ Validate: must be valid ISO 8601 date, must be in the future.
 **Default:** B → `containerization_status: "buildpack_only"`
 
 **Design impact:** Options B and C trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings — all compute targets are Fargate regardless.
+
+---
+
+#### Q12c — Kubernetes Preference
+
+> _Fires always. This question determines the compute orchestration target for all dyno formations._
+>
+> Would you prefer EKS (Kubernetes) or ECS Fargate for your containerized workloads?
+>
+> EKS gives you full Kubernetes control but requires cluster management expertise. Fargate eliminates cluster management entirely — simpler operations, no nodes to manage.
+>
+> A) EKS preferred — team has Kubernetes expertise, wants full K8s control (self-managed node groups)
+> B) EKS acceptable — team can operate K8s, prefers managed node groups to reduce burden
+> C) ECS Fargate preferred — simplest managed containers, no cluster management (default)
+> D) I don't know
+
+**Interpret:**
+
+- A → `design_constraints.kubernetes: "eks-managed"`
+- B → `design_constraints.kubernetes: "eks-or-ecs"`
+- C → `design_constraints.kubernetes: "ecs-fargate"`
+- D → `design_constraints.kubernetes: "ecs-fargate"` (same as default)
+
+**Default:** C → `design_constraints.kubernetes: "ecs-fargate"` with `source: "default"`
+
+**Design impact:** When `"eks-managed"` or `"eks-or-ecs"` is selected, ALL formation resources map to EKS Deployments with pod resource requests/limits instead of Fargate task definitions. Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected.
+
+**Fir intent precedence:** If both Q11 (Fir intent = "self_managed_eks_ecs") and Q12c (kubernetes = "ecs-fargate") are set, the global kubernetes preference takes precedence for non-Fir formations. Fir workloads remain deferred in v1 regardless of this setting.
+
+**Fast-path mode:** This question is still presented in fast-path mode — it cannot be safely defaulted without user input since it fundamentally changes the compute architecture.
 
 ---
 
