@@ -1,0 +1,32 @@
+{
+  "name": "ai-to-aws",
+  "displayName": "AI to AWS (Bedrock Migration)",
+  "version": "1.0.1",
+  "description": "End-to-end AI migration to Amazon Bedrock: assess your codebase, design the architecture, then execute \u2014 rewriting SDK calls, evaluating quality, and delivering a ready-to-merge git branch. Requires the migration-to-aws plugin (it powers the Assess phase). Runs in inline mode on Cursor (phases execute sequentially in the main session).",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "aws",
+    "bedrock",
+    "ai-migration",
+    "llm-migration",
+    "openai",
+    "openai-to-bedrock",
+    "gemini",
+    "gemini-to-bedrock",
+    "anthropic",
+    "claude",
+    "converse-api",
+    "migration",
+    "move-to-aws",
+    "switch-to-aws",
+    "code-rewrite",
+    "sdk-migration",
+    "llm-evaluation",
+    "golden-dataset",
+    "cost-estimation",
+    "cost-comparison"
+  ]
+}
