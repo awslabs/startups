@@ -17,13 +17,13 @@ Point this plugin at your Terraform files, application code, or billing data. It
 - **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration (GCR → ECR), secrets migration (GCP Secret Manager → AWS Secrets Manager), and post-migration validation
-- **Estimates costs across three tiers** — Premium, Balanced, and Optimized — using real-time AWS pricing, compared against your current GCP spend
+- **Estimates monthly costs across three tiers** — Premium, Balanced, and Optimized — using real-time AWS pricing, compared against your current GCP spend
 
 **For AI and agentic migrations:**
 
 - **Detects your entire AI stack** — not just "you use GPT-4o" but your agents, tools, orchestration patterns, memory layers, and multi-model pipelines
 - **Recommends three migration paths** for agentic workloads: retarget (keep your framework, swap models), AgentCore Harness (config-based managed agents), or Strands Agents (AWS-native multi-agent SDK)
-- **Gives honest pricing comparisons** — finds the best Bedrock option for your workload with current pricing data, including side-by-side cost comparisons against your existing OpenAI/Gemini spend
+- **Gives honest pricing comparisons** — finds the best Bedrock option for your workload with current pricing data, including side-by-side estimated monthly cost comparisons against your existing OpenAI/Gemini spend
 - **Generates runnable AI artifacts** — `harness.json`, provider adapters, deployment scripts, incremental migration scripts — tailored to your specific models, tools, and architecture
 
 ## Plugins
@@ -121,14 +121,14 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 | Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups  |
 | Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts |
 | Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script          |
-| Cost estimation            | Stale guesses     | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill    |
+| Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill    |
 | Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                      |
 
 **AI/Agentic:**
 
 | Capability               | Base LLM                          | This Plugin                                                                                                                |
 | ------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with pricing, honest stay-or-migrate recommendation per model                                  |
+| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with estimated monthly costs, honest stay-or-migrate recommendation per model                                  |
 | Agentic migration        | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges |
 | Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage          |
 | Framework gotchas        | Not covered                       | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion     |
