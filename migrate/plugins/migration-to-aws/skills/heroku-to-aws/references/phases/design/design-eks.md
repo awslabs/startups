@@ -1,8 +1,8 @@
 # EKS Design Branch
 
-**Applies when:** `preferences.json → design_constraints.kubernetes` is `"eks-managed"` or `"eks-or-ecs"`.
+**Applies when:** `preferences.json → design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`.
 
-**Skip when:** `design_constraints.kubernetes` is `"ecs-fargate"` or absent → use existing Fargate path (dyno-type-table.md).
+**Skip when:** `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent → use existing Fargate path (dyno-type-table.md).
 
 ---
 

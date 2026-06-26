@@ -32,20 +32,20 @@ _Fire when:_ Always. This is a subjective team-expertise question that determine
 Interpret:
 
 ```
-A -> design_constraints.kubernetes: "eks-managed" — EKS with self-managed node groups
-B -> design_constraints.kubernetes: "eks-or-ecs" — EKS with managed node groups  
-C -> design_constraints.kubernetes: "ecs-fargate" — ECS Fargate (default)
-D -> design_constraints.kubernetes: "ecs-fargate" (same as default)
+A -> design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }
+B -> design_constraints.kubernetes: { "value": "eks-or-ecs", "chosen_by": "user" }
+C -> design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }
+D -> design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }
 ```
 
-**Default:** C → `design_constraints.kubernetes: "ecs-fargate"` with `source: "default"`
+**Default:** C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
 
 **preferences.json output:**
 
 ```json
 {
   "design_constraints": {
-    "kubernetes": "eks-managed | eks-or-ecs | ecs-fargate"
+    "kubernetes": { "value": "eks-managed | eks-or-ecs | ecs-fargate", "chosen_by": "user | default" }
   }
 }
 ```

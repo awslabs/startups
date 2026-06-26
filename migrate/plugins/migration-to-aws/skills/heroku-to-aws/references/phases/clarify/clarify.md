@@ -78,7 +78,7 @@ ELSE full question flow (12–15 questions)
 
 **If user chooses Yes:**
 
-1. Ask only: **Q1** (region), **Q2** (compliance), **Q3** (availability), **Q4** (maintenance window) — and optionally **Q11** (Fir intent, only if Fir detected).
+1. Ask only: **Q1** (region), **Q2** (compliance), **Q3** (availability), **Q4** (maintenance window), **Q12c** (Kubernetes preference) — and optionally **Q11** (Fir intent, only if Fir detected).
 2. Apply documented defaults for ALL other questions. Record each in `metadata.questions_defaulted`.
 3. Write `preferences.json` with `metadata.clarify_mode: "fast_path"`. Skip Steps 2–3 batch loop.
 4. Proceed to Step 4 (Validation Checklist).
@@ -95,7 +95,6 @@ ELSE full question flow (12–15 questions)
 - `log_retention_days`: `30`
 - `cost_optimization`: `balanced`
 - `container_registry`: `ecr`
-- `design_constraints.kubernetes`: `ecs-fargate`
 
 Users are informed: "Smart defaults applied: full cutover approach, pg_dump for database migration, routine urgency, buildpack-only containerization status. Say 'I want to change something' to override any of these."
 
@@ -672,12 +671,12 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 **Interpret:**
 
-- A → `design_constraints.kubernetes: "eks-managed"`
-- B → `design_constraints.kubernetes: "eks-or-ecs"`
-- C → `design_constraints.kubernetes: "ecs-fargate"`
-- D → `design_constraints.kubernetes: "ecs-fargate"` (same as default)
+- A → `design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }`
+- B → `design_constraints.kubernetes: { "value": "eks-or-ecs", "chosen_by": "user" }`
+- C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }`
+- D → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
 
-**Default:** C → `design_constraints.kubernetes: "ecs-fargate"` with `source: "default"`
+**Default:** C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
 
 **Design impact:** When `"eks-managed"` or `"eks-or-ecs"` is selected, ALL formation resources map to EKS Deployments with pod resource requests/limits instead of Fargate task definitions. Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected.
 
@@ -815,6 +814,9 @@ Write `$MIGRATION_DIR/preferences.json`:
     "alerting": "<Q14 value>",
     "cost_optimization": "<Q15 value>"
   },
+  "design_constraints": {
+    "kubernetes": { "value": "<Q12c value>", "chosen_by": "user|default" }
+  },
   "defaults_applied": ["<list of defaulted question IDs>"],
   "sources": {
     "Q1": "user|default",
@@ -857,6 +859,7 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 | Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                   |
 | Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                 |
 | Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"` |
+| Q12c — Kubernetes pref    | C (Fargate)                             | `design_constraints.kubernetes.value: "ecs-fargate"` |
 | Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                 |
 | Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                    |
 | Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                    |
@@ -882,6 +885,8 @@ Before handing off to Design:
 - [ ] If peering detected and VPC ID needed → `network.existing_vpc_id` is populated
 - [ ] If Fir apps detected → `global.fir_intent` is populated (not null)
 - [ ] `operational.containerization_status` is populated
+- [ ] `design_constraints.kubernetes.value` is one of: `"eks-managed"`, `"eks-or-ecs"`, `"ecs-fargate"`
+- [ ] `design_constraints.kubernetes.chosen_by` is `"user"` or `"default"`
 - [ ] All entries in `sources` have a value of `"user"` or `"default"`
 - [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`
 - [ ] Only keys with non-null values are present
