@@ -418,3 +418,59 @@ def test_stub_fixture_fails() -> None:
     assert "Section 0" in out or "numbered" in out.lower()
     assert "exec-security-teaser" in out
     assert "verdict" in out.lower()
+
+
+# --- exec-flow reader vocabulary (no artifact filenames / resource IDs up top) ---
+
+
+def test_exec_vocabulary_rejects_json_filename(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="exec-costs"><h2>Costs</h2></section>',
+        '<section id="exec-costs"><h2>Costs</h2>'
+        "<p>See <code>estimation-infra.json</code> for the breakdown.</p></section>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "exec vocabulary" in out.lower()
+    assert "estimation-infra.json" in out
+
+
+def test_exec_vocabulary_rejects_terraform_resource(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="exec-services"><h2>Services</h2>',
+        '<section id="exec-services"><h2>Services</h2>'
+        "<p>Deployed via <code>aws_guardduty_detector.baseline</code>.</p>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "exec vocabulary" in out.lower()
+    assert "aws_guardduty_detector.baseline" in out
+
+
+def test_exec_vocabulary_allows_filename_in_appendix(tmp_path: Path) -> None:
+    """Appendices may name artifacts/resources — only the exec flow is gated."""
+    html = MINIMAL_PASS.replace(
+        "<tr><td>GuardDuty $13</td></tr>",
+        "<tr><td>GuardDuty $13</td></tr>"
+        "<tr><td>Source: estimation-infra.json (aws_guardduty_detector.baseline)</td></tr>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 0, out
+
+
+def test_exec_vocabulary_can_be_disabled(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="exec-costs"><h2>Costs</h2></section>',
+        '<section id="exec-costs"><h2>Costs</h2>'
+        "<p>See <code>estimation-infra.json</code>.</p></section>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False, readability=False)
+    assert code == 0, out

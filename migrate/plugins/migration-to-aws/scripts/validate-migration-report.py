@@ -78,6 +78,24 @@ READABILITY_PATTERNS = [
     ),
 ]
 
+# Executive-flow sections must speak the reader's language, not the system's.
+# Artifact filenames and Terraform resource IDs are internal build vocabulary —
+# they belong in the technical appendices, not the executive summary. (Enforced
+# unless --no-readability.)
+EXEC_SECTION_IDS = (
+    "decision-summary",
+    "exec-tco",
+    "exec-services",
+    "exec-costs",
+    "exec-architecture",
+    "exec-security-teaser",
+    "exec-timeline",
+    "exec-risks",
+)
+
+ARTIFACT_FILENAME_RE = re.compile(r"\b[a-z0-9][a-z0-9_-]*\.json\b", re.IGNORECASE)
+TERRAFORM_RESOURCE_RE = re.compile(r"\baws_[a-z0-9_]+\.[a-z0-9_]+\b")
+
 APPENDIX_STUB_PATTERNS = [
     re.compile(
         r'<section[^>]*id="appendix-costs"[^>]*>.*?Full artifacts:\s*<code>estimation-infra\.json</code>',
@@ -259,6 +277,33 @@ def _validate_readability(html: str) -> list[str]:
     return errors
 
 
+def _validate_exec_vocabulary(html: str) -> list[str]:
+    """Executive-flow sections must name what the reader controls, not how the
+    system is built. Artifact filenames (*.json) and Terraform resource IDs
+    (aws_<resource>.<name>) are internal vocabulary and belong in the technical
+    appendices. Appendix sections are exempt by design."""
+    errors: list[str] = []
+    for sid in EXEC_SECTION_IDS:
+        section = _section_html(html, sid)
+        if not section:
+            continue
+        filenames = sorted(set(m.lower() for m in ARTIFACT_FILENAME_RE.findall(section)))
+        resources = sorted(set(TERRAFORM_RESOURCE_RE.findall(section)))
+        if filenames:
+            errors.append(
+                f'exec vocabulary: <section id="{sid}"> exposes artifact filename(s) '
+                f"{filenames} — name what the reader controls in the executive flow; "
+                "keep artifact filenames in the technical appendices"
+            )
+        if resources:
+            errors.append(
+                f'exec vocabulary: <section id="{sid}"> exposes Terraform resource ID(s) '
+                f"{resources} — move resource names to the appendix; the executive flow "
+                "names what the reader controls"
+            )
+    return errors
+
+
 def _has_security_baseline(estimation_infra: dict | None) -> bool:
     if not estimation_infra:
         return False
@@ -349,6 +394,7 @@ def validate_report(
 
     if check_readability:
         errors.extend(_validate_readability(html))
+        errors.extend(_validate_exec_vocabulary(html))
 
     for section_id, min_depth in MIN_CONTENT_DEPTH.items():
         section = _section_html(html, section_id)

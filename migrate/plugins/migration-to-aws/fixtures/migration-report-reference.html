@@ -193,7 +193,7 @@
     <!-- TCO -->
     <section id="exec-tco">
       <h2>Total Cost of Ownership</h2>
-      <p>Combined view merging <code>estimation-infra.json</code> and <code>estimation-ai.json</code>. BigQuery excluded from both sides.</p>
+      <p>Combined view of your infrastructure and AI estimated monthly costs. BigQuery excluded from both sides.</p>
 
       <table>
         <caption>Combined estimated monthly costs, GCP vs AWS (BigQuery excluded).</caption>
@@ -237,7 +237,7 @@
           </tr>
         </tbody>
       </table>
-      <p><em>* Optimized AI assumes Nova Lite for text + Nova Canvas for images after A/B validation (<code>estimation-ai.json</code> &rarr; <code>optimized_projection</code>).</em></p>
+      <p><em>* Optimized AI assumes Nova Lite for text + Nova Canvas for images after A/B validation (see the optimized AI projection in Appendix D).</em></p>
 
       <h3>GCP infrastructure breakdown (baseline)</h3>
       <table>
@@ -367,7 +367,7 @@
       <p>Full control-by-control detail, GCP equivalents, and the GCP&rarr;AWS gap analysis are in
          <a href="#appendix-security">Appendix E</a> and <a href="#appendix-security-gap">Appendix F</a>.</p>
       <div class="callout callout-info">
-        <strong>Compliance add-on (not applicable):</strong> No SOC 2, PCI, HIPAA, or FedRAMP declared in <code>preferences.json</code>. If compliance is required later, add AWS Config + Security Hub (~$3–$25/mo additional per plugin estimates).
+        <strong>Compliance add-on (not applicable):</strong> No SOC 2, PCI, HIPAA, or FedRAMP declared in your migration preferences. If compliance is required later, add AWS Config + Security Hub (~$3–$25/mo additional per plugin estimates).
       </div>
     </section>
 

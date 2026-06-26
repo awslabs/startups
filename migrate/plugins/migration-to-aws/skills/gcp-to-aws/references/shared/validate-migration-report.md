@@ -46,12 +46,13 @@ This validator is a **structural + readability completeness gate**. It does **no
 | 7 | No placeholders | No `[placeholder]` or `TODO` in report body |
 | 8 | Combined TCO | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">` |
 | 9 | Readability — no scoring trace | No literal `Rubric:` in the body. Render per-cluster rationale in a `<details>` "Why this mapping?" block instead |
-| 10 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure |
+| 10 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure. **Genuine sequences keep their numbering** — cluster order, phased weeks, migration phases, and rollback steps stay ordered; only *decorative* section labels are banned |
 | 11 | Security teaser present | If `security_baseline` is in the estimate: exactly the compact `exec-security-teaser` carries it in the exec flow (full table stays in `appendix-security`) |
 | 12 | Verdict banner | If `estimation-infra.json` has a `recommendation` block: `decision-summary` contains a `class="verdict"` element or a "Recommendation:" sentence — not only badges |
 | 13 | No fixture bleed | With `--migration-dir`: the reference canary migration ID does not appear in a real run, and the report's migration ID matches the run folder |
+| 14 | Readability — reader vocabulary | No artifact filename (`*.json`) or Terraform resource ID (`aws_<resource>.<name>`) inside any `exec-*` / `decision-summary` section. The executive flow names what the reader controls; those identifiers live only in the appendices |
 
-Checks 9–10 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Disable with `--no-readability` only for non-customer fixtures. Check 13 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips.
+Checks 9, 10, and 14 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Check 14 scopes to executive-flow sections only — appendices may carry artifact filenames and resource IDs by design. Disable checks 9, 10, and 14 with `--no-readability` only for non-customer fixtures. Check 13 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips.
 
 ---
 
