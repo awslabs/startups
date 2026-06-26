@@ -418,7 +418,7 @@ Add these sections after Prerequisites, before Data Migration:
    ```
 ```
 
-**Omit all EKS sections** when the design contains only Fargate services.
+**Omit all EKS sections** when the design contains only Fargate-only compute (no EKS services).
 
 ### Post-Deployment Enhancements (recommended but not generated)
 
