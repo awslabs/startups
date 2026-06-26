@@ -120,8 +120,8 @@
       </p>
 
       <div class="verdict">
-        <strong>Recommendation:</strong> Migrate, phased over 10 weeks — about $503/month
-        (-35%) combined infrastructure + AI savings, with BigQuery analytics deferred to a
+        <strong>Recommendation:</strong> Migrate, phased over 10 weeks — estimated monthly savings of ~$503/month
+        (-35%) combined infrastructure + AI, with BigQuery analytics deferred to a
         specialist engagement. Eligible for up to $5K AWS Activate credits.
       </div>
 
@@ -129,12 +129,12 @@
         <div class="metric">
           <span>Infra (Balanced vs GCP)</span>
           <strong class="savings">-32%</strong>
-          <small>$112/mo AWS vs $165/mo GCP infra</small>
+          <small>Est. $112/mo AWS vs $165/mo GCP infra</small>
         </div>
         <div class="metric">
           <span>Combined TCO (Balanced)</span>
           <strong class="savings">-35%</strong>
-          <small>$912/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
+          <small>Est. $912/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
         </div>
         <div class="metric">
           <span>Timeline</span>
@@ -149,7 +149,7 @@
         <div class="metric">
           <span>AI projection</span>
           <strong class="savings">-36%</strong>
-          <small>~$800/mo Bedrock vs $1,250/mo GCP AI</small>
+          <small>Est. ~$800/mo Bedrock vs $1,250/mo GCP AI</small>
         </div>
         <div class="metric">
           <span>Activate credits</span>
@@ -169,7 +169,7 @@
       <h3>Migrate if</h3>
       <ul class="compact">
         <li>You want unified AWS operations for containers, database, and Bedrock AI</li>
-        <li>Combined TCO savings (~$503/month) and AWS Activate credits offset migration effort</li>
+        <li>Estimated combined TCO savings (~$503/month) and AWS Activate credits offset migration effort</li>
         <li>You can engage AWS account team for BigQuery analytics in parallel</li>
       </ul>
 
@@ -196,13 +196,13 @@
       <p>Combined view merging <code>estimation-infra.json</code> and <code>estimation-ai.json</code>. BigQuery excluded from both sides.</p>
 
       <table>
-        <caption>Combined monthly cost of ownership, GCP vs AWS (BigQuery excluded).</caption>
+        <caption>Combined estimated monthly costs, GCP vs AWS (BigQuery excluded).</caption>
         <thead>
           <tr>
             <th scope="col">Category</th>
             <th scope="col">GCP (current est.)</th>
-            <th scope="col">AWS Balanced</th>
-            <th scope="col">AWS Optimized</th>
+            <th scope="col">AWS Balanced (est.)</th>
+            <th scope="col">AWS Optimized (est.)</th>
             <th scope="col">Monthly &Delta; (Balanced)</th>
           </tr>
         </thead>
@@ -274,11 +274,11 @@
          <code>terraform/</code> implements the <strong>Balanced</strong> tier. The full
          per-service breakdown is in Appendix B.</p>
       <table>
-        <caption>AWS infrastructure pricing tiers vs current GCP ($165/mo). Annual difference included.</caption>
+        <caption>Estimated monthly AWS infrastructure costs vs current GCP ($165/mo). Annual difference included.</caption>
         <thead>
           <tr>
             <th scope="col">Tier</th>
-            <th scope="col">Monthly AWS</th>
+            <th scope="col">Est. Monthly AWS</th>
             <th scope="col">vs GCP ($165/mo)</th>
             <th scope="col">Annual difference</th>
           </tr>
@@ -562,12 +562,12 @@
 
       <h3>Per-service breakdown (AWS Balanced tier)</h3>
       <table>
-        <caption>AWS Balanced-tier monthly cost by service, with calculation notes.</caption>
+        <caption>Estimated monthly AWS cost by service (Balanced tier), with calculation notes.</caption>
         <thead>
           <tr>
             <th scope="col">Category</th>
             <th scope="col">AWS Service</th>
-            <th scope="col">Monthly (mid)</th>
+            <th scope="col">Est. Monthly</th>
             <th scope="col">Calculation / notes</th>
           </tr>
         </thead>
@@ -627,7 +627,7 @@
 
       <h3>Optimization opportunities</h3>
       <table>
-        <caption>Cost optimizations available post-migration, infra and AI combined.</caption>
+        <caption>Estimated cost savings available post-migration, infra and AI combined.</caption>
         <thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
         <tbody>
           <tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td><td>1-year no-upfront</td><td>Low (post-migration)</td></tr>

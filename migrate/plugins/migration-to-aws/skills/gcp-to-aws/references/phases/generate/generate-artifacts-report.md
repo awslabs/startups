@@ -148,14 +148,15 @@ Source: `aws-design.json`, `generation-infra.json`
 
 **Section 3 — Cost Comparison:**
 
-- Side-by-side display: Current GCP Monthly vs Projected AWS Monthly (**Balanced** tier — the default scenario for comparing to GCP)
+- Side-by-side display: Current GCP Monthly vs Estimated AWS Monthly (**Balanced** tier — the default scenario for comparing to GCP)
 - Percent change (savings or increase)
-- **How to read cost tiers (callout box — required when infra estimation with three tiers exists):** The three AWS monthly figures are **pricing scenarios** for the **same** mapped architecture (same services in `aws-design.json`), not three different generated Terraform stacks. **Order = highest → middle → lowest** monthly estimate in this model. Use **Balanced** as the **primary** row vs GCP; **Premium** and **Optimized** are **bounds** (higher HA / newer skew vs cost-optimization skew). When `terraform/` is present, it implements **one** infrastructure baseline aligned with the **Balanced** cost scenario (see `terraform/README.md` and `migration_summary` output).
+- **Cost labeling rule:** All dollar figures in cost tables and metrics MUST be labeled as estimated monthly costs. Use column headers like "Est. Monthly AWS" or "Estimated Monthly" — never present figures as exact amounts.
+- **How to read cost tiers (callout box — required when infra estimation with three tiers exists):** The three AWS monthly figures are **estimated monthly costs** for the **same** mapped architecture (same services in `aws-design.json`), not three different generated Terraform stacks. **Order = highest → middle → lowest** monthly estimate in this model. Use **Balanced** as the **primary** row vs GCP; **Premium** and **Optimized** are **bounds** (higher HA / newer skew vs cost-optimization skew). When `terraform/` is present, it implements **one** infrastructure baseline aligned with the **Balanced** cost scenario (see `terraform/README.md` and `migration_summary` output).
 - If 3 tiers available: show **Premium**, **Balanced**, and **Optimized** with **short subtitles** (second line or subtext under each label):
   - **Premium** — _Highest resilience / highest monthly estimate in this model_
   - **Balanced** — _Default scenario; compare GCP to this row first_
   - **Optimized** — _Lower monthly estimate; reservations, Spot, or storage trade-offs assumed_
-- **Footnote (required):** _Only one Terraform configuration is generated (Balanced-aligned baseline). Premium and Optimized are what-if cost models in `estimation-infra.json` — adjust IaC yourself if you want those postures in production._
+- **Footnote (required):** _All figures are estimated monthly costs based on AWS pricing data at time of analysis. Only one Terraform configuration is generated (Balanced-aligned baseline). Premium and Optimized are what-if cost models in `estimation-infra.json` — adjust IaC yourself if you want those postures in production._
 - **Only include "GCP data transfer egress (est.)" when the infra estimation artifact has `migration_cost_considerations.billing_data_available === true`.** Never present human one-time migration costs. If `false` or only non-infra estimates exist, footnote: "GCP data transfer egress estimates require billing data and the infra estimate path."
 - If observability entry exists in `projected_costs.breakdown` (tolerant lookup: array where `service` contains "Observability" OR object where key contains `observability` or `cloudwatch`) AND the entry's `note` field mentions GCP free tiers:
 

@@ -572,13 +572,15 @@ Before returning control to `estimate.md`, require:
 After writing `estimation-infra.json`, present a concise summary to the user:
 
 1. **Pricing source and accuracy**: State whether prices came from cache or live API, and the accuracy range (±5-10% for infrastructure from cache/live, ±15-25% if cache is stale). Example: "Estimates based on cached AWS pricing (2026-03-07), accuracy ±5-10%."
-2. GCP baseline vs AWS projected (balanced tier) — one-line comparison
-3. Three-tier table: **Premium**, **Balanced**, **Optimized** with monthly totals. Under or beside each label, use the **short subtitles**: Premium — _Highest resilience / highest monthly estimate in this model_; Balanced — _Default scenario; compare GCP to this first_; Optimized — _Lower monthly estimate; reservations / Spot / storage trade-offs assumed_. Add a one-line **How to read**: three figures are **pricing scenarios** for the same architecture (high → mid → low); **not** three Terraform stacks. When Terraform is generated later, it aligns with **Balanced**.
-4. Per-service cost breakdown (balanced tier, 1 line per service)
+2. GCP baseline vs estimated AWS monthly cost (balanced tier) — one-line comparison
+3. Three-tier table: **Premium**, **Balanced**, **Optimized** with estimated monthly costs. Under or beside each label, use the **short subtitles**: Premium — _Highest resilience / highest monthly estimate in this model_; Balanced — _Default scenario; compare GCP to this first_; Optimized — _Lower monthly estimate; reservations / Spot / storage trade-offs assumed_. Add a one-line **How to read**: three figures are **estimated monthly costs** for the same architecture (high → mid → low); **not** three Terraform stacks. When Terraform is generated later, it aligns with **Balanced**.
+4. Per-service estimated monthly cost breakdown (balanced tier, 1 line per service)
 5. **If billing data available**: Estimated GCP data transfer egress fees. **If billing data NOT available**: "Data transfer cost estimates require GCP billing data."
-6. Monthly and annual savings (or increase) vs GCP per tier
-7. Top 2-3 optimization opportunities with savings amounts
+6. Estimated monthly and annual savings (or increase) vs GCP per tier
+7. Top 2-3 optimization opportunities with estimated savings amounts
 8. **Recommendation:** `recommendation.path_label` with one-line ROI justification when present
+
+**Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact. This applies to chat output, report tables, and summary lines.
 
 Keep it under 25 lines. The user can ask for details or re-read `estimation-infra.json` at any time.
 
