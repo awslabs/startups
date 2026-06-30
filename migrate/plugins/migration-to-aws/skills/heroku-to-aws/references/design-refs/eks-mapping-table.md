@@ -6,27 +6,14 @@ Maps each Heroku dyno type to Kubernetes pod resource requests, resource limits,
 
 ## Pod Resource Mapping
 
-| Heroku Dyno Type  | Pod Request CPU | Pod Request Memory | Pod Limit CPU | Pod Limit Memory | Recommended Node Type |
-| ----------------- | --------------- | ------------------ | ------------- | ---------------- | --------------------- |
-| standard-1x       | 250m            | 512Mi              | 500m          | 512Mi            | m6i.large             |
-| standard-2x       | 500m            | 1024Mi             | 1000m         | 1024Mi           | m6i.large             |
-| performance-m     | 1000m           | 2560Mi             | 2000m         | 2560Mi           | m6i.xlarge            |
-| performance-l     | 4000m           | 14336Mi            | 8000m         | 14336Mi          | m6i.4xlarge           |
-| performance-l-ram | 4000m           | 30720Mi            | 8000m         | 30720Mi          | r6i.4xlarge           |
-| performance-xl    | 8000m           | 63488Mi            | 16000m        | 63488Mi          | m6i.8xlarge           |
-| performance-2xl   | 16000m          | 129024Mi           | 32000m        | 129024Mi         | m6i.16xlarge          |
-| private-s         | 500m            | 1024Mi             | 1000m         | 1024Mi           | m6i.large             |
-| private-m         | 1000m           | 2560Mi             | 2000m         | 2560Mi           | m6i.xlarge            |
-| private-l         | 4000m           | 14336Mi            | 8000m         | 14336Mi          | m6i.4xlarge           |
-| private-l-ram     | 4000m           | 30720Mi            | 8000m         | 30720Mi          | r6i.4xlarge           |
-| private-xl        | 8000m           | 63488Mi            | 16000m        | 63488Mi          | m6i.8xlarge           |
-| private-2xl       | 16000m          | 129024Mi           | 32000m        | 129024Mi         | m6i.16xlarge          |
-| shield-s          | 500m            | 1024Mi             | 1000m         | 1024Mi           | m6i.large             |
-| shield-m          | 1000m           | 2560Mi             | 2000m         | 2560Mi           | m6i.xlarge            |
-| shield-l          | 4000m           | 14336Mi            | 8000m         | 14336Mi          | m6i.4xlarge           |
-| shield-l-ram      | 4000m           | 30720Mi            | 8000m         | 30720Mi          | r6i.4xlarge           |
-| shield-xl         | 8000m           | 63488Mi            | 16000m        | 63488Mi          | m6i.8xlarge           |
-| shield-2xl        | 16000m          | 129024Mi           | 32000m        | 129024Mi         | m6i.16xlarge          |
+> **Data:** [`knowledge/design/eks-pod-sizing.json`](../../knowledge/design/eks-pod-sizing.json)
+>
+> The dyno-type → EKS pod sizing rows are maintained as structured data in that
+> JSON file. Read the `rows` map keyed by Heroku dyno type; each row carries
+> `req_cpu` / `req_mem` (pod resource requests), `lim_cpu` / `lim_mem` (limits),
+> and `node_type` (recommended EC2 node instance type). The file also holds
+> `node_size_rank` (for largest-pod-class-wins node selection), the
+> `system_overhead_per_node` constants, and the EKS `cluster` constants.
 
 ## Design Rationale
 

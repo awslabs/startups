@@ -18,19 +18,20 @@ When the Kubernetes preference indicates EKS:
    - If process type is `web` → include Kubernetes Service (type: LoadBalancer) with AWS LB Controller annotations
    - If process type is NOT `web` → Deployment only (no Service)
 
-2. **Produce single EKS cluster entry:**
-   - `cluster_name`: `"heroku-migration-cluster"`
-   - `kubernetes_version`: Use the latest EKS-supported stable version at generation time (query via `aws eks describe-addon-versions` or default to current stable: `"1.31"`). Do not hardcode — EKS deprecates older versions on a rolling basis.
-   - Node group type based on preference:
-     - `"eks-managed"` → `"self-managed"` node groups (more control)
-     - `"eks-or-ecs"` → `"managed"` node groups (less operational burden)
-   - Addons: `["vpc-cni", "coredns", "kube-proxy", "aws-load-balancer-controller"]`
+2. **Produce single EKS cluster entry** (constants from `design-refs/eks-mapping-table.md` → its `cluster` JSON block):
+   - `cluster_name`: from `cluster.cluster_name` (`"heroku-migration-cluster"`)
+   - `kubernetes_version`: query the latest EKS-supported stable version at generation time (`aws eks describe-addon-versions`); if the query is unavailable, fall back to `cluster.kubernetes_version_fallback`. Do not hardcode — EKS deprecates older versions on a rolling basis.
+   - Node group type: from `cluster.node_group_type_by_pref` keyed on the preference (`eks-managed` → `self-managed`, more control; `eks-or-ecs` → `managed`, less operational burden)
+   - Addons: from `cluster.addons`
 
 3. **Node group sizing:**
-   - Determine the largest dyno type present across all formations
-   - Select instance type using **largest-pod-class-wins** rule: use the recommended node type for that largest dyno type. All pods from smaller classes fit on those nodes with room to spare.
-   - Calculate node count: min_size = 2 (HA), max_size = ceil(total_pods / 4) + 2, desired_size = ceil(total_pods / 4)
-   - System overhead per node: 500m CPU, 512Mi memory
+   - Determine the largest dyno type present across all formations.
+   - Select instance type using the **largest-pod-class-wins** rule: use the recommended `node_type` for the largest dyno present, ranked by the JSON's `node_size_rank` (higher = larger). On a rank tie between `m6i.4xlarge` and `r6i.4xlarge`, prefer `m6i.4xlarge` unless a RAM-optimized dyno (`*-l-ram`) is the only dyno at that rank, in which case use `r6i.4xlarge`. All pods from smaller classes fit on those nodes with room to spare.
+   - Calculate node count:
+     - `min_size` = 2 (HA)
+     - `desired_size` = `max(min_size, ceil(total_pods / 4))` — clamp UP to `min_size`; AWS rejects `desired_size < min_size`, which would otherwise happen for small workloads (`total_pods <= 4`).
+     - `max_size` = `desired_size + 2`
+   - System overhead per node: from the JSON's `system_overhead_per_node` (500m CPU, 512Mi memory).
 
 4. **Non-formation resources unchanged:**
    - Postgres → RDS/Aurora (existing path)
@@ -57,7 +58,7 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
   "confidence": "deterministic",
   "aws_config": {
     "region": "<target-region>",
-    "cluster_name": "heroku-migration-cluster",
+    "cluster_name": "<cluster.cluster_name>",
     "namespace": "<heroku-app>",
     "deployment_name": "<process-type>",
     "replicas": <quantity>,
@@ -78,9 +79,9 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
 ```json
 {
   "eks_cluster": {
-    "cluster_name": "heroku-migration-cluster",
-    "kubernetes_version": "<latest EKS-supported stable, e.g. 1.31>",
-    "node_group_type": "<managed|self-managed>",
+    "cluster_name": "<cluster.cluster_name>",
+    "kubernetes_version": "<queried latest stable, else cluster.kubernetes_version_fallback>",
+    "node_group_type": "<managed|self-managed, from cluster.node_group_type_by_pref>",
     "node_groups": [
       {
         "name": "general",
@@ -90,7 +91,7 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
         "desired_size": <calculated>
       }
     ],
-    "addons": ["vpc-cni", "coredns", "kube-proxy", "aws-load-balancer-controller"]
+    "addons": "<cluster.addons>"
   }
 }
 ```
