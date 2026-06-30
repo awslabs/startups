@@ -1,6 +1,6 @@
 # aws-dev-toolkit
 
-A Claude Code plugin for building, migrating, and performing architecture reviews on AWS. Ships 35 skills, 11 sub-agents, and 3 MCP servers.
+A Claude Code plugin for building, migrating, and performing architecture reviews on AWS. Ships 36 skills, 11 sub-agents, and 3 MCP servers.
 
 ## Installation
 
@@ -45,7 +45,7 @@ Some skills are invoked explicitly via slash commands:
 /aws-dev-toolkit:strands-agent "Document processing pipeline"
 ```
 
-## Skills (35)
+## Skills (36)
 
 | Skill                                | Trigger      | Description                                                                          |
 | ------------------------------------ | ------------ | ------------------------------------------------------------------------------------ |
@@ -77,6 +77,7 @@ Some skills are invoked explicitly via slash commands:
 | `cloudfront`                         | Auto         | CloudFront — caching, origins, Lambda@Edge, Functions                                |
 | `iam`                                | Auto         | IAM — policies, roles, permission boundaries, least-privilege                        |
 | `networking`                         | Auto         | VPC, subnets, security groups, Transit Gateway, VPC endpoints                        |
+| `efa-networking`                     | Auto         | Diagnose EFA/NCCL issues on GPU instances — TCP fallback, missing devices, low BW    |
 | `messaging`                          | Auto         | SQS, SNS, EventBridge — queues, fan-out, event routing                               |
 | `observability`                      | Auto         | CloudWatch, X-Ray, OpenTelemetry — dashboards, alarms, tracing                       |
 | `step-functions`                     | Auto         | Step Functions — state machines, error handling, service integrations                |
