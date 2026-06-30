@@ -27,10 +27,12 @@ Calculate projected monthly AWS costs for the designed Heroku-to-AWS architectur
 
 ### Step 0a: Load Pricing Cache
 
-Read `shared/pricing-cache.md`. Check the `Last updated` date in the header:
+Read `../../../../shared/pricing/aws-infra-pricing.json` (shared AWS infrastructure pricing data). Check the `_meta.last_updated` date:
 
-- If ≤ 30 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the cache. Set `pricing_source: "cached"`.
-- If > 30 days old: Cache is stale for AI model prices. Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable. Attempt MCP (Step 0b) for services not in cache; use stale cache as fallback with `pricing_source: "cached_stale"`.
+- If ≤ 30 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the file. Set `pricing_source: "cached"`.
+- If > 30 days old: Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable. Attempt MCP (Step 0b) for services not in the file; use the cached rates as fallback with `pricing_source: "cached_stale"`.
+
+Each service object carries its rates and (where relevant) a `multi_az_handling` key. Look up the rates from there — do not hardcode them. Apply the cost formula from the Per-Service Calculation Formulas table below.
 
 ### Step 0b: MCP Availability Check (only if cache stale or service not listed)
 
@@ -52,14 +54,14 @@ Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts, 10-s
 
 ### Pricing Hierarchy (per-service lookup order)
 
-| Priority | Source                    | Condition                                     | `pricing_source` value |
-| -------- | ------------------------- | --------------------------------------------- | ---------------------- |
-| 1        | `shared/pricing-cache.md` | Service found in cache                        | `"cached"`             |
-| 2        | MCP API (`get_pricing`)   | Service NOT in cache, MCP available           | `"live"`               |
-| 3        | Cache after MCP failure   | MCP attempted but failed, service IS in cache | `"cached_fallback"`    |
-| 4        | Unavailable               | NOT in cache AND MCP failed                   | `"unavailable"`        |
+| Priority | Source                                  | Condition                                    | `pricing_source` value |
+| -------- | --------------------------------------- | -------------------------------------------- | ---------------------- |
+| 1        | `shared/pricing/aws-infra-pricing.json` | Service found in the pricing file            | `"cached"`             |
+| 2        | MCP API (`get_pricing`)                 | Service NOT in the file, MCP available       | `"live"`               |
+| 3        | Pricing file after MCP failure          | MCP attempted but failed, service IS in file | `"cached_fallback"`    |
+| 4        | Unavailable                             | NOT in file AND MCP failed                   | `"unavailable"`        |
 
-For typical Heroku migrations (Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `pricing-cache.md`. Zero MCP calls needed.
+For typical Heroku migrations (Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `aws-infra-pricing.json`. Zero MCP calls needed.
 
 ---
 
@@ -113,31 +115,33 @@ When billing data or pricing cache is available, present the Heroku baseline as:
 
 ## Part 2: Calculate Projected AWS Costs
 
-For each service in `aws-design.json → services[]`, calculate monthly cost using rates from `pricing-cache.md`. Track `pricing_source` per service.
+For each service in `aws-design.json → services[]`, calculate monthly cost by applying the formula from the Per-Service Calculation Formulas table below, looking up its rates from `shared/pricing/aws-infra-pricing.json`. Track `pricing_source` per service. (`hours_per_month` = 730, from `_meta`.)
 
 ### Per-Service Calculation Formulas
 
-| AWS Service               | Formula                                                                                              | Key inputs from `aws_config`                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Fargate**               | (task_cpu/1024 × $0.04048 + task_memory/1024 × $0.004445) × 730 hrs × desired_count                  | `task_cpu`, `task_memory`, `desired_count`                                    |
-| **EKS (cluster + nodes)** | $0.10/hr control plane ($73/month) + node_instance_rate × 730 hrs × node_count + ALB per web service | `eks_cluster.node_groups[].instance_types`, `desired_size`, web service count |
-| **ALB**                   | $16.43/month fixed + LCU estimate ($0.008/LCU-hr × 730)                                              | Per web service with `load_balancer: true`                                    |
-| **RDS PostgreSQL**        | instance_rate × 730 hrs + storage_gb × $0.23/GB-month                                                | `instance_class`, `storage_gb`, `multi_az`                                    |
-| **Aurora PostgreSQL**     | instance_rate × 730 hrs + storage_gb × $0.10/GB-month + I/O estimate                                 | `instance_class`, `storage_gb`                                                |
-| **ElastiCache Redis**     | node_rate × 730 hrs (× 2 if Multi-AZ)                                                                | `node_type`, `multi_az`                                                       |
-| **MSK**                   | broker_rate × 730 hrs × broker_count + storage_gb × rate                                             | `broker_instance_type`, `broker_count`, `storage_per_broker_gb`               |
-| **CloudWatch Logs**       | log_volume_gb × $0.50/GB + storage × $0.03/GB-month                                                  | `retention_days`, estimated log volume                                        |
-| **S3**                    | storage_gb × $0.023/GB-month + request estimates                                                     | `storage_gb` (from Bucketeer/Cloudinary mapping)                              |
-| **Amazon SES**            | $0.10 per 1000 emails (minimal baseline)                                                             | Flat estimate from SendGrid mapping                                           |
-| **EventBridge Scheduler** | $1.00 per million events (minimal for cron jobs)                                                     | From Heroku Scheduler mapping                                                 |
-| **Amazon MQ**             | instance_rate × 730 hrs + storage                                                                    | From CloudAMQP mapping                                                        |
-| **Amazon OpenSearch**     | instance_rate × 730 hrs + storage                                                                    | From Bonsai Elasticsearch mapping                                             |
-| **Secrets Manager**       | secret_count × $0.40/month + API calls × $0.05/10K                                                   | Config var count from inventory                                               |
-| **NAT Gateway**           | $32.85/month fixed + data processing estimate                                                        | From VPC design (if new VPC)                                                  |
-| **RDS Proxy**             | $0.015 per vCPU-hour × 730 hrs × vCPUs                                                               | When connection pooling mapped                                                |
-| **Route 53**              | $0.50/hosted zone + query estimate                                                                   | When DNS strategy = route53                                                   |
-| **CloudFront**            | $0.085/GB (first 10TB) + request costs                                                               | From Cloudinary composite mapping                                             |
-| **X-Ray**                 | $5.00 per million traces                                                                             | Only if tracing detected in source                                            |
+Rates below come from the named keys in `aws-infra-pricing.json` — do not hardcode them here. The formula shape + key inputs are shown for reference.
+
+| AWS Service               | Formula (rates from `aws-infra-pricing.json`)                                                                                            | Key inputs from `aws_config`                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Fargate**               | (task_cpu/1024 × `fargate.per_vcpu_hour` + task_memory/1024 × `fargate.per_gb_mem_hour`) × 730 × desired_count                           | `task_cpu`, `task_memory`, `desired_count`                                    |
+| **EKS (cluster + nodes)** | `eks.control_plane_monthly` + `eks.node_rates_monthly[type]` × node_count + ALB per web service                                          | `eks_cluster.node_groups[].instance_types`, `desired_size`, web service count |
+| **ALB**                   | `alb.monthly_fixed` + LCU estimate (`alb.per_lcu_hour` × 730)                                                                            | Per web service with `load_balancer: true`                                    |
+| **RDS PostgreSQL**        | `rds_postgresql.instances[class]` × 730 + storage_gb × `rds_postgresql.storage_per_gb_month` (rate is baked_in Multi-AZ — do NOT double) | `instance_class`, `storage_gb`, `multi_az`                                    |
+| **Aurora PostgreSQL**     | `aurora_postgresql.instances[class]` × 730 + storage_gb × `aurora_postgresql.storage_per_gb_month` + I/O estimate (intrinsic multi-AZ)   | `instance_class`, `storage_gb`                                                |
+| **ElastiCache Redis**     | `elasticache.nodes[type]` × 730 (× 2 if Multi-AZ — `multiplier_x2`)                                                                      | `node_type`, `multi_az`                                                       |
+| **MSK**                   | `msk.brokers[type]` × 730 × broker_count + storage_gb × `msk.storage_per_gb_month` (intrinsic multi-AZ)                                  | `broker_instance_type`, `broker_count`, `storage_per_broker_gb`               |
+| **CloudWatch Logs**       | log_volume_gb × `cloudwatch.log_ingestion_per_gb` + storage × `cloudwatch.log_storage_per_gb_month`                                      | `retention_days`, estimated log volume                                        |
+| **S3**                    | storage_gb × `fast_path_services.s3.storage_per_gb_month` + request estimates (or `s3.monthly_baseline_est`)                             | `storage_gb` (from Bucketeer/Cloudinary mapping)                              |
+| **Amazon SES**            | `fast_path_services.ses.monthly_baseline_est` (flat baseline; see `_basis`)                                                              | Flat estimate from SendGrid mapping                                           |
+| **EventBridge Scheduler** | `fast_path_services.eventbridge.monthly_baseline_est` (flat; per_million_events basis)                                                   | From Heroku Scheduler mapping                                                 |
+| **Amazon MQ**             | `fast_path_services.amazon_mq.instance_monthly_est` + storage                                                                            | From CloudAMQP mapping                                                        |
+| **Amazon OpenSearch**     | `fast_path_services.opensearch.instance_monthly_est` + storage                                                                           | From Bonsai Elasticsearch mapping                                             |
+| **Secrets Manager**       | secret_count × `fast_path_services.secrets_manager.per_secret_month` + API calls × `per_10k_api_calls` (or `monthly_baseline_est`)       | Config var count from inventory                                               |
+| **NAT Gateway**           | `nat_gateway.monthly_fixed` + data processing estimate (`nat_gateway.per_gb_processed`)                                                  | From VPC design (if new VPC)                                                  |
+| **RDS Proxy**             | `rds_proxy.per_vcpu_hour` × 730 × vCPUs                                                                                                  | When connection pooling mapped                                                |
+| **Route 53**              | `route53.hosted_zone_monthly` + query estimate (`route53.per_million_queries`)                                                           | When DNS strategy = route53                                                   |
+| **CloudFront**            | `fast_path_services.cloudfront.per_gb_first_10tb` × GB + request costs (or `cloudfront.monthly_baseline_est`)                            | From Cloudinary composite mapping                                             |
+| **X-Ray**                 | `cloudwatch.xray_per_million_traces` × trace_millions                                                                                    | Only if tracing detected in source                                            |
 
 ### Unpriced Resource Handling
 
@@ -152,26 +156,16 @@ IF pricing data for a service is unavailable from both MCP and cache:
 
 When `aws-design.json` contains EKS services (`aws_service: "EKS"`):
 
-1. **EKS Control Plane**: $0.10/hour = **$73.00/month** (fixed, one cluster regardless of node count)
-2. **EC2 Node Group**: Look up instance type hourly rate × 730 hours × `desired_size` nodes
+1. **EKS Control Plane**: `eks.control_plane_monthly` (fixed, one cluster regardless of node count)
+2. **EC2 Node Group**: Look up the node instance type's monthly rate in `eks.node_rates_monthly[type]` × `desired_size` nodes. The monthly rates (m6i.large, m6i.xlarge, m6i.4xlarge, r6i.4xlarge, m6i.8xlarge, m6i.16xlarge) are maintained in `aws-infra-pricing.json` — do not hardcode them here.
+3. **ALB for web services**: Same as Fargate ALB pricing (`alb.monthly_fixed` per web service)
+4. **NAT Gateway** (if private subnets): Same as Fargate path (`nat_gateway.monthly_fixed` + data processing)
 
-   | Node Instance Type | Hourly Rate | Monthly (730 hrs) |
-   | ------------------ | ----------- | ----------------- |
-   | m6i.large          | $0.096      | $70.08/node       |
-   | m6i.xlarge         | $0.192      | $140.16/node      |
-   | m6i.4xlarge        | $0.768      | $560.64/node      |
-   | r6i.4xlarge        | $1.008      | $735.84/node      |
-   | m6i.8xlarge        | $1.536      | $1,121.28/node    |
-   | m6i.16xlarge       | $3.072      | $2,242.56/node    |
-
-3. **ALB for web services**: Same as Fargate ALB pricing ($16.43/month per web service)
-4. **NAT Gateway** (if private subnets): Same as Fargate path ($32.85/month + data processing)
-
-**Total EKS monthly cost** = control_plane + (node_rate × 730 × node_count) + ALB_costs + NAT_costs
+**Total EKS monthly cost** = `eks.control_plane_monthly` + (node_monthly_rate × node_count) + ALB_costs + NAT_costs. Pods are NOT charged a per-task cost (compute is billed via the EC2 nodes); ALB and NAT are the separate lines above, not re-added here.
 
 **EKS vs Fargate cost comparison note**: When presenting EKS estimates alongside the Heroku baseline, include this note:
 
-> "EKS with EC2 nodes is typically cheaper than Fargate for sustained workloads (>60% utilization) because there is no per-pod Fargate surcharge. However, EKS has a higher base cost ($73/month control plane + minimum 2 nodes) and requires Kubernetes operational expertise."
+> "EKS with EC2 nodes is typically cheaper than Fargate for sustained workloads (>60% utilization) because there is no per-pod Fargate surcharge. However, EKS has a higher base cost (`eks.control_plane_monthly` control plane + minimum 2 nodes) and requires Kubernetes operational expertise."
 
 ### Cost Tier Calculation
 
@@ -223,14 +217,16 @@ Sum all applicable services.
 ### Step 3: Calculate CloudWatch Costs
 
 ```
-log_ingestion_cost    = monthly_log_gb × $0.50
-log_storage_cost      = monthly_log_gb × $0.03 × retention_months (use preferences.operational.log_retention_days / 30, default: 1)
-custom_metrics_cost   = custom_metrics_count × $0.30
-alarms_cost           = alarm_count × $0.10
+log_ingestion_cost    = monthly_log_gb × cloudwatch.log_ingestion_per_gb
+log_storage_cost      = monthly_log_gb × cloudwatch.log_storage_per_gb_month × retention_months (use preferences.operational.log_retention_days / 30, default: 1)
+custom_metrics_cost   = custom_metrics_count × cloudwatch.custom_metric_month
+alarms_cost           = alarm_count × cloudwatch.standard_alarm_month
 tracing_cost          = 0 (do not add X-Ray costs unless tracing detected in source)
 
 total_observability   = log_ingestion_cost + log_storage_cost + custom_metrics_cost + alarms_cost + tracing_cost
 ```
+
+(All `cloudwatch.*` rates are in `shared/pricing/aws-infra-pricing.json`.)
 
 ### Step 4: Add Observability Entry
 
@@ -679,7 +675,7 @@ Keep under 25 lines. The user can ask for details or re-read `estimation-infra.j
 
 ## Pricing Recipes (MCP Fallback Only)
 
-Only use these recipes when a service is NOT in `pricing-cache.md` and MCP is available. Do NOT call `get_pricing_service_codes` or `get_pricing_service_attributes` — go directly to `get_pricing`.
+Only use these recipes when a service is NOT in `shared/pricing/aws-infra-pricing.json` and MCP is available. Do NOT call `get_pricing_service_codes` or `get_pricing_service_attributes` — go directly to `get_pricing`.
 
 | AWS Service       | service_code      | filters                                                                                                     | output_options                                                                                                                                     |
 | ----------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |

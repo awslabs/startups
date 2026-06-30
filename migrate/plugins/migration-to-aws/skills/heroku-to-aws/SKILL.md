@@ -177,7 +177,7 @@ Use **read-merge-write** updates for `.phase-status.json`:
 
 - Provides `get_pricing`, `get_pricing_service_codes`, `get_pricing_service_attributes` tools
 - Only needed during Estimate phase. Discover and Design do not require it.
-- Primary pricing source: `references/shared/pricing-cache.md` (cached rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the cache.
+- Primary pricing source: `shared/pricing/aws-infra-pricing.json` (cached AWS infrastructure rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the pricing file.
 
 ---
 
@@ -218,7 +218,6 @@ heroku-to-aws/
 │           ├── handoff-gates.md                # Fail-closed phase handoff protocol
 │           ├── schema-phase-status.md          # .phase-status.json schema
 │           ├── migration-complexity.md         # Complexity tier definitions (Small/Medium/Large)
-│           ├── pricing-cache.md                # Cached AWS pricing (primary source)
 │           ├── schema-estimate-infra.md        # estimation-infra.json schema
 │           └── validate-artifacts.md           # Pre-report validation
 ```
@@ -227,7 +226,7 @@ heroku-to-aws/
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No Terraform files with `heroku_*` resources found       | Stop. Output: "No Terraform files with heroku_* resources found. Heroku Terraform is required for discovery. Procfile and app.json alone are not sufficient." |
 | `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                        |
-| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `pricing-cache.md`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`.                       |
+| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `shared/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`.  |
 | User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                              |
 | Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                            |
 | Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                    |
