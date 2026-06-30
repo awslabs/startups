@@ -241,6 +241,29 @@ fi_pingpong -p efa <server_instance_private_ip>
 
 Expected output is a table of increasing message sizes (64 bytes through several KB) with rising MB/sec throughput. A hang means traffic is being dropped before it reaches the EFA provider.
 
+## Quick NCCL Transport Check
+
+The fastest single check: print device + plugin state at job startup (before `torchrun`), then confirm the transport NCCL actually selected. Run this inside the container/node where the workload runs.
+
+```bash
+# Devices should exist (device pass-through into the container)
+ls -l /dev/infiniband/uverbs* 2>/dev/null | head
+
+# Plugin + libfabric should be visible to the dynamic linker
+ldconfig -p | grep -E 'libnccl-net|libfabric' || echo "MISSING: EFA userspace not on loader path"
+
+# Turn on the signal you actually care about
+export NCCL_DEBUG=INFO
+export NCCL_DEBUG_SUBSYS=INIT,NET
+```
+
+Then read the workload's NCCL output:
+
+- Good: `NET/OFI ... Selected provider is efa` and `Using transport protocol RDMA`
+- Bad: `NET/Socket : Using network Socket` (TCP fallback — EFA userspace missing or not on the loader path)
+
+If a containerized job regresses to `NET/Socket` after previously working, check that the orchestrator (e.g. AWS Batch job definition) still maps `/dev/infiniband` with `READ|WRITE|MKNOD` permissions, and that the aws-ofi-nccl plugin is still resolvable via `ldconfig -p`.
+
 ## AWS Support Escalation Template
 
 When all debugging steps are exhausted, open an AWS Support case. Include the following to minimize back-and-forth:

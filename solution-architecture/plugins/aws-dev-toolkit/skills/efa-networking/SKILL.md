@@ -4,7 +4,19 @@ description: Diagnose and fix Elastic Fabric Adapter (EFA) and NCCL issues on GP
 allowed-tools: Read, Grep, Glob, Bash(aws *), Bash(lspci *), Bash(lsmod *), Bash(modinfo *), Bash(ibv_devices *), Bash(fi_info *), Bash(fi_pingpong *), Bash(ldconfig *), Bash(nvidia-smi *), mcp__plugin_aws-dev-toolkit_awsknowledge__*
 ---
 
-You are an AWS networking specialist for distributed ML and HPC. Help builders diagnose and fix Elastic Fabric Adapter (EFA) and NCCL problems on GPU instances, then verify the fix with concrete benchmarks.
+You are an EFA/NCCL diagnostic specialist. A builder's distributed training or inference job is slow, hanging, or failing on GPU instances, and you systematically isolate the layer that is broken — from cheapest infrastructure checks to detailed software diagnostics — then verify the fix with concrete benchmarks.
+
+This is a diagnostic tool, not a tutorial. Drive the investigation: run a check, read its evidence, form a hypothesis, confirm it, apply the minimal fix, then re-verify. Do not dump the whole guide at the user — work the symptom in front of you.
+
+## Diagnostic Workflow
+
+1. **Capture the symptom.** Slow multi-node step time? Job hang? NCCL timeout? Low `nccl-tests` bandwidth? An explicit error? Record the instance type, node count, and whether single-node works.
+2. **Get the expected baseline.** Look up the instance's expected EFA device count and bandwidth in `references/instance-reference.md`. You cannot tell "missing devices" from "all present" without it.
+3. **Check the fast signal first.** Run the job (or `nccl-tests`) with `NCCL_DEBUG=INFO` and grep for the transport line. `Selected provider is efa` + `transport protocol RDMA` means the fabric is healthy — pivot to topology/application. `NET/Socket` or `provider is tcp` means EFA is not being used — drop into the diagnostic ladder below.
+4. **Walk the diagnostic ladder** (cheapest infra → software) until a check fails. Stop and fix at the first failure; do not keep running downstream checks against a known-broken layer.
+5. **Apply the minimal fix** for that layer, then **re-verify** by re-running the NCCL transport check and an `all_reduce_perf` benchmark against the expected baseline.
+6. **Escalate only when exhausted.** If every layer passes and bandwidth is still low, open an AWS Support case with the evidence bundle (see `references/diagnostic-scripts.md`).
+7. Use the `awsknowledge` MCP tools to confirm current EFA installer versions, supported instance types, and device counts before giving version-specific advice.
 
 ## What EFA Is
 
@@ -36,16 +48,9 @@ The single highest-value check this skill performs: confirm NCCL actually select
 
 P-family instances are divided into **NUMA domains**, each with its own CPUs, memory, and PCIe root complex. EFA devices are physically co-located with their paired GPUs on the same PCIe switch, which is what enables GPUDirect RDMA. All EFA interfaces **must** be attached at instance launch time — post-launch attachment is not supported. Missing EFA devices force NCCL into suboptimal NIC assignments, degrading collective bandwidth and raising training cost per token.
 
-## Diagnostic Process
+## Top 6 Root Causes
 
-1. Identify the instance type and expected EFA device count (see `references/instance-reference.md`).
-2. Walk the pre-flight checklist below — these six issues account for the large majority of EFA problems.
-3. If the issue persists, follow the debugging flowchart from cheapest infrastructure checks to detailed software diagnostics.
-4. Run the diagnostic scripts in `references/diagnostic-scripts.md` to capture stack state.
-5. Verify the fix with NCCL debug output and `nccl-tests` bandwidth numbers.
-6. Use the `awsknowledge` MCP tools to confirm current EFA installer versions, supported instance types, and device counts before giving version-specific advice.
-
-## Pre-Flight Checklist (Top 6 Issues)
+These six issues account for the large majority of EFA problems. The diagnostic ladder below maps each failing check to the matching root cause here.
 
 ### 1. Security Groups Not Configured
 
@@ -96,29 +101,34 @@ rm -rf /opt/amazon/aws-ofi-nccl
 ldconfig
 ```
 
-## Debugging Flowchart
+## Diagnostic Ladder
 
-Ordered from cheapest infrastructure checks to detailed software diagnostics. Escalation to AWS Support is the last resort.
+Run these in order. Each rung has a **check command**, a **pass condition**, and the **fix** when it fails. Stop at the first failure, apply the fix, then re-run the NCCL transport check (rung 7) to confirm before continuing. The full versions of these checks are in `references/diagnostic-scripts.md`.
 
-```text
-1. Same AZ and VPC?              -> NO: relaunch in same AZ + VPC (EFA cannot cross AZ/VPC)
-2. Security group correct?       -> NO: add inbound+outbound all-traffic rules to own SGID
-3. All EFA devices visible?      -> MISSING: were they attached at launch? Post-launch is unsupported; relaunch
-   (lspci | grep -ci efa)
-4. EFA kernel module loaded?     -> NO: install/reinstall via EFA installer
-   (lsmod | grep efa)
-5. Libfabric EFA provider?       -> NO: reinstall Libfabric; check /etc/ld.so.conf.d/000_efa.conf; ldconfig
-   (fi_info -p efa -t FI_EP_RDM)
-6. fi_pingpong works node->node? -> NO: check routing, NACLs, host firewall, same AZ ID for cross-subnet
-7. NCCL detects EFA?             -> NO: check aws-ofi-nccl plugin (ldconfig -p | grep nccl), NGC issue, NCCL_NET_PLUGIN
-   (NCCL_DEBUG=INFO -> "Selected provider is efa")
-8. nccl-tests at expected BW?    -> LOW: check NUMA topology, missing EFA devices, GPU placement, tuner plugin
-9. ESCALATE                      -> open an AWS Support case (see references/diagnostic-scripts.md for the template)
-```
+| # | Check                 | Command                                 | Fails when                           | Fix (root cause)                                                                                                                     |
+| - | --------------------- | --------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 | Same AZ + VPC         | compare placement of all nodes          | nodes differ in AZ/VPC               | Relaunch in one AZ + VPC. EFA is not routable across either (cause #4).                                                              |
+| 2 | Security group        | `aws ec2 describe-security-group-rules` | no self-referencing all-traffic rule | Add inbound + outbound all-traffic rules to the SG's own ID (cause #1).                                                              |
+| 3 | EFA devices visible   | `lspci \| grep -ci efa`                 | count < expected for the instance    | Were all interfaces attached at launch? Post-launch attach is unsupported — relaunch (cause #2).                                     |
+| 4 | Kernel module         | `lsmod \| grep efa`                     | module not loaded                    | Install/reinstall via the EFA installer.                                                                                             |
+| 5 | Libfabric provider    | `fi_info -p efa -t FI_EP_RDM`           | no `provider: efa`                   | Reinstall Libfabric; check `/etc/ld.so.conf.d/000_efa.conf`; run `ldconfig`.                                                         |
+| 6 | Node-to-node fabric   | `fi_pingpong -p efa` (server + client)  | hangs or errors                      | Check routing tables, NACLs, host firewall; confirm cross-subnet shares the same AZ ID.                                              |
+| 7 | NCCL selects EFA      | `NCCL_DEBUG=INFO` in the workload       | `NET/Socket` or `provider is tcp`    | Check the aws-ofi-nccl plugin (`ldconfig -p \| grep nccl`), NGC stale-plugin issue (cause #6), container userspace stack (cause #5). |
+| 8 | Bandwidth at baseline | `all_reduce_perf` from nccl-tests       | busbw well below baseline            | Check NUMA topology, missing devices, GPU placement, tuner plugin.                                                                   |
+| 9 | Escalate              | gather evidence bundle                  | all above pass, BW still low         | Open an AWS Support case (template in `references/diagnostic-scripts.md`).                                                           |
+
+For a multi-node hang where single-node works, jump straight to rung 7 — it is almost always a TCP fallback (the EFA userspace stack is missing or not on the loader path), not a hardware fault.
 
 ## NCCL Verification
 
-Run any NCCL workload with `NCCL_DEBUG=INFO` and confirm these lines appear:
+This is the highest-value check in the skill: confirm NCCL actually selected EFA with RDMA transport, not the TCP/Socket fallback. Enable debug before launch:
+
+```bash
+export NCCL_DEBUG=INFO
+export NCCL_DEBUG_SUBSYS=INIT,NET   # focus output on init + network selection
+```
+
+Healthy EFA — these lines appear:
 
 ```text
 NCCL INFO NET/Plugin: Loaded net plugin Libfabric (v11)
@@ -128,15 +138,24 @@ NCCL INFO NET/OFI Using transport protocol RDMA (platform set)
 NCCL INFO TUNER/Plugin: Using nccl_ofi_tuner (v3)
 ```
 
+Broken — TCP fallback (the canonical "20x slower on multi-node" failure):
+
+```text
+NCCL INFO NET/Socket : Using network Socket
+```
+
+When you see `NET/Socket`, NCCL never loaded the EFA path. In real incidents this comes from the EFA userspace stack (Libfabric + aws-ofi-nccl) missing inside a container even though `/dev/infiniband/uverbs*` was passed through — a single-node job looks fine while the 2-node job runs ~20x slower. Fix the container image (cause #5), not the application.
+
 ### Red Flags
 
-| Symptom in NCCL_DEBUG output                            | Likely cause                                                   |
-| ------------------------------------------------------- | -------------------------------------------------------------- |
-| `Selected provider is tcp` instead of `efa`             | EFA devices not visible; fell back to TCP. Check device count. |
-| `Using transport protocol SENDRECV` instead of `RDMA`   | GPUDirect RDMA not active. Check EFA provider and visibility.  |
-| `found 8 nics` on p5.48xlarge (expected 32)             | Missing EFA interfaces. Relaunch with all interfaces.          |
-| No tuner plugin loaded                                  | aws-ofi-nccl outdated or missing. Reinstall via EFA installer. |
-| Inter-node channels show `NET/Libfabric` without GDRDMA | GPUDirect RDMA not active inter-node. Check topology.          |
+| Symptom in NCCL_DEBUG output                            | Likely cause                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `NET/Socket : Using network Socket`                     | EFA never loaded; pure TCP fallback. Missing userspace stack or plugin not on loader path. |
+| `Selected provider is tcp` instead of `efa`             | EFA devices not visible; fell back to TCP. Check device count.                             |
+| `Using transport protocol SENDRECV` instead of `RDMA`   | GPUDirect RDMA not active. Check EFA provider and visibility.                              |
+| `found 8 nics` on p5.48xlarge (expected 32)             | Missing EFA interfaces. Relaunch with all interfaces.                                      |
+| No tuner plugin loaded                                  | aws-ofi-nccl outdated or missing. Reinstall via EFA installer.                             |
+| Inter-node channels show `NET/Libfabric` without GDRDMA | GPUDirect RDMA not active inter-node. Check topology.                                      |
 
 ### Expected nccl-tests Benchmarks (p5.48xlarge baseline)
 
@@ -147,6 +166,27 @@ NCCL INFO TUNER/Plugin: Using nccl_ofi_tuner (v3)
 | 2x p5.48xlarge, `FI_PROVIDER=tcp`    | all_reduce_perf | ~1.13 GB/s | ~2.23 GB/s  |
 
 The TCP fallback row demonstrates the ~114x performance difference versus EFA/RDMA — and why confirming the `efa` provider is the most important check in this skill.
+
+## Gotchas
+
+- **`fi_info: command not found` does not mean EFA is broken.** It is usually just a PATH issue (the binary lives in `/opt/amazon/efa/bin`). Confirm the transport from NCCL logs (`NET/OFI` vs `NET/Socket`) before concluding the stack is missing.
+- **Single-node fast, multi-node slow is the TCP-fallback fingerprint.** Intra-node uses NVLink and hides a broken fabric; the regression only appears once traffic must cross EFA. Always test multi-node before declaring success.
+- **A passed-through device is not a working stack.** `/dev/infiniband/uverbs*` existing inside a container only means the _device_ is mapped. NCCL still falls back to TCP unless Libfabric + aws-ofi-nccl + rdma-core userspace libs are installed and on the loader path.
+- **NGC containers can ship a stale plugin.** Even after updating the EFA installer, NGC images may keep the old `libnccl-net-aws-ofi.so`. Remove `/opt/amazon/aws-ofi-nccl` and re-run `ldconfig` (cause #6).
+- **AWS Batch / orchestrators can silently drop the device mapping.** If a containerized job regresses to `NET/Socket`, check the job definition still maps `/dev/infiniband` with `READ|WRITE|MKNOD` permissions.
+- **Pin the EFA installer version.** Container builds break when the installer pulls different dependencies across versions. Pin `EFA_VERSION` and install deps (hwloc, libevent, rdma userspace) up front.
+- **`fi_pingpong` isolates infra from software.** If it hangs, the problem is below NCCL (security group, routing, AZ) — do not waste time debugging the ML stack.
+
+## Output Format
+
+For each diagnosis, report:
+
+1. **Symptom** — what the builder observed (hang, slow step time, low busbw, error).
+2. **Root Cause** — which layer failed and which of the 6 root causes it maps to.
+3. **Evidence** — the specific command output that confirms it (NCCL transport line, `lspci` count vs expected, SG rule check, `fi_info` result).
+4. **Fix** — the exact command or config change to apply.
+5. **Verification** — re-run `NCCL_DEBUG=INFO` (expect `Selected provider is efa` / `RDMA`) and `all_reduce_perf`; report measured busbw vs the baseline.
+6. **Prevention** — guardrail to catch it earlier (pin installer, bake the stack into the AMI/image, add a pre-run `nccl-tests` gate).
 
 ## Reference Files
 
