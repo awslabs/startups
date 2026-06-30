@@ -195,18 +195,9 @@ Heroku includes basic logging via its log drain. AWS CloudWatch charges from the
 
 ### Step 1: Estimate Log Volume
 
-Use per-service heuristic (billing data not applicable for log volume since Heroku logging model differs):
+Use the per-service log-volume heuristic from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `log_volume_gb_per_service` (billing data not applicable for log volume since Heroku's logging model differs). Keyed by service: `fargate_task` (per task), `rds_or_aurora_instance` (per instance), `alb` (per load balancer), `nat_gateway` (per gateway), `elasticache_node` (per node), `msk_broker` (per broker).
 
-| AWS Service (from aws-design.json) | Estimated log volume/month | Basis                   |
-| ---------------------------------- | -------------------------- | ----------------------- |
-| Fargate task                       | 3 GB per task              | Container stdout/stderr |
-| RDS/Aurora instance                | 1 GB per instance          | Error log + slow query  |
-| ALB                                | 2 GB per load balancer     | Access logs             |
-| NAT Gateway                        | 1 GB per gateway           | Flow logs               |
-| ElastiCache                        | 0.5 GB per node            | Slow log                |
-| MSK                                | 2 GB per broker            | Broker logs             |
-
-Sum all applicable services.
+Sum across all applicable services.
 
 ### Step 2: Estimate Custom Metrics and Alarms
 
@@ -374,13 +365,7 @@ Present monthly and annual cost difference between Heroku baseline and each AWS 
 
 Present applicable optimizations with estimated savings. These are **incremental post-migration actions** beyond the Balanced on-demand baseline.
 
-| Optimization           | Savings Range                               | Applies To                       | When                                           |
-| ---------------------- | ------------------------------------------- | -------------------------------- | ---------------------------------------------- |
-| Compute Savings Plans  | 20-66%                                      | Fargate                          | Post-migration (after 30-90 day baseline)      |
-| Database Savings Plans | Up to 35% (serverless) / ~20% (provisioned) | Aurora, RDS, ElastiCache         | Post-migration or after right-sizing           |
-| RDS Reserved Instances | Up to 69%                                   | RDS, Aurora (provisioned)        | Post-migration (after architecture stabilizes) |
-| S3 Intelligent-Tiering | 38-50%                                      | S3 storage                       | During migration                               |
-| Fargate Spot           | 60-70%                                      | Non-critical/batch Fargate tasks | If worker dynos exist                          |
+The savings ranges + applicability come from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `optimization_savings_ranges` (keys: `compute_savings_plans`, `database_savings_plans`, `rds_reserved_instances`, `s3_intelligent_tiering`, `fargate_spot`; each carries `savings_percent` / `target_services` / `timing`). Include ONLY opportunities relevant to the designed architecture (per each entry's `target_services` / `timing`).
 
 **Emit in `optimization_opportunities[]`:**
 
