@@ -6,18 +6,13 @@ This table maps Apache Kafka on Heroku plan tiers to recommended Amazon MSK brok
 
 ## Lookup Table
 
-| Heroku Plan        | Max Topics | Max Partitions | Storage | Throughput | Recommended MSK Broker Instance Type | Recommended Storage Per Broker |
-| ------------------ | ---------- | -------------- | ------- | ---------- | ------------------------------------ | ------------------------------ |
-| basic-0            | 20         | 40             | 4 GB    | 5 MB/s     | kafka.t3.small                       | 10 GB                          |
-| standard-0         | 40         | 160            | 50 GB   | 20 MB/s    | kafka.m5.large                       | 100 GB                         |
-| standard-1         | 100        | 400            | 200 GB  | 50 MB/s    | kafka.m5.xlarge                      | 250 GB                         |
-| standard-2         | 200        | 1600           | 1 TB    | 100 MB/s   | kafka.m5.2xlarge                     | 500 GB                         |
-| extended-0         | 200        | 2000           | 2 TB    | 150 MB/s   | kafka.m5.4xlarge                     | 1 TB                           |
-| extended-1         | 400        | 4000           | 4 TB    | 200 MB/s   | kafka.m5.8xlarge                     | 2 TB                           |
-| extended-2         | 600        | 8000           | 8 TB    | 300 MB/s   | kafka.m5.12xlarge                    | 4 TB                           |
-| private-extended-0 | 200        | 2000           | 2 TB    | 150 MB/s   | kafka.m5.4xlarge                     | 1 TB                           |
-| private-extended-1 | 400        | 4000           | 4 TB    | 200 MB/s   | kafka.m5.8xlarge                     | 2 TB                           |
-| private-extended-2 | 600        | 8000           | 8 TB    | 300 MB/s   | kafka.m5.12xlarge                    | 4 TB                           |
+> **Data:** [`knowledge/design/kafka-msk-sizing.json`](../../knowledge/design/kafka-msk-sizing.json)
+>
+> The Heroku Kafka plan → MSK sizing rows are maintained as structured data in
+> that JSON file. Read the `rows` map keyed by Heroku plan; each row carries
+> `broker_instance_type`, `storage_per_broker_gb`, `max_topics`, `max_partitions`,
+> and `default_replication_factor`. The `throughput` and `storage` fields are
+> provenance only.
 
 ## Interpretation Notes
 

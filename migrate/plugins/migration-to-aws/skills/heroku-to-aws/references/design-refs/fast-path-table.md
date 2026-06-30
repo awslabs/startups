@@ -6,25 +6,19 @@ This table provides deterministic mappings from Heroku add-ons to AWS service eq
 
 ## Lookup Table
 
-| Heroku Add-On        | AWS Service(s)        | Mapping Type | Notes                                                    |
-| -------------------- | --------------------- | ------------ | -------------------------------------------------------- |
-| Papertrail           | CloudWatch Logs       | Single       | Log aggregation and search                               |
-| SendGrid             | Amazon SES            | Single       | Transactional and marketing email                        |
-| Heroku Scheduler     | EventBridge Scheduler | Single       | Cron-style scheduled jobs                                |
-| Memcachier           | ElastiCache Memcached | Single       | In-memory caching (Memcached protocol)                   |
-| Bucketeer            | S3                    | Single       | Object/file storage                                      |
-| CloudAMQP            | Amazon MQ             | Single       | RabbitMQ-compatible message broker                       |
-| Bonsai Elasticsearch | Amazon OpenSearch     | Single       | Full-text search and analytics                           |
-| Scout APM            | CloudWatch + X-Ray    | Composite    | Application performance monitoring + distributed tracing |
-| Rollbar              | CloudWatch            | Single       | Error tracking via structured logs                       |
-| New Relic            | CloudWatch + X-Ray    | Composite    | Full-stack observability + distributed tracing           |
-| Twilio               | Amazon SNS (SMS)      | Single       | SMS messaging                                            |
-| Cloudinary           | S3 + CloudFront       | Composite    | Media storage + CDN delivery                             |
-| Sentry               | CloudWatch            | Single       | Error tracking via structured logs                       |
+> **Data:** [`knowledge/design/fast-path-addons.json`](../../knowledge/design/fast-path-addons.json)
+>
+> The add-on → AWS service mappings are maintained as structured data in that JSON
+> file. Read the `rows` map keyed by NORMALIZED add-on name; each row carries
+> `type` (`single` or `composite`), `aws_services`, and `notes`. A discovered
+> add-on name is normalized before matching (strip a leading `heroku-`, hyphens →
+> spaces, lowercase, then apply the `_prefix_aliases`); matching is exact
+> full-string (partial matches are invalid). All matches produce confidence
+> `"deterministic"`.
 
 ## Interpretation Notes
 
-- **Matching rule**: The add-on name from the inventory is matched against the "Heroku Add-On" column using **exact case-insensitive string comparison**. Partial matches (e.g., "Paper" matching "Papertrail") are NOT valid and must be treated as unmatched.
+- **Matching rule**: The add-on name from the inventory is matched against each row's key (the normalized add-on name) using **exact case-insensitive string comparison**. Partial matches (e.g., "Paper" matching "Papertrail") are NOT valid and must be treated as unmatched.
 - **Confidence level**: All matches from this table produce a confidence level of `"deterministic"` in the design output.
 - **Single mappings**: Map the source add-on to exactly one AWS service.
 - **Composite mappings**: Map the source add-on to multiple AWS services that together replicate the source functionality. All listed services must appear in the design output as a single composite mapping with one `"deterministic"` confidence level assigned to the group.

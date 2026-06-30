@@ -6,31 +6,14 @@ This table maps Heroku Redis (Key-Value Store) plan tiers to recommended AWS Ela
 
 ## Lookup Table
 
-| Heroku Plan | Memory Limit | HA  | Encryption | Redis Version | Recommended ElastiCache Node Type |
-| ----------- | ------------ | --- | ---------- | ------------- | --------------------------------- |
-| hobby       | 25 MB        | No  | No         | 6.2           | cache.t4g.micro                   |
-| premium-0   | 50 MB        | Yes | Yes        | 7.0           | cache.t4g.micro                   |
-| premium-1   | 100 MB       | Yes | Yes        | 7.0           | cache.t4g.micro                   |
-| premium-2   | 250 MB       | Yes | Yes        | 7.0           | cache.t4g.micro                   |
-| premium-3   | 500 MB       | Yes | Yes        | 7.0           | cache.t4g.small                   |
-| premium-4   | 1 GB         | Yes | Yes        | 7.0           | cache.t4g.small                   |
-| premium-5   | 2.5 GB       | Yes | Yes        | 7.0           | cache.t4g.medium                  |
-| premium-6   | 5 GB         | Yes | Yes        | 7.0           | cache.m6g.large                   |
-| premium-7   | 10 GB        | Yes | Yes        | 7.0           | cache.m6g.xlarge                  |
-| premium-8   | 15 GB        | Yes | Yes        | 7.0           | cache.m6g.xlarge                  |
-| premium-9   | 25 GB        | Yes | Yes        | 7.0           | cache.m6g.2xlarge                 |
-| premium-10  | 50 GB        | Yes | Yes        | 7.0           | cache.m6g.4xlarge                 |
-| premium-11  | 75 GB        | Yes | Yes        | 7.0           | cache.m6g.8xlarge                 |
-| premium-12  | 100 GB       | Yes | Yes        | 7.0           | cache.m6g.8xlarge                 |
-| premium-13  | 150 GB       | Yes | Yes        | 7.0           | cache.m6g.12xlarge                |
-| premium-14  | 200 GB       | Yes | Yes        | 7.0           | cache.m6g.16xlarge                |
-| private-1   | 1 GB         | Yes | Yes        | 7.0           | cache.t4g.small                   |
-| private-2   | 2.5 GB       | Yes | Yes        | 7.0           | cache.t4g.medium                  |
-| private-3   | 5 GB         | Yes | Yes        | 7.0           | cache.m6g.large                   |
-| private-4   | 10 GB        | Yes | Yes        | 7.0           | cache.m6g.xlarge                  |
-| private-5   | 25 GB        | Yes | Yes        | 7.0           | cache.m6g.2xlarge                 |
-| private-6   | 50 GB        | Yes | Yes        | 7.0           | cache.m6g.4xlarge                 |
-| private-7   | 100 GB       | Yes | Yes        | 7.0           | cache.m6g.8xlarge                 |
+> **Data:** [`knowledge/design/redis-elasticache-sizing.json`](../../knowledge/design/redis-elasticache-sizing.json)
+>
+> The Heroku Redis plan → ElastiCache sizing rows are maintained as structured
+> data in that JSON file. Read the `rows` map keyed by Heroku plan; each row
+> carries `node_type`, `ha`, and `encryption`. The `memory_limit` and
+> `redis_version` fields are provenance only — do NOT recompute the node type from
+> `memory_limit`, and do NOT derive the engine version from `redis_version` (the
+> engine version is pinned; see the Redis version note below).
 
 ## Interpretation Notes
 

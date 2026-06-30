@@ -6,27 +6,14 @@ This table maps Heroku dyno types to AWS Fargate task definition CPU and memory 
 
 ## Lookup Table
 
-| Heroku Dyno Type  | CPU (shares) | Memory (MB) | Fargate CPU (units) | Fargate Memory (MiB) |
-| ----------------- | ------------ | ----------- | ------------------- | -------------------- |
-| standard-1x       | 1x           | 512         | 256                 | 512                  |
-| standard-2x       | 2x           | 1024        | 512                 | 1024                 |
-| performance-m     | 6x           | 2560        | 1024                | 2048                 |
-| performance-l     | 12x          | 14336       | 4096                | 16384                |
-| performance-l-ram | 12x          | 30720       | 4096                | 30720                |
-| performance-xl    | 12x          | 63488       | 8192                | 65536                |
-| performance-2xl   | 12x          | 129024      | 16384               | 122880               |
-| private-s         | 1x           | 1024        | 512                 | 1024                 |
-| private-m         | 6x           | 2560        | 1024                | 2048                 |
-| private-l         | 12x          | 14336       | 4096                | 16384                |
-| private-l-ram     | 12x          | 30720       | 4096                | 30720                |
-| private-xl        | 12x          | 63488       | 8192                | 65536                |
-| private-2xl       | 12x          | 129024      | 16384               | 122880               |
-| shield-s          | 1x           | 1024        | 512                 | 1024                 |
-| shield-m          | 6x           | 2560        | 1024                | 2048                 |
-| shield-l          | 12x          | 14336       | 4096                | 16384                |
-| shield-l-ram      | 12x          | 30720       | 4096                | 30720                |
-| shield-xl         | 12x          | 63488       | 8192                | 65536                |
-| shield-2xl        | 12x          | 129024      | 16384               | 122880               |
+> **Data:** [`knowledge/design/dyno-fargate-sizing.json`](../../knowledge/design/dyno-fargate-sizing.json)
+>
+> The dyno-type → Fargate sizing rows are maintained as structured data in that
+> JSON file. Read the `rows` map keyed by Heroku dyno type; each row carries
+> `fargate_cpu` (CPU units, 1024 = 1 vCPU) and `fargate_memory` (MiB). The
+> `heroku_cpu_share` and `heroku_memory_mb` fields are provenance only (they
+> explain why the row meets-or-exceeds the source) — do NOT recompute the Fargate
+> values from them.
 
 ## Interpretation Notes
 
