@@ -1,3 +1,22 @@
+---
+_phase: discover
+_title: "Discover Heroku Resources"
+_init: true
+_input: workspace
+_fragments:
+  - _id: terraform
+    _trigger: { _always: true }
+    _file: phases/discover/discover-terraform.md
+  - _id: billing
+    _trigger: { _glob: "**/*{billing,invoice}*.{csv,json}" }
+    _file: phases/discover/discover-billing.md
+_assemble:
+  _file: phases/discover/discover-assemble.md
+_produces:
+  - heroku-resource-inventory.json
+_advances_to: clarify
+---
+
 # Phase 1: Discover Heroku Resources
 
 Lightweight orchestrator that delegates to domain-specific discoverers. Each sub-discovery file is self-contained — it scans for its own input, processes what it finds, and exits cleanly if nothing is relevant.
@@ -80,47 +99,10 @@ GATE_FAIL | phase=<target_phase> | field=phases.<active_phase> | reason=invalid
 
 ## Step 0: Initialize Migration State
 
-1. Check for existing `.migration/` directory at the project root.
-   - **If existing runs found:** List them with their phase status and ask:
-     - `[A] Resume: Continue with [latest run]`
-     - `[B] Fresh: Create new migration run`
-     - `[C] Cancel`
-   - **If resuming:** Set `$MIGRATION_DIR` to the selected run's directory. Read its `.phase-status.json` and validate per the State Machine in SKILL.md. If `phases.discover` is already `completed`, check re-entry rules (Rule 5).
-   - **If fresh or no existing runs:** Continue to step 2.
-
-2. Create `.migration/[MMDD-HHMM]/` directory (e.g., `.migration/0315-1030/`) using current timestamp (MMDD = month/day, HHMM = hour/minute). Set `$MIGRATION_DIR` to this new directory.
-
-3. Create `.migration/.gitignore` file (if not already present) with exact content:
-
-   ```
-   # Auto-generated migration state (temporary, do not commit)
-   *
-   !.gitignore
-   ```
-
-   This prevents accidental commits of migration artifacts.
-
-4. Write `.phase-status.json` with exact schema:
-
-   ```json
-   {
-     "migration_id": "[MMDD-HHMM]",
-     "last_updated": "[ISO 8601 timestamp]",
-     "current_phase": "discover",
-     "phases": {
-       "discover": "in_progress",
-       "clarify": "pending",
-       "design": "pending",
-       "estimate": "pending",
-       "generate": "pending",
-       "feedback": "pending"
-     }
-   }
-   ```
-
-   Schema reference: `shared/schema-phase-status.md`.
-
-5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before proceeding to Step 1.
+This phase has `_init: true`. Per `INTERPRETER.md` (§ `_init`), establish migration
+state before running the sub-discovery fragments: resolve resume-vs-fresh, set
+`$MIGRATION_DIR`, create `.migration/.gitignore`, and write the initial
+`.phase-status.json`. Confirm both files exist before proceeding to Step 1.
 
 ---
 
@@ -186,32 +168,7 @@ This produces:
 
 ## Step 3: Assemble Inventory
 
-After all sub-discoveries complete, assemble `heroku-resource-inventory.json` in `$MIGRATION_DIR/`.
-
-**Schema reference**: `shared/schema-discover-heroku.md` — consult for complete field definitions, per-type config schemas, and validation checklist.
-
-### Assembly Rules
-
-1. Merge all discovered resources into a flat array (no clustering, no dependency graphs).
-2. Each resource entry MUST have: `resource_id`, `resource_type`, `heroku_app`, `config`.
-3. Resources grouped by `heroku_app` field. Unassociable resources (spaces, pipelines) get `heroku_app: "unassociated"`.
-4. Include `metadata` section: `discovery_timestamp`, `total_apps_discovered`, `discovery_sources`, `confidence`.
-5. Include `apps[]` section with per-app entries containing:
-   - `app_name`, `app_id`, `discovery_status` (success/discovery_failed), `failure_reason`
-   - `heroku_generation` (cedar/fir/unknown), `generation_action` (always `detect_only`), `generation_diagnostics` (array of diagnostic reasons)
-   - `space` (Private Space name or null)
-   - `procfile_parse_warning`, `app_json_parse_warning` (per-app parse warnings or null)
-6. Include `billing_profile` section (if billing data available, with `available`, `total_monthly_cost`, `currency`, `billing_period`, `line_items`).
-7. Include `terraform_metadata` section (if Terraform discovery ran, with `found`, `tf_files_scanned`, `resource_types_extracted`, `parse_warnings`).
-8. Verify NO forbidden fields exist: `cluster_id`, `creation_order_depth`, `edges`, `dependencies`, `must_migrate_together`.
-
-**If assembly fails** (no valid resources from any source after sub-discoveries ran):
-
-Apply **unrecoverable error behavior** (Rule 4):
-
-- Revert `phases.discover` to `"pending"`.
-- Preserve prior completed phases.
-- STOP and output: "Discovery ran but produced no valid resources. Check that your input files contain valid Heroku resources and try again."
+Load `references/phases/discover/discover-assemble.md` (the phase's assembler) and follow it to combine the sub-discovery outputs into the single `heroku-resource-inventory.json` artifact. It owns that artifact's assembly rules and the failure behavior if no valid resources were produced.
 
 ---
 

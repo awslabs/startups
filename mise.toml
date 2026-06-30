@@ -7,6 +7,7 @@ min_version = "2026.2.4"
 node = "24"
 "npm:markdownlint-cli2" = "0.17"
 "npm:dprint" = "0.51"
+"npm:typescript" = "5"
 "pipx:pre-commit" = "4"
 "pipx:bandit[sarif]" = "1"
 "pipx:checkov" = "3"
@@ -42,10 +43,25 @@ run = "markdownlint-cli2 '**/*.md' '#node_modules' '#.git'"
 description = "Lint Markdown files with auto-fix"
 run = "markdownlint-cli2 '**/*.md' '#node_modules' --fix"
 
+[tasks."lint:frontmatter"]
+description = "Validate phase/fragment/assembler frontmatter (typed, zero-dep; skill-agnostic)"
+run = "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/heroku-to-aws"
+
+[tasks."lint:types"]
+description = "Type-check the frontmatter validator + its test (tsc --noEmit, strict)"
+run = "cd migrate/plugins/migration-to-aws && tsc --noEmit"
+
+[tasks.test]
+description = "Run the frontmatter-validator test suite (node --test)"
+run = "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts"
+
 [tasks.lint]
 description = "Run all linters"
 run = [
   { task = "lint:md" },
+  { task = "lint:types" },
+  { task = "lint:frontmatter" },
+  { task = "test" },
 ]
 
 # =========

@@ -1,3 +1,10 @@
+---
+_fragment: billing
+_of_phase: discover
+_contributes:
+  - heroku-resource-inventory.json (billing_profile section)
+---
+
 # Discover Phase: Billing Discovery
 
 > Self-contained billing discovery sub-file. Scans for Heroku Dashboard invoice files and Enterprise CSV billing exports, parses billing data, builds a billing profile with per-app cost breakdowns, and contributes the `billing_profile` section to `heroku-resource-inventory.json`.

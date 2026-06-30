@@ -1,3 +1,10 @@
+---
+_fragment: terraform
+_of_phase: discover
+_contributes:
+  - heroku-resource-inventory.json (resource entries, apps, metadata, terraform_metadata sections)
+---
+
 # Discover Phase: Terraform Discovery (Primary Path)
 
 > Self-contained Terraform discovery sub-file. Scans `.tf` files for `heroku_*` resource types, extracts resource configuration attributes, maps them to inventory format, and integrates Procfile/app.json parsing when repo artifacts are available.

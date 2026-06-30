@@ -27,6 +27,16 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 
 ---
 
+## Phase Structure (frontmatter)
+
+A phase orchestrator file (e.g. `references/phases/discover/discover.md`) may carry a small YAML frontmatter block that names how the phase is composed — its inputs, the **fragments** it runs (each with a trigger), the **assembler** that combines their outputs, what it produces, and what it requires/advances-to. `INTERPRETER.md` is the contract: it lists every frontmatter key and how to act on it (including `_init`, which establishes migration state on the first phase).
+
+**Fragment vs assembler:** a **fragment** does one unit of work and writes its own contribution; fragments are independent (none reads another's output). The **assembler** runs last and combines/validates the fragments' outputs into the phase's final artifact. A phase has 1..N fragments and exactly one assembler.
+
+When a phase file has frontmatter, read it (and `INTERPRETER.md`) first, then execute the phase body. Frontmatter is being introduced phase-by-phase; phases without it run from their prose as before.
+
+---
+
 ## Context Loading Rules
 
 Each phase loads reference files on demand. To keep per-turn context manageable and prevent instruction-following degradation:
