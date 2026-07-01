@@ -15,6 +15,11 @@ _assemble:
 _produces:
   - estimation-infra.json
 _advances_to: generate
+_re_entry_guard:
+  _stale_if_completed: generate
+  _stale_artifact: generation-warnings.json
+  _on_reentry: stop_unless_confirmed
+  _on_confirm: reset_downstream_to_pending
 ---
 
 # Phase 4: Estimate AWS Costs

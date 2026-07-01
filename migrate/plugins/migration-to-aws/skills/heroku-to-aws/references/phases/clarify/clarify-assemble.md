@@ -124,8 +124,6 @@ Before handing off to Design:
 
 Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 
-**Re-entry guard:** If `aws-design.json` exists and `phases.design` is `"completed"`: STOP unless the user explicitly confirms re-running Clarify. Emit `GATE_FAIL | phase=clarify | field=aws-design.json | reason=stale_downstream`.
-
 **Checks (all must PASS):**
 
 1. `preferences.json` exists and parses as valid JSON.

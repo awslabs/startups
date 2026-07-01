@@ -21,12 +21,51 @@ runs entirely from its prose, as before.
 | `_assemble`         | the single terminal unit (`{ _file }`) that combines the fragment outputs into the phase's artifact(s)                                                                                                                                                                          |
 | `_produces`         | the artifact file(s) the phase writes                                                                                                                                                                                                                                           |
 | `_advances_to`      | (backbone phases only) the phase that runs next on success — or a terminal (`complete`). A checkpoint has NO `_advances_to`.                                                                                                                                                    |
+| `_re_entry_guard`   | (backbone phases with a downstream only) the stale-downstream guard — STOP re-running this phase if its downstream phase already completed, unless the user confirms (see below). Terminal phases and checkpoints have none.                                                    |
 
 ### `_trigger` forms
 
 - `{ _always: true }` — the fragment always runs.
 - `{ _glob: "<pattern>" }` — the fragment runs when one or more files matching the glob exist in the workspace; otherwise it is skipped.
 - `{ _when: "<condition>" }` — the fragment runs when the prose condition holds (evaluated by you, the interpreter, against the phase's inputs); otherwise it is skipped. The condition is opaque prose — CI validates only that the form is well-formed, not the condition's truth. Used for fragments gated on a preference or a design-artifact shape (e.g. the EKS branches, gated on the Kubernetes preference / an `eks_cluster` design entry).
+
+### `_re_entry_guard` — stale-downstream re-entry
+
+A backbone phase whose downstream phase has already completed is unsafe to re-run
+silently: its artifact feeds the downstream, so overwriting it leaves the
+downstream artifact stale. `_re_entry_guard` encodes that check. It has four keys,
+all required when the guard is present:
+
+| Key                   | Meaning                                                                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `_stale_if_completed` | the downstream phase whose `"completed"` status makes re-running THIS phase unsafe (equals `_advances_to`) |
+| `_stale_artifact`     | the downstream artifact named in the `GATE_FAIL` line (one of that downstream phase's `_produces`)         |
+| `_on_reentry`         | what to do on re-entry — `stop_unless_confirmed` (the only value today)                                    |
+| `_on_confirm`         | what to do when the user confirms the re-run — `reset_downstream_to_pending` (the only value today)        |
+
+**Enforcement (at this phase's completion gate, BEFORE the phase's checks):**
+
+1. Read `.phase-status.json`. If `phases.<_stale_if_completed>` is NOT
+   `"completed"`, the guard does not fire — proceed normally.
+2. If it IS `"completed"` **and** the user has not explicitly confirmed re-running
+   this phase: **STOP**. Emit exactly:
+
+   ```
+   GATE_FAIL | phase=<this phase's _phase> | field=<_stale_artifact> | reason=stale_downstream
+   ```
+
+   Do NOT modify artifacts. Do NOT update `.phase-status.json`. Tell the user the
+   downstream work may be stale and they must confirm the re-run.
+3. If the user HAS explicitly confirmed the re-run (`_on_confirm:
+   reset_downstream_to_pending`): before proceeding, set every phase downstream of
+   this one (its `_advances_to` and everything after it on the backbone) back to
+   `"pending"` in `.phase-status.json`. Then run the phase normally.
+
+`phase=` and `reason=stale_downstream` are NOT stored in the frontmatter — you
+reconstruct the `GATE_FAIL` line from this phase's `_phase` plus the constant
+`stale_downstream` reason. This guard is the single source of truth for
+stale-downstream re-entry; there is no separate per-phase prose or shared-file
+table for it.
 
 ### Backbone vs checkpoint phases
 
@@ -84,8 +123,9 @@ out as a per-phase "initialize" step.
      - `[C] Cancel`
    - **If resuming:** set `$MIGRATION_DIR` to the selected run's directory. Read
      its `.phase-status.json` and validate it per the State Machine in `SKILL.md`.
-     If the `_init` phase is already `completed`, apply the re-entry rules (see the
-     phase's prose and `shared/handoff-gates.md`) before proceeding.
+     If the `_init` phase is already `completed`, apply the re-entry rules (see
+     the phase's `_re_entry_guard` frontmatter and § `_re_entry_guard` above)
+     before proceeding.
    - **If fresh, or no existing runs:** continue to step 2.
 
 2. Create `.migration/[MMDD-HHMM]/` (e.g. `.migration/0315-1030/`) using the

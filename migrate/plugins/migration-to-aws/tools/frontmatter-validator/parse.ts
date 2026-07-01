@@ -8,6 +8,7 @@ import type {
   FragmentFrontmatter,
   FragmentRef,
   PhaseFrontmatter,
+  ReEntryGuard,
   Trigger,
 } from "./types.ts";
 import { readFileSync } from "node:fs";
@@ -15,6 +16,10 @@ import { readFileSync } from "node:fs";
 const PHASE_KEYS = new Set([
   "_phase", "_title", "_kind", "_requires_phase", "_init", "_input",
   "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
+  "_re_entry_guard",
+]);
+const GUARD_KEYS = new Set([
+  "_stale_if_completed", "_stale_artifact", "_on_reentry", "_on_confirm",
 ]);
 const FRAGMENT_KEYS = new Set(["_fragment", "_of_phase", "_contributes"]);
 const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces"]);
@@ -80,6 +85,43 @@ function parseFragments(fm: string): FragmentRef[] {
   return out;
 }
 
+/** Extract the indented body lines of a `key:` block (lines more-indented than the key). */
+function indentedBlock(fm: string, key: string): string | null {
+  const lines = fm.split("\n");
+  const idx = lines.findIndex((l) => new RegExp(`^${key}:\\s*$`).test(l));
+  if (idx === -1) return null;
+  const body: string[] = [];
+  for (let i = idx + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.trim() === "") continue;
+    if (/^\s/.test(l)) body.push(l);
+    else break; // dedent to column 0 ends the block
+  }
+  return body.join("\n");
+}
+
+/** Parse the nested `_re_entry_guard:` block, or null when the key is absent. */
+function parseReEntryGuard(fm: string): ReEntryGuard | null {
+  const body = indentedBlock(fm, "_re_entry_guard");
+  if (body === null) return null;
+  const sub = (k: string): string | null => {
+    const m = new RegExp(`^\\s*${k}:\\s*(.+)$`, "m").exec(body);
+    return m ? m[1].trim().replace(/^["']|["']$/g, "") : null;
+  };
+  const guardKeys: string[] = [];
+  for (const line of body.split("\n")) {
+    const m = /^\s*(_[a-z_]+):/.exec(line);
+    if (m) guardKeys.push(m[1]);
+  }
+  return {
+    staleIfCompleted: sub("_stale_if_completed"),
+    staleArtifact: sub("_stale_artifact"),
+    onReentry: sub("_on_reentry"),
+    onConfirm: sub("_on_confirm"),
+    unknownKeys: guardKeys.filter((k) => !GUARD_KEYS.has(k)),
+  };
+}
+
 export function parsePhase(path: string, fm: string): PhaseFrontmatter {
   const assembleBlock = /_assemble:\s*\n\s*_file:\s*([^\n]+)/.exec(fm);
   const roleRaw = scalar(fm, "_kind");
@@ -100,6 +142,7 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     assembleFile: assembleBlock ? assembleBlock[1].trim() : null,
     produces: blockList(fm, "_produces"),
     advancesTo: scalar(fm, "_advances_to"),
+    reEntryGuard: parseReEntryGuard(fm),
     unknownKeys: unknownAmong(fm, PHASE_KEYS),
   };
 }

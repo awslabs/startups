@@ -15,6 +15,11 @@ _assemble:
 _produces:
   - heroku-resource-inventory.json
 _advances_to: clarify
+_re_entry_guard:
+  _stale_if_completed: clarify
+  _stale_artifact: preferences.json
+  _on_reentry: stop_unless_confirmed
+  _on_confirm: reset_downstream_to_pending
 ---
 
 # Phase 1: Discover Heroku Resources
@@ -93,7 +98,7 @@ GATE_FAIL | phase=<target_phase> | field=phases.<active_phase> | reason=invalid
    - The error category (e.g., `no_sources`, `state_corrupted`, `auth_failure`)
    - Actionable guidance on how to resolve
 
-**Rule 5 — Phase re-entry:** See `shared/handoff-gates.md` re-entry table. Re-running a phase after downstream phases completed requires explicit user confirmation; downstream phases must be reset to `"pending"`.
+**Rule 5 — Phase re-entry:** Stale-downstream re-entry is handled by each phase's `_re_entry_guard` frontmatter — see `INTERPRETER.md` § `_re_entry_guard`. Re-running a phase after a downstream phase completed requires explicit user confirmation; on confirmation the downstream phases are reset to `"pending"`.
 
 ---
 
@@ -192,12 +197,6 @@ Verify required artifacts exist in `$MIGRATION_DIR/`:
 
 Load `shared/handoff-gates.md`. **Re-read from disk** every artifact below before checking.
 
-**Re-entry guard:** If `preferences.json` exists AND `phases.clarify` is `"completed"`: STOP unless the user explicitly confirms re-running Discover. Emit:
-
-```
-GATE_FAIL | phase=discover | field=preferences.json | reason=stale_downstream
-```
-
 **Checks (all must PASS):**
 
 1. `heroku-resource-inventory.json` exists with at least one resource entry.
@@ -206,7 +205,7 @@ GATE_FAIL | phase=discover | field=preferences.json | reason=stale_downstream
 4. No forbidden clustering fields present (`cluster_id`, `creation_order_depth`, `edges`, `dependencies`, `must_migrate_together`).
 5. Route output gates from Step 4 all pass.
 
-**On any FAIL:** Emit `GATE_FAIL | phase=discover | field=<path> | reason=<missing|invalid|stale_downstream>`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user which sub-discovery to re-run.
+**On any FAIL:** Emit `GATE_FAIL | phase=discover | field=<path> | reason=<missing|invalid>`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user which sub-discovery to re-run.
 
 **On PASS:** Emit `HANDOFF_OK | phase=discover | artifacts=<comma-separated list of files verified>`.
 
@@ -270,7 +269,6 @@ All user communication via output messages only.
 | All sub-discoveries produce no resources                       | STOP, surface diagnostic                       | Revert to `pending` (Rule 4)  |
 | `.phase-status.json` invalid JSON                              | STOP, surface diagnostic                       | N/A (state corrupted)         |
 | Handoff gate check fails (GATE_FAIL)                           | Halt pipeline, surface diagnostic              | Retain `in_progress` (Rule 3) |
-| Downstream artifacts stale (re-entry)                          | Halt, emit GATE_FAIL stale_downstream          | Retain `in_progress` (Rule 3) |
 
 ---
 

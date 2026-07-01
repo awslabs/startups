@@ -53,12 +53,6 @@ Verify required artifacts exist in `$MIGRATION_DIR/`:
 
 Load `shared/handoff-gates.md`. **Re-read from disk** every artifact below before checking.
 
-**Re-entry guard:** If `estimation-infra.json` exists AND `phases.estimate` is `"completed"`: STOP unless the user explicitly confirms re-running Design. Emit:
-
-```
-GATE_FAIL | phase=design | field=estimation-infra.json | reason=stale_downstream
-```
-
 **Checks (all must PASS):**
 
 1. `aws-design.json` exists and parses as valid JSON.
@@ -73,7 +67,7 @@ GATE_FAIL | phase=design | field=estimation-infra.json | reason=stale_downstream
 10. No Fir-specific Terraform (ARM/Graviton, CNB) appears anywhere in output.
 11. Route output gates from Step 7 all pass.
 
-**On any FAIL:** Emit `GATE_FAIL | phase=design | field=<path> | reason=<missing|invalid|stale_downstream>`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user what failed and how to fix it.
+**On any FAIL:** Emit `GATE_FAIL | phase=design | field=<path> | reason=<missing|invalid>`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user what failed and how to fix it.
 
 **On PASS:** Emit `HANDOFF_OK | phase=design | artifacts=aws-design.json`.
 
@@ -134,4 +128,3 @@ All user communication via output messages only.
 | Partial match on Fast-Path Table             | Specialist gate (NOT a match), continue         | Continue `in_progress`        |
 | No services AND no deferred entries produced | Unrecoverable error                             | Revert to `pending` (Rule 4)  |
 | Handoff gate check fails (GATE_FAIL)         | Halt pipeline, surface diagnostic               | Retain `in_progress` (Rule 3) |
-| Downstream artifacts stale (re-entry)        | Halt, emit GATE_FAIL stale_downstream           | Retain `in_progress` (Rule 3) |

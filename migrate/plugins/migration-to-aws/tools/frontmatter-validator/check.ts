@@ -117,6 +117,64 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
+  // ---- Re-entry guard checks (INTERPRETER.md § _re_entry_guard) ----
+  // The guard is skill-agnostic structure: a phase's re-run is stale-blocked by the
+  // completion of the phase it advances to. Enforced per-phase; cross-phase artifact
+  // check runs once the downstream phase's frontmatter is present.
+  const guardOnReentry = new Set(["stop_unless_confirmed"]);
+  const guardOnConfirm = new Set(["reset_downstream_to_pending"]);
+  const phasesByName = new Map(skill.phases.map((p) => [p.phase, p] as const));
+  for (const phase of skill.phases) {
+    const g = phase.reEntryGuard;
+    if (!g) continue;
+    const pf = skill.rel(phase.sourceFile);
+
+    // unknown sub-keys (typo catch)
+    for (const k of g.unknownKeys) add(pf, `unknown _re_entry_guard sub-key '${k}'`);
+
+    // required-together: all four sub-keys present
+    if (!g.staleIfCompleted) add(pf, `_re_entry_guard missing _stale_if_completed`);
+    if (!g.staleArtifact) add(pf, `_re_entry_guard missing _stale_artifact`);
+    if (!g.onReentry) add(pf, `_re_entry_guard missing _on_reentry`);
+    if (!g.onConfirm) add(pf, `_re_entry_guard missing _on_confirm`);
+
+    // enum membership
+    if (g.onReentry && !guardOnReentry.has(g.onReentry)) {
+      add(pf, `_re_entry_guard._on_reentry '${g.onReentry}' is not a recognized value (expected: stop_unless_confirmed)`);
+    }
+    if (g.onConfirm && !guardOnConfirm.has(g.onConfirm)) {
+      add(pf, `_re_entry_guard._on_confirm '${g.onConfirm}' is not a recognized value (expected: reset_downstream_to_pending)`);
+    }
+
+    // a terminal-advancing phase (or one with no downstream) must NOT carry a guard
+    if (!phase.advancesTo || TERMINALS.has(phase.advancesTo)) {
+      add(pf, `phase '${phase.phase}' has a _re_entry_guard but no downstream backbone phase (its _advances_to is '${phase.advancesTo ?? "(none)"}') — a guard is meaningless with nothing downstream`);
+    }
+
+    // guard ⟺ advancer: the phase is stale-blocked by the completion of the phase
+    // it advances to. _stale_if_completed SHOULD equal _advances_to.
+    if (g.staleIfCompleted && phase.advancesTo && !TERMINALS.has(phase.advancesTo) &&
+        g.staleIfCompleted !== phase.advancesTo) {
+      add(pf, `_re_entry_guard._stale_if_completed '${g.staleIfCompleted}' should equal this phase's _advances_to '${phase.advancesTo}' (a phase's re-run is stale-blocked by the completion of the phase it advances to)`);
+    }
+
+    // phase-ref resolves: _stale_if_completed names a declared phase (verify only when
+    // that phase has frontmatter — tolerant of partial rollout).
+    if (g.staleIfCompleted && declaredPhases.size > 1 && !declaredPhases.has(g.staleIfCompleted)) {
+      add(pf, `_re_entry_guard._stale_if_completed '${g.staleIfCompleted}' names no declared phase`);
+    }
+
+    // artifact ⟺ downstream _produces (HARD FAIL): _stale_artifact must be one of the
+    // downstream phase's _produces. Checked only when the downstream phase's
+    // frontmatter is present (otherwise UNVERIFIED — partial rollout).
+    if (g.staleIfCompleted && g.staleArtifact) {
+      const downstream = phasesByName.get(g.staleIfCompleted);
+      if (downstream && !downstream.produces.includes(g.staleArtifact)) {
+        add(pf, `_re_entry_guard._stale_artifact '${g.staleArtifact}' is not in the _produces of the downstream phase '${g.staleIfCompleted}' (declared: ${downstream.produces.join(", ") || "(none)"})`);
+      }
+    }
+  }
+
   // ---- Backbone chain-consistency (backbone phases only; checkpoints excluded) ----
   // The backbone is the linear lifecycle wired by _advances_to (forward) and
   // _requires_phase (backward). Checkpoints (_kind: checkpoint) are off-backbone and

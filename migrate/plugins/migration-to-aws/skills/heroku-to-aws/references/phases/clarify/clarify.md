@@ -13,6 +13,11 @@ _assemble:
 _produces:
   - preferences.json
 _advances_to: design
+_re_entry_guard:
+  _stale_if_completed: design
+  _stale_artifact: aws-design.json
+  _on_reentry: stop_unless_confirmed
+  _on_confirm: reset_downstream_to_pending
 ---
 
 # Phase 2: Clarify Requirements

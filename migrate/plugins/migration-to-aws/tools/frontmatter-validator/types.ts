@@ -18,6 +18,15 @@ export interface FragmentRef {
   file: string; // path relative to the skill's references/ root
 }
 
+/** A phase's stale-downstream re-entry guard (see INTERPRETER.md § _re_entry_guard). */
+export interface ReEntryGuard {
+  staleIfCompleted: string | null; // _stale_if_completed — downstream phase whose completion blocks re-run
+  staleArtifact: string | null; // _stale_artifact — the artifact named in the GATE_FAIL field
+  onReentry: string | null; // _on_reentry — closed enum
+  onConfirm: string | null; // _on_confirm — closed enum
+  unknownKeys: string[]; // sub-keys not in the closed guard vocab
+}
+
 /** The phase orchestrator file's frontmatter. */
 export interface PhaseFrontmatter {
   kind: "phase";
@@ -34,6 +43,7 @@ export interface PhaseFrontmatter {
   assembleFile: string | null; // _assemble._file
   produces: string[];
   advancesTo: string | null;
+  reEntryGuard: ReEntryGuard | null; // _re_entry_guard (backbone phases with a downstream); null when absent
   unknownKeys: string[]; // top-level _keys not in the closed vocab
 }
 

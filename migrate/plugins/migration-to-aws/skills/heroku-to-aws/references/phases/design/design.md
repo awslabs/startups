@@ -17,6 +17,11 @@ _assemble:
 _produces:
   - aws-design.json
 _advances_to: estimate
+_re_entry_guard:
+  _stale_if_completed: estimate
+  _stale_artifact: estimation-infra.json
+  _on_reentry: stop_unless_confirmed
+  _on_confirm: reset_downstream_to_pending
 ---
 
 # Phase 3: Design AWS Architecture
