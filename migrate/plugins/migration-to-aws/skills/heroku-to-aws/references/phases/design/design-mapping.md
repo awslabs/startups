@@ -9,10 +9,10 @@ _contributes:
 
 > Self-contained mapping sub-file (the always-on path). Validates prerequisites,
 > initializes the design structure, performs the single-pass resource mapping
-> (Fargate/RDS/ElastiCache/MSK/fast-path/deferred), designs the VPC + security
-> groups, and adds Cedar/Fir notation + metadata. When the Kubernetes preference
-> selects EKS, formation mapping is handled by `design-eks.md` instead of the
-> Fargate branch below. The final artifact write, output checks, handoff gate, and
+> (Elastic Beanstalk/Fargate/EKS/RDS/ElastiCache/MSK/fast-path/deferred), designs the VPC + security
+> groups, and adds Cedar/Fir notation + metadata. The default compute target is
+> Elastic Beanstalk; Fargate and EKS are available as user overrides via Q12c.
+> The final artifact write, output checks, handoff gate, and
 > phase-status update are owned by the assembler (`design-assemble.md`).
 
 **Execute ALL steps in order. Do not skip or deviate.**
@@ -75,23 +75,81 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 
 ---
 
-### 2A: Formation Mapping (Fargate or EKS)
+### 2A: Formation Mapping (Elastic Beanstalk, Fargate, or EKS)
 
 **Trigger**: `resource_type == "formation"`
 
 **Prerequisites**:
 
-- Read `preferences.json → design_constraints.kubernetes.value` (may be absent).
-- If value is `"eks-managed"` or `"eks-or-ecs"`: Load `design-refs/eks-mapping-table.md` and `phases/design/design-eks.md`. Follow the EKS branch logic in `design-eks.md` for ALL formations. Skip the Fargate mapping below.
-- Otherwise (value is `"ecs-fargate"` or field is absent): Load `design-refs/dyno-type-table.md` if not already loaded. Follow the Fargate mapping below.
+- Read `preferences.json → design_constraints.compute_target.value` (may be absent; fall back to `design_constraints.kubernetes.value` for backwards compatibility).
+- If value is `"eks"` or (legacy) `"eks-managed"` or `"eks-or-ecs"`: Load `design-refs/eks-mapping-table.md` and `phases/design/design-eks.md`. Follow the EKS branch logic. Skip EB and Fargate below.
+- If value is `"fargate"` or (legacy) `"ecs-fargate"`: Load `design-refs/dyno-type-table.md`. Follow the Fargate mapping below.
+- Otherwise (value is `"elastic_beanstalk"` or field is absent): Follow the Elastic Beanstalk mapping below (default path).
 
 #### EKS Branch
 
-When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`, load and follow `references/phases/design/design-eks.md`. That file contains the complete EKS mapping logic. ALL formations are mapped to EKS. Return here after EKS mapping is complete (skip the Fargate logic below).
+When `design_constraints.compute_target.value` is `"eks"` or (legacy) `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`, load and follow `references/phases/design/design-eks.md`. That file contains the complete EKS mapping logic. ALL formations are mapped to EKS. Return here after EKS mapping is complete (skip the EB and Fargate logic below).
 
-**Fir intent precedence**: If `preferences.operational.fir_intent` is `"self_managed_eks_ecs"` AND `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent, the Fir intent does NOT automatically enable EKS for all formations. The Fir intent is compute-destination-only for Fir workloads and is handled as a deferred notation (no Terraform generation for Fir in v1). The global `design_constraints.kubernetes.value` preference takes precedence for non-Fir formations.
+**Fir intent precedence**: If `preferences.operational.fir_intent` is `"self_managed_eks_ecs"` AND `design_constraints.compute_target.value` is `"elastic_beanstalk"` or `"fargate"` or absent, the Fir intent does NOT automatically enable EKS for all formations. The Fir intent is compute-destination-only for Fir workloads and is handled as a deferred notation (no Terraform generation for Fir in v1). The global `design_constraints.compute_target.value` preference takes precedence for non-Fir formations.
 
-#### Fargate Branch (default)
+#### Elastic Beanstalk Branch (default)
+
+**Mapping logic:**
+
+1. Extract `config.dyno_type`, `config.quantity`, `config.process_type` from the resource.
+
+2. **Empty Procfile check**: If there are NO formation resources in the entire inventory for this app, reject the input. Record in `warnings[]` and skip.
+
+3. **Instance type selection**: Map dyno type to EC2 instance type:
+
+   | Heroku Dyno Type | EC2 Instance Type | Notes |
+   | ---------------- | ----------------- | ----- |
+   | eco, basic       | t3.micro          | Minimal dev workloads |
+   | standard-1x     | t3.small           | 512MB equivalent |
+   | standard-2x     | t3.medium          | 1GB equivalent |
+   | performance-m    | m5.large           | 2.5GB, dedicated CPU |
+   | performance-l    | m5.xlarge          | 14GB, dedicated CPU |
+   | performance-l-ram | r5.xlarge         | 14GB RAM-optimized |
+   | performance-xl   | m5.2xlarge         | 46GB, high compute |
+   | performance-2xl  | m5.4xlarge         | 62GB, max compute |
+
+   If dyno type not found, add to `warnings[]` and skip.
+
+4. **Environment type**:
+   - If `process_type == "web"` → `environment_type: "LoadBalanced"` (includes ALB)
+   - Otherwise (worker, clock, release) → `environment_type: "Worker"` (SQS-backed)
+
+5. **Produce Elastic Beanstalk entry**:
+
+   ```json
+   {
+     "service_id": "eb:{heroku_app}:{process_type}",
+     "source_resource_id": "{resource_id}",
+     "heroku_app": "{heroku_app}",
+     "aws_service": "Elastic Beanstalk",
+     "confidence": "deterministic",
+     "aws_config": {
+       "region": "{target_region}",
+       "platform": "Docker running on 64bit Amazon Linux 2023",
+       "instance_type": "<from table>",
+       "environment_type": "<LoadBalanced|Worker>",
+       "min_instances": 1,
+       "max_instances": <config.quantity or 2, whichever is greater>,
+       "process_type": "{process_type}",
+       "deployment_policy": "Rolling"
+     }
+   }
+   ```
+
+6. **No separate ALB entry**: Unlike Fargate, EB LoadBalanced environments include ALB automatically. Do NOT produce a separate ALB service entry for web process types.
+
+7. Append to `services[]`. Increment `metadata.total_services`.
+
+---
+
+#### Fargate Branch (override)
+
+**Trigger**: `compute_target == "fargate"` (user override from Q12c).
 
 **Mapping logic:**
 
