@@ -31,7 +31,7 @@ Strands Agents is an open-source SDK from AWS (open-sourced May 2025, 1.0 releas
 
 - Working LangGraph/CrewAI/AutoGen system where retarget (model swap) is sufficient
 - Team needs to ship in < 2 weeks (retarget or Harness is faster)
-- Simple single-agent pattern (Harness is simpler — config vs code)
+- Simple single-agent pattern (Harness is simpler and GA — config vs code)
 - Team has no Python/TypeScript expertise (Strands SDK is Python and TypeScript)
 
 ---
