@@ -20,7 +20,7 @@ _produces:
 
 ## Step 4: Assemble and Write preferences.json
 
-Assemble all interpreted answers into the final `$MIGRATION_DIR/preferences.json`. If `preferences-draft.json` exists, use it as the base — merge in the final batch's answers, remove draft-specific metadata fields (`draft`, `batches_completed`, `batches_remaining`), and set timestamp to current time.
+Assemble all interpreted answers into the final `$MIGRATION_DIR/preferences.json` from the current session's answers. Set `metadata.timestamp` to the current time.
 
 Write `$MIGRATION_DIR/preferences.json`:
 
@@ -90,7 +90,7 @@ Write `$MIGRATION_DIR/preferences.json`:
 6. `network.existing_vpc_id` and `network.subnet_ids` are `null`/empty when no Private Space peering exists.
 7. `data.database_ha`, `data.redis_ha`, `data.kafka_retention_days` are omitted entirely when those services are not present in the inventory.
 
-After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` if it exists.
+After writing `preferences.json`, delete any stale `$MIGRATION_DIR/preferences-draft.json` left by an older skill version (drafts are no longer written or consumed).
 
 ---
 
@@ -116,7 +116,6 @@ Before handing off to Design:
 - [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`
 - [ ] Only keys with non-null values are present
 - [ ] Output is valid JSON
-- [ ] `preferences-draft.json` has been deleted (if it existed)
 
 ---
 
