@@ -10,7 +10,7 @@
 | Cloud Functions     | `google_cloudfunctions_function` | `compute.md`   | Lambda             |
 | Compute Engine (VM) | `google_compute_instance`        | `compute.md`   | EC2 or Fargate     |
 | GKE                 | `google_container_cluster`       | `compute.md`   | EKS                |
-| App Engine          | `google_app_engine_application`  | `compute.md`   | Fargate or Amplify |
+| App Engine          | `google_app_engine_application`  | `compute.md`   | Elastic Beanstalk (default) or Fargate |
 
 ## Database Services
 

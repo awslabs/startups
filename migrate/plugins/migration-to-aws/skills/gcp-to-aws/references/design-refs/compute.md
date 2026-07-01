@@ -5,7 +5,8 @@
 **Table lookup first:** Check `fast-path.md` **Direct Mappings** for this Terraform type.
 
 - `google_cloud_run_service`, `google_cloud_run_v2_service`, `google_cloudfunctions_function`, and `google_cloudfunctions2_function` are currently in Direct Mappings and usually resolve with `confidence: "deterministic"` when row conditions are met.
-- `google_compute_instance`, `google_container_cluster`, and `google_app_engine_application` are not direct-mapped in `fast-path.md`; use the rubric below (typically `confidence: "inferred"`).
+- `google_app_engine_application` is now in Direct Mappings (→ Elastic Beanstalk, confidence: `deterministic`).
+- `google_compute_instance` and `google_container_cluster` are not direct-mapped in `fast-path.md`; use the rubric below (typically `confidence: "inferred"`).
 - If a resource is not eligible for Direct Mappings (or row conditions are not met), use the rubric below.
 
 ## Eliminators (Hard Blockers)
@@ -17,14 +18,17 @@
 | Cloud Functions | Lambda     | Python version not supported (e.g., Python 2.7) → use custom runtime on Fargate                                                                                |
 | GKE             | EKS        | Custom CRI incompatible → manual workaround or ECS                                                                                                             |
 | Any             | App Runner | **Closed to new customers (April 30 2026).** Do not target App Runner for new migrations. Use Fargate (default), Lambda (event-driven), or EKS (K8s required). |
+| App Engine      | Elastic Beanstalk | `compute_model: "container_orchestration"` or `"serverless"` in preferences → do not use EB, fall through to Fargate or Lambda |
 
 ## Signals (Decision Criteria)
 
-### Cloud Run / App Engine
+### Cloud Run
 
 - **Always-on** or **cold-start sensitive** → Fargate (not Lambda)
 - **Stateless microservice** + **<15 min execution** → Lambda
 - **HTTP-only** + **container-native** → Fargate preferred (better dev/prod parity)
+
+Note: Cloud Run maps to Fargate via deterministic fast-path ("Always"). The `compute_model` preference does not affect Cloud Run mapping.
 
 ### Cloud Functions
 
@@ -41,7 +45,16 @@
 
 - **Kubernetes orchestration explicitly required** (`kubernetes = "eks-managed"` or `"eks-or-ecs"` in `preferences.json`) → EKS
 - **Default / no explicit K8s preference** (`kubernetes = "ecs-fargate"` or absent):
-  - → **Fargate** (absent kubernetes preference resolves to Fargate, not EKS — teams that want EKS answer A or B in Clarify)
+  - If `gcp-resource-inventory.json` contains `google_container_cluster` → EKS (IaC signal shows K8s workload)
+  - Otherwise → **Fargate** (no K8s signal; lower-ops default)
+
+### App Engine
+
+- **Default** → Elastic Beanstalk (PaaS-to-PaaS, preserves managed platform model)
+- **User prefers container control** (`compute_model: "container_orchestration"`) → Fargate
+- **Event-driven / scale-to-zero required** → Lambda
+
+After selecting Elastic Beanstalk, load `elastic-beanstalk.md` to populate `aws_config` (platform, deployment policy, IAM, VPC, sizing).
 
 ## 6-Criteria Rubric
 
@@ -50,6 +63,7 @@ Apply in order; first match wins:
 1. **Eliminators**: Does GCP config violate AWS constraints? If yes: switch to alternative
 2. **Operational Model**: Managed (Lambda, Fargate) vs Self-Hosted (EC2, EKS)?
    - Prefer managed unless: Always-on + high baseline cost → EC2
+   - For App Engine sources: Elastic Beanstalk (PaaS-to-PaaS) when `compute_model` is absent or `"managed_platform"`
 3. **User Preference**: From `preferences.json`: `design_constraints.kubernetes`, `design_constraints.cost_sensitivity`?
    - If `kubernetes = "eks-managed"` → EKS (preserves K8s investment)
    - If `kubernetes = "eks-or-ecs"` → EKS with managed node groups (user is competent with K8s)
@@ -101,6 +115,24 @@ Apply in order; first match wins:
 - Criterion 3 (User Preference): If `design_constraints.gcp_monthly_spend` indicates cost sensitivity, prefer auto-scaling → EC2 + ASG (scale to 0)
 - → **AWS: EC2 t3.medium + Auto Scaling Group (min=0 in dev)**
 - Confidence: `inferred`
+
+### Example 4a: App Engine (standard Python web app, default preference)
+
+- GCP: `google_app_engine_application` (runtime=python39, instance_class=F2)
+- Signals: PaaS deployment, `compute_model` absent or `"managed_platform"`
+- Fast-path condition met: `compute_model` not set to `"container_orchestration"` or `"serverless"`
+- → **AWS: Elastic Beanstalk (Python 3.9, LoadBalanced, t3.small)**
+- Confidence: `deterministic` (App Engine → EB direct mapping, condition met)
+
+### Example 4b: App Engine (user chose container orchestration)
+
+- GCP: `google_app_engine_application` (runtime=python39, instance_class=F2)
+- Signals: PaaS deployment, but `compute_model: "container_orchestration"` in preferences
+- Fast-path condition NOT met: falls through to rubric
+- Criterion 1 (Eliminators): EB blocked (user chose container orchestration)
+- Criterion 2 (Operational Model): Fargate (managed containers)
+- → **AWS: Fargate (0.5 CPU, 1 GB memory)**
+- Confidence: `inferred` (rubric-based override of default PaaS mapping)
 
 ## Output Schema
 
