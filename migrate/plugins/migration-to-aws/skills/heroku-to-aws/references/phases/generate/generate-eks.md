@@ -1,4 +1,17 @@
+---
+_fragment: eks-generate
+_of_phase: generate
+_contributes:
+  - terraform/eks.tf (EKS cluster + node groups, when EKS in design)
+  - kubernetes/ (namespace + deployment + service manifests, when EKS in design)
+---
+
 # EKS Generate Phase
+
+> Conditional generation fragment. Fires (gate in its prose) only when
+> `aws-design.json` contains `aws_service: "EKS"`. When active, it produces the EKS
+> Terraform + kubernetes/ manifests; otherwise the Fargate generation path applies
+> and this fragment is skipped.
 
 **Applies when:** `aws-design.json` contains `aws_service: "EKS"` for one or more services.
 

@@ -1,3 +1,11 @@
+---
+_fragment: terraform
+_of_phase: generate
+_contributes:
+  - terraform/ (all .tf files)
+  - generation-warnings.json (services skipped during terraform generation)
+---
+
 # Generate Phase: Terraform Configuration Generation
 
 > Loaded by `generate.md` when `aws-design.json` and `estimation-infra.json` exist.
