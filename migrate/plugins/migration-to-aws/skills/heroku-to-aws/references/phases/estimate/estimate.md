@@ -6,6 +6,9 @@ _input:
   - aws-design.json
   - preferences.json
   - heroku-resource-inventory.json
+_knowledge:
+  - { file: knowledge/estimate/estimate-defaults.json }
+  - { file: ../shared/pricing/aws-infra-pricing.json }
 _fragments:
   - _id: cost-engine
     _trigger: { _always: true }

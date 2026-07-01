@@ -397,4 +397,57 @@ _produces:
     );
     assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
   });
+
+  // ---- _knowledge + _input resolution ----
+
+  it('accepts _knowledge whose file resolves on disk', () => {
+    const files = chainSkill();
+    files['knowledge/design/sizing.json'] = '{}';
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_knowledge:\n  - { file: knowledge/design/sizing.json }');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects a _knowledge file that does not resolve', () => {
+    const files = chainSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_knowledge:\n  - { file: knowledge/design/MISSING.json }');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /_knowledge file does not resolve: knowledge\/design\/MISSING\.json/);
+  });
+
+  it('accepts a _knowledge _when (opaque, not evaluated)', () => {
+    const files = chainSkill();
+    files['knowledge/x.json'] = '{}';
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_knowledge:\n  - { file: knowledge/x.json, _when: "inventory has a formation" }');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('accepts _input resolving to an upstream _produces (and the workspace literal)', () => {
+    // chainSkill: discover _input workspace (add it), clarify reads discover.json
+    const files = chainSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true', '_init: true\n_input: workspace');
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_requires_phase: discover\n_input:\n  - discover.json');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects an _input artifact produced by no phase', () => {
+    const files = chainSkill();
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_requires_phase: discover\n_input:\n  - nonexistent-artifact.json');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /_input 'nonexistent-artifact\.json' is not produced by any declared phase/);
+  });
 });

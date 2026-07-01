@@ -272,5 +272,34 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
+  // ---- _knowledge (JSON data deps resolve) + _input (resolves to an upstream _produces) ----
+  const skillRoot = join(skill.referencesRoot, "..");
+  // every artifact any declared phase produces (for _input resolution)
+  const allProduced = new Set<string>();
+  for (const p of skill.phases) for (const art of p.produces) allProduced.add(art);
+  const INPUT_LITERALS = new Set(["workspace"]);
+  const isGlob = (s: string) => /[*?{]/.test(s);
+
+  for (const phase of skill.phases) {
+    const pf = skill.rel(phase.sourceFile);
+
+    // _knowledge files must resolve on disk (relative to the skill root). _when opaque.
+    for (const k of phase.knowledge) {
+      if (!existsSync(join(skillRoot, k.file))) {
+        add(pf, `_knowledge file does not resolve: ${k.file}`);
+      }
+    }
+
+    // _input resolution: each entry is 'workspace', a glob (e.g. the phase-status file),
+    // or an artifact produced by some declared phase. Enforce the produced-by check only
+    // once >1 phase declares frontmatter (partial-rollout tolerant).
+    for (const inp of phase.input) {
+      if (INPUT_LITERALS.has(inp) || isGlob(inp)) continue;
+      if (declaredPhases.size > 1 && !allProduced.has(inp)) {
+        add(pf, `_input '${inp}' is not produced by any declared phase (no phase declares it in _produces)`);
+      }
+    }
+  }
+
   return findings;
 }

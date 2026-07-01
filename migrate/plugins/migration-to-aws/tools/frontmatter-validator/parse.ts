@@ -8,6 +8,7 @@ import type {
   CheckItem,
   FragmentFrontmatter,
   FragmentRef,
+  KnowledgeRef,
   PhaseFrontmatter,
   ReEntryGuard,
   Trigger,
@@ -18,6 +19,7 @@ const PHASE_KEYS = new Set([
   "_phase", "_title", "_kind", "_requires_phase", "_init", "_input",
   "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
   "_re_entry_guard", "_preconditions", "_postconditions", "_forbids_files",
+  "_knowledge",
 ]);
 /** The closed vocabulary of check kinds usable in _preconditions/_postconditions. */
 export const CHECK_KINDS = new Set([
@@ -110,6 +112,34 @@ function indentedBlock(fm: string, key: string): string | null {
   return body.join("\n");
 }
 
+/** Parse `_input`: either a scalar (`workspace` / a quoted glob) or a block list. */
+function parseInput(fm: string): string[] {
+  // Block form first: `_input:` followed by newline + `- ` items.
+  const block = blockList(fm, "_input");
+  if (block.length) return block;
+  // Scalar form: `_input: <value>` on the same line.
+  const m = /^_input:[ \t]*(\S.*)$/m.exec(fm);
+  if (m) return [m[1].trim().replace(/^["']|["']$/g, "")];
+  return [];
+}
+
+/** Parse `_knowledge`: a list of inline `{ file: <path>, _when: <prose> }` maps. */
+function parseKnowledge(fm: string): KnowledgeRef[] {
+  const body = indentedBlock(fm, "_knowledge");
+  if (body === null) return [];
+  const out: KnowledgeRef[] = [];
+  for (const line of body.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("-")) continue;
+    const fm2 = /file:\s*([^,}]+)/.exec(t);
+    if (!fm2) continue;
+    const file = fm2[1].trim().replace(/^["']|["']$/g, "");
+    const wm = /_when:\s*["']?([^"'}]+)["']?/.exec(t);
+    out.push({ file, when: wm ? wm[1].trim() : null });
+  }
+  return out;
+}
+
 /** Parse the nested `_re_entry_guard:` block, or null when the key is absent. */
 function parseReEntryGuard(fm: string): ReEntryGuard | null {
   const body = indentedBlock(fm, "_re_entry_guard");
@@ -199,6 +229,8 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     preconditions: parseChecks(fm, "_preconditions"),
     postconditions: parseChecks(fm, "_postconditions"),
     forbidsFiles: blockList(fm, "_forbids_files"),
+    input: parseInput(fm),
+    knowledge: parseKnowledge(fm),
     unknownKeys: unknownAmong(fm, PHASE_KEYS),
   };
 }

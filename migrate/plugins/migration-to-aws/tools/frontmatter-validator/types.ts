@@ -34,6 +34,12 @@ export interface CheckItem {
   onFailure: string | null; // _on_failure action name
 }
 
+/** One entry in a phase's `_knowledge` list (a JSON data dependency). */
+export interface KnowledgeRef {
+  file: string; // path relative to the skill root
+  when: string | null; // optional opaque prose condition (bound, not evaluated by CI)
+}
+
 /** The phase orchestrator file's frontmatter. */
 export interface PhaseFrontmatter {
   kind: "phase";
@@ -54,6 +60,8 @@ export interface PhaseFrontmatter {
   preconditions: CheckItem[]; // _preconditions (entry gate); empty when absent
   postconditions: CheckItem[]; // _postconditions (completion gate); empty when absent
   forbidsFiles: string[]; // _forbids_files globs; empty when absent
+  input: string[]; // _input entries (artifacts / 'workspace' / a glob)
+  knowledge: KnowledgeRef[]; // _knowledge JSON data deps; empty when absent
   unknownKeys: string[]; // top-level _keys not in the closed vocab
 }
 
