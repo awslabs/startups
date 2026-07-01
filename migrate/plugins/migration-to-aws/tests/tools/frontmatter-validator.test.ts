@@ -149,4 +149,108 @@ describe('frontmatter-validator', () => {
       'should not fail on an unverifiable forward reference',
     );
   });
+
+  // ---- backbone / checkpoint + chain-consistency ----
+
+  // A fully-declared 2-phase backbone (discover -> clarify -> complete) plus a
+  // feedback CHECKPOINT (off-backbone, trigger-entered). Minimal but complete.
+  function chainSkill(): Record<string, string> {
+    const phase = (name: string, extra: string, frag = name, assemble = name) => ({
+      [`references/phases/${name}/${name}.md`]:
+`---
+_phase: ${name}
+_title: "${name}"
+${extra}
+_fragments:
+  - _id: ${frag}
+    _trigger: { _always: true }
+    _file: phases/${name}/${name}-frag.md
+_assemble:
+  _file: phases/${name}/${name}-asm.md
+_produces:
+  - ${name}.json
+---
+# ${name}
+`,
+      [`references/phases/${name}/${name}-frag.md`]:
+`---
+_fragment: ${frag}
+_of_phase: ${name}
+_contributes:
+  - ${name}.json
+---
+# frag
+`,
+      [`references/phases/${name}/${name}-asm.md`]:
+`---
+_assemble: asm-${name}
+_of_phase: ${name}
+_reads:
+  - ${frag}
+_produces:
+  - ${name}.json
+---
+# asm
+`,
+    });
+    return {
+      ...phase('discover', '_init: true\n_advances_to: clarify'),
+      ...phase('clarify', '_requires_phase: discover\n_advances_to: complete'),
+      ...phase(
+        'feedback',
+        '_kind: checkpoint\n_requires_phase: discover\n_trigger: { _when: "user opts in" }',
+      ),
+    };
+  }
+
+  it('accepts a valid backbone + a checkpoint phase', () => {
+    const findings = validateFixture(chainSkill());
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects a checkpoint phase that declares _advances_to (must be off-backbone)', () => {
+    const files = chainSkill();
+    files['references/phases/feedback/feedback.md'] = files[
+      'references/phases/feedback/feedback.md'
+    ].replace('_trigger: { _when: "user opts in" }', '_trigger: { _when: "user opts in" }\n_advances_to: complete');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /checkpoint phase 'feedback' must NOT declare _advances_to/);
+  });
+
+  it('rejects a checkpoint phase with no phase-level _trigger', () => {
+    const files = chainSkill();
+    files['references/phases/feedback/feedback.md'] = files[
+      'references/phases/feedback/feedback.md'
+    ].replace('\n_trigger: { _when: "user opts in" }', '');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /checkpoint phase 'feedback' must declare a phase-level _trigger/);
+  });
+
+  it('rejects a backbone phase that declares a phase-level _trigger', () => {
+    const files = chainSkill();
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_requires_phase: discover\n_trigger: { _when: "x" }');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /backbone phase 'clarify' must NOT declare a phase-level _trigger/);
+  });
+
+  it('rejects a backbone phase missing _advances_to', () => {
+    const files = chainSkill();
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('\n_advances_to: complete', '');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /backbone phase 'clarify' must declare _advances_to/);
+  });
+
+  it('rejects a chain inconsistency (forward edge with no matching back-link)', () => {
+    const files = chainSkill();
+    // discover advances to clarify, but make clarify require the wrong predecessor.
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_requires_phase: feedback');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /chain inconsistency/);
+  });
 });

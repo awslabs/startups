@@ -37,13 +37,33 @@ export function check(skill: BoundSkill): Finding[] {
     // closed vocab
     for (const k of phase.unknownKeys) add(pf, `unknown phase frontmatter key '${k}'`);
 
-    // _advances_to / _requires_phase: verify only when the target declares frontmatter;
-    // otherwise UNVERIFIED (skip) — tolerant of partial rollout.
-    if (phase.advancesTo && !TERMINALS.has(phase.advancesTo) && !declaredPhases.has(phase.advancesTo)) {
-      // unverified — target phase has no frontmatter yet. no finding.
+    // backbone/checkpoint contract (see INTERPRETER.md § _kind):
+    //   backbone (default): MUST have _advances_to; MUST NOT have a phase-level _trigger.
+    //   checkpoint: MUST have a phase-level _trigger; MUST NOT have _advances_to
+    //               (off-backbone — entered by its trigger, returns control).
+    if (phase.role === "checkpoint") {
+      if (!phase.trigger) {
+        add(pf, `checkpoint phase '${phase.phase}' must declare a phase-level _trigger (how it is entered)`);
+      } else if (phase.trigger.kind === "unknown") {
+        add(pf, `checkpoint phase '${phase.phase}' has an unrecognized phase _trigger form: ${phase.trigger.raw}`);
+      }
+      if (phase.advancesTo) {
+        add(pf, `checkpoint phase '${phase.phase}' must NOT declare _advances_to (it is off-backbone; it returns control, it does not advance)`);
+      }
+    } else {
+      // backbone
+      if (!phase.advancesTo) {
+        add(pf, `backbone phase '${phase.phase}' must declare _advances_to (or mark it '_kind: checkpoint' if it is an off-backbone checkpoint)`);
+      }
+      if (phase.trigger) {
+        add(pf, `backbone phase '${phase.phase}' must NOT declare a phase-level _trigger (only checkpoint phases are trigger-entered)`);
+      }
     }
+
+    // _requires_phase membership: verify only when >1 phase declares frontmatter AND
+    // the target is not itself declared (otherwise UNVERIFIED — tolerant of partial rollout).
     if (phase.requiresPhase && declaredPhases.size > 1 && !declaredPhases.has(phase.requiresPhase)) {
-      // unverified likewise. no finding.
+      add(pf, `_requires_phase '${phase.requiresPhase}' names no declared phase`);
     }
 
     // fragments
@@ -93,6 +113,57 @@ export function check(skill: BoundSkill): Finding[] {
     for (const art of phase.produces) {
       if (!asm.produces.includes(art)) {
         add(pf, `phase _produces '${art}' but the assembler does not declare it in _produces (single-creator rule)`);
+      }
+    }
+  }
+
+  // ---- Backbone chain-consistency (backbone phases only; checkpoints excluded) ----
+  // The backbone is the linear lifecycle wired by _advances_to (forward) and
+  // _requires_phase (backward). Checkpoints (_kind: checkpoint) are off-backbone and
+  // are NOT part of this graph. Enforced only once >1 phase declares frontmatter AND
+  // every backbone _advances_to target is either a terminal or a declared phase
+  // (i.e. the backbone is fully present — tolerant of partial rollout).
+  const backbone = skill.phases.filter((p) => p.role === "backbone");
+  if (backbone.length > 1) {
+    const byName = new Map(backbone.map((p) => [p.phase, p] as const));
+    const advTargetsResolvable = backbone.every(
+      (p) => !p.advancesTo || TERMINALS.has(p.advancesTo) || byName.has(p.advancesTo),
+    );
+    if (advTargetsResolvable) {
+      const relOf = (p: PhaseFrontmatter) => skill.rel(p.sourceFile);
+
+      // (1) single head: exactly one backbone phase with no _requires_phase.
+      const heads = backbone.filter((p) => !p.requiresPhase);
+      if (heads.length !== 1) {
+        const names = heads.map((h) => h.phase).join(", ") || "(none)";
+        add(relOf(backbone[0]), `backbone must have exactly one head (a phase with no _requires_phase); found ${heads.length}: ${names}`);
+      }
+
+      // (2) single terminal: exactly one backbone phase advancing to a terminal.
+      const terminals = backbone.filter((p) => p.advancesTo && TERMINALS.has(p.advancesTo));
+      if (terminals.length !== 1) {
+        const names = terminals.map((t) => t.phase).join(", ") || "(none)";
+        add(relOf(backbone[0]), `backbone must have exactly one terminal (a phase whose _advances_to is complete/done/end); found ${terminals.length}: ${names}`);
+      }
+
+      // (3) forward⇒back: if A _advances_to B and B is a backbone phase, B must _requires_phase A.
+      for (const a of backbone) {
+        if (a.advancesTo && !TERMINALS.has(a.advancesTo)) {
+          const b = byName.get(a.advancesTo);
+          if (b && b.requiresPhase !== a.phase) {
+            add(relOf(a), `chain inconsistency: '${a.phase}' _advances_to '${b.phase}', but '${b.phase}' _requires_phase '${b.requiresPhase ?? "(none)"}' (expected '${a.phase}')`);
+          }
+        }
+      }
+
+      // (4) back⇒forward: if B _requires_phase A (both backbone), A must _advances_to B.
+      for (const b of backbone) {
+        if (b.requiresPhase && byName.has(b.requiresPhase)) {
+          const a = byName.get(b.requiresPhase)!;
+          if (a.advancesTo !== b.phase) {
+            add(relOf(b), `chain inconsistency: '${b.phase}' _requires_phase '${a.phase}', but '${a.phase}' _advances_to '${a.advancesTo ?? "(none)"}' (expected '${b.phase}')`);
+          }
+        }
       }
     }
   }
