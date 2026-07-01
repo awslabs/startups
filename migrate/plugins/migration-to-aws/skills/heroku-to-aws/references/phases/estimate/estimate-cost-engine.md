@@ -186,7 +186,7 @@ Calculate 3 cost tiers to show the optimization range:
 | ------------- | ------------------------ | ------------------------------------------------------------------------------------------------- |
 | **Premium**   | Highest resilience       | Multi-AZ everything, latest-gen instances, no Spot, enhanced monitoring                           |
 | **Balanced**  | Standard setup (default) | On-demand pricing, Multi-AZ where configured, standard monitoring                                 |
-| **Optimized** | Cost-minimized           | Reserved pricing assumption (20-40% discount), Fargate Spot where applicable, S3-IA for cold data |
+| **Optimized** | Cost-minimized           | Reserved pricing assumption (20-40% discount), Spot instances for workers (EB or Fargate), S3-IA for cold data |
 
 **Balanced** is the primary comparison tier. Generated Terraform (Phase 5) aligns with **Balanced**.
 
@@ -380,20 +380,20 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 
 **Emit in `optimization_opportunities[]`:**
 
-### Compute Savings Plans (when Fargate in design)
+### Compute Savings Plans (when Elastic Beanstalk or Fargate in design)
 
 ```json
 {
   "opportunity": "Compute Savings Plans",
   "type": "compute_savings_plan",
-  "target_services": ["Fargate"],
+  "target_services": ["Elastic Beanstalk", "Fargate"],
   "savings_percent": "20-66%",
   "savings_monthly": null,
   "commitment": "1-year or 3-year",
   "timing": "post-migration (after 30-90 days of usage data)",
   "implementation_effort": "low",
   "prerequisite": "Establish AWS compute usage baseline before committing",
-  "description": "Heroku dyno billing is flat-rate per dyno type. Fargate usage patterns may differ — establish AWS baseline before Savings Plan commitment. Use Cost Explorer recommendations after 30+ days.",
+  "description": "Heroku dyno billing is flat-rate per dyno type. AWS compute usage patterns may differ — establish baseline before Savings Plan commitment. Compute Savings Plans apply to both EC2 instances (EB) and Fargate tasks. Use Cost Explorer recommendations after 30+ days.",
   "references": [
     "https://aws.amazon.com/savingsplans/compute-pricing/",
     "https://aws.amazon.com/savingsplans/faqs/"
@@ -428,7 +428,24 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 }
 ```
 
-### Fargate Spot (when worker dynos exist)
+### EC2 Spot Instances for EB Workers (when EB worker environments exist)
+
+```json
+{
+  "opportunity": "Spot Instances for EB Worker Environments",
+  "type": "ec2_spot",
+  "target_services": ["Elastic Beanstalk"],
+  "savings_percent": "60-70%",
+  "savings_monthly": "<calculated based on worker environment EC2 costs>",
+  "commitment": "none",
+  "timing": "during migration (for fault-tolerant workers)",
+  "implementation_effort": "medium",
+  "prerequisite": "Worker tasks must be fault-tolerant and idempotent",
+  "description": "EB worker environments processing SQS messages can use Spot instances for background/batch work that tolerates interruption. Configure via aws:ec2:instances SpotFleetOnDemandBase and SpotFleetOnDemandAboveBasePercentage options."
+}
+```
+
+### Fargate Spot (when Fargate worker tasks exist — override path only)
 
 ```json
 {
@@ -440,12 +457,12 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
   "commitment": "none",
   "timing": "during migration (for fault-tolerant workers)",
   "implementation_effort": "medium",
-  "prerequisite": "Worker tasks must be fault-tolerant and idempotent",
+  "prerequisite": "Worker tasks must be fault-tolerant and idempotent; only applies when Fargate override is active",
   "description": "Heroku worker dynos mapped to Fargate can use Spot pricing for background/batch work that tolerates interruption."
 }
 ```
 
-Only include optimizations relevant to the designed architecture. Do not include EC2-specific optimizations if no EC2 in design.
+Only include optimizations relevant to the designed architecture. Do not include Fargate-specific optimizations if no Fargate in design; do not include EC2/EB-specific optimizations if no EB in design.
 
 ---
 

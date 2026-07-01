@@ -502,11 +502,11 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Fargate Task Security Group
-resource "aws_security_group" "fargate" {
-  name_prefix = "${var.project_name}-${var.environment}-fargate-"
+# Application Security Group (shared by EB instances, Fargate tasks, or EKS pods)
+resource "aws_security_group" "app" {
+  name_prefix = "${var.project_name}-${var.environment}-app-"
   vpc_id      = <vpc_id_reference>
-  description = "Security group for Fargate tasks"
+  description = "Security group for application compute (EB/Fargate/EKS)"
 
   ingress {
     from_port       = 0
@@ -525,7 +525,7 @@ resource "aws_security_group" "fargate" {
   }
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-fargate-sg"
+    Name = "${var.project_name}-${var.environment}-app-sg"
   }
 
   lifecycle {
@@ -543,8 +543,8 @@ resource "aws_security_group" "database" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "PostgreSQL from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "PostgreSQL from application compute"
   }
 
   egress {
@@ -574,8 +574,8 @@ resource "aws_security_group" "cache" {
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "Redis from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "Redis from application compute"
   }
 
   egress {
@@ -605,16 +605,16 @@ resource "aws_security_group" "messaging" {
     from_port       = 9094
     to_port         = 9094
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "Kafka TLS from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "Kafka TLS from application compute"
   }
 
   ingress {
     from_port       = 9092
     to_port         = 9092
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "Kafka plaintext from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "Kafka plaintext from application compute"
   }
 
   egress {
@@ -755,6 +755,13 @@ resource "aws_elastic_beanstalk_environment" "<app_name>_<process_type>" {
     namespace = "aws:ec2:vpc"
     name      = "Subnets"
     value     = <comma-separated subnet IDs>
+  }
+
+  # Security group — shared with DB/Cache/MSK ingress rules
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "SecurityGroups"
+    value     = aws_security_group.app.id
   }
 
   # Deployment policy
@@ -1048,7 +1055,7 @@ resource "aws_ecs_service" "<app_sanitized>_<process_type>" {
 
   network_configuration {
     subnets          = <private_subnet_references>
-    security_groups  = [aws_security_group.fargate.id]
+    security_groups  = [aws_security_group.app.id]
     assign_public_ip = false
   }
 
