@@ -22,6 +22,9 @@ runs entirely from its prose, as before.
 | `_produces`         | the artifact file(s) the phase writes                                                                                                                                                                                                                                           |
 | `_advances_to`      | (backbone phases only) the phase that runs next on success — or a terminal (`complete`). A checkpoint has NO `_advances_to`.                                                                                                                                                    |
 | `_re_entry_guard`   | (backbone phases with a downstream only) the stale-downstream guard — STOP re-running this phase if its downstream phase already completed, unless the user confirms (see below). Terminal phases and checkpoints have none.                                                    |
+| `_preconditions`    | the entry gate — an ordered list of checks that MUST pass before the phase does any work (predecessor completed, single active phase, inputs present/valid). See § Gate protocol.                                                                                               |
+| `_postconditions`   | the completion gate — an ordered list of checks that MUST pass before the phase is marked `completed` and control advances. See § Gate protocol.                                                                                                                                |
+| `_forbids_files`    | a glob list of files/dirs this phase MUST NOT create (scope boundary). See § Gate protocol.                                                                                                                                                                                     |
 
 ### `_trigger` forms
 
@@ -66,6 +69,86 @@ reconstruct the `GATE_FAIL` line from this phase's `_phase` plus the constant
 `stale_downstream` reason. This guard is the single source of truth for
 stale-downstream re-entry; there is no separate per-phase prose or shared-file
 table for it.
+
+## Gate protocol
+
+The LLM runs two gates around each phase, reading them from frontmatter. This is
+heroku-to-aws's own gate contract — phases do NOT load any shared gate file.
+
+### Check kinds (used in `_preconditions` and `_postconditions`)
+
+Each entry is a single check plus an `_on_failure` action (see the `_on_error`
+dictionary below). Closed vocabulary of check kinds:
+
+| Check                        | Arg                       | Passes when                                                    |
+| ---------------------------- | ------------------------- | -------------------------------------------------------------- |
+| `_check_phase_completed`     | a phase name              | `.phase-status.json` `phases.<name> == "completed"`            |
+| `_check_single_active_phase` | `true`                    | at most one core phase is `in_progress`                        |
+| `_check_file_exists`         | filename or `[names]`     | each named file exists in `$MIGRATION_DIR/`                    |
+| `_validate_json`             | filename or `[names]`     | each named file parses as valid JSON                           |
+| `_assert`                    | an opaque prose predicate | you (the interpreter) evaluate the prose against the artifacts |
+
+`_assert` is the JUDGMENT escape hatch: arithmetic (e.g. the Property-16 total ==
+sum invariant), enum-membership over an artifact's runtime content (e.g.
+`recommendation.path ∈ {...}`), and conditionals (e.g. "if Postgres in inventory
+→ `database_ha` set") are `_assert` prose, NOT structured checks — CI cannot open a
+runtime artifact to verify them, so the interpreter evaluates them. CI validates
+only that the `_assert` form is well-formed, never the predicate's truth (same
+policy as `_when`).
+
+### `_on_error` actions
+
+Every `_on_failure:` names one of these. Each is an effect plus a phase-status
+transition:
+
+| Action              | Effect                                     | Phase status         |
+| ------------------- | ------------------------------------------ | -------------------- |
+| `_warn_and_skip`    | record a warning; skip this item; continue | remain `in_progress` |
+| `_default_and_warn` | apply a documented default; warn; continue | remain `in_progress` |
+| `_halt_and_inform`  | stop; surface a diagnostic to the user     | retain `in_progress` |
+| `_unrecoverable`    | stop; surface an error                     | revert to `pending`  |
+
+### `_preconditions` — the entry gate
+
+Before the phase does ANY work, run each `_preconditions` check in order. On a
+failure, apply that check's `_on_failure` action. A `_halt_and_inform` /
+`_unrecoverable` failure STOPS the phase (it does not proceed to its fragments).
+Only when all preconditions pass does the phase set itself `in_progress` and run.
+
+### `_postconditions` — the completion gate
+
+Before the phase is marked `"completed"` and control advances, **re-read the
+relevant artifacts from disk** (do not trust chat memory), then run each
+`_postconditions` check in order.
+
+- **On any failure:** apply the `_on_failure` action and emit exactly:
+
+  ```
+  GATE_FAIL | phase=<this phase's _phase> | field=<the failing file/field> | reason=<missing|invalid>
+  ```
+
+  Do NOT modify artifacts to force a gate to pass. Do NOT update
+  `.phase-status.json`. Do NOT advance. Tell the user which phase to re-run.
+
+- **On all-pass:** emit exactly:
+
+  ```
+  HANDOFF_OK | phase=<this phase's _phase> | artifacts=<comma-separated files verified>
+  ```
+
+  then update `.phase-status.json` (set this phase `"completed"`, set
+  `current_phase` to `_advances_to`, update the timestamp) in the same turn.
+
+`phase=` is reconstructed from the phase's own `_phase` (not stored in each check).
+The orchestrator (SKILL.md) MUST NOT load the next phase until it sees the
+`HANDOFF_OK` line; a completion message without it is not a valid handoff.
+
+### `_forbids_files` — scope boundary
+
+A glob list of files/directories the phase MUST NOT create. After the phase runs,
+if any path matching a `_forbids_files` glob was written, that is a scope
+violation — treat it as a `_postconditions` failure. This encodes the per-phase
+"do not emit README.md / *.txt / downstream artifacts" boundaries.
 
 ### Backbone vs checkpoint phases
 

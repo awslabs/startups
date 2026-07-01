@@ -62,17 +62,14 @@ For typical Heroku migrations (Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gatew
 
 ## Step 1: Prerequisites
 
-1. Read `$MIGRATION_DIR/.phase-status.json`. If `phases.design` is not exactly `"completed"`: **STOP**. Output: "Phase 3 (Design) not completed. Run Phase 3 first."
-2. Read `$MIGRATION_DIR/aws-design.json`. If missing or invalid JSON: **STOP**. Output: "Design artifact missing or corrupted. Re-run Phase 3."
-3. Read `$MIGRATION_DIR/preferences.json`. If missing: **STOP**. Output: "Preferences file missing. Re-run Phase 2."
-4. Read `$MIGRATION_DIR/heroku-resource-inventory.json`. Extract `billing_profile` section (may be null/absent).
+The entry gate (design completed, inputs present + valid JSON, non-empty
+`services[]`) is enforced by this phase's `_preconditions` frontmatter per
+`INTERPRETER.md` § Gate protocol — it has already passed before this fragment
+runs. Then:
 
-### Validate Design
+1. Read `$MIGRATION_DIR/heroku-resource-inventory.json`. Extract `billing_profile` section (may be null/absent).
 
-- `services` array must exist and not be empty. If empty: **STOP**. Output: "No services in design. Re-run Phase 3."
-- Each service entry must have `aws_service` and `aws_config` fields. If missing: **STOP**. Output: "Service [service_id] missing aws_service or aws_config. Re-run Phase 3."
-
-If all validations pass, proceed to Part 1.
+Proceed to Part 1.
 
 ---
 

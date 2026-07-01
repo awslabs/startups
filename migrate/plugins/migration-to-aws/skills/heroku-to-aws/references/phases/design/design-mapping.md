@@ -21,17 +21,10 @@ _contributes:
 
 ## Step 0: Validate Prerequisites
 
-1. Read `$MIGRATION_DIR/.phase-status.json`. Validate per SKILL.md State Validation rules.
-2. Confirm `phases.clarify == "completed"`. If not → GATE_FAIL (Rule 1).
-3. Confirm no other core phase is `in_progress`. If violated → GATE_FAIL (Rule 2).
-4. Set `phases.design` to `"in_progress"` and `current_phase` to `"design"`. Write `.phase-status.json`.
-5. Read `$MIGRATION_DIR/heroku-resource-inventory.json` from disk.
-6. Read `$MIGRATION_DIR/preferences.json` from disk.
-7. Confirm both files exist and parse as valid JSON. If either is missing or invalid:
-
-```
-GATE_FAIL | phase=design | field=<filename> | reason=missing
-```
+The entry gate (clarify completed, single active phase, inputs present + valid JSON) is
+enforced by this phase's `_preconditions` frontmatter per `INTERPRETER.md` § Gate
+protocol. Once the preconditions pass, set `phases.design` to `"in_progress"` and
+`current_phase` to `"design"` in `.phase-status.json`, then proceed.
 
 ---
 

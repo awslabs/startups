@@ -121,21 +121,12 @@ Before handing off to Design:
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
-
-**Checks (all must PASS):**
-
-1. `preferences.json` exists and parses as valid JSON.
-2. All Validation Checklist items pass.
-3. If `heroku-resource-inventory.json` contains Postgres add-ons → `data.database_ha` is set (non-null).
-4. If `heroku-resource-inventory.json` contains Postgres add-ons → `global.migration_approach` is set (non-null).
-5. If `global.migration_approach` is `interim_cutover_data_first` → `global.target_exit_date` is non-null and a valid future date.
-6. If Fir-generation apps detected → `global.fir_intent` is set (non-null).
-7. If Private Space peering detected and subnet IDs were required → `network.subnet_ids` is non-empty array.
-
-**On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
-
-**On PASS:** Emit `HANDOFF_OK | phase=clarify | artifacts=preferences.json`.
+The completion checks are declared in this phase's `_postconditions` frontmatter and
+enforced per `INTERPRETER.md` § Gate protocol: re-read `preferences.json` from disk, run
+the mechanical checks (`_check_file_exists` / `_validate_json`) and the `_assert`
+judgment checks (all Validation Checklist items; the Postgres/interim-cutover/Fir/
+private-space conditionals), then emit `GATE_FAIL` (STOP; do not patch artifacts) or
+`HANDOFF_OK | phase=clarify | artifacts=preferences.json` and advance.
 
 ---
 

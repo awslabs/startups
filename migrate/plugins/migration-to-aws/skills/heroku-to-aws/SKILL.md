@@ -102,7 +102,9 @@ This is the execution controller. After completing each phase, consult this tabl
 
 ### Handoff Gate Orchestration (Fail Closed)
 
-Load `references/shared/handoff-gates.md` when executing any phase completion step.
+Each phase's entry and completion gates are declared in its `_preconditions` /
+`_postconditions` frontmatter and enforced per `INTERPRETER.md` § Gate protocol (which
+also defines the `GATE_FAIL` / `HANDOFF_OK` line formats and the `_on_error` actions).
 
 1. **Single `$MIGRATION_DIR`**: Use one run directory for the entire migration. Do not mix artifacts across `.migration/*/` sessions.
 2. **Re-read from disk**: Before each phase (and before each handoff gate), Read required artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
@@ -225,7 +227,7 @@ heroku-to-aws/
 │   │
 │   └── shared/                                 # References shared plugin infrastructure
 │       └── (path reference to ../gcp-to-aws/references/shared/)
-│           ├── handoff-gates.md                # Fail-closed phase handoff protocol
+│           ├── handoff-gates.md                # Shared gate protocol (NOT used by heroku-to-aws — heroku's gates live in phase `_preconditions`/`_postconditions` + INTERPRETER.md § Gate protocol)
 │           ├── schema-phase-status.md          # .phase-status.json schema
 │           ├── migration-complexity.md         # Complexity tier definitions (Small/Medium/Large)
 │           ├── schema-estimate-infra.md        # estimation-infra.json schema
@@ -267,9 +269,9 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 4. **Execute ALL steps in order**: Follow every numbered step in the reference file. **Do not skip, optimize, or deviate.**
 
-5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding. Phase orchestrators run **Completion Handoff Gate** checks per `shared/handoff-gates.md`.
+5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding. Phase orchestrators run their `_postconditions` completion gate per `INTERPRETER.md` § Gate protocol.
 
-6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `shared/handoff-gates.md`. On `GATE_FAIL`, stop — do not update phase status or load the next phase.
+6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `INTERPRETER.md` § Gate protocol. On `GATE_FAIL`, stop — do not update phase status or load the next phase.
 
 7. **Update phase status**: Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
 

@@ -13,6 +13,7 @@ import type {
 } from "./types.ts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { CHECK_KINDS, ON_ERROR_ACTIONS } from "./parse.ts";
 
 export interface BoundSkill {
   /** absolute path to the skill's `references/` root (where phase _file paths resolve). */
@@ -109,10 +110,18 @@ export function check(skill: BoundSkill): Finding[] {
     if (asm.ofPhase !== phase.phase) {
       add(skill.rel(apath), `_of_phase '${asm.ofPhase || "(missing)"}' != '${phase.phase}'`);
     }
-    // single-creator: everything the phase _produces must be created by the assembler.
+    // single-creator: everything the phase _produces must be declared by exactly one
+    // unit — the assembler's _produces OR a fragment's _contributes. (Most phases have
+    // an assembler-only creator; generate's artifacts are fragment-created, so we union
+    // the fragment contributions.)
+    const contributed = new Set<string>(asm.produces);
+    for (const fr of phase.fragments) {
+      const frag = skill.fragments.get(join(skill.referencesRoot, fr.file));
+      if (frag) for (const art of frag.contributes) contributed.add(art);
+    }
     for (const art of phase.produces) {
-      if (!asm.produces.includes(art)) {
-        add(pf, `phase _produces '${art}' but the assembler does not declare it in _produces (single-creator rule)`);
+      if (!contributed.has(art)) {
+        add(pf, `phase _produces '${art}' but no unit (assembler _produces or a fragment _contributes) declares it (single-creator rule)`);
       }
     }
   }
@@ -171,6 +180,43 @@ export function check(skill: BoundSkill): Finding[] {
       const downstream = phasesByName.get(g.staleIfCompleted);
       if (downstream && !downstream.produces.includes(g.staleArtifact)) {
         add(pf, `_re_entry_guard._stale_artifact '${g.staleArtifact}' is not in the _produces of the downstream phase '${g.staleIfCompleted}' (declared: ${downstream.produces.join(", ") || "(none)"})`);
+      }
+    }
+  }
+
+  // ---- Gate checks: _preconditions / _postconditions / _forbids_files ----
+  // (INTERPRETER.md § Gate protocol.) Structural only: closed check-kind vocab,
+  // _on_failure action membership, phase-ref resolution, and the postcondition⟺
+  // _produces cross-check. _assert bodies are opaque prose (bound, not evaluated).
+  for (const phase of skill.phases) {
+    const pf = skill.rel(phase.sourceFile);
+    const checkList = (items: typeof phase.preconditions, label: string) => {
+      for (const c of items) {
+        if (!CHECK_KINDS.has(c.kind)) {
+          add(pf, `unknown ${label} check kind '${c.kind}' (allowed: ${[...CHECK_KINDS].join(", ")})`);
+        }
+        if (c.onFailure && !ON_ERROR_ACTIONS.has(c.onFailure)) {
+          add(pf, `${label} check '${c.kind}' has an unrecognized _on_failure action '${c.onFailure}' (allowed: ${[...ON_ERROR_ACTIONS].join(", ")})`);
+        }
+        // _check_phase_completed arg SHOULD name a declared phase (partial-rollout tolerant).
+        if (c.kind === "_check_phase_completed" && c.arg[0] && declaredPhases.size > 1 && !declaredPhases.has(c.arg[0])) {
+          add(pf, `${label} _check_phase_completed '${c.arg[0]}' names no declared phase`);
+        }
+      }
+    };
+    checkList(phase.preconditions, "_preconditions");
+    checkList(phase.postconditions, "_postconditions");
+
+    // postcondition file-exists ⟺ _produces (HARD FAIL): a phase can only assert the
+    // existence of a file it declares it produces — forces _produces to be the real
+    // artifact set (guards against a hollow _produces).
+    for (const c of phase.postconditions) {
+      if (c.kind === "_check_file_exists") {
+        for (const f of c.arg) {
+          if (!phase.produces.includes(f)) {
+            add(pf, `_postconditions asserts _check_file_exists '${f}' but it is not in this phase's _produces (declared: ${phase.produces.join(", ") || "(none)"}) — a phase may only gate on artifacts it declares it produces`);
+          }
+        }
       }
     }
   }

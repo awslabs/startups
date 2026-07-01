@@ -2,8 +2,10 @@
 _fragment: terraform
 _of_phase: generate
 _contributes:
-  - terraform/ (all .tf files)
-  - generation-warnings.json (services skipped during terraform generation)
+  - terraform/main.tf
+  - terraform/variables.tf
+  - terraform/outputs.tf
+  - generation-warnings.json
 ---
 
 # Generate Phase: Terraform Configuration Generation

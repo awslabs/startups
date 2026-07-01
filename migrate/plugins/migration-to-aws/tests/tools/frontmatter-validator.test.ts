@@ -330,4 +330,71 @@ _produces:
     const findings = validateFixture(files);
     assert.match(findings.map((f) => f.message).join('\n'), /has a _re_entry_guard but no downstream backbone phase/);
   });
+
+  // ---- _preconditions / _postconditions / _forbids_files ----
+
+  // Attach a gate block to discover (which _produces discover.json in chainSkill).
+  function gatesOnDiscover(gates: string): Record<string, string> {
+    const files = chainSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', `_advances_to: clarify\n${gates}`);
+    return files;
+  }
+
+  const GOOD_GATES =
+    '_preconditions:\n' +
+    '  - _check_single_active_phase: true\n' +
+    '    _on_failure: _halt_and_inform\n' +
+    '  - _assert: "a heroku_* resource exists"\n' +
+    '    _on_failure: _unrecoverable\n' +
+    '_postconditions:\n' +
+    '  - _check_file_exists: discover.json\n' +
+    '    _on_failure: _halt_and_inform\n' +
+    '  - _assert: "inventory has at least one resource"\n' +
+    '    _on_failure: _halt_and_inform';
+
+  it('accepts well-formed _preconditions / _postconditions', () => {
+    const findings = validateFixture(gatesOnDiscover(GOOD_GATES));
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects an unknown check kind', () => {
+    const findings = validateFixture(
+      gatesOnDiscover(GOOD_GATES.replace('_check_single_active_phase', '_check_vibes')),
+    );
+    assert.match(findings.map((f) => f.message).join('\n'), /unknown _preconditions check kind '_check_vibes'/);
+  });
+
+  it('rejects an unrecognized _on_failure action', () => {
+    const findings = validateFixture(
+      gatesOnDiscover(GOOD_GATES.replace('_unrecoverable', '_explode')),
+    );
+    assert.match(findings.map((f) => f.message).join('\n'), /unrecognized _on_failure action '_explode'/);
+  });
+
+  it('rejects a _check_phase_completed naming no declared phase', () => {
+    const findings = validateFixture(
+      gatesOnDiscover(
+        '_preconditions:\n  - _check_phase_completed: nonesuch\n    _on_failure: _halt_and_inform',
+      ),
+    );
+    assert.match(findings.map((f) => f.message).join('\n'), /_check_phase_completed 'nonesuch' names no declared phase/);
+  });
+
+  it('rejects a _postconditions file-exists not in _produces (finding-#2 cross-check)', () => {
+    const findings = validateFixture(
+      gatesOnDiscover(
+        '_postconditions:\n  - _check_file_exists: not-produced.json\n    _on_failure: _halt_and_inform',
+      ),
+    );
+    assert.match(findings.map((f) => f.message).join('\n'), /_check_file_exists 'not-produced.json' but it is not in this phase's _produces/);
+  });
+
+  it('accepts _forbids_files as a glob list', () => {
+    const findings = validateFixture(
+      gatesOnDiscover('_forbids_files:\n  - README.md\n  - "*.txt"'),
+    );
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
 });

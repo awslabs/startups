@@ -5,6 +5,7 @@
 
 import type {
   AssemblerFrontmatter,
+  CheckItem,
   FragmentFrontmatter,
   FragmentRef,
   PhaseFrontmatter,
@@ -16,7 +17,16 @@ import { readFileSync } from "node:fs";
 const PHASE_KEYS = new Set([
   "_phase", "_title", "_kind", "_requires_phase", "_init", "_input",
   "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
-  "_re_entry_guard",
+  "_re_entry_guard", "_preconditions", "_postconditions", "_forbids_files",
+]);
+/** The closed vocabulary of check kinds usable in _preconditions/_postconditions. */
+export const CHECK_KINDS = new Set([
+  "_check_phase_completed", "_check_single_active_phase", "_check_file_exists",
+  "_validate_json", "_assert",
+]);
+/** The closed vocabulary of _on_failure / _on_error actions. */
+export const ON_ERROR_ACTIONS = new Set([
+  "_warn_and_skip", "_default_and_warn", "_halt_and_inform", "_unrecoverable",
 ]);
 const GUARD_KEYS = new Set([
   "_stale_if_completed", "_stale_artifact", "_on_reentry", "_on_confirm",
@@ -122,6 +132,49 @@ function parseReEntryGuard(fm: string): ReEntryGuard | null {
   };
 }
 
+/** Parse a `_preconditions` / `_postconditions` list into CheckItems. Each list item
+ * is `- <check_kind>: <arg>` optionally followed by an `_on_failure: <action>` line. */
+function parseChecks(fm: string, key: string): CheckItem[] {
+  const body = indentedBlock(fm, key);
+  if (body === null) return [];
+  const out: CheckItem[] = [];
+  // Split into items on lines beginning (after indent) with `- `.
+  const lines = body.split("\n");
+  let cur: string[] | null = null;
+  const items: string[][] = [];
+  for (const line of lines) {
+    if (/^\s*-\s+/.test(line)) {
+      if (cur) items.push(cur);
+      cur = [line];
+    } else if (cur && line.trim() !== "") {
+      cur.push(line);
+    }
+  }
+  if (cur) items.push(cur);
+
+  for (const item of items) {
+    const joined = item.join("\n");
+    // the check keyword is the first `_<kind>:` after the leading `- `
+    const km = /^\s*-\s+(_[a-z_]+):\s*(.*)$/m.exec(item[0]);
+    if (!km) continue;
+    const kind = km[1];
+    const rawArg = km[2].trim();
+    let arg: string[];
+    if (kind === "_assert") {
+      arg = [rawArg.replace(/^["']|["']$/g, "")]; // opaque prose (bound, not evaluated)
+    } else if (rawArg.startsWith("[")) {
+      arg = rawArg.replace(/^\[|\]$/g, "").split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    } else if (rawArg === "" || rawArg === "true") {
+      arg = rawArg === "true" ? ["true"] : [];
+    } else {
+      arg = [rawArg.replace(/^["']|["']$/g, "")];
+    }
+    const om = /_on_failure:\s*(_[a-z_]+)/.exec(joined);
+    out.push({ kind, arg, onFailure: om ? om[1] : null });
+  }
+  return out;
+}
+
 export function parsePhase(path: string, fm: string): PhaseFrontmatter {
   const assembleBlock = /_assemble:\s*\n\s*_file:\s*([^\n]+)/.exec(fm);
   const roleRaw = scalar(fm, "_kind");
@@ -143,6 +196,9 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     produces: blockList(fm, "_produces"),
     advancesTo: scalar(fm, "_advances_to"),
     reEntryGuard: parseReEntryGuard(fm),
+    preconditions: parseChecks(fm, "_preconditions"),
+    postconditions: parseChecks(fm, "_postconditions"),
+    forbidsFiles: blockList(fm, "_forbids_files"),
     unknownKeys: unknownAmong(fm, PHASE_KEYS),
   };
 }

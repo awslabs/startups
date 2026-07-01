@@ -27,6 +27,13 @@ export interface ReEntryGuard {
   unknownKeys: string[]; // sub-keys not in the closed guard vocab
 }
 
+/** One check in a `_preconditions` / `_postconditions` list. */
+export interface CheckItem {
+  kind: string; // the check keyword: _check_phase_completed | _check_single_active_phase | _check_file_exists | _validate_json | _assert (or an unknown keyword → flagged)
+  arg: string[]; // normalized args (phase name / filenames / [] for _assert / the assert prose)
+  onFailure: string | null; // _on_failure action name
+}
+
 /** The phase orchestrator file's frontmatter. */
 export interface PhaseFrontmatter {
   kind: "phase";
@@ -44,6 +51,9 @@ export interface PhaseFrontmatter {
   produces: string[];
   advancesTo: string | null;
   reEntryGuard: ReEntryGuard | null; // _re_entry_guard (backbone phases with a downstream); null when absent
+  preconditions: CheckItem[]; // _preconditions (entry gate); empty when absent
+  postconditions: CheckItem[]; // _postconditions (completion gate); empty when absent
+  forbidsFiles: string[]; // _forbids_files globs; empty when absent
   unknownKeys: string[]; // top-level _keys not in the closed vocab
 }
 
