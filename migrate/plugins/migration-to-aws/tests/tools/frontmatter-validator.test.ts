@@ -124,6 +124,15 @@ describe('frontmatter-validator', () => {
     assert.match(findings.map((f) => f.message).join('\n'), /unrecognized _trigger form/);
   });
 
+  it('accepts a _when trigger (opaque prose condition, not evaluated by CI)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('{ _always: true }', `{ _when: "preferences.foo.value is 'bar'" }`);
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected _when to be accepted, got: ${JSON.stringify(findings)}`);
+  });
+
   it('rejects a phase _produces artifact the assembler does not create (single-creator)', () => {
     const files = goodSkill();
     files['references/phases/discover/discover.md'] = files[

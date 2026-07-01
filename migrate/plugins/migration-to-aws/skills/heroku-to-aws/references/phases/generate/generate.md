@@ -15,7 +15,7 @@ _fragments:
     _trigger: { _always: true }
     _file: phases/generate/generate-docs.md
   - _id: eks-generate
-    _trigger: { _always: true }
+    _trigger: { _when: "aws-design.json has an eks_cluster entry OR a service with aws_service == 'EKS'" }
     _file: phases/generate/generate-eks.md
 _assemble:
   _file: phases/generate/generate-assemble.md
@@ -34,7 +34,7 @@ _advances_to: feedback
 
 - **generate-terraform.md** → routes the design into Terraform: writes the `terraform/` directory and `generation-warnings.json`.
 - **generate-docs.md** → fills the docs + script templates: writes `MIGRATION_GUIDE.md`, `README.md`, and database migration scripts in `scripts/`.
-- **generate-eks.md** → the EKS branch: fires (gate in its prose) only when the design contains `aws_service: "EKS"`; writes `terraform/eks.tf` + the `kubernetes/` manifests.
+- **generate-eks.md** → the EKS branch: fires (via its `_when` trigger) only when the design contains `aws_service: "EKS"`; writes `terraform/eks.tf` + the `kubernetes/` manifests.
 - **generate-assemble.md** → the assembler: cross-artifact validation, completion handoff gate, and `.phase-status.json` update.
 
 ---

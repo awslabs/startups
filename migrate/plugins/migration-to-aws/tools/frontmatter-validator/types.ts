@@ -8,6 +8,7 @@
 export type Trigger =
   | { kind: "always" }
   | { kind: "glob"; pattern: string }
+  | { kind: "when"; condition: string } // opaque prose condition; bound but NOT evaluated by CI (the LLM evaluates it at runtime)
   | { kind: "unknown"; raw: string }; // parsed but not a recognized form → a check flags it
 
 /** One entry in a phase's `_fragments` list. */

@@ -10,7 +10,7 @@ _fragments:
     _trigger: { _always: true }
     _file: phases/design/design-mapping.md
   - _id: eks-mapping
-    _trigger: { _always: true }
+    _trigger: { _when: "preferences.design_constraints.kubernetes.value is 'eks-managed' or 'eks-or-ecs'" }
     _file: phases/design/design-eks.md
 _assemble:
   _file: phases/design/design-assemble.md
@@ -27,7 +27,7 @@ Single-pass mapping engine that translates each Heroku resource to its AWS equiv
 ## Sub-Files
 
 - **design-mapping.md** → the always-on mapping engine: prerequisites, single-pass resource mapping (Fargate/RDS/ElastiCache/MSK/fast-path/deferred), VPC + security-group design, Cedar/Fir notation, and metadata.
-- **design-eks.md** → the EKS branch: fires (gate in its prose) only when `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`; maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the Fargate path.
+- **design-eks.md** → the EKS branch: fires (via its `_when` trigger) only when `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`; maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the Fargate path.
 - **design-assemble.md** → the assembler: writes `aws-design.json`, runs the output route gates + completion handoff gate, and updates `.phase-status.json`.
 
 ## Lookup Table References (Conditional Loading)

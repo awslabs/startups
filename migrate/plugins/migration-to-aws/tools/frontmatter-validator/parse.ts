@@ -64,6 +64,8 @@ function parseTrigger(raw: string): Trigger {
   if (/_always\s*:\s*true/.test(t)) return { kind: "always" };
   const g = /_glob\s*:\s*["']?([^"'}]+)["']?/.exec(t);
   if (g) return { kind: "glob", pattern: g[1].trim() };
+  const w = /_when\s*:\s*["']?([^"'}]+)["']?/.exec(t);
+  if (w) return { kind: "when", condition: w[1].trim() };
   return { kind: "unknown", raw: t };
 }
 
