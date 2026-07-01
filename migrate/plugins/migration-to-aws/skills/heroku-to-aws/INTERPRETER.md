@@ -9,22 +9,46 @@ runs entirely from its prose, as before.
 
 ## Phase frontmatter keys
 
-| Key                 | Meaning                                                                                                                                        |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `_phase` / `_title` | the phase's id and human title                                                                                                                 |
-| `_requires_phase`   | the phase that must be `completed` before this one may start (omitted for the first phase)                                                     |
-| `_init`             | `true` only on the first phase — this phase establishes migration state before its fragments run (see below)                                   |
-| `_input`            | what the phase reads — prior-phase artifacts, or `workspace` for the initial file scan                                                         |
-| `_fragments`        | the ordered units of work the phase composes. Each is `{ _id, _trigger, _file }`. Load + follow a fragment's `_file` when its `_trigger` fires |
-| `_assemble`         | the single terminal unit (`{ _file }`) that combines the fragment outputs into the phase's artifact(s)                                         |
-| `_produces`         | the artifact file(s) the phase writes                                                                                                          |
-| `_advances_to`      | the phase that runs next on success                                                                                                            |
+| Key                 | Meaning                                                                                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_phase` / `_title` | the phase's id and human title                                                                                                                                                                                                                                                  |
+| `_kind`             | `backbone` (default when absent) or `checkpoint`. A **backbone** phase is a step on the linear lifecycle (see below). A **checkpoint** phase is off-backbone — optional, entered by a phase-level `_trigger`, returns control instead of advancing. `feedback` is a checkpoint. |
+| `_requires_phase`   | the phase that must be `completed` before this one may start (omitted for the first phase; on a checkpoint, its minimum precondition)                                                                                                                                           |
+| `_init`             | `true` only on the first phase — this phase establishes migration state before its fragments run (see below)                                                                                                                                                                    |
+| `_input`            | what the phase reads — prior-phase artifacts, or `workspace` for the initial file scan                                                                                                                                                                                          |
+| `_trigger`          | (checkpoint phases only) how the phase is ENTERED — same forms as a fragment `_trigger` (below). `feedback` uses `_when: "user opts in"`. Backbone phases have no phase-level `_trigger` (they are advanced INTO via a predecessor's `_advances_to`).                           |
+| `_fragments`        | the ordered units of work the phase composes. Each is `{ _id, _trigger, _file }`. Load + follow a fragment's `_file` when its `_trigger` fires                                                                                                                                  |
+| `_assemble`         | the single terminal unit (`{ _file }`) that combines the fragment outputs into the phase's artifact(s)                                                                                                                                                                          |
+| `_produces`         | the artifact file(s) the phase writes                                                                                                                                                                                                                                           |
+| `_advances_to`      | (backbone phases only) the phase that runs next on success — or a terminal (`complete`). A checkpoint has NO `_advances_to`.                                                                                                                                                    |
 
 ### `_trigger` forms
 
 - `{ _always: true }` — the fragment always runs.
 - `{ _glob: "<pattern>" }` — the fragment runs when one or more files matching the glob exist in the workspace; otherwise it is skipped.
 - `{ _when: "<condition>" }` — the fragment runs when the prose condition holds (evaluated by you, the interpreter, against the phase's inputs); otherwise it is skipped. The condition is opaque prose — CI validates only that the form is well-formed, not the condition's truth. Used for fragments gated on a preference or a design-artifact shape (e.g. the EKS branches, gated on the Kubernetes preference / an `eks_cluster` design entry).
+
+### Backbone vs checkpoint phases
+
+A **backbone** phase (the default) is a step on the linear lifecycle: it is
+advanced into by its predecessor's `_advances_to`, and it advances to the next
+phase (or the `complete` terminal). The backbone is
+`discover → clarify → design → estimate → generate → complete`.
+
+A **checkpoint** phase (`_kind: checkpoint`, e.g. `feedback`) is OFF the backbone.
+It is optional, entered only when its phase-level `_trigger` fires (e.g. the user
+opts in), and it returns control to the flow rather than advancing `current_phase`
+— so it has no `_advances_to`, and it never appears as a `current_phase` value.
+WHERE a checkpoint is offered is orchestration prose (see SKILL.md), not part of
+the phase contract.
+
+**Checkpoint status semantics (important):** marking a checkpoint's
+`phases.<checkpoint>` as `"completed"` means the checkpoint was RESOLVED (offered
+and dealt with) — NOT that the user participated. A declined checkpoint is still
+`"completed"` (the lifecycle is resolved, so the migration can terminate cleanly).
+Whether the user actually participated is a SEPARATE signal, carried by the
+presence of the checkpoint's artifact (e.g. `feedback.json` exists only if the
+user engaged). Do not conflate "checkpoint resolved" with "user participated."
 
 ## Fragment unit keys
 

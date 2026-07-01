@@ -21,7 +21,7 @@ _assemble:
   _file: phases/generate/generate-assemble.md
 _produces:
   - generation-warnings.json
-_advances_to: feedback
+_advances_to: complete
 ---
 
 # Phase 5: Generate Migration Artifacts
