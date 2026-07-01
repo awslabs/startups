@@ -61,7 +61,7 @@ For resources not covered by fast-path:
 6. Evaluate 6 criteria (1-sentence each):
    - **Eliminators**: Feature incompatibility (hard blocker)
    - **Operational Model**: Managed vs self-hosted fit
-   - **User Preference**: From `preferences.json` design_constraints
+   - **User Preference**: From `preferences.json` design_constraints (includes `compute_model`, `kubernetes`, `cost_sensitivity`)
    - **Feature Parity**: GCP feature → AWS feature availability
    - **Cluster Context**: Affinity with other resources in this cluster
    - **Simplicity**: Prefer fewer resources / less config

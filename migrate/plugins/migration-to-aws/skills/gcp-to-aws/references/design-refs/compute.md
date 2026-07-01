@@ -82,29 +82,26 @@ Apply in order; first match wins:
 ### Example 1: Cloud Run (stateless API)
 
 - GCP: `google_cloud_run_service` (memory=512MB, timeout=60s, min_instances=1)
-- Signals: HTTP, stateless, always-on
-- Criterion 1 (Eliminators): PASS (60s < 15min doesn't apply; stateless OK)
-- Criterion 2 (Operational Model): FARGATE preferred
+- Fast-path: `google_cloud_run_service` → Fargate (Always, condition met)
 - → **AWS: Fargate (0.5 CPU, 1 GB memory)**
-- Confidence: `inferred` (rubric-based — Cloud Run is not in fast-path)
+- Confidence: `deterministic` (Direct Mapping, no rubric needed)
 
 ### Example 2a: Cloud Functions (event processor, short-running)
 
 - GCP: `google_cloudfunctions_function` (runtime=python39, timeout=540s)
-- Signals: Event-driven, 540s = 9 minutes (< 15min limit)
-- Criterion 1 (Eliminators): PASS on timeout (540s < 900s)
-- Criterion 2 (Operational Model): Lambda preferred for event-driven + short-running
+- Fast-path: `google_cloudfunctions_function` → Lambda (Always, condition met)
 - → **AWS: Lambda with EventBridge trigger**
-- Confidence: `inferred`
+- Confidence: `deterministic` (Direct Mapping, no rubric needed)
 
-### Example 2b: Cloud Functions (long-running batch processor)
+### Example 2b: Cloud Functions (long-running, timeout exceeds Lambda limit)
 
 - GCP: `google_cloudfunctions_function` (runtime=python39, timeout=1200s)
-- Signals: Event-driven but 1200s = 20 minutes (> 15min limit)
-- Criterion 1 (Eliminators): FAIL on timeout (1200s > 900s) → **cannot use Lambda**
+- Fast-path: `google_cloudfunctions_function` → Lambda (Always)
+- However, Eliminator fires: timeout 1200s > Lambda max 900s → **cannot use Lambda**
+- Eliminator overrides fast-path → falls through to rubric
 - Criterion 2 (Operational Model): Fargate (managed + can handle longer execution)
 - → **AWS: Fargate (0.5 CPU, 1 GB memory) with EventBridge trigger**
-- Confidence: `inferred`
+- Confidence: `inferred` (eliminator forced rubric fallback)
 
 ### Example 3: Compute Engine (background job)
 
@@ -136,6 +133,8 @@ Apply in order; first match wins:
 
 ## Output Schema
 
+**Deterministic (fast-path) example:**
+
 ```json
 {
   "gcp_type": "google_cloud_run_service",
@@ -150,15 +149,35 @@ Apply in order; first match wins:
     "memory_mb": 1024,
     "region": "us-east-1"
   },
+  "confidence": "deterministic",
+  "rationale": "Direct Mapping: google_cloud_run_service → Fargate (Always)"
+}
+```
+
+**Inferred (rubric-based) example:**
+
+```json
+{
+  "gcp_type": "google_compute_instance",
+  "gcp_address": "batch-worker",
+  "gcp_config": {
+    "machine_type": "e2-medium",
+    "region": "us-central1"
+  },
+  "aws_service": "EC2",
+  "aws_config": {
+    "instance_type": "t3.medium",
+    "region": "us-east-1"
+  },
   "confidence": "inferred",
-  "rationale": "Rubric: Cloud Run (stateless, <15min) → Fargate (always-on, managed)",
+  "rationale": "Rubric: Compute Engine (always-on batch job) → EC2 with Auto Scaling",
   "rubric_applied": [
     "Eliminators: PASS",
-    "Operational Model: Managed preferred",
-    "User Preference: N/A",
+    "Operational Model: EC2 (explicit compute control)",
+    "User Preference: cost_sensitivity → Auto Scaling",
     "Feature Parity: Full",
-    "Cluster Context: Fargate affinity",
-    "Simplicity: Fargate (1 service)"
+    "Cluster Context: N/A",
+    "Simplicity: EC2 + ASG"
   ]
 }
 ```
