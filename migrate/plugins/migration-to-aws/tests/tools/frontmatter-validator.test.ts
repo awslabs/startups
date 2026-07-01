@@ -142,6 +142,34 @@ describe('frontmatter-validator', () => {
     assert.match(findings.map((f) => f.message).join('\n'), /single-creator rule/);
   });
 
+  it('rejects an artifact created by two fragments with no assembler owner (ambiguous creator)', () => {
+    const files = goodSkill();
+    // add a second fragment; both fragments create doc.json; doc.json is in _produces
+    // but NOT in the assembler _produces → two fragment creators, no assembler owner.
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ]
+      .replace(
+        '    _file: phases/discover/discover-terraform.md',
+        '    _file: phases/discover/discover-terraform.md\n  - _id: docs\n    _trigger: { _always: true }\n    _file: phases/discover/discover-docs.md',
+      )
+      .replace('  - inventory.json\n_advances_to', '  - inventory.json\n  - doc.json\n_advances_to');
+    files['references/phases/discover/discover-terraform.md'] = files[
+      'references/phases/discover/discover-terraform.md'
+    ].replace('  - inventory.json (resource entries)', '  - doc.json');
+    files['references/phases/discover/discover-docs.md'] =
+`---
+_fragment: docs
+_of_phase: discover
+_contributes:
+  - doc.json
+---
+# Docs fragment
+`;
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /ambiguous creator/);
+  });
+
   it('does NOT fail an _advances_to that points at a phase without frontmatter (partial rollout)', () => {
     const findings = validateFixture(goodSkill());
     assert.ok(

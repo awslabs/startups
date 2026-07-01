@@ -5,7 +5,6 @@ _contributes:
   - terraform/main.tf
   - terraform/variables.tf
   - terraform/outputs.tf
-  - generation-warnings.json
 ---
 
 # Generate Phase: Terraform Configuration Generation

@@ -2,7 +2,7 @@
 _fragment: eks-mapping
 _of_phase: design
 _contributes:
-  - aws-design.json (EKS pods + eks_cluster aggregate for all formations, when EKS is selected)
+  - aws-design.json
 ---
 
 # EKS Design Branch

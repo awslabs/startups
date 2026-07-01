@@ -2,7 +2,7 @@
 _fragment: mapping-engine
 _of_phase: design
 _contributes:
-  - aws-design.json (services, deferred, warnings, vpc_design, Fir notation, metadata; created here, finalized by the assembler)
+  - aws-design.json
 ---
 
 # Design Phase: Mapping Engine

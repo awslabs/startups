@@ -110,18 +110,26 @@ export function check(skill: BoundSkill): Finding[] {
     if (asm.ofPhase !== phase.phase) {
       add(skill.rel(apath), `_of_phase '${asm.ofPhase || "(missing)"}' != '${phase.phase}'`);
     }
-    // single-creator: everything the phase _produces must be declared by exactly one
-    // unit — the assembler's _produces OR a fragment's _contributes. (Most phases have
-    // an assembler-only creator; generate's artifacts are fragment-created, so we union
-    // the fragment contributions.)
-    const contributed = new Set<string>(asm.produces);
+    // single-creator (creates-vs-contributes model, INTERPRETER § assembler): each
+    // phase _produces artifact must have exactly ONE creator.
+    //   - If the assembler _produces it → the assembler is the creator; fragments that
+    //     also name it in _contributes are CONTENT-contributors (allowed, no conflict).
+    //   - Otherwise exactly one fragment must _contributes it (that fragment is the
+    //     creator). Zero → uncreated; two+ fragments → ambiguous creator.
+    const fragCreators = new Map<string, string[]>(); // artifact -> fragment ids declaring it
     for (const fr of phase.fragments) {
       const frag = skill.fragments.get(join(skill.referencesRoot, fr.file));
-      if (frag) for (const art of frag.contributes) contributed.add(art);
+      if (frag) for (const art of frag.contributes) {
+        (fragCreators.get(art) ?? fragCreators.set(art, []).get(art)!).push(fr.id);
+      }
     }
     for (const art of phase.produces) {
-      if (!contributed.has(art)) {
-        add(pf, `phase _produces '${art}' but no unit (assembler _produces or a fragment _contributes) declares it (single-creator rule)`);
+      if (asm.produces.includes(art)) continue; // assembler is the creator; fragments contribute
+      const fcs = fragCreators.get(art) ?? [];
+      if (fcs.length === 0) {
+        add(pf, `phase _produces '${art}' but no unit creates it (not in the assembler _produces, and no fragment _contributes it) — single-creator rule`);
+      } else if (fcs.length > 1) {
+        add(pf, `phase _produces '${art}' is declared by multiple fragments (${fcs.join(", ")}) with no assembler owner — ambiguous creator (single-creator rule)`);
       }
     }
   }
