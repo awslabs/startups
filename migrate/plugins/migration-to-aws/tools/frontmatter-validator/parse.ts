@@ -13,8 +13,8 @@ import type {
 import { readFileSync } from "node:fs";
 
 const PHASE_KEYS = new Set([
-  "_phase", "_title", "_requires_phase", "_init", "_input",
-  "_fragments", "_assemble", "_produces", "_advances_to",
+  "_phase", "_title", "_kind", "_requires_phase", "_init", "_input",
+  "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
 ]);
 const FRAGMENT_KEYS = new Set(["_fragment", "_of_phase", "_contributes"]);
 const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces"]);
@@ -82,14 +82,21 @@ function parseFragments(fm: string): FragmentRef[] {
 
 export function parsePhase(path: string, fm: string): PhaseFrontmatter {
   const assembleBlock = /_assemble:\s*\n\s*_file:\s*([^\n]+)/.exec(fm);
+  const roleRaw = scalar(fm, "_kind");
+  const role = roleRaw === "checkpoint" ? "checkpoint" : "backbone";
+  // phase-level _trigger: a `_trigger: { ... }` at column 0 (NOT a _fragments[] entry,
+  // which is indented under a `- _id:`). Match only a top-of-line _trigger.
+  const ptrig = /^_trigger:\s*\{([^}]*)\}/m.exec(fm);
   return {
     kind: "phase",
     sourceFile: path,
     phase: scalar(fm, "_phase") ?? "",
     title: scalar(fm, "_title"),
+    role,
     requiresPhase: scalar(fm, "_requires_phase"),
     init: /^_init:\s*true\s*$/m.test(fm),
     fragments: parseFragments(fm),
+    trigger: ptrig ? parseTrigger(ptrig[1]) : null,
     assembleFile: assembleBlock ? assembleBlock[1].trim() : null,
     produces: blockList(fm, "_produces"),
     advancesTo: scalar(fm, "_advances_to"),

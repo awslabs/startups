@@ -24,9 +24,13 @@ export interface PhaseFrontmatter {
   sourceFile: string; // absolute path, for messages
   phase: string; // _phase
   title: string | null;
+  /** _kind: 'checkpoint' (off-backbone, trigger-entered) or 'backbone' (default when absent). */
+  role: "backbone" | "checkpoint";
   requiresPhase: string | null;
   init: boolean; // _init
   fragments: FragmentRef[];
+  /** phase-level _trigger (checkpoint phases only) — how the phase is entered. null for backbone. */
+  trigger: Trigger | null;
   assembleFile: string | null; // _assemble._file
   produces: string[];
   advancesTo: string | null;

@@ -1,8 +1,10 @@
 ---
 _phase: feedback
 _title: "Feedback (Optional)"
+_kind: checkpoint
 _requires_phase: discover
 _input: "**/.phase-status.json"
+_trigger: { _when: "the user opts in to providing feedback at a feedback checkpoint" }
 _fragments:
   - _id: collect
     _trigger: { _always: true }
@@ -12,7 +14,6 @@ _assemble:
 _produces:
   - feedback.json
   - trace.json
-_advances_to: complete
 ---
 
 # Phase 6: Feedback (Optional)
@@ -28,7 +29,7 @@ Collects user feedback and generates a shareable migration plan link. Reuses the
 - **feedback-collect.md** → the collection work: detect IDE/version, build the anonymized trace, present the survey link, optionally generate a share link, and write `feedback.json`.
 - **feedback-assemble.md** → the assembler: output gate, phase-status update, and marking the migration complete.
 
-This is the terminal phase — `_advances_to: complete`. There is no next phase to load.
+This is an **optional checkpoint phase** (`_kind: checkpoint`), not a step on the linear backbone. It is entered only when the user opts in at a feedback checkpoint (its `_trigger`), and it returns control to the flow rather than advancing a `current_phase` — so it has no `_advances_to`. SKILL.md decides where the feedback checkpoint is offered (see the Feedback Checkpoints section there).
 
 ---
 
