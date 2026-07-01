@@ -218,7 +218,7 @@ heroku-to-aws/
 │   │
 │   ├── design-refs/
 │   │   ├── fast-path-table.md                  # Add-on → AWS deterministic mappings (13+ entries)
-│   │   ├── dyno-type-table.md                  # Dyno type → Fargate CPU/memory
+│   │   ├── dyno-type-table.md                  # Dyno type → Fargate CPU/memory (Fargate override path only)
 │   │   ├── postgres-plan-table.md              # Postgres plan → RDS/Aurora sizing
 │   │   ├── redis-plan-table.md                 # Redis plan → ElastiCache sizing
 │   │   └── kafka-plan-table.md                 # Kafka plan → MSK sizing
@@ -238,7 +238,7 @@ heroku-to-aws/
 | `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                        |
 | awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `shared/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`.  |
 | User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                              |
-| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                            |
+| Dyno type not in sizing table (EB or Fargate path)       | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                             |
 | Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                    |
 
 ## Defaults

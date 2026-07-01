@@ -37,7 +37,8 @@ Load these reference files **only when the corresponding resource type exists in
 | Resource Type in Inventory                                                                    | Reference File to Load                                             |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `formation` (any) + `design_constraints.kubernetes.value` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"` or absent         | `design-refs/dyno-type-table.md`                                   |
+| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"`                   | `design-refs/dyno-type-table.md`                                   |
+| `formation` (any) + `design_constraints.kubernetes.value` = `"elastic_beanstalk"` or absent   | (no additional file needed — EB mapping is inline in `design-mapping.md`) |
 | `addon:*:heroku-postgresql:*`                                                                 | `design-refs/postgres-plan-table.md`                               |
 | `addon:*:heroku-redis:*`                                                                      | `design-refs/redis-plan-table.md`                                  |
 | `addon:*:heroku-kafka:*`                                                                      | `design-refs/kafka-plan-table.md`                                  |

@@ -118,6 +118,7 @@ Rates below come from the named keys in `aws-infra-pricing.json` — do not hard
 
 | AWS Service               | Formula (rates from `aws-infra-pricing.json`)                                                                                            | Key inputs from `aws_config`                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Elastic Beanstalk**     | EC2: `ec2.instances[instance_type]` × 730 × max_instances + ALB: `alb.monthly_fixed` (if LoadBalanced). EB service fee is $0.             | `instance_type`, `max_instances`, `environment_type`                          |
 | **Fargate**               | (task_cpu/1024 × `fargate.per_vcpu_hour` + task_memory/1024 × `fargate.per_gb_mem_hour`) × 730 × desired_count                           | `task_cpu`, `task_memory`, `desired_count`                                    |
 | **EKS (cluster + nodes)** | `eks.control_plane_monthly` + `eks.node_rates_monthly[type]` × node_count + ALB per web service                                          | `eks_cluster.node_groups[].instance_types`, `desired_size`, web service count |
 | **ALB**                   | `alb.monthly_fixed` + LCU estimate (`alb.per_lcu_hour` × 730)                                                                            | Per web service with `load_balancer: true`                                    |
@@ -146,6 +147,21 @@ IF pricing data for a service is unavailable from both MCP and cache:
 2. **Exclude** from the total monthly cost sum
 3. Add to `warnings[]`: "Pricing unavailable for [service_id] ([aws_service]). Requires manual cost verification."
 4. Add service name to `pricing_source.services_with_missing_fallback[]`
+
+### Elastic Beanstalk Cost Calculation
+
+When `aws-design.json` contains Elastic Beanstalk services (`aws_service: "Elastic Beanstalk"`):
+
+1. **EC2 instances**: Look up the instance type's hourly rate in `ec2.instances[instance_type]` × 730 hours × `max_instances`. Use `max_instances` (not min) for the Balanced tier estimate to reflect scaling headroom.
+2. **ALB** (LoadBalanced environments only): `alb.monthly_fixed` per web-tier environment. Worker environments do NOT incur ALB cost.
+3. **SQS** (Worker environments only): Minimal cost — use `fast_path_services.sqs.monthly_baseline_est` if available, otherwise estimate $1-5/month for moderate queue traffic.
+4. **EBS storage**: Included in EC2 instance pricing for default GP3 volumes. Do not add separately unless instance storage exceeds 30GB.
+
+**Total EB monthly cost** = (EC2_hourly × 730 × instance_count) + ALB_costs (web only) + SQS_costs (worker only). EB itself charges $0 — all costs are the underlying resources.
+
+**EB vs Fargate cost comparison note**: When presenting EB estimates alongside Fargate alternative:
+
+> "Elastic Beanstalk uses EC2 instances (always-on, hourly billing) while Fargate bills per-second for actual CPU/memory usage. EB is typically cheaper for sustained workloads (>60% utilization) and simpler to operate (PaaS model). Fargate is cheaper for bursty/low-utilization workloads and offers finer-grained scaling."
 
 ### EKS Cost Calculation
 

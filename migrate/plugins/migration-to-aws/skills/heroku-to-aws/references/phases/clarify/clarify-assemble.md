@@ -69,7 +69,7 @@ Write `$MIGRATION_DIR/preferences.json`:
     "cost_optimization": "<Q15 value>"
   },
   "design_constraints": {
-    "kubernetes": { "value": "<Q12c value>", "chosen_by": "user|default" }
+    "kubernetes": { "value": "elastic_beanstalk", "chosen_by": "user|default" }
   },
   "defaults_applied": ["<list of defaulted question IDs>"],
   "sources": {
@@ -110,7 +110,7 @@ Before handing off to Design:
 - [ ] If peering detected and VPC ID needed → `network.existing_vpc_id` is populated
 - [ ] If Fir apps detected → `global.fir_intent` is populated (not null)
 - [ ] `operational.containerization_status` is populated
-- [ ] `design_constraints.kubernetes.value` is one of: `"eks-managed"`, `"eks-or-ecs"`, `"ecs-fargate"`
+- [ ] `design_constraints.kubernetes.value` is one of: `"elastic_beanstalk"`, `"eks-managed"`, `"eks-or-ecs"`, `"ecs-fargate"`
 - [ ] `design_constraints.kubernetes.chosen_by` is `"user"` or `"default"`
 - [ ] All entries in `sources` have a value of `"user"` or `"default"`
 - [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`

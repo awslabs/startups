@@ -81,16 +81,16 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 
 **Prerequisites**:
 
-- Read `preferences.json → design_constraints.compute_target.value` (may be absent; fall back to `design_constraints.kubernetes.value` for backwards compatibility).
-- If value is `"eks"` or (legacy) `"eks-managed"` or `"eks-or-ecs"`: Load `design-refs/eks-mapping-table.md` and `phases/design/design-eks.md`. Follow the EKS branch logic. Skip EB and Fargate below.
-- If value is `"fargate"` or (legacy) `"ecs-fargate"`: Load `design-refs/dyno-type-table.md`. Follow the Fargate mapping below.
+- Read `preferences.json → design_constraints.kubernetes.value` (may be absent).
+- If value is `"eks-managed"` or `"eks-or-ecs"`: Load `design-refs/eks-mapping-table.md` and `phases/design/design-eks.md`. Follow the EKS branch logic. Skip EB and Fargate below.
+- If value is `"ecs-fargate"`: Load `design-refs/dyno-type-table.md`. Follow the Fargate mapping below.
 - Otherwise (value is `"elastic_beanstalk"` or field is absent): Follow the Elastic Beanstalk mapping below (default path).
 
 #### EKS Branch
 
-When `design_constraints.compute_target.value` is `"eks"` or (legacy) `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`, load and follow `references/phases/design/design-eks.md`. That file contains the complete EKS mapping logic. ALL formations are mapped to EKS. Return here after EKS mapping is complete (skip the EB and Fargate logic below).
+When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`, load and follow `references/phases/design/design-eks.md`. That file contains the complete EKS mapping logic. ALL formations are mapped to EKS. Return here after EKS mapping is complete (skip the EB and Fargate logic below).
 
-**Fir intent precedence**: If `preferences.operational.fir_intent` is `"self_managed_eks_ecs"` AND `design_constraints.compute_target.value` is `"elastic_beanstalk"` or `"fargate"` or absent, the Fir intent does NOT automatically enable EKS for all formations. The Fir intent is compute-destination-only for Fir workloads and is handled as a deferred notation (no Terraform generation for Fir in v1). The global `design_constraints.compute_target.value` preference takes precedence for non-Fir formations.
+**Fir intent precedence**: If `preferences.operational.fir_intent` is `"self_managed_eks_ecs"` AND `design_constraints.kubernetes.value` is `"elastic_beanstalk"` or `"ecs-fargate"` or absent, the Fir intent does NOT automatically enable EKS for all formations. The Fir intent is compute-destination-only for Fir workloads and is handled as a deferred notation (no Terraform generation for Fir in v1). The global `design_constraints.kubernetes.value` preference takes precedence for non-Fir formations.
 
 #### Elastic Beanstalk Branch (default)
 
@@ -149,7 +149,7 @@ When `design_constraints.compute_target.value` is `"eks"` or (legacy) `design_co
 
 #### Fargate Branch (override)
 
-**Trigger**: `compute_target == "fargate"` (user override from Q12c).
+**Trigger**: `design_constraints.kubernetes.value == "ecs-fargate"` (user override from Q12c).
 
 **Mapping logic:**
 

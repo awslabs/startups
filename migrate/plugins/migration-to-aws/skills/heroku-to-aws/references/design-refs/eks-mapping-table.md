@@ -62,4 +62,4 @@ Node types are selected to accommodate **≥4 pods** of the given dyno type on a
 
 ## Usage Context
 
-This table is consumed by the Design Engine's EKS branch. When `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent, this table is not consulted — the existing `dyno-type-table.md` (Fargate path) is used instead.
+This table is consumed by the Design Engine's EKS branch. When `design_constraints.kubernetes.value` is `"elastic_beanstalk"`, `"ecs-fargate"`, or absent, this table is not consulted — the EB or Fargate path is used instead.

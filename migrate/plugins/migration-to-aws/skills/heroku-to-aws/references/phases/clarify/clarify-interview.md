@@ -437,17 +437,17 @@ Return to **3a** for the next batch.
 
 **Interpret:**
 
-- A → `design_constraints.compute_target: { "value": "elastic_beanstalk", "chosen_by": "user" }`
-- B → `design_constraints.compute_target: { "value": "fargate", "chosen_by": "user" }`
-- C → `design_constraints.compute_target: { "value": "eks", "chosen_by": "user" }`
-- D → `design_constraints.compute_target: { "value": "elastic_beanstalk", "chosen_by": "default" }`
+- A → `design_constraints.kubernetes: { "value": "elastic_beanstalk", "chosen_by": "user" }`
+- B → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }`
+- C → `design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }`
+- D → `design_constraints.kubernetes: { "value": "elastic_beanstalk", "chosen_by": "default" }`
 
-**Default:** A → `design_constraints.compute_target: { "value": "elastic_beanstalk", "chosen_by": "default" }`
+**Default:** A → `design_constraints.kubernetes: { "value": "elastic_beanstalk", "chosen_by": "default" }`
 
-**Design impact:** 
-- `"elastic_beanstalk"`: ALL formation resources map to EB environments (Docker platform, LoadBalanced for web, Worker for non-web). This is the PaaS-to-PaaS path.
-- `"fargate"`: ALL formation resources map to Fargate task definitions (existing behavior). Use when user wants direct container control.
-- `"eks"`: ALL formation resources map to EKS Deployments with pod resource requests/limits. Use when user wants Kubernetes.
+**Design impact:**
+- `"elastic_beanstalk"`: ALL formation resources map to EB environments (Docker platform, LoadBalanced for web, Worker for non-web). This is the PaaS-to-PaaS path (default).
+- `"ecs-fargate"`: ALL formation resources map to Fargate task definitions. Use when user wants direct container control.
+- `"eks-managed"` or `"eks-or-ecs"`: ALL formation resources map to EKS Deployments with pod resource requests/limits. Use when user wants Kubernetes.
 
 Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected by this choice.
 
@@ -669,7 +669,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 **Note:** Cutover timing (full vs data-first) is handled by the migration_approach question (Q5b), not this question. This question only determines the compute destination for Fir workloads.
 
-**Design impact:** Both options result in full Fir workload migration to AWS. Option B indicates the user wants to manage their own Kubernetes/ECS orchestration rather than using the skill's standard Fargate mapping.
+**Design impact:** Both options result in full Fir workload migration to AWS. Option B indicates the user wants to manage their own Kubernetes/ECS orchestration rather than using the skill's standard Elastic Beanstalk mapping.
 
 ---
 
@@ -677,7 +677,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > Is your application already containerized (has a Dockerfile)?
 >
-> A) Yes — Dockerfile exists, ready for Fargate deployment
+> A) Yes — Dockerfile exists, ready for deployment
 > B) No — uses Heroku buildpacks only, no Dockerfile yet
 > C) Partial — some services have Dockerfiles, others use buildpacks
 
@@ -689,7 +689,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 **Default:** B → `containerization_status: "buildpack_only"`
 
-**Design impact:** Options B and C trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings — all compute targets are Fargate regardless.
+**Design impact:** Options B and C trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings — the compute target (EB, Fargate, or EKS) is determined by Q12c regardless of containerization status.
 
 ---
 
@@ -790,7 +790,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 | Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                            |
 | Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                          |
 | Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"`          |
-| Q12c — Compute target     | A (Elastic Beanstalk)                   | `design_constraints.compute_target.value: "elastic_beanstalk"` |
+| Q12c — Compute target     | A (Elastic Beanstalk)                   | `design_constraints.kubernetes.value: "elastic_beanstalk"` |
 | Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                          |
 | Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                             |
 | Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                             |
