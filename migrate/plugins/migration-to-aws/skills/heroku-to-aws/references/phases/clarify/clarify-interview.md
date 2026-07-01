@@ -657,7 +657,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 >
 > What's your compute migration intent for these Fir workloads?
 >
-> A) Exit Heroku entirely — re-platform all Fir workloads to AWS (ECS/Fargate, standard containers)
+> A) Exit Heroku entirely — re-platform all Fir workloads to AWS (Elastic Beanstalk or Fargate, per Q12c)
 > B) Self-managed EKS/ECS — move to Kubernetes or ECS on AWS with your own orchestration
 
 **Interpret:**

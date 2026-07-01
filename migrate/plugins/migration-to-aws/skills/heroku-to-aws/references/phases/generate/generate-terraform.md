@@ -1615,7 +1615,7 @@ For any `service_id` in `aws-design.json` whose `aws_service` does not have a Te
 
 **Warning scenarios that produce entries:**
 
-- CloudWatch Logs mapped from Papertrail (no standalone Terraform needed — integrated into `compute.tf` log configuration)
+- CloudWatch Logs mapped from Papertrail (no standalone Terraform needed — integrated into compute config: `beanstalk.tf` EB platform logging or `compute.tf` ECS log configuration)
 - CloudWatch + X-Ray composite mappings (Scout APM, New Relic)
 - Amazon SES (SendGrid mapping)
 - Amazon SNS (Twilio mapping)
@@ -1625,7 +1625,7 @@ For any `service_id` in `aws-design.json` whose `aws_service` does not have a Te
 - Amazon OpenSearch (Bonsai Elasticsearch mapping)
 - S3 + CloudFront composite (Cloudinary mapping)
 
-**Exception:** If `aws_service == "CloudWatch Logs"` and it maps from a logging add-on (Papertrail, Rollbar, Sentry), the log group is already emitted in `compute.tf` Step 6. Do NOT log a warning for this case.
+**Exception:** If `aws_service == "CloudWatch Logs"` and it maps from a logging add-on (Papertrail, Rollbar, Sentry), logging is already handled by the compute target (EB platform logging in `beanstalk.tf` or ECS log configuration in `compute.tf` Step 6). Do NOT log a warning for this case.
 
 ---
 

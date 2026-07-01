@@ -245,7 +245,7 @@ heroku-to-aws/
 
 - **IaC output**: Terraform configurations, migration scripts, and documentation
 - **Region**: `us-east-1` (unless user specifies otherwise)
-- **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, 0.5 CPU for Fargate)
+- **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, `t3.small` for EB compute)
 - **Migration mode**: Adapts based on available inputs (Terraform primary, Procfile/app.json supplementary, billing optional)
 - **Cost currency**: USD
 - **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). See `references/shared/migration-complexity.md` for tier definitions.
