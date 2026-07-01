@@ -1,3 +1,12 @@
+---
+_fragment: docs
+_of_phase: generate
+_contributes:
+  - MIGRATION_GUIDE.md
+  - README.md
+  - scripts/ (database migration scripts, conditional on design content)
+---
+
 # Generate Phase: Documentation and Script Generation
 
 > Self-contained sub-file for generating migration documentation and database migration scripts.

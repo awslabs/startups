@@ -1,4 +1,17 @@
+---
+_fragment: eks-mapping
+_of_phase: design
+_contributes:
+  - aws-design.json (EKS pods + eks_cluster aggregate for all formations, when EKS is selected)
+---
+
 # EKS Design Branch
+
+> Conditional formation-mapping fragment. Fires only when the Kubernetes preference
+> selects EKS; the prose below gates on that value (skip when `ecs-fargate` or
+> absent). When active, it maps ALL formations to EKS pods + a single `eks_cluster`
+> aggregate, contributing to `aws-design.json`. The mapping-engine fragment
+> (`design-mapping.md`) handles the Fargate path and all non-formation resources.
 
 **Applies when:** `preferences.json → design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`.
 
