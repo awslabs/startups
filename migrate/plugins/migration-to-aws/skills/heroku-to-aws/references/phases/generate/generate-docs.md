@@ -660,11 +660,12 @@ Reference these in your ECS task definition:
 
 {{IF has_beanstalk}}
 - [ ] Application responds on EB environment URL: `http://{{EB_ENVIRONMENT_URL}}/`
+- [ ] Health check endpoint returns 200: `http://{{EB_ENVIRONMENT_URL}}/health`
 {{ENDIF}}
 {{IF has_fargate}}
 - [ ] Application responds on ALB endpoint: `https://{{ALB_DNS_NAME}}/`
-{{ENDIF}}
 - [ ] Health check endpoint returns 200: `https://{{ALB_DNS_NAME}}/health`
+{{ENDIF}}
       {{IF has_postgres}}
 - [ ] Database connectivity confirmed (application can read/write)
 - [ ] Row counts match source database
@@ -794,6 +795,7 @@ Replace template variables using these sources:
 | `{{TARGET_MSK_*}}` | Placeholder — user fills from Terraform output |
 | `{{AWS_ACCOUNT_ID}}` | Placeholder — user fills with their AWS account ID |
 | `{{ALB_DNS_NAME}}` | Placeholder — user fills from Terraform output |
+| `{{EB_ENVIRONMENT_URL}}` | `aws_elastic_beanstalk_environment.<app_name>_web.cname` from `outputs.tf` (the EB environment's public CNAME) |
 | `{{MSK_CLUSTER_ARN}}` | Placeholder — user fills from Terraform output |
 | `{{MIGRATION_BUCKET}}` | Placeholder — user creates an S3 bucket for migration artifacts |
 | `{{app_domain}}` | Placeholder — user fills with their application domain |

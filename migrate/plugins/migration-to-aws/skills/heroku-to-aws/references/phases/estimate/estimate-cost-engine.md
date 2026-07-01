@@ -154,10 +154,9 @@ When `aws-design.json` contains Elastic Beanstalk services (`aws_service: "Elast
 
 1. **EC2 instances**: Look up the instance type's hourly rate in `ec2.instances[instance_type]` × 730 hours × `max_instances`. Use `max_instances` (not min) for the Balanced tier estimate to reflect scaling headroom.
 2. **ALB** (LoadBalanced environments only): `alb.monthly_fixed` per web-tier environment. Worker environments do NOT incur ALB cost.
-3. **SQS** (Worker environments only): Minimal cost — use `fast_path_services.sqs.monthly_baseline_est` if available, otherwise estimate $1-5/month for moderate queue traffic.
-4. **EBS storage**: Included in EC2 instance pricing for default GP3 volumes. Do not add separately unless instance storage exceeds 30GB.
+3. **EBS storage**: Included in EC2 instance pricing for default GP3 volumes. Do not add separately unless instance storage exceeds 30GB.
 
-**Total EB monthly cost** = (EC2_hourly × 730 × instance_count) + ALB_costs (web only) + SQS_costs (worker only). EB itself charges $0 — all costs are the underlying resources.
+**Total EB monthly cost** = (EC2_hourly × 730 × instance_count) + ALB_costs (web only). EB itself charges $0 — all costs are the underlying resources.
 
 **EB vs Fargate cost comparison note**: When presenting EB estimates alongside Fargate alternative:
 
@@ -206,7 +205,7 @@ Heroku includes basic logging via its log drain. AWS CloudWatch charges from the
 
 ### Step 1: Estimate Log Volume
 
-Use the per-service log-volume heuristic from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `log_volume_gb_per_service` (billing data not applicable for log volume since Heroku's logging model differs). Keyed by service: `fargate_task` (per task), `rds_or_aurora_instance` (per instance), `alb` (per load balancer), `nat_gateway` (per gateway), `elasticache_node` (per node), `msk_broker` (per broker).
+Use the per-service log-volume heuristic from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `log_volume_gb_per_service` (billing data not applicable for log volume since Heroku's logging model differs). Keyed by service: `fargate_task` (per task), `eb_environment` (per environment), `rds_or_aurora_instance` (per instance), `alb` (per load balancer), `nat_gateway` (per gateway), `elasticache_node` (per node), `msk_broker` (per broker).
 
 Sum across all applicable services.
 

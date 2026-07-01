@@ -111,6 +111,21 @@
     },
     "pod_cost": 0
   },
+  "ec2": {
+    "_comment": "EC2 On-Demand hourly rates (Linux/x86, us-east-1). Used by the Elastic Beanstalk cost formula to price underlying instances. Every instance_type the EB design can emit MUST have a rate here.",
+    "instances": {
+      "t3.micro": 0.0104,
+      "t3.small": 0.0208,
+      "t3.medium": 0.0416,
+      "t3.large": 0.0832,
+      "m5.large": 0.096,
+      "m5.xlarge": 0.192,
+      "m5.2xlarge": 0.384,
+      "m5.4xlarge": 0.768,
+      "r5.xlarge": 0.252
+    },
+    "_instances_note": "Rates match the dyno-to-EC2 instance type table in design-mapping.md. t3.micro (eco/basic), t3.small (standard-1x), t3.medium (standard-2x), m5.large (performance-m), m5.xlarge (performance-l), r5.xlarge (performance-l-ram), m5.2xlarge (performance-xl), m5.4xlarge (performance-2xl)."
+  },
   "nat_gateway": {
     "monthly_fixed": 32.85,
     "per_gb_processed": 0.045

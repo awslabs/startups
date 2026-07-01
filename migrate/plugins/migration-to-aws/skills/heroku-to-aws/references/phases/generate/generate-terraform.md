@@ -464,6 +464,7 @@ When no Private Space is involved, generate standard security groups:
 
 ```hcl
 # ALB Security Group
+# Only relevant when Fargate override is active. EB manages its own ALB. Emit only when has_fargate.
 resource "aws_security_group" "alb" {
   name_prefix = "${var.project_name}-${var.environment}-alb-"
   vpc_id      = <vpc_id_reference>
@@ -508,12 +509,14 @@ resource "aws_security_group" "app" {
   vpc_id      = <vpc_id_reference>
   description = "Security group for application compute (EB/Fargate/EKS)"
 
+  # Conditional: use ALB SG reference when Fargate, VPC CIDR when EB
+  # For the template, use VPC CIDR (covers both paths — EB ALB is in the VPC)
   ingress {
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-    description     = "Traffic from ALB"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+    description = "Traffic from within VPC (covers EB-managed ALB and direct service communication)"
   }
 
   egress {
@@ -643,7 +646,9 @@ resource "aws_security_group" "messaging" {
 - ALB SG allows 80 and 443 from 0.0.0.0/0
 - All SGs allow all outbound (Fargate needs ECR, internet access)
 
-### IAM Roles
+### ECS IAM Roles (Fargate override path only)
+
+**Skip this section** if no services in `aws-design.json` have `aws_service: "Fargate"`. These roles are only needed for ECS task execution.
 
 Generate ECS task execution and task roles:
 

@@ -93,7 +93,6 @@ ELSE full question flow (12–15 questions)
 
 **Fast-path default values applied when skipping questions:**
 
-- `migration_urgency`: `routine`
 - `migration_approach`: `full_cutover`
 - `migration_method`: `pg_dump_restore`
 - `containerization_status`: `buildpack_only`
@@ -123,7 +122,7 @@ Before generating questions, scan the inventory to determine which questions app
 | Q3 — Availability posture      | Always                                                           | Never                                     |
 | Q4 — Maintenance window        | Always                                                           | Never                                     |
 | Q5 — Environment naming        | Always                                                           | Never                                     |
-| Q5b — Migration urgency        | Always                                                           | Never                                     |
+| Q5b — Migration approach        | Postgres add-on present                                          | No Postgres in inventory                  |
 | Q6 — Database HA               | Postgres add-on present                                          | No Postgres in inventory                  |
 | Q6b — Migration approach       | Postgres add-on present                                          | No Postgres in inventory                  |
 | Q6c — DB migration method      | Postgres add-on present                                          | No Postgres in inventory                  |
@@ -142,7 +141,7 @@ Before generating questions, scan the inventory to determine which questions app
 
 ### Batch Planning
 
-After determining active questions, organize into **three batches** (≤5 each):
+After determining active questions, organize into **three batches**:
 
 | Batch | Name                      | Questions            | Content                                                                                                     |
 | ----- | ------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
