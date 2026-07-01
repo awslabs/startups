@@ -36,6 +36,8 @@ Scan `aws-design.json`.services[] to determine which data store types exist in t
 
 | Check            | Condition                                                                             | Flag                  |
 | ---------------- | ------------------------------------------------------------------------------------- | --------------------- |
+| Beanstalk present | Any service with `aws_service == "Elastic Beanstalk"`                                | `has_beanstalk = true` |
+| Fargate present  | Any service with `aws_service == "Fargate"` or `aws_service == "ALB"`                 | `has_fargate = true`  |
 | Postgres present | Any service with `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"` | `has_postgres = true` |
 | Redis present    | Any service with `aws_service == "ElastiCache Redis"`                                 | `has_redis = true`    |
 | Kafka present    | Any service with `aws_service == "Amazon MSK"`                                        | `has_kafka = true`    |
@@ -962,7 +964,8 @@ Follow the verification checklist in `MIGRATION_GUIDE.md` Phase 4, then perform 
 
 ### Conditional Section Rules
 
-- `has_fargate`: True if any service in design has `aws_service == "Fargate"`
+- `has_beanstalk`: True if ANY service in `aws-design.json → services[]` has `aws_service == "Elastic Beanstalk"`
+- `has_fargate`: True if ANY service in `aws-design.json → services[]` has `aws_service == "Fargate"` or `aws_service == "ALB"`
 - `has_postgres`: True if any service has `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"`
 - `has_redis`: True if any service has `aws_service == "ElastiCache Redis"`
 - `has_kafka`: True if any service has `aws_service == "Amazon MSK"`

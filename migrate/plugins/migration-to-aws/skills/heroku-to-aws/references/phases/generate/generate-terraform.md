@@ -712,11 +712,13 @@ resource "aws_elastic_beanstalk_application" "<app_name>" {
 }
 
 # Environment: <process_type>
+# For web: tier = "WebServer", environment_type = "LoadBalanced"
+# For worker/clock/release: tier = "WebServer", environment_type = "SingleInstance"
 resource "aws_elastic_beanstalk_environment" "<app_name>_<process_type>" {
   name                = "${var.project_name}-<process_type>"
   application         = aws_elastic_beanstalk_application.<app_name>.name
   solution_stack_name = "64bit Amazon Linux 2023 v4.4.0 running Docker"
-  tier                = <"WebServer" if environment_type == "LoadBalanced", "Worker" if environment_type == "Worker">
+  tier                = "WebServer"
 
   # Instance configuration
   setting {
@@ -812,8 +814,9 @@ resource "aws_iam_role_policy_attachment" "eb_docker_<app_name>" {
 
 **Per-environment customization:**
 
-- Web process types: `tier = "WebServer"`, ALB is auto-provisioned by EB
-- Worker process types: `tier = "Worker"`, SQS queue auto-provisioned by EB
+- Web process types: `tier = "WebServer"`, `environment_type = "LoadBalanced"`, ALB is auto-provisioned by EB
+- Worker/clock/release process types: `tier = "WebServer"`, `environment_type = "SingleInstance"` (no ALB, no public endpoint; the worker command runs as the Docker CMD — a persistent process, not SQS-triggered)
+- Do NOT use `tier = "Worker"` — Heroku workers are persistent processes, not SQS consumers
 - One `aws_elastic_beanstalk_application` per Heroku app, one `aws_elastic_beanstalk_environment` per process type
 - Instance type from `aws_config.instance_type` in `aws-design.json`
 - Min/max instances from `aws_config.min_instances` / `aws_config.max_instances`
@@ -849,10 +852,15 @@ resource "aws_codepipeline" "<app_name>_deploy" {
     }
   }
 
+  # One deploy action per environment. All environments in the same application
+  # share the same source bundle but run different Docker CMD commands defined
+  # in their respective Dockerfiles or docker-compose.yml.
   stage {
     name = "Deploy"
+
+    # One action per EB environment
     action {
-      name            = "DeployToEB"
+      name            = "Deploy-Web"
       category        = "Deploy"
       owner           = "AWS"
       provider        = "ElasticBeanstalk"
@@ -861,6 +869,20 @@ resource "aws_codepipeline" "<app_name>_deploy" {
       configuration = {
         ApplicationName = aws_elastic_beanstalk_application.<app_name>.name
         EnvironmentName = aws_elastic_beanstalk_environment.<app_name>_web.name
+      }
+    }
+
+    # Repeat for each non-web process type (worker, clock, etc.)
+    action {
+      name            = "Deploy-<process_type>"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "ElasticBeanstalk"
+      version         = "1"
+      input_artifacts = ["source_output"]
+      configuration = {
+        ApplicationName = aws_elastic_beanstalk_application.<app_name>.name
+        EnvironmentName = aws_elastic_beanstalk_environment.<app_name>_<process_type>.name
       }
     }
   }

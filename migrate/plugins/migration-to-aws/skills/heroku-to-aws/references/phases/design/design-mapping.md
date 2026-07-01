@@ -115,12 +115,15 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
 
    If dyno type not found, add to `warnings[]` and skip.
 
-4. **Environment type**:
-   - If `process_type == "web"` → `environment_type: "LoadBalanced"` (includes ALB)
-   - Otherwise (worker, clock, release) → `environment_type: "Worker"` (SQS-backed)
+4. **Environment type and tier**:
+   - If `process_type == "web"` → `tier: "WebServer"`, `environment_type: "LoadBalanced"` (includes ALB)
+   - All other process types (worker, clock, release) → `tier: "WebServer"`, `environment_type: "SingleInstance"` (no ALB, no public endpoint). The worker command runs as the Docker CMD — a persistent process, not SQS-triggered.
+
+   **Note:** EB Worker tier (SQS-based polling) is NOT used. Heroku workers are persistent processes (Sidekiq, Celery, background job runners) that maintain their own connections to queues/databases. They are NOT HTTP-triggered. Map them to SingleInstance WebServer environments where they run continuously as Docker containers.
 
 5. **Produce Elastic Beanstalk entry**:
 
+   For web process types:
    ```json
    {
      "service_id": "eb:{heroku_app}:{process_type}",
@@ -132,7 +135,8 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
        "region": "{target_region}",
        "platform": "Docker running on 64bit Amazon Linux 2023",
        "instance_type": "<from table>",
-       "environment_type": "<LoadBalanced|Worker>",
+       "environment_type": "LoadBalanced",
+       "tier": "WebServer",
        "min_instances": 1,
        "max_instances": <config.quantity or 2, whichever is greater>,
        "process_type": "{process_type}",
@@ -141,7 +145,29 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
    }
    ```
 
-6. **No separate ALB entry**: Unlike Fargate, EB LoadBalanced environments include ALB automatically. Do NOT produce a separate ALB service entry for web process types.
+   For non-web process types (worker, clock, release):
+   ```json
+   {
+     "service_id": "eb:{heroku_app}:{process_type}",
+     "source_resource_id": "{resource_id}",
+     "heroku_app": "{heroku_app}",
+     "aws_service": "Elastic Beanstalk",
+     "confidence": "deterministic",
+     "aws_config": {
+       "region": "{target_region}",
+       "platform": "Docker running on 64bit Amazon Linux 2023",
+       "instance_type": "<from table>",
+       "environment_type": "SingleInstance",
+       "tier": "WebServer",
+       "min_instances": 1,
+       "max_instances": <config.quantity or 1>,
+       "process_type": "{process_type}",
+       "deployment_policy": "Rolling"
+     }
+   }
+   ```
+
+6. **No separate ALB entry**: Unlike Fargate, EB LoadBalanced environments include ALB automatically. SingleInstance environments have no ALB. Do NOT produce separate ALB service entries for any EB environment.
 
 7. Append to `services[]`. Increment `metadata.total_services`.
 

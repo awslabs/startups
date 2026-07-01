@@ -77,7 +77,7 @@ This produces:
 - `terraform/main.tf` must exist
 - `terraform/variables.tf` must exist
 - `terraform/outputs.tf` must exist
-- At least one domain file must exist (`compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`)
+- At least one domain file must exist (`beanstalk.tf`, `pipeline.tf`, `compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`)
 
 If gate fails: STOP. Output: "Terraform generation failed. Check generation-warnings.json for details."
 
