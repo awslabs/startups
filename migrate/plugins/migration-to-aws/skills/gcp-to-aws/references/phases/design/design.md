@@ -86,6 +86,7 @@ Sub-design files may reference rubrics in `design-refs/`:
 - `design-refs/index.md` — GCP type → rubric file lookup
 - `design-refs/fast-path.md` — Direct (table) mappings vs rubric path; **User-facing vocabulary** for presenting `confidence` to users (**Standard pairing** / **Tailored to your setup** / **Estimated from billing only**)
 - `design-refs/compute.md` — Compute service rubric
+- `design-refs/elastic-beanstalk.md` — Elastic Beanstalk reference (App Engine, managed platform)
 - `design-refs/database.md` — Database service rubric
 - `design-refs/storage.md` — Storage service rubric
 - `design-refs/networking.md` — Networking service rubric

@@ -24,9 +24,12 @@ For each PRIMARY resource in the cluster:
 
 1. Extract GCP type (e.g., `google_sql_database_instance`)
 2. Look up in `design-refs/fast-path.md` → **Direct Mappings** table (not the Preferred Target table — that applies later in Pass 2).
-3. If found and conditions match: assign AWS service with confidence = **`deterministic`**. Set `human_expertise_required: false` (no Direct Mapping row requires it).
-4. If `gcp_type` is `google_sql_database_instance` with PostgreSQL or MySQL engine: **always proceed to Pass 2** (Cloud SQL is not in Direct Mappings — see `fast-path.md`). Confidence = **`inferred`** after rubric.
-5. If not found: proceed to Pass 2 (confidence will be **`inferred`** after rubric, or **`billing_inferred`** on the billing-only path).
+3. If found, evaluate the row's **Conditions** column:
+   - `Always` → conditions met.
+   - Conditional rows (e.g., `google_app_engine_application` requires `compute_model` absent or `"managed_platform"`): read `preferences.json → design_constraints.compute_model.value`. If the condition is NOT met (e.g., user chose `"container_orchestration"` or `"serverless"`), treat as **not found** — proceed to Pass 2.
+4. If found and conditions match: assign AWS service with confidence = **`deterministic`**. Set `human_expertise_required: false` (no Direct Mapping row requires it).
+5. If `gcp_type` is `google_sql_database_instance` with PostgreSQL or MySQL engine: **always proceed to Pass 2** (Cloud SQL is not in Direct Mappings — see `fast-path.md`). Confidence = **`inferred`** after rubric.
+6. If not found (or conditions not met): proceed to Pass 2 (confidence will be **`inferred`** after rubric, or **`billing_inferred`** on the billing-only path).
 
 **Definitions:** See the top of `design-refs/fast-path.md` for **`deterministic` vs `inferred` vs `billing_inferred`** and the note that **index.md “Typical AWS target” ≠ deterministic**.
 
@@ -58,7 +61,7 @@ For resources not covered by fast-path:
 6. Evaluate 6 criteria (1-sentence each):
    - **Eliminators**: Feature incompatibility (hard blocker)
    - **Operational Model**: Managed vs self-hosted fit
-   - **User Preference**: From `preferences.json` design_constraints
+   - **User Preference**: From `preferences.json` design_constraints (includes `compute_model`, `kubernetes`, `cost_sensitivity`)
    - **Feature Parity**: GCP feature → AWS feature availability
    - **Cluster Context**: Affinity with other resources in this cluster
    - **Simplicity**: Prefer fewer resources / less config

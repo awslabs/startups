@@ -315,7 +315,7 @@ When user confirms: mark all rows `"confirmed": true` in `metadata.detected_sett
 | -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q4 (funding stage), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance) |
 | **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                    |
-| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend)                                  |
+| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE, App Engine)   | `clarify-compute.md`  | Q7b (compute model), Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend)             |
 | **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                              |
 | **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                           |
 | **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q26 (Q14–Q22 always; Q23–Q26 only when `agentic_profile.is_agentic == true`)                                    |
@@ -324,7 +324,7 @@ When user confirms: mark all rows `"confirmed": true` in `metadata.detected_sett
 
 1. Category A is always active.
 2. Check for billing-only mode — if `billing-profile.json` exists and `gcp-resource-inventory.json` does NOT, Category B is active.
-3. Check for compute resources — if present, Category C is active. Within C, skip Q8 if no GKE present. Skip Q10/Q11 if no Cloud Run present.
+3. Check for compute resources — if present, Category C is active. Within C, skip Q7b if no App Engine present. Skip Q8 if no GKE present. Skip Q10/Q11 if no Cloud Run present.
 4. Check for database resources — if present, Category D is active.
 5. Category E is disabled by default. Offered after the last batch completes in Step 4 (see **Category E Opt-In** in Step 4). If user declines or does not respond, apply Category E defaults (no HA upgrades, no right-sizing).
 6. Check for `ai-workload-profile.json` — if present, Category F is active.
@@ -373,7 +373,7 @@ After determining active categories, organize questions into **up to three batch
 | Batch | Name                   | Categories                                 | Questions                         | Fires When                                |
 | ----- | ---------------------- | ------------------------------------------ | --------------------------------- | ----------------------------------------- |
 | **1** | Strategic Requirements | A (Global/Strategic)                       | Q1–Q7 (minus Q4)                  | Always                                    |
-| **2** | Infrastructure         | B (Config Gaps), C (Compute), D (Database) | Q8–Q13b + Category B prompts      | Any compute or database resources present |
+| **2** | Infrastructure         | B (Config Gaps), C (Compute), D (Database) | Q7b, Q8–Q13b + Category B prompts | Any compute or database resources present |
 | **3** | AI Workloads           | F (AI/Bedrock)                             | Q14–Q26 (Q23–Q26 only if agentic) | `ai-workload-profile.json` exists         |
 
 **Determine active batches:**
@@ -537,6 +537,8 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 | ---------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Early-stage funding path                 | Q3 = lower spend band                                         | Entry-tier migration funding program review                                                    |
 | Growth-stage funding path                | Q3 = higher spend band                                        | Migration funding/support program review based on spend profile                                |
+| Managed platform preference              | Q7b = A (managed platform)                                    | Elastic Beanstalk for App Engine compute targets                                               |
+| Container orchestration pref             | Q7b = B (container orchestration)                             | ECS Fargate for App Engine targets (overrides default EB mapping)                              |
 | Must stay portable                       | Q5 = Yes multi-cloud                                          | EKS only, no ECS Fargate                                                                       |
 | Kubernetes-averse                        | Q5 = No + Q8 = Frustrated                                     | ECS Fargate strongly recommended                                                               |
 | WebSocket app                            | Q9 = Yes                                                      | ALB WebSocket config required                                                                  |
@@ -623,6 +625,7 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
     "funding_stage": { "value": "series-a", "chosen_by": "user" },
     "availability": { "value": "multi-az", "chosen_by": "default" },
     "cutover_strategy": { "value": "maintenance-window-weekly", "chosen_by": "user" },
+    "compute_model": { "value": "managed_platform", "chosen_by": "user" },
     "kubernetes": { "value": "eks-or-ecs", "chosen_by": "user" },
     "database_traffic": { "value": "steady", "chosen_by": "user" },
     "db_io_workload": { "value": "medium", "chosen_by": "user" },
@@ -676,6 +679,7 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 | Q5 — Multi-cloud        | B (AWS-only)         | no constraint                                     |
 | Q6 — Uptime             | B (significant)      | `availability: "multi-az"`                        |
 | Q7 — Maintenance        | D (flexible)         | `cutover_strategy: "flexible"`                    |
+| Q7b — Compute model     | A (managed platform)  | `compute_model: "managed_platform"` (App Engine only; skipped if no App Engine) |
 | Q8 — K8s sentiment      | B (neutral)          | `kubernetes: "eks-or-ecs"`                        |
 | Q9 — WebSocket          | B (no)               | no constraint                                     |
 | Q10 — Cloud Run traffic | C (24/7)             | `cloud_run_traffic_pattern: "constant-24-7"`      |
