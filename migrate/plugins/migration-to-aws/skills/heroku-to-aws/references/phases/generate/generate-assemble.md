@@ -45,26 +45,14 @@ Load `shared/validate-artifacts.md`. Verify the complete set of generated artifa
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
-
-**Checks (all must PASS):**
-
-1. `terraform/main.tf` exists with valid provider configuration
-2. `terraform/variables.tf` exists with at least `aws_region` variable
-3. `terraform/outputs.tf` exists
-4. At least one domain `.tf` file exists beyond core files
-5. `MIGRATION_GUIDE.md` exists with Prerequisites and Verification sections
-6. `README.md` exists with artifact listing
-7. If Postgres in design → `scripts/migrate-postgres.sh` exists
-8. If Redis in design → `scripts/migrate-redis.sh` exists
-9. Every designed service accounted for (generated or in warnings)
-10. If EKS in design → `terraform/eks.tf` exists with cluster + node group resources
-11. If EKS in design → `kubernetes/` directory exists with namespace + deployment manifests
-12. No placeholder `{{VARIABLE}}` in Terraform `.tf` files (those belong in `variables.tf` as proper `var.*` references)
-
-**On any FAIL:** Emit `GATE_FAIL | phase=generate | field=<path> | reason=<missing|invalid>`. STOP.
-
-**On PASS:** Emit `HANDOFF_OK | phase=generate | artifacts=terraform/,MIGRATION_GUIDE.md,README.md`.
+The completion checks are declared in this phase's `_postconditions` frontmatter and
+enforced per `INTERPRETER.md` § Gate protocol: re-read the generated artifacts from
+disk, run the mechanical checks (`_check_file_exists` for the core terraform files +
+MIGRATION_GUIDE.md + README.md) and the `_assert` judgment checks (valid provider /
+aws_region variable, a domain .tf beyond core, guide sections, conditional Postgres/
+Redis migration scripts, conditional EKS terraform + kubernetes manifests, every service
+accounted for, no `{{VARIABLE}}` placeholders), then emit `GATE_FAIL` (STOP) or
+`HANDOFF_OK | phase=generate | artifacts=terraform/,MIGRATION_GUIDE.md,README.md`.
 
 ---
 

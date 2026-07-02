@@ -20,7 +20,7 @@ _produces:
 
 ## Step 4: Assemble and Write preferences.json
 
-Assemble all interpreted answers into the final `$MIGRATION_DIR/preferences.json`. If `preferences-draft.json` exists, use it as the base — merge in the final batch's answers, remove draft-specific metadata fields (`draft`, `batches_completed`, `batches_remaining`), and set timestamp to current time.
+Assemble all interpreted answers into the final `$MIGRATION_DIR/preferences.json` from the current session's answers. Set `metadata.timestamp` to the current time.
 
 Write `$MIGRATION_DIR/preferences.json`:
 
@@ -90,7 +90,7 @@ Write `$MIGRATION_DIR/preferences.json`:
 6. `network.existing_vpc_id` and `network.subnet_ids` are `null`/empty when no Private Space peering exists.
 7. `data.database_ha`, `data.redis_ha`, `data.kafka_retention_days` are omitted entirely when those services are not present in the inventory.
 
-After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` if it exists.
+After writing `preferences.json`, delete any stale `$MIGRATION_DIR/preferences-draft.json` left by an older skill version (drafts are no longer written or consumed).
 
 ---
 
@@ -116,29 +116,17 @@ Before handing off to Design:
 - [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`
 - [ ] Only keys with non-null values are present
 - [ ] Output is valid JSON
-- [ ] `preferences-draft.json` has been deleted (if it existed)
 
 ---
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
-
-**Re-entry guard:** If `aws-design.json` exists and `phases.design` is `"completed"`: STOP unless the user explicitly confirms re-running Clarify. Emit `GATE_FAIL | phase=clarify | field=aws-design.json | reason=stale_downstream`.
-
-**Checks (all must PASS):**
-
-1. `preferences.json` exists and parses as valid JSON.
-2. All Validation Checklist items pass.
-3. If `heroku-resource-inventory.json` contains Postgres add-ons → `data.database_ha` is set (non-null).
-4. If `heroku-resource-inventory.json` contains Postgres add-ons → `global.migration_approach` is set (non-null).
-5. If `global.migration_approach` is `interim_cutover_data_first` → `global.target_exit_date` is non-null and a valid future date.
-6. If Fir-generation apps detected → `global.fir_intent` is set (non-null).
-7. If Private Space peering detected and subnet IDs were required → `network.subnet_ids` is non-empty array.
-
-**On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
-
-**On PASS:** Emit `HANDOFF_OK | phase=clarify | artifacts=preferences.json`.
+The completion checks are declared in this phase's `_postconditions` frontmatter and
+enforced per `INTERPRETER.md` § Gate protocol: re-read `preferences.json` from disk, run
+the mechanical checks (`_check_file_exists` / `_validate_json`) and the `_assert`
+judgment checks (all Validation Checklist items; the Postgres/interim-cutover/Fir/
+private-space conditionals), then emit `GATE_FAIL` (STOP; do not patch artifacts) or
+`HANDOFF_OK | phase=clarify | artifacts=preferences.json` and advance.
 
 ---
 

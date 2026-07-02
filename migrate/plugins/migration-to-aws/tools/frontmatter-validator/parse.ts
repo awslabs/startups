@@ -5,9 +5,12 @@
 
 import type {
   AssemblerFrontmatter,
+  CheckItem,
   FragmentFrontmatter,
   FragmentRef,
+  KnowledgeRef,
   PhaseFrontmatter,
+  ReEntryGuard,
   Trigger,
 } from "./types.ts";
 import { readFileSync } from "node:fs";
@@ -15,6 +18,20 @@ import { readFileSync } from "node:fs";
 const PHASE_KEYS = new Set([
   "_phase", "_title", "_kind", "_requires_phase", "_init", "_input",
   "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
+  "_re_entry_guard", "_preconditions", "_postconditions", "_forbids_files",
+  "_knowledge",
+]);
+/** The closed vocabulary of check kinds usable in _preconditions/_postconditions. */
+export const CHECK_KINDS = new Set([
+  "_check_phase_completed", "_check_single_active_phase", "_check_file_exists",
+  "_validate_json", "_assert",
+]);
+/** The closed vocabulary of _on_failure / _on_error actions. */
+export const ON_ERROR_ACTIONS = new Set([
+  "_warn_and_skip", "_default_and_warn", "_halt_and_inform", "_unrecoverable",
+]);
+const GUARD_KEYS = new Set([
+  "_stale_if_completed", "_stale_artifact", "_on_reentry", "_on_confirm",
 ]);
 const FRAGMENT_KEYS = new Set(["_fragment", "_of_phase", "_contributes"]);
 const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces"]);
@@ -80,6 +97,114 @@ function parseFragments(fm: string): FragmentRef[] {
   return out;
 }
 
+/** Extract the indented body lines of a `key:` block (lines more-indented than the key). */
+function indentedBlock(fm: string, key: string): string | null {
+  const lines = fm.split("\n");
+  const idx = lines.findIndex((l) => new RegExp(`^${key}:\\s*$`).test(l));
+  if (idx === -1) return null;
+  const body: string[] = [];
+  for (let i = idx + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.trim() === "") continue;
+    if (/^\s/.test(l)) body.push(l);
+    else break; // dedent to column 0 ends the block
+  }
+  return body.join("\n");
+}
+
+/** Parse `_input`: either a scalar (`workspace` / a quoted glob) or a block list. */
+function parseInput(fm: string): string[] {
+  // Block form first: `_input:` followed by newline + `- ` items.
+  const block = blockList(fm, "_input");
+  if (block.length) return block;
+  // Scalar form: `_input: <value>` on the same line.
+  const m = /^_input:[ \t]*(\S.*)$/m.exec(fm);
+  if (m) return [m[1].trim().replace(/^["']|["']$/g, "")];
+  return [];
+}
+
+/** Parse `_knowledge`: a list of inline `{ file: <path>, _when: <prose> }` maps. */
+function parseKnowledge(fm: string): KnowledgeRef[] {
+  const body = indentedBlock(fm, "_knowledge");
+  if (body === null) return [];
+  const out: KnowledgeRef[] = [];
+  for (const line of body.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("-")) continue;
+    const fm2 = /file:\s*([^,}]+)/.exec(t);
+    if (!fm2) continue;
+    const file = fm2[1].trim().replace(/^["']|["']$/g, "");
+    const wm = /_when:\s*["']?([^"'}]+)["']?/.exec(t);
+    out.push({ file, when: wm ? wm[1].trim() : null });
+  }
+  return out;
+}
+
+/** Parse the nested `_re_entry_guard:` block, or null when the key is absent. */
+function parseReEntryGuard(fm: string): ReEntryGuard | null {
+  const body = indentedBlock(fm, "_re_entry_guard");
+  if (body === null) return null;
+  const sub = (k: string): string | null => {
+    const m = new RegExp(`^\\s*${k}:\\s*(.+)$`, "m").exec(body);
+    return m ? m[1].trim().replace(/^["']|["']$/g, "") : null;
+  };
+  const guardKeys: string[] = [];
+  for (const line of body.split("\n")) {
+    const m = /^\s*(_[a-z_]+):/.exec(line);
+    if (m) guardKeys.push(m[1]);
+  }
+  return {
+    staleIfCompleted: sub("_stale_if_completed"),
+    staleArtifact: sub("_stale_artifact"),
+    onReentry: sub("_on_reentry"),
+    onConfirm: sub("_on_confirm"),
+    unknownKeys: guardKeys.filter((k) => !GUARD_KEYS.has(k)),
+  };
+}
+
+/** Parse a `_preconditions` / `_postconditions` list into CheckItems. Each list item
+ * is `- <check_kind>: <arg>` optionally followed by an `_on_failure: <action>` line. */
+function parseChecks(fm: string, key: string): CheckItem[] {
+  const body = indentedBlock(fm, key);
+  if (body === null) return [];
+  const out: CheckItem[] = [];
+  // Split into items on lines beginning (after indent) with `- `.
+  const lines = body.split("\n");
+  let cur: string[] | null = null;
+  const items: string[][] = [];
+  for (const line of lines) {
+    if (/^\s*-\s+/.test(line)) {
+      if (cur) items.push(cur);
+      cur = [line];
+    } else if (cur && line.trim() !== "") {
+      cur.push(line);
+    }
+  }
+  if (cur) items.push(cur);
+
+  for (const item of items) {
+    const joined = item.join("\n");
+    // the check keyword is the first `_<kind>:` after the leading `- `
+    const km = /^\s*-\s+(_[a-z_]+):\s*(.*)$/m.exec(item[0]);
+    if (!km) continue;
+    const kind = km[1];
+    const rawArg = km[2].trim();
+    let arg: string[];
+    if (kind === "_assert") {
+      arg = [rawArg.replace(/^["']|["']$/g, "")]; // opaque prose (bound, not evaluated)
+    } else if (rawArg.startsWith("[")) {
+      arg = rawArg.replace(/^\[|\]$/g, "").split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    } else if (rawArg === "" || rawArg === "true") {
+      arg = rawArg === "true" ? ["true"] : [];
+    } else {
+      arg = [rawArg.replace(/^["']|["']$/g, "")];
+    }
+    const om = /_on_failure:\s*(_[a-z_]+)/.exec(joined);
+    out.push({ kind, arg, onFailure: om ? om[1] : null });
+  }
+  return out;
+}
+
 export function parsePhase(path: string, fm: string): PhaseFrontmatter {
   const assembleBlock = /_assemble:\s*\n\s*_file:\s*([^\n]+)/.exec(fm);
   const roleRaw = scalar(fm, "_kind");
@@ -100,6 +225,12 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     assembleFile: assembleBlock ? assembleBlock[1].trim() : null,
     produces: blockList(fm, "_produces"),
     advancesTo: scalar(fm, "_advances_to"),
+    reEntryGuard: parseReEntryGuard(fm),
+    preconditions: parseChecks(fm, "_preconditions"),
+    postconditions: parseChecks(fm, "_postconditions"),
+    forbidsFiles: blockList(fm, "_forbids_files"),
+    input: parseInput(fm),
+    knowledge: parseKnowledge(fm),
     unknownKeys: unknownAmong(fm, PHASE_KEYS),
   };
 }

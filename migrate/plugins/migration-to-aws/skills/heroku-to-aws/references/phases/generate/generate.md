@@ -20,8 +20,39 @@ _fragments:
 _assemble:
   _file: phases/generate/generate-assemble.md
 _produces:
+  - terraform/main.tf
+  - terraform/variables.tf
+  - terraform/outputs.tf
+  - MIGRATION_GUIDE.md
+  - README.md
   - generation-warnings.json
 _advances_to: complete
+_preconditions:
+  - _check_phase_completed: estimate
+    _on_failure: _halt_and_inform
+  - _check_single_active_phase: true
+    _on_failure: _halt_and_inform
+  - _check_file_exists: [aws-design.json, estimation-infra.json, preferences.json, heroku-resource-inventory.json]
+    _on_failure: _unrecoverable
+  - _validate_json: [aws-design.json, estimation-infra.json, preferences.json, heroku-resource-inventory.json]
+    _on_failure: _unrecoverable
+_postconditions:
+  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, MIGRATION_GUIDE.md, README.md]
+    _on_failure: _halt_and_inform
+  - _assert: "terraform/main.tf has valid provider configuration; terraform/variables.tf declares at least an aws_region variable"
+    _on_failure: _halt_and_inform
+  - _assert: "at least one domain .tf file exists beyond the core files"
+    _on_failure: _halt_and_inform
+  - _assert: "MIGRATION_GUIDE.md has Prerequisites and Verification sections; README.md lists the artifacts"
+    _on_failure: _halt_and_inform
+  - _assert: "if Postgres is in the design, scripts/migrate-postgres.sh exists; if Redis is in the design, scripts/migrate-redis.sh exists"
+    _on_failure: _halt_and_inform
+  - _assert: "if EKS is in the design, terraform/eks.tf exists with cluster + node group resources AND a kubernetes/ directory has namespace + deployment manifests"
+    _on_failure: _halt_and_inform
+  - _assert: "every designed service is accounted for (generated or listed in generation-warnings.json)"
+    _on_failure: _halt_and_inform
+  - _assert: "no placeholder {{VARIABLE}} tokens remain in Terraform .tf files (those belong in variables.tf as var.* references)"
+    _on_failure: _halt_and_inform
 ---
 
 # Phase 5: Generate Migration Artifacts
@@ -41,25 +72,10 @@ _advances_to: complete
 
 ## Step 0: Validate Prerequisites
 
-1. Read `$MIGRATION_DIR/.phase-status.json`. Validate per SKILL.md State Validation rules.
-2. Confirm `phases.estimate == "completed"`. If not:
-
-   ```
-   GATE_FAIL | phase=generate | field=phases.estimate | reason=missing
-   ```
-
-3. Confirm no other core phase is `in_progress`. If violated → GATE_FAIL.
-4. Set `phases.generate` to `"in_progress"` and `current_phase` to `"generate"`. Write `.phase-status.json`.
-5. Read all required artifacts from `$MIGRATION_DIR/`:
-   - `aws-design.json` (REQUIRED)
-   - `estimation-infra.json` (REQUIRED)
-   - `preferences.json` (REQUIRED)
-   - `heroku-resource-inventory.json` (REQUIRED)
-6. Confirm all four files exist and parse as valid JSON. If any missing:
-
-   ```
-   GATE_FAIL | phase=generate | field=<filename> | reason=missing
-   ```
+The entry gate (estimate completed, single active phase, all four inputs present + valid
+JSON) is enforced by this phase's `_preconditions` frontmatter per `INTERPRETER.md`
+§ Gate protocol. Once the preconditions pass, set `phases.generate` to `"in_progress"`
+and `current_phase` to `"generate"` in `.phase-status.json`, then proceed.
 
 ---
 

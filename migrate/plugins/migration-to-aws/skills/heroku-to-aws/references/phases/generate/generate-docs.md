@@ -4,7 +4,6 @@ _of_phase: generate
 _contributes:
   - MIGRATION_GUIDE.md
   - README.md
-  - scripts/ (database migration scripts, conditional on design content)
 ---
 
 # Generate Phase: Documentation and Script Generation

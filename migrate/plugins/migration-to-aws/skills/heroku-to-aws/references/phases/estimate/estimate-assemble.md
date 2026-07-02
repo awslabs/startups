@@ -89,29 +89,16 @@ Write to `$MIGRATION_DIR/estimation-infra.json`.
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
+The completion checks are declared in this phase's `_postconditions` frontmatter
+and enforced per `INTERPRETER.md` § Gate protocol: **re-read `estimation-infra.json`
+from disk**, run the mechanical checks (`_check_file_exists` / `_validate_json`) and
+the `_assert` judgment checks (recommendation shape, the Property-16 total-invariant,
+every-service-priced, complexity tier), then emit `GATE_FAIL` (do NOT patch artifacts;
+STOP) or `HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json` and advance.
 
-Before returning control to SKILL.md, require:
-
-1. `estimation-infra.json` exists in `$MIGRATION_DIR/`
-2. Valid JSON that passes `shared/schema-estimate-infra.md` validation
-3. `recommendation.path` ∈ `{migrate_optimized, migrate_phased, stay}`
-4. `recommendation.path_label` is non-empty string
-5. `recommendation.migrate_if` and `recommendation.stay_if` are non-empty arrays
-6. `projected_costs.aws_monthly_balanced` is a positive number
-7. Every service in `aws-design.json → services[]` appears in the cost breakdown (or is listed as `"unpriced"` in warnings)
-8. Total equals sum of individual resource costs (excluding unpriced) — **Property 16 invariant**
-9. `complexity_tier` is one of: `"small"`, `"medium"`, `"large"`
-
-**On FAIL:** Emit `GATE_FAIL | phase=estimate | field=<path> | reason=<reason>`. **Do NOT modify artifacts to pass the gate.** STOP.
-
-**On PASS:** Emit `HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json`.
-
-After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
-
-- Set `phases.estimate` to `"completed"`
-- Set `current_phase` to `"generate"`
-- Update `last_updated` timestamp
+One check needs this fragment's context: `estimation-infra.json` must also pass
+`shared/schema-estimate-infra.md` validation (the schema shape) — verify that as part
+of the `_validate_json` postcondition.
 
 ---
 

@@ -14,6 +14,18 @@ _assemble:
 _produces:
   - feedback.json
   - trace.json
+_preconditions:
+  - _check_phase_completed: discover
+    _on_failure: _halt_and_inform
+_postconditions:
+  - _check_file_exists: feedback.json
+    _on_failure: _warn_and_skip
+  - _validate_json: feedback.json
+    _on_failure: _warn_and_skip
+_forbids_files:
+  - README.md
+  - "*.txt"
+  - "terraform/**"
 ---
 
 # Phase 6: Feedback (Optional)

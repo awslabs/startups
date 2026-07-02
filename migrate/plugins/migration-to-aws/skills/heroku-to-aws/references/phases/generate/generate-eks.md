@@ -2,8 +2,8 @@
 _fragment: eks-generate
 _of_phase: generate
 _contributes:
-  - terraform/eks.tf (EKS cluster + node groups, when EKS in design)
-  - kubernetes/ (namespace + deployment + service manifests, when EKS in design)
+  - terraform/eks.tf
+  - kubernetes/
 ---
 
 # EKS Generate Phase

@@ -13,6 +13,40 @@ _assemble:
 _produces:
   - preferences.json
 _advances_to: design
+_re_entry_guard:
+  _stale_if_completed: design
+  _stale_artifact: aws-design.json
+  _on_reentry: stop_unless_confirmed
+  _on_confirm: reset_downstream_to_pending
+_preconditions:
+  - _check_phase_completed: discover
+    _on_failure: _halt_and_inform
+  - _check_single_active_phase: true
+    _on_failure: _halt_and_inform
+  - _check_file_exists: heroku-resource-inventory.json
+    _on_failure: _unrecoverable
+  - _validate_json: heroku-resource-inventory.json
+    _on_failure: _unrecoverable
+_postconditions:
+  - _check_file_exists: preferences.json
+    _on_failure: _halt_and_inform
+  - _validate_json: preferences.json
+    _on_failure: _halt_and_inform
+  - _assert: "all Validation Checklist items in clarify-assemble.md pass"
+    _on_failure: _halt_and_inform
+  - _assert: "if heroku-resource-inventory.json contains Postgres add-ons, then data.database_ha and global.migration_approach are both set (non-null)"
+    _on_failure: _halt_and_inform
+  - _assert: "if global.migration_approach is interim_cutover_data_first, then global.target_exit_date is non-null and a valid future date"
+    _on_failure: _halt_and_inform
+  - _assert: "if Fir-generation apps were detected, then global.fir_intent is set (non-null)"
+    _on_failure: _halt_and_inform
+  - _assert: "if Private Space peering was detected and subnet IDs were required, then network.subnet_ids is a non-empty array"
+    _on_failure: _halt_and_inform
+_forbids_files:
+  - README.md
+  - "*.txt"
+  - aws-design.json
+  - "terraform/**"
 ---
 
 # Phase 2: Clarify Requirements

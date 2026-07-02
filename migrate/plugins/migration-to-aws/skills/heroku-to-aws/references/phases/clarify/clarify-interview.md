@@ -3,7 +3,6 @@ _fragment: interview
 _of_phase: clarify
 _contributes:
   - preferences.json (interpreted answers; created here, finalized by the assembler)
-  - preferences-draft.json (intermediate per-batch progress)
 ---
 
 # Clarify Phase: Adaptive Interview
@@ -32,17 +31,9 @@ Check `$MIGRATION_DIR/` for existing state:
 - If A: Skip to Validation Checklist with the existing `preferences.json`.
 - If B: Delete `preferences.json`, continue to Step 1.
 
-**Case 2 — Draft preferences exist** (`preferences-draft.json` present, no `preferences.json`):
-
-> "I found a partial set of answers from a previous session ([N] of [total] batches completed). Would you like to:"
->
-> A) Resume from where you left off — I'll pick up the remaining questions
-> B) Start fresh and re-answer all questions
-
-- If A: Load the draft, read `metadata.batches_completed` to determine which batches are done, skip completed batches when entering Step 3.
-- If B: Delete `preferences-draft.json`, continue to Step 1.
-
-**Case 3 — No prior state**: Continue to Step 1.
+**Case 2 — No prior state**: Continue to Step 1. (If a stale
+`preferences-draft.json` from an older skill version is present, delete it — the
+interview no longer resumes from drafts; it always runs to completion in one pass.)
 
 ---
 
@@ -161,7 +152,7 @@ Record the ordered list of active batches and count questions per batch after fi
 
 ### Batch Loop
 
-For each active batch, execute steps 3a–3d:
+For each active batch, execute steps 3a–3c:
 
 #### 3a. Present Batch
 
@@ -243,31 +234,6 @@ Re-prompt Q9 until valid input is provided.
 > "Invalid VPC ID format. Expected format: `vpc-xxxxxxxxxxxxxxxxx` (vpc- followed by 17 hexadecimal characters). Please provide your existing AWS VPC ID."
 
 Re-prompt Q9b until valid input is provided.
-
-#### 3d. Save Draft
-
-**If more batches remain** after this one: Write (or update) `$MIGRATION_DIR/preferences-draft.json` with all answers collected so far:
-
-```json
-{
-  "metadata": {
-    "draft": true,
-    "batches_completed": ["global"],
-    "batches_remaining": ["data_network", "operational"],
-    "timestamp": "<ISO timestamp>"
-  },
-  "global": { ... },
-  "data": { ... },
-  "network": { ... },
-  "operational": { ... }
-}
-```
-
-Batch name values: `"global"`, `"data_network"`, `"operational"`.
-
-Return to **3a** for the next batch.
-
-**If this was the last active batch**: Do not write a draft — proceed to Step 4 (the assembler, `clarify-assemble.md`).
 
 ---
 
