@@ -69,7 +69,7 @@ Write `$MIGRATION_DIR/preferences.json`:
     "cost_optimization": "<Q15 value>"
   },
   "design_constraints": {
-    "kubernetes": { "value": "elastic_beanstalk", "chosen_by": "user|default" }
+    "kubernetes": { "value": "<Q12c value: elastic_beanstalk|ecs-fargate|eks-managed|eks-or-ecs>", "chosen_by": "user|default" }
   },
   "defaults_applied": ["<list of defaulted question IDs>"],
   "sources": {
