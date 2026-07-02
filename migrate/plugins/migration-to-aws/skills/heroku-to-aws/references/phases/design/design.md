@@ -6,7 +6,8 @@ _input:
   - heroku-resource-inventory.json
   - preferences.json
 _knowledge:
-  - { file: knowledge/design/dyno-fargate-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is ecs-fargate or absent" }
+  - { file: knowledge/design/dyno-eb-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is elastic_beanstalk or absent" }
+  - { file: knowledge/design/dyno-fargate-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is ecs-fargate" }
   - { file: knowledge/design/eks-pod-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is eks-managed or eks-or-ecs" }
   - { file: knowledge/design/postgres-rds-sizing.json, _when: "inventory has a heroku-postgresql addon" }
   - { file: knowledge/design/redis-elasticache-sizing.json, _when: "inventory has a heroku-redis addon" }
@@ -68,8 +69,8 @@ Single-pass mapping engine that translates each Heroku resource to its AWS equiv
 
 ## Sub-Files
 
-- **design-mapping.md** → the always-on mapping engine: prerequisites, single-pass resource mapping (Fargate/RDS/ElastiCache/MSK/fast-path/deferred), VPC + security-group design, Cedar/Fir notation, and metadata.
-- **design-eks.md** → the EKS branch: fires (via its `_when` trigger) only when `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`; maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the Fargate path.
+- **design-mapping.md** → the always-on mapping engine: prerequisites, single-pass resource mapping (Elastic Beanstalk/Fargate/RDS/ElastiCache/MSK/fast-path/deferred), VPC + security-group design, Cedar/Fir notation, and metadata.
+- **design-eks.md** → the EKS branch: fires (via its `_when` trigger) only when `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`; maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the default EB path.
 - **design-assemble.md** → the assembler: writes `aws-design.json`, runs the output route gates + completion handoff gate, and updates `.phase-status.json`.
 
 ## Lookup Table References (Conditional Loading)
@@ -79,7 +80,8 @@ Load these reference files **only when the corresponding resource type exists in
 | Resource Type in Inventory                                                                    | Reference File to Load                                             |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `formation` (any) + `design_constraints.kubernetes.value` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"` or absent         | `design-refs/dyno-type-table.md`                                   |
+| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"`                   | `design-refs/dyno-type-table.md`                                   |
+| `formation` (any) + `design_constraints.kubernetes.value` = `"elastic_beanstalk"` or absent   | `knowledge/design/dyno-eb-sizing.json` (loaded via `_knowledge` frontmatter) |
 | `addon:*:heroku-postgresql:*`                                                                 | `design-refs/postgres-plan-table.md`                               |
 | `addon:*:heroku-redis:*`                                                                      | `design-refs/redis-plan-table.md`                                  |
 | `addon:*:heroku-kafka:*`                                                                      | `design-refs/kafka-plan-table.md`                                  |

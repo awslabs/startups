@@ -41,7 +41,7 @@ Verify required artifacts exist in `$MIGRATION_DIR/`:
 
 **Route output gates (fail closed):**
 
-- If inventory had formation resources → `services[]` MUST contain at least one Fargate OR EKS entry (unless all dyno types were unrecognized).
+- If inventory had formation resources → `services[]` MUST contain at least one Fargate OR EKS OR Elastic Beanstalk entry (unless all dyno types were unrecognized).
 - If inventory had `heroku-postgresql` add-ons with recognized plans → `services[]` MUST contain RDS or Aurora entries.
 - If inventory had `heroku-redis` add-ons with recognized plans → `services[]` MUST contain ElastiCache entries.
 - If inventory had `heroku-kafka` add-ons with recognized plans → `services[]` MUST contain MSK entries.

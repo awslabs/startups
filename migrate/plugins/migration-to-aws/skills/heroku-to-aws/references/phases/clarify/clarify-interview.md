@@ -77,14 +77,13 @@ ELSE full question flow (12–15 questions)
 
 **If user chooses Yes:**
 
-1. Ask only: **Q1** (region), **Q2** (compliance), **Q3** (availability), **Q4** (maintenance window), **Q12c** (Kubernetes preference) — and optionally **Q11** (Fir intent, only if Fir detected).
+1. Ask only: **Q1** (region), **Q2** (compliance), **Q3** (availability), **Q4** (maintenance window), **Q12c** (Compute target preference) — and optionally **Q11** (Fir intent, only if Fir detected).
 2. Apply documented defaults for ALL other questions. Record each in `metadata.questions_defaulted`.
 3. Write `preferences.json` with `metadata.clarify_mode: "fast_path"`. Skip Steps 2–3 batch loop.
 4. Proceed to Step 4 (Validation Checklist).
 
 **Fast-path default values applied when skipping questions:**
 
-- `migration_urgency`: `routine`
 - `migration_approach`: `full_cutover`
 - `migration_method`: `pg_dump_restore`
 - `containerization_status`: `buildpack_only`
@@ -125,7 +124,7 @@ Before generating questions, scan the inventory to determine which questions app
 | Q10 — DNS strategy             | Always                                                           | Never                                     |
 | Q11 — Fir intent               | At least one app has `heroku_generation == "fir"`                | No Fir-generation apps                    |
 | Q12b — Containerization status | Always                                                           | Never                                     |
-| Q12c — Kubernetes preference   | Always                                                           | Never                                     |
+| Q12c — Compute target preference | Always                                                           | Never                                     |
 | Q12 — Container registry       | Always                                                           | Never                                     |
 | Q13 — Log retention            | Always                                                           | Never                                     |
 | Q14 — Alerting preference      | Always                                                           | Never                                     |
@@ -137,7 +136,7 @@ After determining active questions, organize into **three batches** (≤5 each):
 
 | Batch | Name                      | Questions            | Content                                                                                                     |
 | ----- | ------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **1** | Global / Strategic        | Q1–Q5, Q5b, Q12c     | Region, compliance, availability, maintenance, environment naming, migration urgency, Kubernetes preference |
+| **1** | Global / Strategic        | Q1–Q5, Q5b, Q12c     | Region, compliance, availability, maintenance, environment naming, migration urgency, Compute target preference |
 | **2** | Data / Network            | Q6, Q6b, Q6c, Q7–Q10 | Database HA, migration approach, DB migration method, Redis HA, Kafka retention, VPC subnets, DNS strategy  |
 | **3** | Operational / Conditional | Q11, Q12b, Q12–Q15   | Fir intent, containerization status, container registry, log retention, alerting, cost optimization         |
 
@@ -390,31 +389,32 @@ Re-prompt Q9b until valid input is provided.
 
 ---
 
-#### Q12c — Kubernetes Preference
+#### Q12c — Compute Target Preference
 
-> _Fires always. This question determines the compute orchestration target for all dyno formations._
+> _Fires always. This question determines the compute target for all dyno formations._
 >
-> Would you prefer EKS (Kubernetes) or ECS Fargate for your containerized workloads?
+> Heroku is a managed platform — you push code, Heroku handles the rest. On AWS, you have options:
 >
-> EKS gives you full Kubernetes control but requires cluster management expertise. Fargate eliminates cluster management entirely — simpler operations, no nodes to manage.
->
-> A) EKS preferred — team has Kubernetes expertise, wants full K8s control (self-managed node groups)
-> B) EKS acceptable — team can operate K8s, prefers managed node groups to reduce burden
-> C) ECS Fargate preferred — simplest managed containers, no cluster management (default)
-> D) I don't know
+> A) Elastic Beanstalk — managed platform like Heroku (push code/Dockerfile, AWS manages deployments, scaling, patching) (default)
+> B) ECS Fargate — direct container control, no server management, pay per-second
+> C) EKS — full Kubernetes orchestration, requires cluster management expertise
+> D) I don't know — recommend the best fit
 
 **Interpret:**
 
-- A → `design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }`
-- B → `design_constraints.kubernetes: { "value": "eks-or-ecs", "chosen_by": "user" }`
-- C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }`
-- D → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
+- A → `design_constraints.kubernetes: { "value": "elastic_beanstalk", "chosen_by": "user" }`
+- B → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "user" }`
+- C → `design_constraints.kubernetes: { "value": "eks-managed", "chosen_by": "user" }`
+- D → `design_constraints.kubernetes: { "value": "elastic_beanstalk", "chosen_by": "default" }`
 
-**Default:** C → `design_constraints.kubernetes: { "value": "ecs-fargate", "chosen_by": "default" }`
+**Default:** A → `design_constraints.kubernetes: { "value": "elastic_beanstalk", "chosen_by": "default" }`
 
-**Design impact:** When `"eks-managed"` or `"eks-or-ecs"` is selected, ALL formation resources map to EKS Deployments with pod resource requests/limits instead of Fargate task definitions. Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected.
+**Design impact:**
+- `"elastic_beanstalk"`: ALL formation resources map to EB environments (Docker platform, LoadBalanced for web, Worker for non-web). This is the PaaS-to-PaaS path (default).
+- `"ecs-fargate"`: ALL formation resources map to Fargate task definitions. Use when user wants direct container control.
+- `"eks-managed"` or `"eks-or-ecs"`: ALL formation resources map to EKS Deployments with pod resource requests/limits. Use when user wants Kubernetes.
 
-**Fir intent precedence:** If both Q11 (Fir intent = "self_managed_eks_ecs") and Q12c (kubernetes = "ecs-fargate") are set, the global kubernetes preference takes precedence for non-Fir formations. Fir workloads remain deferred in v1 regardless of this setting.
+Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected by this choice.
 
 ---
 
@@ -622,7 +622,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 >
 > What's your compute migration intent for these Fir workloads?
 >
-> A) Exit Heroku entirely — re-platform all Fir workloads to AWS (ECS/Fargate, standard containers)
+> A) Exit Heroku entirely — re-platform all Fir workloads to AWS (Elastic Beanstalk or Fargate, per Q12c)
 > B) Self-managed EKS/ECS — move to Kubernetes or ECS on AWS with your own orchestration
 
 **Interpret:**
@@ -634,7 +634,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 **Note:** Cutover timing (full vs data-first) is handled by the migration_approach question (Q5b), not this question. This question only determines the compute destination for Fir workloads.
 
-**Design impact:** Both options result in full Fir workload migration to AWS. Option B indicates the user wants to manage their own Kubernetes/ECS orchestration rather than using the skill's standard Fargate mapping.
+**Design impact:** Both options result in full Fir workload migration to AWS. Option B indicates the user wants to manage their own Kubernetes/ECS orchestration rather than using the skill's standard Elastic Beanstalk mapping.
 
 ---
 
@@ -642,7 +642,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > Is your application already containerized (has a Dockerfile)?
 >
-> A) Yes — Dockerfile exists, ready for Fargate deployment
+> A) Yes — Dockerfile exists, ready for deployment
 > B) No — uses Heroku buildpacks only, no Dockerfile yet
 > C) Partial — some services have Dockerfiles, others use buildpacks
 
@@ -654,7 +654,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 **Default:** B → `containerization_status: "buildpack_only"`
 
-**Design impact:** Options B and C trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings — all compute targets are Fargate regardless.
+**Design impact:** Options B and C trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings — the compute target (EB, Fargate, or EKS) is determined by Q12c regardless of containerization status.
 
 ---
 
@@ -755,7 +755,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 | Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                            |
 | Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                          |
 | Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"`          |
-| Q12c — Kubernetes pref    | C (Fargate)                             | `design_constraints.kubernetes.value: "ecs-fargate"` |
+| Q12c — Compute target     | A (Elastic Beanstalk)                   | `design_constraints.kubernetes.value: "elastic_beanstalk"` |
 | Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                          |
 | Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                             |
 | Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                             |

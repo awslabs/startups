@@ -15,7 +15,7 @@ _contributes:
 
 **Applies when:** `preferences.json → design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`.
 
-**Skip when:** `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent → use existing Fargate path (dyno-type-table.md).
+**Skip when:** `design_constraints.kubernetes.value` is `"elastic_beanstalk"`, `"ecs-fargate"`, or absent → use EB or Fargate path respectively.
 
 ---
 

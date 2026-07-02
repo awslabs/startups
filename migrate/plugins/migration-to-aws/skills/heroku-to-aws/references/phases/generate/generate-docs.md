@@ -35,6 +35,8 @@ Scan `aws-design.json`.services[] to determine which data store types exist in t
 
 | Check            | Condition                                                                             | Flag                  |
 | ---------------- | ------------------------------------------------------------------------------------- | --------------------- |
+| Beanstalk present | Any service with `aws_service == "Elastic Beanstalk"`                                | `has_beanstalk = true` |
+| Fargate present  | Any service with `aws_service == "Fargate"` or `aws_service == "ALB"`                 | `has_fargate = true`  |
 | Postgres present | Any service with `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"` | `has_postgres = true` |
 | Redis present    | Any service with `aws_service == "ElastiCache Redis"`                                 | `has_redis = true`    |
 | Kafka present    | Any service with `aws_service == "Amazon MSK"`                                        | `has_kafka = true`    |
@@ -125,7 +127,7 @@ Before beginning the migration, ensure the following are in place:
 
 ### Containerization Prerequisites
 
-Your application currently uses Heroku buildpacks and does not have a Dockerfile. You'll need to create one for Fargate deployment.
+Your application currently uses Heroku buildpacks and does not have a Dockerfile. You'll need to create one for AWS deployment (Elastic Beanstalk Docker platform or Fargate).
 
 **Common Procfile → Dockerfile patterns:**
 
@@ -499,6 +501,86 @@ kafka-consumer-groups.sh --bootstrap-server {{TARGET_MSK_BROKERS}} \
 
 ## Phase 3: Application Deployment
 
+{{IF has_beanstalk}}
+
+### Deploy via CodePipeline (Automatic)
+
+If you set up the CodePipeline in `pipeline.tf`, deployments happen automatically on git push to your configured branch. Simply push your code:
+
+```bash
+git push origin main
+```
+
+CodePipeline detects the push, zips the source (including your Dockerfile), and deploys to Elastic Beanstalk. Monitor the deployment:
+
+```bash
+aws elasticbeanstalk describe-environments \
+  --environment-names {{app_name}}-web \
+  --query 'Environments[0].{Status:Status,Health:Health,Version:VersionLabel}' \
+  --region {{target_region}}
+```
+
+### Manual Deploy (Alternative)
+
+If not using CodePipeline, deploy manually with AWS CLI:
+
+```bash
+# Zip your source (must include Dockerfile at root)
+zip -r app.zip . -x '.git/*' 'node_modules/*'
+
+# Upload to S3
+aws s3 cp app.zip s3://{{pipeline_bucket}}/{{app_name}}/latest.zip
+
+# Create application version
+aws elasticbeanstalk create-application-version \
+  --application-name {{app_name}} \
+  --version-label "v$(date +%Y%m%d%H%M%S)" \
+  --source-bundle S3Bucket={{pipeline_bucket}},S3Key={{app_name}}/latest.zip \
+  --region {{target_region}}
+
+# Deploy to environment
+aws elasticbeanstalk update-environment \
+  --environment-name {{app_name}}-web \
+  --version-label "v$(date +%Y%m%d%H%M%S)" \
+  --region {{target_region}}
+```
+
+### Update Environment Variables
+
+Ensure all environment variables from Heroku config vars are set in AWS:
+
+- Secrets → AWS Secrets Manager (referenced via EB `environmentsecrets` namespace)
+- Non-sensitive config → EB environment properties
+
+### Config Var Migration
+
+Export all Heroku config vars and import to AWS:
+
+```bash
+# Export all config vars as JSON
+heroku config --json -a {{app_name}} > heroku-config-vars.json
+
+# Import to AWS Secrets Manager (for sensitive values)
+# For each secret:
+aws secretsmanager create-secret \
+  --name "{{app_name}}/DATABASE_URL" \
+  --secret-string "<value>" \
+  --region {{target_region}}
+
+# Import to SSM Parameter Store (for non-sensitive config)
+# For each parameter:
+aws ssm put-parameter \
+  --name "/{{app_name}}/NODE_ENV" \
+  --value "production" \
+  --type String \
+  --region {{target_region}}
+```
+
+Reference secrets in your EB environment via the `environmentsecrets` namespace (configured in `beanstalk.tf` option settings). Non-sensitive config is set directly as EB environment properties.
+
+{{ENDIF}}
+{{IF has_fargate}}
+
 ### Build and Push Container Image
 
 ```bash
@@ -567,13 +649,7 @@ Reference these in your ECS task definition:
 ]
 ```
 
-### ECS Express Mode (Optional)
-
-> **Simplified deployment option:** If you prefer a Heroku-like deploy experience, consider ECS Express Mode. It provides simplified service deployment with ALB/TLS wired up automatically, using the same underlying Fargate + ALB infrastructure.
->
-> No design changes are needed — the generated Terraform targets standard Fargate, which is compatible with ECS Express Mode. You can opt into Express Mode after initial deployment if desired.
->
-> Underlying cost model: identical to standard Fargate + ALB.
+{{ENDIF}}
 
 ---
 
@@ -581,8 +657,14 @@ Reference these in your ECS task definition:
 
 ### Health Checks
 
+{{IF has_beanstalk}}
+- [ ] Application responds on EB environment URL: `http://{{EB_ENVIRONMENT_URL}}/`
+- [ ] Health check endpoint returns 200: `http://{{EB_ENVIRONMENT_URL}}/health`
+{{ENDIF}}
+{{IF has_fargate}}
 - [ ] Application responds on ALB endpoint: `https://{{ALB_DNS_NAME}}/`
 - [ ] Health check endpoint returns 200: `https://{{ALB_DNS_NAME}}/health`
+{{ENDIF}}
       {{IF has_postgres}}
 - [ ] Database connectivity confirmed (application can read/write)
 - [ ] Row counts match source database
@@ -712,6 +794,7 @@ Replace template variables using these sources:
 | `{{TARGET_MSK_*}}` | Placeholder — user fills from Terraform output |
 | `{{AWS_ACCOUNT_ID}}` | Placeholder — user fills with their AWS account ID |
 | `{{ALB_DNS_NAME}}` | Placeholder — user fills from Terraform output |
+| `{{EB_ENVIRONMENT_URL}}` | `aws_elastic_beanstalk_environment.<app_name>_web.cname` from `outputs.tf` (the EB environment's public CNAME) |
 | `{{MSK_CLUSTER_ARN}}` | Placeholder — user fills from Terraform output |
 | `{{MIGRATION_BUCKET}}` | Placeholder — user creates an S3 bucket for migration artifacts |
 | `{{app_domain}}` | Placeholder — user fills with their application domain |
@@ -758,21 +841,24 @@ This directory contains all artifacts needed to migrate your Heroku application(
 | `terraform/main.tf` | Provider configuration and module declarations |
 | `terraform/variables.tf` | Input variables (region, VPC, naming) |
 | `terraform/outputs.tf` | Output values (endpoints, ARNs, DNS names) |
+{{IF has_beanstalk}}
+| `terraform/beanstalk.tf` | Elastic Beanstalk application and environments |
+| `terraform/pipeline.tf` | CodePipeline for GitHub auto-deploy |
+{{ENDIF}}
 {{IF has_fargate}}
-| `terraform/ecs.tf` | ECS/Fargate task definitions and services |
-| `terraform/alb.tf` | Application Load Balancer configuration |
+| `terraform/compute.tf` | ECS/Fargate task definitions and services |
 {{ENDIF}}
 {{IF has_postgres}}
-| `terraform/rds.tf` | RDS/Aurora PostgreSQL database configuration |
+| `terraform/database.tf` | RDS/Aurora PostgreSQL database configuration |
 {{ENDIF}}
 {{IF has_redis}}
-| `terraform/elasticache.tf` | ElastiCache Redis cluster configuration |
+| `terraform/cache.tf` | ElastiCache Redis cluster configuration |
 {{ENDIF}}
 {{IF has_kafka}}
-| `terraform/msk.tf` | Amazon MSK Kafka cluster configuration |
+| `terraform/messaging.tf` | Amazon MSK Kafka cluster configuration |
 {{ENDIF}}
 | `terraform/vpc.tf` | VPC, subnets, and networking configuration |
-| `terraform/security-groups.tf` | Security group rules |
+| `terraform/security.tf` | Security group rules and IAM policies |
 | `MIGRATION_GUIDE.md` | Step-by-step migration procedure |
 | `README.md` | This file — artifact listing and quick start |
 {{IF has_postgres}}
@@ -879,7 +965,8 @@ Follow the verification checklist in `MIGRATION_GUIDE.md` Phase 4, then perform 
 
 ### Conditional Section Rules
 
-- `has_fargate`: True if any service in design has `aws_service == "Fargate"`
+- `has_beanstalk`: True if ANY service in `aws-design.json → services[]` has `aws_service == "Elastic Beanstalk"`
+- `has_fargate`: True if ANY service in `aws-design.json → services[]` has `aws_service == "Fargate"` or `aws_service == "ALB"`
 - `has_postgres`: True if any service has `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"`
 - `has_redis`: True if any service has `aws_service == "ElastiCache Redis"`
 - `has_kafka`: True if any service has `aws_service == "Amazon MSK"`
@@ -1220,7 +1307,8 @@ Verify all generated files:
    - If `containerization_status != "containerized"`: Contains "Containerization Prerequisites" section
    - Contains "Post-Migration Lockdown" section
    - Contains "Config Var Migration" section
-   - Contains "ECS Express Mode" informational paragraph
+   - If has_fargate: Contains "ECS Express Mode" informational paragraph
+   - If has_beanstalk: Contains "CodePipeline" deployment section
    - Contains "Verification" section with data-store-appropriate checks
    - If `deferred_addons.length > 0`: Contains "Manual Migration Items" section
 

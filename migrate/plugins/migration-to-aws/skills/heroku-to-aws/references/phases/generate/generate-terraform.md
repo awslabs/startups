@@ -32,23 +32,26 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 
 Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only emit domain files that have resources in `aws-design.json`:
 
-| File           | Domain     | Contains                                                   |
-| -------------- | ---------- | ---------------------------------------------------------- |
-| `main.tf`      | core       | Provider config, backend, data sources                     |
-| `variables.tf` | core       | All input variables with types and defaults                |
-| `outputs.tf`   | core       | Resource outputs and migration summary                     |
-| `vpc.tf`       | networking | VPC, subnets, route tables, internet gateway, NAT, peering |
-| `compute.tf`   | compute    | ECS cluster, Fargate task definitions, services, ALBs      |
-| `database.tf`  | database   | RDS/Aurora instances, parameter groups, RDS Proxy          |
-| `cache.tf`     | cache      | ElastiCache replication groups, subnet groups              |
-| `messaging.tf` | messaging  | MSK clusters, configurations                               |
-| `security.tf`  | security   | Security groups, IAM roles/policies                        |
+| File           | Domain     | Contains                                                          |
+| -------------- | ---------- | ----------------------------------------------------------------- |
+| `main.tf`      | core       | Provider config, backend, data sources                            |
+| `variables.tf` | core       | All input variables with types and defaults                       |
+| `outputs.tf`   | core       | Resource outputs and migration summary                            |
+| `vpc.tf`       | networking | VPC, subnets, route tables, internet gateway, NAT, peering        |
+| `beanstalk.tf` | compute    | EB applications, environments, option settings, instance profiles  |
+| `pipeline.tf`  | compute    | CodePipeline + CodeBuild for EB source deploy from GitHub          |
+| `compute.tf`   | compute    | ECS cluster, Fargate task definitions, services, ALBs (override)  |
+| `database.tf`  | database   | RDS/Aurora instances, parameter groups, RDS Proxy                 |
+| `cache.tf`     | cache      | ElastiCache replication groups, subnet groups                     |
+| `messaging.tf` | messaging  | MSK clusters, configurations                                      |
+| `security.tf`  | security   | Security groups, IAM roles/policies                               |
 
 **File emission rules:**
 
 - `main.tf`, `variables.tf`, `outputs.tf` — ALWAYS emitted
 - `vpc.tf` — Emitted when `vpc_design` is present in `aws-design.json` (either existing or new VPC)
-- `compute.tf` — Emitted when `aws_service` contains "Fargate" or "ALB" entries
+- `beanstalk.tf` + `pipeline.tf` — Emitted when `aws_service` contains "Elastic Beanstalk" entries (default path)
+- `compute.tf` — Emitted when `aws_service` contains "Fargate" or "ALB" entries (Fargate override path)
 - `database.tf` — Emitted when `aws_service` contains "RDS" or "Aurora" entries
 - `cache.tf` — Emitted when `aws_service` contains "ElastiCache" entries
 - `messaging.tf` — Emitted when `aws_service` contains "MSK" entries
@@ -56,15 +59,16 @@ Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only 
 
 **Service-to-file routing:**
 
-| AWS Service in `aws-design.json`   | Target File    |
-| ---------------------------------- | -------------- |
-| Fargate, ALB                       | `compute.tf`   |
-| RDS PostgreSQL, Aurora PostgreSQL  | `database.tf`  |
-| ElastiCache Redis                  | `cache.tf`     |
-| Amazon MSK                         | `messaging.tf` |
-| VPC, Subnet, Route Table, IGW, NAT | `vpc.tf`       |
-| Security Group, IAM Role/Policy    | `security.tf`  |
-| CloudWatch Logs                    | `compute.tf`   |
+| AWS Service in `aws-design.json`   | Target File              |
+| ---------------------------------- | ------------------------ |
+| Elastic Beanstalk                  | `beanstalk.tf` + `pipeline.tf` |
+| Fargate, ALB                       | `compute.tf`             |
+| RDS PostgreSQL, Aurora PostgreSQL  | `database.tf`            |
+| ElastiCache Redis                  | `cache.tf`               |
+| Amazon MSK                         | `messaging.tf`           |
+| VPC, Subnet, Route Table, IGW, NAT | `vpc.tf`                 |
+| Security Group, IAM Role/Policy    | `security.tf`            |
+| CloudWatch Logs                    | `beanstalk.tf` or `compute.tf` (match compute target) |
 
 **Unmapped services:** If `aws-design.json` contains a `service_id` with an `aws_service` value that has no Terraform resource mapping in this file (e.g., CloudWatch + X-Ray composite, Amazon SES, Amazon SNS), **skip** that resource and log a warning to `generation-warnings.json`. Do NOT halt generation.
 
@@ -150,7 +154,15 @@ variable "migration_id" {
   type        = string
   default     = "<migration_id from .phase-status.json>"
 }
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block (used for security group ingress rules)"
+  type        = string
+  default     = "<vpc_design.cidr or existing VPC CIDR from data source>"
+}
 ```
+
+> **Note:** `vpc_cidr` is always included in the global variables section because `security.tf` (which is always emitted) references `var.vpc_cidr` in the application security group. On Path A (existing VPC), populate the default from the existing VPC's CIDR block (available via `data.aws_vpc.existing.cidr_block`). On Path B (new VPC), populate it from `vpc_design.cidr` (e.g., `"10.0.0.0/16"`).
 
 **Per-service variables** — Extract from `aws-design.json` `aws_config` for each designed service. Include:
 
@@ -461,6 +473,7 @@ When no Private Space is involved, generate standard security groups:
 
 ```hcl
 # ALB Security Group
+# Only relevant when Fargate override is active. EB manages its own ALB. Emit only when has_fargate.
 resource "aws_security_group" "alb" {
   name_prefix = "${var.project_name}-${var.environment}-alb-"
   vpc_id      = <vpc_id_reference>
@@ -499,18 +512,20 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Fargate Task Security Group
-resource "aws_security_group" "fargate" {
-  name_prefix = "${var.project_name}-${var.environment}-fargate-"
+# Application Security Group (shared by EB instances, Fargate tasks, or EKS pods)
+resource "aws_security_group" "app" {
+  name_prefix = "${var.project_name}-${var.environment}-app-"
   vpc_id      = <vpc_id_reference>
-  description = "Security group for Fargate tasks"
+  description = "Security group for application compute (EB/Fargate/EKS)"
 
+  # Conditional: use ALB SG reference when Fargate, VPC CIDR when EB
+  # For the template, use VPC CIDR (covers both paths — EB ALB is in the VPC)
   ingress {
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-    description     = "Traffic from ALB"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+    description = "Traffic from within VPC (covers EB-managed ALB and direct service communication)"
   }
 
   egress {
@@ -522,7 +537,7 @@ resource "aws_security_group" "fargate" {
   }
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-fargate-sg"
+    Name = "${var.project_name}-${var.environment}-app-sg"
   }
 
   lifecycle {
@@ -540,8 +555,8 @@ resource "aws_security_group" "database" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "PostgreSQL from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "PostgreSQL from application compute"
   }
 
   egress {
@@ -571,8 +586,8 @@ resource "aws_security_group" "cache" {
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "Redis from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "Redis from application compute"
   }
 
   egress {
@@ -602,16 +617,16 @@ resource "aws_security_group" "messaging" {
     from_port       = 9094
     to_port         = 9094
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "Kafka TLS from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "Kafka TLS from application compute"
   }
 
   ingress {
     from_port       = 9092
     to_port         = 9092
     protocol        = "tcp"
-    security_groups = [aws_security_group.fargate.id]
-    description     = "Kafka plaintext from Fargate tasks"
+    security_groups = [aws_security_group.app.id]
+    description     = "Kafka plaintext from application compute"
   }
 
   egress {
@@ -640,7 +655,9 @@ resource "aws_security_group" "messaging" {
 - ALB SG allows 80 and 443 from 0.0.0.0/0
 - All SGs allow all outbound (Fargate needs ECR, internet access)
 
-### IAM Roles
+### ECS IAM Roles (Fargate override path only)
+
+**Skip this section** if no services in `aws-design.json` have `aws_service: "Fargate"`. These roles are only needed for ECS task execution.
 
 Generate ECS task execution and task roles:
 
@@ -693,7 +710,331 @@ resource "aws_iam_role" "ecs_task" {
 
 ---
 
-## Step 6: Generate `compute.tf`
+## Step 5.5: Generate `beanstalk.tf` + `pipeline.tf`
+
+**Skip this step** if no services in `aws-design.json` have `aws_service: "Elastic Beanstalk"`. Proceed to Step 6.
+
+For each service where `aws_service` is "Elastic Beanstalk":
+
+### `beanstalk.tf` — EB Application and Environments
+
+```hcl
+# Elastic Beanstalk Application
+resource "aws_elastic_beanstalk_application" "<app_name>" {
+  name        = var.project_name
+  description = "Migrated from Heroku app: <heroku_app>"
+}
+
+# Environment: <process_type>
+# For web: tier = "WebServer", environment_type = "LoadBalanced"
+# For worker/clock/release: tier = "WebServer", environment_type = "SingleInstance"
+resource "aws_elastic_beanstalk_environment" "<app_name>_<process_type>" {
+  name                = "${var.project_name}-<process_type>"
+  application         = aws_elastic_beanstalk_application.<app_name>.name
+  solution_stack_name = "64bit Amazon Linux 2023 v4.4.0 running Docker"
+  tier                = "WebServer"
+
+  # Instance configuration
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "InstanceType"
+    value     = var.eb_instance_type_<app_name>_<process_type>
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "IamInstanceProfile"
+    value     = aws_iam_instance_profile.eb_<app_name>.name
+  }
+
+  # Auto-scaling
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MinSize"
+    value     = var.eb_min_instances_<app_name>_<process_type>
+  }
+
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MaxSize"
+    value     = var.eb_max_instances_<app_name>_<process_type>
+  }
+
+  # Environment type (LoadBalanced for web with ALB, SingleInstance for workers)
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name      = "EnvironmentType"
+    value     = "<LoadBalanced for web, SingleInstance for worker/clock/release>"
+  }
+
+  # For SingleInstance (worker) environments only:
+  # Workers have no HTTP endpoint. Use basic health reporting (process-level only)
+  # instead of enhanced (HTTP-based).
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "HealthCheckPath"
+    value     = "/dev/null"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:healthreporting:system"
+    name      = "SystemType"
+    value     = "basic"
+  }
+
+  # VPC placement
+  setting {
+    namespace = "aws:ec2:vpc"
+    name      = "VPCId"
+    value     = <vpc_id from vpc_design>
+  }
+
+  setting {
+    namespace = "aws:ec2:vpc"
+    name      = "Subnets"
+    value     = <comma-separated subnet IDs>
+  }
+
+  # Security group — shared with DB/Cache/MSK ingress rules
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "SecurityGroups"
+    value     = aws_security_group.app.id
+  }
+
+  # Deployment policy
+  setting {
+    namespace = "aws:elasticbeanstalk:command"
+    name      = "DeploymentPolicy"
+    value     = var.eb_deployment_policy
+  }
+
+  # Environment variables (from Heroku config vars)
+  # Each Heroku config var becomes an environment property
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "PORT"
+    value     = "5000"
+  }
+
+  # Process type — used by the Docker entrypoint to select which Procfile command to run
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "PROCESS_TYPE"
+    value     = "<process_type>"
+  }
+}
+
+# IAM instance profile for EB instances
+resource "aws_iam_instance_profile" "eb_<app_name>" {
+  name = "${var.project_name}-eb-profile"
+  role = aws_iam_role.eb_instance_<app_name>.name
+}
+
+resource "aws_iam_role" "eb_instance_<app_name>" {
+  name = "${var.project_name}-eb-instance"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eb_web_tier_<app_name>" {
+  role       = aws_iam_role.eb_instance_<app_name>.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier"
+}
+
+resource "aws_iam_role_policy_attachment" "eb_docker_<app_name>" {
+  role       = aws_iam_role.eb_instance_<app_name>.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkMulticontainerDocker"
+}
+```
+
+**Per-environment customization:**
+
+- Web process types: `tier = "WebServer"`, `environment_type = "LoadBalanced"`, ALB is auto-provisioned by EB
+- Worker/clock/release process types: `tier = "WebServer"`, `environment_type = "SingleInstance"` (no ALB, no public endpoint; the worker command runs as the Docker CMD — a persistent process, not SQS-triggered)
+- Do NOT use `tier = "Worker"` — Heroku workers are persistent processes, not SQS consumers
+- One `aws_elastic_beanstalk_application` per Heroku app, one `aws_elastic_beanstalk_environment` per process type
+- Instance type from `aws_config.instance_type` in `aws-design.json`
+- Min/max instances from `aws_config.min_instances` / `aws_config.max_instances`
+
+**Process differentiation:** Each environment sets `PROCESS_TYPE` as an environment variable matching the Heroku Procfile process name (e.g., "web", "worker", "clock"). The Dockerfile entrypoint should branch on this variable:
+
+```dockerfile
+# Example entrypoint.sh
+#!/bin/sh
+if [ "$PROCESS_TYPE" = "web" ]; then
+  exec node server.js
+elif [ "$PROCESS_TYPE" = "worker" ]; then
+  exec node worker.js
+else
+  exec "$@"
+fi
+```
+
+This mirrors Heroku's Procfile model where each process type runs a different command from the same codebase. The MIGRATION_GUIDE includes guidance on creating this entrypoint if the source app uses a simple Procfile without a Dockerfile.
+
+### `pipeline.tf` — CodePipeline for Auto-Deploy from GitHub
+
+```hcl
+# CodePipeline — deploys to EB on git push (mirrors Heroku's git push deploy model)
+
+resource "aws_codepipeline" "<app_name>_deploy" {
+  name     = "${var.project_name}-deploy"
+  role_arn = aws_iam_role.codepipeline_<app_name>.arn
+
+  artifact_store {
+    location = aws_s3_bucket.pipeline_artifacts_<app_name>.bucket
+    type     = "S3"
+  }
+
+  stage {
+    name = "Source"
+    action {
+      name             = "GitHub"
+      category         = "Source"
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
+      version          = "1"
+      output_artifacts = ["source_output"]
+      configuration = {
+        ConnectionArn    = var.github_connection_arn
+        FullRepositoryId = var.github_repo
+        BranchName       = var.github_branch
+      }
+    }
+  }
+
+  # One deploy action per environment. All environments in the same application
+  # share the same source bundle but run different Docker CMD commands defined
+  # in their respective Dockerfiles or docker-compose.yml.
+  stage {
+    name = "Deploy"
+
+    # One action per EB environment
+    action {
+      name            = "Deploy-Web"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "ElasticBeanstalk"
+      version         = "1"
+      input_artifacts = ["source_output"]
+      configuration = {
+        ApplicationName = aws_elastic_beanstalk_application.<app_name>.name
+        EnvironmentName = aws_elastic_beanstalk_environment.<app_name>_web.name
+      }
+    }
+
+    # Repeat for each non-web process type (worker, clock, etc.)
+    action {
+      name            = "Deploy-<process_type>"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "ElasticBeanstalk"
+      version         = "1"
+      input_artifacts = ["source_output"]
+      configuration = {
+        ApplicationName = aws_elastic_beanstalk_application.<app_name>.name
+        EnvironmentName = aws_elastic_beanstalk_environment.<app_name>_<process_type>.name
+      }
+    }
+  }
+}
+
+resource "aws_s3_bucket" "pipeline_artifacts_<app_name>" {
+  bucket_prefix = "${var.project_name}-artifacts-"
+  force_destroy = true
+}
+
+resource "aws_iam_role" "codepipeline_<app_name>" {
+  name = "${var.project_name}-codepipeline"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "codepipeline.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "codepipeline_policy_<app_name>" {
+  role       = aws_iam_role.codepipeline_<app_name>.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess"
+}
+```
+
+**Variables to add to `variables.tf` for EB:**
+
+```hcl
+variable "github_connection_arn" {
+  description = "CodeStar connection ARN for GitHub access (create in AWS Console > Developer Tools > Connections)"
+  type        = string
+}
+
+variable "github_repo" {
+  description = "GitHub repository (owner/repo format)"
+  type        = string
+}
+
+variable "github_branch" {
+  description = "Branch to deploy from"
+  type        = string
+  default     = "main"
+}
+
+variable "eb_instance_type_<app>_<process>" {
+  description = "EC2 instance type for <app> <process> environment"
+  type        = string
+  default     = "<from aws_config.instance_type>"
+  # Heroku source: <dyno_type> dyno
+}
+
+variable "eb_min_instances_<app>_<process>" {
+  description = "Minimum instances for <app> <process>"
+  type        = number
+  default     = <from aws_config.min_instances>
+}
+
+variable "eb_max_instances_<app>_<process>" {
+  description = "Maximum instances for <app> <process>"
+  type        = number
+  default     = <from aws_config.max_instances>
+}
+
+variable "eb_deployment_policy" {
+  description = "EB deployment policy (AllAtOnce, Rolling, RollingWithAdditionalBatch, Immutable, TrafficSplitting)"
+  type        = string
+  default     = "Rolling"
+}
+```
+
+**Outputs to add to `outputs.tf` for EB:**
+
+```hcl
+output "eb_environment_url" {
+  description = "Elastic Beanstalk environment URL"
+  value       = aws_elastic_beanstalk_environment.<app_name>_web.cname
+}
+
+output "eb_environment_id" {
+  description = "Elastic Beanstalk environment ID"
+  value       = aws_elastic_beanstalk_environment.<app_name>_web.id
+}
+```
+
+---
+
+## Step 6: Generate `compute.tf` (Fargate override path)
+
+**Skip this step** if no services in `aws-design.json` have `aws_service: "Fargate"` or `"ALB"`. This step only executes when the user selected `design_constraints.kubernetes.value = "ecs-fargate"` (Fargate override).
 
 For each service in `aws-design.json` where `aws_service` is "Fargate" or "ALB":
 
@@ -795,7 +1136,7 @@ resource "aws_ecs_service" "<app_sanitized>_<process_type>" {
 
   network_configuration {
     subnets          = <private_subnet_references>
-    security_groups  = [aws_security_group.fargate.id]
+    security_groups  = [aws_security_group.app.id]
     assign_public_ip = false
   }
 
@@ -1355,7 +1696,7 @@ For any `service_id` in `aws-design.json` whose `aws_service` does not have a Te
 
 **Warning scenarios that produce entries:**
 
-- CloudWatch Logs mapped from Papertrail (no standalone Terraform needed — integrated into `compute.tf` log configuration)
+- CloudWatch Logs mapped from Papertrail (no standalone Terraform needed — integrated into compute config: `beanstalk.tf` EB platform logging or `compute.tf` ECS log configuration)
 - CloudWatch + X-Ray composite mappings (Scout APM, New Relic)
 - Amazon SES (SendGrid mapping)
 - Amazon SNS (Twilio mapping)
@@ -1365,7 +1706,7 @@ For any `service_id` in `aws-design.json` whose `aws_service` does not have a Te
 - Amazon OpenSearch (Bonsai Elasticsearch mapping)
 - S3 + CloudFront composite (Cloudinary mapping)
 
-**Exception:** If `aws_service == "CloudWatch Logs"` and it maps from a logging add-on (Papertrail, Rollbar, Sentry), the log group is already emitted in `compute.tf` Step 6. Do NOT log a warning for this case.
+**Exception:** If `aws_service == "CloudWatch Logs"` and it maps from a logging add-on (Papertrail, Rollbar, Sentry), logging is already handled by the compute target (EB platform logging in `beanstalk.tf` or ECS log configuration in `compute.tf` Step 6). Do NOT log a warning for this case.
 
 ---
 
@@ -1446,7 +1787,9 @@ terraform/
 ├── outputs.tf                # Resource outputs
 ├── vpc.tf                    # VPC configuration (new or data sources for existing)
 ├── security.tf               # Security groups, IAM roles
-├── compute.tf                # ECS cluster, task definitions, services, ALBs
+├── beanstalk.tf              # EB applications, environments, instance profiles (default path)
+├── pipeline.tf               # CodePipeline for GitHub → EB deploy (default path)
+├── compute.tf                # ECS cluster, task definitions, services, ALBs (Fargate override)
 ├── database.tf               # RDS/Aurora, parameter groups, RDS Proxy
 ├── cache.tf                  # ElastiCache replication groups
 ├── messaging.tf              # MSK clusters and configurations
@@ -1467,7 +1810,7 @@ Before returning control to `generate.md`, require:
 1. `$MIGRATION_DIR/terraform/main.tf` exists
 2. `$MIGRATION_DIR/terraform/variables.tf` exists
 3. `$MIGRATION_DIR/terraform/outputs.tf` exists
-4. At least one domain file (`compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`) exists
+4. At least one domain file (`beanstalk.tf`, `compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`) exists
 5. All resource cross-references resolve within the configuration
 6. `generation-warnings.json` exists if any services were skipped (empty `warnings` array if all mapped successfully)
 

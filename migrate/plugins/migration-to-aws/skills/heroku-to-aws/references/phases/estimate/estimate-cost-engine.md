@@ -115,6 +115,7 @@ Rates below come from the named keys in `aws-infra-pricing.json` — do not hard
 
 | AWS Service               | Formula (rates from `aws-infra-pricing.json`)                                                                                            | Key inputs from `aws_config`                                                  |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Elastic Beanstalk**     | EC2: `ec2.instances[instance_type]` × 730 × max_instances + ALB: `alb.monthly_fixed` (if LoadBalanced). EB service fee is $0.             | `instance_type`, `max_instances`, `environment_type`                          |
 | **Fargate**               | (task_cpu/1024 × `fargate.per_vcpu_hour` + task_memory/1024 × `fargate.per_gb_mem_hour`) × 730 × desired_count                           | `task_cpu`, `task_memory`, `desired_count`                                    |
 | **EKS (cluster + nodes)** | `eks.control_plane_monthly` + `eks.node_rates_monthly[type]` × node_count + ALB per web service                                          | `eks_cluster.node_groups[].instance_types`, `desired_size`, web service count |
 | **ALB**                   | `alb.monthly_fixed` + LCU estimate (`alb.per_lcu_hour` × 730)                                                                            | Per web service with `load_balancer: true`                                    |
@@ -144,6 +145,20 @@ IF pricing data for a service is unavailable from both MCP and cache:
 3. Add to `warnings[]`: "Pricing unavailable for [service_id] ([aws_service]). Requires manual cost verification."
 4. Add service name to `pricing_source.services_with_missing_fallback[]`
 
+### Elastic Beanstalk Cost Calculation
+
+When `aws-design.json` contains Elastic Beanstalk services (`aws_service: "Elastic Beanstalk"`):
+
+1. **EC2 instances**: Look up the instance type's hourly rate in `ec2.instances[instance_type]` × 730 hours × `max_instances`. Use `max_instances` (not min) for the Balanced tier estimate to reflect scaling headroom.
+2. **ALB** (LoadBalanced environments only): `alb.monthly_fixed` per web-tier environment. Worker environments do NOT incur ALB cost.
+3. **EBS storage**: Included in EC2 instance pricing for default GP3 volumes. Do not add separately unless instance storage exceeds 30GB.
+
+**Total EB monthly cost** = (EC2_hourly × 730 × instance_count) + ALB_costs (web only). EB itself charges $0 — all costs are the underlying resources.
+
+**EB vs Fargate cost comparison note**: When presenting EB estimates alongside Fargate alternative:
+
+> "Elastic Beanstalk uses EC2 instances (always-on, hourly billing) while Fargate bills per-second for actual CPU/memory usage. EB is typically cheaper for sustained workloads (>60% utilization) and simpler to operate (PaaS model). Fargate is cheaper for bursty/low-utilization workloads and offers finer-grained scaling."
+
 ### EKS Cost Calculation
 
 When `aws-design.json` contains EKS services (`aws_service: "EKS"`):
@@ -167,7 +182,7 @@ Calculate 3 cost tiers to show the optimization range:
 | ------------- | ------------------------ | ------------------------------------------------------------------------------------------------- |
 | **Premium**   | Highest resilience       | Multi-AZ everything, latest-gen instances, no Spot, enhanced monitoring                           |
 | **Balanced**  | Standard setup (default) | On-demand pricing, Multi-AZ where configured, standard monitoring                                 |
-| **Optimized** | Cost-minimized           | Reserved pricing assumption (20-40% discount), Fargate Spot where applicable, S3-IA for cold data |
+| **Optimized** | Cost-minimized           | Reserved pricing assumption (20-40% discount), Spot instances for workers (EB or Fargate), S3-IA for cold data |
 
 **Balanced** is the primary comparison tier. Generated Terraform (Phase 5) aligns with **Balanced**.
 
@@ -187,7 +202,7 @@ Heroku includes basic logging via its log drain. AWS CloudWatch charges from the
 
 ### Step 1: Estimate Log Volume
 
-Use the per-service log-volume heuristic from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `log_volume_gb_per_service` (billing data not applicable for log volume since Heroku's logging model differs). Keyed by service: `fargate_task` (per task), `rds_or_aurora_instance` (per instance), `alb` (per load balancer), `nat_gateway` (per gateway), `elasticache_node` (per node), `msk_broker` (per broker).
+Use the per-service log-volume heuristic from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `log_volume_gb_per_service` (billing data not applicable for log volume since Heroku's logging model differs). Keyed by service: `fargate_task` (per task), `eb_environment` (per environment), `rds_or_aurora_instance` (per instance), `alb` (per load balancer), `nat_gateway` (per gateway), `elasticache_node` (per node), `msk_broker` (per broker).
 
 Sum across all applicable services.
 
@@ -361,20 +376,20 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 
 **Emit in `optimization_opportunities[]`:**
 
-### Compute Savings Plans (when Fargate in design)
+### Compute Savings Plans (when Elastic Beanstalk or Fargate in design)
 
 ```json
 {
   "opportunity": "Compute Savings Plans",
   "type": "compute_savings_plan",
-  "target_services": ["Fargate"],
+  "target_services": ["Elastic Beanstalk", "Fargate"],
   "savings_percent": "20-66%",
   "savings_monthly": null,
   "commitment": "1-year or 3-year",
   "timing": "post-migration (after 30-90 days of usage data)",
   "implementation_effort": "low",
   "prerequisite": "Establish AWS compute usage baseline before committing",
-  "description": "Heroku dyno billing is flat-rate per dyno type. Fargate usage patterns may differ — establish AWS baseline before Savings Plan commitment. Use Cost Explorer recommendations after 30+ days.",
+  "description": "Heroku dyno billing is flat-rate per dyno type. AWS compute usage patterns may differ — establish baseline before Savings Plan commitment. Compute Savings Plans apply to both EC2 instances (EB) and Fargate tasks. Use Cost Explorer recommendations after 30+ days.",
   "references": [
     "https://aws.amazon.com/savingsplans/compute-pricing/",
     "https://aws.amazon.com/savingsplans/faqs/"
@@ -409,7 +424,24 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 }
 ```
 
-### Fargate Spot (when worker dynos exist)
+### EC2 Spot Instances for EB Workers (when EB worker environments exist)
+
+```json
+{
+  "opportunity": "Spot Instances for EB Worker Environments",
+  "type": "ec2_spot",
+  "target_services": ["Elastic Beanstalk"],
+  "savings_percent": "60-70%",
+  "savings_monthly": "<calculated based on worker environment EC2 costs>",
+  "commitment": "none",
+  "timing": "during migration (for fault-tolerant workers)",
+  "implementation_effort": "medium",
+  "prerequisite": "Worker tasks must be fault-tolerant and idempotent",
+  "description": "EB worker environments processing SQS messages can use Spot instances for background/batch work that tolerates interruption. Configure via aws:ec2:instances SpotFleetOnDemandBase and SpotFleetOnDemandAboveBasePercentage options."
+}
+```
+
+### Fargate Spot (when Fargate worker tasks exist — override path only)
 
 ```json
 {
@@ -421,12 +453,12 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
   "commitment": "none",
   "timing": "during migration (for fault-tolerant workers)",
   "implementation_effort": "medium",
-  "prerequisite": "Worker tasks must be fault-tolerant and idempotent",
+  "prerequisite": "Worker tasks must be fault-tolerant and idempotent; only applies when Fargate override is active",
   "description": "Heroku worker dynos mapped to Fargate can use Spot pricing for background/batch work that tolerates interruption."
 }
 ```
 
-Only include optimizations relevant to the designed architecture. Do not include EC2-specific optimizations if no EC2 in design.
+Only include optimizations relevant to the designed architecture. Do not include Fargate-specific optimizations if no Fargate in design; do not include EC2/EB-specific optimizations if no EB in design.
 
 ---
 

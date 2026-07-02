@@ -1,6 +1,6 @@
 ---
 name: heroku-to-aws
-description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform. Runs a 6-phase process: discover Heroku resources from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Fargate, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP or Azure migrations to AWS, AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
+description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Elastic Beanstalk, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to Elastic Beanstalk, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform. Runs a 6-phase process: discover Heroku resources from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Elastic Beanstalk, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP or Azure migrations to AWS, AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
 ---
 
 # Heroku-to-AWS Migration Skill
@@ -8,9 +8,9 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 ## Philosophy
 
 - **Full platform exit by default**: Heroku is in sustaining engineering (KTLO) — stability and support only, no new investment. Enterprise contracts are no longer sold to new customers. This skill assumes complete departure from Heroku (compute, data, and add-ons) within a user-defined window. Do not recommend indefinite continued use of Heroku.
-- **No legacy-to-legacy**: Do not recommend Elastic Beanstalk or AWS App Runner (no longer accepting new customers as of April 2026) as migration targets. Fargate is the sole compute target. ECS Express Mode may be mentioned as an optional simplified deployment path (same underlying Fargate + ALB cost model).
+- **PaaS-to-PaaS by default**: Elastic Beanstalk (Docker platform, AL2023) is the default compute target — it preserves Heroku's managed platform model (push code, platform handles builds/deploys/scaling/patching). Fargate and EKS are available as overrides for users who want direct container control or Kubernetes orchestration. Do not recommend AWS App Runner (no longer accepting new customers as of April 2026).
 - **Interim cutover is bounded**: If a user chooses data-first migration (database on AWS, app temporarily on Heroku), treat this as a bounded phase (weeks, not quarters). Require a target exit date and surface KTLO platform risk warnings.
-- **Re-platform by default**: Select AWS services that match Heroku workload types (e.g., Dynos → Fargate, Heroku Postgres → RDS/Aurora, Heroku Redis → ElastiCache, Kafka → MSK).
+- **Re-platform by default**: Select AWS services that match Heroku workload types (e.g., Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, Heroku Redis → ElastiCache, Kafka → MSK).
 - **Dev sizing unless specified**: Default to development-tier capacity (e.g., db.t4g.micro, single AZ). Upgrade only on user direction.
 - **No human one-time migration costs**: Do not present human labor, professional services, or people-time work as dollar estimates or "one-time migration cost" budget categories. Vendor charges grounded in data (for example Heroku invoice line items in the infra estimate when billing exists) are allowed.
 - **Terraform + repo as primary discovery**: Terraform files (`.tf` with `heroku_*` resources) and repo artifacts (Procfile, app.json) are the primary data sources for resource discovery. No Platform API calls in v1.
@@ -220,7 +220,7 @@ heroku-to-aws/
 │   │
 │   ├── design-refs/
 │   │   ├── fast-path-table.md                  # Add-on → AWS deterministic mappings (13+ entries)
-│   │   ├── dyno-type-table.md                  # Dyno type → Fargate CPU/memory
+│   │   ├── dyno-type-table.md                  # Dyno type → Fargate CPU/memory (Fargate override path only)
 │   │   ├── postgres-plan-table.md              # Postgres plan → RDS/Aurora sizing
 │   │   ├── redis-plan-table.md                 # Redis plan → ElastiCache sizing
 │   │   └── kafka-plan-table.md                 # Kafka plan → MSK sizing
@@ -240,14 +240,14 @@ heroku-to-aws/
 | `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                        |
 | awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `shared/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`.  |
 | User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                              |
-| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                            |
+| Dyno type not in sizing table (EB or Fargate path)       | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                             |
 | Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                    |
 
 ## Defaults
 
 - **IaC output**: Terraform configurations, migration scripts, and documentation
 - **Region**: `us-east-1` (unless user specifies otherwise)
-- **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, 0.5 CPU for Fargate)
+- **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, `t3.small` for EB compute)
 - **Migration mode**: Adapts based on available inputs (Terraform primary, Procfile/app.json supplementary, billing optional)
 - **Cost currency**: USD
 - **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). See `references/shared/migration-complexity.md` for tier definitions.
