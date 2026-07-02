@@ -6,7 +6,8 @@ _input:
   - heroku-resource-inventory.json
   - preferences.json
 _knowledge:
-  - { file: knowledge/design/dyno-fargate-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is ecs-fargate or absent" }
+  - { file: knowledge/design/dyno-eb-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is elastic_beanstalk or absent" }
+  - { file: knowledge/design/dyno-fargate-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is ecs-fargate" }
   - { file: knowledge/design/eks-pod-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is eks-managed or eks-or-ecs" }
   - { file: knowledge/design/postgres-rds-sizing.json, _when: "inventory has a heroku-postgresql addon" }
   - { file: knowledge/design/redis-elasticache-sizing.json, _when: "inventory has a heroku-redis addon" }
@@ -80,7 +81,7 @@ Load these reference files **only when the corresponding resource type exists in
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `formation` (any) + `design_constraints.kubernetes.value` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
 | `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"`                   | `design-refs/dyno-type-table.md`                                   |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"elastic_beanstalk"` or absent   | (no additional file needed — EB mapping is inline in `design-mapping.md`) |
+| `formation` (any) + `design_constraints.kubernetes.value` = `"elastic_beanstalk"` or absent   | `knowledge/design/dyno-eb-sizing.json` (loaded via `_knowledge` frontmatter) |
 | `addon:*:heroku-postgresql:*`                                                                 | `design-refs/postgres-plan-table.md`                               |
 | `addon:*:heroku-redis:*`                                                                      | `design-refs/redis-plan-table.md`                                  |
 | `addon:*:heroku-kafka:*`                                                                      | `design-refs/kafka-plan-table.md`                                  |

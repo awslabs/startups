@@ -93,20 +93,10 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
 
 2. **Empty Procfile check**: If there are NO formation resources in the entire inventory for this app, reject the input. Record in `warnings[]` and skip.
 
-3. **Instance type selection**: Map dyno type to EC2 instance type:
+3. **Instance type selection**: Look up `config.dyno_type` (case-insensitive) in `knowledge/design/dyno-eb-sizing.json → rows`. Read the `ec2_instance_type` value from the matched row.
 
-   | Heroku Dyno Type | EC2 Instance Type | Notes |
-   | ---------------- | ----------------- | ----- |
-   | eco, basic       | t3.micro          | Minimal dev workloads |
-   | standard-1x     | t3.small           | 512MB equivalent |
-   | standard-2x     | t3.medium          | 1GB equivalent |
-   | performance-m    | m5.large           | 2.5GB, dedicated CPU |
-   | performance-l    | m5.xlarge          | 14GB, dedicated CPU |
-   | performance-l-ram | r5.xlarge         | 14GB RAM-optimized |
-   | performance-xl   | m5.2xlarge         | 46GB, high compute |
-   | performance-2xl  | m5.4xlarge         | 62GB, max compute |
-
-   If dyno type not found, add to `warnings[]` and skip.
+   - **If NOT found**: Reject this formation entry. Add to `warnings[]`: "Unsupported dyno type: `{dyno_type}`. Cannot map to Elastic Beanstalk. Please contact support or provide manual sizing." Do NOT produce an EB entry. Continue to next resource.
+   - **If found**: Use the `ec2_instance_type` value as the instance type for this environment.
 
 4. **Environment type and tier**:
    - If `process_type == "web"` → `tier: "WebServer"`, `environment_type: "LoadBalanced"` (includes ALB)
@@ -153,12 +143,18 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
        "environment_type": "SingleInstance",
        "tier": "WebServer",
        "min_instances": 1,
-       "max_instances": <config.quantity or 1>,
+       "max_instances": 1,
        "process_type": "{process_type}",
-       "deployment_policy": "Rolling"
+       "deployment_policy": "AllAtOnce"
      }
    }
    ```
+
+   **Scaling limitation:** EB SingleInstance environments always run exactly 1 instance. If the source Heroku formation has `quantity > 1` for a non-web process, add a warning:
+
+   > "Heroku formation `{process_type}` has quantity={quantity}. EB SingleInstance environments cannot scale horizontally. For horizontal worker scaling, select the Fargate override path (Q12c option B)."
+
+   Record in `warnings[]` and continue with `max_instances: 1`.
 
 6. **No separate ALB entry**: Unlike Fargate, EB LoadBalanced environments include ALB automatically. SingleInstance environments have no ALB. Do NOT produce separate ALB service entries for any EB environment.
 
