@@ -315,10 +315,13 @@ out as a per-phase "initialize" step.
 
    This prevents accidental commits of migration artifacts.
 
-4. Write `.phase-status.json` per the schema in `shared/schema-phase-status.md`.
-   Set `migration_id` to `[MMDD-HHMM]`, `last_updated` to the current ISO 8601
-   timestamp, every phase to `"pending"` EXCEPT this `_init` phase which is
-   `"in_progress"`, and `current_phase` to this `_init` phase.
+4. Write `.phase-status.json` per the schema
+   `../shared/state/phase-status.schema.json`. Seed `phases` with ONE entry per
+   phase the skill declares (its phase files), all `"pending"` EXCEPT this `_init`
+   phase which is `"in_progress"`; set `migration_id` to `[MMDD-HHMM]`,
+   `last_updated` to the current ISO 8601 timestamp, and `current_phase` to this
+   `_init` phase. (The schema does not enumerate phase names — the valid names are
+   the skill's declared phases.)
 
 5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
    running the phase's fragments.

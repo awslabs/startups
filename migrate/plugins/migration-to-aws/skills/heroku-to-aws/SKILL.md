@@ -74,31 +74,12 @@ Clarify.
 
 ## State Management
 
-Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created by Phase 1 and persisted across invocations.
-
-**.phase-status.json schema:**
-
-```json
-{
-  "migration_id": "0315-1030",
-  "last_updated": "2026-03-15T10:30:00Z",
-  "current_phase": "discover",
-  "phases": {
-    "discover": "in_progress",
-    "clarify": "pending",
-    "design": "pending",
-    "estimate": "pending",
-    "generate": "pending",
-    "feedback": "pending"
-  }
-}
-```
-
-**Status values:** `"pending"` → `"in_progress"` → `"completed"`. Never goes backward.
-For core phases (discover, clarify, design, estimate, generate), at most one phase may be `"in_progress"` at any time.
-`current_phase` is optional but recommended; when present it is authoritative.
-
-The `.migration/` directory is automatically protected by a `.gitignore` file created in Phase 1. State reads, validation, and the read-merge-write update protocol are defined in `INTERPRETER.md` § The interpreter loop.
+Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created on
+the first phase and persisted across invocations. The state file is
+`.phase-status.json`; its shape is defined by
+`../shared/state/phase-status.schema.json`, and how it is created, validated, and
+updated across the lifecycle is defined in `INTERPRETER.md` § The interpreter loop.
+The `.migration/` directory is protected by a `.gitignore` created at init.
 
 ---
 
@@ -147,7 +128,6 @@ heroku-to-aws/
 │   └── shared/                                 # References shared plugin infrastructure
 │       └── (path reference to ../gcp-to-aws/references/shared/)
 │           ├── handoff-gates.md                # Shared gate protocol (NOT used by heroku-to-aws — heroku's gates live in phase `_preconditions`/`_postconditions` + INTERPRETER.md § Gate protocol)
-│           ├── schema-phase-status.md          # .phase-status.json schema
 │           ├── migration-complexity.md         # Complexity tier definitions (Small/Medium/Large)
 │           ├── schema-estimate-infra.md        # estimation-infra.json schema
 │           └── validate-artifacts.md           # Pre-report validation
