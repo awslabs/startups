@@ -46,30 +46,9 @@ Each phase loads reference files on demand. To keep per-turn context manageable 
 - **No duplication:** Mapping tables, pricing data, and shared warnings exist in one canonical file. Other files reference them; they do not copy them inline.
 - **Progressive depth:** Phase orchestrators (`design.md`, `generate.md`) contain short routing logic that points to detailed sub-files. Load the sub-file only when its path is selected.
 
-**Conditional reference files (load ONLY when condition is true):**
-
-| File                                       | Condition                                                    |
-| ------------------------------------------ | ------------------------------------------------------------ |
-| `design-refs/postgres-plan-table.md`       | Inventory contains `addon:*:heroku-postgresql:*` resources   |
-| `design-refs/redis-plan-table.md`          | Inventory contains `addon:*:heroku-redis:*` resources        |
-| `design-refs/kafka-plan-table.md`          | Inventory contains `addon:*:heroku-kafka:*` resources        |
-| `references/phases/clarify/clarify.md` Q11 | `heroku_generation == "fir"` detected in any inventory entry |
+Each phase declares its own conditional reference/knowledge loads in frontmatter (a fragment `_trigger` or a `_knowledge` entry's `_when`); do not maintain a separate load-condition table here.
 
 When adding new reference files, verify the phase's total loaded instructions remain under budget. If a new file would exceed ~800 lines when combined with other loaded refs, split it or make it conditional.
-
----
-
-## Prerequisites
-
-User must provide:
-
-- **Terraform IaC** (REQUIRED): `.tf` files containing `heroku_*` resource types (primary and required discovery path)
-- **Repo artifacts** (SUPPLEMENTARY): Procfile and/or app.json in the workspace (supplements Terraform with commands, buildpacks, and declared add-ons — cannot stand alone)
-- **Billing data** (OPTIONAL): Heroku Dashboard invoices or Enterprise CSV billing exports (for cost comparison)
-
-If no Terraform files with `heroku_*` resources are found, stop and ask user to provide Heroku Terraform files. Procfile and app.json alone are not sufficient for discovery.
-
-**Note:** Platform API discovery is NOT supported in v1. No API token is required or used.
 
 ---
 
@@ -110,7 +89,7 @@ also defines the `GATE_FAIL` / `HANDOFF_OK` line formats and the `_on_error` act
 2. **Re-read from disk**: Before each phase (and before each handoff gate), Read required artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
 3. **Advance only on `HANDOFF_OK`**: A phase is complete only when its orchestrator emits `HANDOFF_OK | phase=<name> | artifacts=...`. Do not load the next phase without it.
 4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Tell the user which phase to re-run.
-5. **Re-entry**: Re-running an earlier phase after downstream phases completed requires explicit user confirmation; downstream phases must be reset to `"pending"`. This is governed by each phase's `_re_entry_guard` frontmatter — see `INTERPRETER.md` § `_re_entry_guard`.
+   The per-phase entry/completion gates, the `HANDOFF_OK` / `GATE_FAIL` protocol, the `_on_error` actions, and stale-downstream re-entry are all defined by each phase's frontmatter (`_preconditions` / `_postconditions` / `_re_entry_guard`) and `INTERPRETER.md` § Gate protocol and § `_re_entry_guard`. Do not restate them here.
 
 Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`.
 
@@ -126,7 +105,8 @@ When reading `$MIGRATION_DIR/.phase-status.json`, validate before proceeding:
 4. **Unrecognized status**: If any `phases.*` value is not in {pending, in_progress, completed}, STOP. Output: "Unrecognized status: [value]. Valid values: pending, in_progress, completed."
 5. **Invalid `current_phase`** (if present): If `current_phase` is not in {discover, clarify, design, estimate, generate, complete}, STOP. Output: "Unrecognized current_phase: [value]. Valid values: discover, clarify, design, estimate, generate, complete."
 6. **Out-of-order completion**: For ordered phases [discover, clarify, design, estimate, generate], if any later phase is `"completed"` while an earlier phase is not `"completed"`, STOP. Output: "Inconsistent phase ordering detected. Reconcile `.phase-status.json` before resuming."
-7. **Multiple active phases**: Across core phases {discover, clarify, design, estimate, generate}, at most one phase may be `"in_progress"`. If >1, STOP. Output: "Multiple phases are in_progress. Keep only one active phase before resuming."
+
+(The single-active-phase invariant is enforced by discover's `_preconditions._check_single_active_phase`; see `INTERPRETER.md` § Gate protocol.)
 
 ---
 
@@ -167,19 +147,6 @@ Use **read-merge-write** updates for `.phase-status.json`:
 3. Keep prior completed phases unchanged.
 4. Set `current_phase` to the next deterministic phase (or `complete` after generate).
 5. Write the full file in the same turn as your final phase work message.
-
----
-
-## Phase Summary Table
-
-| Phase        | Inputs                                                                                           | Outputs                                                                                                                                               | Reference                                |
-| ------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Discover** | Terraform files with `heroku_*` resources, Procfile, app.json, and/or billing exports            | `heroku-resource-inventory.json`, `.phase-status.json` updated                                                                                        | `references/phases/discover/discover.md` |
-| **Clarify**  | `heroku-resource-inventory.json`                                                                 | `preferences.json`, `.phase-status.json` updated                                                                                                      | `references/phases/clarify/clarify.md`   |
-| **Design**   | `heroku-resource-inventory.json`, `preferences.json`                                             | `aws-design.json`                                                                                                                                     | `references/phases/design/design.md`     |
-| **Estimate** | `aws-design.json`, `preferences.json`, optional billing profile                                  | `estimation-infra.json`, `.phase-status.json` updated                                                                                                 | `references/phases/estimate/estimate.md` |
-| **Generate** | `aws-design.json`, `estimation-infra.json`, `preferences.json`, `heroku-resource-inventory.json` | `terraform/`, `MIGRATION_GUIDE.md`, `README.md`, database migration scripts, `generation-warnings.json` (if applicable), `.phase-status.json` updated | `references/phases/generate/generate.md` |
-| **Feedback** | `.phase-status.json` (discover completed minimum), all existing migration artifacts              | `feedback.json`, `.phase-status.json` updated                                                                                                         | `references/phases/feedback/feedback.md` |
 
 ---
 
@@ -234,14 +201,13 @@ heroku-to-aws/
 │           └── validate-artifacts.md           # Pre-report validation
 ```
 
-| Condition                                                | Action                                                                                                                                                        |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No Terraform files with `heroku_*` resources found       | Stop. Output: "No Terraform files with heroku_* resources found. Heroku Terraform is required for discovery. Procfile and app.json alone are not sufficient." |
-| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                        |
-| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `shared/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`.  |
-| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                              |
-| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                            |
-| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                    |
+| Condition                                                | Action                                                                                                                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                       |
+| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `shared/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`. |
+| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                             |
+| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                           |
+| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                   |
 
 ## Defaults
 
