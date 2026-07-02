@@ -51,31 +51,13 @@ Verify required artifacts exist in `$MIGRATION_DIR/`:
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `shared/handoff-gates.md`. **Re-read from disk** every artifact below before checking.
-
-**Re-entry guard:** If `estimation-infra.json` exists AND `phases.estimate` is `"completed"`: STOP unless the user explicitly confirms re-running Design. Emit:
-
-```
-GATE_FAIL | phase=design | field=estimation-infra.json | reason=stale_downstream
-```
-
-**Checks (all must PASS):**
-
-1. `aws-design.json` exists and parses as valid JSON.
-2. `aws-design.json` has `phase == "design"` and a valid `timestamp`.
-3. `services[]` array is present (may be empty only if ALL resources deferred to specialist gate).
-4. Every entry in `services[]` has: `service_id`, `source_resource_id`, `heroku_app`, `aws_service`, `confidence`, `aws_config`.
-5. Every entry in `deferred[]` has: `addon_name`, `addon_plan`, `provider`, `reason`, `recommendation`.
-6. `vpc_design` section is present and has a valid `mode` value (`existing_vpc` or `new_vpc`).
-7. If `mode == "existing_vpc"`: `existing_vpc_id` is non-empty.
-8. If `mode == "new_vpc"`: at least 2 subnets present across separate AZs.
-9. `metadata.total_services` matches `services[].length`.
-10. No Fir-specific Terraform (ARM/Graviton, CNB) appears anywhere in output.
-11. Route output gates from Step 7 all pass.
-
-**On any FAIL:** Emit `GATE_FAIL | phase=design | field=<path> | reason=<missing|invalid|stale_downstream>`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user what failed and how to fix it.
-
-**On PASS:** Emit `HANDOFF_OK | phase=design | artifacts=aws-design.json`.
+The completion checks are declared in this phase's `_postconditions` frontmatter and
+enforced per `INTERPRETER.md` § Gate protocol: re-read `aws-design.json` from disk, run
+the mechanical checks (`_check_file_exists` / `_validate_json`) and the `_assert`
+judgment checks (phase/timestamp/services shape, per-entry required fields, vpc_design
+mode, total_services match, no Fir-specific Terraform), plus the route output gates from
+Step 7, then emit `GATE_FAIL` (STOP; do not patch artifacts) or
+`HANDOFF_OK | phase=design | artifacts=aws-design.json` and advance.
 
 ---
 
@@ -134,4 +116,3 @@ All user communication via output messages only.
 | Partial match on Fast-Path Table             | Specialist gate (NOT a match), continue         | Continue `in_progress`        |
 | No services AND no deferred entries produced | Unrecoverable error                             | Revert to `pending` (Rule 4)  |
 | Handoff gate check fails (GATE_FAIL)         | Halt pipeline, surface diagnostic               | Retain `in_progress` (Rule 3) |
-| Downstream artifacts stale (re-entry)        | Halt, emit GATE_FAIL stale_downstream           | Retain `in_progress` (Rule 3) |

@@ -18,6 +18,28 @@ export interface FragmentRef {
   file: string; // path relative to the skill's references/ root
 }
 
+/** A phase's stale-downstream re-entry guard (see INTERPRETER.md § _re_entry_guard). */
+export interface ReEntryGuard {
+  staleIfCompleted: string | null; // _stale_if_completed — downstream phase whose completion blocks re-run
+  staleArtifact: string | null; // _stale_artifact — the artifact named in the GATE_FAIL field
+  onReentry: string | null; // _on_reentry — closed enum
+  onConfirm: string | null; // _on_confirm — closed enum
+  unknownKeys: string[]; // sub-keys not in the closed guard vocab
+}
+
+/** One check in a `_preconditions` / `_postconditions` list. */
+export interface CheckItem {
+  kind: string; // the check keyword: _check_phase_completed | _check_single_active_phase | _check_file_exists | _validate_json | _assert (or an unknown keyword → flagged)
+  arg: string[]; // normalized args (phase name / filenames / [] for _assert / the assert prose)
+  onFailure: string | null; // _on_failure action name
+}
+
+/** One entry in a phase's `_knowledge` list (a JSON data dependency). */
+export interface KnowledgeRef {
+  file: string; // path relative to the skill root
+  when: string | null; // optional opaque prose condition (bound, not evaluated by CI)
+}
+
 /** The phase orchestrator file's frontmatter. */
 export interface PhaseFrontmatter {
   kind: "phase";
@@ -34,6 +56,12 @@ export interface PhaseFrontmatter {
   assembleFile: string | null; // _assemble._file
   produces: string[];
   advancesTo: string | null;
+  reEntryGuard: ReEntryGuard | null; // _re_entry_guard (backbone phases with a downstream); null when absent
+  preconditions: CheckItem[]; // _preconditions (entry gate); empty when absent
+  postconditions: CheckItem[]; // _postconditions (completion gate); empty when absent
+  forbidsFiles: string[]; // _forbids_files globs; empty when absent
+  input: string[]; // _input entries (artifacts / 'workspace' / a glob)
+  knowledge: KnowledgeRef[]; // _knowledge JSON data deps; empty when absent
   unknownKeys: string[]; // top-level _keys not in the closed vocab
 }
 
