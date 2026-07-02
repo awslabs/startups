@@ -29,11 +29,14 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 
 ## Phase Structure (frontmatter)
 
-A phase orchestrator file (e.g. `references/phases/discover/discover.md`) may carry a small YAML frontmatter block that names how the phase is composed — its inputs, the **fragments** it runs (each with a trigger), the **assembler** that combines their outputs, what it produces, and what it requires/advances-to. `INTERPRETER.md` is the contract: it lists every frontmatter key and how to act on it (including `_init`, which establishes migration state on the first phase).
+Phase and unit files carry a YAML frontmatter block that declares how the phase is
+composed — its inputs, the fragments it runs, the assembler that combines them,
+what it produces, its gates, and what it requires/advances-to. `INTERPRETER.md` is
+the contract: it defines every frontmatter key, the fragment/assembler model, and
+the interpreter loop. Read it first, then execute a phase file's prose body.
 
-**Fragment vs assembler:** a **fragment** does one unit of work and writes its own contribution; fragments are independent (none reads another's output). The **assembler** runs last and combines/validates the fragments' outputs into the phase's final artifact. A phase has 1..N fragments and exactly one assembler.
-
-When a phase file has frontmatter, read it (and `INTERPRETER.md`) first, then execute the phase body. Frontmatter is being introduced phase-by-phase; phases without it run from their prose as before.
+Frontmatter is being introduced phase-by-phase; a phase file without it runs from
+its prose as before.
 
 ---
 
@@ -52,61 +55,24 @@ When adding new reference files, verify the phase's total loaded instructions re
 
 ---
 
-## State Machine
+## Execution
 
-This is the execution controller. After completing each phase, consult this table to determine the next action.
+This skill is driven by the interpreter loop in `INTERPRETER.md` (§ The interpreter
+loop): it reads `.phase-status.json`, determines the current phase, runs each
+phase's `_preconditions` / fragments / `_assemble` / `_postconditions`, advances on
+`HANDOFF_OK` via `_advances_to`, and validates state. The phase set, ordering, and
+gates are all derived from the phase files' frontmatter and `INTERPRETER.md` — they
+are not restated here.
 
-| Current State | Condition                                                             | Next Action                                                                            |
-| ------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `discover`    | `phases.discover != "completed"`                                      | Load `references/phases/discover/discover.md`                                          |
-| `clarify`     | `phases.discover == "completed"` AND `phases.clarify != "completed"`  | Load `references/phases/clarify/clarify.md`                                            |
-| `design`      | `phases.clarify == "completed"` AND `phases.design != "completed"`    | Load `references/phases/design/design.md`                                              |
-| `estimate`    | `phases.design == "completed"` AND `phases.estimate != "completed"`   | Load `references/phases/estimate/estimate.md`                                          |
-| `generate`    | `phases.estimate == "completed"` AND `phases.generate != "completed"` | Load `references/phases/generate/generate.md`                                          |
-| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "pending"`   | Set `phases.feedback` to `"completed"` (user had two chances), then migration complete |
-| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "completed"` | Migration planning complete                                                            |
+**Clarify is a mandatory gate (heroku policy).** Design, Estimate, and Generate
+each declare `_requires_phase: clarify` (enforced by their `_preconditions`), so
+the interpreter will not enter them until Clarify is `"completed"`. A
+`preferences.json` file alone is not proof Clarify ran. If the user asks to skip
+Clarify or jump straight to Design/Estimate/Generate, refuse briefly and run
+Clarify first — there is no exception for "quick" or "obvious" migrations.
 
-**How to determine current state (deterministic):**
-
-1. Read `$MIGRATION_DIR/.phase-status.json`
-2. If `current_phase` exists, use it (must match one of: discover, clarify, design, estimate, generate, complete)
-3. Otherwise use ordered phase evaluation: `discover` → `clarify` → `design` → `estimate` → `generate`
-4. Pick the **first** phase in that order where `phases.<phase> != "completed"`; if none, state is `complete`
-
-**Phase gate checks**: If prior phase incomplete, do not advance (e.g., cannot enter estimate without completed design).
-
-**Clarify is mandatory:** Do not load `references/phases/design/design.md`, `references/phases/estimate/estimate.md`, or `references/phases/generate/generate.md` unless `$MIGRATION_DIR/.phase-status.json` exists and `phases.clarify` is exactly `"completed"`. A `preferences.json` file alone is **not** sufficient proof that Clarify ran. If the user asks to skip Clarify or jump straight to Design, cost estimate, or artifact generation, refuse briefly, then load `references/phases/clarify/clarify.md` and run Phase 2. There is no exception for "quick" or "obvious" migrations.
-
-**Feedback checkpoints**: Feedback is offered once after Estimate (combined with plan sharing). See the **Feedback Checkpoints** section below for details.
-
-### Handoff Gate Orchestration (Fail Closed)
-
-Each phase's entry and completion gates are declared in its `_preconditions` /
-`_postconditions` frontmatter and enforced per `INTERPRETER.md` § Gate protocol (which
-also defines the `GATE_FAIL` / `HANDOFF_OK` line formats and the `_on_error` actions).
-
-1. **Single `$MIGRATION_DIR`**: Use one run directory for the entire migration. Do not mix artifacts across `.migration/*/` sessions.
-2. **Re-read from disk**: Before each phase (and before each handoff gate), Read required artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
-3. **Advance only on `HANDOFF_OK`**: A phase is complete only when its orchestrator emits `HANDOFF_OK | phase=<name> | artifacts=...`. Do not load the next phase without it.
-4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Tell the user which phase to re-run.
-   The per-phase entry/completion gates, the `HANDOFF_OK` / `GATE_FAIL` protocol, the `_on_error` actions, and stale-downstream re-entry are all defined by each phase's frontmatter (`_preconditions` / `_postconditions` / `_re_entry_guard`) and `INTERPRETER.md` § Gate protocol and § `_re_entry_guard`. Do not restate them here.
-
-Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`.
-
----
-
-## State Validation
-
-When reading `$MIGRATION_DIR/.phase-status.json`, validate before proceeding:
-
-1. **Multiple sessions**: If multiple directories exist under `.migration/`, list them with their phase status and ask: [A] Resume latest, [B] Start fresh, [C] Cancel.
-2. **Invalid JSON**: If `.phase-status.json` fails to parse, STOP. Output: "State file corrupted (invalid JSON). Delete the file and restart the current phase."
-3. **Unrecognized phase**: If `phases` object contains a phase not in {discover, clarify, design, estimate, generate, feedback}, STOP. Output: "Unrecognized phase: [value]. Valid phases: discover, clarify, design, estimate, generate, feedback."
-4. **Unrecognized status**: If any `phases.*` value is not in {pending, in_progress, completed}, STOP. Output: "Unrecognized status: [value]. Valid values: pending, in_progress, completed."
-5. **Invalid `current_phase`** (if present): If `current_phase` is not in {discover, clarify, design, estimate, generate, complete}, STOP. Output: "Unrecognized current_phase: [value]. Valid values: discover, clarify, design, estimate, generate, complete."
-6. **Out-of-order completion**: For ordered phases [discover, clarify, design, estimate, generate], if any later phase is `"completed"` while an earlier phase is not `"completed"`, STOP. Output: "Inconsistent phase ordering detected. Reconcile `.phase-status.json` before resuming."
-
-(The single-active-phase invariant is enforced by discover's `_preconditions._check_single_active_phase`; see `INTERPRETER.md` § Gate protocol.)
+The Generate phase additionally loads `references/shared/validate-artifacts.md`
+before writing `migration-report.html`.
 
 ---
 
@@ -136,17 +102,7 @@ Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created b
 For core phases (discover, clarify, design, estimate, generate), at most one phase may be `"in_progress"` at any time.
 `current_phase` is optional but recommended; when present it is authoritative.
 
-The `.migration/` directory is automatically protected by a `.gitignore` file created in Phase 1.
-
-### Phase Status Update Protocol
-
-Use **read-merge-write** updates for `.phase-status.json`:
-
-1. Read the current file before every update.
-2. Change only the phase keys being advanced and `last_updated`.
-3. Keep prior completed phases unchanged.
-4. Set `current_phase` to the next deterministic phase (or `complete` after generate).
-5. Write the full file in the same turn as your final phase work message.
+The `.migration/` directory is automatically protected by a `.gitignore` file created in Phase 1. State reads, validation, and the read-merge-write update protocol are defined in `INTERPRETER.md` § The interpreter loop.
 
 ---
 
@@ -164,7 +120,7 @@ Use **read-merge-write** updates for `.phase-status.json`:
 
 ```
 heroku-to-aws/
-├── SKILL.md                                    ← You are here (orchestrator + state machine)
+├── SKILL.md                                    ← You are here (skill entry point)
 │
 ├── references/
 │   ├── phases/
@@ -218,78 +174,59 @@ heroku-to-aws/
 - **Cost currency**: USD
 - **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). See `references/shared/migration-complexity.md` for tier definitions.
 
-## Workflow Execution
+## Feedback & Sharing Checkpoints
 
-When invoked, the agent **MUST follow this exact sequence**:
+The interpreter loop (`INTERPRETER.md` § The interpreter loop) drives phase
+sequencing, gates, and state. This section defines only the heroku-specific
+checkpoint orchestration: WHERE the optional `feedback` checkpoint and plan-share
+are offered (a checkpoint's placement is orchestration prose, not part of the
+phase contract).
 
-1. **Load phase status**: Read `.phase-status.json` from `.migration/*/`.
-   - If missing: Initialize for Phase 1 (Discover)
-   - If exists: Determine current phase using deterministic rules in **State Machine**
+- **After Discover**: No prompt. Proceed directly to Clarify.
 
-2. **Determine phase to execute**:
-   - If `current_phase` exists: execute that phase.
-   - Otherwise execute the first non-completed phase in ordered list: discover → clarify → design → estimate → generate.
-   - If all ordered phases are completed: migration is complete (with feedback finalization rule).
+- **After Estimate** (if `phases.feedback` is `"pending"`): Output to user:
 
-3. **Read phase reference**: Load the full reference file for the target phase.
+  ```
+  ─── Share Your Migration Plan ───
 
-4. **Execute ALL steps in order**: Follow every numbered step in the reference file. **Do not skip, optimize, or deviate.**
+  This link encodes your migration profile for partner matching:
+  ✓ Included: Clarify answers, estimated costs, recommendation path,
+    detected Heroku services, resource names, and workload types.
+  ✗ Excluded: Source code, local file paths, credentials, API tokens,
+    config-var values, and environment secrets.
 
-5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding. Phase orchestrators run their `_postconditions` completion gate per `INTERPRETER.md` § Gate protocol.
+  The link uses a URL fragment (#) — no data is sent to any server
+  when you click it. The landing page decodes everything client-side.
 
-6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `INTERPRETER.md` § Gate protocol. On `GATE_FAIL`, stop — do not update phase status or load the next phase.
+  [A] Send feedback & share plan
+  [B] Send feedback only
+  [C] No thanks, continue to Generate
+  ```
 
-7. **Update phase status**: Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
+  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Then generate share link. Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **B** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **C** → Set `phases.feedback` to `"completed"`. Continue to Generate.
 
-8. **Feedback and sharing checkpoints**: After Estimate completes, offer feedback and/or plan sharing. This runs **before** advancing to Generate.
+- **After Generate**: Share-only prompt (no feedback re-ask):
 
-   - **After Discover**: No prompt. Proceed directly to Clarify.
+  ```
+  ─── Share Your Completed Plan ───
 
-   - **After Estimate** (if `phases.feedback` is `"pending"`): Output to user:
+  This link encodes your migration profile for partner matching:
+  ✓ Included: Clarify answers, estimated costs, recommendation path,
+    detected Heroku services, resource names, and workload types.
+  ✗ Excluded: Source code, local file paths, credentials, API tokens,
+    config-var values, and environment secrets.
 
-     ```
-     ─── Share Your Migration Plan ───
+  The link uses a URL fragment (#) — no data is sent to any server
+  when you click it. The landing page decodes everything client-side.
 
-     This link encodes your migration profile for partner matching:
-     ✓ Included: Clarify answers, estimated costs, recommendation path,
-       detected Heroku services, resource names, and workload types.
-     ✗ Excluded: Source code, local file paths, credentials, API tokens,
-       config-var values, and environment secrets.
+  [A] Share completed plan
+  [B] No thanks, finish
+  ```
 
-     The link uses a URL fragment (#) — no data is sent to any server
-     when you click it. The landing page decodes everything client-side.
+  - If user picks **A** → Generate share link. Mark migration complete.
+  - If user picks **B** → Mark migration complete.
+  - If `phases.feedback` is still `"pending"`, set it to `"completed"` regardless of choice.
 
-     [A] Send feedback & share plan
-     [B] Send feedback only
-     [C] No thanks, continue to Generate
-     ```
-
-     - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Then generate share link. Set `phases.feedback` to `"completed"`. Continue to Generate.
-     - If user picks **B** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
-     - If user picks **C** → Set `phases.feedback` to `"completed"`. Continue to Generate.
-
-   - **After Generate**: Share-only prompt (no feedback re-ask):
-
-     ```
-     ─── Share Your Completed Plan ───
-
-     This link encodes your migration profile for partner matching:
-     ✓ Included: Clarify answers, estimated costs, recommendation path,
-       detected Heroku services, resource names, and workload types.
-     ✗ Excluded: Source code, local file paths, credentials, API tokens,
-       config-var values, and environment secrets.
-
-     The link uses a URL fragment (#) — no data is sent to any server
-     when you click it. The landing page decodes everything client-side.
-
-     [A] Share completed plan
-     [B] No thanks, finish
-     ```
-
-     - If user picks **A** → Generate share link. Mark migration complete.
-     - If user picks **B** → Mark migration complete.
-     - If `phases.feedback` is still `"pending"`, set it to `"completed"` regardless of choice.
-
-9. **Display summary**: Show user what was accomplished, highlight next phase, or confirm migration completion.
-
-**Critical constraint**: Agent must strictly adhere to the reference file's workflow. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.
+**Critical constraint**: Follow each phase reference file's workflow exactly. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.

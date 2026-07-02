@@ -58,7 +58,7 @@ accounted for, no `{{VARIABLE}}` placeholders), then emit `GATE_FAIL` (STOP) or
 
 ## Step 4: Update Phase Status
 
-Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write):
+Only after `HANDOFF_OK`. Use the read-merge-write update protocol (`INTERPRETER.md` § The interpreter loop):
 
 1. Read current `.phase-status.json` from disk.
 2. Set `phases.generate` to `"completed"`.

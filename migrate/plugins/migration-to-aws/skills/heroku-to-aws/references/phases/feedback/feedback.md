@@ -41,7 +41,7 @@ Collects user feedback and generates a shareable migration plan link. Reuses the
 - **feedback-collect.md** → the collection work: detect IDE/version, build the anonymized trace, present the survey link, optionally generate a share link, and write `feedback.json`.
 - **feedback-assemble.md** → the assembler: output gate, phase-status update, and marking the migration complete.
 
-This is an **optional checkpoint phase** (`_kind: checkpoint`), not a step on the linear backbone. It is entered only when the user opts in at a feedback checkpoint (its `_trigger`), and it returns control to the flow rather than advancing a `current_phase` — so it has no `_advances_to`. SKILL.md decides where the feedback checkpoint is offered (see the Feedback Checkpoints section there).
+This is an **optional checkpoint phase** (`_kind: checkpoint`), not a step on the linear backbone. It is entered only when the user opts in at a feedback checkpoint (its `_trigger`), and it returns control to the flow rather than advancing a `current_phase` — so it has no `_advances_to`. SKILL.md decides where the feedback checkpoint is offered (see the Feedback & Sharing Checkpoints section there).
 
 ---
 

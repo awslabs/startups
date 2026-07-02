@@ -132,7 +132,7 @@ private-space conditionals), then emit `GATE_FAIL` (STOP; do not patch artifacts
 
 ## Step 5: Update Phase Status
 
-Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
+Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the read-merge-write update protocol (`INTERPRETER.md` § The interpreter loop) to update `.phase-status.json`:
 
 - Set `phases.clarify` to `"completed"`
 - Set `current_phase` to `"design"`
