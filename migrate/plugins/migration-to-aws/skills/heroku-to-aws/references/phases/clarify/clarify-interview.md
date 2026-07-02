@@ -113,7 +113,7 @@ Before generating questions, scan the inventory to determine which questions app
 | Q3 — Availability posture      | Always                                                           | Never                                     |
 | Q4 — Maintenance window        | Always                                                           | Never                                     |
 | Q5 — Environment naming        | Always                                                           | Never                                     |
-| Q5b — Migration approach        | Postgres add-on present                                          | No Postgres in inventory                  |
+| Q5b — Migration urgency        | Always                                                           | Never                                     |
 | Q6 — Database HA               | Postgres add-on present                                          | No Postgres in inventory                  |
 | Q6b — Migration approach       | Postgres add-on present                                          | No Postgres in inventory                  |
 | Q6c — DB migration method      | Postgres add-on present                                          | No Postgres in inventory                  |
@@ -132,7 +132,7 @@ Before generating questions, scan the inventory to determine which questions app
 
 ### Batch Planning
 
-After determining active questions, organize into **three batches**:
+After determining active questions, organize into **three batches** (≤5 each):
 
 | Batch | Name                      | Questions            | Content                                                                                                     |
 | ----- | ------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
