@@ -125,12 +125,10 @@ heroku-to-aws/
 │   │   ├── redis-plan-table.md                 # Redis plan → ElastiCache sizing
 │   │   └── kafka-plan-table.md                 # Kafka plan → MSK sizing
 │   │
-│   └── shared/                                 # References shared plugin infrastructure
-│       └── (path reference to ../gcp-to-aws/references/shared/)
-│           ├── handoff-gates.md                # Shared gate protocol (NOT used by heroku-to-aws — heroku's gates live in phase `_preconditions`/`_postconditions` + INTERPRETER.md § Gate protocol)
-│           ├── migration-complexity.md         # Complexity tier definitions (Small/Medium/Large)
-│           ├── schema-estimate-infra.md        # estimation-infra.json schema
-│           └── validate-artifacts.md           # Pre-report validation
+│   └── shared/                                 # heroku-to-aws's own shared references
+│           ├── README.md                       # what lives here + pointers to plugin-neutral shared data
+│           ├── heroku-pricing-cache.md          # Heroku plan pricing (source-side baseline)
+│           └── schema-discover-heroku.md        # heroku-resource-inventory.json schema
 ```
 
 | Condition                                                | Action                                                                                                                                                       |
@@ -148,7 +146,7 @@ heroku-to-aws/
 - **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, 0.5 CPU for Fargate)
 - **Migration mode**: Adapts based on available inputs (Terraform primary, Procfile/app.json supplementary, billing optional)
 - **Cost currency**: USD
-- **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). See `references/shared/migration-complexity.md` for tier definitions.
+- **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). Complexity tiers are classified per `../shared/estimate/complexity-tiers.json`.
 
 ## Feedback & Sharing Checkpoints
 

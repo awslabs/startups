@@ -9,6 +9,8 @@ _input:
 _knowledge:
   - { file: knowledge/estimate/estimate-defaults.json }
   - { file: ../shared/pricing/aws-infra-pricing.json }
+  - { file: ../shared/estimate/complexity-tiers.json }
+  - { file: ../shared/estimate/estimation-infra.schema.json }
 _fragments:
   - _id: cost-engine
     _trigger: { _always: true }
@@ -69,7 +71,7 @@ _forbids_files:
 
 ## Overview
 
-Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture. Produce `estimation-infra.json` conforming to `shared/schema-estimate-infra.md`. Classify migration complexity using `shared/migration-complexity.md`.
+Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture. Produce `estimation-infra.json` conforming to `../shared/estimate/estimation-infra.schema.json`. Classify migration complexity using the tier thresholds in `../shared/estimate/complexity-tiers.json`.
 
 **Inputs:**
 

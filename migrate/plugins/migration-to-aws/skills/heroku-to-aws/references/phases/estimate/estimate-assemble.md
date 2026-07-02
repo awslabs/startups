@@ -20,7 +20,7 @@ _produces:
 
 ## Output: Write `estimation-infra.json`
 
-Assemble the full artifact conforming to `shared/schema-estimate-infra.md`:
+Assemble the full artifact conforming to `../shared/estimate/estimation-infra.schema.json`:
 
 ```json
 {
@@ -97,7 +97,7 @@ every-service-priced, complexity tier), then emit `GATE_FAIL` (do NOT patch arti
 STOP) or `HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json` and advance.
 
 One check needs this fragment's context: `estimation-infra.json` must also pass
-`shared/schema-estimate-infra.md` validation (the schema shape) — verify that as part
+`../shared/estimate/estimation-infra.schema.json` validation (the schema shape) — verify that as part
 of the `_validate_json` postcondition.
 
 ---
