@@ -67,6 +67,14 @@ phase's `_preconditions` / fragments / `_assemble` / `_postconditions`, advances
 gates are all derived from the phase files' frontmatter and `INTERPRETER.md` — they
 are not restated here.
 
+**Cold start (entry phase).** On a cold start — no `.migration/` run with a
+`.phase-status.json` yet — begin at `references/phases/discover/discover.md`, this
+skill's entry phase (the one carrying `_init: true`). The interpreter loads THIS
+phase directly; it does not scan every phase's frontmatter to discover the root.
+All subsequent phases are reached by following each phase's `_advances_to`. On a
+warm start, `current_phase` in `.phase-status.json` is authoritative (see
+`INTERPRETER.md` § The interpreter loop).
+
 **Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
 Design, Estimate, or Generate even if the user asks — there is no exception for
 "quick" or "obvious" migrations. A `preferences.json` that was not produced by an

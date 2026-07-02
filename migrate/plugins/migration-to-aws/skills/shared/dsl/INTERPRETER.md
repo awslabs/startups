@@ -18,14 +18,21 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
 **On each invocation:**
 
 1. **Load state.** Find the run directory under `.migration/` and read its
-   `.phase-status.json`. If none exists, the first backbone phase runs and
-   establishes state via `_init` (see § `_init`).
+   `.phase-status.json`. If none exists, this is a COLD START: load the skill's
+   DECLARED entry phase (the skill's SKILL.md names it) and run it — it carries
+   `_init: true` and establishes state (see § `_init`). Do NOT scan every phase's
+   frontmatter to find the root; the skill declares its own entry so this is a
+   single, direct load. (The entry phase is, by contract, the backbone head — the
+   one phase with no `_requires_phase` and with `_init: true`; CI enforces that
+   these coincide, so the declared entry is unambiguous.)
 2. **Determine the current phase (deterministic):**
    - If `current_phase` is present in `.phase-status.json`, use it (it is
-     authoritative).
-   - Otherwise walk the backbone in order (see § Backbone vs checkpoint) and pick
-     the FIRST phase whose `phases.<phase>` is not `"completed"`. If all backbone
-     phases are `"completed"`, the state is the terminal (`complete`).
+     authoritative). This is the normal WARM-START path.
+   - Otherwise (state exists but has no `current_phase`) walk the backbone in order
+     (see § Backbone vs checkpoint) and pick the FIRST phase whose
+     `phases.<phase>` is not `"completed"`. If all backbone phases are
+     `"completed"`, the state is the terminal (`complete`). (On a cold start there
+     is no state to read — step 1's declared entry phase is used directly.)
 3. **Validate state before proceeding.** See § State-file validation below. STOP
    on any inconsistency rather than guessing.
 4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
@@ -241,7 +248,10 @@ phase (or the `complete` terminal). The backbone is the chain of backbone phases
 wired by `_advances_to` (forward) and `_requires_phase` (backward), from the first
 phase (no `_requires_phase`) to the one whose `_advances_to` is the terminal
 `complete`. The interpreter derives this chain from the phase frontmatter; it is
-not hardcoded.
+not hardcoded. The head of the backbone (the phase with no `_requires_phase`) is
+the skill's entry phase and carries `_init: true`; the skill names it in SKILL.md
+so a cold start loads it directly rather than scanning to find it (see § The
+interpreter loop, step 1).
 
 A **checkpoint** phase (`_kind: checkpoint`, e.g. `feedback`) is OFF the backbone.
 It is optional, entered only when its phase-level `_trigger` fires (e.g. the user
@@ -289,7 +299,9 @@ The assembler file (named by a phase's `_assemble._file`) carries:
 
 When the phase being entered has `_init: true`, perform migration-state setup
 BEFORE running any of its fragments. This replaces what was previously written
-out as a per-phase "initialize" step.
+out as a per-phase "initialize" step. Exactly one phase per skill carries `_init:
+true` — the backbone head / declared entry phase — so this setup runs once, on the
+cold start that begins a migration.
 
 1. Check for an existing `.migration/` directory at the project root.
    - **If existing runs are found:** list them with their phase status and ask:

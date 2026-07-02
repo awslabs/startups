@@ -282,6 +282,70 @@ _produces:
     assert.match(findings.map((f) => f.message).join('\n'), /chain inconsistency/);
   });
 
+  // ---- entry phase: _init uniqueness + _init ⟺ backbone head ----
+
+  it('accepts a single _init phase that is the backbone head', () => {
+    // chainSkill: discover has _init:true and no _requires_phase (the head).
+    const findings = validateFixture(chainSkill());
+    assert.equal(findings.length, 0, `expected no findings, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects two phases both declaring _init: true', () => {
+    const files = chainSkill();
+    // Give clarify _init too (now discover AND clarify both claim the entry).
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_init: true\n_requires_phase: discover');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /multiple phases declare '_init: true'/);
+  });
+
+  it('rejects an _init phase that also declares _requires_phase (entry must be the head)', () => {
+    const files = chainSkill();
+    // Move _init off the head: strip it from discover, add it to clarify (which
+    // has a _requires_phase) so _init and 'no _requires_phase' no longer coincide.
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true\n', '');
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_init: true\n_requires_phase: discover');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /entry phase 'clarify' declares '_init: true' but also '_requires_phase: discover'/,
+    );
+  });
+
+  it('rejects a checkpoint phase declaring _init: true (entry must be backbone)', () => {
+    const files = chainSkill();
+    // Strip _init from discover; put it on the feedback checkpoint.
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true\n', '');
+    files['references/phases/feedback/feedback.md'] = files[
+      'references/phases/feedback/feedback.md'
+    ].replace('_kind: checkpoint', '_kind: checkpoint\n_init: true');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /checkpoint phase 'feedback' declares '_init: true'/,
+    );
+  });
+
+  it('rejects a fully-declared backbone with no _init entry phase', () => {
+    const files = chainSkill();
+    // Remove the only _init: the backbone (discover->clarify) now has no entry.
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true\n', '');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /no phase declares '_init: true'/,
+    );
+  });
+
   // ---- _re_entry_guard ----
 
   // discover guards its downstream (clarify); clarify's _produces is 'clarify.json'.

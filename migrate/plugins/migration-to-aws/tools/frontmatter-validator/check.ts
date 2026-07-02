@@ -280,6 +280,43 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
+  // ---- Entry phase: `_init` uniqueness + `_init` ⟺ backbone head ----
+  // The skill's cold-start entry is the backbone head (the phase with no
+  // _requires_phase) and it carries `_init: true` (INTERPRETER.md § The interpreter
+  // loop, step 1 + § `_init`). SKILL.md names this phase so a cold start loads it
+  // directly instead of scanning all phase frontmatter to find the root. These
+  // checks guarantee that entry is single and unambiguous, so the SKILL.md pointer
+  // has exactly one legal target.
+  const initPhases = skill.phases.filter((p) => p.init);
+  //   (a) at most one `_init` phase (a migration bootstraps state once).
+  if (initPhases.length > 1) {
+    const names = initPhases.map((p) => p.phase).join(", ");
+    for (const p of initPhases) {
+      add(skill.rel(p.sourceFile), `multiple phases declare '_init: true' (${names}) — a skill has exactly one entry phase`);
+    }
+  }
+  for (const p of initPhases) {
+    //   (b) the `_init` phase must be a backbone phase (a checkpoint is off-backbone,
+    //       trigger-entered — it can never be the entry).
+    if (p.role === "checkpoint") {
+      add(skill.rel(p.sourceFile), `checkpoint phase '${p.phase}' declares '_init: true' — only a backbone phase can be the entry (checkpoints are off-backbone, trigger-entered)`);
+    }
+    //   (c) the `_init` phase must be the backbone head (no _requires_phase) — the
+    //       entry cannot depend on an upstream phase.
+    if (p.requiresPhase) {
+      add(skill.rel(p.sourceFile), `entry phase '${p.phase}' declares '_init: true' but also '_requires_phase: ${p.requiresPhase}' — the entry phase is the backbone head and must have no _requires_phase`);
+    }
+  }
+  //   (d) once the backbone is fully present (>1 backbone phase), an entry MUST exist:
+  //       exactly one `_init` phase. (Partial-rollout tolerant: skip while only one
+  //       phase carries frontmatter.)
+  {
+    const backboneCount = skill.phases.filter((p) => p.role === "backbone").length;
+    if (backboneCount > 1 && initPhases.length === 0) {
+      add(skill.rel(skill.phases[0].sourceFile), `no phase declares '_init: true' — the backbone has no entry phase to bootstrap migration state on a cold start`);
+    }
+  }
+
   // ---- _knowledge (JSON data deps resolve) + _input (resolves to an upstream _produces) ----
   const skillRoot = join(skill.referencesRoot, "..");
   // every artifact any declared phase produces (for _input resolution)
