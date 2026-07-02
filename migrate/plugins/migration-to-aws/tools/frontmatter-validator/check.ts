@@ -288,6 +288,15 @@ export function check(skill: BoundSkill): Finding[] {
   const INPUT_LITERALS = new Set(["workspace"]);
   const isGlob = (s: string) => /[*?{]/.test(s);
 
+  // assembler _knowledge files must resolve on disk too (relative to the skill root).
+  for (const asm of skill.assemblers.values()) {
+    for (const k of asm.knowledge) {
+      if (!existsSync(join(skillRoot, k.file))) {
+        add(skill.rel(asm.sourceFile), `_knowledge file does not resolve: ${k.file}`);
+      }
+    }
+  }
+
   for (const phase of skill.phases) {
     const pf = skill.rel(phase.sourceFile);
 

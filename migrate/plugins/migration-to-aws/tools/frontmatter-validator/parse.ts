@@ -34,7 +34,7 @@ const GUARD_KEYS = new Set([
   "_stale_if_completed", "_stale_artifact", "_on_reentry", "_on_confirm",
 ]);
 const FRAGMENT_KEYS = new Set(["_fragment", "_of_phase", "_contributes"]);
-const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces"]);
+const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces", "_knowledge"]);
 
 /** Return the frontmatter block text (between the leading `---` fences), or null. */
 export function extractFrontmatter(path: string): string | null {
@@ -254,6 +254,7 @@ export function parseAssembler(path: string, fm: string): AssemblerFrontmatter {
     ofPhase: scalar(fm, "_of_phase"),
     reads: blockList(fm, "_reads"),
     produces: blockList(fm, "_produces"),
+    knowledge: parseKnowledge(fm),
     unknownKeys: unknownAmong(fm, ASSEMBLER_KEYS),
   };
 }

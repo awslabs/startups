@@ -7,6 +7,87 @@ first and act on the keys below, then execute the phase's prose body.
 Frontmatter is being introduced phase-by-phase. A phase file with no frontmatter
 runs entirely from its prose, as before.
 
+## The interpreter loop
+
+This is the execution controller — how you drive a migration from invocation to
+completion. It is skill-agnostic: the phase set, ordering, and per-phase behavior
+are all DERIVED from the phase files' frontmatter (never hardcoded here).
+
+**On each invocation:**
+
+1. **Load state.** Find the run directory under `.migration/` and read its
+   `.phase-status.json`. If none exists, the first backbone phase runs and
+   establishes state via `_init` (see § `_init`).
+2. **Determine the current phase (deterministic):**
+   - If `current_phase` is present in `.phase-status.json`, use it (it is
+     authoritative).
+   - Otherwise walk the backbone in order (see § Backbone vs checkpoint) and pick
+     the FIRST phase whose `phases.<phase>` is not `"completed"`. If all backbone
+     phases are `"completed"`, the state is the terminal (`complete`).
+3. **Validate state before proceeding.** See § State-file validation below. STOP
+   on any inconsistency rather than guessing.
+4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
+   `references/phases/<phase>/<phase>.md`. Load it in full and read its
+   frontmatter first.
+5. **Run the phase.** Run its `_preconditions` entry gate (§ Gate protocol); if it
+   passes, set the phase `in_progress`, run its `_fragments` (each when its
+   `_trigger` fires) then its `_assemble`; then run its `_postconditions`
+   completion gate.
+6. **Advance only on `HANDOFF_OK`.** A phase is complete ONLY when its completion
+   gate emits the `HANDOFF_OK` line (§ Gate protocol). On `GATE_FAIL`, STOP — do
+   not update `.phase-status.json`, do not load the next phase; tell the user
+   which phase to re-run. Never load the next phase from a completion message that
+   lacks `HANDOFF_OK`.
+7. **Update state.** After `HANDOFF_OK`, apply the phase-status update protocol
+   below, then load the next phase — the current phase's `_advances_to` — and
+   repeat from step 4. When `_advances_to` is a terminal (`complete`), the
+   migration is complete.
+
+Checkpoint phases (§ Backbone vs checkpoint) are OFF this loop — they are entered
+by their own `_trigger` at a point the skill's orchestrator (SKILL.md) chooses,
+and return control without changing `current_phase`.
+
+### State discipline
+
+- **Single run directory.** Use ONE `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`)
+  for the entire migration; do not mix artifacts across `.migration/*/` sessions.
+- **Re-read from disk.** Before each phase and before each gate, read the required
+  artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
+
+### Phase-status update protocol (read-merge-write)
+
+Update `.phase-status.json` with read-merge-write, never a blind overwrite:
+
+1. Read the current file before every update.
+2. Change only the phase key(s) being advanced and `last_updated`.
+3. Leave prior completed phases unchanged.
+4. Set `current_phase` to the next phase (the completed phase's `_advances_to`),
+   or the terminal (`complete`) when the backbone is exhausted.
+5. Write the full file in the same turn as the phase's final output message.
+
+Status values progress `"pending"` → `"in_progress"` → `"completed"` and never go
+backward (except a confirmed re-entry reset — see § `_re_entry_guard`). At most one
+backbone phase is `"in_progress"` at a time.
+
+### State-file validation
+
+When reading `.phase-status.json`, STOP (surface the diagnostic, do not proceed or
+guess) on any of:
+
+1. **Multiple run directories** under `.migration/`: list them with their phase
+   status and ask `[A] Resume latest / [B] Start fresh / [C] Cancel`.
+2. **Invalid JSON:** "State file corrupted (invalid JSON). Delete the file and
+   restart the current phase."
+3. **Unrecognized phase name** in `phases` (not a phase the skill declares).
+4. **Unrecognized status** (not `pending` / `in_progress` / `completed`).
+5. **Invalid `current_phase`** (present but not a declared phase or the terminal).
+6. **Out-of-order completion:** a later backbone phase is `"completed"` while an
+   earlier one is not — "Inconsistent phase ordering detected. Reconcile
+   `.phase-status.json` before resuming."
+
+(The single-active-phase invariant is enforced structurally by the first phase's
+`_preconditions._check_single_active_phase`; see § Gate protocol.)
+
 ## Phase frontmatter keys
 
 | Key                 | Meaning                                                                                                                                                                                                                                                                         |
@@ -154,8 +235,11 @@ violation — treat it as a `_postconditions` failure. This encodes the per-phas
 
 A **backbone** phase (the default) is a step on the linear lifecycle: it is
 advanced into by its predecessor's `_advances_to`, and it advances to the next
-phase (or the `complete` terminal). The backbone is
-`discover → clarify → design → estimate → generate → complete`.
+phase (or the `complete` terminal). The backbone is the chain of backbone phases
+wired by `_advances_to` (forward) and `_requires_phase` (backward), from the first
+phase (no `_requires_phase`) to the one whose `_advances_to` is the terminal
+`complete`. The interpreter derives this chain from the phase frontmatter; it is
+not hardcoded.
 
 A **checkpoint** phase (`_kind: checkpoint`, e.g. `feedback`) is OFF the backbone.
 It is optional, entered only when its phase-level `_trigger` fires (e.g. the user
@@ -174,6 +258,11 @@ user engaged). Do not conflate "checkpoint resolved" with "user participated."
 
 ## Fragment unit keys
 
+A phase has 1..N fragments and exactly one assembler. A fragment does one unit of
+work and writes its own contribution; fragments are independent (none reads
+another's output). The assembler runs last and combines/validates the fragments'
+contributions into the phase's artifact(s).
+
 Each fragment file (named by a phase's `_fragments[]._file`) carries its own frontmatter:
 
 | Key            | Meaning                                                                                                                                     |
@@ -186,12 +275,13 @@ Each fragment file (named by a phase's `_fragments[]._file`) carries its own fro
 
 The assembler file (named by a phase's `_assemble._file`) carries:
 
-| Key         | Meaning                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------- |
-| `_assemble` | the assembler's id                                                                            |
-| `_of_phase` | the phase this assembler belongs to                                                           |
-| `_reads`    | the fragment contributions it combines                                                        |
-| `_produces` | the artifact file(s) it creates — the assembler is the single creator of the phase's artifact |
+| Key          | Meaning                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `_assemble`  | the assembler's id                                                                                                         |
+| `_of_phase`  | the phase this assembler belongs to                                                                                        |
+| `_reads`     | the fragment contributions it combines                                                                                     |
+| `_knowledge` | reference/data files it loads (same shape as a phase's `_knowledge`: `{ file, _when? }`); each `file` must resolve on disk |
+| `_produces`  | the artifact file(s) it creates — the assembler is the single creator of the phase's artifact                              |
 
 ## `_init: true` — establish migration state
 
@@ -205,10 +295,10 @@ out as a per-phase "initialize" step.
      - `[B] Fresh: Create new migration run`
      - `[C] Cancel`
    - **If resuming:** set `$MIGRATION_DIR` to the selected run's directory. Read
-     its `.phase-status.json` and validate it per the State Machine in `SKILL.md`.
-     If the `_init` phase is already `completed`, apply the re-entry rules (see
-     the phase's `_re_entry_guard` frontmatter and § `_re_entry_guard` above)
-     before proceeding.
+     its `.phase-status.json` and validate it per § The interpreter loop
+     (State-file validation). If the `_init` phase is already `completed`, apply
+     the re-entry rules (see the phase's `_re_entry_guard` frontmatter and
+     § `_re_entry_guard` above) before proceeding.
    - **If fresh, or no existing runs:** continue to step 2.
 
 2. Create `.migration/[MMDD-HHMM]/` (e.g. `.migration/0315-1030/`) using the
@@ -225,24 +315,10 @@ out as a per-phase "initialize" step.
 
    This prevents accidental commits of migration artifacts.
 
-4. Write `.phase-status.json` with the exact schema (schema reference:
-   `shared/schema-phase-status.md`):
-
-   ```json
-   {
-     "migration_id": "[MMDD-HHMM]",
-     "last_updated": "[ISO 8601 timestamp]",
-     "current_phase": "discover",
-     "phases": {
-       "discover": "in_progress",
-       "clarify": "pending",
-       "design": "pending",
-       "estimate": "pending",
-       "generate": "pending",
-       "feedback": "pending"
-     }
-   }
-   ```
+4. Write `.phase-status.json` per the schema in `shared/schema-phase-status.md`.
+   Set `migration_id` to `[MMDD-HHMM]`, `last_updated` to the current ISO 8601
+   timestamp, every phase to `"pending"` EXCEPT this `_init` phase which is
+   `"in_progress"`, and `current_phase` to this `_init` phase.
 
 5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
    running the phase's fragments.

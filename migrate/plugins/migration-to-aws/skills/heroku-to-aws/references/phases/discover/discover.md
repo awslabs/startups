@@ -228,7 +228,7 @@ emit `GATE_FAIL` (STOP; do not patch artifacts) or
 
 ## Step 5: Update Phase Status
 
-Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
+Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the read-merge-write update protocol (`INTERPRETER.md` § The interpreter loop) to update `.phase-status.json`:
 
 1. Read current `.phase-status.json` from disk.
 2. Set `phases.discover` to `"completed"`.

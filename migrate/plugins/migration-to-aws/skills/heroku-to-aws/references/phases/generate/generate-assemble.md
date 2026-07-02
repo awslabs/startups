@@ -5,6 +5,8 @@ _reads:
   - terraform (fragment contribution)
   - docs (fragment contribution)
   - eks-generate (fragment contribution, when EKS in design)
+_knowledge:
+  - { file: references/shared/validate-artifacts.md }
 _produces:
   - generation-warnings.json
 ---
@@ -21,7 +23,8 @@ _produces:
 
 ## Step 3: Validate Complete Artifact Set
 
-Load `shared/validate-artifacts.md`. Verify the complete set of generated artifacts:
+Load the validation reference declared in `_knowledge`
+(`references/shared/validate-artifacts.md`). Verify the complete set of generated artifacts:
 
 1. `terraform/main.tf` — provider configuration
 2. `terraform/variables.tf` — input variables
@@ -58,7 +61,7 @@ accounted for, no `{{VARIABLE}}` placeholders), then emit `GATE_FAIL` (STOP) or
 
 ## Step 4: Update Phase Status
 
-Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write):
+Only after `HANDOFF_OK`. Use the read-merge-write update protocol (`INTERPRETER.md` § The interpreter loop):
 
 1. Read current `.phase-status.json` from disk.
 2. Set `phases.generate` to `"completed"`.
