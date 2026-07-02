@@ -31,9 +31,12 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 
 Phase and unit files carry a YAML frontmatter block that declares how the phase is
 composed — its inputs, the fragments it runs, the assembler that combines them,
-what it produces, its gates, and what it requires/advances-to. `INTERPRETER.md` is
-the contract: it defines every frontmatter key, the fragment/assembler model, and
-the interpreter loop. Read it first, then execute a phase file's prose body.
+what it produces, its gates, and what it requires/advances-to. The DSL interpreter
+contract is the plugin-shared `../shared/dsl/INTERPRETER.md`: it defines every
+frontmatter key, the fragment/assembler model, and the interpreter loop. **Load it
+first** (once, at the start of a migration), then execute a phase file's prose
+body. Elsewhere in this skill, `INTERPRETER.md` (without a path) refers to this
+same loaded contract.
 
 Frontmatter is being introduced phase-by-phase; a phase file without it runs from
 its prose as before.

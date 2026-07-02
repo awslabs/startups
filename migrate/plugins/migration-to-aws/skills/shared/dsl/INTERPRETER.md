@@ -1,8 +1,10 @@
 # Interpreter
 
-How to read and act on the structured frontmatter that phase files carry. This is
-the runtime contract: when a phase file begins with a `---` YAML block, read it
-first and act on the keys below, then execute the phase's prose body.
+The plugin-shared contract for DSL-driven migration skills: how to read and act on
+the structured frontmatter that phase files carry. It is skill-AGNOSTIC — any
+migration skill under this plugin can author its phases to this grammar and drive
+execution from this one interpreter. When a phase file begins with a `---` YAML
+block, read it first and act on the keys below, then execute the phase's prose body.
 
 Frontmatter is being introduced phase-by-phase. A phase file with no frontmatter
 runs entirely from its prose, as before.
