@@ -153,7 +153,15 @@ variable "migration_id" {
   type        = string
   default     = "<migration_id from .phase-status.json>"
 }
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block (used for security group ingress rules)"
+  type        = string
+  default     = "<vpc_design.cidr or existing VPC CIDR from data source>"
+}
 ```
+
+> **Note:** `vpc_cidr` is always included in the global variables section because `security.tf` (which is always emitted) references `var.vpc_cidr` in the application security group. On Path A (existing VPC), populate the default from the existing VPC's CIDR block (available via `data.aws_vpc.existing.cidr_block`). On Path B (new VPC), populate it from `vpc_design.cidr` (e.g., `"10.0.0.0/16"`).
 
 **Per-service variables** — Extract from `aws-design.json` `aws_config` for each designed service. Include:
 
@@ -751,6 +759,28 @@ resource "aws_elastic_beanstalk_environment" "<app_name>_<process_type>" {
     value     = var.eb_max_instances_<app_name>_<process_type>
   }
 
+  # Environment type (LoadBalanced for web with ALB, SingleInstance for workers)
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name      = "EnvironmentType"
+    value     = "<LoadBalanced for web, SingleInstance for worker/clock/release>"
+  }
+
+  # For SingleInstance (worker) environments only:
+  # Workers have no HTTP endpoint. Use basic health reporting (process-level only)
+  # instead of enhanced (HTTP-based).
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "HealthCheckPath"
+    value     = "/dev/null"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:healthreporting:system"
+    name      = "SystemType"
+    value     = "basic"
+  }
+
   # VPC placement
   setting {
     namespace = "aws:ec2:vpc"
@@ -784,6 +814,13 @@ resource "aws_elastic_beanstalk_environment" "<app_name>_<process_type>" {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "PORT"
     value     = "5000"
+  }
+
+  # Process type — used by the Docker entrypoint to select which Procfile command to run
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "PROCESS_TYPE"
+    value     = "<process_type>"
   }
 }
 
@@ -825,6 +862,22 @@ resource "aws_iam_role_policy_attachment" "eb_docker_<app_name>" {
 - One `aws_elastic_beanstalk_application` per Heroku app, one `aws_elastic_beanstalk_environment` per process type
 - Instance type from `aws_config.instance_type` in `aws-design.json`
 - Min/max instances from `aws_config.min_instances` / `aws_config.max_instances`
+
+**Process differentiation:** Each environment sets `PROCESS_TYPE` as an environment variable matching the Heroku Procfile process name (e.g., "web", "worker", "clock"). The Dockerfile entrypoint should branch on this variable:
+
+```dockerfile
+# Example entrypoint.sh
+#!/bin/sh
+if [ "$PROCESS_TYPE" = "web" ]; then
+  exec node server.js
+elif [ "$PROCESS_TYPE" = "worker" ]; then
+  exec node worker.js
+else
+  exec "$@"
+fi
+```
+
+This mirrors Heroku's Procfile model where each process type runs a different command from the same codebase. The MIGRATION_GUIDE includes guidance on creating this entrypoint if the source app uses a simple Procfile without a Dockerfile.
 
 ### `pipeline.tf` — CodePipeline for Auto-Deploy from GitHub
 
