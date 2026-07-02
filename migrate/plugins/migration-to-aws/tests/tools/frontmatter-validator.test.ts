@@ -457,6 +457,25 @@ _produces:
     assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
   });
 
+  it('accepts an assembler _knowledge whose file resolves on disk', () => {
+    const files = goodSkill();
+    files['references/shared/ref.md'] = '# ref';
+    files['references/phases/discover/discover-assemble.md'] = files[
+      'references/phases/discover/discover-assemble.md'
+    ].replace('_produces:\n  - inventory.json', '_knowledge:\n  - { file: references/shared/ref.md }\n_produces:\n  - inventory.json');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects an assembler _knowledge file that does not resolve', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover-assemble.md'] = files[
+      'references/phases/discover/discover-assemble.md'
+    ].replace('_produces:\n  - inventory.json', '_knowledge:\n  - { file: references/shared/MISSING.md }\n_produces:\n  - inventory.json');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /_knowledge file does not resolve: references\/shared\/MISSING\.md/);
+  });
+
   it('accepts _input resolving to an upstream _produces (and the workspace literal)', () => {
     // chainSkill: discover _input workspace (add it), clarify reads discover.json
     const files = chainSkill();

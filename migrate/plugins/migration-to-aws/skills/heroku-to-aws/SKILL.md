@@ -64,15 +64,11 @@ phase's `_preconditions` / fragments / `_assemble` / `_postconditions`, advances
 gates are all derived from the phase files' frontmatter and `INTERPRETER.md` — they
 are not restated here.
 
-**Clarify is a mandatory gate (heroku policy).** Design, Estimate, and Generate
-each declare `_requires_phase: clarify` (enforced by their `_preconditions`), so
-the interpreter will not enter them until Clarify is `"completed"`. A
-`preferences.json` file alone is not proof Clarify ran. If the user asks to skip
-Clarify or jump straight to Design/Estimate/Generate, refuse briefly and run
-Clarify first — there is no exception for "quick" or "obvious" migrations.
-
-The Generate phase additionally loads `references/shared/validate-artifacts.md`
-before writing `migration-report.html`.
+**Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
+Design, Estimate, or Generate even if the user asks — there is no exception for
+"quick" or "obvious" migrations. A `preferences.json` that was not produced by an
+actual Clarify run does not count. If asked to skip, refuse briefly and run
+Clarify.
 
 ---
 

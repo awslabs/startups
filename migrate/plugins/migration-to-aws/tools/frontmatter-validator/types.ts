@@ -83,6 +83,7 @@ export interface AssemblerFrontmatter {
   ofPhase: string | null;
   reads: string[];
   produces: string[];
+  knowledge: KnowledgeRef[]; // _knowledge reference/data deps; empty when absent
   unknownKeys: string[];
 }
 

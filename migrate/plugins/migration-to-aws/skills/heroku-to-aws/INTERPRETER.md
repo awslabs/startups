@@ -275,12 +275,13 @@ Each fragment file (named by a phase's `_fragments[]._file`) carries its own fro
 
 The assembler file (named by a phase's `_assemble._file`) carries:
 
-| Key         | Meaning                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------- |
-| `_assemble` | the assembler's id                                                                            |
-| `_of_phase` | the phase this assembler belongs to                                                           |
-| `_reads`    | the fragment contributions it combines                                                        |
-| `_produces` | the artifact file(s) it creates — the assembler is the single creator of the phase's artifact |
+| Key          | Meaning                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `_assemble`  | the assembler's id                                                                                                         |
+| `_of_phase`  | the phase this assembler belongs to                                                                                        |
+| `_reads`     | the fragment contributions it combines                                                                                     |
+| `_knowledge` | reference/data files it loads (same shape as a phase's `_knowledge`: `{ file, _when? }`); each `file` must resolve on disk |
+| `_produces`  | the artifact file(s) it creates — the assembler is the single creator of the phase's artifact                              |
 
 ## `_init: true` — establish migration state
 
