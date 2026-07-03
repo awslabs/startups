@@ -69,7 +69,7 @@ Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only 
 | Security Group, IAM Role/Policy    | `security.tf`  |
 | CloudWatch Logs                    | `compute.tf`   |
 
-**Unmapped services:** If `aws-design.json` contains a `service_id` with an `aws_service` value that has no Terraform resource mapping in this file (e.g., CloudWatch + X-Ray composite, Amazon SES, Amazon SNS), **skip** that resource and log a warning to `generation-warnings.json`. Do NOT halt generation.
+**Unmapped services:** If `aws-design.json` contains a `service_id` with an `aws_service` value that has no Terraform resource mapping in this file (e.g., CloudWatch + X-Ray composite, Amazon SES, Amazon SNS), **skip** that resource and record a warning in `generation-warnings.json` (which is ALWAYS written — see Step 10 — with an empty `warnings` array when nothing is skipped). Do NOT halt generation.
 
 ---
 
@@ -1329,10 +1329,20 @@ resource "aws_cloudwatch_log_group" "msk" {
 
 ## Step 10: Handle Unmapped Resources and Warnings
 
-For any `service_id` in `aws-design.json` whose `aws_service` does not have a Terraform resource mapping defined in Steps 4–9 above:
+**Always write `$MIGRATION_DIR/generation-warnings.json`** — it is a mandatory
+artifact of this phase (part of generate's `_produces` floor), a manifest that
+records whatever could NOT be generated. Write it even when nothing was skipped:
+in that case the `warnings` array is EMPTY (`"warnings": []`). A consumer can then
+rely on the file always existing rather than testing for its absence.
+
+For any `service_id` in `aws-design.json` whose `aws_service` does not have a
+Terraform resource mapping defined in Steps 4–9 above:
 
 1. **Skip** the resource — do NOT generate Terraform for it
-2. **Log** the skip to `$MIGRATION_DIR/generation-warnings.json`
+2. **Append** the skip as an entry in `generation-warnings.json`'s `warnings` array
+
+If every service mapped successfully, still write the file with an empty
+`warnings` array.
 
 ### `generation-warnings.json` Schema
 
@@ -1459,7 +1469,7 @@ terraform/
 
 Files are only emitted if their domain has resources in `aws-design.json`. The minimum set is always: `main.tf`, `variables.tf`, `outputs.tf`, `security.tf`, `.gitignore`, `terraform.tfvars.example`.
 
-Additionally, `$MIGRATION_DIR/generation-warnings.json` is emitted if any services were skipped.
+Additionally, `$MIGRATION_DIR/generation-warnings.json` is ALWAYS emitted (empty `warnings` array when no services were skipped).
 
 ---
 
@@ -1472,7 +1482,7 @@ Before returning control to `generate.md`, require:
 3. `$MIGRATION_DIR/terraform/outputs.tf` exists
 4. At least one domain file (`compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`) exists
 5. All resource cross-references resolve within the configuration
-6. `generation-warnings.json` exists if any services were skipped (empty `warnings` array if all mapped successfully)
+6. `generation-warnings.json` exists (ALWAYS written; empty `warnings` array if all services mapped successfully)
 
 If this gate fails: STOP and output: "generate-terraform did not produce a valid terraform/ directory; do not continue Generate."
 

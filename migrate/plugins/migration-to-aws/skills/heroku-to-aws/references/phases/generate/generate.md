@@ -40,7 +40,7 @@ _preconditions:
   - _validate_json: [aws-design.json, estimation-infra.json, preferences.json, heroku-resource-inventory.json]
     _on_failure: _unrecoverable
 _postconditions:
-  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md]
+  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, generation-warnings.json]
     _on_failure: _halt_and_inform
   - _assert: "terraform/main.tf has valid provider configuration; terraform/variables.tf declares at least an aws_region variable"
     _on_failure: _halt_and_inform
@@ -94,7 +94,7 @@ Load `references/phases/generate/generate-terraform.md` and execute completely.
 This produces:
 
 - `$MIGRATION_DIR/terraform/` directory with all `.tf` files
-- `$MIGRATION_DIR/generation-warnings.json` (if any services were skipped)
+- `$MIGRATION_DIR/generation-warnings.json` (always written; empty `warnings` array when nothing was skipped)
 
 **Gate check after Step 1:**
 

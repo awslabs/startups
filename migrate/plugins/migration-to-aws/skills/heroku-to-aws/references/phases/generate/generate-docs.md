@@ -883,7 +883,7 @@ Follow the verification checklist in `MIGRATION_GUIDE.md` Phase 4, then perform 
 - `has_postgres`: True if any service has `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"`
 - `has_redis`: True if any service has `aws_service == "ElastiCache Redis"`
 - `has_kafka`: True if any service has `aws_service == "Amazon MSK"`
-- `generation_warnings_exist`: True if `generation-warnings.json` was created during Terraform generation
+- `generation_warnings_exist`: True if `generation-warnings.json` has a NON-EMPTY `warnings` array (the file is always written, so test its contents, not its existence)
 
 ---
 

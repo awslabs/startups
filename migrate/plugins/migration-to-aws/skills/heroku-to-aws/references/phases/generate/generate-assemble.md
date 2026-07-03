@@ -32,7 +32,7 @@ Verify the complete set of generated artifacts:
 7. `MIGRATION_GUIDE.md` — step-by-step migration procedure
 8. `README.md` — artifact listing and quick start
 9. Database migration scripts (conditional on design content)
-10. `generation-warnings.json` (if any services were skipped)
+10. `generation-warnings.json` (always written; empty `warnings` array when nothing was skipped)
 
 **Cross-reference checks:**
 
@@ -76,7 +76,7 @@ Artifacts produced:
 • MIGRATION_GUIDE.md — Step-by-step migration procedure
 • README.md — Artifact listing and quick start
 • scripts/ — Database migration scripts
-[• generation-warnings.json — N service(s) require manual setup]
+[• generation-warnings.json — N service(s) require manual setup]   (show this line only when warnings is non-empty; the file is always written)
 
 Migration planning is complete. All artifacts are in $MIGRATION_DIR/.
 ```
@@ -98,7 +98,7 @@ After this output, SKILL.md handles the post-Generate share prompt and feedback 
 
 - `scripts/migrate-postgres.sh` — when Postgres in design
 - `scripts/migrate-redis.sh` — when Redis in design
-- `generation-warnings.json` — when any services skipped
+- `generation-warnings.json` — always written (empty `warnings` array when nothing was skipped)
 
 ---
 
