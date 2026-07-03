@@ -74,18 +74,15 @@ Single-pass mapping engine that translates each Heroku resource to its AWS equiv
 
 ## Lookup Table References (Conditional Loading)
 
-Load these reference files **only when the corresponding resource type exists in the inventory**:
-
-| Resource Type in Inventory                                                                    | Reference File to Load                                             |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"` or absent         | `design-refs/dyno-type-table.md`                                   |
-| `addon:*:heroku-postgresql:*`                                                                 | `design-refs/postgres-plan-table.md`                               |
-| `addon:*:heroku-redis:*`                                                                      | `design-refs/redis-plan-table.md`                                  |
-| `addon:*:heroku-kafka:*`                                                                      | `design-refs/kafka-plan-table.md`                                  |
-| `addon:*` (non-core)                                                                          | `design-refs/fast-path-table.md`                                   |
-
-Do NOT speculatively load tables for resource types absent from the inventory.
+The per-resource sizing/mapping data this phase consults lives in the phase's
+`_knowledge` frontmatter (the `knowledge/design/*.json` files), each gated by a
+`_when` condition. The interpreter loads a knowledge file only when its `_when`
+holds — see `INTERPRETER.md` § `_knowledge`. Do NOT speculatively load knowledge
+for resource types absent from the inventory. (The lookups: formation →
+`dyno-fargate-sizing.json` for the Fargate path or `eks-pod-sizing.json` for the
+EKS path; `heroku-postgresql` → `postgres-rds-sizing.json`; `heroku-redis` →
+`redis-elasticache-sizing.json`; `heroku-kafka` → `kafka-msk-sizing.json`; other
+add-ons → `fast-path-addons.json`.)
 
 ---
 

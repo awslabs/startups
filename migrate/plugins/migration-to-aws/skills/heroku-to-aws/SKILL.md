@@ -129,17 +129,19 @@ heroku-to-aws/
 │   │   └── feedback/
 │   │       └── feedback.md                     # Phase 6: Feedback collection (reuses shared)
 │   │
-│   ├── design-refs/
-│   │   ├── fast-path-table.md                  # Add-on → AWS deterministic mappings (13+ entries)
-│   │   ├── dyno-type-table.md                  # Dyno type → Fargate CPU/memory
-│   │   ├── postgres-plan-table.md              # Postgres plan → RDS/Aurora sizing
-│   │   ├── redis-plan-table.md                 # Redis plan → ElastiCache sizing
-│   │   └── kafka-plan-table.md                 # Kafka plan → MSK sizing
-│   │
 │   └── shared/                                 # heroku-to-aws's own shared references
 │           ├── README.md                       # what lives here + pointers to plugin-neutral shared data
 │           ├── heroku-pricing-cache.md          # Heroku plan pricing (source-side baseline)
 │           └── schema-discover-heroku.md        # heroku-resource-inventory.json schema
+│
+├── knowledge/design/                          # design lookup DATA (pure data, referenced by
+│   │                                           #  design.md _knowledge, gated per _when)
+│   ├── dyno-fargate-sizing.json                # Dyno type → Fargate CPU/memory
+│   ├── eks-pod-sizing.json                     # Dyno type → EKS pod sizing + node selection
+│   ├── postgres-rds-sizing.json                # Postgres plan → RDS/Aurora sizing
+│   ├── redis-elasticache-sizing.json           # Redis plan → ElastiCache sizing
+│   ├── kafka-msk-sizing.json                   # Kafka plan → MSK sizing
+│   └── fast-path-addons.json                   # Add-on → AWS deterministic mappings (13+ entries)
 ```
 
 | Condition                                                | Action                                                                                                                                                       |
