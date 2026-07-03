@@ -2,8 +2,8 @@
 _fragment: eks-generate
 _of_phase: generate
 _contributes:
-  - terraform/eks.tf
-  - kubernetes/
+  - { file: terraform/eks.tf, _when: "aws-design.json has an eks_cluster entry OR a service with aws_service == 'EKS'" }
+  - { file: kubernetes/, _when: "aws-design.json has an eks_cluster entry OR a service with aws_service == 'EKS'" }
 ---
 
 # EKS Generate Phase

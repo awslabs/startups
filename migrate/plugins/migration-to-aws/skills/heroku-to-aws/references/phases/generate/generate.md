@@ -26,6 +26,10 @@ _produces:
   - MIGRATION_GUIDE.md
   - README.md
   - generation-warnings.json
+  - { file: terraform/eks.tf, _when: "aws-design.json has an eks_cluster entry OR a service with aws_service == 'EKS'" }
+  - { file: kubernetes/, _when: "aws-design.json has an eks_cluster entry OR a service with aws_service == 'EKS'" }
+  - { file: scripts/migrate-postgres.sh, _when: "Postgres (RDS/Aurora) is in the design" }
+  - { file: scripts/migrate-redis.sh, _when: "Redis (ElastiCache) is in the design" }
 _advances_to: complete
 _preconditions:
   - _check_phase_completed: estimate
@@ -45,9 +49,9 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "MIGRATION_GUIDE.md has Prerequisites and Verification sections; README.md lists the artifacts"
     _on_failure: _halt_and_inform
-  - _assert: "if Postgres is in the design, scripts/migrate-postgres.sh exists; if Redis is in the design, scripts/migrate-redis.sh exists"
+  - _assert: "the conditional artifacts declared in _produces exist per their _when: if Postgres is in the design, scripts/migrate-postgres.sh exists; if Redis is in the design, scripts/migrate-redis.sh exists"
     _on_failure: _halt_and_inform
-  - _assert: "if EKS is in the design, terraform/eks.tf exists with cluster + node group resources AND a kubernetes/ directory has namespace + deployment manifests"
+  - _assert: "if EKS is in the design (terraform/eks.tf + kubernetes/ declared in _produces with _when): terraform/eks.tf exists WITH cluster + node group resources, AND the kubernetes/ directory has namespace + deployment manifests"
     _on_failure: _halt_and_inform
   - _assert: "every designed service is accounted for (generated or listed in generation-warnings.json)"
     _on_failure: _halt_and_inform

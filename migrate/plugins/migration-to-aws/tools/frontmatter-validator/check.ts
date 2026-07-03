@@ -376,5 +376,29 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
+  // ---- Conditional-artifact well-formedness (_produces / _contributes) ----
+  // An artifact entry is either a bare filename or an inline conditional map
+  // `{ file: <path>, _when: <prose> }` (mirrors _knowledge). CI does NOT evaluate
+  // `_when` (opaque prose, same as _knowledge._when); it only checks the entry is
+  // well-formed: a map form must carry a parseable, non-empty `file:`. (The
+  // filename itself flows into produces/contributes and is covered by the existing
+  // single-creator, postcond⊆produces, _input, and _stale_artifact checks.)
+  const checkArtifactRefs = (refs: typeof skill.phases[number]["producesRefs"], file: string, key: string) => {
+    for (const r of refs) {
+      if (!r.file) {
+        add(file, `${key} has a conditional entry with no parseable 'file:' (expected '{ file: <path>, _when: <prose> }')`);
+      }
+    }
+  };
+  for (const phase of skill.phases) {
+    checkArtifactRefs(phase.producesRefs, skill.rel(phase.sourceFile), "_produces");
+  }
+  for (const frag of skill.fragments.values()) {
+    checkArtifactRefs(frag.contributesRefs, skill.rel(frag.sourceFile), "_contributes");
+  }
+  for (const asm of skill.assemblers.values()) {
+    checkArtifactRefs(asm.producesRefs, skill.rel(asm.sourceFile), "_produces");
+  }
+
   return findings;
 }

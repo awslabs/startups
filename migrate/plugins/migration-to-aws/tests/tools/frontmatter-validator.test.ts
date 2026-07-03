@@ -587,4 +587,76 @@ _produces:
     const findings = validateFixture(files);
     assert.match(findings.map((f) => f.message).join('\n'), /_input 'nonexistent-artifact\.json' is not produced by any declared phase/);
   });
+
+  // ---- conditional artifacts in _produces / _contributes ({file, _when}) ----
+
+  it('accepts a conditional _produces entry ({file, _when}) with a matching fragment creator', () => {
+    // discover produces inventory.json (assembler). Add a CONDITIONAL artifact the
+    // terraform fragment contributes, so single-creator is satisfied.
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { file: eks.tf, _when: "EKS in design" }',
+    );
+    files['references/phases/discover/discover-terraform.md'] = files[
+      'references/phases/discover/discover-terraform.md'
+    ].replace(
+      '_contributes:\n  - inventory.json (resource entries)',
+      '_contributes:\n  - inventory.json (resource entries)\n  - { file: eks.tf, _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected no findings, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects a conditional artifact map with no parseable file: (malformed)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /_produces has a conditional entry with no parseable 'file:'/,
+    );
+  });
+
+  it('applies single-creator to a conditional _produces artifact (uncreated -> flagged)', () => {
+    // Declare a conditional artifact in _produces that NO fragment contributes and
+    // the assembler does not produce -> single-creator must still flag it.
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { file: orphan-eks.tf, _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /phase _produces 'orphan-eks\.tf' but no unit creates it/,
+    );
+  });
+
+  it('accepts a trailing-slash directory as a conditional artifact (kubernetes/)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { file: kubernetes/, _when: "EKS in design" }',
+    );
+    files['references/phases/discover/discover-terraform.md'] = files[
+      'references/phases/discover/discover-terraform.md'
+    ].replace(
+      '_contributes:\n  - inventory.json (resource entries)',
+      '_contributes:\n  - inventory.json (resource entries)\n  - { file: kubernetes/, _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected no findings, got: ${JSON.stringify(findings)}`);
+  });
 });
