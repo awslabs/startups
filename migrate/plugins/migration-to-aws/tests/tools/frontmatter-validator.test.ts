@@ -78,6 +78,16 @@ _produces:
 # Assembler
 prose body.
 `,
+    // A partial-rollout stub: 'clarify' is a REAL downstream phase whose file
+    // exists but carries NO frontmatter yet (mid phase-by-phase rollout). It is
+    // invisible to the typed model (bindSkill skips no-frontmatter files) but makes
+    // discover's `_advances_to: clarify` resolve on disk — so the dangling-edge
+    // check tolerates it (a real phase, not a typo).
+    'references/phases/clarify/clarify.md':
+`# Clarify
+
+prose-only phase (no frontmatter yet).
+`,
   };
 }
 
@@ -171,10 +181,26 @@ _contributes:
   });
 
   it('does NOT fail an _advances_to that points at a phase without frontmatter (partial rollout)', () => {
+    // goodSkill includes a frontmatter-less clarify.md stub — a real phase mid-
+    // rollout. discover._advances_to: clarify must resolve (dir exists) and NOT be
+    // flagged as dangling, even though clarify has no typed frontmatter yet.
     const findings = validateFixture(goodSkill());
     assert.ok(
       !findings.some((f) => /advances_to|clarify/.test(f.message)),
       'should not fail on an unverifiable forward reference',
+    );
+  });
+
+  it('rejects an _advances_to that names a phase with no file on disk (dangling forward edge)', () => {
+    const files = goodSkill();
+    // Point discover at a phase that does not exist at all (a typo, not rollout).
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify_TYPO');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /_advances_to 'clarify_TYPO' names neither a terminal.*nor an existing phase.*dangling forward edge/s,
     );
   });
 
