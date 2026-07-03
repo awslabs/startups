@@ -15,7 +15,7 @@ _contributes:
 
 **Applies when:** `preferences.json → design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`.
 
-**Skip when:** `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent → use existing Fargate path (dyno-type-table.md).
+**Skip when:** `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent → use existing Fargate path (the `dyno-fargate-sizing.json` knowledge).
 
 ---
 
@@ -24,14 +24,14 @@ _contributes:
 When the Kubernetes preference indicates EKS:
 
 1. **For EACH formation resource** in the inventory:
-   - Look up dyno type in `design-refs/eks-mapping-table.md`
+   - Look up dyno type in the `eks-pod-sizing.json` knowledge (`rows.<dyno_type>`)
    - Produce an EKS Deployment entry with pod resource requests and limits
    - Set `aws_service: "EKS"`
    - Preserve dyno quantity as `replicas` (0–100)
    - If process type is `web` → include Kubernetes Service (type: LoadBalancer) with AWS LB Controller annotations
    - If process type is NOT `web` → Deployment only (no Service)
 
-2. **Produce single EKS cluster entry** (constants from `design-refs/eks-mapping-table.md` → its `cluster` JSON block):
+2. **Produce single EKS cluster entry** (constants from the `eks-pod-sizing.json` knowledge → its `cluster` block):
    - `cluster_name`: from `cluster.cluster_name` (`"heroku-migration-cluster"`)
    - `kubernetes_version`: query the latest EKS-supported stable version at generation time (`aws eks describe-addon-versions`); if the query is unavailable, fall back to `cluster.kubernetes_version_fallback`. Do not hardcode — EKS deprecates older versions on a rolling basis.
    - Node group type: from `cluster.node_group_type_by_pref` keyed on the preference (`eks-managed` → `self-managed`, more control; `eks-or-ecs` → `managed`, less operational burden)
@@ -78,8 +78,8 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
     "container_image": "placeholder:<heroku-app>-<process-type>",
     "process_type": "<process-type>",
     "resources": {
-      "requests": { "cpu": "<from-table>", "memory": "<from-table>" },
-      "limits": { "cpu": "<from-table>", "memory": "<from-table>" }
+      "requests": { "cpu": "<rows.<dyno>.req_cpu>", "memory": "<rows.<dyno>.req_mem>" },
+      "limits": { "cpu": "<rows.<dyno>.lim_cpu>", "memory": "<rows.<dyno>.lim_mem>" }
     },
     "load_balancer": <true if web, false otherwise>,
     "node_group_type": "<managed|self-managed>"
@@ -98,7 +98,7 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
     "node_groups": [
       {
         "name": "general",
-        "instance_types": ["<recommended-from-table>"],
+        "instance_types": ["<node_type of the largest dyno present, per node_size_rank>"],
         "min_size": 2,
         "max_size": <calculated>,
         "desired_size": <calculated>
