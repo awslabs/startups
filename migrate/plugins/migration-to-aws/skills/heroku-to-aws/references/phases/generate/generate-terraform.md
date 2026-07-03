@@ -5,6 +5,9 @@ _contributes:
   - terraform/main.tf
   - terraform/variables.tf
   - terraform/outputs.tf
+  - terraform/security.tf
+  - terraform/.gitignore
+  - terraform/terraform.tfvars.example
 ---
 
 # Generate Phase: Terraform Configuration Generation

@@ -4,8 +4,6 @@ _of_phase: generate
 _contributes:
   - MIGRATION_GUIDE.md
   - README.md
-  - { file: scripts/migrate-postgres.sh, _when: "Postgres (RDS/Aurora) is in the design" }
-  - { file: scripts/migrate-redis.sh, _when: "Redis (ElastiCache) is in the design" }
 ---
 
 # Generate Phase: Documentation and Script Generation
