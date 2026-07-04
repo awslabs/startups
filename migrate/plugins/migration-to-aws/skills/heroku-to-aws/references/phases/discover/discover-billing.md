@@ -16,14 +16,13 @@ _contributes:
 
 ## Step 0: Self-Scan for Billing Files
 
-Scan the target directory for Heroku billing data:
+This fragment runs only when its `_trigger` glob matches a billing/invoice file
+(see frontmatter). Confirm at least one such file is present and readable.
 
-- `**/*billing*.csv` — Heroku Enterprise CSV billing export
-- `**/*invoice*.csv` — Heroku Dashboard invoice CSV export
-- `**/*billing*.json` — Heroku billing JSON (API export or Dashboard download)
-- `**/*invoice*.json` — Heroku Dashboard invoice JSON
-
-**Exit gate:** If NO billing files are found, **exit cleanly**. Return no output artifacts. Set `billing_profile.available` to `false` in the inventory contribution. Other sub-discovery files will still produce their artifacts.
+**Exit gate:** If no usable billing file is found (none present, or the matched
+file(s) turn out not to be parseable billing data), contribute
+`billing_profile: { available: false }` and **exit cleanly** — return no other
+output. Discovery continues; other sub-discoveries still produce their artifacts.
 
 Log: "No billing files found — skipping billing discovery. Cost comparison will be limited to projected AWS costs only."
 
@@ -249,25 +248,12 @@ Produce the `billing_profile` section for inclusion in `heroku-resource-inventor
 | `line_items[].cost`          | number  | Yes      | Cost amount for this line item                                                                                  |
 | `parse_warnings`             | array   | Yes      | Any warnings generated during parsing (empty array if none)                                                     |
 
-### When Billing Profile is Unavailable
-
-If no billing files are found (Step 0 exit gate), the parent orchestrator sets:
-
-```json
-{
-  "billing_profile": {
-    "available": false
-  }
-}
-```
-
 ---
 
 ## Error Handling
 
 | Error Category                  | Behavior                                       | Effect on Discovery                                         |
 | ------------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
-| No billing files found          | Exit cleanly, no output                        | Discovery continues with API/Terraform inventory only       |
 | Unrecognized CSV header format  | Log warning with filename, skip file           | Try next billing file; if none remain, exit cleanly         |
 | Unrecognized JSON structure     | Log warning with filename, skip file           | Try next billing file; if none remain, exit cleanly         |
 | Malformed JSON (parse error)    | Log warning with filename and error, skip file | Try next billing file; if none remain, exit cleanly         |
