@@ -63,33 +63,9 @@ _forbids_files:
 
 # Phase 4: Estimate AWS Costs
 
-> Loaded by SKILL.md when `phases.design == "completed"` AND `phases.estimate != "completed"`.
-
 **Execute ALL steps in order. Do not skip or optimize.**
 
----
-
-## Overview
-
-Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture. Produce `estimation-infra.json` conforming to `../shared/estimate/estimation-infra.schema.json`. Classify migration complexity using the tier thresholds in `../shared/estimate/complexity-tiers.json`.
-
-**Inputs:**
-
-- `$MIGRATION_DIR/aws-design.json` (from Phase 3)
-- `$MIGRATION_DIR/preferences.json` (from Phase 2)
-- `$MIGRATION_DIR/heroku-resource-inventory.json` (from Phase 1 — for billing profile)
-
-**Outputs:**
-
-- `$MIGRATION_DIR/estimation-infra.json`
-- `.phase-status.json` updated (estimate → completed)
-
----
-
-## Sub-Files
-
-- **estimate-cost-engine.md** → the cost engine: pricing-mode selection, prerequisites, and the full calculation (current Heroku costs, projected AWS costs + tiers, observability, comparison, ROI, optimization opportunities, complexity tier, recommendation) plus the MCP pricing recipes.
-- **estimate-assemble.md** → the assembler: assembles + writes `estimation-infra.json`, runs the completion handoff gate (incl. the Property-16 total invariant), updates `.phase-status.json`, and presents the summary.
+Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture, producing `estimation-infra.json` (conforming to `../shared/estimate/estimation-infra.schema.json`) and classifying migration complexity using the tier thresholds in `../shared/estimate/complexity-tiers.json`.
 
 ---
 
