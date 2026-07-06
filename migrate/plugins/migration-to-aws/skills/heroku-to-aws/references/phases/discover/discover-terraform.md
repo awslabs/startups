@@ -504,22 +504,23 @@ terraform-specific content and rules:
   primary inventory data; Procfile/app.json supplements them (adds `command`,
   buildpacks, declared add-ons). When Procfile was available, formation entries
   have `command` populated; otherwise `command` is `null`.
-- **`terraform_metadata`:** contribute this shape —
-  ```json
-  {
-    "terraform_metadata": {
-      "found": true,
-      "tf_files_scanned": 5,
-      "resource_types_extracted": ["heroku_app", "heroku_addon", "heroku_formation"],
-      "parse_warnings": []
-    }
-  }
-  ```
 - **Confidence:** set `metadata.confidence` to `"full"` when all Terraform files
   parsed successfully, or `"reduced"` if any parse errors occurred or expected
   resources were missing.
 - **Discovery sources:** contribute `"terraform"` to `metadata.discovery_sources`,
   and `"procfile"` as well if Procfile/app.json were found and parsed.
+- **`terraform_metadata`:** contribute the shape shown below.
+
+```json
+{
+  "terraform_metadata": {
+    "found": true,
+    "tf_files_scanned": 5,
+    "resource_types_extracted": ["heroku_app", "heroku_addon", "heroku_formation"],
+    "parse_warnings": []
+  }
+}
+```
 
 ---
 
