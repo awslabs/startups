@@ -13,10 +13,6 @@ _contributes:
 > aggregate, contributing to `aws-design.json`. The mapping-engine fragment
 > (`design-mapping.md`) handles the Fargate path and all non-formation resources.
 
-**Applies when:** `preferences.json → design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`.
-
-**Skip when:** `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent → use existing Fargate path (the `dyno-fargate-sizing.json` knowledge).
-
 ---
 
 ## EKS Branch Logic

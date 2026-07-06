@@ -23,8 +23,7 @@ _contributes:
 
 The entry gate (clarify completed, single active phase, inputs present + valid JSON) is
 enforced by this phase's `_preconditions` frontmatter per `INTERPRETER.md` § Gate
-protocol. Once the preconditions pass, set `phases.design` to `"in_progress"` and
-`current_phase` to `"design"` in `.phase-status.json`, then proceed.
+protocol; proceed once it passes.
 
 ---
 
