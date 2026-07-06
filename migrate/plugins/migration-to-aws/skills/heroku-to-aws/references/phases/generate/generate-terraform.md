@@ -12,24 +12,11 @@ _contributes:
 
 # Generate Phase: Terraform Configuration Generation
 
-> Loaded by `generate.md` when `aws-design.json` and `estimation-infra.json` exist.
-
 **Execute ALL steps in order. Do not skip or optimize.**
 
 ## Overview
 
 Transform `aws-design.json` into deployable Terraform HCL configurations. Produces a `terraform/` directory in `$MIGRATION_DIR/` containing valid, `terraform validate`-passing configurations for all designed AWS resources.
-
-## Prerequisites
-
-Read the following artifacts from `$MIGRATION_DIR/`:
-
-- `aws-design.json` (REQUIRED) — AWS architecture design from Phase 3
-- `estimation-infra.json` (REQUIRED) — Cost estimates from Phase 4
-- `preferences.json` (REQUIRED) — User migration preferences from Phase 2
-- `heroku-resource-inventory.json` (REQUIRED) — Discovered Heroku resources from Phase 1
-
-If any required file is missing: **STOP**. Output: "Missing required artifact: [filename]. Complete the prior phase that produces it."
 
 ## Output Structure
 
@@ -1446,50 +1433,4 @@ After all files are written:
 
 **Note:** Full `terraform validate` requires `terraform init` (provider download). The generated configuration SHOULD pass `terraform validate` when run with network access. If validation cannot run (no Terraform binary, no network), log a note but do NOT block generation.
 
----
-
-## Output Summary
-
-Upon completion, the `$MIGRATION_DIR/terraform/` directory should contain:
-
-```
-terraform/
-├── main.tf                   # Provider, backend, data sources
-├── variables.tf              # All input variables
-├── outputs.tf                # Resource outputs
-├── vpc.tf                    # VPC configuration (new or data sources for existing)
-├── security.tf               # Security groups, IAM roles
-├── compute.tf                # ECS cluster, task definitions, services, ALBs
-├── database.tf               # RDS/Aurora, parameter groups, RDS Proxy
-├── cache.tf                  # ElastiCache replication groups
-├── messaging.tf              # MSK clusters and configurations
-├── .gitignore                # Terraform-specific ignore rules
-└── terraform.tfvars.example  # Example variable values
-```
-
-Files are only emitted if their domain has resources in `aws-design.json`. The minimum set is always: `main.tf`, `variables.tf`, `outputs.tf`, `security.tf`, `.gitignore`, `terraform.tfvars.example`.
-
-Additionally, `$MIGRATION_DIR/generation-warnings.json` is ALWAYS emitted (empty `warnings` array when no services were skipped).
-
----
-
-## Completion Handoff Gate (Fail Closed)
-
-Before returning control to `generate.md`, require:
-
-1. `$MIGRATION_DIR/terraform/main.tf` exists
-2. `$MIGRATION_DIR/terraform/variables.tf` exists
-3. `$MIGRATION_DIR/terraform/outputs.tf` exists
-4. At least one domain file (`compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`) exists
-5. All resource cross-references resolve within the configuration
-6. `generation-warnings.json` exists (ALWAYS written; empty `warnings` array if all services mapped successfully)
-
-If this gate fails: STOP and output: "generate-terraform did not produce a valid terraform/ directory; do not continue Generate."
-
-## Generate Phase Integration
-
-The parent orchestrator (`generate.md`) uses the `terraform/` directory to:
-
-1. Gate documentation generation — `generate-docs.md` references terraform file names in `README.md`
-2. Validate the complete artifact set before phase completion
-3. Set phase completion status in `.phase-status.json`
+When all files are written, control returns to `generate.md` (then the phase assembler `generate-assemble.md`), which runs the phase completion handoff gate per its `_postconditions`.
