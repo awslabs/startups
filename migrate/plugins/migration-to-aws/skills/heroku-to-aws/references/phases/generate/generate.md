@@ -65,76 +65,27 @@ _forbids_files:
 
 # Phase 5: Generate Migration Artifacts
 
-> Loaded by SKILL.md when `phases.estimate == "completed"` AND `phases.generate != "completed"`.
-
 **Execute ALL steps in order. Do not skip or optimize.**
-
-## Sub-Files
-
-- **generate-terraform.md** → routes the design into Terraform: writes the `terraform/` directory and `generation-warnings.json`.
-- **generate-docs.md** → fills the docs + script templates: writes `MIGRATION_GUIDE.md`, `README.md`, and database migration scripts in `scripts/`.
-- **generate-eks.md** → the EKS branch: fires (via its `_when` trigger) only when the design contains `aws_service: "EKS"`; writes `terraform/eks.tf` + the `kubernetes/` manifests.
-- **generate-assemble.md** → the assembler: cross-artifact validation, completion handoff gate, and `.phase-status.json` update.
-
----
 
 ## Step 0: Validate Prerequisites
 
 The entry gate (estimate completed, single active phase, all four inputs present + valid
 JSON) is enforced by this phase's `_preconditions` frontmatter per `INTERPRETER.md`
-§ Gate protocol. Once the preconditions pass, set `phases.generate` to `"in_progress"`
-and `current_phase` to `"generate"` in `.phase-status.json`, then proceed.
+§ Gate protocol; proceed once it passes.
 
 ---
 
 ## Step 1: Generate Terraform Configurations
 
-Load `references/phases/generate/generate-terraform.md` and execute completely.
-
-This produces:
-
-- `$MIGRATION_DIR/terraform/` directory with all `.tf` files
-- `$MIGRATION_DIR/generation-warnings.json` (always written; empty `warnings` array when nothing was skipped)
-
-**Gate check after Step 1:**
-
-- `terraform/main.tf` must exist
-- `terraform/variables.tf` must exist
-- `terraform/outputs.tf` must exist
-- At least one domain file must exist (`compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`)
-
-If gate fails: STOP. Output: "Terraform generation failed. Check generation-warnings.json for details."
-
-**EKS Generation (conditional):**
-
-If `aws-design.json` contains any service with `aws_service: "EKS"`:
-
-- Load `references/phases/generate/generate-eks.md`
-- Follow its instructions to produce `terraform/eks.tf` and `kubernetes/` directory
-- Add Helm provider to `terraform/main.tf`
-- Add EKS sections to MIGRATION_GUIDE.md
-
-If NO services have `aws_service: "EKS"`, skip EKS generation entirely.
+Load `references/phases/generate/generate-terraform.md` and execute completely. When the
+design contains EKS (`aws_service: "EKS"`), the `eks-generate` fragment also fires per its
+`_fragments` `_when` trigger; follow `references/phases/generate/generate-eks.md`.
 
 ---
 
 ## Step 2: Generate Documentation and Scripts
 
 Load `references/phases/generate/generate-docs.md` and execute completely.
-
-This produces:
-
-- `$MIGRATION_DIR/MIGRATION_GUIDE.md`
-- `$MIGRATION_DIR/README.md`
-- `$MIGRATION_DIR/scripts/migrate-postgres.sh` (if Postgres in design)
-- `$MIGRATION_DIR/scripts/migrate-redis.sh` (if Redis in design)
-
-**Gate check after Step 2:**
-
-- `MIGRATION_GUIDE.md` must exist
-- `README.md` must exist
-
-If gate fails: STOP. Output: "Documentation generation incomplete. MIGRATION_GUIDE.md or README.md missing."
 
 ---
 

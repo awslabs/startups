@@ -16,19 +16,6 @@ _contributes:
 
 ---
 
-## Inputs Required
-
-Before executing, the parent `generate.md` must have loaded:
-
-1. `$MIGRATION_DIR/aws-design.json` — designed AWS architecture
-2. `$MIGRATION_DIR/heroku-resource-inventory.json` — source Heroku resources
-3. `$MIGRATION_DIR/preferences.json` — migration preferences
-4. `$MIGRATION_DIR/estimation-infra.json` — cost estimates
-
-All four files must be valid JSON and present. If any are missing, exit cleanly — the parent orchestrator handles the GATE_FAIL.
-
----
-
 ## Step 0: Detect Data Store Presence
 
 Scan `aws-design.json`.services[] to determine which data store types exist in the design:
@@ -1238,30 +1225,10 @@ Verify all generated files:
 
 ---
 
-## Output Contribution
-
-This sub-file contributes to `$MIGRATION_DIR/`:
-
-1. `MIGRATION_GUIDE.md` — complete migration procedure
-2. `README.md` — artifact listing and quick start
-3. `scripts/migrate-postgres.sh` — PostgreSQL migration script (conditional)
-4. `scripts/migrate-redis.sh` — Redis migration script (conditional)
-
-The parent `generate.md` handles:
-
-- Merging with Terraform generation output
-- Generation warnings consolidation
-- Phase status update and handoff gate
-
-**Do not update `.phase-status.json` from this sub-file.**
-
----
-
 ## Error Handling
 
 | Error                          | Behavior                                        | Impact                                 |
 | ------------------------------ | ----------------------------------------------- | -------------------------------------- |
-| Input artifact missing         | Exit cleanly, no output                         | Parent handles GATE_FAIL               |
 | Template variable unresolvable | Use placeholder with `{{VARIABLE_NAME}}` format | User fills manually                    |
 | No data stores in design       | Omit Phase 2 entirely from guide                | Valid — compute-only migration         |
 | No deferred add-ons            | Omit Manual Migration Items section             | Valid — all add-ons mapped             |

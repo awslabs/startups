@@ -13,10 +13,6 @@ _contributes:
 > Terraform + kubernetes/ manifests; otherwise the Fargate generation path applies
 > and this fragment is skipped.
 
-**Applies when:** `aws-design.json` contains `aws_service: "EKS"` for one or more services.
-
-**Skip when:** No EKS services in design → existing Fargate generation path applies.
-
 ---
 
 ## Generated Artifacts
