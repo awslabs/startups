@@ -2,7 +2,7 @@
 _fragment: cost-engine
 _of_phase: estimate
 _contributes:
-  - estimation-infra.json (per-service costs, tiers, comparison, ROI, optimizations, complexity; created here, finalized by the assembler)
+  - estimation-infra.json
 ---
 
 # Estimate Phase: Cost Engine
