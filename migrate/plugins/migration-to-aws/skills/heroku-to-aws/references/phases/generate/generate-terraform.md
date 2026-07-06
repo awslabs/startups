@@ -5,28 +5,18 @@ _contributes:
   - terraform/main.tf
   - terraform/variables.tf
   - terraform/outputs.tf
+  - terraform/security.tf
+  - terraform/.gitignore
+  - terraform/terraform.tfvars.example
 ---
 
 # Generate Phase: Terraform Configuration Generation
-
-> Loaded by `generate.md` when `aws-design.json` and `estimation-infra.json` exist.
 
 **Execute ALL steps in order. Do not skip or optimize.**
 
 ## Overview
 
 Transform `aws-design.json` into deployable Terraform HCL configurations. Produces a `terraform/` directory in `$MIGRATION_DIR/` containing valid, `terraform validate`-passing configurations for all designed AWS resources.
-
-## Prerequisites
-
-Read the following artifacts from `$MIGRATION_DIR/`:
-
-- `aws-design.json` (REQUIRED) — AWS architecture design from Phase 3
-- `estimation-infra.json` (REQUIRED) — Cost estimates from Phase 4
-- `preferences.json` (REQUIRED) — User migration preferences from Phase 2
-- `heroku-resource-inventory.json` (REQUIRED) — Discovered Heroku resources from Phase 1
-
-If any required file is missing: **STOP**. Output: "Missing required artifact: [filename]. Complete the prior phase that produces it."
 
 ## Output Structure
 
@@ -66,7 +56,7 @@ Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only 
 | Security Group, IAM Role/Policy    | `security.tf`  |
 | CloudWatch Logs                    | `compute.tf`   |
 
-**Unmapped services:** If `aws-design.json` contains a `service_id` with an `aws_service` value that has no Terraform resource mapping in this file (e.g., CloudWatch + X-Ray composite, Amazon SES, Amazon SNS), **skip** that resource and log a warning to `generation-warnings.json`. Do NOT halt generation.
+**Unmapped services:** If `aws-design.json` contains a `service_id` with an `aws_service` value that has no Terraform resource mapping in this file (e.g., CloudWatch + X-Ray composite, Amazon SES, Amazon SNS), **skip** that resource and record a warning in `generation-warnings.json` (which is ALWAYS written — see Step 10 — with an empty `warnings` array when nothing is skipped). Do NOT halt generation.
 
 ---
 
@@ -1326,10 +1316,20 @@ resource "aws_cloudwatch_log_group" "msk" {
 
 ## Step 10: Handle Unmapped Resources and Warnings
 
-For any `service_id` in `aws-design.json` whose `aws_service` does not have a Terraform resource mapping defined in Steps 4–9 above:
+**Always write `$MIGRATION_DIR/generation-warnings.json`** — it is a mandatory
+artifact of this phase (part of generate's `_produces` floor), a manifest that
+records whatever could NOT be generated. Write it even when nothing was skipped:
+in that case the `warnings` array is EMPTY (`"warnings": []`). A consumer can then
+rely on the file always existing rather than testing for its absence.
+
+For any `service_id` in `aws-design.json` whose `aws_service` does not have a
+Terraform resource mapping defined in Steps 4–9 above:
 
 1. **Skip** the resource — do NOT generate Terraform for it
-2. **Log** the skip to `$MIGRATION_DIR/generation-warnings.json`
+2. **Append** the skip as an entry in `generation-warnings.json`'s `warnings` array
+
+If every service mapped successfully, still write the file with an empty
+`warnings` array.
 
 ### `generation-warnings.json` Schema
 
@@ -1433,50 +1433,4 @@ After all files are written:
 
 **Note:** Full `terraform validate` requires `terraform init` (provider download). The generated configuration SHOULD pass `terraform validate` when run with network access. If validation cannot run (no Terraform binary, no network), log a note but do NOT block generation.
 
----
-
-## Output Summary
-
-Upon completion, the `$MIGRATION_DIR/terraform/` directory should contain:
-
-```
-terraform/
-├── main.tf                   # Provider, backend, data sources
-├── variables.tf              # All input variables
-├── outputs.tf                # Resource outputs
-├── vpc.tf                    # VPC configuration (new or data sources for existing)
-├── security.tf               # Security groups, IAM roles
-├── compute.tf                # ECS cluster, task definitions, services, ALBs
-├── database.tf               # RDS/Aurora, parameter groups, RDS Proxy
-├── cache.tf                  # ElastiCache replication groups
-├── messaging.tf              # MSK clusters and configurations
-├── .gitignore                # Terraform-specific ignore rules
-└── terraform.tfvars.example  # Example variable values
-```
-
-Files are only emitted if their domain has resources in `aws-design.json`. The minimum set is always: `main.tf`, `variables.tf`, `outputs.tf`, `security.tf`, `.gitignore`, `terraform.tfvars.example`.
-
-Additionally, `$MIGRATION_DIR/generation-warnings.json` is emitted if any services were skipped.
-
----
-
-## Completion Handoff Gate (Fail Closed)
-
-Before returning control to `generate.md`, require:
-
-1. `$MIGRATION_DIR/terraform/main.tf` exists
-2. `$MIGRATION_DIR/terraform/variables.tf` exists
-3. `$MIGRATION_DIR/terraform/outputs.tf` exists
-4. At least one domain file (`compute.tf`, `database.tf`, `cache.tf`, `messaging.tf`, or `vpc.tf`) exists
-5. All resource cross-references resolve within the configuration
-6. `generation-warnings.json` exists if any services were skipped (empty `warnings` array if all mapped successfully)
-
-If this gate fails: STOP and output: "generate-terraform did not produce a valid terraform/ directory; do not continue Generate."
-
-## Generate Phase Integration
-
-The parent orchestrator (`generate.md`) uses the `terraform/` directory to:
-
-1. Gate documentation generation — `generate-docs.md` references terraform file names in `README.md`
-2. Validate the complete artifact set before phase completion
-3. Set phase completion status in `.phase-status.json`
+When all files are written, control returns to `generate.md` (then the phase assembler `generate-assemble.md`), which runs the phase completion handoff gate per its `_postconditions`.

@@ -66,68 +66,15 @@ _forbids_files:
 Single-pass mapping engine that translates each Heroku resource to its AWS equivalent using deterministic lookup tables. No clustering, no dependency graphs — resources are processed as a flat list in input order.
 **Execute ALL steps in order. Do not skip or deviate.**
 
-## Sub-Files
-
-- **design-mapping.md** → the always-on mapping engine: prerequisites, single-pass resource mapping (Fargate/RDS/ElastiCache/MSK/fast-path/deferred), VPC + security-group design, Cedar/Fir notation, and metadata.
-- **design-eks.md** → the EKS branch: fires (via its `_when` trigger) only when `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`; maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the Fargate path.
-- **design-assemble.md** → the assembler: writes `aws-design.json`, runs the output route gates + completion handoff gate, and updates `.phase-status.json`.
+The EKS branch (`design-eks.md`, fired by its `_when` trigger when the Kubernetes preference selects EKS) is an ALTERNATIVE path, not an addition: it maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the Fargate path.
 
 ## Lookup Table References (Conditional Loading)
 
-Load these reference files **only when the corresponding resource type exists in the inventory**:
-
-| Resource Type in Inventory                                                                    | Reference File to Load                                             |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"eks-managed"` or `"eks-or-ecs"` | `design-refs/eks-mapping-table.md` + `phases/design/design-eks.md` |
-| `formation` (any) + `design_constraints.kubernetes.value` = `"ecs-fargate"` or absent         | `design-refs/dyno-type-table.md`                                   |
-| `addon:*:heroku-postgresql:*`                                                                 | `design-refs/postgres-plan-table.md`                               |
-| `addon:*:heroku-redis:*`                                                                      | `design-refs/redis-plan-table.md`                                  |
-| `addon:*:heroku-kafka:*`                                                                      | `design-refs/kafka-plan-table.md`                                  |
-| `addon:*` (non-core)                                                                          | `design-refs/fast-path-table.md`                                   |
-
-Do NOT speculatively load tables for resource types absent from the inventory.
-
----
-
-## Phase Status State Machine
-
-### Valid Transitions
-
-```
-pending → in_progress → completed
-```
-
-Status NEVER goes backward under normal operation. Only an **unrecoverable error** reverts the current phase to `pending`.
-
-### Phase Gate Rules (Fail Closed)
-
-**Rule 1 — Predecessor gate:** Design requires `phases.clarify == "completed"`. If not:
-
-```
-GATE_FAIL | phase=design | field=phases.clarify | reason=missing
-```
-
-Do NOT advance. Do NOT modify `.phase-status.json`. Tell the user to complete Phase 2 (Clarify) first.
-
-**Rule 2 — Single active phase:** At most one core phase may be `in_progress`. If another is active:
-
-```
-GATE_FAIL | phase=design | field=phases.<active_phase> | reason=invalid
-```
-
-**Rule 3 — GATE_FAIL halt behavior:** On any handoff gate failure at phase completion:
-
-1. Retain `phases.design` as `in_progress`.
-2. Do NOT advance `current_phase`.
-3. Do NOT modify artifacts to force the gate to pass.
-4. Surface diagnostic: phase, field, reason.
-5. Tell user: "Re-run Phase 3 (Design) to produce the missing field, then continue."
-
-**Rule 4 — Unrecoverable error:** If the phase fails fatally:
-
-1. Revert `phases.design` to `"pending"`.
-2. Preserve all prior completed phases unchanged.
-3. Surface diagnostic with error category and actionable guidance.
+The per-resource sizing/mapping data this phase consults lives in the phase's
+`_knowledge` frontmatter (the `knowledge/design/*.json` files), each gated by a
+`_when` condition. Load a knowledge file only when its `_when` holds; do NOT
+speculatively load knowledge for resource types absent from the inventory — see
+`INTERPRETER.md` § `_knowledge`.
 
 ---
 

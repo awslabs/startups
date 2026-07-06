@@ -61,18 +61,12 @@ Questions are organized into **three batches** (≤7 per batch) presented sequen
 
 ---
 
-## Sub-Files
-
-- **clarify-interview.md** → the adaptive interview: prior-run check, fast-path gate, active-question selection, and the progressive-batch Q&A (with the full Question Catalog + Defaults Table). Interprets answers into `preferences.json` fields.
-- **clarify-assemble.md** → the assembler: assembles + writes the final `preferences.json`, runs the validation checklist + completion handoff gate, and updates `.phase-status.json`.
-
----
-
 ## Step 1: Run the Interview
 
 Load `references/phases/clarify/clarify-interview.md` and follow it. It handles the
 prior-run check, determines fast-path eligibility, selects the active question set,
-and presents the questions in progressive batches — interpreting each answer.
+and presents the questions in progressive batches — interpreting each answer. It
+contains the full Question Catalog and Defaults Table.
 
 ---
 

@@ -40,6 +40,20 @@ export interface KnowledgeRef {
   when: string | null; // optional opaque prose condition (bound, not evaluated by CI)
 }
 
+/**
+ * One entry in a `_produces` / `_contributes` list. An artifact is either
+ * unconditional (a bare filename, `when: null`) or CONDITIONAL (an inline
+ * `{ file: <path>, _when: <prose> }` map — produced only when the design predicate
+ * holds). Mirrors `_knowledge`'s `{ file, _when }` shape. `when` is opaque prose,
+ * bound but NOT evaluated by CI (same as `_knowledge._when`). A trailing-slash
+ * `file` (e.g. `kubernetes/`) denotes a produced DIRECTORY, used when a unit emits
+ * a set of dynamically-named files with no single fixed filename.
+ */
+export interface ArtifactRef {
+  file: string;
+  when: string | null;
+}
+
 /** The phase orchestrator file's frontmatter. */
 export interface PhaseFrontmatter {
   kind: "phase";
@@ -54,7 +68,8 @@ export interface PhaseFrontmatter {
   /** phase-level _trigger (checkpoint phases only) — how the phase is entered. null for backbone. */
   trigger: Trigger | null;
   assembleFile: string | null; // _assemble._file
-  produces: string[];
+  produces: string[]; // _produces filenames (bare + conditional, filename only)
+  producesRefs: ArtifactRef[]; // _produces with conditional metadata ({file, when})
   advancesTo: string | null;
   reEntryGuard: ReEntryGuard | null; // _re_entry_guard (backbone phases with a downstream); null when absent
   preconditions: CheckItem[]; // _preconditions (entry gate); empty when absent
@@ -71,7 +86,8 @@ export interface FragmentFrontmatter {
   sourceFile: string;
   fragment: string; // _fragment (id)
   ofPhase: string | null; // _of_phase
-  contributes: string[];
+  contributes: string[]; // _contributes filenames (bare + conditional, filename only)
+  contributesRefs: ArtifactRef[]; // _contributes with conditional metadata ({file, when})
   unknownKeys: string[];
 }
 
@@ -82,7 +98,8 @@ export interface AssemblerFrontmatter {
   assemble: string | null; // _assemble (id)
   ofPhase: string | null;
   reads: string[];
-  produces: string[];
+  produces: string[]; // _produces filenames (bare + conditional, filename only)
+  producesRefs: ArtifactRef[]; // _produces with conditional metadata ({file, when})
   knowledge: KnowledgeRef[]; // _knowledge reference/data deps; empty when absent
   unknownKeys: string[];
 }

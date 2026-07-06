@@ -23,8 +23,7 @@ _contributes:
 
 The entry gate (clarify completed, single active phase, inputs present + valid JSON) is
 enforced by this phase's `_preconditions` frontmatter per `INTERPRETER.md` § Gate
-protocol. Once the preconditions pass, set `phases.design` to `"in_progress"` and
-`current_phase` to `"design"` in `.phase-status.json`, then proceed.
+protocol; proceed once it passes.
 
 ---
 
@@ -75,8 +74,8 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 **Prerequisites**:
 
 - Read `preferences.json → design_constraints.kubernetes.value` (may be absent).
-- If value is `"eks-managed"` or `"eks-or-ecs"`: Load `design-refs/eks-mapping-table.md` and `phases/design/design-eks.md`. Follow the EKS branch logic in `design-eks.md` for ALL formations. Skip the Fargate mapping below.
-- Otherwise (value is `"ecs-fargate"` or field is absent): Load `design-refs/dyno-type-table.md` if not already loaded. Follow the Fargate mapping below.
+- If value is `"eks-managed"` or `"eks-or-ecs"`: use the `eks-pod-sizing.json` knowledge and Load `phases/design/design-eks.md`. Follow the EKS branch logic in `design-eks.md` for ALL formations. Skip the Fargate mapping below.
+- Otherwise (value is `"ecs-fargate"` or field is absent): use the `dyno-fargate-sizing.json` knowledge. Follow the Fargate mapping below.
 
 #### EKS Branch
 
@@ -96,7 +95,7 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
 
    Record this in `warnings[]` and skip the app's formations.
 
-3. **Dyno type lookup**: Match `config.dyno_type` (case-insensitive) against the Dyno Type Table.
+3. **Dyno type lookup**: Match `config.dyno_type` (case-insensitive) against the `dyno-fargate-sizing.json` knowledge (`rows.<dyno_type>`).
 
    - **If NOT found**: Reject this formation entry. Add to `warnings[]`:
 
@@ -156,7 +155,7 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
 
 **Trigger**: `resource_type == "addon"` AND `config.addon_service == "heroku-postgresql"`
 
-**Prerequisites**: Load `design-refs/postgres-plan-table.md` if not already loaded.
+**Prerequisites**: the `postgres-rds-sizing.json` knowledge (loaded per the phase's `_knowledge` `_when`).
 
 **Mapping logic:**
 
@@ -218,7 +217,7 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
 
 **Trigger**: `resource_type == "addon"` AND `config.addon_service == "heroku-redis"`
 
-**Prerequisites**: Load `design-refs/redis-plan-table.md` if not already loaded.
+**Prerequisites**: the `redis-elasticache-sizing.json` knowledge (loaded per the phase's `_knowledge` `_when`).
 
 **Mapping logic:**
 
@@ -275,7 +274,7 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
 
 **Trigger**: `resource_type == "addon"` AND `config.addon_service == "heroku-kafka"`
 
-**Prerequisites**: Load `design-refs/kafka-plan-table.md` if not already loaded.
+**Prerequisites**: the `kafka-msk-sizing.json` knowledge (loaded per the phase's `_knowledge` `_when`).
 
 **Mapping logic:**
 
@@ -335,7 +334,7 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
 
 **Trigger**: `resource_type == "addon"` AND `config.addon_service` is NOT one of: `heroku-postgresql`, `heroku-redis`, `heroku-kafka`
 
-**Prerequisites**: Load `design-refs/fast-path-table.md` if not already loaded.
+**Prerequisites**: the `fast-path-addons.json` knowledge (loaded per the phase's `_knowledge` `_when`).
 
 **Mapping logic:**
 

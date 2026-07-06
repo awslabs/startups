@@ -229,6 +229,27 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
+  // ---- _advances_to membership (dangling forward-edge check) ----
+  // A phase's _advances_to must name either a terminal (complete/done/end) or a
+  // phase that EXISTS ON DISK (a references/phases/<name>/<name>.md file). This is
+  // independent of the chain-consistency block below (which is gated on the whole
+  // backbone being frontmatter-present and self-SKIPS the moment any _advances_to
+  // is unresolvable — so a dangling edge would otherwise slip through as a false
+  // OK). Resolving against the phase DIRECTORY (not the frontmatter-declared set)
+  // preserves partial-rollout tolerance: an edge to a real phase that has no
+  // frontmatter yet still resolves; only an edge to a phase that does not exist at
+  // all fails.
+  for (const phase of skill.phases) {
+    if (!phase.advancesTo || TERMINALS.has(phase.advancesTo)) continue;
+    const targetFile = join(skill.referencesRoot, "phases", phase.advancesTo, `${phase.advancesTo}.md`);
+    if (!existsSync(targetFile)) {
+      add(
+        skill.rel(phase.sourceFile),
+        `_advances_to '${phase.advancesTo}' names neither a terminal (complete/done/end) nor an existing phase (no references/phases/${phase.advancesTo}/${phase.advancesTo}.md) — dangling forward edge`,
+      );
+    }
+  }
+
   // ---- Backbone chain-consistency (backbone phases only; checkpoints excluded) ----
   // The backbone is the linear lifecycle wired by _advances_to (forward) and
   // _requires_phase (backward). Checkpoints (_kind: checkpoint) are off-backbone and
@@ -353,6 +374,30 @@ export function check(skill: BoundSkill): Finding[] {
         add(pf, `_input '${inp}' is not produced by any declared phase (no phase declares it in _produces)`);
       }
     }
+  }
+
+  // ---- Conditional-artifact well-formedness (_produces / _contributes) ----
+  // An artifact entry is either a bare filename or an inline conditional map
+  // `{ file: <path>, _when: <prose> }` (mirrors _knowledge). CI does NOT evaluate
+  // `_when` (opaque prose, same as _knowledge._when); it only checks the entry is
+  // well-formed: a map form must carry a parseable, non-empty `file:`. (The
+  // filename itself flows into produces/contributes and is covered by the existing
+  // single-creator, postcond⊆produces, _input, and _stale_artifact checks.)
+  const checkArtifactRefs = (refs: typeof skill.phases[number]["producesRefs"], file: string, key: string) => {
+    for (const r of refs) {
+      if (!r.file) {
+        add(file, `${key} has a conditional entry with no parseable 'file:' (expected '{ file: <path>, _when: <prose> }')`);
+      }
+    }
+  };
+  for (const phase of skill.phases) {
+    checkArtifactRefs(phase.producesRefs, skill.rel(phase.sourceFile), "_produces");
+  }
+  for (const frag of skill.fragments.values()) {
+    checkArtifactRefs(frag.contributesRefs, skill.rel(frag.sourceFile), "_contributes");
+  }
+  for (const asm of skill.assemblers.values()) {
+    checkArtifactRefs(asm.producesRefs, skill.rel(asm.sourceFile), "_produces");
   }
 
   return findings;

@@ -21,18 +21,10 @@ _produces:
 
 ## Step 3: Validate Complete Artifact Set
 
-Verify the complete set of generated artifacts:
-
-1. `terraform/main.tf` — provider configuration
-2. `terraform/variables.tf` — input variables
-3. `terraform/outputs.tf` — resource outputs
-4. `terraform/vpc.tf` — VPC configuration (new or existing reference)
-5. `terraform/security.tf` — security groups and IAM
-6. Domain-specific `.tf` files (per design content)
-7. `MIGRATION_GUIDE.md` — step-by-step migration procedure
-8. `README.md` — artifact listing and quick start
-9. Database migration scripts (conditional on design content)
-10. `generation-warnings.json` (if any services were skipped)
+The full generated artifact set (core terraform files + MIGRATION_GUIDE.md +
+README.md + generation-warnings.json) is gate-checked by this phase's
+`_postconditions` (see the Completion Handoff Gate below). This assembler adds the
+cross-artifact checks that span multiple fragment outputs:
 
 **Cross-reference checks:**
 
@@ -56,15 +48,9 @@ accounted for, no `{{VARIABLE}}` placeholders), then emit `GATE_FAIL` (STOP) or
 
 ---
 
-## Step 4: Update Phase Status
+## Step 4: Update Phase Status and Hand Off
 
-Only after `HANDOFF_OK`. Use the read-merge-write update protocol (`INTERPRETER.md` § The interpreter loop):
-
-1. Read current `.phase-status.json` from disk.
-2. Set `phases.generate` to `"completed"`.
-3. Set `current_phase` to `"complete"`.
-4. Update `last_updated` to current ISO 8601 timestamp.
-5. Write the full file.
+Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.generate` completed and advance per `_advances_to` (the `complete` terminal) — in the **same turn** as the output message below.
 
 Output to user:
 
@@ -76,7 +62,7 @@ Artifacts produced:
 • MIGRATION_GUIDE.md — Step-by-step migration procedure
 • README.md — Artifact listing and quick start
 • scripts/ — Database migration scripts
-[• generation-warnings.json — N service(s) require manual setup]
+[• generation-warnings.json — N service(s) require manual setup]   (show this line only when warnings is non-empty; the file is always written)
 
 Migration planning is complete. All artifacts are in $MIGRATION_DIR/.
 ```
@@ -87,27 +73,16 @@ After this output, SKILL.md handles the post-Generate share prompt and feedback 
 
 ## Output Files
 
-**Generate phase writes to `$MIGRATION_DIR/`. Required outputs:**
-
-1. `.phase-status.json` — updated per Step 4
-2. `terraform/` — complete Terraform configuration directory
-3. `MIGRATION_GUIDE.md` — migration procedure
-4. `README.md` — artifact overview
-
-**Conditional outputs:**
-
-- `scripts/migrate-postgres.sh` — when Postgres in design
-- `scripts/migrate-redis.sh` — when Redis in design
-- `generation-warnings.json` — when any services skipped
+This phase's artifacts are declared in `_produces` (the terraform floor + MIGRATION_GUIDE.md + README.md + generation-warnings.json; `.phase-status.json` is updated per Step 4). Conditional outputs (`scripts/migrate-postgres.sh` when Postgres in design, `scripts/migrate-redis.sh` when Redis in design) are governed by the docs fragment's Step 0/Step 3; `generation-warnings.json` is always written (empty `warnings` array when nothing was skipped).
 
 ---
 
 ## Error Handling
 
-| Error Category                       | Behavior                                  | Status Transition      |
-| ------------------------------------ | ----------------------------------------- | ---------------------- |
-| Predecessor phase incomplete         | GATE_FAIL, halt                           | Remain `pending`       |
-| Input artifact missing/invalid       | GATE_FAIL, halt                           | Retain `in_progress`   |
-| Terraform generation partial failure | Log to generation-warnings.json, continue | Continue `in_progress` |
-| Documentation generation failure     | GATE_FAIL at Step 2 gate                  | Retain `in_progress`   |
-| Handoff gate check fails             | Halt pipeline, surface diagnostic         | Retain `in_progress`   |
+Non-fatal generation errors and their handling (fatal predecessor/input/gate failures are handled by `_preconditions`/`_postconditions` + `INTERPRETER.md` § `_on_error`):
+
+| Error Category                       | Behavior                                  |
+| ------------------------------------ | ----------------------------------------- |
+| Terraform generation partial failure | Log to generation-warnings.json, continue |
+| Documentation generation failure     | GATE_FAIL at the completion gate          |
+| Handoff gate check fails             | Halt pipeline, surface diagnostic         |
