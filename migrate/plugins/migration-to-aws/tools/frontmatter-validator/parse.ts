@@ -7,6 +7,7 @@ import type {
   ArtifactRef,
   AssemblerFrontmatter,
   CheckItem,
+  ExecSpec,
   FragmentFrontmatter,
   FragmentRef,
   KnowledgeRef,
@@ -19,8 +20,8 @@ import { readFileSync } from "node:fs";
 const PHASE_KEYS = new Set([
   "_phase", "_title", "_kind", "_requires_phase", "_init", "_input",
   "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
-  "_re_entry_guard", "_preconditions", "_postconditions", "_forbids_files",
-  "_knowledge",
+  "_exec", "_re_entry_guard", "_preconditions", "_postconditions",
+  "_forbids_files", "_knowledge",
 ]);
 /** The closed vocabulary of check kinds usable in _preconditions/_postconditions. */
 export const CHECK_KINDS = new Set([
@@ -34,6 +35,11 @@ export const ON_ERROR_ACTIONS = new Set([
 const GUARD_KEYS = new Set([
   "_stale_if_completed", "_stale_artifact", "_on_reentry", "_on_confirm",
 ]);
+/** The closed vocabulary of `_exec` sub-keys. */
+const EXEC_KEYS = new Set(["_agent"]);
+/** The closed vocabulary of `_exec._agent` capability tiers (ordered least→most privileged). */
+export const EXEC_TIERS = ["ro", "rw", "git"] as const;
+export const EXEC_TIER_SET = new Set<string>(EXEC_TIERS);
 const FRAGMENT_KEYS = new Set(["_fragment", "_of_phase", "_contributes"]);
 const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces", "_knowledge"]);
 
@@ -185,6 +191,42 @@ function parseReEntryGuard(fm: string): ReEntryGuard | null {
   };
 }
 
+/**
+ * Parse the `_exec:` block, or null when the key is absent. Accepts both an inline
+ * map (`_exec: { _agent: rw }`) and a nested block:
+ *   _exec:
+ *     _agent: rw
+ * `_agent` is bound verbatim; the checker enforces the closed tier vocabulary and
+ * unknown sub-keys are collected for the typo check (same pattern as the guard).
+ */
+function parseExec(fm: string): ExecSpec | null {
+  // Inline form: `_exec: { ... }` on one line.
+  const inline = /^_exec:\s*\{([^}]*)\}\s*$/m.exec(fm);
+  if (inline) {
+    const body = inline[1];
+    const am = /_agent:\s*([^,}]+)/.exec(body);
+    const keys: string[] = [];
+    for (const m of body.matchAll(/(_[a-z_]+):/g)) keys.push(m[1]);
+    return {
+      agent: am ? am[1].trim().replace(/^["']|["']$/g, "") : null,
+      unknownKeys: keys.filter((k) => !EXEC_KEYS.has(k)),
+    };
+  }
+  // Block form: `_exec:` on its own line, then indented sub-keys.
+  const block = indentedBlock(fm, "_exec");
+  if (block === null) return null;
+  const am = /^\s*_agent:\s*(.+)$/m.exec(block);
+  const keys: string[] = [];
+  for (const line of block.split("\n")) {
+    const m = /^\s*(_[a-z_]+):/.exec(line);
+    if (m) keys.push(m[1]);
+  }
+  return {
+    agent: am ? am[1].trim().replace(/^["']|["']$/g, "") : null,
+    unknownKeys: keys.filter((k) => !EXEC_KEYS.has(k)),
+  };
+}
+
 /** Parse a `_preconditions` / `_postconditions` list into CheckItems. Each list item
  * is `- <check_kind>: <arg>` optionally followed by an `_on_failure: <action>` line. */
 function parseChecks(fm: string, key: string): CheckItem[] {
@@ -249,6 +291,7 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     produces: artifactList(fm, "_produces").map((a) => a.file),
     producesRefs: artifactList(fm, "_produces"),
     advancesTo: scalar(fm, "_advances_to"),
+    exec: parseExec(fm),
     reEntryGuard: parseReEntryGuard(fm),
     preconditions: parseChecks(fm, "_preconditions"),
     postconditions: parseChecks(fm, "_postconditions"),

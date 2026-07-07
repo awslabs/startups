@@ -34,6 +34,19 @@ export interface CheckItem {
   onFailure: string | null; // _on_failure action name
 }
 
+/**
+ * A phase's `_exec` block — its EXECUTION MODE (see INTERPRETER.md § `_exec`).
+ * When present, the phase's WORK (its fragments + assembler) runs in a fresh,
+ * isolated sub-agent window with file-only I/O; the interpreter keeps the phase's
+ * entry gate, completion gate, `_init` state setup, and the state transition
+ * (`HANDOFF_OK` + `.phase-status.json` write) in the MAIN window. Absent = the
+ * phase runs inline in the main window, as today.
+ */
+export interface ExecSpec {
+  agent: string | null; // _agent — the capability tier the phase's work runs at (closed enum: ro | rw | git)
+  unknownKeys: string[]; // sub-keys not in the closed _exec vocab
+}
+
 /** One entry in a phase's `_knowledge` list (a JSON data dependency). */
 export interface KnowledgeRef {
   file: string; // path relative to the skill root
@@ -71,6 +84,7 @@ export interface PhaseFrontmatter {
   produces: string[]; // _produces filenames (bare + conditional, filename only)
   producesRefs: ArtifactRef[]; // _produces with conditional metadata ({file, when})
   advancesTo: string | null;
+  exec: ExecSpec | null; // _exec execution mode (agent dispatch); null when the phase runs inline
   reEntryGuard: ReEntryGuard | null; // _re_entry_guard (backbone phases with a downstream); null when absent
   preconditions: CheckItem[]; // _preconditions (entry gate); empty when absent
   postconditions: CheckItem[]; // _postconditions (completion gate); empty when absent

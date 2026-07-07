@@ -121,6 +121,30 @@ phase`; `_stale_if_completed '…' should equal this phase's _advances_to '…'`
 **Fix:** align the guard with the chain; make `_stale_artifact` the exact downstream
 artifact whose staleness you're guarding against.
 
+## `_exec` checks (execution mode / agent dispatch)
+
+**Enforces** (`INTERPRETER.md` § `_exec`), when a phase declares `_exec`:
+
+- every `_exec` sub-key is in the closed set (`_agent`);
+- `_agent` is present and ∈ the closed tier set (`ro` / `rw` / `git`);
+- **derived-minimum:** a phase that `_produces` ≥1 artifact does write work, so its
+  `_agent` cannot be `ro` — the declared tier must be ≥ the minimum implied by what
+  the phase produces (declare-but-verify).
+
+The **one-level rule** needs no dedicated check: `_exec` is a PHASE-only key, so a
+fragment or assembler carrying it already trips the closed-vocabulary check
+(`unknown fragment frontmatter key '_exec'`). Nested dispatch is structurally
+unrepresentable.
+
+**Trips on:** `unknown _exec sub-key '…'`; `_exec is present but declares no _agent
+tier`; `_exec._agent '…' is not a recognized capability tier`; `_exec._agent 'ro'
+(read-only) but phase '…' _produces N artifact(s) … needs at least 'rw'`.
+**Fix:** declare `_agent` as the LEAST tier that covers the phase's real work; a
+phase that writes an artifact needs `rw` (or `git` if it mutates repo history). Note
+the validator checks the tier is _well-formed and not under-privileged_ — it does NOT
+verify the host actually enforces it (on inline-only hosts the tier fails open; see
+the judgment-surface note below).
+
 ## Gate checks (`_preconditions` / `_postconditions`)
 
 **Enforces:** every check `kind` is in the closed `CHECK_KINDS` set; every
@@ -221,6 +245,11 @@ These are **not** bugs; they are the deliberate edge of "structure is checkable"
   entire judgment half of the postcondition contract rides on prose the validator
   never reads. Reserve `_assert` for genuine judgment; prefer the mechanical check
   kinds (`_check_file_exists`, `_validate_json`) wherever the property is mechanical.
+- **`_exec._agent` tier enforcement** is the host harness's job, not the validator's.
+  CI checks the tier is well-formed and not under-privileged for what the phase
+  produces, but on a host with no sub-agent allow-list the tier is inert — the phase
+  runs at full access and the restriction fails **open**. The tier records
+  least-privilege _intent_; it is not a portable security boundary.
 
 The value of the grammar is that it **isolates** these to named, greppable places —
 so a reviewer knows exactly where the LLM's judgment is load-bearing.

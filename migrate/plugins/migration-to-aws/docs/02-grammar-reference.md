@@ -15,9 +15,9 @@ Every `_`-prefixed key is closed: a key not in the set for its unit kind is a
 `unknown … frontmatter key` finding (a typo fails the build rather than being
 silently ignored). The sets, verbatim from `parse.ts`:
 
-- **Phase keys (16):** `_phase`, `_title`, `_kind`, `_requires_phase`, `_init`,
+- **Phase keys (17):** `_phase`, `_title`, `_kind`, `_requires_phase`, `_init`,
   `_input`, `_fragments`, `_trigger`, `_assemble`, `_produces`, `_advances_to`,
-  `_re_entry_guard`, `_preconditions`, `_postconditions`, `_forbids_files`,
+  `_exec`, `_re_entry_guard`, `_preconditions`, `_postconditions`, `_forbids_files`,
   `_knowledge`.
 - **Fragment keys (3):** `_fragment`, `_of_phase`, `_contributes`.
 - **Assembler keys (5):** `_assemble`, `_of_phase`, `_reads`, `_produces`,
@@ -28,6 +28,8 @@ silently ignored). The sets, verbatim from `parse.ts`:
   `_halt_and_inform`, `_unrecoverable`.
 - **Re-entry guard sub-keys (4):** `_stale_if_completed`, `_stale_artifact`,
   `_on_reentry`, `_on_confirm`.
+- **`_exec` sub-keys (1):** `_agent`. Its value is a capability tier from the closed
+  set `ro` \| `rw` \| `git`.
 
 ## Unit file structure
 
@@ -63,11 +65,12 @@ The phase orchestrator file `references/phases/<name>/<name>.md` composes the ph
 
 ### Lifecycle & flow
 
-| Key               | Shape                                                                | Meaning                                                                                            |
-| ----------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `_advances_to`    | phase name or a terminal (`complete`)                                | the next phase on success (backbone only; a checkpoint has none)                                   |
-| `_trigger`        | a trigger form (below)                                               | **checkpoint phases only** — how the phase is entered; backbone phases have no phase-level trigger |
-| `_re_entry_guard` | `{ _stale_if_completed, _stale_artifact, _on_reentry, _on_confirm }` | stale-downstream guard (backbone phases with a downstream)                                         |
+| Key               | Shape                                                                | Meaning                                                                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `_advances_to`    | phase name or a terminal (`complete`)                                | the next phase on success (backbone only; a checkpoint has none)                                                                                                               |
+| `_exec`           | `{ _agent: ro \| rw \| git }`                                        | (optional) run the phase's WORK (fragments + assembler) in an isolated sub-agent at this tier; gates + `_init` + state transition stay in the main window. Absent = run inline |
+| `_trigger`        | a trigger form (below)                                               | **checkpoint phases only** — how the phase is entered; backbone phases have no phase-level trigger                                                                             |
+| `_re_entry_guard` | `{ _stale_if_completed, _stale_artifact, _on_reentry, _on_confirm }` | stale-downstream guard (backbone phases with a downstream)                                                                                                                     |
 
 ### Contract
 
@@ -253,6 +256,23 @@ Every check's `_on_failure` names one of these. Two STOP, two CONTINUE:
 | `_default_and_warn` | apply a documented default; warn; continue | remain `in_progress` |
 | `_halt_and_inform`  | stop; surface a diagnostic                 | retain `in_progress` |
 | `_unrecoverable`    | stop; surface an error                     | revert to `pending`  |
+
+### `_exec._agent` — capability tiers
+
+`_exec` runs a phase's work (its fragments + assembler) in an isolated sub-agent;
+`_agent` names the tier that work runs at. Ordered, closed vocabulary (least → most
+privileged):
+
+| Tier  | Grants                                   | For                                          |
+| ----- | ---------------------------------------- | -------------------------------------------- |
+| `ro`  | read-only (Read / Grep / Glob / ro Bash) | analysis phases that produce NO artifact     |
+| `rw`  | `ro` + Write / Edit                      | a phase that writes its `_produces`          |
+| `git` | `rw` + git ops                           | a phase that mutates the user's repo history |
+
+The author DECLARES the tier; CI verifies it is not below the minimum derivable from
+what the phase produces (a producing phase can't be `ro`). The runtime ENFORCEMENT
+of the tier is platform-dependent — on a host with no sub-agent allow-list it fails
+open (the phase runs at full access). See `INTERPRETER.md` § `_exec`.
 
 ### `_re_entry_guard` sub-keys
 

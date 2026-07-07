@@ -24,7 +24,11 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
    frontmatter to find the root; the skill declares its own entry so this is a
    single, direct load. (The entry phase is, by contract, the backbone head — the
    one phase with no `_requires_phase` and with `_init: true`; CI enforces that
-   these coincide, so the declared entry is unambiguous.)
+   these coincide, so the declared entry is unambiguous.) "Run it" means run it per
+   step 5 below — including its `_exec` dispatch if it declares one. The `_init`
+   state setup always happens in THIS (main) window BEFORE any dispatch (a
+   dispatched sub-agent never bootstraps state; it is handed an initialized
+   `$MIGRATION_DIR`).
 2. **Determine the current phase (deterministic):**
    - If `current_phase` is present in `.phase-status.json`, use it (it is
      authoritative). This is the normal WARM-START path.
@@ -38,10 +42,24 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
 4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
    `references/phases/<phase>/<phase>.md`. Load it in full and read its
    frontmatter first.
-5. **Run the phase.** Run its `_preconditions` entry gate (§ Gate protocol); if it
-   passes, set the phase `in_progress`, run its `_fragments` (each when its
-   `_trigger` fires) then its `_assemble`; then run its `_postconditions`
-   completion gate.
+5. **Run the phase.** Run its `_preconditions` entry gate (§ Gate protocol) in
+   THIS (main) window; if it passes, set the phase `in_progress`, then run the
+   phase's WORK — its `_fragments` (each when its `_trigger` fires) then its
+   `_assemble` — and finally run its `_postconditions` completion gate in THIS
+   window.
+   - **If the phase declares `_exec` (§ `_exec`): dispatch the WORK, do not run it
+     inline.** On a host with a sub-agent mechanism, spawn ONE fresh sub-agent at
+     the `_exec._agent` capability tier and have it run the phase's fragments +
+     assembler with file-only I/O (it reads `_input` from `$MIGRATION_DIR`, writes
+     the phase's `_produces` artifact(s) back to `$MIGRATION_DIR`, and returns a
+     terse status — it MUST NOT emit `HANDOFF_OK`, touch `.phase-status.json`, or
+     converse with the user). The entry gate (already run above), any `_init` state
+     setup, and the completion gate + state transition all stay in THIS window. On
+     a host with NO sub-agent mechanism, run the same work inline here (the tier is
+     inert — see § `_exec`). Either way, re-read the produced artifact(s) from disk
+     before the completion gate.
+   - **Otherwise, run the fragments + assembler inline in this window** (the
+     default).
 6. **Advance only on `HANDOFF_OK`.** A phase is complete ONLY when its completion
    gate emits the `HANDOFF_OK` line (§ Gate protocol). On `GATE_FAIL`, STOP — do
    not update `.phase-status.json`, do not load the next phase; tell the user
@@ -112,6 +130,7 @@ guess) on any of:
 | `_assemble`         | the single terminal unit (`{ _file }`) that combines the fragment outputs into the phase's artifact(s)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `_produces`         | the artifact file(s) the phase writes. Each entry is either a bare filename (unconditional) or an inline conditional map `{ file: <path>, _when: <prose> }` — an artifact produced ONLY when the design predicate holds (e.g. `terraform/eks.tf` only when EKS is in the design). Same `{ file, _when }` shape as `_knowledge`; `_when` is opaque prose the interpreter reads at runtime and CI does NOT evaluate. A trailing-slash `file` (e.g. `kubernetes/`) names a produced DIRECTORY when the unit emits a set of dynamically-named files. |
 | `_advances_to`      | (backbone phases only) the phase that runs next on success — or a terminal (`complete`). A checkpoint has NO `_advances_to`.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `_exec`             | (optional) the phase's EXECUTION MODE. When present, the phase's WORK (fragments + assembler) is dispatched to a fresh isolated sub-agent window with file-only I/O, at the capability tier named by `_exec._agent`; the interpreter keeps the gates, `_init` setup, and the state transition in the MAIN window (see § `_exec`). Absent = the phase runs inline in the main window.                                                                                                                                                             |
 | `_re_entry_guard`   | (backbone phases with a downstream only) the stale-downstream guard — STOP re-running this phase if its downstream phase already completed, unless the user confirms (see below). Terminal phases and checkpoints have none.                                                                                                                                                                                                                                                                                                                     |
 | `_preconditions`    | the entry gate — an ordered list of checks that MUST pass before the phase does any work (predecessor completed, single active phase, inputs present/valid). See § Gate protocol.                                                                                                                                                                                                                                                                                                                                                                |
 | `_postconditions`   | the completion gate — an ordered list of checks that MUST pass before the phase is marked `completed` and control advances. See § Gate protocol.                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -173,6 +192,131 @@ reconstruct the `GATE_FAIL` line from this phase's `_phase` plus the constant
 `stale_downstream` reason. This guard is the single source of truth for
 stale-downstream re-entry; there is no separate per-phase prose or shared-file
 table for it.
+
+## `_exec` — execution mode (agent dispatch)
+
+By default a phase runs INLINE: the interpreter loads its orchestrator and runs the
+phase's fragments and assembler in the same (main) window. A phase MAY instead
+declare `_exec` to run its WORK in a fresh, isolated sub-agent window. This is for a
+phase whose work is heavy, self-contained, and non-interactive, and whose
+intermediate DATA (e.g. raw Terraform/HCL, billing CSVs, large tool output) would
+otherwise bloat the main context. Discovery is the canonical case: it parses bulky
+source files down to one small inventory artifact.
+
+```yaml
+_exec:
+  _agent: rw # capability tier: ro | rw | git
+```
+
+### What moves, and what STAYS in the main window
+
+`_exec` dispatches the phase's WORK only. The interpreter keeps ownership of the
+state machine. When a phase declares `_exec`, the interpreter:
+
+1. **Runs the entry gate (`_preconditions`) in the MAIN window**, before dispatch.
+   Dispatch only happens if the gate passes.
+2. **Performs `_init` state setup in the MAIN window** if the phase carries `_init`
+   (create `.migration/`, resolve resume-vs-fresh, write `.phase-status.json`). The
+   agent never bootstraps state — it is handed an already-initialized
+   `$MIGRATION_DIR`.
+3. **Dispatches the fragments + assembler to one sub-agent** at the `_agent` tier.
+   The agent reads the phase's `_input` from `$MIGRATION_DIR` (and the workspace),
+   runs the fragments (each when its `_trigger` fires) then the assembler, and
+   writes the phase's `_produces` artifact(s) to `$MIGRATION_DIR`. The agent's I/O
+   is FILE-ONLY: it returns nothing but its written artifacts (plus a terse status).
+   It does NOT converse with the user — every interactive gate stays in the main
+   window (this is why only non-interactive phases are dispatch candidates).
+4. **Runs the completion gate (`_postconditions`) in the MAIN window**, re-reading
+   the artifact(s) from disk (never trusting the agent's summary), then emits
+   `GATE_FAIL` or `HANDOFF_OK` and writes the state transition — exactly as for an
+   inline phase. The agent MUST NOT emit `HANDOFF_OK` or touch `.phase-status.json`.
+
+One controller owns the lifecycle; the agent is a pure artifact-producing worker.
+
+### How to dispatch (the generic tiered worker)
+
+The dispatched agent is GENERIC and phase-agnostic: one worker shell per capability
+tier, whose only baked-in trait is its tool allow-list. The PHASE it runs is passed
+in at dispatch time, so a single shell serves every phase at that tier. The plugin
+ships these workers under `agents/`; the tier maps to the worker name:
+
+| `_agent` | Worker to dispatch                          | Allow-list (the tier)         |
+| -------- | ------------------------------------------- | ----------------------------- |
+| `ro`     | `migration-to-aws:generic-phase-worker-ro`  | Read, Grep, Glob              |
+| `rw`     | `migration-to-aws:generic-phase-worker-rw`  | Read, Grep, Glob, Write, Edit |
+| `git`    | `migration-to-aws:generic-phase-worker-git` | rw + git                      |
+
+(Only the workers a skill actually needs are shipped; a tier with no worker file on
+disk means no phase uses it yet. `rw` deliberately excludes shell/Bash so it cannot
+reach `git` — that keeps the `rw`/`git` distinction real.)
+
+To dispatch, invoke the tier's worker via the host's Agent/subagent tool with a
+context block that tells the generic worker WHICH phase to run and where. Build these
+exact labeled lines (the worker parses them; omit an optional line when empty):
+
+```
+Skill: <the skill name, e.g. heroku-to-aws>
+Skill root: <absolute path to the skill directory (where references/ and knowledge/ live)>
+Phase: <the _phase id, e.g. discover>
+Phase file: <path, relative to Skill root, of the phase orchestrator (references/phases/<phase>/<phase>.md)>
+Migration dir: <the absolute $MIGRATION_DIR>
+Input artifacts (Read these): <comma-joined paths of the phase's _input artifacts already on disk — omit if none>
+```
+
+Pass upstream artifacts as FILE PATHS, never inlined. The worker loads the phase
+file, runs its fragments + assembler (skipping the `_init`/gate/handoff scaffolding,
+which stay here), writes the `_produces` artifact(s) to `Migration dir`, and returns
+one status line:
+
+- `WORKER_DONE | phase=<phase> | artifacts=<paths>` — proceed to step 4 (re-read the
+  artifacts from disk and run the completion gate here; do NOT trust this line as the
+  handoff).
+- `WORKER_BLOCKED | phase=<phase> | reason=<...>` — the work did not complete. Do NOT
+  advance; run the completion gate anyway (it will fail on the missing/partial
+  artifact and emit `GATE_FAIL`), and tell the user which phase to re-run.
+
+**Fallback — no subagent tool (inline hosts).** If the host has no Agent/subagent
+dispatch tool (e.g. inline-only platforms), do NOT fail: run the phase's fragments +
+assembler INLINE in the main window instead, exactly as a non-`_exec` phase. The
+`_exec` tier is inert here (nothing to enforce it) and the only cost is the heavier
+main-window context `_exec` was meant to avoid. Behavior is identical; isolation is
+not. (See the platform-asymmetry note below.)
+
+### `_agent` — capability tiers
+
+`_agent` names the capability tier the dispatched work runs at. The tiers are an
+ordered, closed vocabulary (least → most privileged):
+
+| Tier  | Capabilities                                    | Use for                                         |
+| ----- | ----------------------------------------------- | ----------------------------------------------- |
+| `ro`  | read-only (Read / Grep / Glob / read-only Bash) | analysis-only phases that produce NO artifact   |
+| `rw`  | `ro` + Write / Edit (file creation in the run)  | a phase that writes its `_produces` artifact(s) |
+| `git` | `rw` + git operations (commit / branch / push)  | a phase that mutates the user's repo history    |
+
+**Derive the minimum, then declare it.** A phase that `_produces` any artifact does
+write work, so it needs at least `rw`; declaring `ro` on a producing phase is a
+validator error (a phase can't produce a file it has no permission to write). The
+author declares the tier and CI verifies it is not below the minimum derivable from
+what the phase produces — the same declare-but-verify pattern as the rest of the
+grammar. Pick the LEAST tier that covers the phase's real work.
+
+### One level only
+
+Dispatch is ONE level deep. A phase's fragments run INSIDE the dispatched agent;
+they cannot themselves declare `_exec` and spawn a further sub-agent (most harnesses
+forbid a sub-agent spawning a sub-agent). `_exec` is a PHASE-only key — a fragment
+or assembler carrying it is a closed-vocabulary error.
+
+### Platform asymmetry — the tier is a scoping HINT, not a guarantee
+
+The capability tier is only _enforced_ where the host harness has a real sub-agent
+allow-list (e.g. Claude Code's `tools:` frontmatter). On harnesses with no sub-agent
+model (inline-only hosts), there is nothing to dispatch to: the phase runs in the
+main session at full access and the tier is INERT — it fails **open**. Treat
+`_exec._agent` as a least-privilege _intent_ the harness enforces when it can, NOT as
+a security boundary you can rely on. Do not put a safety-critical permission
+restriction behind a tier and assume it holds everywhere. (Same fail-open discipline
+as `_when`: structure records the intent; enforcement is the harness's job.)
 
 ## Gate protocol
 

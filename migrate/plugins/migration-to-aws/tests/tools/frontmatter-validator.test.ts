@@ -659,4 +659,84 @@ _produces:
     const findings = validateFixture(files);
     assert.equal(findings.length, 0, `expected no findings, got: ${JSON.stringify(findings)}`);
   });
+
+  // ---- _exec (execution mode / agent dispatch) ----
+
+  it('accepts a phase with _exec: { _agent: rw } that produces an artifact', () => {
+    // goodSkill's discover _produces inventory.json -> rw is the derived minimum.
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: rw }');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('accepts an _exec in nested block form (_agent: git)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec:\n  _agent: git');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects an _exec._agent that is not a recognized tier', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: superuser }');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /_exec\._agent 'superuser' is not a recognized capability tier/,
+    );
+  });
+
+  it('rejects an unknown _exec sub-key (typo)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: rw, _agnet: rw }');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /unknown _exec sub-key '_agnet'/);
+  });
+
+  it('rejects _exec present with no _agent tier', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec:\n  _mode: agent');
+    const findings = validateFixture(files);
+    const msg = findings.map((f) => f.message).join('\n');
+    assert.match(msg, /_exec is present but declares no _agent tier/);
+    assert.match(msg, /unknown _exec sub-key '_mode'/);
+  });
+
+  it('rejects _agent: ro on a producing phase (derived-minimum tier)', () => {
+    // discover _produces inventory.json, so ro (read-only) is below the minimum.
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: ro }');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /_exec\._agent 'ro' \(read-only\) but phase 'discover' _produces .* needs at least 'rw'/,
+    );
+  });
+
+  it('rejects _exec on a fragment (one-level rule: _exec is phase-only)', () => {
+    // A fragment carrying _exec must trip the closed-vocab check — nested dispatch
+    // is structurally unrepresentable.
+    const files = goodSkill();
+    files['references/phases/discover/discover-terraform.md'] = files[
+      'references/phases/discover/discover-terraform.md'
+    ].replace('_of_phase: discover', '_of_phase: discover\n_exec: { _agent: rw }');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /unknown fragment frontmatter key '_exec'/,
+    );
+  });
 });

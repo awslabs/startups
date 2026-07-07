@@ -15,6 +15,8 @@ _assemble:
 _produces:
   - heroku-resource-inventory.json
 _advances_to: clarify
+_exec:
+  _agent: rw
 _re_entry_guard:
   _stale_if_completed: clarify
   _stale_artifact: preferences.json

@@ -13,7 +13,7 @@ import type {
 } from "./types.ts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { CHECK_KINDS, ON_ERROR_ACTIONS } from "./parse.ts";
+import { CHECK_KINDS, EXEC_TIER_SET, EXEC_TIERS, ON_ERROR_ACTIONS } from "./parse.ts";
 
 export interface BoundSkill {
   /** absolute path to the skill's `references/` root (where phase _file paths resolve). */
@@ -65,6 +65,29 @@ export function check(skill: BoundSkill): Finding[] {
     // the target is not itself declared (otherwise UNVERIFIED — tolerant of partial rollout).
     if (phase.requiresPhase && declaredPhases.size > 1 && !declaredPhases.has(phase.requiresPhase)) {
       add(pf, `_requires_phase '${phase.requiresPhase}' names no declared phase`);
+    }
+
+    // ---- _exec (execution mode / agent dispatch) — INTERPRETER.md § _exec ----
+    // A phase carrying _exec runs its WORK (fragments + assembler) in a fresh isolated
+    // sub-agent at the declared capability tier; the interpreter keeps the gates,
+    // _init state setup, and the state transition in the main window. Structural
+    // checks only (the tier's runtime ENFORCEMENT is platform-dependent — see the doc):
+    //   (1) unknown _exec sub-keys (typo catch);
+    //   (2) _agent is present and ∈ the closed tier set (ro|rw|git);
+    //   (3) derived-minimum: a phase that _produces ≥1 artifact does WRITE work, so its
+    //       tier cannot be 'ro' (read-only) — the author-declared tier must be ≥ the
+    //       minimum derivable from what the phase produces (declare-but-verify, the same
+    //       pattern as the rest of the grammar).
+    if (phase.exec) {
+      for (const k of phase.exec.unknownKeys) add(pf, `unknown _exec sub-key '${k}'`);
+      const tier = phase.exec.agent;
+      if (!tier) {
+        add(pf, `_exec is present but declares no _agent tier (expected one of: ${EXEC_TIERS.join(", ")})`);
+      } else if (!EXEC_TIER_SET.has(tier)) {
+        add(pf, `_exec._agent '${tier}' is not a recognized capability tier (expected one of: ${EXEC_TIERS.join(", ")})`);
+      } else if (tier === "ro" && phase.produces.length > 0) {
+        add(pf, `_exec._agent 'ro' (read-only) but phase '${phase.phase}' _produces ${phase.produces.length} artifact(s) (${phase.produces.join(", ")}) — a producing phase writes files and needs at least 'rw' (derived-minimum tier)`);
+      }
     }
 
     // fragments

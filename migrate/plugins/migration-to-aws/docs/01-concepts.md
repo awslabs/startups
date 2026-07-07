@@ -142,6 +142,18 @@ Two more lifecycle constructs:
   stops unless the user confirms, and on confirm resets the downstream phases to
   pending.
 
+And one execution-mode construct, orthogonal to the lifecycle:
+
+- **Agent dispatch** (`_exec`) lets a phase run its WORK (fragments + assembler) in a
+  fresh isolated sub-agent window instead of inline — for heavy, self-contained,
+  non-interactive phases (discovery is the case) whose bulky intermediate data would
+  otherwise flood the main context. The interpreter keeps the gates, `_init` setup,
+  and the state transition in the main window; only the artifact-producing work moves
+  out. It carries a capability tier (`_agent: ro|rw|git`) the validator floors
+  against what the phase produces — but that tier is enforced only where the host
+  harness has a real sub-agent allow-list, so it is a least-privilege _hint_, not a
+  portable guarantee. Dispatch is one level deep (a fragment can't re-dispatch).
+
 ## 6. Derive, don't declare.
 
 A recurring principle you will see enforced: when the validator needs a closed set to
