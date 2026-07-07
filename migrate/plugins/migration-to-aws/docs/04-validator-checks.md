@@ -258,4 +258,5 @@ so a reviewer knows exactly where the LLM's judgment is load-bearing.
 
 Back to the [README](README.md) · the model in [01-concepts.md](01-concepts.md) · the
 keys in [02-grammar-reference.md](02-grammar-reference.md) · building in
-[03-authoring-guide.md](03-authoring-guide.md).
+[03-authoring-guide.md](03-authoring-guide.md) · agent dispatch in
+[05-exec-agent-dispatch.md](05-exec-agent-dispatch.md).
