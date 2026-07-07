@@ -48,78 +48,9 @@ _forbids_files:
 Lightweight orchestrator that delegates to domain-specific discoverers. Each sub-discovery file is self-contained — it scans for its own input, processes what it finds, and exits cleanly if nothing is relevant.
 **Execute ALL steps in order. Do not skip or deviate.**
 
-## Sub-Discovery Files
+Procfile and app.json parsing is integrated into the Terraform discovery flow (there is no standalone Procfile fragment) — when repo artifacts are found alongside Terraform, they supplement resource data with commands, buildpacks, and declared add-ons.
 
-- **discover-terraform.md** → Terraform discovery (primary): `.tf` files with `heroku_*` resource types
-- **discover-billing.md** → Billing data parsing: Heroku Dashboard invoices or Enterprise CSV exports
-
-Procfile and app.json parsing is integrated into the Terraform discovery flow — when repo artifacts are found alongside Terraform, they supplement resource data with commands, buildpacks, and declared add-ons.
-
-All sub-discoveries contribute to a single `heroku-resource-inventory.json` artifact.
-
-**Note:** Platform API discovery is NOT supported in v1. No API calls are made. Discovery is entirely file-based (Terraform + repo + billing).
-
----
-
-## Phase Status State Machine
-
-### Valid Transitions
-
-```
-pending → in_progress → completed
-```
-
-Status NEVER goes backward under normal operation. Only an **unrecoverable error** reverts the current phase to `pending`.
-
-### Phase Gate Rules (Fail Closed)
-
-**Rule 1 — Predecessor gate:** A phase may transition to `in_progress` ONLY when its immediate predecessor phase has status `completed`. The ordered phase list is:
-
-```
-discover → clarify → design → estimate → generate
-```
-
-- `discover` has no predecessor — it may always start.
-- `clarify` requires `phases.discover == "completed"`.
-- `design` requires `phases.clarify == "completed"`.
-- `estimate` requires `phases.design == "completed"`.
-- `generate` requires `phases.estimate == "completed"`.
-
-If the predecessor is not `completed`, emit:
-
-```
-GATE_FAIL | phase=<target_phase> | field=phases.<predecessor> | reason=missing
-```
-
-Do NOT advance. Do NOT modify `.phase-status.json`. Tell the user which prior phase must complete first.
-
-**Rule 2 — Single active phase:** At most one core phase (discover, clarify, design, estimate, generate) may be `in_progress` at any time. If another phase is already `in_progress`, emit:
-
-```
-GATE_FAIL | phase=<target_phase> | field=phases.<active_phase> | reason=invalid
-```
-
-**Rule 3 — GATE_FAIL halt behavior:** When any handoff gate check fails at phase completion:
-
-1. Retain the failing phase's status as `in_progress` — do NOT revert it.
-2. Do NOT advance `current_phase`.
-3. Do NOT modify any artifacts to force the gate to pass.
-4. Surface a diagnostic to the user identifying:
-   - The phase that failed (`phase=<name>`)
-   - The specific field or artifact that failed (`field=<dotted.path>`)
-   - The failure reason (`reason=missing|invalid|stale_downstream`)
-5. Tell the user: "Re-run Phase N (phase name) to produce the missing field, then continue."
-
-**Rule 4 — Unrecoverable error behavior:** When a phase fails during execution due to an unrecoverable error (e.g., no Heroku sources found, corrupted state file, critical sub-discovery failure that blocks all outputs):
-
-1. Revert that phase's status to `pending` in `.phase-status.json`.
-2. Preserve all artifacts and status values from prior completed phases — do NOT touch them.
-3. Surface a diagnostic to the user identifying:
-   - The failed phase
-   - The error category (e.g., `no_sources`, `state_corrupted`, `auth_failure`)
-   - Actionable guidance on how to resolve
-
-**Rule 5 — Phase re-entry:** Stale-downstream re-entry is handled by each phase's `_re_entry_guard` frontmatter — see `INTERPRETER.md` § `_re_entry_guard`. Re-running a phase after a downstream phase completed requires explicit user confirmation; on confirmation the downstream phases are reset to `"pending"`.
+**Note:** Platform API discovery is NOT supported in v1. No API calls are made. Discovery is entirely file-based (Terraform + repo + billing). All sub-discoveries contribute to a single `heroku-resource-inventory.json` artifact via the phase assembler.
 
 ---
 
@@ -157,12 +88,7 @@ Glob for: `**/*billing*.csv`, `**/*invoice*.csv`, `**/*billing*.json`, `**/*invo
 
 ### 1d. Source validation gate
 
-**If NO Terraform files with `heroku_*` resources found** (regardless of whether Procfile/app.json exist):
-
-1. Apply **unrecoverable error behavior** (Rule 4):
-   - Revert `phases.discover` to `"pending"` in `.phase-status.json`.
-   - Preserve all other phase statuses unchanged.
-2. STOP and output: "No Terraform files with heroku_* resources found. Heroku Terraform is required for discovery. Procfile and app.json alone are not sufficient."
+**If NO Terraform files with `heroku_*` resources found** (regardless of whether Procfile/app.json exist): this phase's `_preconditions` `_assert` fails with `_on_failure: _unrecoverable` (see `INTERPRETER.md` § Gate protocol / `_on_error`) — STOP and output: "No Terraform files with heroku_* resources found. Heroku Terraform is required for discovery. Procfile and app.json alone are not sufficient."
 
 ---
 
@@ -226,16 +152,9 @@ emit `GATE_FAIL` (STOP; do not patch artifacts) or
 
 ---
 
-## Step 5: Update Phase Status
+## Step 5: Update Phase Status and Hand Off
 
-Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
-
-1. Read current `.phase-status.json` from disk.
-2. Set `phases.discover` to `"completed"`.
-3. Set `current_phase` to `"clarify"`.
-4. Update `last_updated` to current ISO 8601 timestamp.
-5. Keep all other phase values unchanged.
-6. Write the full file.
+Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.discover` completed and advance per `_advances_to` — in the **same turn** as the output message below.
 
 Output to user — build message from inventory contents:
 
@@ -251,39 +170,22 @@ Format: "Discover phase complete. [artifact summaries] Next required step: Phase
 
 ## Output Files
 
-**Discover phase writes files to `$MIGRATION_DIR/`. Required outputs:**
-
-1. `.phase-status.json` — phase tracking (initialized in Step 0, updated in Step 5)
-2. `heroku-resource-inventory.json` — flat resource inventory
-
-**Optional outputs (depending on available sources):**
-
-- Billing profile embedded in inventory (not a separate file)
-
-**No other files must be created:**
-
-- No README.md
-- No discovery-summary.md
-- No EXECUTION_REPORT.txt
-- No discovery-log.md
-- No documentation or report files
-
-All user communication via output messages only.
+This phase's artifacts are declared in `_produces` and its scope boundary (files it must NOT create) in `_forbids_files`. Billing data, when present, is embedded in `heroku-resource-inventory.json` — not a separate file. All user communication is via output messages only (no report/log files).
 
 ---
 
 ## Error Handling
 
-| Error Category                                                 | Behavior                                       | Status Transition             |
-| -------------------------------------------------------------- | ---------------------------------------------- | ----------------------------- |
-| No Heroku Terraform files (no `.tf` with `heroku_*` resources) | STOP, surface diagnostic                       | Revert to `pending` (Rule 4)  |
-| Terraform parse error (malformed HCL)                          | Log warning, skip malformed blocks, continue   | Continue `in_progress`        |
-| Procfile/app.json parse error                                  | Record warning per-app, continue               | Continue `in_progress`        |
-| Generation detection unresolvable (no stack attr)              | Set `heroku_generation` to `unknown`, continue | Continue `in_progress`        |
-| Pipeline detection from Terraform incomplete                   | Record with available data, continue           | Continue `in_progress`        |
-| All sub-discoveries produce no resources                       | STOP, surface diagnostic                       | Revert to `pending` (Rule 4)  |
-| `.phase-status.json` invalid JSON                              | STOP, surface diagnostic                       | N/A (state corrupted)         |
-| Handoff gate check fails (GATE_FAIL)                           | Halt pipeline, surface diagnostic              | Retain `in_progress` (Rule 3) |
+Non-fatal discovery errors and their handling (fatal source/gate failures are handled by `_preconditions`/`_postconditions` + `INTERPRETER.md` § `_on_error`):
+
+| Error Category                                    | Behavior                                       |
+| ------------------------------------------------- | ---------------------------------------------- |
+| Terraform parse error (malformed HCL)             | Log warning, skip malformed blocks, continue   |
+| Procfile/app.json parse error                     | Record warning per-app, continue               |
+| Generation detection unresolvable (no stack attr) | Set `heroku_generation` to `unknown`, continue |
+| Pipeline detection from Terraform incomplete      | Record with available data, continue           |
+
+When all sub-discoveries produce no resources (or no Heroku Terraform is present), the phase's source `_precondition` fails `_unrecoverable`; a completion-gate failure halts per the gate protocol (retain `in_progress`, do not patch).
 
 ---
 

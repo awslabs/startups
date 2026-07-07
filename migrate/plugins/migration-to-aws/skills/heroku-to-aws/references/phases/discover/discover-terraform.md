@@ -48,15 +48,6 @@ Specifically, match lines containing `resource "heroku_` (with double-quote befo
 - `heroku_pipeline`
 - `heroku_space`
 
-### 0c. Exit Gate
-
-**If NO `.tf` files contain any `heroku_*` resource blocks:**
-
-- Log: "No Terraform files with heroku_* resources found — skipping Terraform discovery."
-- **Exit cleanly.** Return no output artifacts. Other sub-discovery files will still produce their artifacts.
-
-**If at least one `heroku_*` resource found → continue to Step 1.**
-
 ---
 
 ## Step 1: Extract Resources from Terraform
@@ -505,13 +496,20 @@ For each `heroku_app` resource:
 
 ## Step 4: Output Contribution for Parent Orchestrator
 
-This sub-discovery contributes two sections to `heroku-resource-inventory.json`:
+The phase assembler (`discover-assemble.md`) owns the inventory's STRUCTURE (which
+sections exist and their field lists). This fragment contributes the following
+terraform-specific content and rules:
 
-### 4a. Resources Contribution
-
-All Terraform-sourced resource entries are included directly in the `resources[]` array as the primary inventory data. Procfile/app.json data supplements Terraform entries with additional fields (commands, buildpacks).
-
-### 4b. `terraform_metadata` Section
+- **Resources:** all Terraform-sourced entries go into `resources[]` as the
+  primary inventory data; Procfile/app.json supplements them (adds `command`,
+  buildpacks, declared add-ons). When Procfile was available, formation entries
+  have `command` populated; otherwise `command` is `null`.
+- **Confidence:** set `metadata.confidence` to `"full"` when all Terraform files
+  parsed successfully, or `"reduced"` if any parse errors occurred or expected
+  resources were missing.
+- **Discovery sources:** contribute `"terraform"` to `metadata.discovery_sources`,
+  and `"procfile"` as well if Procfile/app.json were found and parsed.
+- **`terraform_metadata`:** contribute the shape shown below.
 
 ```json
 {
@@ -524,40 +522,19 @@ All Terraform-sourced resource entries are included directly in the `resources[]
 }
 ```
 
-### 4c. Confidence Metadata Contribution
-
-Terraform + repo artifacts is the primary (and only) discovery path in v1:
-
-- Set `metadata.confidence` to `"full"` when all Terraform files parsed successfully
-- Set `metadata.confidence` to `"reduced"` if any parse errors occurred or expected resources were missing
-- `metadata.discovery_sources` includes `"terraform"` and (if Procfile/app.json found) `"procfile"`
-
-### 4d. Output Assembly
-
-All Terraform-extracted resources are the primary inventory entries. Procfile/app.json data supplements them (adds `command`, buildpacks, declared add-ons).
-
-If Procfile was available: formation resources will have `command` fields populated.
-If Procfile was NOT available: formation `command` fields will be `null`.
-
-### 4e. Discovery Sources Contribution
-
-Add `"terraform"` to `metadata.discovery_sources` array. If Procfile or app.json were found and parsed, also add `"procfile"`.
-
 ---
 
 ## Error Handling
 
-| Error Category                         | Behavior                                     | Effect on Discovery                      |
-| -------------------------------------- | -------------------------------------------- | ---------------------------------------- |
-| No `.tf` files in workspace            | Exit cleanly, no output                      | Billing discovery may still run          |
-| No `heroku_*` resources in `.tf` files | Exit cleanly, no output                      | Billing discovery may still run          |
-| HCL parse error in one file            | Log warning, skip malformed blocks, continue | Other files still processed              |
-| HCL parse error in all files           | Log warning, exit cleanly                    | Billing discovery may still run          |
-| Unresolvable Terraform reference       | Set `heroku_app: "unassociated"`, continue   | Resource included with limited context   |
-| `heroku_app` resource has no `name`    | Skip resource, log warning                   | Other resources still processed          |
-| `heroku_addon` has unparseable `plan`  | Record with `plan: "unknown"`, continue      | Resource included with limited plan info |
-| File read permission denied            | Log warning, skip file, continue             | Other files still processed              |
-| Circular Terraform references          | Resolve to best-effort, log warning          | Resources included with available data   |
+| Error Category                        | Behavior                                     | Effect on Discovery                      |
+| ------------------------------------- | -------------------------------------------- | ---------------------------------------- |
+| HCL parse error in one file           | Log warning, skip malformed blocks, continue | Other files still processed              |
+| HCL parse error in all files          | Log warning, exit cleanly                    | Billing discovery may still run          |
+| Unresolvable Terraform reference      | Set `heroku_app: "unassociated"`, continue   | Resource included with limited context   |
+| `heroku_app` resource has no `name`   | Skip resource, log warning                   | Other resources still processed          |
+| `heroku_addon` has unparseable `plan` | Record with `plan: "unknown"`, continue      | Resource included with limited plan info |
+| File read permission denied           | Log warning, skip file, continue             | Other files still processed              |
+| Circular Terraform references         | Resolve to best-effort, log warning          | Resources included with available data   |
 
 **Key principle:** Terraform discovery is the **primary** discovery path in v1. Any parse failure results in a warning and graceful skip for that specific block — it should NOT halt the entire discovery. Partial results are always better than no results.
 

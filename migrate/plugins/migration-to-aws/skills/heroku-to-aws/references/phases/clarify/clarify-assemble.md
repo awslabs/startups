@@ -90,8 +90,6 @@ Write `$MIGRATION_DIR/preferences.json`:
 6. `network.existing_vpc_id` and `network.subnet_ids` are `null`/empty when no Private Space peering exists.
 7. `data.database_ha`, `data.redis_ha`, `data.kafka_retention_days` are omitted entirely when those services are not present in the inventory.
 
-After writing `preferences.json`, delete any stale `$MIGRATION_DIR/preferences-draft.json` left by an older skill version (drafts are no longer written or consumed).
-
 ---
 
 ## Validation Checklist
@@ -130,12 +128,8 @@ private-space conditionals), then emit `GATE_FAIL` (STOP; do not patch artifacts
 
 ---
 
-## Step 5: Update Phase Status
+## Step 5: Update Phase Status and Hand Off
 
-Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
-
-- Set `phases.clarify` to `"completed"`
-- Set `current_phase` to `"design"`
-- Update `last_updated` to current ISO timestamp
+Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.clarify` completed and advance per `_advances_to` — in the **same turn** as the output message below.
 
 Output to user: "Clarification complete. Proceeding to Phase 3: Design AWS Architecture."

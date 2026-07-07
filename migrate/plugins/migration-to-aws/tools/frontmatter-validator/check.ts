@@ -229,6 +229,27 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
+  // ---- _advances_to membership (dangling forward-edge check) ----
+  // A phase's _advances_to must name either a terminal (complete/done/end) or a
+  // phase that EXISTS ON DISK (a references/phases/<name>/<name>.md file). This is
+  // independent of the chain-consistency block below (which is gated on the whole
+  // backbone being frontmatter-present and self-SKIPS the moment any _advances_to
+  // is unresolvable — so a dangling edge would otherwise slip through as a false
+  // OK). Resolving against the phase DIRECTORY (not the frontmatter-declared set)
+  // preserves partial-rollout tolerance: an edge to a real phase that has no
+  // frontmatter yet still resolves; only an edge to a phase that does not exist at
+  // all fails.
+  for (const phase of skill.phases) {
+    if (!phase.advancesTo || TERMINALS.has(phase.advancesTo)) continue;
+    const targetFile = join(skill.referencesRoot, "phases", phase.advancesTo, `${phase.advancesTo}.md`);
+    if (!existsSync(targetFile)) {
+      add(
+        skill.rel(phase.sourceFile),
+        `_advances_to '${phase.advancesTo}' names neither a terminal (complete/done/end) nor an existing phase (no references/phases/${phase.advancesTo}/${phase.advancesTo}.md) — dangling forward edge`,
+      );
+    }
+  }
+
   // ---- Backbone chain-consistency (backbone phases only; checkpoints excluded) ----
   // The backbone is the linear lifecycle wired by _advances_to (forward) and
   // _requires_phase (backward). Checkpoints (_kind: checkpoint) are off-backbone and
@@ -280,6 +301,43 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
+  // ---- Entry phase: `_init` uniqueness + `_init` ⟺ backbone head ----
+  // The skill's cold-start entry is the backbone head (the phase with no
+  // _requires_phase) and it carries `_init: true` (INTERPRETER.md § The interpreter
+  // loop, step 1 + § `_init`). SKILL.md names this phase so a cold start loads it
+  // directly instead of scanning all phase frontmatter to find the root. These
+  // checks guarantee that entry is single and unambiguous, so the SKILL.md pointer
+  // has exactly one legal target.
+  const initPhases = skill.phases.filter((p) => p.init);
+  //   (a) at most one `_init` phase (a migration bootstraps state once).
+  if (initPhases.length > 1) {
+    const names = initPhases.map((p) => p.phase).join(", ");
+    for (const p of initPhases) {
+      add(skill.rel(p.sourceFile), `multiple phases declare '_init: true' (${names}) — a skill has exactly one entry phase`);
+    }
+  }
+  for (const p of initPhases) {
+    //   (b) the `_init` phase must be a backbone phase (a checkpoint is off-backbone,
+    //       trigger-entered — it can never be the entry).
+    if (p.role === "checkpoint") {
+      add(skill.rel(p.sourceFile), `checkpoint phase '${p.phase}' declares '_init: true' — only a backbone phase can be the entry (checkpoints are off-backbone, trigger-entered)`);
+    }
+    //   (c) the `_init` phase must be the backbone head (no _requires_phase) — the
+    //       entry cannot depend on an upstream phase.
+    if (p.requiresPhase) {
+      add(skill.rel(p.sourceFile), `entry phase '${p.phase}' declares '_init: true' but also '_requires_phase: ${p.requiresPhase}' — the entry phase is the backbone head and must have no _requires_phase`);
+    }
+  }
+  //   (d) once the backbone is fully present (>1 backbone phase), an entry MUST exist:
+  //       exactly one `_init` phase. (Partial-rollout tolerant: skip while only one
+  //       phase carries frontmatter.)
+  {
+    const backboneCount = skill.phases.filter((p) => p.role === "backbone").length;
+    if (backboneCount > 1 && initPhases.length === 0) {
+      add(skill.rel(skill.phases[0].sourceFile), `no phase declares '_init: true' — the backbone has no entry phase to bootstrap migration state on a cold start`);
+    }
+  }
+
   // ---- _knowledge (JSON data deps resolve) + _input (resolves to an upstream _produces) ----
   const skillRoot = join(skill.referencesRoot, "..");
   // every artifact any declared phase produces (for _input resolution)
@@ -287,6 +345,15 @@ export function check(skill: BoundSkill): Finding[] {
   for (const p of skill.phases) for (const art of p.produces) allProduced.add(art);
   const INPUT_LITERALS = new Set(["workspace"]);
   const isGlob = (s: string) => /[*?{]/.test(s);
+
+  // assembler _knowledge files must resolve on disk too (relative to the skill root).
+  for (const asm of skill.assemblers.values()) {
+    for (const k of asm.knowledge) {
+      if (!existsSync(join(skillRoot, k.file))) {
+        add(skill.rel(asm.sourceFile), `_knowledge file does not resolve: ${k.file}`);
+      }
+    }
+  }
 
   for (const phase of skill.phases) {
     const pf = skill.rel(phase.sourceFile);
@@ -307,6 +374,30 @@ export function check(skill: BoundSkill): Finding[] {
         add(pf, `_input '${inp}' is not produced by any declared phase (no phase declares it in _produces)`);
       }
     }
+  }
+
+  // ---- Conditional-artifact well-formedness (_produces / _contributes) ----
+  // An artifact entry is either a bare filename or an inline conditional map
+  // `{ file: <path>, _when: <prose> }` (mirrors _knowledge). CI does NOT evaluate
+  // `_when` (opaque prose, same as _knowledge._when); it only checks the entry is
+  // well-formed: a map form must carry a parseable, non-empty `file:`. (The
+  // filename itself flows into produces/contributes and is covered by the existing
+  // single-creator, postcond⊆produces, _input, and _stale_artifact checks.)
+  const checkArtifactRefs = (refs: typeof skill.phases[number]["producesRefs"], file: string, key: string) => {
+    for (const r of refs) {
+      if (!r.file) {
+        add(file, `${key} has a conditional entry with no parseable 'file:' (expected '{ file: <path>, _when: <prose> }')`);
+      }
+    }
+  };
+  for (const phase of skill.phases) {
+    checkArtifactRefs(phase.producesRefs, skill.rel(phase.sourceFile), "_produces");
+  }
+  for (const frag of skill.fragments.values()) {
+    checkArtifactRefs(frag.contributesRefs, skill.rel(frag.sourceFile), "_contributes");
+  }
+  for (const asm of skill.assemblers.values()) {
+    checkArtifactRefs(asm.producesRefs, skill.rel(asm.sourceFile), "_produces");
   }
 
   return findings;

@@ -32,12 +32,12 @@ After all sub-discoveries complete, assemble `heroku-resource-inventory.json` in
    - `procfile_parse_warning`, `app_json_parse_warning` (per-app parse warnings or null)
 6. Include `billing_profile` section (if billing data available, with `available`, `total_monthly_cost`, `currency`, `billing_period`, `line_items`).
 7. Include `terraform_metadata` section (if Terraform discovery ran, with `found`, `tf_files_scanned`, `resource_types_extracted`, `parse_warnings`).
-8. Verify NO forbidden fields exist: `cluster_id`, `creation_order_depth`, `edges`, `dependencies`, `must_migrate_together`.
 
 **If assembly fails** (no valid resources from any source after sub-discoveries ran):
+this is an unrecoverable error (`INTERPRETER.md` § `_on_error` — `_unrecoverable`).
+STOP and output: "Discovery ran but produced no valid resources. Check that your
+input files contain valid Heroku resources and try again."
 
-Apply **unrecoverable error behavior** (Rule 4 in `discover.md`):
-
-- Revert `phases.discover` to `"pending"`.
-- Preserve prior completed phases.
-- STOP and output: "Discovery ran but produced no valid resources. Check that your input files contain valid Heroku resources and try again."
+(The phase's `_postconditions` separately enforce that no forbidden clustering
+fields — `cluster_id`, `creation_order_depth`, `edges`, `dependencies`,
+`must_migrate_together` — appear in the assembled artifact.)

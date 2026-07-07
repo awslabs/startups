@@ -4,6 +4,7 @@
 // / `_produces` / `_reads` / `_contributes` lists). Not a general YAML parser.
 
 import type {
+  ArtifactRef,
   AssemblerFrontmatter,
   CheckItem,
   FragmentFrontmatter,
@@ -34,7 +35,7 @@ const GUARD_KEYS = new Set([
   "_stale_if_completed", "_stale_artifact", "_on_reentry", "_on_confirm",
 ]);
 const FRAGMENT_KEYS = new Set(["_fragment", "_of_phase", "_contributes"]);
-const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces"]);
+const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces", "_knowledge"]);
 
 /** Return the frontmatter block text (between the leading `---` fences), or null. */
 export function extractFrontmatter(path: string): string | null {
@@ -74,6 +75,28 @@ function blockList(fm: string, key: string): string[] {
     .split("\n")
     .map((l) => l.replace(/^\s*-\s*/, "").trim())
     .filter(Boolean);
+}
+
+/**
+ * An ARTIFACT block-list (`_produces` / `_contributes`): each item is either a
+ * bare filename (`- foo.tf`) or an inline conditional map (`- { file: foo.tf,
+ * _when: "..." }`), mirroring `_knowledge`. Returns one ArtifactRef per item.
+ * A map item with no parseable `file:` yields `{ file: "", when }` so the checker
+ * can flag it as malformed. `when` is opaque prose (bound, not evaluated by CI).
+ */
+function artifactList(fm: string, key: string): ArtifactRef[] {
+  const out: ArtifactRef[] = [];
+  for (const raw of blockList(fm, key)) {
+    if (raw.startsWith("{")) {
+      const fmatch = /file:\s*([^,}]+)/.exec(raw);
+      const file = fmatch ? fmatch[1].trim().replace(/^["']|["']$/g, "") : "";
+      const wmatch = /_when:\s*["']?([^"'}]+)["']?/.exec(raw);
+      out.push({ file, when: wmatch ? wmatch[1].trim() : null });
+    } else {
+      out.push({ file: raw, when: null });
+    }
+  }
+  return out;
 }
 
 function parseTrigger(raw: string): Trigger {
@@ -223,7 +246,8 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     fragments: parseFragments(fm),
     trigger: ptrig ? parseTrigger(ptrig[1]) : null,
     assembleFile: assembleBlock ? assembleBlock[1].trim() : null,
-    produces: blockList(fm, "_produces"),
+    produces: artifactList(fm, "_produces").map((a) => a.file),
+    producesRefs: artifactList(fm, "_produces"),
     advancesTo: scalar(fm, "_advances_to"),
     reEntryGuard: parseReEntryGuard(fm),
     preconditions: parseChecks(fm, "_preconditions"),
@@ -241,7 +265,8 @@ export function parseFragment(path: string, fm: string): FragmentFrontmatter {
     sourceFile: path,
     fragment: scalar(fm, "_fragment") ?? "",
     ofPhase: scalar(fm, "_of_phase"),
-    contributes: blockList(fm, "_contributes"),
+    contributes: artifactList(fm, "_contributes").map((a) => a.file),
+    contributesRefs: artifactList(fm, "_contributes"),
     unknownKeys: unknownAmong(fm, FRAGMENT_KEYS),
   };
 }
@@ -253,7 +278,9 @@ export function parseAssembler(path: string, fm: string): AssemblerFrontmatter {
     assemble: scalar(fm, "_assemble"),
     ofPhase: scalar(fm, "_of_phase"),
     reads: blockList(fm, "_reads"),
-    produces: blockList(fm, "_produces"),
+    produces: artifactList(fm, "_produces").map((a) => a.file),
+    producesRefs: artifactList(fm, "_produces"),
+    knowledge: parseKnowledge(fm),
     unknownKeys: unknownAmong(fm, ASSEMBLER_KEYS),
   };
 }

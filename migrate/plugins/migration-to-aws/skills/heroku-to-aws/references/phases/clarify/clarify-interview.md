@@ -31,9 +31,7 @@ Check `$MIGRATION_DIR/` for existing state:
 - If A: Skip to Validation Checklist with the existing `preferences.json`.
 - If B: Delete `preferences.json`, continue to Step 1.
 
-**Case 2 — No prior state**: Continue to Step 1. (If a stale
-`preferences-draft.json` from an older skill version is present, delete it — the
-interview no longer resumes from drafts; it always runs to completion in one pass.)
+**Case 2 — No prior state**: Continue to Step 1.
 
 ---
 

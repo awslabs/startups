@@ -20,24 +20,14 @@ _produces:
 
 ## Step 6: Write `aws-design.json`
 
-Write the completed design object to `$MIGRATION_DIR/aws-design.json`.
-
-Verify the written file:
-
-1. Parses as valid JSON.
-2. Has at least one entry in `services[]` OR at least one entry in `deferred[]`.
-3. `vpc_design` section is present and non-empty.
-4. All entries in `services[]` have: `service_id`, `source_resource_id`, `heroku_app`, `aws_service`, `confidence`, `aws_config`.
-5. All entries in `deferred[]` have: `addon_name`, `addon_plan`, `provider`, `reason`, `recommendation`.
+Write the completed design object to `$MIGRATION_DIR/aws-design.json`. The written
+artifact's structure (valid JSON; `services[]` or `deferred[]` non-empty;
+`vpc_design` present; per-entry required fields) is validated by the Completion
+Handoff Gate below (this phase's `_postconditions`, re-read from disk).
 
 ---
 
 ## Step 7: Check Outputs
-
-Verify required artifacts exist in `$MIGRATION_DIR/`:
-
-1. `aws-design.json` — MUST exist with valid structure per Step 6 checks.
-2. `.phase-status.json` — MUST exist and be valid JSON.
 
 **Route output gates (fail closed):**
 
@@ -61,16 +51,9 @@ Step 7, then emit `GATE_FAIL` (STOP; do not patch artifacts) or
 
 ---
 
-## Step 8: Update Phase Status
+## Step 8: Update Phase Status and Hand Off
 
-Only after `HANDOFF_OK`. In the **same turn** as the output message below, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json`:
-
-1. Read current `.phase-status.json` from disk.
-2. Set `phases.design` to `"completed"`.
-3. Set `current_phase` to `"estimate"`.
-4. Update `last_updated` to current ISO 8601 timestamp.
-5. Keep all other phase values unchanged.
-6. Write the full file.
+Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.design` completed and advance per `_advances_to` — in the **same turn** as the output message below.
 
 Output to user — build message from design contents:
 
@@ -86,33 +69,21 @@ Format: "Design phase complete. [artifact summaries] Next required step: Phase 4
 
 ## Output Files
 
-**Design phase writes files to `$MIGRATION_DIR/`. Required outputs:**
-
-1. `.phase-status.json` — updated per Step 8
-2. `aws-design.json` — complete AWS architecture design
-
-**No other files must be created:**
-
-- No README.md
-- No design-summary.md
-- No EXECUTION_REPORT.txt
-- No documentation or report files
-
-All user communication via output messages only.
+This phase's artifacts are declared in `_produces` (`aws-design.json`; `.phase-status.json` is updated per Step 8) and its scope boundary (files it must NOT create) in `_forbids_files`. All user communication is via output messages only (no report/summary files).
 
 ---
 
 ## Error Handling
 
-| Error Category                               | Behavior                                        | Status Transition             |
-| -------------------------------------------- | ----------------------------------------------- | ----------------------------- |
-| Predecessor phase incomplete                 | GATE_FAIL, halt                                 | Remain `pending`              |
-| Input artifact missing/invalid               | GATE_FAIL, halt                                 | Retain `in_progress`          |
-| Unrecognized dyno type                       | Reject formation, add warning, continue         | Continue `in_progress`        |
-| Empty Procfile (no process types)            | Reject app formations, add warning, continue    | Continue `in_progress`        |
-| Unrecognized Postgres/Redis/Kafka plan       | Defer to specialist gate, add warning, continue | Continue `in_progress`        |
-| Unrecognized availability preference         | Default to `multi-az` + RDS + warning, continue | Continue `in_progress`        |
-| Add-on not in Fast-Path Table                | Specialist gate (deferred), continue            | Continue `in_progress`        |
-| Partial match on Fast-Path Table             | Specialist gate (NOT a match), continue         | Continue `in_progress`        |
-| No services AND no deferred entries produced | Unrecoverable error                             | Revert to `pending` (Rule 4)  |
-| Handoff gate check fails (GATE_FAIL)         | Halt pipeline, surface diagnostic               | Retain `in_progress` (Rule 3) |
+Non-fatal mapping errors and their handling (fatal predecessor/input/gate failures are handled by `_preconditions`/`_postconditions` + `INTERPRETER.md` § `_on_error`):
+
+| Error Category                         | Behavior                                        |
+| -------------------------------------- | ----------------------------------------------- |
+| Unrecognized dyno type                 | Reject formation, add warning, continue         |
+| Empty Procfile (no process types)      | Reject app formations, add warning, continue    |
+| Unrecognized Postgres/Redis/Kafka plan | Defer to specialist gate, add warning, continue |
+| Unrecognized availability preference   | Default to `multi-az` + RDS + warning, continue |
+| Add-on not in Fast-Path Table          | Specialist gate (deferred), continue            |
+| Partial match on Fast-Path Table       | Specialist gate (NOT a match), continue         |
+
+A no-services-and-no-deferred outcome is an unrecoverable error and a failing handoff gate halts per the gate protocol (`INTERPRETER.md` § `_on_error`); do not patch artifacts to force a pass.

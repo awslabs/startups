@@ -78,6 +78,16 @@ _produces:
 # Assembler
 prose body.
 `,
+    // A partial-rollout stub: 'clarify' is a REAL downstream phase whose file
+    // exists but carries NO frontmatter yet (mid phase-by-phase rollout). It is
+    // invisible to the typed model (bindSkill skips no-frontmatter files) but makes
+    // discover's `_advances_to: clarify` resolve on disk — so the dangling-edge
+    // check tolerates it (a real phase, not a typo).
+    'references/phases/clarify/clarify.md':
+`# Clarify
+
+prose-only phase (no frontmatter yet).
+`,
   };
 }
 
@@ -171,10 +181,26 @@ _contributes:
   });
 
   it('does NOT fail an _advances_to that points at a phase without frontmatter (partial rollout)', () => {
+    // goodSkill includes a frontmatter-less clarify.md stub — a real phase mid-
+    // rollout. discover._advances_to: clarify must resolve (dir exists) and NOT be
+    // flagged as dangling, even though clarify has no typed frontmatter yet.
     const findings = validateFixture(goodSkill());
     assert.ok(
       !findings.some((f) => /advances_to|clarify/.test(f.message)),
       'should not fail on an unverifiable forward reference',
+    );
+  });
+
+  it('rejects an _advances_to that names a phase with no file on disk (dangling forward edge)', () => {
+    const files = goodSkill();
+    // Point discover at a phase that does not exist at all (a typo, not rollout).
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify_TYPO');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /_advances_to 'clarify_TYPO' names neither a terminal.*nor an existing phase.*dangling forward edge/s,
     );
   });
 
@@ -280,6 +306,70 @@ _produces:
     ].replace('_requires_phase: discover', '_requires_phase: feedback');
     const findings = validateFixture(files);
     assert.match(findings.map((f) => f.message).join('\n'), /chain inconsistency/);
+  });
+
+  // ---- entry phase: _init uniqueness + _init ⟺ backbone head ----
+
+  it('accepts a single _init phase that is the backbone head', () => {
+    // chainSkill: discover has _init:true and no _requires_phase (the head).
+    const findings = validateFixture(chainSkill());
+    assert.equal(findings.length, 0, `expected no findings, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects two phases both declaring _init: true', () => {
+    const files = chainSkill();
+    // Give clarify _init too (now discover AND clarify both claim the entry).
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_init: true\n_requires_phase: discover');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /multiple phases declare '_init: true'/);
+  });
+
+  it('rejects an _init phase that also declares _requires_phase (entry must be the head)', () => {
+    const files = chainSkill();
+    // Move _init off the head: strip it from discover, add it to clarify (which
+    // has a _requires_phase) so _init and 'no _requires_phase' no longer coincide.
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true\n', '');
+    files['references/phases/clarify/clarify.md'] = files[
+      'references/phases/clarify/clarify.md'
+    ].replace('_requires_phase: discover', '_init: true\n_requires_phase: discover');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /entry phase 'clarify' declares '_init: true' but also '_requires_phase: discover'/,
+    );
+  });
+
+  it('rejects a checkpoint phase declaring _init: true (entry must be backbone)', () => {
+    const files = chainSkill();
+    // Strip _init from discover; put it on the feedback checkpoint.
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true\n', '');
+    files['references/phases/feedback/feedback.md'] = files[
+      'references/phases/feedback/feedback.md'
+    ].replace('_kind: checkpoint', '_kind: checkpoint\n_init: true');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /checkpoint phase 'feedback' declares '_init: true'/,
+    );
+  });
+
+  it('rejects a fully-declared backbone with no _init entry phase', () => {
+    const files = chainSkill();
+    // Remove the only _init: the backbone (discover->clarify) now has no entry.
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true\n', '');
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /no phase declares '_init: true'/,
+    );
   });
 
   // ---- _re_entry_guard ----
@@ -457,6 +547,25 @@ _produces:
     assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
   });
 
+  it('accepts an assembler _knowledge whose file resolves on disk', () => {
+    const files = goodSkill();
+    files['references/shared/ref.md'] = '# ref';
+    files['references/phases/discover/discover-assemble.md'] = files[
+      'references/phases/discover/discover-assemble.md'
+    ].replace('_produces:\n  - inventory.json', '_knowledge:\n  - { file: references/shared/ref.md }\n_produces:\n  - inventory.json');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects an assembler _knowledge file that does not resolve', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover-assemble.md'] = files[
+      'references/phases/discover/discover-assemble.md'
+    ].replace('_produces:\n  - inventory.json', '_knowledge:\n  - { file: references/shared/MISSING.md }\n_produces:\n  - inventory.json');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /_knowledge file does not resolve: references\/shared\/MISSING\.md/);
+  });
+
   it('accepts _input resolving to an upstream _produces (and the workspace literal)', () => {
     // chainSkill: discover _input workspace (add it), clarify reads discover.json
     const files = chainSkill();
@@ -477,5 +586,77 @@ _produces:
     ].replace('_requires_phase: discover', '_requires_phase: discover\n_input:\n  - nonexistent-artifact.json');
     const findings = validateFixture(files);
     assert.match(findings.map((f) => f.message).join('\n'), /_input 'nonexistent-artifact\.json' is not produced by any declared phase/);
+  });
+
+  // ---- conditional artifacts in _produces / _contributes ({file, _when}) ----
+
+  it('accepts a conditional _produces entry ({file, _when}) with a matching fragment creator', () => {
+    // discover produces inventory.json (assembler). Add a CONDITIONAL artifact the
+    // terraform fragment contributes, so single-creator is satisfied.
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { file: eks.tf, _when: "EKS in design" }',
+    );
+    files['references/phases/discover/discover-terraform.md'] = files[
+      'references/phases/discover/discover-terraform.md'
+    ].replace(
+      '_contributes:\n  - inventory.json (resource entries)',
+      '_contributes:\n  - inventory.json (resource entries)\n  - { file: eks.tf, _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected no findings, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects a conditional artifact map with no parseable file: (malformed)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /_produces has a conditional entry with no parseable 'file:'/,
+    );
+  });
+
+  it('applies single-creator to a conditional _produces artifact (uncreated -> flagged)', () => {
+    // Declare a conditional artifact in _produces that NO fragment contributes and
+    // the assembler does not produce -> single-creator must still flag it.
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { file: orphan-eks.tf, _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /phase _produces 'orphan-eks\.tf' but no unit creates it/,
+    );
+  });
+
+  it('accepts a trailing-slash directory as a conditional artifact (kubernetes/)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace(
+      '_produces:\n  - inventory.json',
+      '_produces:\n  - inventory.json\n  - { file: kubernetes/, _when: "EKS in design" }',
+    );
+    files['references/phases/discover/discover-terraform.md'] = files[
+      'references/phases/discover/discover-terraform.md'
+    ].replace(
+      '_contributes:\n  - inventory.json (resource entries)',
+      '_contributes:\n  - inventory.json (resource entries)\n  - { file: kubernetes/, _when: "EKS in design" }',
+    );
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected no findings, got: ${JSON.stringify(findings)}`);
   });
 });

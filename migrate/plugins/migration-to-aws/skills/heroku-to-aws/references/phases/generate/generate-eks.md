@@ -13,10 +13,6 @@ _contributes:
 > Terraform + kubernetes/ manifests; otherwise the Fargate generation path applies
 > and this fragment is skipped.
 
-**Applies when:** `aws-design.json` contains `aws_service: "EKS"` for one or more services.
-
-**Skip when:** No EKS services in design → existing Fargate generation path applies.
-
 ---
 
 ## Generated Artifacts
@@ -300,11 +296,11 @@ spec:
         image: <placeholder-image>
         resources:
           requests:
-            cpu: "<from-eks-mapping-table>"
-            memory: "<from-eks-mapping-table>"
+            cpu: "<from aws-design.json: aws_config.resources.requests.cpu>"
+            memory: "<from aws-design.json: aws_config.resources.requests.memory>"
           limits:
-            cpu: "<from-eks-mapping-table>"
-            memory: "<from-eks-mapping-table>"
+            cpu: "<from aws-design.json: aws_config.resources.limits.cpu>"
+            memory: "<from aws-design.json: aws_config.resources.limits.memory>"
         env:
         - name: PORT
           value: "8080"  # Heroku injects $PORT dynamically; 8080 is the default here. If your app binds to a different port, update this value and the containerPort/targetPort to match.

@@ -2,7 +2,7 @@
 _fragment: cost-engine
 _of_phase: estimate
 _contributes:
-  - estimation-infra.json (per-service costs, tiers, comparison, ROI, optimizations, complexity; created here, finalized by the assembler)
+  - estimation-infra.json
 ---
 
 # Estimate Phase: Cost Engine
@@ -432,7 +432,7 @@ Only include optimizations relevant to the designed architecture. Do not include
 
 ## Part 7: Complexity Tier Classification
 
-Load `shared/migration-complexity.md`. Classify using these inputs from the current artifacts:
+Load the tier thresholds declared in `_knowledge` (`../shared/estimate/complexity-tiers.json`). Classify using these inputs from the current artifacts:
 
 | Input                | Source                                                                            | Key                                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -485,7 +485,7 @@ Include in `estimation-infra.json`:
 }
 ```
 
-**Timeline guidance** (from `migration-complexity.md` Infrastructure Path):
+**Timeline guidance** (infrastructure path):
 
 | Tier   | Weeks | Approach                            |
 | ------ | ----- | ----------------------------------- |
