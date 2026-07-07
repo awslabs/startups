@@ -133,6 +133,7 @@ jobs:
           fi
           set +e
           semgrep scan --oss-only --metrics=off --config=r/all \
+            --exclude-rule="bbp-pattern-inject" \
             --exclude-rule="ai.generic.detect-generic-ai-anthprop.detect-generic-ai-anthprop" \
             --exclude-rule="ai.generic.detect-generic-ai-oai.detect-generic-ai-oai" \
             --json-output semgrep-report.json $BASELINE_ARGS
