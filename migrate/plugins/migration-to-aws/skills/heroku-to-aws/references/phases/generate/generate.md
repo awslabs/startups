@@ -30,6 +30,9 @@ _produces:
   - README.md
   - generation-warnings.json
 _advances_to: complete
+_interactive: false
+_exec:
+  _agent: rw
 _preconditions:
   - _check_phase_completed: estimate
     _on_failure: _halt_and_inform
