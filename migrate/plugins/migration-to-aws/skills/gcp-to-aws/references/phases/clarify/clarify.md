@@ -336,6 +336,7 @@ Present the sheet in two sections (omit rows for questions that are ESSENTIAL or
 | Database availability | Single-AZ (Cloud SQL `ZONAL`) | Terraform `availability_type` | RDS single-AZ topology |
 | Database size | 10–100 GB (allocated: 10 GB) | Terraform `disk_size` | pgcopydb migration tooling |
 | DB traffic / I/O | Steady / Low (dev-tier `db-f1-micro`) | Terraform tier + ZONAL | gp3 storage, no replicas |
+| Cloud SQL HA | Zonal (1 instance) | billing-profile.json | No Aurora Multi-AZ failover |
 | AI model | gemini-2.5-flash | ai-workload-profile.json | Bedrock mapping baseline |
 
 **Assumed (documented defaults — correct anything that's wrong):**
@@ -355,6 +356,8 @@ Reply:
 - **"ask me about [setting]"** — I'll ask the full question with all options for that item.
 - **"ask me everything"** — discard all assumptions and run the full question-by-question flow.
 ```
+
+**Computing [N]:** Count ESSENTIAL dispositions for all active categories, plus any rows converted to ESSENTIAL via user correction ("ask me about X"), plus conflict rows. Subtract any ESSENTIAL questions that were already answered by a user correction on the sheet (e.g., user said `"availability: mission-critical"` — Q6 no longer needs asking).
 
 **Multi-instance Cloud SQL conflicts:** When instances disagree, replace the single-row summary with a per-instance table and keep the conflicting question ESSENTIAL until resolved:
 

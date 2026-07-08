@@ -344,6 +344,13 @@ Key decisions that shaped this migration plan. Each value is read from `preferen
 
 **Assumption flag:** Rows where `source` starts with `"default:"` are unverified assumptions confirmed on the sheet — render in a visually distinct style (e.g., lighter text or italic) so the reader can spot which values were not explicitly verified from infrastructure.
 
+**Critical-default caveats (required when present):** If any of the following constraints have `chosen_by: "default"` AND the corresponding question ID appears in `metadata.questions_defaulted`:
+
+- `compliance` (Q2): render a warning callout: _"⚠️ Compliance was not explicitly confirmed. The security baseline assumes no regulatory requirements. If SOC 2, PCI, HIPAA, or FedRAMP applies, re-run Clarify or manually add controls."_
+- `gcp_monthly_spend` (Q3): render a warning callout: _"⚠️ GCP spend was not confirmed by the user. Cost comparison uses the default band ($1K–$5K). Actual spend may differ — verify against your GCP billing console."_
+
+Place these callouts at the top of Appendix F, before the table, so they're immediately visible.
+
 **Full detail:** Open `preferences.json` in this directory.
 
 Source: `preferences.json`
