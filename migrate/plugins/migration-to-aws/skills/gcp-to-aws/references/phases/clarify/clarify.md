@@ -577,7 +577,9 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 
 ## Step 5: Assemble and Write preferences.json
 
-Assemble all interpreted answers from the completed batches into the final `$MIGRATION_DIR/preferences.json`. If `preferences-draft.json` exists, use it as the base — merge in the final batch's answers, remove the draft-specific metadata fields (`draft`, `batches_completed`, `batches_remaining`), and set `metadata.timestamp` to the current time. Write `$MIGRATION_DIR/preferences.json`:
+Assemble all interpreted answers from the completed batches into the final `$MIGRATION_DIR/preferences.json`. **Every constraint object MUST include `prompt` and `design_consequence`** per `references/shared/schema-preferences.md` (use the constraint catalog when the user did not see the verbatim question).
+
+If `preferences-draft.json` exists, use it as the base — merge in the final batch's answers, remove the draft-specific metadata fields (`draft`, `batches_completed`, `batches_remaining`), and set `metadata.timestamp` to the current time. Write `$MIGRATION_DIR/preferences.json`:
 
 ```json
 {
@@ -617,30 +619,62 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
     "inventory_clarifications": {}
   },
   "design_constraints": {
-    "target_region": { "value": "us-east-1", "chosen_by": "user" },
-    "compliance": { "value": ["hipaa"], "chosen_by": "user" },
-    "gcp_monthly_spend": { "value": "$5K-$20K", "chosen_by": "user" },
-    "funding_stage": { "value": "series-a", "chosen_by": "user" },
-    "availability": { "value": "multi-az", "chosen_by": "default" },
-    "cutover_strategy": { "value": "maintenance-window-weekly", "chosen_by": "user" },
-    "kubernetes": { "value": "eks-or-ecs", "chosen_by": "user" },
-    "database_traffic": { "value": "steady", "chosen_by": "user" },
-    "db_io_workload": { "value": "medium", "chosen_by": "user" },
-    "db_size": { "value": "10-100GB", "chosen_by": "user" }
+    "target_region": {
+      "value": "us-east-1",
+      "chosen_by": "user",
+      "prompt": "Where are your users located?",
+      "design_consequence": "All resources deploy in us-east-1; Bedrock model availability checked for this region",
+      "question_id": "Q1"
+    },
+    "compliance": {
+      "value": ["hipaa"],
+      "chosen_by": "user",
+      "prompt": "Do you have any compliance or regulatory requirements?",
+      "design_consequence": "HIPAA drives BAA-eligible services, encryption mandatory, and us-east-1/us-west-2 region preference",
+      "question_id": "Q2"
+    },
+    "gcp_monthly_spend": {
+      "value": "$5K-$20K",
+      "chosen_by": "user",
+      "prompt": "Approximately how much are you spending on GCP per month in total?",
+      "design_consequence": "$5K-$20K band sets dev-tier sizing baseline and credits eligibility context",
+      "question_id": "Q3"
+    },
+    "availability": {
+      "value": "multi-az",
+      "chosen_by": "default",
+      "prompt": "What level of uptime does your application require? (default applied)",
+      "design_consequence": "multi-az drives RDS Multi-AZ or Aurora selection",
+      "question_id": "Q6"
+    },
+    "cutover_strategy": {
+      "value": "maintenance-window-weekly",
+      "chosen_by": "user",
+      "prompt": "When can you accept downtime for cutover?",
+      "design_consequence": "Weekly maintenance window sets phased cutover timing in the migration plan",
+      "question_id": "Q7"
+    }
   },
   "ai_constraints": {
-    "ai_framework": { "value": ["direct"], "chosen_by": "extracted" },
-    "ai_monthly_spend": { "value": "$500-$2K", "chosen_by": "user" },
-    "ai_priority": { "value": "balanced", "chosen_by": "user" },
-    "ai_critical_feature": { "value": "function-calling", "chosen_by": "user" },
-    "ai_token_volume": { "value": "low", "chosen_by": "user" },
-    "ai_model_baseline": { "value": "claude-sonnet-4-6", "chosen_by": "user" },
-    "ai_vision": { "value": "text-only", "chosen_by": "user" },
-    "ai_latency": { "value": "important", "chosen_by": "user" },
-    "ai_complexity": { "value": "moderate", "chosen_by": "user" },
+    "ai_framework": {
+      "value": ["direct"],
+      "chosen_by": "extracted",
+      "prompt": "Detected: direct SDK integration from ai-workload-profile.json",
+      "design_consequence": "Direct SDK pattern → Converse API adapter with feature-flag cutover",
+      "question_id": "Q14"
+    },
+    "ai_monthly_spend": {
+      "value": "$500-$2K",
+      "chosen_by": "user",
+      "prompt": "Approximately how much do you spend on AI/ML per month?",
+      "design_consequence": "$500-$2K band sets token volume and model tier assumptions",
+      "question_id": "Q15"
+    },
     "ai_capabilities_required": {
       "value": ["text_generation", "streaming", "function_calling"],
-      "chosen_by": "extracted"
+      "chosen_by": "derived",
+      "prompt": "Derived from detected capabilities and your answers",
+      "design_consequence": "Required capabilities union enforced in Bedrock model mapping and validation checklist"
     }
   }
 }
@@ -648,18 +682,22 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
 
 ### Schema Rules
 
-1. Every entry in `design_constraints` and `ai_constraints` is an object with `value` and `chosen_by` fields.
-2. `chosen_by` values: `"user"` (explicitly answered), `"default"` (system default applied — includes "I don't know" answers), `"extracted"` (inferred from inventory), `"derived"` (computed from combination of answers + detected capabilities).
-3. Only write a key to `design_constraints` / `ai_constraints` if the answer produces a constraint. Absent keys mean "no constraint — Design decides."
-4. Do not write null values.
-5. For billing-source inventories, `metadata.inventory_clarifications` records Category B answers.
-6. `metadata.questions_skipped_early_exit` records questions skipped due to early-exit logic (e.g., Q8 skipped because Q5=multi-cloud).
-7. `metadata.questions_skipped_extracted` records questions skipped because inventory already provided the answer.
-8. `metadata.detected_settings` records each auto-detected setting with source, confirmation status, and whether the user corrected it in Step 2.5.
-9. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory.
-10. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
-11. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
-12. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"`.
+Full schema and constraint catalog: `references/shared/schema-preferences.md`.
+
+1. Every entry in `design_constraints`, `ai_constraints`, and `startup_constraints` (when present) is an object with **`value`**, **`chosen_by`**, **`prompt`**, and **`design_consequence`** fields. Optional **`question_id`** when mapped to the Q1–Q27 catalog.
+2. **`prompt`:** verbatim question from the category file when `chosen_by` is `"user"`; detection label when `"extracted"`; question + `" (default applied)"` when `"default"`; derivation label when `"derived"`.
+3. **`design_consequence`:** one sentence from the category file's Recommendation Impact for the selected answer, or the catalog template in `schema-preferences.md` with `[value]` substituted.
+4. `chosen_by` values: `"user"` (explicitly answered), `"default"` (system default applied — includes "I don't know" answers), `"extracted"` (inferred from inventory), `"derived"` (computed from combination of answers + detected capabilities).
+5. Only write a key to `design_constraints` / `ai_constraints` if the answer produces a constraint. Absent keys mean "no constraint — Design decides."
+6. Do not write null values. Do not omit `prompt` or `design_consequence` on any written constraint.
+7. For billing-source inventories, `metadata.inventory_clarifications` records Category B answers.
+8. `metadata.questions_skipped_early_exit` records questions skipped due to early-exit logic (e.g., Q8 skipped because Q5=multi-cloud).
+9. `metadata.questions_skipped_extracted` records questions skipped because inventory already provided the answer.
+10. `metadata.detected_settings` records each auto-detected setting with source, confirmation status, and whether the user corrected it in Step 2.5.
+11. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory.
+12. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
+13. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
+14. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"`.
 
 After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` if it exists.
 

@@ -51,8 +51,10 @@ This validator is a **structural + readability completeness gate**. It does **no
 | 12 | Verdict banner | If `estimation-infra.json` has a `recommendation` block: `decision-summary` contains a `class="verdict"` element or a "Recommendation:" sentence — not only badges |
 | 13 | No fixture bleed | With `--migration-dir`: the reference canary migration ID does not appear in a real run, and the report's migration ID matches the run folder |
 | 14 | Readability — reader vocabulary | No artifact filename (`*.json`) or Terraform resource ID (`aws_<resource>.<name>`) inside any `exec-*` / `decision-summary` section. The executive flow names what the reader controls; those identifiers live only in the appendices |
+| 15 | Ordered action lists | When `Key decisions ahead` or `Next steps` headings exist in `decision-summary`, the following list is `<ol>`, not `<ul>` |
+| 16 | Configuration provenance | When `<section id="appendix-config">` exists: table includes Question/Assumption and Design consequence columns; ≥2 data rows |
 
-Checks 9, 10, and 14 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Check 14 scopes to executive-flow sections only — appendices may carry artifact filenames and resource IDs by design. Disable checks 9, 10, and 14 with `--no-readability` only for non-customer fixtures. Check 13 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips.
+Checks 9, 10, and 14 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Check 14 scopes to executive-flow sections only — appendices may carry artifact filenames and resource IDs by design. Disable checks 9, 10, and 14 with `--no-readability` only for non-customer fixtures. Check 13 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips. Checks 15–16 apply whenever the corresponding sections/headings exist.
 
 ---
 
@@ -64,6 +66,7 @@ Checks 9, 10, and 14 scan the `<body>` with `<style>` stripped, so CSS class nam
 | `exec-architecture` | `aws-design.json` with clusters exists |
 | `exec-security-teaser` | `estimation-infra.json` has `security_baseline` breakdown (compact summary; full table in `appendix-security`) |
 | `appendix-ai` | `estimation-ai.json` or `aws-design-ai.json` exists |
+| `appendix-config` | `preferences.json` exists — question/answer/consequence table from `prompt` and `design_consequence` fields |
 | `appendix-security` | Full security capabilities table (rendered in the appendix) |
 | `appendix-security-gap` | Infra track ran (rendered in the appendix) |
 | `appendix-assumptions` | Pricing confidence, exclusions, validation status, glossary (rendered in the executive flow by design) |

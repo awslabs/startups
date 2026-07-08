@@ -93,8 +93,8 @@ Content when `recommendation` block exists:
 3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
 4. **Timeline:** from `generation-infra.json` → `migration_plan.total_weeks` (preferred), OR `migration-preview.json` → `timeline_hint`. Do NOT use `recommendation.next_steps` as timeline — those are action items, not duration.
 5. **Migrate if / Stay if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists. For BigQuery/deferred analytics: **do not** frame specialist engagement as a reason to stay on GCP unless the user must cut over analytics in the **same window** as app infra. Prefer migrate-if bullets that mention parallel specialist planning.
-6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — bullet list
-7. **Next steps (optional):** from `recommendation.next_steps` — compact bullet list separate from timeline
+6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — **ordered list** (`<ol class="compact">`), not bullets. Each item is one concrete decision the reader must make next.
+7. **Next steps (optional):** from `recommendation.next_steps` — **ordered list** (`<ol class="compact">`) of actionable steps separate from timeline. Numbered sequence implies priority order; keep `Migrate if` / `Stay if` as unordered lists.
 
 **Deferred services flag:** If ANY resource in the design artifact has `aws_service == "Deferred — specialist engagement"`, add a prominent callout:
 
@@ -372,24 +372,26 @@ Open any JSON file with a text editor or `cat <filename> | python3 -m json.tool`
 
 Do not list files that were not generated.
 
-### Appendix Section F — Your Configuration (conditional)
+### Appendix Section F — Your Configuration (`appendix-config`, conditional)
 
 **Only include if `preferences.json` exists in `$MIGRATION_DIR/`.**
 
-Key decisions that shaped this migration plan. Each value is read from `preferences.json` using the `.value` field of wrapped preference objects (e.g., `availability.value`, not `availability` directly).
+Key decisions that shaped this migration plan. Read every object in `design_constraints`, `ai_constraints`, and `startup_constraints` (when present). Schema: `references/shared/schema-preferences.md`.
 
-| Decision                 | Your choice                                            | Impact on plan                                                  |
-| ------------------------ | ------------------------------------------------------ | --------------------------------------------------------------- |
-| Target AWS region        | `design_constraints.target_region.value` or equivalent | All resources deployed here; Bedrock model availability checked |
-| Availability requirement | `availability.value`                                   | Drives RDS single-AZ vs Multi-AZ vs Aurora selection            |
-| Monthly GCP spend        | From estimation source or `gcp_monthly_spend.value`    | Cost comparison baseline                                        |
-| Framework                | `ai_framework.value` (if AI track ran)                 | Determines migration effort for AI workloads                    |
-| AI priority              | `ai_priority.value` (if present)                       | Drives Bedrock model selection                                  |
-| Compliance               | `compliance.value` (if present)                        | Triggers Config + Security Hub in baseline.tf                   |
+Render an HTML table with **four columns**:
 
-**Source indicators:** Each preference shows `chosen_by`: `"user"` (explicitly answered), `"extracted"` (inferred from IaC/code), or `"default"` (plugin default applied).
+| Column | Source |
+| ------ | ------ |
+| **Question / assumption** | `prompt` on each constraint object |
+| **Your choice** | formatted `value` (human-readable; expand arrays) |
+| **Source** | `chosen_by` → "User answer", "Extracted from infrastructure", "Default applied", or "Derived" |
+| **Design consequence** | `design_consequence` on each constraint object |
 
-**Full detail:** Open `preferences.json` in this directory.
+**Sort order:** user-answered rows first, then extracted, then default, then derived.
+
+**Legacy fallback:** If a constraint object lacks `prompt` or `design_consequence` (pre-extension runs), use the catalog in `schema-preferences.md` keyed by constraint name — never omit the appendix or leave cells empty.
+
+**Do not** reduce this section to a key/value dump without question text and consequences.
 
 Source: `preferences.json`
 
@@ -615,6 +617,7 @@ These move from "example in the fixture" to enforced gate. See `references/share
 6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate, phased over 10 weeks — ~$497/mo savings, BigQuery deferred") in addition to the `path_label` badges.
 7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*` or `decision-summary` section.
 8. **One name per concept.** Use a single consistent label for each recommended choice across the whole report. The recommended Bedrock model and the chosen cost tier keep the same name in the verdict, tables, and appendices (always "Claude Sonnet 4.6 (recommended)", always "Balanced"). Do not alternate "recommended / selected target / design target / projected" for the same item — one label is how the reader keeps their bearings.
+9. **Ordered action lists.** In `decision-summary`, `Key decisions ahead` and `Next steps` MUST use `<ol class="compact">`, not `<ul>`. The validator fails when either heading is followed by a bullet list. `Migrate if` / `Stay if` remain unordered lists.
 
 > **Section IDs are stable anchors, not placement hints.** Some `appendix-*` IDs render in the executive flow on purpose (notably `appendix-assumptions`). Do not rename IDs to match position — the validator and TOC key on them.
 
@@ -637,6 +640,8 @@ After generating the HTML file, verify:
 13. **Readability**: No literal `Rubric:` and no numbered headings (`Section 0`, `Section 1b`, `<hN>Section N — …`); security teaser up top with full table in the appendix; tables have `<caption>`/`scope`; acronyms expanded; one-sentence recommendation banner in decision summary
 14. **Reader vocabulary**: No artifact filenames (`*.json`) or Terraform resource IDs (`aws_*.*`) inside `decision-summary` / `exec-*` sections — those names live only in the technical appendices.
 15. **Consistent labels**: The recommended model and the chosen cost tier use one consistent name across verdict, tables, and appendices (no "recommended / selected / design target" drift for the same item).
+16. **Configuration provenance**: When `preferences.json` exists, `appendix-config` table has Question/assumption, Your choice, Source, and Design consequence columns populated from `prompt` and `design_consequence` fields (see `schema-preferences.md`).
+17. **Ordered next steps**: `Key decisions ahead` and `Next steps` in `decision-summary` use `<ol>`, not `<ul>`.
 
 **Run automated validator (mandatory when HTML was written):**
 

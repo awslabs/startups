@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "migration_type": "full",
+    "migration_id": "0611-0606",
+    "clarify_mode": "full"
+  },
+  "design_constraints": {
+    "target_region": {
+      "value": "us-west-2",
+      "chosen_by": "extracted",
+      "prompt": "Detected: GCP region us-west1",
+      "design_consequence": "All resources deploy in us-west-2; Bedrock availability verified",
+      "question_id": "Q1"
+    },
+    "compliance": {
+      "value": [],
+      "chosen_by": "user",
+      "prompt": "Do you have any compliance or regulatory requirements?",
+      "design_consequence": "Tier 1 security baseline only; no Config/Security Hub add-on",
+      "question_id": "Q2"
+    },
+    "gcp_monthly_spend": {
+      "value": "<$1K",
+      "chosen_by": "user",
+      "prompt": "Approximately how much are you spending on GCP per month in total?",
+      "design_consequence": "Dev-tier sizing baseline for cost comparison",
+      "question_id": "Q3"
+    },
+    "availability": {
+      "value": "single-az",
+      "chosen_by": "extracted",
+      "prompt": "Detected: Cloud SQL ZONAL → single-AZ availability",
+      "design_consequence": "RDS db.t4g.micro single-AZ (not Multi-AZ)",
+      "question_id": "Q6"
+    },
+    "cutover_strategy": {
+      "value": "maintenance-window-weekly",
+      "chosen_by": "user",
+      "prompt": "When can you accept downtime for cutover?",
+      "design_consequence": "Phased cutover in week 3 during declared maintenance window",
+      "question_id": "Q7"
+    },
+    "cloud_run_traffic_pattern": {
+      "value": "most-of-day",
+      "chosen_by": "user",
+      "prompt": "How does traffic to your Cloud Run services vary?",
+      "design_consequence": "Fargate hours estimate (~511 hrs/mo) in Balanced tier",
+      "question_id": "Q10"
+    }
+  },
+  "ai_constraints": {
+    "ai_priority": {
+      "value": "quality",
+      "chosen_by": "user",
+      "prompt": "What matters most for your AI workloads?",
+      "design_consequence": "Claude Sonnet 4.6 recommended over lower-cost models",
+      "question_id": "Q16"
+    },
+    "startup_program_status": {
+      "value": "eligible_founders",
+      "chosen_by": "user",
+      "prompt": "Are you eligible for AWS startup programs?",
+      "design_consequence": "Up to $5K AWS Activate credits callout in report",
+      "question_id": "Q27"
+    }
+  }
+}
