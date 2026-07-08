@@ -170,7 +170,7 @@ Before generating the Assumption Sheet, scan the inventory to extract values tha
 
 If multiple instances disagree, mark Q13b as an essential question. Record in `metadata.inventory_clarifications.db_size_gb` when extracted.
 
-8. **Q6 from Cloud SQL HA** — For each `google_sql_database_instance`, read `availability_type` (or `config.availability_type`):
+1. **Q6 from Cloud SQL HA** — For each `google_sql_database_instance`, read `availability_type` (or `config.availability_type`):
 
 | GCP value  | `availability` extracted |
 | ---------- | ------------------------ |
@@ -179,14 +179,14 @@ If multiple instances disagree, mark Q13b as an essential question. Record in `m
 
 Resolve Q6 only when **all** Cloud SQL PostgreSQL/MySQL instances agree on the same mapped value. **`multi-az-ha` and `multi-region` are never auto-extracted** — those require Q6 user answers (Mission-Critical / Catastrophic). Cloud SQL `REGIONAL` maps to `multi-az` (RDS Multi-AZ), not `multi-az-ha` (Aurora). Record in `metadata.inventory_clarifications.cloud_sql_ha`. When `availability_type` is missing on any instance, or instances disagree, mark Q6 as an essential question.
 
-9. **Q12/Q13 dev-tier defaults** — When **all** Cloud SQL instances match dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract and **resolve Q12 and Q13**. When instances mix dev and prod tiers, do not extract — mark Q12 and Q13 as essential questions.
+1. **Q12/Q13 dev-tier defaults** — When **all** Cloud SQL instances match dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract and **resolve Q12 and Q13**. When instances mix dev and prod tiers, do not extract — mark Q12 and Q13 as essential questions.
 
 ```
 database_traffic: "steady" — chosen_by: "extracted"
 db_io_workload: "low" — chosen_by: "extracted"
 ```
 
-10. **Q3 GCP spend from billing** — If `billing-profile.json` exists, map `summary.total_monthly_spend` to spend band and **resolve Q3** when unambiguous:
+1. **Q3 GCP spend from billing** — If `billing-profile.json` exists, map `summary.total_monthly_spend` to spend band and **resolve Q3** when unambiguous:
 
 | Monthly USD   | `gcp_monthly_spend` |
 | ------------- | ------------------- |
@@ -196,11 +196,11 @@ db_io_workload: "low" — chosen_by: "extracted"
 | 20,000–99,999 | `"$20K-$100K"`      |
 | ≥ 100,000     | `">$100K"`          |
 
-11. **Q1 region extraction** — When inventory has a **single** GCP region among PRIMARY compute/database resources, map to closest AWS region and **resolve Q1** with `target_region` `chosen_by: "extracted"`. When multiple regions, suggest default but mark Q1 as an essential question.
+1. **Q1 region extraction** — When inventory has a **single** GCP region among PRIMARY compute/database resources, map to closest AWS region and **resolve Q1** with `target_region` `chosen_by: "extracted"`. When multiple regions, suggest default but mark Q1 as an essential question.
 
-12. **Q19 primary model** — If `ai-workload-profile.json` exists and `models[0].model_id` is set with confidence ≥ 0.8, map to Q19 answer and **resolve Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`.
+1. **Q19 primary model** — If `ai-workload-profile.json` exists and `models[0].model_id` is set with confidence ≥ 0.8, map to Q19 answer and **resolve Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`.
 
-13. **Q20 input modalities** — If `integration.capabilities_summary` exists:
+1. **Q20 input modalities** — If `integration.capabilities_summary` exists:
 
 | Signal                               | Extract                                                                           | Resolve Q20?                                              |
 | ------------------------------------ | --------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -210,12 +210,12 @@ db_io_workload: "low" — chosen_by: "extracted"
 
 When `image_generation: true` and `vision: false`, set `ai_capabilities_required` derived from profile and resolve Q20 (image output is not vision _input_).
 
-14. **Q9 WebSocket scan** — Only when application code was **actually analyzed**. Treat code as analyzed when **any** of: (a) `discover-app-code.md` ran and found source files; (b) `ai-workload-profile.json` → `metadata.sources_analyzed.application_code == true`; (c) a companion app directory was scanned. Scan for WebSocket usage: `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI WebSocket, `ws` package imports. If code was analyzed and **no matches**, extract `websocket: false` and **resolve Q9**. If matches found, mark Q9 as an essential question to confirm.
+1. **Q9 WebSocket scan** — Only when application code was **actually analyzed**. Treat code as analyzed when **any** of: (a) `discover-app-code.md` ran and found source files; (b) `ai-workload-profile.json` → `metadata.sources_analyzed.application_code == true`; (c) a companion app directory was scanned. Scan for WebSocket usage: `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI WebSocket, `ws` package imports. If code was analyzed and **no matches**, extract `websocket: false` and **resolve Q9**. If matches found, mark Q9 as an essential question to confirm.
     **If no application code was available** (Terraform-only workspace, no code discovery), do **NOT** extract Q9 — Q9 becomes a **proposed-default sheet row** (see Step 3 catalog), flagged so the user can correct it. Absence of a code scan is not evidence of no WebSockets.
 
-15. **Q10 Cloud Run traffic** — If Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` and resolve Q10. Otherwise Q10 becomes a proposed-default sheet row.
+1. **Q10 Cloud Run traffic** — If Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` and resolve Q10. Otherwise Q10 becomes a proposed-default sheet row.
 
-16. **Multi-instance Cloud SQL conflicts** — When multiple `google_sql_database_instance` resources **disagree** on values used for Q6, Q12/Q13, or Q13b (e.g. one ZONAL and one REGIONAL; mixed dev/prod tiers; different disk sizes):
+1. **Multi-instance Cloud SQL conflicts** — When multiple `google_sql_database_instance` resources **disagree** on values used for Q6, Q12/Q13, or Q13b (e.g. one ZONAL and one REGIONAL; mixed dev/prod tiers; different disk sizes):
     - Do **not** extract a single global value or propose a default for the affected question(s)
     - Record per-instance values in `metadata.inventory_clarifications.cloud_sql_instances[]` (address, `availability_type`, `tier`, `disk_size_gb`)
     - In Step 2.5, show a **per-instance breakdown** (see below) instead of a single summary row
@@ -395,6 +395,7 @@ For each override: set `chosen_by: "user"` on the constraint (this removes the `
 **"Ask me everything":** clear `questions_skipped_extracted` and `questions_defaulted`; set all previously extracted/assumed constraints to pending; set `metadata.clarify_mode: "full"` and run the **Legacy Full Flow** (see Step 4, Full Flow variant).
 
 **Constraint `source` field:** When writing a constraint with `chosen_by: "extracted"` or `chosen_by: "default"`, include the `source` field on the constraint object itself:
+
 - Extracted: raw provenance signal (e.g. `"terraform:availability_type=ZONAL"`, `"billing:region=us-west1"`, `"ai-profile:integration.pattern=direct_sdk"`)
 - Default: `"default:<Qid>"` (e.g. `"default:Q16"`)
 
@@ -455,6 +456,7 @@ Question 2: [Q7 text with context and options]
 **Wait for the user's response.** Do NOT proceed to Design without a response or an explicit "use defaults for the rest."
 
 **"Use defaults for the rest" handling:** Apply documented defaults for all unanswered essential questions **except** those marked "never assumed" in the catalog when a safe default genuinely does not exist:
+
 - Q2 defaults to A (none) — record `chosen_by: "default"` and add a report caveat that compliance was not confirmed.
 - Q7 defaults to D (flexible).
 - Q3 defaults to B ($1K–$5K) with a report caveat that spend was not confirmed.
@@ -579,13 +581,13 @@ Assemble all resolved values — sheet confirmations, corrections, essential ans
 5. For billing-source inventories, `metadata.inventory_clarifications` records Category B answers.
 6. `metadata.questions_skipped_early_exit` records questions skipped due to early-exit logic (e.g., Q8 skipped because Q5=multi-cloud).
 7. `metadata.questions_skipped_extracted` records questions resolved because inventory already provided the answer.
-8. `metadata.questions_defaulted` records questions resolved by documented default — whether sheet-confirmed (wizard) or skipped (full flow / "use defaults").
-9. **`source` field on constraints:** Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` MUST include a `source` field. Extracted: raw provenance signal (prefix `terraform:`, `billing:`, `code:`, `inventory:`, or artifact filename). Default: `"default:<Qid>"`. Omit `source` for `"user"` and `"derived"`. Report generation uses `source` prefixed `default:` to flag unverified assumptions.
-10. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory or their firing condition wasn't met.
-11. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
-12. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
-13. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"`.
-14. `metadata.clarify_mode` is one of `"wizard"`, `"full"`, `"fast_path"`, `"simple_hybrid"`.
+1. `metadata.questions_defaulted` records questions resolved by documented default — whether sheet-confirmed (wizard) or skipped (full flow / "use defaults").
+1. **`source` field on constraints:** Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` MUST include a `source` field. Extracted: raw provenance signal (prefix `terraform:`, `billing:`, `code:`, `inventory:`, or artifact filename). Default: `"default:<Qid>"`. Omit `source` for `"user"` and `"derived"`. Report generation uses `source` prefixed `default:` to flag unverified assumptions.
+1. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory or their firing condition wasn't met.
+1. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
+1. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
+1. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"`.
+1. `metadata.clarify_mode` is one of `"wizard"`, `"full"`, `"fast_path"`, `"simple_hybrid"`.
 
 After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` if it exists.
 
