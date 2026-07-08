@@ -18,8 +18,8 @@ import type {
 import { readFileSync } from "node:fs";
 
 const PHASE_KEYS = new Set([
-  "_phase", "_title", "_kind", "_requires_phase", "_init", "_input",
-  "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
+  "_phase", "_title", "_kind", "_requires_phase", "_init", "_interactive",
+  "_input", "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
   "_exec", "_re_entry_guard", "_preconditions", "_postconditions",
   "_forbids_files", "_knowledge",
 ]);
@@ -285,6 +285,14 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     role,
     requiresPhase: scalar(fm, "_requires_phase"),
     init: /^_init:\s*true\s*$/m.test(fm),
+    // _interactive is a tri-state: true / false / null (absent). Parsed strictly so a
+    // typo'd value (e.g. `_interactive: yes`) reads as null (unspecified), which the
+    // _exec gate then rejects rather than silently treating as "non-interactive".
+    interactive: /^_interactive:\s*true\s*$/m.test(fm)
+      ? true
+      : /^_interactive:\s*false\s*$/m.test(fm)
+      ? false
+      : null,
     fragments: parseFragments(fm),
     trigger: ptrig ? parseTrigger(ptrig[1]) : null,
     assembleFile: assembleBlock ? assembleBlock[1].trim() : null,

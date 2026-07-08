@@ -130,6 +130,14 @@ artifact whose staleness you're guarding against.
 - **derived-minimum:** a phase that `_produces` ≥1 artifact does write work, so its
   `_agent` cannot be `ro` — the declared tier must be ≥ the minimum implied by what
   the phase produces (declare-but-verify).
+- **non-interactive affirmation:** the phase MUST declare `_interactive: false`. A
+  dispatched worker has file-only I/O and cannot prompt the user, so a phase with
+  `_interactive: true` — or with no `_interactive` key — cannot carry `_exec`. This
+  fires independently of the tier (even when `_agent` is missing or invalid).
+- **worker-exists:** the tier's `agents/generic-phase-worker-<tier>.md` agent file
+  must be shipped on disk — a phase cannot dispatch to a capability tier whose worker
+  the plugin does not ship (it would fail at runtime). Skipped (UNVERIFIED) when the
+  plugin `agents/` dir cannot be located, tolerant of a non-standard layout.
 
 The **one-level rule** needs no dedicated check: `_exec` is a PHASE-only key, so a
 fragment or assembler carrying it already trips the closed-vocabulary check
@@ -138,12 +146,17 @@ unrepresentable.
 
 **Trips on:** `unknown _exec sub-key '…'`; `_exec is present but declares no _agent
 tier`; `_exec._agent '…' is not a recognized capability tier`; `_exec._agent 'ro'
-(read-only) but phase '…' _produces N artifact(s) … needs at least 'rw'`.
-**Fix:** declare `_agent` as the LEAST tier that covers the phase's real work; a
-phase that writes an artifact needs `rw` (or `git` if it mutates repo history). Note
-the validator checks the tier is _well-formed and not under-privileged_ — it does NOT
-verify the host actually enforces it (on inline-only hosts the tier fails open; see
-the judgment-surface note below).
+(read-only) but phase '…' _produces N artifact(s) … needs at least 'rw'`; `phase '…'
+declares _exec but no _interactive declaration / _interactive: true … MUST declare
+'_interactive: false'`; `_exec._agent '…' has no worker on disk — expected agent file
+'agents/generic-phase-worker-….md'`.
+**Fix:** declare `_agent` as the LEAST tier that covers the phase's real work (a
+phase that writes an artifact needs `rw`, or `git` if it mutates repo history); add
+`_interactive: false` to affirm the work does not prompt the user; and ship the
+tier's worker under `agents/`. Note the validator checks the tier is _well-formed,
+not under-privileged, affirmed non-interactive, and backed by a shipped worker_ — it
+does NOT verify the host actually enforces the tier (on inline-only hosts the tier
+fails open; see the judgment-surface note below).
 
 ## Gate checks (`_preconditions` / `_postconditions`)
 

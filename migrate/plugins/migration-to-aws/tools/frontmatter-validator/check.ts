@@ -22,6 +22,12 @@ export interface BoundSkill {
   fragments: Map<string, FragmentFrontmatter>; // by resolved absolute path
   assemblers: Map<string, AssemblerFrontmatter>; // by resolved absolute path
   rel: (absPath: string) => string; // for readable messages
+  /** Capability tiers for which a generic-phase-worker-<tier>.md agent file exists on
+   *  disk (under the plugin's `agents/` dir). A phase's `_exec._agent` must name a tier
+   *  in this set — dispatching to a worker that isn't shipped would fail at runtime.
+   *  null when the plugin `agents/` dir could not be located (worker-exists UNVERIFIED,
+   *  tolerant of a skill laid out without the standard plugin structure). */
+  availableWorkerTiers: Set<string> | null;
 }
 
 export function check(skill: BoundSkill): Finding[] {
@@ -78,6 +84,12 @@ export function check(skill: BoundSkill): Finding[] {
     //       tier cannot be 'ro' (read-only) — the author-declared tier must be ≥ the
     //       minimum derivable from what the phase produces (declare-but-verify, the same
     //       pattern as the rest of the grammar).
+    //   (4) non-interactive-only: a dispatched worker has FILE-ONLY I/O and cannot
+    //       prompt the user, so a phase may only be dispatched when it has explicitly
+    //       declared its work non-interactive (_interactive: false). Absent or
+    //       _interactive: true both block dispatch — the author must affirm it.
+    //   (5) worker-exists: the tier's generic-phase-worker-<tier>.md agent must be
+    //       shipped on disk (dispatching to a missing worker fails at runtime).
     if (phase.exec) {
       for (const k of phase.exec.unknownKeys) add(pf, `unknown _exec sub-key '${k}'`);
       const tier = phase.exec.agent;
@@ -85,8 +97,20 @@ export function check(skill: BoundSkill): Finding[] {
         add(pf, `_exec is present but declares no _agent tier (expected one of: ${EXEC_TIERS.join(", ")})`);
       } else if (!EXEC_TIER_SET.has(tier)) {
         add(pf, `_exec._agent '${tier}' is not a recognized capability tier (expected one of: ${EXEC_TIERS.join(", ")})`);
-      } else if (tier === "ro" && phase.produces.length > 0) {
-        add(pf, `_exec._agent 'ro' (read-only) but phase '${phase.phase}' _produces ${phase.produces.length} artifact(s) (${phase.produces.join(", ")}) — a producing phase writes files and needs at least 'rw' (derived-minimum tier)`);
+      } else {
+        if (tier === "ro" && phase.produces.length > 0) {
+          add(pf, `_exec._agent 'ro' (read-only) but phase '${phase.phase}' _produces ${phase.produces.length} artifact(s) (${phase.produces.join(", ")}) — a producing phase writes files and needs at least 'rw' (derived-minimum tier)`);
+        }
+        // (5) the tier's worker must be shipped (skip when the agents/ dir was not found).
+        if (skill.availableWorkerTiers && !skill.availableWorkerTiers.has(tier)) {
+          add(pf, `_exec._agent '${tier}' has no worker on disk — expected agent file 'agents/generic-phase-worker-${tier}.md' (a phase cannot dispatch to a capability tier whose worker the plugin does not ship)`);
+        }
+      }
+      // (4) dispatch requires an explicit non-interactive affirmation. This is
+      //     independent of the tier, so it fires even when _agent is missing/bad.
+      if (phase.interactive !== false) {
+        const state = phase.interactive === true ? "_interactive: true" : "no _interactive declaration";
+        add(pf, `phase '${phase.phase}' declares _exec but ${state} — a dispatched worker has file-only I/O and cannot prompt the user, so an _exec phase MUST declare '_interactive: false' (only non-interactive work can be dispatched)`);
       }
     }
 

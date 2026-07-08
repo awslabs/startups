@@ -123,6 +123,7 @@ guess) on any of:
 | `_kind`             | `backbone` (default when absent) or `checkpoint`. A **backbone** phase is a step on the linear lifecycle (see below). A **checkpoint** phase is off-backbone — optional, entered by a phase-level `_trigger`, returns control instead of advancing. `feedback` is a checkpoint.                                                                                                                                                                                                                                                                  |
 | `_requires_phase`   | the phase that must be `completed` before this one may start (omitted for the first phase; on a checkpoint, its minimum precondition)                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `_init`             | `true` only on the first phase — this phase establishes migration state before its fragments run (see below)                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `_interactive`      | (optional) does the phase's WORK (fragments + assembler) prompt the user? Declare `false` to make the phase a dispatch candidate (required alongside `_exec`); a dispatched worker is file-only and cannot converse. Absent or `true` = the phase runs inline. Interactive phases (clarify, feedback) cannot be dispatched.                                                                                                                                                                                                                      |
 | `_input`            | what the phase reads — prior-phase artifacts, or `workspace` for the initial file scan                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `_knowledge`        | the reference/data files the phase consults (`knowledge/**.json` sizing/mapping/pricing tables). Each entry is `{ file, _when? }`; each `file` must resolve on disk. Load a knowledge file ONLY when its `_when` holds — see § `_knowledge`.                                                                                                                                                                                                                                                                                                     |
 | `_trigger`          | (checkpoint phases only) how the phase is ENTERED — same forms as a fragment `_trigger` (below). `feedback` uses `_when: "user opts in"`. Backbone phases have no phase-level `_trigger` (they are advanced INTO via a predecessor's `_advances_to`).                                                                                                                                                                                                                                                                                            |
@@ -130,7 +131,7 @@ guess) on any of:
 | `_assemble`         | the single terminal unit (`{ _file }`) that combines the fragment outputs into the phase's artifact(s)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `_produces`         | the artifact file(s) the phase writes. Each entry is either a bare filename (unconditional) or an inline conditional map `{ file: <path>, _when: <prose> }` — an artifact produced ONLY when the design predicate holds (e.g. `terraform/eks.tf` only when EKS is in the design). Same `{ file, _when }` shape as `_knowledge`; `_when` is opaque prose the interpreter reads at runtime and CI does NOT evaluate. A trailing-slash `file` (e.g. `kubernetes/`) names a produced DIRECTORY when the unit emits a set of dynamically-named files. |
 | `_advances_to`      | (backbone phases only) the phase that runs next on success — or a terminal (`complete`). A checkpoint has NO `_advances_to`.                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `_exec`             | (optional) the phase's EXECUTION MODE. When present, the phase's WORK (fragments + assembler) is dispatched to a fresh isolated sub-agent window with file-only I/O, at the capability tier named by `_exec._agent`; the interpreter keeps the gates, `_init` setup, and the state transition in the MAIN window (see § `_exec`). Absent = the phase runs inline in the main window.                                                                                                                                                             |
+| `_exec`             | (optional) the phase's EXECUTION MODE. When present, the phase's WORK (fragments + assembler) is dispatched to a fresh isolated sub-agent window with file-only I/O, at the capability tier named by `_exec._agent`; the interpreter keeps the gates, `_init` setup, and the state transition in the MAIN window (see § `_exec`). Requires `_interactive: false`. Absent = the phase runs inline in the main window.                                                                                                                             |
 | `_re_entry_guard`   | (backbone phases with a downstream only) the stale-downstream guard — STOP re-running this phase if its downstream phase already completed, unless the user confirms (see below). Terminal phases and checkpoints have none.                                                                                                                                                                                                                                                                                                                     |
 | `_preconditions`    | the entry gate — an ordered list of checks that MUST pass before the phase does any work (predecessor completed, single active phase, inputs present/valid). See § Gate protocol.                                                                                                                                                                                                                                                                                                                                                                |
 | `_postconditions`   | the completion gate — an ordered list of checks that MUST pass before the phase is marked `completed` and control advances. See § Gate protocol.                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -146,8 +147,8 @@ entry is `{ file, _when? }` — the same shape as `_produces` conditional artifa
   phase's inputs. Do NOT speculatively load knowledge for resource types absent
   from the inventory. A bare entry (no `_when`) is always loaded.
 - `_when` is opaque prose the interpreter evaluates at runtime; CI validates only
-  that each `file` resolves on disk (skill-root relative, handling the `../shared/`
-  climb), never the predicate's truth (same policy as `_trigger._when`).
+  that each `file` resolves on disk (skill-root relative), never the predicate's
+  truth (same policy as `_trigger._when`).
 
 ### `_trigger` forms
 
@@ -204,9 +205,17 @@ otherwise bloat the main context. Discovery is the canonical case: it parses bul
 source files down to one small inventory artifact.
 
 ```yaml
+_interactive: false # REQUIRED to dispatch: the phase's work does not prompt the user
 _exec:
   _agent: rw # capability tier: ro | rw | git
 ```
+
+`_exec` may only be declared on a phase that also declares `_interactive: false`.
+A dispatched worker has file-only I/O and cannot converse with the user, so only a
+phase whose WORK (fragments + assembler) is non-interactive is a dispatch candidate.
+The author affirms this explicitly — a phase with `_interactive: true` or no
+`_interactive` declaration at all cannot carry `_exec` (CI rejects it). Interactive
+phases (clarify, feedback) therefore run inline, always.
 
 ### What moves, and what STAYS in the main window
 
@@ -246,9 +255,11 @@ ships these workers under `agents/`; the tier maps to the worker name:
 | `rw`     | `migration-to-aws:generic-phase-worker-rw`  | Read, Grep, Glob, Write, Edit |
 | `git`    | `migration-to-aws:generic-phase-worker-git` | rw + git                      |
 
-(Only the workers a skill actually needs are shipped; a tier with no worker file on
-disk means no phase uses it yet. `rw` deliberately excludes shell/Bash so it cannot
-reach `git` — that keeps the `rw`/`git` distinction real.)
+(Only the workers a skill actually needs are shipped. A phase may only name a tier
+whose worker file is present on disk — CI rejects an `_exec._agent` that names a tier
+with no `agents/generic-phase-worker-<tier>.md`, since dispatching to an absent worker
+would fail at runtime. `rw` deliberately excludes shell/Bash so it cannot reach `git`
+— that keeps the `rw`/`git` distinction real.)
 
 To dispatch, invoke the tier's worker via the host's Agent/subagent tool with a
 context block that tells the generic worker WHICH phase to run and where. Build these
@@ -299,6 +310,22 @@ validator error (a phase can't produce a file it has no permission to write). Th
 author declares the tier and CI verifies it is not below the minimum derivable from
 what the phase produces — the same declare-but-verify pattern as the rest of the
 grammar. Pick the LEAST tier that covers the phase's real work.
+
+### What CI enforces (structure only)
+
+The validator checks the STRUCTURE of `_exec` (never the runtime tier — that is the
+harness's job, see the platform-asymmetry note):
+
+1. `_exec` sub-keys are in the closed set (`_agent`); unknown sub-keys are a typo error.
+2. `_agent` is present and ∈ `{ro, rw, git}`.
+3. **Derived-minimum:** a producing phase (`_produces` non-empty) cannot declare `ro`.
+4. **Non-interactive affirmation:** the phase MUST declare `_interactive: false`. A
+   phase with `_interactive: true` or no `_interactive` key cannot carry `_exec` —
+   a dispatched, file-only worker cannot prompt the user.
+5. **Worker-exists:** the tier's `agents/generic-phase-worker-<tier>.md` must be
+   shipped on disk. A phase cannot dispatch to a tier whose worker the plugin does
+   not ship (it would fail at runtime). (Skipped when the plugin `agents/` dir
+   cannot be located — tolerant of a non-standard layout.)
 
 ### One level only
 
@@ -488,7 +515,7 @@ cold start that begins a migration.
    This prevents accidental commits of migration artifacts.
 
 4. Write `.phase-status.json` per the schema
-   `../shared/state/phase-status.schema.json`. Seed `phases` with ONE entry per
+   `references/vendored/state/phase-status.schema.json`. Seed `phases` with ONE entry per
    phase the skill declares (its phase files), all `"pending"` EXCEPT this `_init`
    phase which is `"in_progress"`; set `migration_id` to `[MMDD-HHMM]`,
    `last_updated` to the current ISO 8601 timestamp, and `current_phase` to this

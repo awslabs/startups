@@ -77,6 +77,10 @@ export interface PhaseFrontmatter {
   role: "backbone" | "checkpoint";
   requiresPhase: string | null;
   init: boolean; // _init
+  /** _interactive: does this phase's WORK (fragments + assembler) prompt the user?
+   *  A phase MAY only be dispatched via `_exec` when this is explicitly `false`
+   *  (a file-only worker cannot converse). null = the key is absent (unspecified). */
+  interactive: boolean | null;
   fragments: FragmentRef[];
   /** phase-level _trigger (checkpoint phases only) — how the phase is entered. null for backbone. */
   trigger: Trigger | null;

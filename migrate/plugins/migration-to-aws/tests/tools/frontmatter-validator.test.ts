@@ -661,31 +661,47 @@ _produces:
   });
 
   // ---- _exec (execution mode / agent dispatch) ----
+  //
+  // A dispatched phase must (a) name a valid capability tier, (b) name a tier whose
+  // generic-phase-worker-<tier>.md is shipped under the plugin's agents/ dir, and
+  // (c) explicitly declare its work non-interactive. The fixture skill root is the
+  // tmp dir itself, so a `agents/generic-phase-worker-<tier>.md` entry in the files
+  // map lands where discoverWorkerTiers() finds it. When NO agents/ dir is present
+  // the worker-exists check is UNVERIFIED (null) and skipped — so reject-tests that
+  // target a DIFFERENT rule omit agents/ to keep only their target rule firing.
 
-  it('accepts a phase with _exec: { _agent: rw } that produces an artifact', () => {
-    // goodSkill's discover _produces inventory.json -> rw is the derived minimum.
-    const files = goodSkill();
+  // A shipped worker file for a tier (its body is irrelevant to the validator).
+  const worker = (tier: string): [string, string] => [
+    `agents/generic-phase-worker-${tier}.md`,
+    `---\nname: generic-phase-worker-${tier}\n---\nworker\n`,
+  ];
+  // Add `_exec` (+ the required `_interactive: false`) to goodSkill's discover phase.
+  const withExec = (files: Record<string, string>, execFrag: string, interactive = '\n_interactive: false') => {
     files['references/phases/discover/discover.md'] = files[
       'references/phases/discover/discover.md'
-    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: rw }');
+    ].replace('_advances_to: clarify', `_advances_to: clarify${interactive}\n${execFrag}`);
+    return files;
+  };
+
+  it('accepts a phase with _exec: { _agent: rw }, _interactive: false, and the rw worker shipped', () => {
+    // goodSkill's discover _produces inventory.json -> rw is the derived minimum.
+    const files = withExec(goodSkill(), '_exec: { _agent: rw }');
+    const [wp, wc] = worker('rw');
+    files[wp] = wc;
     const findings = validateFixture(files);
     assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
   });
 
-  it('accepts an _exec in nested block form (_agent: git)', () => {
-    const files = goodSkill();
-    files['references/phases/discover/discover.md'] = files[
-      'references/phases/discover/discover.md'
-    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec:\n  _agent: git');
+  it('accepts an _exec in nested block form (_agent: git) when the git worker is shipped', () => {
+    const files = withExec(goodSkill(), '_exec:\n  _agent: git');
+    const [wp, wc] = worker('git');
+    files[wp] = wc;
     const findings = validateFixture(files);
     assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
   });
 
   it('rejects an _exec._agent that is not a recognized tier', () => {
-    const files = goodSkill();
-    files['references/phases/discover/discover.md'] = files[
-      'references/phases/discover/discover.md'
-    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: superuser }');
+    const files = withExec(goodSkill(), '_exec: { _agent: superuser }');
     const findings = validateFixture(files);
     assert.match(
       findings.map((f) => f.message).join('\n'),
@@ -694,19 +710,15 @@ _produces:
   });
 
   it('rejects an unknown _exec sub-key (typo)', () => {
-    const files = goodSkill();
-    files['references/phases/discover/discover.md'] = files[
-      'references/phases/discover/discover.md'
-    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: rw, _agnet: rw }');
+    const files = withExec(goodSkill(), '_exec: { _agent: rw, _agnet: rw }');
+    const [wp, wc] = worker('rw');
+    files[wp] = wc;
     const findings = validateFixture(files);
     assert.match(findings.map((f) => f.message).join('\n'), /unknown _exec sub-key '_agnet'/);
   });
 
   it('rejects _exec present with no _agent tier', () => {
-    const files = goodSkill();
-    files['references/phases/discover/discover.md'] = files[
-      'references/phases/discover/discover.md'
-    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec:\n  _mode: agent');
+    const files = withExec(goodSkill(), '_exec:\n  _mode: agent');
     const findings = validateFixture(files);
     const msg = findings.map((f) => f.message).join('\n');
     assert.match(msg, /_exec is present but declares no _agent tier/);
@@ -715,10 +727,9 @@ _produces:
 
   it('rejects _agent: ro on a producing phase (derived-minimum tier)', () => {
     // discover _produces inventory.json, so ro (read-only) is below the minimum.
-    const files = goodSkill();
-    files['references/phases/discover/discover.md'] = files[
-      'references/phases/discover/discover.md'
-    ].replace('_advances_to: clarify', '_advances_to: clarify\n_exec: { _agent: ro }');
+    const files = withExec(goodSkill(), '_exec: { _agent: ro }');
+    const [wp, wc] = worker('ro');
+    files[wp] = wc;
     const findings = validateFixture(files);
     assert.match(
       findings.map((f) => f.message).join('\n'),
@@ -737,6 +748,66 @@ _produces:
     assert.match(
       findings.map((f) => f.message).join('\n'),
       /unknown fragment frontmatter key '_exec'/,
+    );
+  });
+
+  // ---- _exec ⟹ _interactive: false (dispatch requires an explicit non-interactive affirmation) ----
+
+  it('rejects _exec on a phase with NO _interactive declaration', () => {
+    // withExec but pass an empty interactive prefix -> the affirmation is absent.
+    const files = withExec(goodSkill(), '_exec: { _agent: rw }', '');
+    const [wp, wc] = worker('rw');
+    files[wp] = wc;
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /declares _exec but no _interactive declaration .* MUST declare '_interactive: false'/,
+    );
+  });
+
+  it('rejects _exec on a phase declared _interactive: true', () => {
+    const files = withExec(goodSkill(), '_exec: { _agent: rw }', '\n_interactive: true');
+    const [wp, wc] = worker('rw');
+    files[wp] = wc;
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /declares _exec but _interactive: true .* non-interactive work can be dispatched/,
+    );
+  });
+
+  it('accepts _interactive: false on a NON-_exec phase (the affirmation is harmless without dispatch)', () => {
+    const files = goodSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_advances_to: clarify', '_advances_to: clarify\n_interactive: false');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  // ---- worker-exists (the tier's generic-phase-worker-<tier>.md must be shipped) ----
+
+  it('rejects _exec._agent naming a tier whose worker is not shipped', () => {
+    // agents/ exists (rw worker shipped) but the phase asks for git -> no git worker.
+    const files = withExec(goodSkill(), '_exec:\n  _agent: git');
+    const [wp, wc] = worker('rw'); // only rw shipped, NOT git
+    files[wp] = wc;
+    const findings = validateFixture(files);
+    assert.match(
+      findings.map((f) => f.message).join('\n'),
+      /_exec\._agent 'git' has no worker on disk .*generic-phase-worker-git\.md/,
+    );
+  });
+
+  it('does NOT run worker-exists when the plugin agents/ dir is absent (UNVERIFIED)', () => {
+    // No agents/ dir in the fixture -> availableWorkerTiers is null -> the check is
+    // skipped (tolerant of a skill laid out without the standard plugin structure).
+    const files = withExec(goodSkill(), '_exec: { _agent: git }'); // git, but no agents/ dir at all
+    const findings = validateFixture(files);
+    assert.equal(
+      findings.filter((f) => /has no worker on disk/.test(f.message)).length,
+      0,
+      `worker-exists should be skipped, got: ${JSON.stringify(findings)}`,
     );
   });
 });

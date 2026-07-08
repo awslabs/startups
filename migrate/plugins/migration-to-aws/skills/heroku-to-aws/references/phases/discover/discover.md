@@ -15,6 +15,7 @@ _assemble:
 _produces:
   - heroku-resource-inventory.json
 _advances_to: clarify
+_interactive: false
 _exec:
   _agent: rw
 _re_entry_guard:

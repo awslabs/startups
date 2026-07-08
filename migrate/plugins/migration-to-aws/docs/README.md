@@ -64,8 +64,9 @@ LLM's.** See [01-concepts.md](01-concepts.md) for the full rationale.
    a green `lint:frontmatter`.
 4. Keep [04-validator-checks.md](04-validator-checks.md) open while authoring — when
    a check fails, it tells you what the check enforces and how to fix it.
-5. Read [05-exec-agent-dispatch.md](05-exec-agent-dispatch.md) if you want a phase to
-   run its work in an isolated sub-agent (the `_exec` execution-mode extension).
+5. Read [05-exec-agent-dispatch.md](05-exec-agent-dispatch.md) for how a phase can run
+   its work in an isolated sub-agent (the `_exec` execution mode) — the mechanism,
+   the generic worker, and the platform caveats.
 
 ## The canonical sources (what these docs answer to)
 

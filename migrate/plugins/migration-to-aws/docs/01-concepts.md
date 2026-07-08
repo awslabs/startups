@@ -149,10 +149,13 @@ And one execution-mode construct, orthogonal to the lifecycle:
   non-interactive phases (discovery is the case) whose bulky intermediate data would
   otherwise flood the main context. The interpreter keeps the gates, `_init` setup,
   and the state transition in the main window; only the artifact-producing work moves
-  out. It carries a capability tier (`_agent: ro|rw|git`) the validator floors
-  against what the phase produces — but that tier is enforced only where the host
-  harness has a real sub-agent allow-list, so it is a least-privilege _hint_, not a
-  portable guarantee. Dispatch is one level deep (a fragment can't re-dispatch).
+  out. A dispatch candidate must affirm `_interactive: false` (a file-only worker
+  cannot prompt the user — CI rejects `_exec` without it). It carries a capability
+  tier (`_agent: ro|rw|git`) the validator floors against what the phase produces —
+  but that tier is enforced only where the host harness has a real sub-agent
+  allow-list, so it is a least-privilege _hint_, not a portable guarantee. Dispatch
+  is one level deep (a fragment can't re-dispatch). See
+  [05-exec-agent-dispatch.md](05-exec-agent-dispatch.md).
 
 ## 6. Derive, don't declare.
 
