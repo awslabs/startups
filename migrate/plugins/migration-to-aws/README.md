@@ -172,66 +172,35 @@ See the [ai-to-aws README](../ai-to-aws/README.md) for full details on prerequis
 - **For AI execution (ai-to-aws):** Python 3.10+, `uv`, and Bedrock model access enabled
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
-## Development
+## Architecture & contributing
 
-This project uses [mise](https://mise.jdx.dev) for tool management and task running.
+This plugin ships two migration skills built on **different architectures**, and this
+matters if you contribute:
 
-```bash
-# Install tools
-mise install
+- **heroku-to-aws** is built on the **phase DSL** — a declarative frontmatter grammar
+  an LLM interprets at runtime, with a static validator that checks the structure
+  before anything runs. It is the reference implementation and the **direction for all
+  new work**.
+- **gcp-to-aws** predates the DSL and uses the **older prose design**. It is maintained,
+  but a future effort will port it onto the DSL.
 
-# Run the full build (lint, format, validate, security)
-mise run build
+**New skills and phases follow the DSL pattern** (`heroku-to-aws`), not the prose
+pattern. The grammar is documented under [`docs/`](docs/) — start with
+[docs/01-concepts.md](docs/01-concepts.md). For the full contributor workflow —
+architecture, build/validate tasks, the vendored shared-files contract, and how to add
+a validator check — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-# Individual tasks
-mise run lint          # All linters (markdown, manifests, cross-refs)
-mise run fmt           # Format with dprint
-mise run fmt:check     # Check formatting
-mise run security      # All security scanners
-```
-
-### Evaluating Changes
-
-Prompt files are the source code of this plugin. Changes to files under
-`skills/gcp-to-aws/` or `skills/heroku-to-aws/` can alter migration behavior
-in subtle ways. Run the evaluation harness before submitting a PR:
+Quick start for a local change:
 
 ```bash
-# 1. Quick structural check (instant, no Claude API calls)
-mise run eval:check
-
-# 2. Run the migration skill against a test fixture (see table below)
-cd tests/fixtures/<FIXTURE_NAME>
-# In Claude Code: "migrate from GCP to AWS"
-
-# 3. Validate the output
-python tools/eval_check.py \
-  --migration-dir .migration/<RUN_ID> \
-  --fixture <FIXTURE_NAME>
-
-# 4. Commit results
-git add .eval-results.json
+mise install     # install pinned tools
+mise run build   # the full gate: lint (md, types, DSL frontmatter, shared-sync, tests) + fmt + security
 ```
-
-#### Test Fixtures
-
-Pick the fixture that covers your change area. For broad changes, run
-`minimal-cloud-run-sql` first, then any fixture specific to your change.
-
-| Fixture                    | Use when you changed...                                                 | Invariants |
-| -------------------------- | ----------------------------------------------------------------------- | ---------- |
-| `minimal-cloud-run-sql`    | General prompt changes, state machine, phase ordering, generate phase   | 26         |
-| `bigquery-specialist-gate` | BigQuery handling, specialist gate, analytics exclusion                 | 9          |
-| `ai-workload-openai`       | AI detection, model mapping, lifecycle rules, Category F questions      | 11         |
-| `user-preferences`         | Clarify question flow, preference schema, Design preference consumption | 10         |
-| `negative-services`        | Classification rules, auth exclusion, forbidden service mappings        | 8          |
-
-See [docs/evaluation-guide.md](docs/evaluation-guide.md) for the full workflow
-and how to add new invariants.
 
 ## Security
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+For security issue notifications, see the repo-root
+[CONTRIBUTING](../../../CONTRIBUTING.md#security-issue-notifications).
 
 ## License
 
