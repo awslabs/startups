@@ -385,34 +385,17 @@ A) Most conservative (highest HA) | B) Use [instance name] as primary | C) Ask m
 | "ask me about [setting]"                         | Convert that row to ESSENTIAL                      | Yes — full question       |
 | Vague correction ("that's wrong")                | Convert that row to ESSENTIAL                      | Yes — full question       |
 
-For each override: set `chosen_by: "user"` and record in `metadata.detected_settings` with `"confirmed": false` and `"corrected_by_user": true`. For extracted rows, also remove the question ID from `metadata.questions_skipped_extracted`; for assumed rows, remove it from `metadata.questions_defaulted`.
+For each override: set `chosen_by: "user"` on the constraint (this removes the `source` field since it's no longer extracted/default). For extracted rows, also remove the question ID from `metadata.questions_skipped_extracted`; for assumed rows, remove it from `metadata.questions_defaulted`.
 
-**When the user confirms ("looks good"):** mark all rows `"confirmed": true` in `metadata.detected_settings`.
+**When the user confirms ("looks good"):** no further action needed — the constraint objects already carry their `chosen_by` and `source` fields.
 
 **"Ask me everything":** clear `questions_skipped_extracted` and `questions_defaulted`; set all previously extracted/assumed constraints to pending; set `metadata.clarify_mode: "full"` and run the **Legacy Full Flow** (see Step 4, Full Flow variant).
 
-**`metadata.detected_settings` schema** (write to `preferences.json` at Step 5). Both extracted and assumed rows are recorded; the `source` prefix distinguishes them:
+**Constraint `source` field:** When writing a constraint with `chosen_by: "extracted"` or `chosen_by: "default"`, include the `source` field on the constraint object itself:
+- Extracted: raw provenance signal (e.g. `"terraform:availability_type=ZONAL"`, `"billing:region=us-west1"`, `"ai-profile:integration.pattern=direct_sdk"`)
+- Default: `"default:<Qid>"` (e.g. `"default:Q16"`)
 
-```json
-"detected_settings": [
-  {
-    "key": "availability",
-    "value": "single-az",
-    "source": "terraform:availability_type=ZONAL",
-    "questions_skipped": ["Q6"],
-    "confirmed": true,
-    "corrected_by_user": false
-  },
-  {
-    "key": "ai_priority",
-    "value": "balanced",
-    "source": "default:Q16",
-    "questions_skipped": ["Q16"],
-    "confirmed": true,
-    "corrected_by_user": false
-  }
-]
-```
+Omit `source` when `chosen_by` is `"user"` or `"derived"`. See constraint examples in Step 5.
 
 After the user responds, write `preferences-draft.json` with all resolved values and `metadata.wizard_stage: "essentials_pending"`, then proceed to Step 4.
 
@@ -550,50 +533,32 @@ Assemble all resolved values — sheet confirmations, corrections, essential ans
     "questions_skipped_extracted": ["Q1", "Q6", "Q12", "Q13", "Q13b", "Q14", "Q19", "Q20"],
     "questions_skipped_early_exit": ["Q8"],
     "questions_skipped_not_applicable": ["Q3.5", "Q4", "Q10", "Q23", "Q24", "Q25", "Q26"],
-    "detected_settings": [
-      {
-        "key": "availability",
-        "value": "multi-az",
-        "source": "terraform:availability_type=REGIONAL",
-        "questions_skipped": ["Q6"],
-        "confirmed": true,
-        "corrected_by_user": false
-      },
-      {
-        "key": "ai_priority",
-        "value": "balanced",
-        "source": "default:Q16",
-        "questions_skipped": ["Q16"],
-        "confirmed": true,
-        "corrected_by_user": false
-      }
-    ],
     "category_e_enabled": false,
     "clarify_mode": "wizard",
     "inventory_clarifications": {}
   },
   "design_constraints": {
-    "target_region": { "value": "us-east-1", "chosen_by": "extracted" },
+    "target_region": { "value": "us-east-1", "chosen_by": "extracted", "source": "inventory:region=us-east1" },
     "compliance": { "value": ["hipaa"], "chosen_by": "user" },
-    "gcp_monthly_spend": { "value": "$5K-$20K", "chosen_by": "extracted" },
-    "availability": { "value": "multi-az", "chosen_by": "extracted" },
+    "gcp_monthly_spend": { "value": "$5K-$20K", "chosen_by": "extracted", "source": "billing:monthly_total=$8200" },
+    "availability": { "value": "multi-az", "chosen_by": "extracted", "source": "terraform:availability_type=REGIONAL" },
     "cutover_strategy": { "value": "maintenance-window-weekly", "chosen_by": "user" },
-    "kubernetes": { "value": "ecs-fargate", "chosen_by": "default" },
-    "database_traffic": { "value": "steady", "chosen_by": "extracted" },
-    "db_io_workload": { "value": "low", "chosen_by": "extracted" },
-    "db_size": { "value": "10-100GB", "chosen_by": "extracted" }
+    "kubernetes": { "value": "ecs-fargate", "chosen_by": "default", "source": "default:Q8" },
+    "database_traffic": { "value": "steady", "chosen_by": "extracted", "source": "inventory:db_tier=db-f1-micro" },
+    "db_io_workload": { "value": "low", "chosen_by": "extracted", "source": "inventory:db_tier=db-f1-micro" },
+    "db_size": { "value": "10-100GB", "chosen_by": "extracted", "source": "inventory:disk_size_gb=10" }
   },
   "ai_constraints": {
-    "ai_framework": { "value": ["direct"], "chosen_by": "extracted" },
+    "ai_framework": { "value": ["direct"], "chosen_by": "extracted", "source": "ai-profile:integration.pattern=direct_sdk" },
     "ai_monthly_spend": { "value": "$500-$2K", "chosen_by": "user" },
-    "ai_priority": { "value": "balanced", "chosen_by": "default" },
-    "ai_critical_feature": { "value": "none", "chosen_by": "default" },
-    "ai_token_volume": { "value": "low", "chosen_by": "default" },
-    "ai_model_baseline": { "value": "gemini-2.5-flash", "chosen_by": "extracted" },
-    "ai_vision": { "value": "text-only", "chosen_by": "extracted" },
-    "ai_latency": { "value": "important", "chosen_by": "default" },
-    "ai_complexity": { "value": "moderate", "chosen_by": "default" },
-    "startup_program_status": { "value": "unknown", "chosen_by": "default" },
+    "ai_priority": { "value": "balanced", "chosen_by": "default", "source": "default:Q16" },
+    "ai_critical_feature": { "value": "none", "chosen_by": "default", "source": "default:Q17" },
+    "ai_token_volume": { "value": "low", "chosen_by": "default", "source": "default:Q18" },
+    "ai_model_baseline": { "value": "gemini-2.5-flash", "chosen_by": "extracted", "source": "ai-profile:models[0].model_id" },
+    "ai_vision": { "value": "text-only", "chosen_by": "extracted", "source": "ai-profile:capabilities_summary.vision=false" },
+    "ai_latency": { "value": "important", "chosen_by": "default", "source": "default:Q21" },
+    "ai_complexity": { "value": "moderate", "chosen_by": "default", "source": "default:Q22" },
+    "startup_program_status": { "value": "unknown", "chosen_by": "default", "source": "default:Q27" },
     "ai_capabilities_required": {
       "value": ["text_generation", "streaming"],
       "chosen_by": "derived"
@@ -612,7 +577,7 @@ Assemble all resolved values — sheet confirmations, corrections, essential ans
 6. `metadata.questions_skipped_early_exit` records questions skipped due to early-exit logic (e.g., Q8 skipped because Q5=multi-cloud).
 7. `metadata.questions_skipped_extracted` records questions resolved because inventory already provided the answer.
 8. `metadata.questions_defaulted` records questions resolved by documented default — whether sheet-confirmed (wizard) or skipped (full flow / "use defaults").
-9. `metadata.detected_settings` records **every sheet row** — extracted (`source` prefix `terraform:`, `billing:`, `code:`, or artifact filename) and assumed (`source: "default:<Qid>"`) — with confirmation status and whether the user corrected it in Step 2.5. Downstream report generation uses `confirmed: false` and `source: "default:*"` rows to flag unverified assumptions. _(The field name is retained for schema stability even though assumed rows are not "detected"; a rename to `assumption_sheet` is planned as a follow-up once downstream consumers are audited.)_
+9. **`source` field on constraints:** Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` MUST include a `source` field. Extracted: raw provenance signal (prefix `terraform:`, `billing:`, `code:`, `inventory:`, or artifact filename). Default: `"default:<Qid>"`. Omit `source` for `"user"` and `"derived"`. Report generation uses `source` prefixed `default:` to flag unverified assumptions.
 10. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory or their firing condition wasn't met.
 11. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
 12. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
@@ -672,7 +637,7 @@ Documented defaults for every question. Used by: PROPOSED sheet rows (wizard), p
 Before handing off to Design:
 
 - [ ] In wizard mode, the Step 2.5 Assumption Sheet was shown (detected + assumed sections) and the user responded before any essential question was asked
-- [ ] Every sheet row (extracted **and** defaulted) is recorded in `metadata.detected_settings` with `confirmed` status and correct `source` prefix
+- [ ] Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` has a `source` field with the correct prefix (`terraform:`, `billing:`, `inventory:`, `ai-profile:`, or `default:<Qid>`)
 - [ ] Essential questions (Q2, Q7, and conditional Q1/Q3/Q3.5/Q15/Q23–Q25/conflicts) were asked, answered, or explicitly defaulted via "use defaults for the rest"
 - [ ] If `bigquery_present` was **true**, the Step 4 BigQuery specialist advisory was shown before questions — **or**, if Step 0 option A (reuse preferences), the same advisory was shown after BigQuery detection
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
@@ -703,8 +668,8 @@ Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 1. `preferences.json` exists and parses as JSON.
 2. Step 5 validation checklist items all pass (including `metadata.clarify_mode`).
 3. If `gcp-resource-inventory.json` contains `google_sql_database_instance` → `design_constraints.availability.value` is set (non-null, non-empty).
-4. If `metadata.clarify_mode` is `"wizard"` → `metadata.detected_settings` is non-empty OR every active question was essential.
-5. **No sheet/question mixing:** `metadata.questions_asked` contains no question ID that still appears in any `metadata.detected_settings[].questions_skipped` array. (A question may be both only if the user converted its sheet row — in which case the override handling removed it from the row's skip list.)
+4. If `metadata.clarify_mode` is `"wizard"` → at least one constraint has a `source` field OR every active question was essential.
+5. **No sheet/question mixing:** `metadata.questions_asked` contains no question ID that also appears in `metadata.questions_skipped_extracted` or `metadata.questions_defaulted`. (A question may move between lists only if the user converted its sheet row — in which case the override handling moved it to `questions_asked`.)
 
 **On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
 

@@ -329,16 +329,20 @@ Do not list files that were not generated.
 
 Key decisions that shaped this migration plan. Each value is read from `preferences.json` using the `.value` field of wrapped preference objects (e.g., `availability.value`, not `availability` directly).
 
-| Decision                 | Your choice                                            | Impact on plan                                                  |
-| ------------------------ | ------------------------------------------------------ | --------------------------------------------------------------- |
-| Target AWS region        | `design_constraints.target_region.value` or equivalent | All resources deployed here; Bedrock model availability checked |
-| Availability requirement | `availability.value`                                   | Drives RDS single-AZ vs Multi-AZ vs Aurora selection            |
-| Monthly GCP spend        | From estimation source or `gcp_monthly_spend.value`    | Cost comparison baseline                                        |
-| Framework                | `ai_framework.value` (if AI track ran)                 | Determines migration effort for AI workloads                    |
-| AI priority              | `ai_priority.value` (if present)                       | Drives Bedrock model selection                                  |
-| Compliance               | `compliance.value` (if present)                        | Triggers Config + Security Hub in baseline.tf                   |
+| Decision                 | Your choice                                            | Source | Source signal | Impact on plan                                                  |
+| ------------------------ | ------------------------------------------------------ | ------ | ------------- | --------------------------------------------------------------- |
+| Target AWS region        | `design_constraints.target_region.value` or equivalent | `chosen_by` → User / Extracted / Default | `source` if present | All resources deployed here; Bedrock model availability checked |
+| Availability requirement | `availability.value`                                   | `chosen_by` | `source` if present | Drives RDS single-AZ vs Multi-AZ vs Aurora selection            |
+| Monthly GCP spend        | From estimation source or `gcp_monthly_spend.value`    | `chosen_by` | `source` if present | Cost comparison baseline                                        |
+| Framework                | `ai_framework.value` (if AI track ran)                 | `chosen_by` | `source` if present | Determines migration effort for AI workloads                    |
+| AI priority              | `ai_priority.value` (if present)                       | `chosen_by` | `source` if present | Drives Bedrock model selection                                  |
+| Compliance               | `compliance.value` (if present)                        | `chosen_by` | `source` if present | Triggers Config + Security Hub in baseline.tf                   |
 
-**Source indicators:** Each preference shows `chosen_by`: `"user"` (explicitly answered), `"extracted"` (inferred from IaC/code), or `"default"` (plugin default applied).
+**Render all constraints**, not just this hardcoded subset — iterate every key in `design_constraints`, `ai_constraints`, and `startup_constraints` (when present).
+
+**Source indicators:** `chosen_by` → "User answer", "Extracted from infrastructure", "Default applied", or "Derived". **Source signal:** the `source` field when present (shows provenance like `terraform:availability_type=ZONAL` or `default:Q16`); leave blank for user/derived rows.
+
+**Assumption flag:** Rows where `source` starts with `"default:"` are unverified assumptions confirmed on the sheet — render in a visually distinct style (e.g., lighter text or italic) so the reader can spot which values were not explicitly verified from infrastructure.
 
 **Full detail:** Open `preferences.json` in this directory.
 
