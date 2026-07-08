@@ -16,20 +16,52 @@ import {
   parsePhase,
 } from "./parse.ts";
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+
+/** The generic-phase-worker file-name prefix (INTERPRETER.md § _exec). A tier `<t>`
+ *  is dispatchable only if `agents/generic-phase-worker-<t>.md` is shipped. */
+const WORKER_PREFIX = "generic-phase-worker-";
+
+/**
+ * Locate the plugin's `agents/` directory and return the set of capability tiers for
+ * which a `generic-phase-worker-<tier>.md` file exists, or null if no `agents/` dir is
+ * found. The skill lives at `<plugin>/skills/<skill>`, so `agents/` is normally two
+ * levels up; we walk up a few levels to tolerate minor layout variation (and to let
+ * tests place `agents/` at a shallow ancestor of the fixture skill root).
+ */
+function discoverWorkerTiers(skillRoot: string): Set<string> | null {
+  let dir = skillRoot;
+  for (let i = 0; i < 5; i++) {
+    const agentsDir = join(dir, "agents");
+    if (existsSync(agentsDir) && statSync(agentsDir).isDirectory()) {
+      const tiers = new Set<string>();
+      for (const f of readdirSync(agentsDir)) {
+        if (f.startsWith(WORKER_PREFIX) && f.endsWith(".md")) {
+          tiers.add(f.slice(WORKER_PREFIX.length, -".md".length));
+        }
+      }
+      return tiers;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+  return null; // no agents/ dir found — worker-exists stays UNVERIFIED
+}
 
 /** Bind a skill root into the typed model (exported so tests can reuse it). */
 export function bindSkill(skillRoot: string): BoundSkill {
   const referencesRoot = join(skillRoot, "references");
   const phasesDir = join(referencesRoot, "phases");
   const rel = (abs: string) => abs.replace(skillRoot + "/", "");
+  const availableWorkerTiers = discoverWorkerTiers(skillRoot);
 
   const phases: BoundSkill["phases"] = [];
   const fragments: BoundSkill["fragments"] = new Map();
   const assemblers: BoundSkill["assemblers"] = new Map();
 
   if (!existsSync(phasesDir)) {
-    return { referencesRoot, phases, fragments, assemblers, rel };
+    return { referencesRoot, phases, fragments, assemblers, rel, availableWorkerTiers };
   }
 
   const phaseNames = readdirSync(phasesDir).filter((d) =>
@@ -62,7 +94,7 @@ export function bindSkill(skillRoot: string): BoundSkill {
     }
   }
 
-  return { referencesRoot, phases, fragments, assemblers, rel };
+  return { referencesRoot, phases, fragments, assemblers, rel, availableWorkerTiers };
 }
 
 /** Validate a skill root; returns findings (empty = clean). Exported for tests. */

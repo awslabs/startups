@@ -121,6 +121,43 @@ phase`; `_stale_if_completed '…' should equal this phase's _advances_to '…'`
 **Fix:** align the guard with the chain; make `_stale_artifact` the exact downstream
 artifact whose staleness you're guarding against.
 
+## `_exec` checks (execution mode / agent dispatch)
+
+**Enforces** (`INTERPRETER.md` § `_exec`), when a phase declares `_exec`:
+
+- every `_exec` sub-key is in the closed set (`_agent`);
+- `_agent` is present and ∈ the closed tier set (`ro` / `rw` / `git`);
+- **derived-minimum:** a phase that `_produces` ≥1 artifact does write work, so its
+  `_agent` cannot be `ro` — the declared tier must be ≥ the minimum implied by what
+  the phase produces (declare-but-verify).
+- **non-interactive affirmation:** the phase MUST declare `_interactive: false`. A
+  dispatched worker has file-only I/O and cannot prompt the user, so a phase with
+  `_interactive: true` — or with no `_interactive` key — cannot carry `_exec`. This
+  fires independently of the tier (even when `_agent` is missing or invalid).
+- **worker-exists:** the tier's `agents/generic-phase-worker-<tier>.md` agent file
+  must be shipped on disk — a phase cannot dispatch to a capability tier whose worker
+  the plugin does not ship (it would fail at runtime). Skipped (UNVERIFIED) when the
+  plugin `agents/` dir cannot be located, tolerant of a non-standard layout.
+
+The **one-level rule** needs no dedicated check: `_exec` is a PHASE-only key, so a
+fragment or assembler carrying it already trips the closed-vocabulary check
+(`unknown fragment frontmatter key '_exec'`). Nested dispatch is structurally
+unrepresentable.
+
+**Trips on:** `unknown _exec sub-key '…'`; `_exec is present but declares no _agent
+tier`; `_exec._agent '…' is not a recognized capability tier`; `_exec._agent 'ro'
+(read-only) but phase '…' _produces N artifact(s) … needs at least 'rw'`; `phase '…'
+declares _exec but no _interactive declaration / _interactive: true … MUST declare
+'_interactive: false'`; `_exec._agent '…' has no worker on disk — expected agent file
+'agents/generic-phase-worker-….md'`.
+**Fix:** declare `_agent` as the LEAST tier that covers the phase's real work (a
+phase that writes an artifact needs `rw`, or `git` if it mutates repo history); add
+`_interactive: false` to affirm the work does not prompt the user; and ship the
+tier's worker under `agents/`. Note the validator checks the tier is _well-formed,
+not under-privileged, affirmed non-interactive, and backed by a shipped worker_ — it
+does NOT verify the host actually enforces the tier (on inline-only hosts the tier
+fails open; see the judgment-surface note below).
+
 ## Gate checks (`_preconditions` / `_postconditions`)
 
 **Enforces:** every check `kind` is in the closed `CHECK_KINDS` set; every
@@ -221,6 +258,11 @@ These are **not** bugs; they are the deliberate edge of "structure is checkable"
   entire judgment half of the postcondition contract rides on prose the validator
   never reads. Reserve `_assert` for genuine judgment; prefer the mechanical check
   kinds (`_check_file_exists`, `_validate_json`) wherever the property is mechanical.
+- **`_exec._agent` tier enforcement** is the host harness's job, not the validator's.
+  CI checks the tier is well-formed and not under-privileged for what the phase
+  produces, but on a host with no sub-agent allow-list the tier is inert — the phase
+  runs at full access and the restriction fails **open**. The tier records
+  least-privilege _intent_; it is not a portable security boundary.
 
 The value of the grammar is that it **isolates** these to named, greppable places —
 so a reviewer knows exactly where the LLM's judgment is load-bearing.
@@ -229,4 +271,5 @@ so a reviewer knows exactly where the LLM's judgment is load-bearing.
 
 Back to the [README](README.md) · the model in [01-concepts.md](01-concepts.md) · the
 keys in [02-grammar-reference.md](02-grammar-reference.md) · building in
-[03-authoring-guide.md](03-authoring-guide.md).
+[03-authoring-guide.md](03-authoring-guide.md) · agent dispatch in
+[05-exec-agent-dispatch.md](05-exec-agent-dispatch.md).

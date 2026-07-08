@@ -20,7 +20,7 @@ _produces:
 
 ## Output: Write `estimation-infra.json`
 
-Assemble the full artifact conforming to `../shared/estimate/estimation-infra.schema.json`
+Assemble the full artifact conforming to `references/vendored/estimate/estimation-infra.schema.json`
 (that schema is the field contract — do not re-enumerate it here). Each section is the
 corresponding output the cost-engine fragment computed: `pricing_source` +
 `current_costs` (Part 1), `projected_costs` (Parts 2/2B), `cost_comparison` (Part 3),
@@ -59,7 +59,7 @@ every-service-priced, complexity tier), then emit `GATE_FAIL` (do NOT patch arti
 STOP) or `HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json` and advance.
 
 One check needs this fragment's context: `estimation-infra.json` must also pass
-`../shared/estimate/estimation-infra.schema.json` validation (the schema shape) — verify that as part
+`references/vendored/estimate/estimation-infra.schema.json` validation (the schema shape) — verify that as part
 of the `_validate_json` postcondition.
 
 ---

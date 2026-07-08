@@ -9,18 +9,25 @@ self-contained.
 | `heroku-pricing-cache.md`   | Heroku plan pricing (source-side baseline for the estimate) |
 | `schema-discover-heroku.md` | `heroku-resource-inventory.json` schema                     |
 
-## Plugin-neutral shared data
+## Vendored plugin-shared data
 
-Cross-skill data that other DSL migration skills also use lives in the plugin-neutral
-`skills/shared/` tree (not owned by any single skill), referenced by phase frontmatter
-`_knowledge` or `INTERPRETER.md`:
+Cross-skill data that other DSL migration skills also use has a canonical home in the
+plugin-neutral `skills/shared/` tree (not owned by any single skill). To keep this
+skill **self-contained** (runnable standalone, without reaching outside its own
+directory), those files are VENDORED into `references/vendored/` — byte-identical
+copies kept in sync by CI. Phase frontmatter `_knowledge` and `INTERPRETER.md`
+reference the vendored copies, never the external source:
 
-| Path                                                 | Purpose                                      |
-| ---------------------------------------------------- | -------------------------------------------- |
-| `../../shared/state/phase-status.schema.json`        | `.phase-status.json` schema (JSON Schema)    |
-| `../../shared/estimate/estimation-infra.schema.json` | `estimation-infra.json` schema (JSON Schema) |
-| `../../shared/estimate/complexity-tiers.json`        | Migration complexity-tier thresholds         |
-| `../../shared/pricing/aws-infra-pricing.json`        | Cached AWS infrastructure pricing            |
+| Vendored path                                               | Purpose                                      |
+| ----------------------------------------------------------- | -------------------------------------------- |
+| `references/vendored/dsl/INTERPRETER.md`                    | the DSL runtime contract (the interpreter)   |
+| `references/vendored/state/phase-status.schema.json`        | `.phase-status.json` schema (JSON Schema)    |
+| `references/vendored/estimate/estimation-infra.schema.json` | `estimation-infra.json` schema (JSON Schema) |
+| `references/vendored/estimate/complexity-tiers.json`        | Migration complexity-tier thresholds         |
+| `references/vendored/pricing/aws-infra-pricing.json`        | Cached AWS infrastructure pricing            |
+
+See `references/vendored/README.md` for the sync contract (`mise run shared:sync` /
+`shared:check`). Do NOT hand-edit the vendored copies — edit the canonical source.
 
 The gate protocol, re-entry, and phase-status lifecycle that used to live in shared
 gcp prose are now defined in `INTERPRETER.md` (§ Gate protocol, § `_re_entry_guard`,
