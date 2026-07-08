@@ -32,7 +32,7 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 Phase and unit files carry a YAML frontmatter block that declares how the phase is
 composed — its inputs, the fragments it runs, the assembler that combines them,
 what it produces, its gates, and what it requires/advances-to. The DSL interpreter
-contract is the plugin-shared `../shared/dsl/INTERPRETER.md`: it defines every
+contract is the vendored `references/vendored/dsl/INTERPRETER.md`: it defines every
 frontmatter key, the fragment/assembler model, and the interpreter loop. **Load it
 first** (once, at the start of a migration), then execute a phase file's prose
 body. Elsewhere in this skill, `INTERPRETER.md` (without a path) refers to this
@@ -88,7 +88,7 @@ Clarify.
 Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created on
 the first phase and persisted across invocations. The state file is
 `.phase-status.json`; its shape is defined by
-`../shared/state/phase-status.schema.json`, and how it is created, validated, and
+`references/vendored/state/phase-status.schema.json`, and how it is created, validated, and
 updated across the lifecycle is defined in `INTERPRETER.md` § The interpreter loop.
 The `.migration/` directory is protected by a `.gitignore` created at init.
 
@@ -100,7 +100,7 @@ The `.migration/` directory is protected by a `.gitignore` created at init.
 
 - Provides `get_pricing`, `get_pricing_service_codes`, `get_pricing_service_attributes` tools
 - Only needed during Estimate phase. Discover and Design do not require it.
-- Primary pricing source: `shared/pricing/aws-infra-pricing.json` (cached AWS infrastructure rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the pricing file.
+- Primary pricing source: `references/vendored/pricing/aws-infra-pricing.json` (cached AWS infrastructure rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the pricing file.
 
 ---
 
@@ -144,13 +144,13 @@ heroku-to-aws/
 │   └── fast-path-addons.json                   # Add-on → AWS deterministic mappings (13+ entries)
 ```
 
-| Condition                                                | Action                                                                                                                                                       |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                       |
-| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `shared/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`. |
-| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                             |
-| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                           |
-| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                   |
+| Condition                                                | Action                                                                                                                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                    |
+| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `references/vendored/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`. |
+| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                                          |
+| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                                        |
+| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                                |
 
 ## Defaults
 
@@ -159,7 +159,7 @@ heroku-to-aws/
 - **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, 0.5 CPU for Fargate)
 - **Migration mode**: Adapts based on available inputs (Terraform primary, Procfile/app.json supplementary, billing optional)
 - **Cost currency**: USD
-- **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). Complexity tiers are classified per `../shared/estimate/complexity-tiers.json`.
+- **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). Complexity tiers are classified per `references/vendored/estimate/complexity-tiers.json`.
 
 ## Feedback & Sharing Checkpoints
 

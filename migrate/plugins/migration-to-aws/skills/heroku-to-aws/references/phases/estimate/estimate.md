@@ -8,9 +8,9 @@ _input:
   - heroku-resource-inventory.json
 _knowledge:
   - { file: knowledge/estimate/estimate-defaults.json }
-  - { file: ../shared/pricing/aws-infra-pricing.json }
-  - { file: ../shared/estimate/complexity-tiers.json }
-  - { file: ../shared/estimate/estimation-infra.schema.json }
+  - { file: references/vendored/pricing/aws-infra-pricing.json }
+  - { file: references/vendored/estimate/complexity-tiers.json }
+  - { file: references/vendored/estimate/estimation-infra.schema.json }
 _fragments:
   - _id: cost-engine
     _trigger: { _always: true }
@@ -65,7 +65,7 @@ _forbids_files:
 
 **Execute ALL steps in order. Do not skip or optimize.**
 
-Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture, producing `estimation-infra.json` (conforming to `../shared/estimate/estimation-infra.schema.json`) and classifying migration complexity using the tier thresholds in `../shared/estimate/complexity-tiers.json`.
+Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture, producing `estimation-infra.json` (conforming to `references/vendored/estimate/estimation-infra.schema.json`) and classifying migration complexity using the tier thresholds in `references/vendored/estimate/complexity-tiers.json`.
 
 ---
 
