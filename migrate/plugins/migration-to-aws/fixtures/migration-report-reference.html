@@ -335,12 +335,12 @@
 
       <h3>Architecture diagram</h3>
       <figure class="diagram-fig">
-        <div class="diagram" role="img" aria-label="In AWS us-west-2, users reach the app over HTTP through a public ALB into ECS Fargate running sf-beach-ratings (1 vCPU, 512 MB, up to 10 tasks) in a private subnet with NAT Gateway egress. Fargate connects to RDS PostgreSQL db.t4g.micro single-AZ, S3 for beach-images and cloudbuild artifacts, and Amazon Bedrock (Claude Sonnet 4.6 plus Nova Canvas). Public beach images are served via direct S3 read in the generated baseline. Security baseline from baseline.tf provides CloudTrail, GuardDuty, Budgets, IAM roles, security groups, NAT Gateway, and VPC. BigQuery sf_beach_analytics is deferred to a specialist engagement.">&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+        <div class="diagram" role="img" aria-label="In AWS us-west-2, users reach the app over HTTPS through a public ALB (TLS on 443; HTTP 80 redirects) into ECS Fargate running sf-beach-ratings (1 vCPU, 512 MB, up to 10 tasks) in a private subnet with NAT Gateway egress. Fargate connects to RDS PostgreSQL db.t4g.micro single-AZ, S3 for beach-images and cloudbuild artifacts, and Amazon Bedrock (Claude Sonnet 4.6 plus Nova Canvas). Public beach images are served via direct S3 read in the generated baseline. Security baseline from baseline.tf provides CloudTrail, GuardDuty, Budgets, IAM roles, security groups, NAT Gateway, and VPC. BigQuery sf_beach_analytics is deferred to a specialist engagement.">&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
 &#9474;                    Internet / Users                        &#9474;
 &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
                              &#9474;
          &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
-         &#9474; HTTP :80          &#9474; image GETs        &#9474;
+         &#9474; HTTPS :443        &#9474; image GETs        &#9474;
          &#9660;                   &#9660;                   &#9474;
    [ ALB (public) ]        [ S3 beach-images &mdash; public read ]
          &#9474;
@@ -357,7 +357,7 @@
    Security baseline: CloudTrail &middot; GuardDuty &middot; Budgets &middot; IAM &middot; VPC
 
    Deferred: BigQuery sf_beach_analytics &rarr; specialist engagement required</div>
-        <figcaption>App traffic: users &rarr; ALB &rarr; Fargate (private) &rarr; RDS, S3, and Bedrock via NAT.
+        <figcaption>App traffic: users &rarr; HTTPS &rarr; ALB &rarr; Fargate (private) &rarr; RDS, S3, and Bedrock via NAT.
           Public images: direct S3 read in baseline. BigQuery analytics is deferred.</figcaption>
       </figure>
 

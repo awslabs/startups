@@ -158,7 +158,7 @@ Render inside `<section id="exec-architecture">` after the service mapping table
 
 4. **Private compute placement.** When tasks use private subnets (`assign_public_ip = false` or `subnet: private` in design), label **private subnet** and **NAT Gateway** (or VPC endpoints if in IaC) for egress to RDS, S3 API, and Bedrock.
 
-5. **Protocol accuracy.** Label ALB listener protocol/port from IaC (e.g. `HTTP :80`). Use HTTPS only when an `aws_lb_listener` with `protocol = "HTTPS"` (or TLS certificate) exists in `terraform/`.
+5. **TLS at the edge.** Internet-facing ALB diagrams must show **HTTPS :443** (TLS termination). Port 80 is redirect-only to HTTPS — never label app traffic as plain HTTP forwarding. If generated `terraform/` lacks an HTTPS listener, that is a **Generate defect** (see `generate-artifacts-infra.md` self-check), not a reason to draw HTTP in the report.
 
 6. **Name buckets by role.** When multiple S3 buckets exist (e.g. images + build artifacts), list both on the compute→S3 branch.
 
@@ -172,7 +172,7 @@ Include **migration cluster order** from `generation-infra.json` → `migration_
 
 - Pipes under the ALB pointing to RDS, S3, or Bedrock while also showing Fargate behind the ALB
 - CloudFront/CDN as a peer backend off compute when it serves public browser traffic
-- HTTPS on the diagram when only HTTP listeners exist in `terraform/`
+- Drawing app traffic as plain HTTP forwarding on ALB :80 (must be HTTPS :443 with :80 redirect-only)
 - Omitting NAT/private subnet when Fargate has `assign_public_ip = false`
 
 Source: `aws-design.json`, `generation-infra.json`, `terraform/` (when present)
