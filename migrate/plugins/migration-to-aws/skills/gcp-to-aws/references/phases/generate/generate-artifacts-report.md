@@ -329,14 +329,14 @@ Do not list files that were not generated.
 
 Key decisions that shaped this migration plan. Each value is read from `preferences.json` using the `.value` field of wrapped preference objects (e.g., `availability.value`, not `availability` directly).
 
-| Decision                 | Your choice                                            | Source | Source signal | Impact on plan                                                  |
-| ------------------------ | ------------------------------------------------------ | ------ | ------------- | --------------------------------------------------------------- |
+| Decision                 | Your choice                                            | Source                                   | Source signal       | Impact on plan                                                  |
+| ------------------------ | ------------------------------------------------------ | ---------------------------------------- | ------------------- | --------------------------------------------------------------- |
 | Target AWS region        | `design_constraints.target_region.value` or equivalent | `chosen_by` → User / Extracted / Default | `source` if present | All resources deployed here; Bedrock model availability checked |
-| Availability requirement | `availability.value`                                   | `chosen_by` | `source` if present | Drives RDS single-AZ vs Multi-AZ vs Aurora selection            |
-| Monthly GCP spend        | From estimation source or `gcp_monthly_spend.value`    | `chosen_by` | `source` if present | Cost comparison baseline                                        |
-| Framework                | `ai_framework.value` (if AI track ran)                 | `chosen_by` | `source` if present | Determines migration effort for AI workloads                    |
-| AI priority              | `ai_priority.value` (if present)                       | `chosen_by` | `source` if present | Drives Bedrock model selection                                  |
-| Compliance               | `compliance.value` (if present)                        | `chosen_by` | `source` if present | Triggers Config + Security Hub in baseline.tf                   |
+| Availability requirement | `availability.value`                                   | `chosen_by`                              | `source` if present | Drives RDS single-AZ vs Multi-AZ vs Aurora selection            |
+| Monthly GCP spend        | From estimation source or `gcp_monthly_spend.value`    | `chosen_by`                              | `source` if present | Cost comparison baseline                                        |
+| Framework                | `ai_framework.value` (if AI track ran)                 | `chosen_by`                              | `source` if present | Determines migration effort for AI workloads                    |
+| AI priority              | `ai_priority.value` (if present)                       | `chosen_by`                              | `source` if present | Drives Bedrock model selection                                  |
+| Compliance               | `compliance.value` (if present)                        | `chosen_by`                              | `source` if present | Triggers Config + Security Hub in baseline.tf                   |
 
 **Render all constraints**, not just this hardcoded subset — iterate every key in `design_constraints`, `ai_constraints`, and `startup_constraints` (when present).
 
