@@ -26,6 +26,10 @@ FORBIDDEN_WHEN_UNKNOWN = [
     re.compile(r"\*\*your\s+status:\s*eligible_portfolio\*\*", re.IGNORECASE),
 ]
 
+ACTIVATE_APPLY_URL = "https://aws.amazon.com/startups/credits/"
+ACTIVATE_LINK_RE = re.compile(r'href=["\']https?://aws\.amazon\.com/startups/credits/?["\']', re.IGNORECASE)
+ACTIVATE_MENTION_RE = re.compile(r"\baws\s+activate\b", re.IGNORECASE)
+
 
 def _load_status(migration_dir: Path) -> tuple[str | None, dict | None]:
     prefs_path = migration_dir / "preferences.json"
@@ -71,6 +75,14 @@ def validate_startup_artifacts(migration_dir: Path) -> list[str]:
                     f"confirmed Activate tier ({pattern.pattern})"
                 )
                 break
+
+        if ACTIVATE_MENTION_RE.search(content) and not ACTIVATE_LINK_RE.search(content):
+            # Plain URLs count for markdown files
+            if ACTIVATE_APPLY_URL not in content:
+                errors.append(
+                    f"{label}: mentions AWS Activate but has no clickable link to "
+                    f"{ACTIVATE_APPLY_URL} — add <a href=\"...\"> in HTML or [text](url) in Markdown"
+                )
 
     return errors
 

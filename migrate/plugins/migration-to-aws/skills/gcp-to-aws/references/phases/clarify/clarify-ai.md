@@ -170,13 +170,13 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 > D) > $10,000/month
 > E) I don't know
 
-| Answer               | Recommendation Impact                                                                                                                                                                                                 |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| < $500/month         | Low token-volume baseline for Bedrock cost comparison; Bedrock free tier may cover initial testing                                                                                                                    |
-| $500–$2,000/month    | Mid band for Bedrock savings comparison and token-volume derivation                                                                                                                                                     |
-| $2,000–$10,000/month | Higher band — Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility)          |
-| > $10,000/month      | High band — provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility)                                           |
-| I don't know         | Use mid-band estimate with ±25% accuracy caveat in `estimation-ai.json`                                                                                                                |
+| Answer               | Recommendation Impact                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| < $500/month         | Low token-volume baseline for Bedrock cost comparison; Bedrock free tier may cover initial testing                                                                                                         |
+| $500–$2,000/month    | Mid band for Bedrock savings comparison and token-volume derivation                                                                                                                                        |
+| $2,000–$10,000/month | Higher band — Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility) |
+| > $10,000/month      | High band — provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility)                                |
+| I don't know         | Use mid-band estimate with ±25% accuracy caveat in `estimation-ai.json`                                                                                                                                    |
 
 **Do not map spend bands to AWS Activate Founders vs Portfolio.** Funding stage is not inferable from monthly AI spend — ask **Q27** instead.
 

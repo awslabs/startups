@@ -48,6 +48,20 @@ def test_unknown_status_fails_eligible_founders_bleed(tmp_path: Path) -> None:
     assert "STARTUP_FAIL" in out
 
 
+def test_unknown_status_requires_apply_link_in_report(tmp_path: Path) -> None:
+    prefs = json.loads(
+        (PLUGIN_ROOT / "fixtures" / "preferences-unknown-startup.json").read_text()
+    )
+    (tmp_path / "preferences.json").write_text(json.dumps(prefs), encoding="utf-8")
+    (tmp_path / "migration-report.html").write_text(
+        "<p>Review AWS Activate tiers before apply.</p>",
+        encoding="utf-8",
+    )
+    code, out = run_validator(tmp_path)
+    assert code == 1, out
+    assert "clickable link" in out
+
+
 def test_eligible_founders_status_not_checked(tmp_path: Path) -> None:
     prefs = json.loads(
         (PLUGIN_ROOT / "fixtures" / "preferences-unknown-startup.json").read_text()
