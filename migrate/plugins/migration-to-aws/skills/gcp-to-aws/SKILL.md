@@ -231,7 +231,7 @@ gcp-to-aws/
 │   │   │   ├── clarify-global.md              # Category A: Global/Strategic (Q1-Q7)
 │   │   │   ├── clarify-compute.md             # Categories B+C: Config Gaps + Compute (Q8-Q11)
 │   │   │   ├── clarify-database.md            # Category D: Database (Q12–Q13b)
-│   │   │   ├── clarify-ai.md                  # Category F: AI/Bedrock (Q14-Q22)
+│   │   │   ├── clarify-ai.md                  # Categories F/G/H: AI/Bedrock, Agentic, Programs (Q14-Q27)
 │   │   │   └── clarify-ai-only.md             # Standalone AI-only migration flow
 │   │   ├── design/
 │   │   │   ├── design.md                       # Phase 3: Design orchestrator
@@ -286,13 +286,13 @@ gcp-to-aws/
 │       └── bedrock-quotas.md                   # Bedrock TPM/RPM quota awareness, burndown rates, capacity planning
 ```
 
-| Condition                                                     | Action                                                                                                                                                  |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No GCP sources found (no `.tf`, no app code, no billing data) | Stop. Output: "No GCP sources detected. Provide at least one source type (Terraform files, application code, or billing exports) and try again."        |
-| `.phase-status.json` missing phase gate                       | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                  |
-| awspricing unavailable after 3 attempts                       | Display user warning about ±5-25% accuracy. Use `pricing-cache.md`. Add `pricing_source: "cached_fallback"` to the applicable `estimation-*.json` file. |
-| User skips questions or says "use defaults for the rest"      | Apply documented defaults for remaining questions in the current batch and all subsequent batches. Phase 2 completes either way.                        |
-| `aws-design.json` missing required clusters                   | Stop Phase 4. Output: "Re-run Phase 3 to generate missing cluster designs."                                                                             |
+| Condition                                                     | Action                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No GCP sources found (no `.tf`, no app code, no billing data) | Stop. Output: "No GCP sources detected. Provide at least one source type (Terraform files, application code, or billing exports) and try again."                                                                                          |
+| `.phase-status.json` missing phase gate                       | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                                                                                    |
+| awspricing unavailable after 3 attempts                       | Display user warning about ±5-25% accuracy. Use `pricing-cache.md`. Add `pricing_source: "cached_fallback"` to the applicable `estimation-*.json` file.                                                                                   |
+| User skips questions or says "use defaults for the rest"      | Apply documented defaults for all remaining questions (essential questions and any unconfirmed sheet rows in wizard mode; current and subsequent batches in full mode). Q2/Q3 defaults add a report caveat. Phase 2 completes either way. |
+| `aws-design.json` missing required clusters                   | Stop Phase 4. Output: "Re-run Phase 3 to generate missing cluster designs."                                                                                                                                                               |
 
 ## Defaults
 
@@ -357,7 +357,7 @@ User can invoke the skill again to resume from `current_phase` (or deterministic
 - Terraform infrastructure discovery
 - App code scanning (AI workload detection)
 - Billing data import from GCP
-- User requirement clarification (adaptive questions by category)
+- User requirement clarification (assumption-sheet wizard by default: confirm detected/assumed values, answer only essential questions; full adaptive question flow available on request)
 - Multi-path Design (infrastructure, AI workloads, billing-only fallback)
 - AWS cost estimation (from pricing API or fallback)
 - Migration artifact generation (Terraform, scripts, AI adapters, documentation)
