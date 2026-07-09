@@ -284,8 +284,48 @@ For each domain with resources in the generation manifest:
 | Security   | Least-privilege IAM (specific ARNs, never wildcards); per-service roles for Fargate/Lambda; Secrets Manager resources with no plaintext defaults; when `preferences.json.compliance` contains `soc2`, `pci`, `hipaa`, or `fedramp`, emit a companion `aws_secretsmanager_secret_rotation` block for every `aws_secretsmanager_secret` resource with `automatically_after_days = 30` and a TODO comment for the rotation Lambda ARN — omit the rotation block for non-compliance stacks to keep the generated Terraform immediately applyable; when `preferences.json.compliance` contains `pci`, `hipaa`, or `fedramp`, generate a customer-managed KMS key (`aws_kms_key`) and reference it via `kms_key_id` on every `aws_secretsmanager_secret` — omit for non-compliance stacks (AWS-managed key is sufficient)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Storage    | Versioning enabled; SSE-S3 or SSE-KMS encryption; block public access by default; lifecycle policies; if public content is required use CloudFront/OAC instead of public bucket policy; when `preferences.json.compliance` contains `pci`, `hipaa`, or `fedramp`, emit `aws_s3_bucket_logging` for every application S3 bucket (not the CloudTrail/Config log buckets themselves) targeting a dedicated access-log bucket — add inline cost disclosure comment: `# S3 access logging: ~$0.023/GB stored. Enabled for compliance. Disable if cost is a concern and compliance posture allows.` — omit for non-compliance stacks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Database   | Private subnets; subnet group + parameter group + security group; backups; encryption at rest (`storage_encrypted = true`); `deletion_protection = true` by default; **`publicly_accessible = false` always** — never emit `publicly_accessible = true` unless the user has explicitly requested it via a compliance exception in `preferences.json`; **never emit a security group rule allowing ingress on port 5432 or 3306 from `0.0.0.0/0`** — database ports must only allow ingress from the application security group CIDR or security group ID; if GCP Cloud SQL `authorized_networks` contains `0.0.0.0/0`, emit a `warnings[]` entry in `aws-design.json`: "Cloud SQL authorized_networks includes 0.0.0.0/0 — mapped to private RDS with no public access" (add inline comment: `# Set to false only when intentionally destroying this cluster`); **never use `master_password = var.database_master_password`** — instead generate the master password into Secrets Manager and reference it via data source: emit `aws_secretsmanager_secret` + `aws_secretsmanager_secret_version` (with `secret_string = jsonencode({password = random_password.db_master.result})`) and `resource "random_password" "db_master"`, then set `master_password = jsondecode(data.aws_secretsmanager_secret_version.db_master.secret_string)["password"]` on the cluster — this keeps the password out of `terraform.tfvars` and Terraform state plaintext |
-| Compute    | Fargate in private subnets; task definitions from `aws_config` CPU/memory; auto-scaling; for EKS clusters set `endpoint_private_access = true` and `endpoint_public_access = false` by default — add inline comment: `# Public endpoint disabled. To enable kubectl access from outside the VPC set endpoint_public_access = true and restrict public_access_cidrs to known CIDRs.`; every `aws_ecr_repository` resource must include `image_scanning_configuration { scan_on_push = true }` — ECR basic scanning is free and catches known CVEs before images reach production                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Compute    | Fargate in private subnets; task definitions from `aws_config` CPU/memory; auto-scaling; for EKS clusters set `endpoint_private_access = true` and `endpoint_public_access = false` by default — add inline comment: `# Public endpoint disabled. To enable kubectl access from outside the VPC set endpoint_public_access = true and restrict public_access_cidrs to known CIDRs.`; every `aws_ecr_repository` resource must include `image_scanning_configuration { scan_on_push = true }` — ECR basic scanning is free and catches known CVEs before images reach production; **internet-facing ALB listeners MUST terminate TLS on 443 and redirect HTTP 80 to HTTPS** — emit this pair whenever `aws_lb` is internet-facing (`internal = false` or omitted):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Monitoring | Log groups per service; dashboard with key metrics; alarms from `generation-infra.json` success_metrics; 30-day log retention                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+**Internet-facing ALB listener template (required when emitting `aws_lb` with `internal = false`):**
+
+```hcl
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.app.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.acm_certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app.arn
+  }
+}
+
+resource "aws_lb_listener" "http_redirect" {
+  load_balancer_arn = aws_lb.app.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN for the public ALB HTTPS listener"
+  type        = string
+  # TODO: request or import a certificate for your app domain
+}
+```
+
+ALB security group must allow **443** from the internet and **80** only for redirect (never forward HTTP to targets). Target groups may use HTTP to Fargate tasks — TLS terminates at the ALB.
 
 ## Step 4: Generate outputs.tf
 
@@ -332,7 +372,7 @@ Verify these quality rules before reporting completion:
 - [ ] No security group rule allows ingress on port 5432 or 3306 from `0.0.0.0/0`
 - [ ] ALB listeners enforce HTTPS (443) and HTTP (80) only redirects to HTTPS
 - [ ] No S3 bucket policy with `Principal = "*"` unless explicitly approved by user requirements
-- [ ] No `0.0.0.0/0` ingress except ALB port 443
+- [ ] No `0.0.0.0/0` ingress except ALB ports 443 and 80 (80 redirect-only)
 - [ ] Every variable has `type` and `description`
 - [ ] Every output has `description`
 - [ ] Region from `var.aws_region`, never hardcoded
@@ -353,6 +393,17 @@ Verify these quality rules before reporting completion:
 - [ ] `baseline.tf` does NOT contain any invented SSB control IDs. Search for `ACCT.IAM`, `ACCT.S3`, `ACCT.EBS`, `ACCT.CT`, `ACCT.GD`, `ACCT.CFG`, `ACCT.SH`, `WKLD.EC2.01` — all MUST have zero matches. Only bare `ACCT.01` through `ACCT.13` identifiers are permitted.
 - [ ] `baseline.tf` does NOT mention "Trusted Advisor" anywhere (Trusted Advisor is docs-action only and out of scope).
 - [ ] Security Hub subscribes to FSBP (always when the compliance-conditional section is emitted) and PCI DSS (only when `compliance` contains `pci`). No other standards subscriptions.
+
+## Step 5a: Policy Validation (mandatory)
+
+After Step 5 self-check and before Phase Completion, run:
+
+```bash
+python3 "$PLUGIN_ROOT/scripts/validate-terraform-policy.py" "$MIGRATION_DIR/terraform"
+```
+
+- Exit **0** (`POLICY_OK`) → proceed.
+- Exit **1** (`POLICY_FAIL`) → fix Terraform (ALB HTTPS listener + HTTP redirect). Re-run until `POLICY_OK`.
 
 ## Phase Completion
 

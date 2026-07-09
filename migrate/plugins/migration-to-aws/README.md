@@ -244,6 +244,20 @@ python3 scripts/validate-migration-report.py \
 
 See [fixtures/README.md](fixtures/README.md) for what `REPORT_OK` does and does not guarantee.
 
+### Terraform policy validator (unit tests)
+
+When changing `generate-artifacts-infra.md`, `scripts/validate-terraform-policy.py`, or `fixtures/terraform-policy/`:
+
+```bash
+cd migrate/plugins/migration-to-aws
+
+pytest tests/test_validate_terraform_policy.py -q
+
+python3 scripts/validate-terraform-policy.py fixtures/terraform-policy/good-https-redirect
+python3 scripts/validate-terraform-policy.py fixtures/terraform-policy/bad-http-forward \
+  && exit 1 || true
+```
+
 ## Security
 
 For security issue notifications, see the repo-root

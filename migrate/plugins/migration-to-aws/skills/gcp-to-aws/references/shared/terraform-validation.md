@@ -19,7 +19,7 @@ Working directory: the `terraform/` directory under test. All commands run non-i
 
 1. `terraform init -backend=false -input=false -no-color`, capturing stderr.
 2. On non-zero exit, run the **Offline Detection** algorithm below on the captured stderr.
-   - If classified network-unavailable: set `validation_status = "passed_degraded_offline"`, emit warning, SKIP Stage C, proceed to Stage E. Do NOT enter the retry loop.
+   - If classified network-unavailable: set `validation_status = "passed_degraded_offline"`, emit warning, SKIP Stage C, proceed to Stage F (policy validation still runs), then Stage E. Do NOT enter the retry loop.
    - Otherwise: enter the Fix-and-Retry loop targeting init failures.
 3. On success, advance to Stage C.
 
@@ -27,7 +27,7 @@ Working directory: the `terraform/` directory under test. All commands run non-i
 
 1. `terraform validate -json`, capturing stdout.
 2. On non-zero exit, parse `.diagnostics[]` and enter the Fix-and-Retry loop targeting validate failures.
-3. On success, set `validation_status = "passed"` and advance to Stage E.
+3. On success, set `validation_status = "passed"` and advance to Stage F (after Stage D is available for retries).
 
 ### Stage D — Fix-and-Retry Loop
 
@@ -39,6 +39,7 @@ Per attempt:
    - fmt: the diff shown by `fmt -recursive -check` (list of files that would change).
    - init: the stderr captured from `terraform init`.
    - validate: the JSON diagnostics array from `terraform validate -json`.
+   - policy: `POLICY_FAIL` lines from `validate-terraform-policy.py`.
 2. **Group errors by file path.** For each file, open it once, apply all targeted edits for that file, close. Never rewrite a file wholesale; only edit the lines/blocks reported.
 3. Re-run only the failing command (fmt -check, init, or validate).
 4. If it passes, exit the loop and return to the calling stage's success path.
@@ -60,6 +61,13 @@ User choices:
 - **retry** — reset the per-batch attempt counter to 0, grant 3 more attempts, continue. The cumulative `attempts` field in `validation-report.json` is NOT reset (it keeps incrementing).
 - **skip** — set `validation_status = "skipped_user_continue"`, emit warning, proceed to Stage E. Phase Completion is allowed.
 - **abort** — set `validation_status = "skipped_user_abort"`, write `validation-report.json` with that status, STOP. **Do NOT write to `.phase-status.json`.** The caller (generate.md) relies on seeing no completion signal.
+
+### Stage F — Policy validation (mandatory when `terraform/` exists)
+
+1. `python3 "$PLUGIN_ROOT/scripts/validate-terraform-policy.py" "$MIGRATION_DIR/terraform"`.
+2. On non-zero exit, parse `POLICY_FAIL` lines and enter Stage D Fix-and-Retry targeting policy violations — typically ALB listener blocks in `compute.tf`.
+3. On success, advance to Stage E.
+4. If Stage C was skipped due to offline fallback, **still run Stage F** — policy checks are static and do not require provider init.
 
 ### Stage E — Emit validation-report.json
 

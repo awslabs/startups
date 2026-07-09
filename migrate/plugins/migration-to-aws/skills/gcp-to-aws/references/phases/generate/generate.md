@@ -185,7 +185,7 @@ After the structured block, include:
 
 1. **Plans generated** — List all `generation-*.json` files produced
 2. **Artifacts generated** — List all directories and files created (terraform/, scripts/, ai-migration/, MIGRATION_GUIDE.md, README.md). Include `migration-report.html` only if it exists.
-3. **Validation status** — If `$MIGRATION_DIR/validation-report.json` exists, report its `status` field (`passed`, `passed_degraded_offline`, or `skipped_user_continue`). If `status == "passed_degraded_offline"`, add: "Provider registry was unreachable; `terraform validate` was skipped. Re-run `terraform init && terraform validate` from a network-connected shell to complete validation."
+3. **Validation status** — If `$MIGRATION_DIR/validation-report.json` exists, report its `status` field (`passed`, `passed_degraded_offline`, or `skipped_user_continue`). If `status == "passed_degraded_offline"`, add: "Provider registry was unreachable; `terraform validate` was skipped. Re-run `terraform init && terraform validate` from a network-connected shell to complete validation." Policy validation (`validate-terraform-policy.py`) runs regardless and must report `POLICY_OK` before infra Generate completes.
 4. **Key timelines** — Highlight migration timeline from the generation plans
 5. **Key risks** — Highlight top risks from the generation plans
 6. **TODO markers** — Note any TODO markers in generated artifacts that require manual attention
