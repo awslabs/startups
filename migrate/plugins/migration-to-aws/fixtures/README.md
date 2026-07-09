@@ -27,7 +27,7 @@ The fixture is also the worked example for the readability rules the validator n
 - **No internal scoring trace.** Per-cluster mapping rationale lives in a collapsible `<details class="why">` ("Why this mapping?") block, never a bare `Rubric:` line.
 - **Security teaser up top, full detail in the appendix.** `exec-security-teaser` carries a 2–3 line summary; the full control table and gap analysis are `appendix-security` / `appendix-security-gap`.
 - **Consistent money formatting** (whole-dollar monthly figures; cents only where sub-dollar precision matters) and **expanded acronyms** (glossary in the assumptions section).
-- **Accessible tables and diagram**: `<caption>` + `scope="col"` on tables; the ASCII architecture diagram is wrapped in a `<figure role="img">` with an `aria-label` text alternative and a `<figcaption>`.
+- **Accessible tables and diagram**: `<caption>` + `scope="col"` on tables; the ASCII architecture diagram is wrapped in a `<figure role="img">` with an `aria-label` text alternative and a `<figcaption>`. Topology: ALB → compute only; public S3/CDN as a separate user path; RDS/S3/Bedrock branch from compute (see `generate-artifacts-report.md` Section 2b).
 - **Configuration provenance (`appendix-config`).** Four-column table: Question/assumption, Your choice, Source, Design consequence — populated from `preferences.json` `prompt` and `design_consequence` fields (see `references/shared/schema-preferences.md`).
 - **Ordered action lists.** `Key decisions ahead` and `Next steps` in `decision-summary` use `<ol>`, not `<ul>`.
 

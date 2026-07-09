@@ -140,11 +140,42 @@ Source: `estimation-infra.json`, `estimation-ai.json`
 
 **Section 2b — Architecture diagram (`exec-architecture`, REQUIRED when `aws-design.json` clusters exist):**
 
-ASCII or structured diagram showing: users → ALB → compute → database/storage/AI; security baseline box; deferred services called out.
+Render inside `<section id="exec-architecture">` after the service mapping table. Wrap in `<figure class="diagram-fig">` with:
 
-Include **migration cluster order** from `generation-infra.json` → `migration_plan.cluster_order`.
+- `<div class="diagram" role="img" aria-label="…">` — full text alternative describing every traffic path
+- `<figcaption>` — concise prose summary (app path, public content path if any, backends, deferred services)
 
-Source: `aws-design.json`, `generation-infra.json`
+**Topology rules (prefer generated `terraform/` when present):**
+
+1. **Ingress through compute only.** Users → (WAF if in IaC) → ALB/load balancer → compute (Fargate, EC2, EKS). Never draw pipes from the load balancer to RDS, S3, or Bedrock — only compute is behind the ALB.
+
+2. **Backends fan out from compute only.** Under compute, use tree branches (`├──►`, `└──►`) to database, object storage (S3 API), and AI services. Do not place parallel pipes under the ALB.
+
+3. **Separate public content path.** When the stack serves public-read objects (GCS `allUsers` → S3 public bucket or CloudFront OAC in design):
+   - Draw a **second branch from Internet/Users** for browser/CDN image GETs.
+   - If `terraform/` has public S3 only (no `aws_cloudfront_*`): label direct S3 public read; footnote CloudFront OAC when design recommends it for PCI (`* add CloudFront OAC post-cutover`).
+   - If `terraform/` includes CloudFront: Users → CloudFront (OAC) → S3; do **not** route public GETs through compute.
+
+4. **Private compute placement.** When tasks use private subnets (`assign_public_ip = false` or `subnet: private` in design), label **private subnet** and **NAT Gateway** (or VPC endpoints if in IaC) for egress to RDS, S3 API, and Bedrock.
+
+5. **Protocol accuracy.** Label ALB listener protocol/port from IaC (e.g. `HTTP :80`). Use HTTPS only when an `aws_lb_listener` with `protocol = "HTTPS"` (or TLS certificate) exists in `terraform/`.
+
+6. **Name buckets by role.** When multiple S3 buckets exist (e.g. images + build artifacts), list both on the compute→S3 branch.
+
+7. **Design vs IaC.** Diagram what `terraform/` provisions. If `aws-design.json` recommends a service not yet in IaC (e.g. CloudFront OAC), show the implemented path and footnote the recommendation — do not draw unprovisioned services as live paths.
+
+8. **Security baseline and deferred services.** Below the VPC box: compliance controls from `security_baseline` (Config, Security Hub, CloudTrail, GuardDuty, VPC segmentation). Call out `Deferred — specialist engagement` resources on their own line.
+
+Include **migration cluster order** from `generation-infra.json` → `migration_plan.cluster_order` as an ordered list below the diagram.
+
+**Anti-patterns (do not generate):**
+
+- Pipes under the ALB pointing to RDS, S3, or Bedrock while also showing Fargate behind the ALB
+- CloudFront/CDN as a peer backend off compute when it serves public browser traffic
+- HTTPS on the diagram when only HTTP listeners exist in `terraform/`
+- Omitting NAT/private subnet when Fargate has `assign_public_ip = false`
+
+Source: `aws-design.json`, `generation-infra.json`, `terraform/` (when present)
 
 **Section 3 — Cost Comparison:**
 
@@ -623,7 +654,7 @@ These move from "example in the fixture" to enforced gate. See `references/share
 2. **No internal scoring trace.** Per-cluster mapping rationale goes in a collapsible `<details class="why">` ("Why this mapping?") block — never a bare `Rubric:` line. The validator fails on a literal `Rubric:` in the body.
 3. **Security teaser up top, full detail in the appendix.** `exec-security-teaser` carries a 2–3 line summary that links down to `appendix-security` (full control table) and `appendix-security-gap`. Do not render the full control table in the executive flow.
 4. **Expand acronyms** on first use and include a glossary (TCO, DMS, OAI, RTO, CUD, SCC, IMDSv2, P95, RAG) in the assumptions section — the audience is startup founders, not AWS specialists.
-5. **Accessible tables and diagrams.** Every table has a `<caption>` and `scope="col"` on header cells. The architecture diagram is wrapped in `<figure role="img" aria-label="…">` with a `<figcaption>` text alternative.
+5. **Accessible tables and diagrams.** Every table has a `<caption>` and `scope="col"` on header cells. The architecture diagram is wrapped in `<figure role="img" aria-label="…">` with a `<figcaption>` text alternative. Follow Section 2b topology rules — ALB → compute only; public CDN/S3 as a separate user path; backends branch from compute.
 6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate, phased over 10 weeks — ~$497/mo savings, BigQuery deferred") in addition to the `path_label` badges.
 7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*` or `decision-summary` section.
 8. **One name per concept.** Use a single consistent label for each recommended choice across the whole report. The recommended Bedrock model and the chosen cost tier keep the same name in the verdict, tables, and appendices (always "Claude Sonnet 4.6 (recommended)", always "Balanced"). Do not alternate "recommended / selected target / design target / projected" for the same item — one label is how the reader keeps their bearings.
