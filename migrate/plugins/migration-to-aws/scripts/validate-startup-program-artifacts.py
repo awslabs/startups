@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Validate startup-program artifacts match preferences.json startup_program_status.
+
+Prevents inferring AWS Activate Founders vs Portfolio when Q27 was skipped or
+startup_program_status is unknown.
+
+Usage:
+  python3 validate-startup-program-artifacts.py --migration-dir /path/to/.migration/RUN_ID
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+# Phrases that imply a confirmed tier — forbidden when status is unknown.
+FORBIDDEN_WHEN_UNKNOWN = [
+    re.compile(r"your\s+status:\s*eligible", re.IGNORECASE),
+    re.compile(r"\beligible\s+founders\s+tier\b", re.IGNORECASE),
+    re.compile(r"\beligible\s+for\s+up\s+to\s+\$5k\s+aws\s+activate\b", re.IGNORECASE),
+    re.compile(r"\bactivate\s+portfolio\s+credits\s+eligibility\b", re.IGNORECASE),
+    re.compile(r"\*\*your\s+status:\s*eligible_founders\*\*", re.IGNORECASE),
+    re.compile(r"\*\*your\s+status:\s*eligible_portfolio\*\*", re.IGNORECASE),
+]
+
+
+def _load_status(migration_dir: Path) -> tuple[str | None, dict | None]:
+    prefs_path = migration_dir / "preferences.json"
+    if not prefs_path.is_file():
+        return None, None
+    prefs = json.loads(prefs_path.read_text(encoding="utf-8"))
+    constraints = prefs.get("design_constraints") or prefs.get("ai_constraints") or {}
+    block = constraints.get("startup_program_status") or prefs.get("startup_constraints", {}).get(
+        "startup_program_status"
+    )
+    if isinstance(block, dict):
+        value = block.get("value")
+        if isinstance(value, list):
+            value = value[0] if value else None
+        return value, prefs
+    return None, prefs
+
+
+def validate_startup_artifacts(migration_dir: Path) -> list[str]:
+    errors: list[str] = []
+    status, _prefs = _load_status(migration_dir)
+    if status is None:
+        return errors  # no preferences — nothing to enforce
+
+    if status != "unknown":
+        return errors
+
+    texts: list[tuple[str, str]] = []
+    for name in ("STARTUP_PROGRAMS.md", "migration-report.html"):
+        path = migration_dir / name
+        if path.is_file():
+            texts.append((name, path.read_text(encoding="utf-8")))
+
+    ai_startup = migration_dir / "ai-migration" / "STARTUP_PROGRAMS.md"
+    if ai_startup.is_file():
+        texts.append((str(ai_startup.relative_to(migration_dir)), ai_startup.read_text(encoding="utf-8")))
+
+    for label, content in texts:
+        for pattern in FORBIDDEN_WHEN_UNKNOWN:
+            if pattern.search(content):
+                errors.append(
+                    f'{label}: startup_program_status is "unknown" but content implies a '
+                    f"confirmed Activate tier ({pattern.pattern})"
+                )
+                break
+
+    return errors
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Validate startup program artifact honesty")
+    parser.add_argument(
+        "--migration-dir",
+        type=Path,
+        required=True,
+        help="Migration output directory containing preferences.json",
+    )
+    args = parser.parse_args()
+
+    if not args.migration_dir.is_dir():
+        print(f"STARTUP_FAIL | reason=not_a_directory | path={args.migration_dir}", file=sys.stderr)
+        return 1
+
+    errors = validate_startup_artifacts(args.migration_dir)
+    if errors:
+        print("STARTUP_FAIL | startup-program-artifacts", file=sys.stderr)
+        for err in errors:
+            print(f"  - {err}", file=sys.stderr)
+        return 1
+
+    print("STARTUP_OK | startup_program_status aligned with artifacts")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -90,11 +90,20 @@ Content when `recommendation` block exists:
 
 > ⚠️ **Specialist engagement required:** [service name] does not have an automated AWS mapping. Engage your AWS account team before including this in cost projections or migration timelines.
 
-**Startup credits callout:** If `STARTUP_PROGRAMS.md` exists in `$MIGRATION_DIR/` OR `$MIGRATION_DIR/ai-migration/STARTUP_PROGRAMS.md` OR `preferences.json` contains `startup_program_status.value` other than `"unknown"`:
+**Startup credits callout (decision summary / verdict):**
 
-> 💡 **AWS Activate credits:** You may be eligible for $1K–$100K in AWS credits that apply to Bedrock, Fargate, RDS, and other services used in this migration. See `STARTUP_PROGRAMS.md` for program tiers and application links.
+| `startup_program_status.value` | Verdict / metric copy |
+| ------------------------------ | --------------------- |
+| `eligible_founders` | May state "Eligible for up to $5K AWS Activate Founders credits" and link `STARTUP_PROGRAMS.md` |
+| `eligible_portfolio` | May state Portfolio credits (up to $200K) and Org ID requirement |
+| `has_credits` | Note existing credits; no "apply for" language |
+| `unknown` | **Neutral only:** e.g. "Review AWS Activate tiers in `STARTUP_PROGRAMS.md` — funding stage not confirmed in Clarify." **Do not** write "Eligible Founders tier", "your status: eligible_*", or dollar amounts tied to a specific tier in the verdict |
 
-Do not show this callout if none of the conditions are met.
+**Sidebar callout box:** Show the 💡 Activate callout when `startup_program_status.value` is **not** `unknown`, **or** when `unknown` but you use the neutral wording above (optional). When `unknown`, do **not** imply a confirmed tier.
+
+Do **not** infer Activate tier from `gcp_monthly_spend` or `ai_monthly_spend` in the report or `estimation-*.json` ROI bullets.
+
+After Generate, run `scripts/validate-startup-program-artifacts.py --migration-dir $MIGRATION_DIR`.
 
 Source: estimation artifact `recommendation`, `migration-preview.json`, design artifact
 

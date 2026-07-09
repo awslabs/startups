@@ -272,9 +272,9 @@ Every question in an **active** category gets exactly one disposition:
 | ----- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Q1    | DETECTED when single-region extraction succeeded; **ESSENTIAL** when multiple regions or no inventory                            | —                                    | All AWS resources deploy to this region; drives latency and service availability                                                               |
 | Q2    | **ESSENTIAL — always**                                                                                                           | —                                    | — (gates security baseline, regions, and service catalog; never assumed)                                                                       |
-| Q3    | DETECTED when billing extraction succeeded; **ESSENTIAL** when no billing data                                                   | —                                    | Anchors the AWS-vs-GCP savings comparison and credits-tier recommendation                                                                      |
+| Q3    | DETECTED when billing extraction succeeded; **ESSENTIAL** when no billing data                                                   | —                                    | Anchors the AWS-vs-GCP savings comparison and dev-tier sizing baseline                                                                        |
 | Q3.5  | **ESSENTIAL** when it fires (billing shows active CUDs); N/A otherwise                                                           | —                                    | — (billing already shows active commitments; assuming "none" would be wrong)                                                                   |
-| Q4    | Always skipped (inferred from Q3)                                                                                                | —                                    | —                                                                                                                                              |
+| Q4    | N/A in wizard mode (funding not inferred from spend); optional in full flow                                                        | —                                    | —                                                                                                                                              |
 | Q5    | PROPOSED                                                                                                                         | B — AWS-only                         | Assuming AWS-only → ECS Fargate eligible; if multi-cloud portability is required, all containers go to EKS instead                             |
 | Q6    | DETECTED when all Cloud SQL instances agree; **ESSENTIAL** on conflict/missing; PROPOSED when no Cloud SQL signal but DB present | B — `multi-az`                       | Assuming Multi-AZ RDS → automatic failover, roughly 2x single-AZ database cost; say "single-az" for dev-grade, "mission-critical" for Aurora   |
 | Q7    | **ESSENTIAL — always**                                                                                                           | —                                    | — (cutover strategy selects DMS vs pg_dump/pgcopydb and the entire migration runbook shape; never assumed)                                     |
@@ -287,7 +287,7 @@ Every question in an **active** category gets exactly one disposition:
 | Q13   | DETECTED when dev-tier; ESSENTIAL on mixed tiers; PROPOSED otherwise                                                             | B — `medium`                         | Assuming medium I/O → gp3 storage; high-IOPS workloads would need io2/Provisioned IOPS                                                         |
 | Q13b  | DETECTED when disk size unambiguous; ESSENTIAL on conflict; PROPOSED otherwise                                                   | E — `unknown`                        | Unknown size → pgcopydb selected as migration tool (safe at any scale); verify before cutover                                                  |
 | Q14   | DETECTED when auto-detection resolves; PROPOSED otherwise                                                                        | `["direct"]`                         | Framework determines AI migration effort (gateway = config change; Agents SDK = weeks)                                                         |
-| Q15   | **ESSENTIAL** when Category F fires                                                                                              | —                                    | — (anchors Bedrock savings comparison and credits tier; no discovery signal exists)                                                            |
+| Q15   | **ESSENTIAL** when Category F fires                                                                                              | —                                    | — (anchors Bedrock savings comparison and token-volume derivation; no discovery signal exists)                                                 |
 | Q16   | PROPOSED                                                                                                                         | E — `balanced`                       | Assuming balanced priority → Sonnet-class default model; say "cost" or "speed" to shift the model family                                       |
 | Q17   | PROPOSED                                                                                                                         | J — none                             | Assuming no specialized feature → Q16 priority decides the model; name a feature (tool use, long context, RAG…) to override                    |
 | Q18   | PROPOSED                                                                                                                         | A — `low`                            | Assuming low volume → on-demand pricing, no provisioned throughput analysis                                                                    |
@@ -299,7 +299,7 @@ Every question in an **active** category gets exactly one disposition:
 | Q24   | **ESSENTIAL** when Category G fires                                                                                              | B — `session`                        | — (memory requirement changes the AgentCore architecture)                                                                                      |
 | Q25   | **ESSENTIAL** when Category G fires                                                                                              | B — `medium`                         | — (task duration gates runtime selection and session limits)                                                                                   |
 | Q26   | PROPOSED when Category G fires                                                                                                   | path-based (see `clarify-ai.md`)     | Incremental migration → A/B test Bedrock per-invocation before committing; full swap is faster but riskier                                     |
-| Q27   | PROPOSED when Category H fires                                                                                                   | D — `unknown`                        | Unknown credit status → report includes both Activate tiers; answering saves you reading the wrong one                                         |
+| Q27   | **ESSENTIAL** when Category H fires (same trigger as Category F)                                                                 | —                                    | — (self-funded vs VC-backed vs already has credits — never inferred from spend; gates Founders vs Portfolio guidance)                        |
 
 **Multi-workload confirmation table** (`clarify-ai.md`, fires when `workloads[]` ≥ 2): unchanged — it runs during Step 4 as part of the AI essentials, after the sheet is confirmed. Its high-confidence rows behave like DETECTED sheet rows; medium/low-confidence rows behave like essential questions (max 2 per row).
 
@@ -348,7 +348,8 @@ Present the sheet in two sections (omit rows for questions that are ESSENTIAL or
 | AI priority | Balanced | Sonnet-class default model |
 | AI latency | Important (<2s) | Sonnet + streaming; <500ms would force Haiku/Nova |
 | WebSockets | None (unverified — no code scan) | Standard ALB config |
-| Activate credits | Unknown | Report includes both credit tiers |
+
+Q27 (AWS Activate credits) is **not** on this sheet — it is asked in Step 4 when AI workloads are detected.
 
 Reply:
 - **"looks good"** — I'll record these and ask only the [N] essential questions.
@@ -451,7 +452,7 @@ Question 2: [Q7 text with context and options]
 ...
 ```
 
-**If the essential count exceeds 7** (e.g., agentic + billing gaps + conflicts), split into two batches — core (Q1/Q2/Q3/Q3.5/Q7 + conflicts) first, then AI/agentic (Q15, Q23–Q25, multi-workload confirmations) — and write `preferences-draft.json` between them (same schema as `preferences.json` plus `metadata.wizard_stage`).
+**If the essential count exceeds 7** (e.g., agentic + billing gaps + conflicts), split into two batches — core (Q1/Q2/Q3/Q3.5/Q7 + conflicts) first, then AI/agentic (Q15, **Q27**, Q23–Q25, multi-workload confirmations) — and write `preferences-draft.json` between them (same schema as `preferences.json` plus `metadata.wizard_stage`).
 
 **Wait for the user's response.** Do NOT proceed to Design without a response or an explicit "use defaults for the rest."
 
@@ -460,6 +461,7 @@ Question 2: [Q7 text with context and options]
 - Q2 defaults to A (none) — record `chosen_by: "default"` and add a report caveat that compliance was not confirmed.
 - Q7 defaults to D (flexible).
 - Q3 defaults to B ($1K–$5K) with a report caveat that spend was not confirmed.
+- **Q27 must not be silently defaulted in wizard mode** when Category H fired — if the user skips it, record `startup_program_status: "unknown"` with `chosen_by: "default"` and `source: "default:Q27"`; downstream artifacts must use neutral Activate copy (both tiers, no "your status: eligible_*").
 - Q3.5, Q23–Q25, and unresolved multi-instance conflicts fall back to their documented defaults (Q3.5 → E; Q23 → framework-based; Q24 → session; Q25 → medium; conflicts → most conservative posture) with `chosen_by: "default"`.
   Then skip to Category E opt-in, then Step 5.
 
@@ -533,8 +535,8 @@ Assemble all resolved values — sheet confirmations, corrections, essential ans
     "migration_type": "full",
     "timestamp": "<ISO timestamp>",
     "discovery_artifacts": ["gcp-resource-inventory.json", "ai-workload-profile.json"],
-    "questions_asked": ["Q2", "Q7", "Q15"],
-    "questions_defaulted": ["Q5", "Q9", "Q11", "Q16", "Q17", "Q18", "Q21", "Q22", "Q27"],
+    "questions_asked": ["Q2", "Q7", "Q15", "Q27"],
+    "questions_defaulted": ["Q5", "Q9", "Q11", "Q16", "Q17", "Q18", "Q21", "Q22"],
     "questions_skipped_extracted": ["Q1", "Q6", "Q12", "Q13", "Q13b", "Q14", "Q19", "Q20"],
     "questions_skipped_early_exit": ["Q8"],
     "questions_skipped_not_applicable": ["Q3.5", "Q4", "Q10", "Q23", "Q24", "Q25", "Q26"],
@@ -600,9 +602,11 @@ Assemble all resolved values — sheet confirmations, corrections, essential ans
     "ai_latency": { "value": "important", "chosen_by": "default", "source": "default:Q21" },
     "ai_complexity": { "value": "moderate", "chosen_by": "default", "source": "default:Q22" },
     "startup_program_status": {
-      "value": "unknown",
-      "chosen_by": "default",
-      "source": "default:Q27"
+      "value": "eligible_founders",
+      "chosen_by": "user",
+      "question_id": "Q27",
+      "prompt": "Have you applied for AWS Activate credits?",
+      "design_consequence": "Activate Founders ($5K) callout in report and STARTUP_PROGRAMS.md"
     },
     "ai_capabilities_required": {
       "value": ["text_generation", "streaming"],
@@ -671,7 +675,7 @@ Documented defaults for every question. Used by: PROPOSED sheet rows (wizard), p
 | Q24 — Agent memory         | B (session)                                          | `ai_constraints.agentic.memory_requirement: "session"`                                                                   |
 | Q25 — Task duration        | B (medium)                                           | `ai_constraints.agentic.task_duration: "medium"`                                                                         |
 | Q26 — Incremental          | path-based                                           | `incremental_migration`: `true` for Harness path, `false` for retarget                                                   |
-| Q27 — Activate credits     | D (unknown)                                          | `startup_program_status: "unknown"`                                                                                      |
+| Q27 — Activate credits     | _(essential when Category H fires — ask in Step 4; skip only via explicit answer or "use defaults for the rest")_ | `startup_program_status` per answer; skip → `"unknown"` with neutral downstream copy |
 | Q-E1 — HA upgrade          | B (no)                                               | `ha_upgrade: false`                                                                                                      |
 | Q-E2 — Right-sizing        | B (no)                                               | `right_sizing: false`                                                                                                    |
 
@@ -683,7 +687,7 @@ Before handing off to Design:
 
 - [ ] In wizard mode, the Step 2.5 Assumption Sheet was shown (detected + assumed sections) and the user responded before any essential question was asked
 - [ ] Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` has a `source` field with the correct prefix (`terraform:`, `billing:`, `inventory:`, `ai-profile:`, or `default:<Qid>`)
-- [ ] Essential questions (Q2, Q7, and conditional Q1/Q3/Q3.5/Q15/Q23–Q25/conflicts) were asked, answered, or explicitly defaulted via "use defaults for the rest"
+- [ ] Essential questions (Q2, Q7, and conditional Q1/Q3/Q3.5/**Q27**/Q15/Q23–Q25/conflicts) were asked, answered, or explicitly defaulted via "use defaults for the rest"
 - [ ] If `bigquery_present` was **true**, the Step 4 BigQuery specialist advisory was shown before questions — **or**, if Step 0 option A (reuse preferences), the same advisory was shown after BigQuery detection
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
 - [ ] `design_constraints.target_region` is populated with `value` and `chosen_by`
