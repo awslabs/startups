@@ -1,0 +1,3 @@
+Error: AnalyzerError: Failed to query INFORMATION_SCHEMA.JOBS: 
+Access Denied: Table INFORMATION_SCHEMA.JOBS: User does not have 
+bigquery.jobs.listAll permission on project my-project.

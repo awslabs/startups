@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bq-collect"
+version = "0.3.1"
+description = "Read-only BigQuery metadata collector (beta): runs in the customer environment and produces an auditable bundle for offline lakehouse-migration assessment. No report generation, scoring, or conversion code included."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+]
+# Deliberately minimal: no jinja2 (report rendering) and no sqlglot (SQL translation).
+# The import-isolation CI check installs this wheel in a clean venv and runs bq-collect
+# --help to prove no excluded dependency leaks in.
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "pyyaml>=6.0",
+    "google-cloud-bigquery>=3.11",
+]
+
+[project.scripts]
+bq-collect = "bq_assess.collect_cli:main"
+
+[tool.setuptools]
+# Built from the repo root's src/ tree (pip install ./packaging/collector uses
+# package-dir below). Only the collection-side modules ship; report/, scoring/,
+# targets/, and engine/ are excluded by NOT being listed.
+package-dir = {"" = "../../src"}
+packages = [
+    "bq_assess",
+    "bq_assess.bundle",
+    "bq_assess.core",
+]
+
+[tool.setuptools.package-data]
+bq_assess = ["py.typed"]

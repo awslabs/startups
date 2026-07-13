@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migration Effort — {{ project_id }}</title>
+<style>
+{% include '_styles.j2' %}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <div class="header-inner">
+      <div class="header-logo">
+        <div class="aws-cube">BQ</div>
+        <div>
+          <h1 style="color:#fff;margin:0;font-size:1.125rem">Migration Assessment</h1>
+          <p style="color:rgba(255,255,255,.5);margin:2px 0 0 0;font-size:.75rem">BigQuery &rarr; Amazon Redshift (Lakehouse)</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        Project: <strong>{{ project_id }}</strong> &middot;
+        {{ generated_at|timestamp }} &middot;
+        {{ assessment_id }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="container">
+    <div class="nav-links">
+      <a href="{{ sibling_landing }}">Landing</a>
+      <a href="{{ sibling_effort }}" class="active">Migration Effort</a>
+      <a href="{{ sibling_query }}">Query Complexity</a>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-xl);">
+
+<div class="section">
+  <div class="section-header">
+    <h2>Migration Effort by Entity</h2>
+  </div>
+  <div class="row">
+    <div class="col-3">
+      <div class="card text-center" data-accent="green">
+        <div class="card-body">
+          <div class="card-title">Auto</div>
+          <div class="stat-value" style="color:var(--color-severity-success)">{{ summary.effort_counts.AUTO or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center" data-accent="amber">
+        <div class="card-body">
+          <div class="card-title">Assisted</div>
+          <div class="stat-value" style="color:var(--color-severity-warning)">{{ summary.effort_counts.ASSISTED or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center" data-accent="red">
+        <div class="card-body">
+          <div class="card-title">Manual</div>
+          <div class="stat-value" style="color:var(--color-severity-error)">{{ summary.effort_counts.MANUAL or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Total Tables</div>
+          <div class="stat-value">{{ summary.total_tables }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th>Entity</th>
+        <th>Type</th>
+        <th>Population</th>
+        <th style="text-align:right">Rows</th>
+        <th style="text-align:right">Size (GB)</th>
+        <th>Effort</th>
+        <th style="text-align:right">Score</th>
+        <th>Confidence</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for e in entities %}
+      {% if e.effort %}
+      <tr>
+        <td><strong>{{ e.full_name }}</strong></td>
+        <td>{{ e.entity_type }}</td>
+        <td>{{ e.population }}</td>
+        <td style="text-align:right">{{ "{:,}".format(e.rows) if e.rows else "—" }}</td>
+        <td style="text-align:right">{{ "%.2f"|format(e.size_gb) if e.size_gb else "—" }}</td>
+        <td>
+          <span class="badge {% if e.effort.category == 'AUTO' %}badge-auto{% elif e.effort.category == 'ASSISTED' %}badge-assisted{% else %}badge-manual{% endif %}">
+            {{ e.effort.category }}
+          </span>
+        </td>
+        <td style="text-align:right">{{ e.effort.score }}</td>
+        <td>
+          <span class="badge {% if e.effort.confidence == 'HIGH' %}badge-high{% elif e.effort.confidence == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">
+            {{ e.effort.confidence }}
+          </span>
+        </td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Per-Entity Details</h2>
+    <span class="section-badge">{{ entities|length }} entities</span>
+  </div>
+  {% for e in entities %}
+    {% if e.effort %}
+    <details>
+      <summary>
+        {{ e.full_name }}
+        <span class="badge {% if e.effort.category == 'AUTO' %}badge-auto{% elif e.effort.category == 'ASSISTED' %}badge-assisted{% else %}badge-manual{% endif %}" style="margin-left:.5rem">
+          {{ e.effort.category }}
+        </span>
+        <span class="text-muted" style="font-weight:400;margin-left:.5rem">score {{ e.effort.score }}</span>
+      </summary>
+      <div class="card">
+        <div class="card-body">
+          <p><strong>Type:</strong> {{ e.entity_type }} &middot; <strong>Population:</strong> {{ e.population }}</p>
+          {% if e.rows %}
+          <p><strong>Rows:</strong> {{ "{:,}".format(e.rows) }} &middot; <strong>Size:</strong> {{ "%.2f"|format(e.size_gb) }} GB</p>
+          {% endif %}
+
+          {% if e.effort.reasoning %}
+          <p class="text-muted" style="font-style:italic">{{ e.effort.reasoning }}</p>
+          {% endif %}
+
+          {% if e.effort.flags %}
+          <p><strong>Flags:</strong>
+            {% for flag in e.effort.flags %}
+            <span class="badge badge-flag">{{ flag }}</span>
+            {% endfor %}
+          </p>
+          {% endif %}
+
+          {% if e.conversion %}
+          <h3 style="margin-top:1rem">Iceberg DDL</h3>
+          <pre><code>{{ e.conversion.ddl }}</code></pre>
+
+          {% if e.conversion.partition_mapping %}
+          <p><strong>Partition Mapping:</strong> {{ e.conversion.partition_mapping }}</p>
+          {% endif %}
+
+          {% if e.conversion.lossy_casts %}
+          <p><strong>Lossy Casts:</strong></p>
+          <table style="font-size:.8125rem;margin-top:.25rem">
+            <thead>
+              <tr>
+                <th>Column</th>
+                <th>BigQuery Type</th>
+                <th>Iceberg Type</th>
+                <th>Impact</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for cast in e.conversion.lossy_casts %}
+              <tr>
+                <td><code>{{ cast.column }}</code></td>
+                <td>{{ cast.source_type }}</td>
+                <td>{{ cast.iceberg_type }}</td>
+                <td class="text-muted">{{ cast.loss_description }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+
+          {% if e.conversion.warnings %}
+          <p><strong>Warnings:</strong></p>
+          <ul style="margin:.25rem 0;padding-left:1.25rem">
+            {% for w in e.conversion.warnings %}
+            <li>{{ w }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% endif %}
+
+          {% if e.load_sync_dml %}
+          <h3 style="margin-top:1rem">Load/Sync DML</h3>
+          <pre><code>{{ e.load_sync_dml }}</code></pre>
+          {% endif %}
+        </div>
+      </div>
+    </details>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<div class="footer">
+  Generated by <strong>bq-assess</strong> &middot; {{ generated_at|timestamp }}
+</div>
+
+</div>
+</body>
+</html>

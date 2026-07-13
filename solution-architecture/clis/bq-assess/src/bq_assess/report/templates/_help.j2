@@ -1,0 +1,73 @@
+{# Shared help copy for the report. The dicts below are imported by
+   combined.html.j2 — partly rendered server-side (cost/sql_surface badges), partly
+   exported to the client-side row renderer via the help-data JSON block.
+   Tooltip copy is derived from the actual scorer logic (scoring/effort.py,
+   scoring/complexity.py, engine/redshift/placement.py) — keep in sync. #}
+
+{% set CONFIDENCE_HELP = {
+  "effort": {
+    "HIGH": "Table size and schema were read directly from BigQuery metadata, so the effort factors are measured, not estimated.",
+    "MEDIUM": "Some metadata was incomplete — effort factors are partly estimated.",
+    "LOW": "Table size was not available in BigQuery metadata, so volume-based effort factors could not be assessed.",
+  },
+  "complexity": {
+    "HIGH": "Based on actual query logs — the SQL your workload really runs was analyzed.",
+    "MEDIUM": "Based on the saved view/routine definition only — queries from consumers were not visible. Provide query logs for a HIGH-confidence rating.",
+    "LOW": "No SQL was visible for this entity (schema only). The rating is a default, not an analysis — provide query logs to assess it properly.",
+  },
+  "placement": {
+    "HIGH": "Only one valid home exists for this entity type — for example, UDFs and procedures must live in Redshift because Iceberg has no function concept.",
+    "MEDIUM": "Query logs were available, so the recommendation reflects how this object is actually consumed.",
+    "LOW": "No query logs were provided, so this recommendation is inferred from schema structure alone (how many datasets the object spans). Re-run with query logs or validate manually before acting on it.",
+  },
+  "cost": {
+    "HIGH": "Priced from measured usage in your project and current published rates.",
+    "MEDIUM": "Priced using research-based conversion ratios or partial usage data — validate with a pilot workload.",
+    "LOW": "Priced from rough assumptions due to missing data — treat as an order-of-magnitude estimate only.",
+  },
+  "sql_surface": {
+    "HIGH": "Query logs were provided — the tool saw the SQL your workload actually runs.",
+    "MEDIUM": "Only view and routine definitions were visible — consumer queries were not. Provide query logs to raise confidence.",
+    "LOW": "Little or no SQL was visible. Complexity ratings are defaults, not analysis — re-run with query logs.",
+  },
+} %}
+
+{% set CATEGORY_HELP = {
+  "AUTO": "Score 0 — no effort factors detected. The generated DDL and load statements can run without manual intervention.",
+  "ASSISTED": "Score 1–2 — mostly automated, with a small number of items to review first (for example a type cast or a partitioning choice).",
+  "MANUAL": "Score 3+ — needs hands-on migration design: many lossy casts, very large volume, or a failed automatic conversion.",
+  "PORTABLE": "Score 0 — no BigQuery-specific SQL detected. Should run on Redshift with little or no change.",
+  "ADAPT": "Score 1–3 — uses some BigQuery-specific constructs. Small, targeted edits are needed.",
+  "REWRITE": "Score 4+ — relies heavily on BigQuery-specific constructs (arrays, JavaScript UDFs). Plan a genuine rewrite.",
+} %}
+
+{% set FLAG_INFO = {
+  "lossy_casts": ("Lossy type casts", "Some columns lose precision or range when mapped to Iceberg types. Review the cast table and confirm each loss is acceptable for your data."),
+  "ongoing_sync": ("Ongoing sync needed", "The table carries an update-timestamp or ingestion-time signal, so it likely changes continuously. Plan a recurring MERGE/CDC sync rather than a one-time copy."),
+  "data_volume_large": ("Large table (1+ GB)", "Big enough to need a staged COPY load rather than a single INSERT…SELECT."),
+  "data_volume_huge": ("Very large table (100+ GB)", "Needs a partition-wise, parallelized load strategy and a validation plan."),
+  "partition_decision_required": ("Partitioning decision needed", "The BigQuery partition spec has no clean Iceberg equivalent — a human must choose the Iceberg partition transform."),
+  "sort_decision_required": ("Sort-order decision needed", "BigQuery clustering does not map one-to-one to an Iceberg sort order — a human must choose the sort columns."),
+  "conversion_failed": ("Conversion failed", "The automatic Iceberg DDL conversion failed for this table — the migration must be designed manually."),
+  "UNNEST": ("UNNEST array flattening", "Redshift has no direct UNNEST. Array flattening must be rewritten, e.g. with SUPER/PartiQL navigation or a join against unnested elements."),
+  "ARRAY_FN": ("Array functions", "BigQuery array functions (ARRAY_AGG options, ARRAY_LENGTH, OFFSET…) have no one-to-one Redshift equivalent and need rewriting."),
+  "JS_UDF": ("JavaScript UDF", "Redshift cannot run JavaScript UDFs. Reimplement in SQL, a Python UDF, or a Lambda UDF."),
+  "STRUCT_NAV": ("Nested STRUCT access", "Navigation into STRUCT fields must be adapted to Redshift's SUPER dot-notation, or the structure flattened."),
+  "FUNCTION_DRIFT": ("Function differences", "Uses functions whose name or behavior differs in Redshift (e.g. TIMESTAMP_DIFF, FORMAT_DATE). Each call site needs mapping to the Redshift equivalent."),
+  "hub_entity": ("Hub entity", "Three or more other entities depend on this one, so changes here ripple outward. Migrate and validate it early."),
+} %}
+
+{% set SOURCE_LABELS = {
+  "query_logs": "query logs",
+  "view_definition": "view definition",
+  "schema_only": "schema only",
+} %}
+
+{# Copy used by the client-side row renderer in combined.html.j2 — exported through
+   the help-data JSON block so it has exactly one source. #}
+{% set UI_TEXT = {
+  "score_tip": "Each detected factor adds weighted points. 0 points = fully automatic / portable; a low score = review needed; a high score = manual work or rewrite.",
+  "partition_auto": " — mapped automatically from the BigQuery partition spec; no action needed.",
+  "partition_manual": " — could not be mapped automatically; review the flagged decision before migrating.",
+  "source_tip": "What the tool analyzed to reach this rating: query logs (the SQL your workload actually runs), the saved view/routine definition, or just the table schema.",
+} %}

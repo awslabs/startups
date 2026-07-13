@@ -1,0 +1,24 @@
+{
+  "name": "bq-assess",
+  "displayName": "BigQuery Migration Assessment",
+  "version": "0.3.1",
+  "description": "Read-only BigQuery migration assessment: scans a BigQuery warehouse and scores every table on two axes — Migration Effort (moving the data to S3 Tables / Apache Iceberg) and Query Complexity (keeping the SQL running on Amazon Redshift) — then generates Iceberg DDL, load guidance, and a BigQuery-vs-AWS cost comparison as HTML + JSON reports. Assesses only; it does not execute the migration, and needs no AWS account to run.",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "homepage": "https://github.com/awslabs/startups/tree/main/solution-architecture/clis/bq-assess",
+  "repository": "https://github.com/awslabs/startups",
+  "keywords": [
+    "bigquery",
+    "redshift",
+    "migration",
+    "assessment",
+    "iceberg",
+    "s3-tables",
+    "lakehouse",
+    "gcp",
+    "cost-comparison"
+  ],
+  "license": "Apache-2.0",
+  "skills": "./skills/"
+}

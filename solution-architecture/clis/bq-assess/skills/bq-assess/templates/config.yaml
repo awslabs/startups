@@ -1,0 +1,40 @@
+# bq-assess configuration
+# All flags are optional except gcp.project_id.
+# Uncomment and edit any line to override the default.
+# Usage: bq-assess --config config.yaml
+
+# --- GCP connection ---
+gcp:
+  project_id: my-project             # GCP project ID (required)
+  use_adc: true                      # Use Application Default Credentials (recommended)
+  # credentials: /path/to/sa.json    # Path to service account JSON (alternative to ADC)
+  # datasets:                        # Comma-separated dataset filter (default: all datasets)
+  #   - prod_data
+  #   - analytics
+
+# --- Query log analysis ---
+query_logs:
+  enabled: true                      # Analyze INFORMATION_SCHEMA.JOBS (--include-query-logs).
+                                     # NOTE: workload analysis also runs automatically when a
+                                     # BigQuery capacity/reservation pricing model is detected,
+                                     # even without this flag. Opt out with --skip-workload.
+  days: 30                           # Lookback window in days, 1-90 (--query-log-days)
+  # file: exported-logs.json         # Path to exported query logs JSON (--query-logs)
+
+# --- Cost inputs ---
+cost:
+  # bigquery_monthly: 450            # Monthly BigQuery spend in USD; omit for estimated (--bigquery-monthly-cost)
+  # reservation_config: reservations.yaml  # Capacity slot figures for accurate cost (--reservation-config)
+
+# --- Output options ---
+options:
+  output: reports/                   # Output directory (--output)
+  format: [json, html]               # Output formats: json, html (--format; no CSV — R20.8)
+
+# --- CLI-only flags (not config keys — pass on the command line) ---
+# --concurrency N        Max parallel metadata API requests (default 50)
+# --skip-translation     Skip best-effort SQL translation stage (faster)
+# --offline-pricing      Use hardcoded AWS rates, skip live pricing lookup
+# --no-cache             Force a fresh metadata scan (DEFAULT — always on)
+# --use-cache            Opt back into cached metadata (offline re-analysis only)
+# --skip-workload        Skip workload analysis even when pricing is detected

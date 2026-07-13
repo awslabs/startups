@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bq-assess"
+version = "0.3.1"
+description = "Read-only BigQuery migration assessment CLI: profiles a Source and assesses migrating it to an AWS lakehouse (S3 Tables / Apache Iceberg storage, Amazon Redshift Serverless query engine)."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+]
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "jinja2>=3.1",
+    "pyyaml>=6.0",
+    "google-cloud-bigquery>=3.11",
+    "sqlglot>=25.0",
+]
+
+[project.scripts]
+bq-assess = "bq_assess.cli:main"
+bq-collect = "bq_assess.collect_cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "hypothesis>=6.82",
+    "pytest-cov>=4.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# The HTML report templates ship as data files — without this the wheel renders
+# JSON fine but dies on TemplateNotFound (dev editable installs mask it).
+"bq_assess.report" = ["templates/*.j2"]
+bq_assess = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

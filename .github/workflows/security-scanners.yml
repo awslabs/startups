@@ -82,17 +82,21 @@ jobs:
           pip install "bandit[sarif]==1.9.3"
           PLUGIN_DIR=migrate/plugins/ai-to-aws
           PLUGIN_CFG=$PLUGIN_DIR/bandit.yml
+          BQ_DIR=solution-architecture/clis/bq-assess
+          BQ_CFG=$BQ_DIR/bandit.yml
           set +e
           bandit -r "$PLUGIN_DIR" -c "$PLUGIN_CFG" -f sarif -o bandit-plugin.sarif
           PLUGIN_EXIT=$?
-          bandit -r . --exclude "./$PLUGIN_DIR,./migrate/plugins/migration-to-aws/tests" -f sarif -o bandit-other.sarif
+          bandit -r "$BQ_DIR" -c "$BQ_CFG" -f sarif -o bandit-bq.sarif
+          BQ_EXIT=$?
+          bandit -r . --exclude "./$PLUGIN_DIR,./migrate/plugins/migration-to-aws/tests,./$BQ_DIR" -f sarif -o bandit-other.sarif
           OTHER_EXIT=$?
           set -e
-          # Merge: keep pass-1 envelope, concatenate results from pass-2.
-          jq -s '.[0] as $p | .[1] as $o | $p | .runs[0].results += $o.runs[0].results' \
-            bandit-plugin.sarif bandit-other.sarif > bandit-report.sarif
-          # Surface non-zero from either pass.
-          if [ "$PLUGIN_EXIT" -ne 0 ] || [ "$OTHER_EXIT" -ne 0 ]; then
+          # Merge: keep pass-1 envelope, concatenate results from later passes.
+          jq -s '.[0] as $p | .[1] as $b | .[2] as $o | $p | .runs[0].results += ($b.runs[0].results + $o.runs[0].results)' \
+            bandit-plugin.sarif bandit-bq.sarif bandit-other.sarif > bandit-report.sarif
+          # Surface non-zero from any pass.
+          if [ "$PLUGIN_EXIT" -ne 0 ] || [ "$BQ_EXIT" -ne 0 ] || [ "$OTHER_EXIT" -ne 0 ]; then
             BANDIT_EXIT=1
           else
             BANDIT_EXIT=0

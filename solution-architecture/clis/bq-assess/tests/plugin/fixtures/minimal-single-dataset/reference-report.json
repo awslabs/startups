@@ -1,0 +1,77 @@
+{
+  "assessment_id": "assess-fixture-minimal",
+  "generated_at": "2026-01-01T00:00:00+00:00",
+  "project_id": "my-project",
+  "summary": {
+    "total_tables": 10,
+    "total_size_gb": 0.025,
+    "auto_count": 5,
+    "review_count": 3,
+    "manual_count": 2
+  },
+  "cost_analysis": {
+    "bigquery_monthly": 0.001,
+    "redshift_monthly": 720.0,
+    "migration_onetime": 500.0,
+    "annual_savings": -8639.99,
+    "breakeven_months": 500.0
+  },
+  "query_logs_provided": false,
+  "optimization_confidence": "LOW",
+  "deployment_recommendation": {
+    "deployment_type": "SERVERLESS",
+    "confidence": "LOW",
+    "reasons": [
+      "Small data volume suits serverless.",
+      "No query logs — recommendation based on data volume only."
+    ],
+    "estimated_monthly_cost": 720.0,
+    "details": {
+      "base_rpu": 8,
+      "estimated_rpu_hours": 1920,
+      "storage_cost": 0.0,
+      "compute_cost": 720.0
+    }
+  },
+  "tables": [
+    {
+      "name": "sample_dataset.events",
+      "rows": 10000,
+      "size_gb": 0.005,
+      "complexity": "MANUAL",
+      "score": 4,
+      "flags": [
+        "deeply_nested_structs",
+        "array_of_struct",
+        "time_partitioning"
+      ],
+      "redshift_ddl": "CREATE TABLE events (event_id BIGINT, user_id BIGINT, event_type VARCHAR(256), event_data SUPER, created_at TIMESTAMP);",
+      "recommendations": {
+        "distkey": "user_id",
+        "distkey_confidence": "LOW",
+        "distkey_source": "naming_convention",
+        "sortkey": null,
+        "sortkey_confidence": "LOW",
+        "sortkey_source": "safe_default"
+      }
+    },
+    {
+      "name": "sample_dataset.users",
+      "rows": 5000,
+      "size_gb": 0.003,
+      "complexity": "AUTO",
+      "score": 0,
+      "flags": [],
+      "redshift_ddl": "CREATE TABLE users (user_id BIGINT, email VARCHAR(256), name VARCHAR(256), created_at TIMESTAMP);",
+      "recommendations": {
+        "distkey": "user_id",
+        "distkey_confidence": "LOW",
+        "distkey_source": "naming_convention",
+        "sortkey": null,
+        "sortkey_confidence": "LOW",
+        "sortkey_source": "safe_default"
+      }
+    }
+  ],
+  "failures": []
+}

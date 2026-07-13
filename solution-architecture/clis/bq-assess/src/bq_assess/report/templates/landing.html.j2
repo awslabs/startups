@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migration Assessment Landing — {{ project_id }}</title>
+<style>
+{% include '_styles.j2' %}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <div class="header-inner">
+      <div class="header-logo">
+        <div class="aws-cube">BQ</div>
+        <div>
+          <h1 style="color:#fff;margin:0;font-size:1.125rem">Migration Assessment</h1>
+          <p style="color:rgba(255,255,255,.5);margin:2px 0 0 0;font-size:.75rem">BigQuery &rarr; Amazon Redshift (Lakehouse)</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        Project: <strong>{{ project_id }}</strong> &middot;
+        {{ generated_at|timestamp }} &middot;
+        {{ assessment_id }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="container">
+    <div class="nav-links">
+      <a href="{{ sibling_landing }}" class="active">Landing</a>
+      <a href="{{ sibling_effort }}">Migration Effort</a>
+      <a href="{{ sibling_query }}">Query Complexity</a>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-xl);">
+
+{% if cost.compute_confidence == "LOW" %}
+<div class="alert alert-warning" id="low-confidence-warning">
+  <strong>Low Confidence Cost Estimate</strong><br>
+  Compute cost estimates are based on incomplete data. Review the cost breakdown notes below.
+</div>
+{% endif %}
+
+<!-- Overview -->
+<div class="section">
+  <div class="section-header">
+    <h2>Overview</h2>
+  </div>
+  <div class="row">
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Total Entities</div>
+          <div class="stat-value">{{ summary.total_entities }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Tables</div>
+          <div class="stat-value">{{ summary.total_tables }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Total Size</div>
+          <div class="stat-value">{{ "%.1f"|format(summary.total_size_gb) }} <span style="font-size:.875rem;font-weight:400">GB</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">SQL Surface Confidence</div>
+          <div class="stat-value">
+            <span class="badge {% if summary.sql_surface_confidence == 'HIGH' %}badge-high{% elif summary.sql_surface_confidence == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}" style="font-size:.875rem;padding:5px 14px">
+              {{ summary.sql_surface_confidence }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Migration Readiness -->
+<div class="section">
+  <div class="section-header">
+    <h2>Migration Readiness</h2>
+  </div>
+
+  {% import '_donut.j2' as charts %}
+  <div class="donut-row">
+    {{ charts.donut("Migration Effort", [
+      {"label": "Auto", "count": summary.effort_counts.AUTO or 0, "color": "green"},
+      {"label": "Assisted", "count": summary.effort_counts.ASSISTED or 0, "color": "amber"},
+      {"label": "Manual", "count": summary.effort_counts.MANUAL or 0, "color": "red"},
+    ]) }}
+    {{ charts.donut("Query Complexity", [
+      {"label": "Portable", "count": summary.complexity_counts.PORTABLE or 0, "color": "green"},
+      {"label": "Adapt", "count": summary.complexity_counts.ADAPT or 0, "color": "amber"},
+      {"label": "Rewrite", "count": summary.complexity_counts.REWRITE or 0, "color": "red"},
+    ]) }}
+  </div>
+</div>
+
+<!-- Cost Comparison -->
+<div class="section">
+  <div class="section-header">
+    <h2>Cost Comparison</h2>
+    <span class="section-badge">monthly estimate</span>
+  </div>
+
+  <div class="cost-hero">
+    <div class="cost-hero__block">
+      <div class="cost-hero__label">BigQuery (Current)</div>
+      <div class="cost-hero__value">{{ cost.bigquery_monthly|currency_precise }}</div>
+      <div class="cost-hero__sub">{{ cost.bq_pricing_model }}</div>
+    </div>
+    <div class="cost-hero__arrow">
+      <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      {{ cost.monthly_delta_low|savings }}
+    </div>
+    <div class="cost-hero__block cost-hero__block--aws">
+      <div class="cost-hero__label">AWS Lakehouse (Projected)</div>
+      <div class="cost-hero__value" style="color: var(--color-severity-success);">{% if cost.aws_monthly_low == cost.aws_monthly_high %}{{ cost.aws_monthly_low|currency_precise }}{% else %}{{ cost.aws_monthly_low|currency_precise }} &ndash; {{ cost.aws_monthly_high|currency_precise }}{% endif %}</div>
+      <div class="cost-hero__sub">per month</div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-bottom: var(--space-lg);">
+    <div class="col-6">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Monthly Savings</div>
+          <div class="fs-3 fw-bold" style="color: var(--color-severity-success);">{{ cost.monthly_delta_low|savings }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Annual Savings</div>
+          <div class="fs-3 fw-bold" style="color: var(--color-severity-success);">{{ cost.annual_savings_low|savings }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cost Breakdown -->
+  <h3 style="margin-top: var(--space-xl); margin-bottom: var(--space-md);">BigQuery Cost Breakdown</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Line Item</th>
+        <th style="text-align:right">Monthly</th>
+        <th>Confidence</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for line in cost.bigquery_breakdown %}
+      <tr>
+        <td><strong>{{ line.label }}</strong></td>
+        <td style="text-align:right">{{ line.monthly|currency_precise }}</td>
+        <td>
+          <span class="badge {% if line.confidence == 'HIGH' %}badge-high{% elif line.confidence == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">
+            {{ line.confidence }}
+          </span>
+        </td>
+        <td class="text-muted">{{ line.source_note }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h3 style="margin-top: var(--space-xl); margin-bottom: var(--space-md);">AWS Cost Breakdown</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Line Item</th>
+        <th style="text-align:right">Monthly (Low)</th>
+        <th style="text-align:right">Monthly (High)</th>
+        <th>Confidence</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for line in cost.aws_lines %}
+      <tr>
+        <td><strong>{{ line.label }}</strong></td>
+        <td style="text-align:right">{{ (line.monthly_low | default(line.monthly))|currency_precise }}</td>
+        <td style="text-align:right">{{ (line.monthly_high | default(line.monthly))|currency_precise }}</td>
+        <td>
+          <span class="badge {% if line.confidence == 'HIGH' %}badge-high{% elif line.confidence == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">
+            {{ line.confidence }}
+          </span>
+        </td>
+        <td class="text-muted">{{ line.source_note }}</td>
+      </tr>
+    {% endfor %}
+    <tr style="border-top: 2px solid var(--color-border-divider); font-weight:700">
+      <td>Total</td>
+      <td style="text-align:right">{{ cost.aws_monthly_low|currency_precise }}</td>
+      <td style="text-align:right">{{ cost.aws_monthly_high|currency_precise }}</td>
+      <td colspan="2"></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+{% if failures %}
+<div class="section">
+  <div class="section-header">
+    <h2>Failures</h2>
+    <span class="section-badge">{{ failures|length }} items</span>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Entity</th><th>Stage</th><th>Error</th></tr>
+    </thead>
+    <tbody>
+    {% for f in failures %}
+      <tr>
+        <td><strong>{{ f.entity_name }}</strong></td>
+        <td>{{ f.stage }}</td>
+        <td class="text-muted">{{ f.error }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="footer">
+  Generated by <strong>bq-assess</strong> &middot; {{ generated_at|timestamp }}
+</div>
+
+</div>
+</body>
+</html>

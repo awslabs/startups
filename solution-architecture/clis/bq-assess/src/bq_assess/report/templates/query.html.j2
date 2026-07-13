@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Query Complexity — {{ project_id }}</title>
+<style>
+{% include '_styles.j2' %}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <div class="header-inner">
+      <div class="header-logo">
+        <div class="aws-cube">BQ</div>
+        <div>
+          <h1 style="color:#fff;margin:0;font-size:1.125rem">Migration Assessment</h1>
+          <p style="color:rgba(255,255,255,.5);margin:2px 0 0 0;font-size:.75rem">BigQuery &rarr; Amazon Redshift (Lakehouse)</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        Project: <strong>{{ project_id }}</strong> &middot;
+        {{ generated_at|timestamp }} &middot;
+        {{ assessment_id }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="container">
+    <div class="nav-links">
+      <a href="{{ sibling_landing }}">Landing</a>
+      <a href="{{ sibling_effort }}">Migration Effort</a>
+      <a href="{{ sibling_query }}" class="active">Query Complexity</a>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-xl);">
+
+{% if summary.sql_surface_confidence == "LOW" %}
+<div class="alert alert-warning" id="low-confidence-warning">
+  <strong>Low Confidence SQL Analysis</strong><br>
+  SQL surface confidence is low. Query logs were not provided or are incomplete. Re-run with query logs for higher confidence.
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-header">
+    <h2>Query Complexity by Entity</h2>
+  </div>
+  <div class="row">
+    <div class="col-3">
+      <div class="card text-center" data-accent="green">
+        <div class="card-body">
+          <div class="card-title">Portable</div>
+          <div class="stat-value" style="color:var(--color-severity-success)">{{ summary.complexity_counts.PORTABLE or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center" data-accent="amber">
+        <div class="card-body">
+          <div class="card-title">Adapt</div>
+          <div class="stat-value" style="color:var(--color-severity-warning)">{{ summary.complexity_counts.ADAPT or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center" data-accent="red">
+        <div class="card-body">
+          <div class="card-title">Rewrite</div>
+          <div class="stat-value" style="color:var(--color-severity-error)">{{ summary.complexity_counts.REWRITE or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Total Entities</div>
+          <div class="stat-value">{{ summary.total_entities }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th>Entity</th>
+        <th>Type</th>
+        <th>Population</th>
+        <th>Complexity</th>
+        <th style="text-align:right">Score</th>
+        <th>Confidence</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for e in entities %}
+      {% if e.complexity %}
+      <tr>
+        <td><strong>{{ e.full_name }}</strong></td>
+        <td>{{ e.entity_type }}</td>
+        <td>{{ e.population }}</td>
+        <td>
+          <span class="badge {% if e.complexity.category == 'PORTABLE' %}badge-portable{% elif e.complexity.category == 'ADAPT' %}badge-adapt{% else %}badge-rewrite{% endif %}">
+            {{ e.complexity.category }}
+          </span>
+        </td>
+        <td style="text-align:right">{{ e.complexity.score }}</td>
+        <td>
+          <span class="badge {% if e.complexity.confidence == 'HIGH' %}badge-high{% elif e.complexity.confidence == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">
+            {{ e.complexity.confidence }}
+          </span>
+        </td>
+        <td class="text-muted">{{ e.complexity.confidence_source }}</td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Per-Entity Details</h2>
+    <span class="section-badge">{{ entities|length }} entities</span>
+  </div>
+  {% for e in entities %}
+    {% if e.complexity and (e.complexity.score > 0 or e.complexity.flags or e.rewrite_guidance or e.placement) %}
+    <details>
+      <summary>
+        {{ e.full_name }}
+        <span class="badge {% if e.complexity.category == 'PORTABLE' %}badge-portable{% elif e.complexity.category == 'ADAPT' %}badge-adapt{% else %}badge-rewrite{% endif %}" style="margin-left:.5rem">
+          {{ e.complexity.category }}
+        </span>
+        <span class="text-muted" style="font-weight:400;margin-left:.5rem">score {{ e.complexity.score }}</span>
+      </summary>
+      <div class="card">
+        <div class="card-body">
+          <p><strong>Type:</strong> {{ e.entity_type }} &middot; <strong>Population:</strong> {{ e.population }}</p>
+
+          {% if e.complexity.reasoning and e.complexity.reasoning != "no SQL surface visible — cannot assess query complexity" %}
+          <p class="text-muted" style="font-style:italic">{{ e.complexity.reasoning }}</p>
+          {% endif %}
+
+          {% if e.complexity.flags %}
+          <p><strong>Flags:</strong>
+            {% for flag in e.complexity.flags %}
+            <span class="badge badge-flag">{{ flag }}</span>
+            {% endfor %}
+          </p>
+          {% endif %}
+
+          {% if e.depends_on %}
+          <p><strong>Dependencies:</strong>
+            {% for dep in e.depends_on %}
+            <span class="text-muted">{{ dep }}</span>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+          </p>
+          {% endif %}
+
+          {% if e.rewrite_guidance %}
+          <h3 style="margin-top:1rem">Rewrite Guidance</h3>
+          <ul style="margin:.25rem 0;padding-left:1.25rem">
+            {% for g in e.rewrite_guidance %}
+            <li>{{ g }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+
+          {% if e.placement %}
+          <h3 style="margin-top:1rem">Placement Recommendation</h3>
+          <p><strong>Home:</strong> {{ e.placement.home }}
+            <span class="badge {% if e.placement.confidence == 'HIGH' %}badge-high{% elif e.placement.confidence == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}" style="margin-left:.5rem">
+              {{ e.placement.confidence }}
+            </span>
+          </p>
+          {% set real_signals = e.placement.signals | reject("equalto", "insufficient cross-engine signals — defaulting to Redshift") | list %}
+          {% if real_signals %}
+          <p><strong>Signals:</strong></p>
+          <ul style="margin:.25rem 0;padding-left:1.25rem">
+            {% for sig in real_signals %}
+            <li class="text-muted">{{ sig }}</li>
+            {% endfor %}
+          </ul>
+          {% elif e.placement.confidence != 'HIGH' %}
+          <p class="text-muted" style="font-size:.8125rem">Default placement — no specific workload signals detected.</p>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </details>
+    {% endif %}
+  {% endfor %}
+
+  {% set excluded = [] %}
+  {% for e in entities %}
+    {% if e.complexity and e.complexity.score == 0 and not e.complexity.flags and not e.rewrite_guidance and not e.placement %}
+      {% if excluded.append(e) %}{% endif %}
+    {% endif %}
+  {% endfor %}
+  {% if excluded %}
+  <details style="margin-top: var(--space-lg);">
+    <summary class="text-muted" style="cursor:pointer;font-size:.8125rem">{{ excluded|length }} entities excluded from details (no SQL surface visible)</summary>
+    <div class="card" style="margin-top:.5rem">
+      <div class="card-body" style="font-size:.8125rem">
+        <p class="text-muted">The following entities have no query logs or view definitions available, so query complexity cannot be assessed beyond the default PORTABLE classification.</p>
+        <ul style="margin:.25rem 0;padding-left:1.25rem">
+          {% for e in excluded %}
+          <li class="text-muted">{{ e.full_name }} ({{ e.entity_type }})</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </details>
+  {% endif %}
+</div>
+
+<div class="footer">
+  Generated by <strong>bq-assess</strong> &middot; {{ generated_at|timestamp }}
+</div>
+
+</div>
+</body>
+</html>

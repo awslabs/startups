@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-{{ csp_nonce }}'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migration Assessment — {{ project_id }}</title>
+<style>
+{% include '_styles.j2' %}
+
+/* Tab system */
+.tab-content { display: none }
+.tab-content.active { display: block }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <div class="header-inner">
+      <div class="header-logo">
+        <div class="aws-cube">BQ</div>
+        <div>
+          <h1 style="color:#fff;margin:0;font-size:1.125rem">Migration Assessment</h1>
+          <p style="color:rgba(255,255,255,.5);margin:2px 0 0 0;font-size:.75rem">BigQuery &rarr; Amazon Redshift (Lakehouse)</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        Project: <strong>{{ project_id }}</strong> &middot;
+        {{ generated_at|timestamp }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="container">
+    <div class="nav-links">
+      <a href="#" data-tab="landing" class="active">Summary</a>
+      <a href="#" data-tab="effort">Migration Effort</a>
+      <a href="#" data-tab="query">Query Complexity</a>
+    </div>
+  </div>
+</div>
+
+{% import '_help.j2' as help %}
+<div class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-xl);">
+
+<noscript>
+<div class="alert alert-warning">
+  <strong>JavaScript required</strong><br>
+  The entity tables in this report render from embedded data and need JavaScript enabled.
+  Summary and cost sections above remain readable; for a script-free view of the full entity
+  data, use the JSON files generated alongside this report.
+</div>
+</noscript>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- TAB: LANDING / SUMMARY                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="tab-landing" class="tab-content active">
+
+{% if cost.compute_confidence == "LOW" %}
+<div class="alert alert-warning">
+  <strong>Low Confidence Cost Estimate</strong><br>
+  Compute cost estimates are based on incomplete data. Review the cost breakdown notes below.
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-header">
+    <h2>Overview</h2>
+  </div>
+
+  <div class="row">
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Total Entities</div>
+          <div class="stat-value">{{ summary.total_entities }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Tables</div>
+          <div class="stat-value">{{ summary.total_tables }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Total Size <span class="tip tooltip-icon" tabindex="0" data-tip="Top: BigQuery logical size — matches your BigQuery console. Below: projected S3 Iceberg footprint{% if storage_basis == 'measured' %}, measured compressed (Parquet) bytes from TABLE_STORAGE{% elif storage_basis == 'mixed' %}, measured where available, assumed {{ pricing.physical_ratio }}× logical for the rest{% else %}, estimated at {{ pricing.physical_ratio }}× logical (TABLE_STORAGE unavailable){% endif %}.">i</span></div>
+          <div class="stat-value">{{ "%.1f"|format(summary.total_logical_size_gb) }} <span style="font-size:.875rem;font-weight:400">GB</span></div>
+          <div style="font-size:.75rem;color:var(--color-text-secondary);margin-top:2px">&rarr; <strong>{{ "%.1f"|format(summary.total_size_gb) }} GB</strong> on S3 Iceberg</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">SQL Surface Confidence <span class="tip tooltip-icon" tabindex="0" data-tip="How much of your actual SQL the tool could see. This caps the reliability of every query-complexity rating in this report.">i</span></div>
+          <div class="stat-value">
+            <span class="badge badge-{{ summary.sql_surface_confidence|lower }} tip" tabindex="0" data-tip="{{ help.CONFIDENCE_HELP['sql_surface'][summary.sql_surface_confidence] }}" style="font-size:.875rem;padding:5px 14px">
+              {{ summary.sql_surface_confidence }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Migration Readiness -->
+{% import '_donut.j2' as charts %}
+<div class="section">
+  <div class="section-header">
+    <h2>Migration Readiness</h2>
+  </div>
+
+  <div class="donut-row">
+    {{ charts.donut("Migration Effort", [
+      {"label": "Auto", "count": summary.effort_counts.AUTO or 0, "color": "green"},
+      {"label": "Assisted", "count": summary.effort_counts.ASSISTED or 0, "color": "amber"},
+      {"label": "Manual", "count": summary.effort_counts.MANUAL or 0, "color": "red"},
+    ]) }}
+    {{ charts.donut("Query Complexity", [
+      {"label": "Portable", "count": summary.complexity_counts.PORTABLE or 0, "color": "green"},
+      {"label": "Adapt", "count": summary.complexity_counts.ADAPT or 0, "color": "amber"},
+      {"label": "Rewrite", "count": summary.complexity_counts.REWRITE or 0, "color": "red"},
+    ]) }}
+  </div>
+</div>
+
+<!-- Cost Comparison -->
+<div class="section">
+  <div class="section-header">
+    <h2>Cost Comparison</h2>
+    <span class="section-badge">monthly estimate</span>
+  </div>
+
+  <div class="cost-hero">
+    <div class="cost-hero__block">
+      <div class="cost-hero__label">BigQuery (Current)</div>
+      <div class="cost-hero__value">{{ cost.bigquery_monthly|currency_precise }}</div>
+      <div class="cost-hero__sub">{{ cost.bq_pricing_model }}{% if cost.bq_pricing_region %} &middot; {{ cost.bq_pricing_region }}{% endif %}</div>
+    </div>
+    <div class="cost-hero__arrow">
+      <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      {{ cost.monthly_delta_low|savings }}
+    </div>
+    <div class="cost-hero__block cost-hero__block--aws">
+      <div class="cost-hero__label">AWS Lakehouse{% if cost.recommendation %} ({{ cost.recommendation.recommended_scenario }}){% endif %}</div>
+      <div class="cost-hero__value" style="color: var(--color-severity-success);">{% if cost.aws_monthly_low == cost.aws_monthly_high %}{{ cost.aws_monthly_low|currency_precise }}{% else %}{{ cost.aws_monthly_low|currency_precise }} &ndash; {{ cost.aws_monthly_high|currency_precise }}{% endif %}</div>
+      <div class="cost-hero__sub">{% if cost.aws_pricing_region %}{{ cost.aws_pricing_region }}{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-bottom: var(--space-lg);">
+    <div class="col-6">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Monthly Savings</div>
+          <div class="fs-3 fw-bold" style="color: var(--color-severity-success);">{{ cost.monthly_delta_low|savings }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="card-title">Annual Savings</div>
+          <div class="fs-3 fw-bold" style="color: var(--color-severity-success);">{{ cost.annual_savings_low|savings }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if cost.recommendation %}
+  <div class="card" style="border-left: 4px solid var(--color-severity-success); margin-bottom: var(--space-lg);">
+    <div class="card-body">
+      <h3 style="margin-top:0;font-size:.9375rem;color:var(--color-severity-success)">Recommendation: {{ cost.recommendation.recommended_scenario }}</h3>
+      <p style="margin-bottom:0;font-size:.8125rem;color:var(--color-text-secondary)">{{ cost.recommendation.reasoning }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if cost.aws_scenarios %}
+  <h3 style="margin-bottom: var(--space-md);">AWS Deployment Options</h3>
+  {% for scenario in cost.aws_scenarios %}
+  <details class="scenario{% if scenario.is_recommended %} scenario-recommended{% endif %}"{% if scenario.is_recommended %} open{% endif %}>
+    <summary>
+      <span class="scenario-row">
+        <span class="scenario-label">
+          {{ scenario.label }}
+          {% if scenario.is_recommended %}<span class="badge badge-high" style="margin-left:.5rem">RECOMMENDED</span>{% endif %}
+        </span>
+        <span class="scenario-cost">{{ scenario.monthly_total|currency_precise }}</span>
+        <span class="scenario-delta">
+          {% set delta = cost.bigquery_monthly - scenario.monthly_total %}
+          {% if delta > 0 %}
+            <span style="color:var(--color-severity-success)">Save {{ delta|currency_precise }}/mo</span>
+          {% elif delta < -1 %}
+            <span style="color:var(--color-severity-error)">+{{ (delta * -1)|currency_precise }}/mo</span>
+          {% else %}
+            <span style="color:var(--color-text-muted)">Comparable</span>
+          {% endif %}
+        </span>
+        <span class="badge badge-{{ scenario.confidence|lower }} tip" tabindex="0" data-tip="{{ help.CONFIDENCE_HELP['cost'][scenario.confidence] }}">
+          {{ scenario.confidence }}
+        </span>
+      </span>
+    </summary>
+    <div class="card">
+      <div class="card-body" style="font-size:.8125rem">
+        {% if scenario.justification %}<p style="margin:0 0 .5rem 0;color:var(--color-text-secondary)">{{ scenario.justification }}</p>{% endif %}
+        {% if scenario.workload_fit_notes %}
+        <ul style="margin:0;padding-left:1.25rem">
+          {% for note in scenario.workload_fit_notes %}
+          <li>{{ note }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+  </details>
+  {% endfor %}
+  {% endif %}
+
+  {% if cost.scope_notes %}
+  <div class="card" style="border-left: 4px solid var(--color-severity-error); margin-top: var(--space-lg);">
+    <div class="card-body">
+      <h3 style="margin-top:0;font-size:.9375rem;color:var(--color-severity-error)">What This Estimate Covers</h3>
+      <ul style="margin:0;padding-left:1.25rem;font-size:.8125rem;color:var(--color-text-secondary)">
+        {% for note in cost.scope_notes %}
+        <li>{{ note }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <h3 style="margin-top: var(--space-xl); margin-bottom: var(--space-md);">BigQuery Cost Breakdown</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Line Item</th>
+        <th style="text-align:right">Monthly</th>
+        <th>Confidence</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for line in cost.bigquery_breakdown %}
+      <tr>
+        <td><strong>{{ line.label }}</strong></td>
+        <td style="text-align:right">{{ line.monthly|currency_precise }}</td>
+        <td>
+          <span class="badge badge-{{ line.confidence|lower }} tip" tabindex="0" data-tip="{{ help.CONFIDENCE_HELP['cost'][line.confidence] }}">
+            {{ line.confidence }}
+          </span>
+        </td>
+        <td class="text-muted">{{ line.source_note }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h3 style="margin-top: var(--space-xl); margin-bottom: var(--space-md);">AWS Cost Breakdown (Recommended Option)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Line Item</th>
+        <th style="text-align:right">Monthly</th>
+        <th>Confidence</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for line in cost.aws_lines %}
+      <tr>
+        <td><strong>{{ line.label }}</strong></td>
+        <td style="text-align:right">
+          {% if line.monthly is not none %}
+            {{ line.monthly|currency_precise }}
+          {% elif line.monthly_low is not none and line.monthly_high is not none %}
+            {{ line.monthly_low|currency_precise }} &ndash; {{ line.monthly_high|currency_precise }}
+          {% elif line.monthly_low is not none %}
+            {{ line.monthly_low|currency_precise }}
+          {% else %}
+            &ndash;
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge badge-{{ line.confidence|lower }} tip" tabindex="0" data-tip="{{ help.CONFIDENCE_HELP['cost'][line.confidence] }}">
+            {{ line.confidence }}
+          </span>
+        </td>
+        <td class="text-muted">{{ line.source_note }}</td>
+      </tr>
+    {% endfor %}
+    <tr style="border-top: 2px solid var(--color-border-divider); font-weight:700">
+      <td>Total</td>
+      <td style="text-align:right">{% if cost.aws_monthly_low == cost.aws_monthly_high %}{{ cost.aws_monthly_low|currency_precise }}{% else %}{{ cost.aws_monthly_low|currency_precise }} &ndash; {{ cost.aws_monthly_high|currency_precise }}{% endif %}</td>
+      <td colspan="2"></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Assumptions -->
+<div class="section">
+  <div class="section-header">
+    <h2>Assumptions &amp; Methodology</h2>
+  </div>
+
+  <div class="card" style="border-left: 4px solid var(--color-brand-orange); margin-bottom: var(--space-md);">
+    <div class="card-body">
+      <h3 style="margin-top:0;font-size:.9375rem">Target Architecture</h3>
+      <p style="margin-bottom:.5rem;font-size:.8125rem;color:var(--color-text-secondary)">This assessment models the AWS lakehouse as a <strong>decoupled storage + compute</strong> architecture:</p>
+      <ul style="margin:0;padding-left:1.25rem;font-size:.8125rem;color:var(--color-text-secondary)">
+        <li><strong>Storage:</strong> Amazon S3 Tables (managed Apache Iceberg) for Serverless, or Redshift Managed Storage for Provisioned</li>
+        <li><strong>Compute:</strong> Multiple options evaluated — Redshift Serverless (RPU-based, auto-scaling, with Reservation discounts) and Redshift Provisioned RG Graviton4 (node-based, with Reserved Instance discounts)</li>
+        <li><strong>Best-fit selection:</strong> Actual workload profile (query volume, concurrency, active hours) determines the recommendation</li>
+      </ul>
+    </div>
+  </div>
+
+  {% if cost.recommendation and cost.recommendation.workload_profile and cost.recommendation.workload_profile.has_data %}
+  <div class="card" style="border-left: 4px solid var(--color-severity-success); margin-bottom: var(--space-md);">
+    <div class="card-body">
+      <h3 style="margin-top:0;font-size:.9375rem">Your Workload Profile (Used for Sizing)</h3>
+      <ul style="margin:0;padding-left:1.25rem;font-size:.8125rem;color:var(--color-text-secondary)">
+        {% set wp = cost.recommendation.workload_profile %}
+        <li><strong>Query volume:</strong> {{ "{:,.0f}".format(wp.queries_per_day) }} queries/day ({{ "{:,.0f}".format(wp.total_queries) }} total over {{ wp.lookback_days }} days)</li>
+        <li><strong>Data scanned:</strong> {{ "{:,.0f}".format(wp.monthly_scanned_tb) }} TB/month (avg {{ "{:,.0f}".format(wp.avg_bytes_per_query / 1048576) }} MB per query)</li>
+        <li><strong>Concurrency:</strong> ~{{ "{:.0f}".format(wp.avg_concurrent_queries) }} avg / ~{{ "{:.0f}".format(wp.peak_concurrent_queries) }} peak concurrent queries</li>
+        <li><strong>Active hours:</strong> {{ "{:.0%}".format(wp.active_hour_fraction) }} of hours have active queries</li>
+        <li><strong>Stored data:</strong> {{ "{:,.1f}".format(wp.total_stored_gb / 1000) }} TB</li>
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card" style="border-left: 4px solid var(--color-severity-warning); margin-bottom: var(--space-md);">
+    <div class="card-body">
+      <h3 style="margin-top:0;font-size:.9375rem">Storage Assumptions</h3>
+      <ul style="margin:0;padding-left:1.25rem;font-size:.8125rem;color:var(--color-text-secondary)">
+        <li><strong>Serverless path:</strong> S3 Tables Standard (managed Iceberg) — tiered from ${{ pricing.s3_tables_tier1_per_gb }}/GB ({{ pricing.aws_region }}), includes automatic compaction</li>
+        <li><strong>Provisioned path:</strong> Redshift Managed Storage @ ${{ pricing.rms_per_gb }}/GB-month — included with RG Graviton4 nodes</li>
+        {% if storage_basis == "measured" %}
+        <li>Storage sized on <strong>measured physical bytes</strong> from BigQuery TABLE_STORAGE &mdash; 1:1 to S3 Iceberg (both store compressed Parquet)</li>
+        <li style="font-size:.75rem;color:var(--color-text-tertiary)">Limitations: TABLE_STORAGE may lag ~1 day for recent changes; clones/snapshots report full size (conservative)</li>
+        {% elif storage_basis == "mixed" %}
+        <li>Storage sized on <strong>mixed basis</strong> — tables covered by BigQuery TABLE_STORAGE use measured physical bytes (1:1 to S3 Iceberg); the remainder assumed at {{ pricing.physical_ratio }}&times; logical</li>
+        <li style="font-size:.75rem;color:var(--color-text-tertiary)">Limitations: TABLE_STORAGE may lag ~1 day for recent changes; clones/snapshots report full size (conservative)</li>
+        {% else %}
+        <li>Physical bytes unavailable &mdash; storage sized at <strong>{{ pricing.physical_ratio }}&times; logical</strong> (1 GiB BQ logical &asymp; {{ pricing.physical_ratio }} GiB S3 Iceberg; conservative estimate)</li>
+        <li style="font-size:.75rem;color:var(--color-text-tertiary)">Typical Parquet compression is 2&ndash;5&times;; {{ pricing.physical_ratio }} is a floor to avoid overstating the monthly run-rate delta</li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="border-left: 4px solid var(--color-severity-warning); margin-bottom: var(--space-md);">
+    <div class="card-body">
+      <h3 style="margin-top:0;font-size:.9375rem">Compute Pricing Assumptions</h3>
+      <ul style="margin:0;padding-left:1.25rem;font-size:.8125rem;color:var(--color-text-secondary)">
+        <li><strong>Serverless On-Demand:</strong> ${{ pricing.serverless_rpu_hr }}/RPU-hr ({{ pricing.aws_region }}). BQ slot&rarr;RPU ratio: {{ pricing.slot_to_rpu_ratio }} (evidence range 0.06&ndash;0.25)</li>
+        <li><strong>Serverless Reserved (1yr):</strong> ~{{ pricing.serverless_1yr_discount_pct }}% discount (${{ pricing.serverless_1yr_rpu_hr }}/RPU-hr). Break-even at ~{{ pricing.serverless_1yr_breakeven_pct }}% utilization</li>
+        <li><strong>Serverless Reserved (3yr):</strong> ~{{ pricing.serverless_3yr_discount_pct }}% discount (${{ pricing.serverless_3yr_rpu_hr }}/RPU-hr). Break-even at ~{{ pricing.serverless_3yr_breakeven_pct }}% utilization</li>
+        <li><strong>Provisioned On-Demand:</strong> RG Graviton4 rg.4xlarge @ ${{ pricing.rg_4xl_ondemand_hr }}/node-hr. {{ pricing.hours_per_month }} hours/month</li>
+        <li><strong>Provisioned 1yr RI:</strong> ~{{ pricing.ri_1yr_discount_pct }}% discount vs on-demand</li>
+        <li><strong>Provisioned 3yr RI:</strong> ~{{ pricing.ri_3yr_discount_pct }}% discount vs on-demand</li>
+        <li><strong>Cluster sizing:</strong> based on peak concurrent query load with 1.5 vCPU/query heuristic and 3&times; burst factor</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="border-left: 4px solid var(--color-severity-neutral); margin-bottom: var(--space-md);">
+    <div class="card-body">
+      <h3 style="margin-top:0;font-size:.9375rem">Key Caveats</h3>
+      <ul style="margin:0;padding-left:1.25rem;font-size:.8125rem;color:var(--color-text-secondary)">
+        <li>BigQuery priced for <strong>{{ pricing.bq_region }}</strong> (${{ pricing.bq_ondemand_per_tib }}/TiB, storage ${{ pricing.bq_storage_active_per_gib }}/GiB-mo); AWS priced for <strong>{{ pricing.region }}</strong></li>
+        <li>The slot&rarr;RPU bridge ({{ pricing.slot_to_rpu_ratio }} ratio, set above the evidence midpoint of 0.06&ndash;0.25 so AWS compute errs high) is a <strong>research-based estimate</strong> — validate with <code>SYS_SERVERLESS_USAGE</code></li>
+        <li>Provisioned cluster sizing uses <strong>estimated concurrency</strong> — validate with a pilot workload</li>
+        <li>Data transfer costs (one-time migration) are <strong>not included</strong></li>
+        <li>Redshift Spectrum, ML features, and cross-region replication are <strong>not modeled</strong></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if failures %}
+<div class="section">
+  <div class="section-header">
+    <h2>Failures</h2>
+    <span class="section-badge">{{ failures|length }} items</span>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Entity</th><th>Stage</th><th>Error</th></tr>
+    </thead>
+    <tbody>
+    {% for f in failures %}
+      <tr>
+        <td><strong>{{ f.entity_name }}</strong></td>
+        <td>{{ f.stage }}</td>
+        <td class="text-muted">{{ f.error }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+</div><!-- end tab-landing -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- TAB: MIGRATION EFFORT                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="tab-effort" class="tab-content">
+
+<div class="section">
+  <div class="section-header">
+    <h2>Migration Effort by Entity</h2>
+  </div>
+  <div class="row">
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="AUTO" data-filter-target="effort" data-accent="green">
+        <div class="card-body">
+          <div class="card-title">Auto</div>
+          <div class="stat-value" style="color:var(--color-severity-success)">{{ summary.effort_counts.AUTO or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="ASSISTED" data-filter-target="effort" data-accent="amber">
+        <div class="card-body">
+          <div class="card-title">Assisted</div>
+          <div class="stat-value" style="color:var(--color-severity-warning)">{{ summary.effort_counts.ASSISTED or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="MANUAL" data-filter-target="effort" data-accent="red">
+        <div class="card-body">
+          <div class="card-title">Manual</div>
+          <div class="stat-value" style="color:var(--color-severity-error)">{{ summary.effort_counts.MANUAL or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="ALL" data-filter-target="effort">
+        <div class="card-body">
+          <div class="card-title">Total Tables</div>
+          <div class="stat-value">{{ summary.total_tables }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="filter-reset" data-filter-target="effort">Clear filter</span>
+</div>
+
+<div class="section">
+  <p class="text-muted" style="font-size:.8125rem; margin-bottom: var(--space-sm);">Click a row to expand conversion details (DDL, lossy casts, warnings).</p>
+  <div class="table-toolbar">
+    <input type="search" class="search-input" data-search-target="effort" placeholder="Filter by entity name&hellip;" aria-label="Filter tables by entity name">
+  </div>
+  <table id="table-effort">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Entity</th>
+        <th>Type</th>
+        <th>Population</th>
+        <th style="text-align:right">Rows</th>
+        <th style="text-align:right">Projected Size (GB)</th>
+        <th>Effort</th>
+        <th style="text-align:right">Score</th>
+        <th>Confidence</th>
+      </tr>
+    </thead>
+    <tbody data-page-size="100"></tbody>
+  </table>
+</div>
+
+</div><!-- end tab-effort -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- TAB: QUERY COMPLEXITY                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="tab-query" class="tab-content">
+
+{% if summary.sql_surface_confidence == "LOW" %}
+<div class="alert alert-warning">
+  <strong>Low Confidence SQL Analysis</strong><br>
+  SQL surface confidence is low. Query logs were not provided or are incomplete. Re-run with query logs for higher confidence.
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-header">
+    <h2>Query Complexity by Entity</h2>
+  </div>
+  <div class="row">
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="PORTABLE" data-filter-target="query" data-accent="green">
+        <div class="card-body">
+          <div class="card-title">Portable</div>
+          <div class="stat-value" style="color:var(--color-severity-success)">{{ summary.complexity_counts.PORTABLE or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="ADAPT" data-filter-target="query" data-accent="amber">
+        <div class="card-body">
+          <div class="card-title">Adapt</div>
+          <div class="stat-value" style="color:var(--color-severity-warning)">{{ summary.complexity_counts.ADAPT or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="REWRITE" data-filter-target="query" data-accent="red">
+        <div class="card-body">
+          <div class="card-title">Rewrite</div>
+          <div class="stat-value" style="color:var(--color-severity-error)">{{ summary.complexity_counts.REWRITE or 0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="card text-center filter-card" data-filter-category="ALL" data-filter-target="query">
+        <div class="card-body">
+          <div class="card-title">Total Entities</div>
+          <div class="stat-value">{{ summary.total_entities }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="filter-reset" data-filter-target="query">Clear filter</span>
+</div>
+
+<div class="section">
+  <p class="text-muted" style="font-size:.8125rem; margin-bottom: var(--space-sm);">Click a row to expand analysis details (flags, rewrite guidance, translated SQL, placement). Entities with no visible SQL surface have no details.</p>
+  <div class="table-toolbar">
+    <input type="search" class="search-input" data-search-target="query" placeholder="Filter by entity name&hellip;" aria-label="Filter entities by name">
+  </div>
+  <table id="table-query">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Entity</th>
+        <th>Type</th>
+        <th>Population</th>
+        <th>Complexity</th>
+        <th style="text-align:right">Score</th>
+        <th>Confidence</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody data-page-size="100"></tbody>
+  </table>
+</div>
+
+</div><!-- end tab-query -->
+
+<div class="footer">
+  Generated by <strong>bq-assess</strong> &middot; {{ generated_at|timestamp }}
+  <div class="disclaimer">
+    <strong>Beta &amp; Disclaimer Notice</strong>
+    {% for para in disclaimer_paragraphs %}
+    <p>{{ para }}</p>
+    {% endfor %}
+  </div>
+</div>
+
+</div><!-- end container -->
+
+<script type="application/json" id="report-data">{{ report_rows|tojson }}</script>
+<script type="application/json" id="help-data">{{ {
+  "confidence": {
+    "effort": help.CONFIDENCE_HELP["effort"],
+    "complexity": help.CONFIDENCE_HELP["complexity"],
+    "placement": help.CONFIDENCE_HELP["placement"],
+  },
+  "category": help.CATEGORY_HELP,
+  "flags": help.FLAG_INFO,
+  "sources": help.SOURCE_LABELS,
+  "text": help.UI_TEXT,
+}|tojson }}</script>
+
+<script nonce="{{ csp_nonce }}">
+document.querySelectorAll('.nav-links a[data-tab]').forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active') });
+    document.querySelectorAll('.nav-links a').forEach(function(a) { a.classList.remove('active') });
+    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    this.classList.add('active');
+    window.scrollTo(0, 0);
+  });
+});
+
+// Entity tables render client-side from embedded JSON. Only the current page of
+// rows exists in the DOM, and a row's detail panel is built on first expand —
+// this keeps the report responsive for warehouses with tens of thousands of
+// entities. All content is inserted via textContent / createElement, never
+// parsed as markup, so entity names and SQL from the source project stay inert.
+var DATA = JSON.parse(document.getElementById('report-data').textContent);
+var HELP = JSON.parse(document.getElementById('help-data').textContent);
+
+function el(tag, className, text) {
+  var node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = text;
+  return node;
+}
+
+function tipSpan(text, tip, className) {
+  // Without tip text, render a plain span: an empty data-tip would still pop an
+  // empty tooltip bubble and steal keyboard focus.
+  if (!tip) return el('span', null, text);
+  var s = el('span', (className || 'tip'), text);
+  s.setAttribute('tabindex', '0');
+  s.setAttribute('data-tip', tip);
+  return s;
+}
+
+function badge(text, cls, tip) {
+  var s = tipSpan(text, tip, 'badge badge-' + cls + ' tip');
+  if (!tip) s.className = 'badge badge-' + cls;
+  return s;
+}
+
+function categoryBadge(cat) {
+  return badge(cat, String(cat).toLowerCase(), HELP.category[cat] || '');
+}
+
+function confidenceBadge(level, context) {
+  return badge(level, String(level).toLowerCase(), (HELP.confidence[context] || {})[level] || '');
+}
+
+function flagChip(flag) {
+  var info = HELP.flags[flag];
+  var label = info ? info[0] : flag.replace(/_/g, ' ');
+  var tip = info ? info[1] : flag;
+  return badge(label, 'flag', tip);
+}
+
+function preCode(text) {
+  var p = document.createElement('pre');
+  p.appendChild(el('code', null, text));
+  return p;
+}
+
+function scoreBreakdown(reasoning) {
+  var p = el('p', 'text-muted');
+  p.style.fontSize = '.8125rem';
+  var label = tipSpan('Score breakdown', HELP.text.score_tip);
+  label.style.borderBottom = '1px dotted var(--color-text-muted)';
+  label.style.cursor = 'help';
+  p.appendChild(label);
+  p.appendChild(document.createTextNode(': ' + reasoning));
+  return p;
+}
+
+function flagsParagraph(labelText, flags) {
+  var p = el('p');
+  p.appendChild(el('strong', null, labelText + ' '));
+  flags.forEach(function(f) {
+    p.appendChild(flagChip(f));
+    p.appendChild(document.createTextNode(' '));
+  });
+  return p;
+}
+
+function sectionHeading(text, tip) {
+  var h = el('h3', null, text + ' ');
+  h.style.marginTop = '1rem';
+  if (tip) h.appendChild(tipSpan('i', tip, 'tip tooltip-icon'));
+  return h;
+}
+
+function bulletList(items, muted) {
+  var ul = el('ul', muted ? 'text-muted' : null);
+  ul.style.margin = '.25rem 0';
+  ul.style.paddingLeft = '1.25rem';
+  items.forEach(function(item) { ul.appendChild(el('li', null, item)); });
+  return ul;
+}
+
+function buildEffortDetail(e) {
+  var td = document.createElement('td');
+  td.setAttribute('colspan', '9');
+  var eff = e.effort;
+
+  if (eff.reasoning) td.appendChild(scoreBreakdown(eff.reasoning));
+  if (eff.flags && eff.flags.length) td.appendChild(flagsParagraph('What to review:', eff.flags));
+
+  if (e.conversion) {
+    td.appendChild(sectionHeading('Iceberg DDL', 'Generated CREATE TABLE statement for the Iceberg target. Review before running — especially any flagged type casts or partition decisions.'));
+    td.appendChild(preCode(e.conversion.ddl));
+
+    var pm = e.conversion.partition_mapping;
+    if (pm) {
+      var p = el('p');
+      p.appendChild(el('strong', null, 'Partitioning: '));
+      if (pm.iceberg_transforms && pm.iceberg_transforms.length) {
+        p.appendChild(el('code', null, pm.iceberg_transforms.join(', ')));
+      } else {
+        p.appendChild(document.createTextNode('none'));
+      }
+      if (pm.sort_order && pm.sort_order.length) {
+        p.appendChild(document.createTextNode(' · '));
+        p.appendChild(el('strong', null, 'Sort order: '));
+        p.appendChild(el('code', null, pm.sort_order.join(', ')));
+      }
+      p.appendChild(el('span', 'text-muted', pm.auto_derived
+        ? HELP.text.partition_auto
+        : HELP.text.partition_manual));
+      td.appendChild(p);
+    }
+
+    var casts = e.conversion.lossy_casts;
+    if (casts && casts.length) {
+      var cp = el('p');
+      cp.appendChild(el('strong', null, 'Type casts that lose information '));
+      cp.appendChild(tipSpan('i', 'These columns have no exact Iceberg equivalent, so the mapped type loses precision or range. Confirm each one is acceptable for your data before loading.', 'tip tooltip-icon'));
+      td.appendChild(cp);
+      var table = document.createElement('table');
+      table.style.fontSize = '.8125rem';
+      table.style.marginTop = '.25rem';
+      var thead = document.createElement('thead');
+      var hr = document.createElement('tr');
+      ['Column', 'BigQuery Type', 'Iceberg Type', 'Impact'].forEach(function(h) { hr.appendChild(el('th', null, h)); });
+      thead.appendChild(hr);
+      table.appendChild(thead);
+      var tbody = document.createElement('tbody');
+      casts.forEach(function(c) {
+        var tr = document.createElement('tr');
+        var colTd = document.createElement('td');
+        colTd.appendChild(el('code', null, c.column));
+        tr.appendChild(colTd);
+        tr.appendChild(el('td', null, c.source_type));
+        tr.appendChild(el('td', null, c.iceberg_type));
+        tr.appendChild(el('td', 'text-muted', c.loss_description));
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      td.appendChild(table);
+    }
+
+    if (e.conversion.warnings && e.conversion.warnings.length) {
+      var wp = el('p');
+      wp.appendChild(el('strong', null, 'Warnings:'));
+      td.appendChild(wp);
+      td.appendChild(bulletList(e.conversion.warnings));
+    }
+  }
+
+  if (e.load_sync_dml) {
+    td.appendChild(sectionHeading('Load/Sync DML', 'Suggested statements for the initial data load and, where a sync signal was detected, the recurring MERGE to keep the target current. Adjust staging schema names to your environment.'));
+    td.appendChild(preCode(e.load_sync_dml));
+  }
+  return td;
+}
+
+function buildQueryDetail(e) {
+  var td = document.createElement('td');
+  td.setAttribute('colspan', '8');
+  var c = e.complexity;
+
+  if (c.reasoning === 'no BigQuery-specific constructs detected') {
+    td.appendChild(el('p', 'text-muted', 'No BigQuery-specific SQL was found in this entity’s definition — it should run on Redshift with little or no change.'));
+  } else if (c.reasoning && c.reasoning !== 'no SQL surface visible — cannot assess query complexity') {
+    td.appendChild(scoreBreakdown(c.reasoning));
+  }
+
+  if (c.flags && c.flags.length) td.appendChild(flagsParagraph('What needs attention:', c.flags));
+
+  if (e.depends_on && e.depends_on.length) {
+    var dp = el('p');
+    dp.appendChild(el('strong', null, 'Reads from: '));
+    e.depends_on.forEach(function(dep, i) {
+      dp.appendChild(el('span', 'text-muted', dep));
+      if (i < e.depends_on.length - 1) dp.appendChild(document.createTextNode(', '));
+    });
+    td.appendChild(dp);
+  }
+
+  if (e.rewrite_guidance && e.rewrite_guidance.length) {
+    td.appendChild(sectionHeading('How to rewrite for Redshift'));
+    td.appendChild(bulletList(e.rewrite_guidance));
+  }
+
+  if (e.translated_sql) {
+    td.appendChild(sectionHeading('Suggested Redshift SQL', 'Machine-translated from the BigQuery definition (via sqlglot) as a starting point — validate before production use. Iceberg table references may need an external schema prefix.'));
+    if (e.translated_sql.confidence === 'LOW') {
+      var lb = badge('LOW CONFIDENCE', 'low', 'The translator hit constructs it could not fully convert — expect to hand-edit this SQL.');
+      lb.style.marginBottom = '.5rem';
+      td.appendChild(lb);
+    }
+    if (e.translated_sql.warnings && e.translated_sql.warnings.length) {
+      var wl = bulletList(e.translated_sql.warnings, true);
+      wl.style.fontSize = '.8125rem';
+      td.appendChild(wl);
+    }
+    td.appendChild(preCode(e.translated_sql.redshift_sql));
+  }
+
+  if (e.placement) {
+    td.appendChild(sectionHeading('Where should this live?', 'Views, materialized views, and UDFs can live either inside Redshift (engine-local) or in the shared Iceberg catalog (queryable by multiple engines). This recommendation weighs how the object is structured and consumed.'));
+    var hp = el('p');
+    hp.appendChild(el('strong', null, 'Recommended home: '));
+    hp.appendChild(document.createTextNode(e.placement.home === 'REDSHIFT' ? 'Redshift (engine-local) ' : 'Iceberg catalog (open, multi-engine) '));
+    hp.appendChild(confidenceBadge(e.placement.confidence, 'placement'));
+    td.appendChild(hp);
+    var signals = e.placement.signals || [];
+    if (signals.length) {
+      var whyP = el('p');
+      whyP.appendChild(el('strong', null, 'Why:'));
+      td.appendChild(whyP);
+      td.appendChild(bulletList(signals, true));
+    }
+  }
+  return td;
+}
+
+function nonEmpty(v) {
+  // Mirrors Jinja truthiness: empty arrays are falsy (unlike JS).
+  return Array.isArray(v) ? v.length > 0 : !!v;
+}
+
+function effortHasDetail(e) {
+  return !!(e.effort.reasoning || nonEmpty(e.effort.flags) || e.conversion || e.load_sync_dml);
+}
+
+function queryHasDetail(e) {
+  return !!(e.complexity.score > 0 || nonEmpty(e.complexity.flags) || nonEmpty(e.rewrite_guidance) || e.placement || e.translated_sql);
+}
+
+function renderEffortRow(e, tr) {
+  // Explicit null checks: 0 rows / 0 GB are real values (empty table), not missing data.
+  var num = el('td', null, e.rows != null ? Number(e.rows).toLocaleString('en-US') : '—');
+  num.style.textAlign = 'right';
+  var sizeTd = document.createElement('td');
+  sizeTd.style.textAlign = 'right';
+  sizeTd.appendChild(tipSpan(
+    e.physical_size_gb != null ? Number(e.physical_size_gb).toFixed(2) : '—',
+    'BigQuery logical: ' + Number(e.logical_size_gb || 0).toFixed(2) + ' GB'
+  ));
+  var nameTd = document.createElement('td');
+  nameTd.appendChild(el('strong', null, e.full_name));
+  tr.appendChild(nameTd);
+  tr.appendChild(el('td', null, e.entity_type));
+  tr.appendChild(el('td', null, e.population));
+  tr.appendChild(num);
+  tr.appendChild(sizeTd);
+  var catTd = document.createElement('td');
+  catTd.appendChild(categoryBadge(e.effort.category));
+  tr.appendChild(catTd);
+  var scoreTd = el('td', null, String(e.effort.score));
+  scoreTd.style.textAlign = 'right';
+  tr.appendChild(scoreTd);
+  var confTd = document.createElement('td');
+  confTd.appendChild(confidenceBadge(e.effort.confidence, 'effort'));
+  tr.appendChild(confTd);
+}
+
+function renderQueryRow(e, tr) {
+  var nameTd = document.createElement('td');
+  nameTd.appendChild(el('strong', null, e.full_name));
+  tr.appendChild(nameTd);
+  tr.appendChild(el('td', null, e.entity_type));
+  tr.appendChild(el('td', null, e.population));
+  var catTd = document.createElement('td');
+  catTd.appendChild(categoryBadge(e.complexity.category));
+  tr.appendChild(catTd);
+  var scoreTd = el('td', null, String(e.complexity.score));
+  scoreTd.style.textAlign = 'right';
+  tr.appendChild(scoreTd);
+  var confTd = document.createElement('td');
+  confTd.appendChild(confidenceBadge(e.complexity.confidence, 'complexity'));
+  tr.appendChild(confTd);
+  var srcTd = el('td', 'text-muted');
+  var src = e.complexity.confidence_source;
+  srcTd.appendChild(tipSpan(HELP.sources[src] || String(src || '').replace(/_/g, ' '),
+    HELP.text.source_tip));
+  tr.appendChild(srcTd);
+}
+
+function EntityTable(opts) {
+  var table = document.getElementById(opts.tableId);
+  var tbody = table.querySelector('tbody');
+  var columnCount = table.querySelector('thead tr').children.length;
+  var pageSize = parseInt(tbody.dataset.pageSize, 10) || 100;
+  var state = { category: 'ALL', query: '', page: 0 };
+
+  // Lowercase once at load; the filter runs per keystroke over up to ~100k rows.
+  opts.rows.forEach(function(e) { e._nameLower = e.full_name.toLowerCase(); });
+  var matched = opts.rows;  // cached filter result — page turns reuse it
+
+  var controls = el('div', 'pagination-controls');
+  var prev = el('button', 'pg-prev', '« Prev');
+  var info = el('span', 'page-info');
+  var next = el('button', 'pg-next', 'Next »');
+  controls.appendChild(prev);
+  controls.appendChild(info);
+  controls.appendChild(next);
+  table.parentNode.insertBefore(controls, table);
+  prev.addEventListener('click', function() { if (state.page > 0) { state.page--; render(); } });
+  next.addEventListener('click', function() { state.page++; render(); });
+
+  function refilter() {
+    matched = opts.rows.filter(function(e) {
+      if (state.category !== 'ALL' && opts.categoryOf(e) !== state.category) return false;
+      if (state.query && e._nameLower.indexOf(state.query) === -1) return false;
+      return true;
+    });
+  }
+
+  function render() {
+    var items = matched;
+    var totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+    if (state.page >= totalPages) state.page = totalPages - 1;
+    var start = state.page * pageSize, end = Math.min(start + pageSize, items.length);
+
+    tbody.textContent = '';
+    if (!items.length) {
+      var emptyTr = el('tr', 'empty-row');
+      var emptyTd = el('td', 'text-muted', 'No matching entities.');
+      emptyTd.colSpan = columnCount;
+      emptyTd.style.textAlign = 'center';
+      emptyTr.appendChild(emptyTd);
+      tbody.appendChild(emptyTr);
+    }
+    items.slice(start, end).forEach(function(e) {
+      var hasDetail = opts.hasDetail(e);
+      var tr = el('tr', 'entity-row' + (hasDetail ? ' has-detail' : ''));
+      var expand = el('td', 'expand-cell');
+      if (hasDetail) expand.appendChild(el('span', 'chevron'));
+      tr.appendChild(expand);
+      opts.renderRow(e, tr);
+      tbody.appendChild(tr);
+      if (hasDetail) {
+        tr.addEventListener('click', function() {
+          if (window.getSelection && String(window.getSelection())) return; // don't toggle while selecting text
+          var detail = tr.nextElementSibling;
+          if (!detail || !detail.classList.contains('detail-row')) {
+            detail = el('tr', 'detail-row');
+            detail.appendChild(opts.buildDetail(e));  // built lazily, on first expand
+            tr.parentNode.insertBefore(detail, tr.nextSibling);
+          }
+          var opening = !tr.classList.contains('expanded');
+          tr.classList.toggle('expanded', opening);
+          detail.classList.toggle('open', opening);
+        });
+      }
+    });
+
+    var showControls = items.length > pageSize;
+    controls.style.display = showControls ? '' : 'none';
+    if (showControls) {
+      var label = state.category !== 'ALL' ? ' (' + state.category + ')' : '';
+      info.textContent = 'Showing ' + (start + 1) + '–' + end + ' of ' + items.length + label;
+      prev.disabled = state.page === 0;
+      next.disabled = state.page >= totalPages - 1;
+    }
+  }
+
+  this.setCategory = function(cat) { state.category = cat; state.page = 0; refilter(); render(); };
+  this.setQuery = function(q) { state.query = q.toLowerCase().trim(); state.page = 0; refilter(); render(); };
+  render();
+}
+
+var tables = {
+  effort: new EntityTable({
+    tableId: 'table-effort', rows: DATA.effort,
+    categoryOf: function(e) { return e.effort.category; },
+    hasDetail: effortHasDetail, renderRow: renderEffortRow, buildDetail: buildEffortDetail,
+  }),
+  query: new EntityTable({
+    tableId: 'table-query', rows: DATA.query,
+    categoryOf: function(e) { return e.complexity.category; },
+    hasDetail: queryHasDetail, renderRow: renderQueryRow, buildDetail: buildQueryDetail,
+  }),
+};
+
+function applyFilter(target, category) {
+  tables[target].setCategory(category);
+  var isAll = category === 'ALL';
+  var resetEl = document.querySelector('.filter-reset[data-filter-target="' + target + '"]');
+  if (resetEl) resetEl.classList.toggle('visible', !isAll);
+  document.querySelectorAll('.filter-card[data-filter-target="' + target + '"]').forEach(function(card) {
+    card.classList.toggle('active-filter', card.dataset.filterCategory === category);
+  });
+}
+
+function clearAllFilters(target) {
+  var input = document.querySelector('.search-input[data-search-target="' + target + '"]');
+  if (input) input.value = '';
+  tables[target].setQuery('');
+  applyFilter(target, 'ALL');
+}
+
+document.querySelectorAll('.filter-card').forEach(function(card) {
+  card.addEventListener('click', function() {
+    var target = this.dataset.filterTarget;
+    var category = this.dataset.filterCategory;
+    if (this.classList.contains('active-filter') && category !== 'ALL') {
+      applyFilter(target, 'ALL');
+    } else {
+      applyFilter(target, category);
+    }
+  });
+});
+
+document.querySelectorAll('.filter-reset').forEach(function(elm) {
+  elm.addEventListener('click', function() {
+    clearAllFilters(this.dataset.filterTarget);
+  });
+});
+
+document.querySelectorAll('.search-input[data-search-target]').forEach(function(input) {
+  var timer = null;
+  input.addEventListener('input', function() {
+    var target = this.dataset.searchTarget, value = this.value;
+    clearTimeout(timer);
+    timer = setTimeout(function() { tables[target].setQuery(value); }, 150);
+  });
+});
+</script>
+</body>
+</html>

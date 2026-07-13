@@ -28,6 +28,12 @@
       "source": "./migrate/plugins/ai-to-aws",
       "version": "1.0.1",
       "description": "End-to-end AI migration to Amazon Bedrock: assess your codebase, design the architecture, then execute — rewriting SDK calls, evaluating quality, and delivering a ready-to-merge git branch. Requires the migration-to-aws plugin (it powers the Assess phase). With both installed, use /ai-to-aws:llm-to-bedrock for AI workloads — it adds the Execute half on top of migration-to-aws's assessment."
+    },
+    {
+      "name": "bq-assess",
+      "source": "./solution-architecture/clis/bq-assess",
+      "version": "0.3.1",
+      "description": "Read-only BigQuery migration assessment: scans a BigQuery warehouse and scores every table on two axes — Migration Effort (moving the data to S3 Tables / Apache Iceberg) and Query Complexity (keeping the SQL running on Amazon Redshift) — then generates Iceberg DDL, load guidance, and a BigQuery-vs-AWS cost comparison as HTML + JSON reports. Ships as a full Python CLI plus a guided Claude Code skill. Assesses only; needs no AWS account to run."
     }
   ]
 }

@@ -4,11 +4,12 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 
 ## Plugins
 
-| Plugin                                        | Description                                                                                                                                                    | Status    |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **[migration-to-aws](migrate/)**              | Assess & plan: migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and Terraform generation | Available |
-| **[ai-to-aws](migrate/)**                     | Execute: rewrite LLM SDK calls to Amazon Bedrock, evaluate output quality against your test cases, and deliver a ready-to-merge git branch                     | Available |
-| **[aws-dev-toolkit](solution-architecture/)** | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS                                     | Available |
+| Plugin                                                 | Description                                                                                                                                                    | Status    |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **[migration-to-aws](migrate/)**                       | Assess & plan: migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and Terraform generation | Available |
+| **[ai-to-aws](migrate/)**                              | Execute: rewrite LLM SDK calls to Amazon Bedrock, evaluate output quality against your test cases, and deliver a ready-to-merge git branch                     | Available |
+| **[aws-dev-toolkit](solution-architecture/)**          | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS                                     | Available |
+| **[bq-assess](solution-architecture/clis/bq-assess/)** | Read-only BigQuery migration assessment — two-axis effort/complexity scoring, Iceberg DDL, and BigQuery-vs-AWS cost comparison (CLI + guided skill)            | Available |
 
 ## Installation
 
@@ -66,6 +67,8 @@ awslabs/startups/
 │       ├── migration-to-aws/         # Assess & plan
 │       └── ai-to-aws/                # Execute (AI/LLM migrations)
 ├── solution-architecture/            # Solution Architecture plugins (aws-dev-toolkit)
+│   └── clis/
+│       └── bq-assess/                # BigQuery migration assessment (CLI + skill)
 └── ...                               # Future team folders
 ```
 

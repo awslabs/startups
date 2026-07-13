@@ -1,0 +1,53 @@
+{# Donut chart macro — pure SVG, offline-safe.
+   segments: list of dicts {key, label, count, color: green|amber|red}
+   center headline = share of the first segment (the "ready" story). #}
+{% macro donut(title, segments) %}
+{% set total = segments | sum(attribute="count") %}
+{% set C = 301.59 %}{# 2 * pi * r=48 #}
+{% set nonzero = segments | selectattr("count", "gt", 0) | list %}
+{% set gap = 4 if nonzero | length > 1 else 0 %}
+<div class="donut-panel">
+  <h3 class="donut-panel__title">{{ title }}</h3>
+  <div class="donut-panel__body">
+    <div class="donut">
+      <svg viewBox="0 0 120 120" role="img" aria-label="{{ title }}: {% for s in segments %}{{ s.label }} {{ s.count }}{% if not loop.last %}, {% endif %}{% endfor %}">
+        <circle cx="60" cy="60" r="48" fill="none" class="donut__track" stroke-width="16"/>
+        {% if total > 0 %}
+        {% set ns = namespace(cum=0.0) %}
+        {% for s in segments if s.count > 0 %}
+        {% set frac = s.count / total %}
+        {% set seg_len = [frac * C - gap, 1.5] | max %}
+        <circle cx="60" cy="60" r="48" fill="none" stroke-width="16"
+                class="donut__seg donut__seg--{{ s.color }}"
+                stroke-dasharray="{{ seg_len | round(2) }} {{ (C - seg_len) | round(2) }}"
+                stroke-dashoffset="{{ (-1 * ns.cum) | round(2) }}"
+                transform="rotate(-90 60 60)">
+          <title>{{ s.label }}: {{ s.count }} ({{ (frac * 100) | round(1) }}%)</title>
+        </circle>
+        {% set ns.cum = ns.cum + frac * C %}
+        {% endfor %}
+        {% endif %}
+      </svg>
+      <div class="donut__center">
+        {% if total > 0 %}
+        <span class="donut__center-value">{{ ((segments[0].count / total) * 100) | round | int }}%</span>
+        <span class="donut__center-label">{{ segments[0].label }}</span>
+        {% else %}
+        <span class="donut__center-value">&mdash;</span>
+        <span class="donut__center-label">no data</span>
+        {% endif %}
+      </div>
+    </div>
+    <ul class="donut-legend">
+      {% for s in segments %}
+      <li class="donut-legend__item">
+        <span class="donut-legend__dot donut-legend__dot--{{ s.color }}"></span>
+        <span class="donut-legend__label">{{ s.label }}</span>
+        <span class="donut-legend__count">{{ s.count }}</span>
+        <span class="donut-legend__pct">{% if total > 0 %}{{ ((s.count / total) * 100) | round | int }}%{% else %}0%{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endmacro %}
