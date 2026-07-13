@@ -50,12 +50,12 @@ Note: This question does NOT affect Cloud Run resources. Cloud Run maps to Farga
 > C) Serverless — Event-driven functions, scale-to-zero, stateless
 > D) I don't know — recommend the best fit
 
-| Answer              | Recommendation Impact                                                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Managed platform    | Elastic Beanstalk — preserves PaaS model, AWS manages deployments/scaling/patching        |
-| Container control   | ECS Fargate — direct container management with full VPC/ALB/IAM integration               |
-| Serverless          | Lambda — event-driven, stateless functions with scale-to-zero                             |
-| I don't know        | Default: Elastic Beanstalk (PaaS-to-PaaS, closest match to App Engine)                   |
+| Answer            | Recommendation Impact                                                              |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| Managed platform  | Elastic Beanstalk — preserves PaaS model, AWS manages deployments/scaling/patching |
+| Container control | ECS Fargate — direct container management with full VPC/ALB/IAM integration        |
+| Serverless        | Lambda — event-driven, stateless functions with scale-to-zero                      |
+| I don't know      | Default: Elastic Beanstalk (PaaS-to-PaaS, closest match to App Engine)             |
 
 Interpret:
 

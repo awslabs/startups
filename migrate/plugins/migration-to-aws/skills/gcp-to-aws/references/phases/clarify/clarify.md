@@ -670,32 +670,32 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 
 ## Defaults Table
 
-| Question                | Default              | Constraint                                        |
-| ----------------------- | -------------------- | ------------------------------------------------- |
-| Q1 — Location           | A (single region)    | `target_region`: closest AWS region to GCP region |
-| Q2 — Compliance         | A (none)             | no constraint                                     |
-| Q3 — GCP spend          | B ($1K–$5K)          | `gcp_monthly_spend: "$1K-$5K"`                    |
-| Q4 — Funding stage      | _(skip in IDE mode)_ | no constraint                                     |
-| Q5 — Multi-cloud        | B (AWS-only)         | no constraint                                     |
-| Q6 — Uptime             | B (significant)      | `availability: "multi-az"`                        |
-| Q7 — Maintenance        | D (flexible)         | `cutover_strategy: "flexible"`                    |
-| Q7b — Compute model     | A (managed platform)  | `compute_model: "managed_platform"` (App Engine only; skipped if no App Engine) |
-| Q8 — K8s sentiment      | B (neutral)          | `kubernetes: "eks-or-ecs"`                        |
-| Q9 — WebSocket          | B (no)               | no constraint                                     |
-| Q10 — Cloud Run traffic | C (24/7)             | `cloud_run_traffic_pattern: "constant-24-7"`      |
-| Q11 — Cloud Run spend   | B ($100–$500)        | `cloud_run_monthly_spend: "$100-$500"`            |
-| Q12 — DB traffic        | A (steady)           | `database_traffic: "steady"`                      |
-| Q13 — DB I/O            | B (medium)           | `db_io_workload: "medium"`                        |
-| Q13b — DB size          | E (unknown)          | `db_size: "unknown"` → default to pgcopydb        |
-| Q14 — AI framework      | _(auto-detect)_      | `ai_framework` from code detection                |
-| Q15 — AI spend          | B ($500–$2K)         | `ai_monthly_spend: "$500-$2K"`                    |
-| Q16 — AI priority       | E (balanced)         | `ai_priority: "balanced"`                         |
-| Q17 — Critical feature  | J (none)             | no additional override                            |
-| Q18 — Volume + cost     | A (low + quality)    | `ai_token_volume: "low"`                          |
-| Q19 — Current model     | _(auto-detect)_      | `ai_model_baseline` from code detection           |
-| Q20 — Input types       | A (text only)        | no constraint                                     |
-| Q21 — AI latency        | B (important)        | `ai_latency: "important"`                         |
-| Q22 — Task complexity   | B (moderate)         | `ai_complexity: "moderate"`                       |
+| Question                | Default              | Constraint                                                                      |
+| ----------------------- | -------------------- | ------------------------------------------------------------------------------- |
+| Q1 — Location           | A (single region)    | `target_region`: closest AWS region to GCP region                               |
+| Q2 — Compliance         | A (none)             | no constraint                                                                   |
+| Q3 — GCP spend          | B ($1K–$5K)          | `gcp_monthly_spend: "$1K-$5K"`                                                  |
+| Q4 — Funding stage      | _(skip in IDE mode)_ | no constraint                                                                   |
+| Q5 — Multi-cloud        | B (AWS-only)         | no constraint                                                                   |
+| Q6 — Uptime             | B (significant)      | `availability: "multi-az"`                                                      |
+| Q7 — Maintenance        | D (flexible)         | `cutover_strategy: "flexible"`                                                  |
+| Q7b — Compute model     | A (managed platform) | `compute_model: "managed_platform"` (App Engine only; skipped if no App Engine) |
+| Q8 — K8s sentiment      | B (neutral)          | `kubernetes: "eks-or-ecs"`                                                      |
+| Q9 — WebSocket          | B (no)               | no constraint                                                                   |
+| Q10 — Cloud Run traffic | C (24/7)             | `cloud_run_traffic_pattern: "constant-24-7"`                                    |
+| Q11 — Cloud Run spend   | B ($100–$500)        | `cloud_run_monthly_spend: "$100-$500"`                                          |
+| Q12 — DB traffic        | A (steady)           | `database_traffic: "steady"`                                                    |
+| Q13 — DB I/O            | B (medium)           | `db_io_workload: "medium"`                                                      |
+| Q13b — DB size          | E (unknown)          | `db_size: "unknown"` → default to pgcopydb                                      |
+| Q14 — AI framework      | _(auto-detect)_      | `ai_framework` from code detection                                              |
+| Q15 — AI spend          | B ($500–$2K)         | `ai_monthly_spend: "$500-$2K"`                                                  |
+| Q16 — AI priority       | E (balanced)         | `ai_priority: "balanced"`                                                       |
+| Q17 — Critical feature  | J (none)             | no additional override                                                          |
+| Q18 — Volume + cost     | A (low + quality)    | `ai_token_volume: "low"`                                                        |
+| Q19 — Current model     | _(auto-detect)_      | `ai_model_baseline` from code detection                                         |
+| Q20 — Input types       | A (text only)        | no constraint                                                                   |
+| Q21 — AI latency        | B (important)        | `ai_latency: "important"`                                                       |
+| Q22 — Task complexity   | B (moderate)         | `ai_complexity: "moderate"`                                                     |
 
 ---
 

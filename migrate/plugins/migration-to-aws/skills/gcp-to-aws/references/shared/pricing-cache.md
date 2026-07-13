@@ -32,18 +32,18 @@ Linux/x86, on-demand.
 
 ### Elastic Beanstalk
 
-| Metric | Rate |
-| ------ | ---- |
+| Metric      | Rate                                              |
+| ----------- | ------------------------------------------------- |
 | Service fee | $0.00 (free — no additional charge for EB itself) |
 
 Costs are the underlying resources (EC2, ALB, EBS, CloudWatch). Typical estimates:
 
-| Profile | Underlying Resources | Estimated Monthly |
-| ------- | -------------------- | ----------------- |
-| Dev (single instance, t3.small, no ALB) | EC2 t3.small | ~$15 |
-| Dev + RDS (t3.small + db.t4g.micro) | EC2 + Aurora Serverless | ~$30–50 |
-| Prod (load-balanced, 2× t3.medium, ALB) | 2× EC2 + ALB + EBS | ~$95–120 |
-| Prod + RDS (2× t3.medium, ALB, db.t4g.medium) | EC2 + ALB + Aurora | ~$175–220 |
+| Profile                                       | Underlying Resources             | Estimated Monthly |
+| --------------------------------------------- | -------------------------------- | ----------------- |
+| Dev (single instance, t3.small, no ALB)       | EC2 t3.small                     | ~$15              |
+| Dev + RDS (t3.small + db.t4g.micro)           | EC2 + RDS db.t4g.micro           | ~$30–50           |
+| Prod (load-balanced, 2× t3.medium, ALB)       | 2× EC2 + ALB + EBS               | ~$95–120          |
+| Prod + RDS (2× t3.medium, ALB, db.t4g.medium) | 2× EC2 + ALB + RDS db.t4g.medium | ~$175–220         |
 
 ### EKS
 

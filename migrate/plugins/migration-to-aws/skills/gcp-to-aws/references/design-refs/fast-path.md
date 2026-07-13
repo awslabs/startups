@@ -36,22 +36,22 @@ JSON artifacts **must** keep the `confidence` string values above. When speaking
 
 ## Direct Mappings Table
 
-| GCP Service                                 | AWS Service          | Conditions | Notes                                                |
-| ------------------------------------------- | -------------------- | ---------- | ---------------------------------------------------- |
-| `google_storage_bucket`                     | S3                   | Always     | 1:1 mapping; preserve ACL/versioning/lifecycle rules |
-| `google_cloud_run_service`                  | Fargate              | Always     | Preferred container runtime target                   |
-| `google_cloud_run_v2_service`               | Fargate              | Always     | v2 API variant of Cloud Run                          |
-| `google_cloudfunctions_function`            | Lambda               | Always     | Gen 1 function mapping                               |
-| `google_cloudfunctions2_function`           | Lambda               | Always     | Gen 2 function mapping                               |
-| `google_sql_database_instance` (SQL Server) | RDS SQL Server       | Always     | Always provisioned (no serverless)                   |
-| `google_compute_network`                    | VPC                  | Always     | 1:1; preserve CIDR ranges                            |
-| `google_compute_firewall`                   | Security Group       | Always     | 1:1 rule mapping; adjust CIDR if needed              |
-| `google_dns_managed_zone`                   | Route 53 Hosted Zone | Always     | Preserve zone name and records                       |
-| `google_service_account`                    | IAM Role             | Always     | Map permissions directly; adjust service principals  |
-| `google_secret_manager_secret`              | Secrets Manager      | Always     | Create secret metadata and IAM-scoped access         |
-| `google_secret_manager_secret_version`      | Secrets Manager      | Always     | Carry current value or explicit migration TODO       |
-| `google_redis_instance`                     | ElastiCache Redis    | Always     | 1:1 mapping; preserve cluster mode and node type     |
-| `google_app_engine_application`             | Elastic Beanstalk     | `compute_model` absent or `"managed_platform"` | PaaS-to-PaaS; detect runtime from app.yaml. If `compute_model: "container_orchestration"` or `"serverless"`, use rubric in `compute.md` (confidence: `inferred`). |
+| GCP Service                                 | AWS Service          | Conditions                                     | Notes                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------- | -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `google_storage_bucket`                     | S3                   | Always                                         | 1:1 mapping; preserve ACL/versioning/lifecycle rules                                                                                                                                                                                                                                        |
+| `google_cloud_run_service`                  | Fargate              | Always                                         | Preferred container runtime target                                                                                                                                                                                                                                                          |
+| `google_cloud_run_v2_service`               | Fargate              | Always                                         | v2 API variant of Cloud Run                                                                                                                                                                                                                                                                 |
+| `google_cloudfunctions_function`            | Lambda               | Always                                         | Gen 1 function mapping                                                                                                                                                                                                                                                                      |
+| `google_cloudfunctions2_function`           | Lambda               | Always                                         | Gen 2 function mapping                                                                                                                                                                                                                                                                      |
+| `google_sql_database_instance` (SQL Server) | RDS SQL Server       | Always                                         | Always provisioned (no serverless)                                                                                                                                                                                                                                                          |
+| `google_compute_network`                    | VPC                  | Always                                         | 1:1; preserve CIDR ranges                                                                                                                                                                                                                                                                   |
+| `google_compute_firewall`                   | Security Group       | Always                                         | 1:1 rule mapping; adjust CIDR if needed                                                                                                                                                                                                                                                     |
+| `google_dns_managed_zone`                   | Route 53 Hosted Zone | Always                                         | Preserve zone name and records                                                                                                                                                                                                                                                              |
+| `google_service_account`                    | IAM Role             | Always                                         | Map permissions directly; adjust service principals                                                                                                                                                                                                                                         |
+| `google_secret_manager_secret`              | Secrets Manager      | Always                                         | Create secret metadata and IAM-scoped access                                                                                                                                                                                                                                                |
+| `google_secret_manager_secret_version`      | Secrets Manager      | Always                                         | Carry current value or explicit migration TODO                                                                                                                                                                                                                                              |
+| `google_redis_instance`                     | ElastiCache Redis    | Always                                         | 1:1 mapping; preserve cluster mode and node type                                                                                                                                                                                                                                            |
+| `google_app_engine_application`             | Elastic Beanstalk    | `compute_model` absent or `"managed_platform"` | PaaS-to-PaaS. One EB environment **per App Engine service**; read `runtime`/`instance_class`/scaling from the `*_app_version` resources (see `elastic-beanstalk.md`). If `compute_model: "container_orchestration"` or `"serverless"`, use rubric in `compute.md` (confidence: `inferred`). |
 
 ### Cloud SQL PostgreSQL / MySQL — NOT in Direct Mappings
 
@@ -80,18 +80,18 @@ These GCP resources do **not** require AWS equivalents in v1.0:
 | `google_compute_address`     | Elastic IPs managed by ALB/NAT (not standalone)                                       |
 | `google_identity_platform_*` | Auth provider — keep existing solution, do not migrate to AWS Cognito or any AWS auth |
 | `google_firebase_auth_*`     | Auth provider — keep existing solution, do not migrate to AWS Cognito or any AWS auth |
-| `google_app_engine_standard_app_version` | Configuration of parent `google_app_engine_application`; no separate AWS resource     |
-| `google_app_engine_flexible_app_version` | Configuration of parent `google_app_engine_application`; no separate AWS resource     |
+
+**Note — App Engine app_version resources are NOT skips.** `google_app_engine_standard_app_version` and `google_app_engine_flexible_app_version` are **config sources** for the App Engine → Elastic Beanstalk mapping, not skipped resources. They carry `runtime`, `instance_class`, `env_variables`, and scaling — exactly the data EB needs — which live on the _version_ resource, not on the parent `google_app_engine_application`. Map **one EB environment per App Engine service** (per app_version), so a multi-service app does not collapse into a single mapping. See `elastic-beanstalk.md` → "Where the config comes from (Terraform)".
 
 ## Preferred AWS Target Services
 
 For the workload categories below, always steer toward the **preferred** AWS service. If rubric evaluation or LLM reasoning would select a non-preferred service, substitute the preferred alternative instead.
 
-| Workload Category       | Preferred AWS Target                                         | Rationale                                                                                  |
-| ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Containerized workloads | Fargate (default), Lambda (event-driven), EKS (K8s required) | Deeper integration with VPC, ALB, IAM, and auto-scaling than lighter-weight alternatives   |
-| PaaS / managed platform | Elastic Beanstalk (when `compute_model: "managed_platform"` or App Engine source) | Preserves managed platform model; AWS manages deployments, scaling, patching, monitoring |
-| Third-party auth in use | Keep existing auth provider                                  | Startups using Auth0, Firebase Auth, Clerk, etc. should preserve their existing investment |
+| Workload Category       | Preferred AWS Target                                                              | Rationale                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Containerized workloads | Fargate (default), Lambda (event-driven), EKS (K8s required)                      | Deeper integration with VPC, ALB, IAM, and auto-scaling than lighter-weight alternatives   |
+| PaaS / managed platform | Elastic Beanstalk (when `compute_model: "managed_platform"` or App Engine source) | Preserves managed platform model; AWS manages deployments, scaling, patching, monitoring   |
+| Third-party auth in use | Keep existing auth provider                                                       | Startups using Auth0, Firebase Auth, Clerk, etc. should preserve their existing investment |
 
 **Enforcement:** Check every resource mapping against this table before writing to `aws-design.json` or `aws-design-billing.json`. If a mapping would select a non-preferred service, substitute the preferred alternative.
 

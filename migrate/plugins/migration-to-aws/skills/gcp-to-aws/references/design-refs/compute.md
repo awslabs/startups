@@ -11,14 +11,14 @@
 
 ## Eliminators (Hard Blockers)
 
-| GCP Service     | AWS        | Blocker                                                                                                                                                        |
-| --------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloud Run       | Lambda     | Execution time >15 min → use Fargate                                                                                                                           |
-| Cloud Run       | Fargate    | GPU workload or >16 vCPU or >120 GB memory → use EC2                                                                                                           |
-| Cloud Functions | Lambda     | Python version not supported (e.g., Python 2.7) → use custom runtime on Fargate                                                                                |
-| GKE             | EKS        | Custom CRI incompatible → manual workaround or ECS                                                                                                             |
-| Any             | App Runner | **Closed to new customers (April 30 2026).** Do not target App Runner for new migrations. Use Fargate (default), Lambda (event-driven), or EKS (K8s required). |
-| App Engine      | Elastic Beanstalk | `compute_model: "container_orchestration"` or `"serverless"` in preferences → do not use EB, fall through to Fargate or Lambda |
+| GCP Service     | AWS               | Blocker                                                                                                                                                        |
+| --------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloud Run       | Lambda            | Execution time >15 min → use Fargate                                                                                                                           |
+| Cloud Run       | Fargate           | GPU workload or >16 vCPU or >120 GB memory → use EC2                                                                                                           |
+| Cloud Functions | Lambda            | Python version not supported (e.g., Python 2.7) → use custom runtime on Fargate                                                                                |
+| GKE             | EKS               | Custom CRI incompatible → manual workaround or ECS                                                                                                             |
+| Any             | App Runner        | **Closed to new customers (April 30 2026).** Do not target App Runner for new migrations. Use Fargate (default), Lambda (event-driven), or EKS (K8s required). |
+| App Engine      | Elastic Beanstalk | `compute_model: "container_orchestration"` or `"serverless"` in preferences → do not use EB, fall through to Fargate or Lambda                                 |
 
 ## Signals (Decision Criteria)
 
@@ -115,15 +115,16 @@ Apply in order; first match wins:
 
 ### Example 4a: App Engine (standard Python web app, default preference)
 
-- GCP: `google_app_engine_application` (runtime=python39, instance_class=F2)
+- GCP: `google_app_engine_standard_app_version` (service=default, runtime=python39, instance_class=F2) under `google_app_engine_application`
+- Note: `runtime`/`instance_class` come from the `*_app_version` resource, not the parent `google_app_engine_application`. Map one EB environment per App Engine service.
 - Signals: PaaS deployment, `compute_model` absent or `"managed_platform"`
 - Fast-path condition met: `compute_model` not set to `"container_orchestration"` or `"serverless"`
-- → **AWS: Elastic Beanstalk (Python 3.9, LoadBalanced, t3.small)**
+- → **AWS: Elastic Beanstalk (Python 3.9, LoadBalanced, t3.medium)** — LoadBalanced uses t3.medium+ per `elastic-beanstalk.md` Sizing Defaults
 - Confidence: `deterministic` (App Engine → EB direct mapping, condition met)
 
 ### Example 4b: App Engine (user chose container orchestration)
 
-- GCP: `google_app_engine_application` (runtime=python39, instance_class=F2)
+- GCP: `google_app_engine_standard_app_version` (service=default, runtime=python39, instance_class=F2) under `google_app_engine_application`
 - Signals: PaaS deployment, but `compute_model: "container_orchestration"` in preferences
 - Fast-path condition NOT met: falls through to rubric
 - Criterion 1 (Eliminators): EB blocked (user chose container orchestration)
