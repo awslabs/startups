@@ -14,6 +14,12 @@ jobs:
       actions: read
       contents: read
     runs-on: ubuntu-latest
+    env:
+      # mise >= 2026.6 defaults minimum_release_age to 24h (supply-chain
+      # guard). Its pipx backend forwards pip's --uploaded-prior-to flag into
+      # the shared-library bootstrap, which the bootstrap pip rejects, breaking
+      # all pipx tool installs. Disable the delay to restore working builds.
+      MISE_MINIMUM_RELEASE_AGE: "0s"
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
