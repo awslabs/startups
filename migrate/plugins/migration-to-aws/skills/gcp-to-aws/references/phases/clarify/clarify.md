@@ -525,7 +525,9 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 
 ## Step 5: Assemble and Write preferences.json
 
-Assemble all resolved values — sheet confirmations, corrections, essential answers, and defaults — into the final `$MIGRATION_DIR/preferences.json`. If `preferences-draft.json` exists, use it as the base — merge in the final answers, remove the draft-specific metadata fields (`draft`, `wizard_stage`, `batches_completed`, `batches_remaining`), and set `metadata.timestamp` to the current time. Write `$MIGRATION_DIR/preferences.json`:
+Assemble all resolved values — sheet confirmations, corrections, essential answers, and defaults — into the final `$MIGRATION_DIR/preferences.json`. **Every constraint object MUST include `prompt` and `design_consequence`** per `references/shared/schema-preferences.md` (use the constraint catalog when the user did not see the verbatim question).
+
+If `preferences-draft.json` exists, use it as the base — merge in the final answers, remove the draft-specific metadata fields (`draft`, `wizard_stage`, `batches_completed`, `batches_remaining`), and set `metadata.timestamp` to the current time. Write `$MIGRATION_DIR/preferences.json`:
 
 ```json
 {
@@ -546,67 +548,159 @@ Assemble all resolved values — sheet confirmations, corrections, essential ans
     "target_region": {
       "value": "us-east-1",
       "chosen_by": "extracted",
-      "source": "inventory:region=us-east1"
+      "source": "inventory:region=us-east1",
+      "prompt": "Detected: GCP region us-east1",
+      "design_consequence": "All resources deploy in us-east-1; Bedrock model availability checked for this region",
+      "question_id": "Q1"
     },
-    "compliance": { "value": ["hipaa"], "chosen_by": "user" },
+    "compliance": {
+      "value": ["hipaa"],
+      "chosen_by": "user",
+      "prompt": "Do you have any compliance or regulatory requirements?",
+      "design_consequence": "HIPAA drives BAA-eligible services, encryption mandatory, and us-east-1/us-west-2 region preference",
+      "question_id": "Q2"
+    },
     "gcp_monthly_spend": {
       "value": "$5K-$20K",
       "chosen_by": "extracted",
-      "source": "billing:monthly_total=$8200"
+      "source": "billing:monthly_total=$8200",
+      "prompt": "Detected: GCP monthly spend from billing-profile.json",
+      "design_consequence": "$5K-$20K band sets dev-tier sizing baseline and credits eligibility context",
+      "question_id": "Q3"
     },
     "availability": {
       "value": "multi-az",
       "chosen_by": "extracted",
-      "source": "terraform:availability_type=REGIONAL"
+      "source": "terraform:availability_type=REGIONAL",
+      "prompt": "Detected: Cloud SQL REGIONAL → multi-AZ availability",
+      "design_consequence": "multi-az drives RDS Multi-AZ or Aurora selection",
+      "question_id": "Q6"
     },
-    "cutover_strategy": { "value": "maintenance-window-weekly", "chosen_by": "user" },
-    "kubernetes": { "value": "ecs-fargate", "chosen_by": "default", "source": "default:Q8" },
+    "cutover_strategy": {
+      "value": "maintenance-window-weekly",
+      "chosen_by": "user",
+      "prompt": "When can you accept downtime for cutover?",
+      "design_consequence": "Weekly maintenance window sets phased cutover timing in the migration plan",
+      "question_id": "Q7"
+    },
+    "kubernetes": {
+      "value": "ecs-fargate",
+      "chosen_by": "default",
+      "source": "default:Q8",
+      "prompt": "How do you feel about Kubernetes? (default applied)",
+      "design_consequence": "Assuming Fargate → no Kubernetes to operate",
+      "question_id": "Q8"
+    },
     "database_traffic": {
       "value": "steady",
       "chosen_by": "extracted",
-      "source": "inventory:db_tier=db-f1-micro"
+      "source": "inventory:db_tier=db-f1-micro",
+      "prompt": "Detected: dev-tier Cloud SQL instance → steady traffic",
+      "design_consequence": "Assuming steady traffic → size from current config, no read replicas",
+      "question_id": "Q12"
     },
     "db_io_workload": {
       "value": "low",
       "chosen_by": "extracted",
-      "source": "inventory:db_tier=db-f1-micro"
+      "source": "inventory:db_tier=db-f1-micro",
+      "prompt": "Detected: dev-tier Cloud SQL instance → low I/O",
+      "design_consequence": "Assuming low I/O → gp3 storage",
+      "question_id": "Q13"
     },
     "db_size": {
       "value": "10-100GB",
       "chosen_by": "extracted",
-      "source": "inventory:disk_size_gb=10"
+      "source": "inventory:disk_size_gb=10",
+      "prompt": "Detected: Cloud SQL disk_size=10GB",
+      "design_consequence": "10-100GB → pgcopydb migration tooling",
+      "question_id": "Q13b"
     }
   },
   "ai_constraints": {
     "ai_framework": {
       "value": ["direct"],
       "chosen_by": "extracted",
-      "source": "ai-profile:integration.pattern=direct_sdk"
+      "source": "ai-profile:integration.pattern=direct_sdk",
+      "prompt": "Detected: direct SDK integration from ai-workload-profile.json",
+      "design_consequence": "Direct SDK pattern → Converse API adapter with feature-flag cutover",
+      "question_id": "Q14"
     },
-    "ai_monthly_spend": { "value": "$500-$2K", "chosen_by": "user" },
-    "ai_priority": { "value": "balanced", "chosen_by": "default", "source": "default:Q16" },
-    "ai_critical_feature": { "value": "none", "chosen_by": "default", "source": "default:Q17" },
-    "ai_token_volume": { "value": "low", "chosen_by": "default", "source": "default:Q18" },
+    "ai_monthly_spend": {
+      "value": "$500-$2K",
+      "chosen_by": "user",
+      "prompt": "Approximately how much do you spend on AI/ML per month?",
+      "design_consequence": "$500-$2K band sets token volume and model tier assumptions",
+      "question_id": "Q15"
+    },
+    "ai_priority": {
+      "value": "balanced",
+      "chosen_by": "default",
+      "source": "default:Q16",
+      "prompt": "What matters most for your AI workloads? (default applied)",
+      "design_consequence": "Assuming balanced priority → Sonnet-class default model",
+      "question_id": "Q16"
+    },
+    "ai_critical_feature": {
+      "value": "none",
+      "chosen_by": "default",
+      "source": "default:Q17",
+      "prompt": "Which AI capability is most critical? (default applied)",
+      "design_consequence": "No specialized feature → Q16 priority decides the model",
+      "question_id": "Q17"
+    },
+    "ai_token_volume": {
+      "value": "low",
+      "chosen_by": "default",
+      "source": "default:Q18",
+      "prompt": "What is your token volume and cost sensitivity? (default applied)",
+      "design_consequence": "Assuming low volume → on-demand pricing, no provisioned throughput analysis",
+      "question_id": "Q18"
+    },
     "ai_model_baseline": {
       "value": "gemini-2.5-flash",
       "chosen_by": "extracted",
-      "source": "ai-profile:models[0].model_id"
+      "source": "ai-profile:models[0].model_id",
+      "prompt": "Detected: primary production model from ai-workload-profile.json",
+      "design_consequence": "Baseline model drives the Bedrock mapping and cost comparison",
+      "question_id": "Q19"
     },
     "ai_vision": {
       "value": "text-only",
       "chosen_by": "extracted",
-      "source": "ai-profile:capabilities_summary.vision=false"
+      "source": "ai-profile:capabilities_summary.vision=false",
+      "prompt": "Detected: capabilities_summary shows no vision usage",
+      "design_consequence": "Assuming text-only → full model catalog",
+      "question_id": "Q20"
     },
-    "ai_latency": { "value": "important", "chosen_by": "default", "source": "default:Q21" },
-    "ai_complexity": { "value": "moderate", "chosen_by": "default", "source": "default:Q22" },
+    "ai_latency": {
+      "value": "important",
+      "chosen_by": "default",
+      "source": "default:Q21",
+      "prompt": "How important is AI response latency? (default applied)",
+      "design_consequence": "Assuming <2s latency → Sonnet-class + streaming",
+      "question_id": "Q21"
+    },
+    "ai_complexity": {
+      "value": "moderate",
+      "chosen_by": "default",
+      "source": "default:Q22",
+      "prompt": "How complex are your AI tasks? (default applied)",
+      "design_consequence": "Assuming moderate complexity → Sonnet-class model",
+      "question_id": "Q22"
+    },
     "startup_program_status": {
       "value": "unknown",
       "chosen_by": "default",
-      "source": "default:Q27"
+      "source": "default:Q27",
+      "prompt": "Are you eligible for AWS startup programs? (default applied)",
+      "design_consequence": "Unknown credit status → report includes both Activate tiers",
+      "question_id": "Q27"
     },
     "ai_capabilities_required": {
       "value": ["text_generation", "streaming"],
-      "chosen_by": "derived"
+      "chosen_by": "derived",
+      "prompt": "Derived from detected capabilities and your answers",
+      "design_consequence": "Required capabilities union enforced in Bedrock model mapping and validation checklist"
     }
   }
 }
@@ -614,20 +708,24 @@ Assemble all resolved values — sheet confirmations, corrections, essential ans
 
 ### Schema Rules
 
-1. Every entry in `design_constraints` and `ai_constraints` is an object with `value` and `chosen_by` fields.
-2. `chosen_by` values: `"user"` (explicitly answered or corrected on the sheet), `"default"` (documented default applied — includes sheet-confirmed defaults and "I don't know" answers), `"extracted"` (inferred from inventory), `"derived"` (computed from combination of answers + detected capabilities).
-3. Only write a key to `design_constraints` / `ai_constraints` if the answer produces a constraint. Absent keys mean "no constraint — Design decides."
-4. Do not write null values.
-5. For billing-source inventories, `metadata.inventory_clarifications` records Category B answers.
-6. `metadata.questions_skipped_early_exit` records questions skipped due to early-exit logic (e.g., Q8 skipped because Q5=multi-cloud).
-7. `metadata.questions_skipped_extracted` records questions resolved because inventory already provided the answer.
-8. `metadata.questions_defaulted` records questions resolved by documented default — whether sheet-confirmed (wizard) or skipped (full flow / "use defaults").
-9. **`source` field on constraints:** Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` MUST include a `source` field. Extracted: raw provenance signal (prefix `terraform:`, `billing:`, `code:`, `inventory:`, or artifact filename). Default: `"default:<Qid>"`. Omit `source` for `"user"` and `"derived"`. Report generation uses `source` prefixed `default:` to flag unverified assumptions.
-10. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory or their firing condition wasn't met.
-11. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
-12. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
-13. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"`.
-14. `metadata.clarify_mode` is one of `"wizard"`, `"full"`, `"fast_path"`, `"simple_hybrid"`.
+Full schema and constraint catalog: `references/shared/schema-preferences.md`.
+
+1. Every entry in `design_constraints`, `ai_constraints`, and `startup_constraints` (when present) is an object with **`value`**, **`chosen_by`**, **`prompt`**, and **`design_consequence`** fields. Optional **`question_id`** when mapped to the Q1–Q27 catalog. Optional **`source`** when `chosen_by` is `"extracted"` or `"default"`.
+2. **`prompt`:** verbatim question from the category file when `chosen_by` is `"user"`; detection label when `"extracted"`; question + `" (default applied)"` when `"default"`; derivation label when `"derived"`.
+3. **`design_consequence`:** one sentence from the category file's Recommendation Impact for the selected answer, or the catalog template in `schema-preferences.md` with `[value]` substituted.
+4. `chosen_by` values: `"user"` (explicitly answered or corrected on the sheet), `"default"` (documented default applied — includes sheet-confirmed defaults and "I don't know" answers), `"extracted"` (inferred from inventory), `"derived"` (computed from combination of answers + detected capabilities).
+5. **`source` field on constraints:** Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` MUST include a `source` field. Extracted: raw provenance signal (prefix `terraform:`, `billing:`, `code:`, `inventory:`, `ai-profile:`, or artifact filename). Default: `"default:<Qid>"`. Omit `source` for `"user"` and `"derived"`. Report generation uses `source` prefixed `default:` to flag unverified assumptions.
+6. Only write a key to `design_constraints` / `ai_constraints` if the answer produces a constraint. Absent keys mean "no constraint — Design decides."
+7. Do not write null values. Do not omit `prompt` or `design_consequence` on any written constraint.
+8. For billing-source inventories, `metadata.inventory_clarifications` records Category B answers.
+9. `metadata.questions_skipped_early_exit` records questions skipped due to early-exit logic (e.g., Q8 skipped because Q5=multi-cloud).
+10. `metadata.questions_skipped_extracted` records questions resolved because inventory already provided the answer.
+11. `metadata.questions_defaulted` records questions resolved by documented default — whether sheet-confirmed (wizard) or skipped (full flow / "use defaults").
+12. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory or their firing condition wasn't met.
+13. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
+14. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
+15. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"` with `source`.
+16. `metadata.clarify_mode` is one of `"wizard"`, `"full"`, `"fast_path"`, `"simple_hybrid"`.
 
 After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` if it exists.
 
