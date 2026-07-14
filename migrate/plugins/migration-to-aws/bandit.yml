@@ -1,0 +1,21 @@
+# Bandit configuration scoped to this plugin only.
+# Loaded explicitly in .github/workflows/security-scanners.yml via `bandit -c`,
+# so these skips apply only when scanning files under this plugin directory.
+# Python anywhere else in the repo is scanned separately with no skips.
+#
+# Why each rule is skipped:
+#   B101 - pytest uses the assert statement as its assertion mechanism; the
+#          only Python here is the migration-report validator plus its pytest
+#          suite, never production guard logic.
+#   B105 - flags string literals beginning with the four-letter prefix p-a-s-s
+#          (e.g. test fixture names like MINIMAL_PASS, or report copy like
+#          "pass rate: ..."). Real secret scanning is done by the gitleaks
+#          job in CI.
+#
+# B404/B603 (subprocess import + call without shell=True) are NOT skipped here
+# — that pattern is the secure invocation form, and future subprocess usage in
+# this plugin should still be reviewed. The one existing use in the test suite
+# is marked with an inline `# nosec` comment instead.
+skips:
+  - B101
+  - B105

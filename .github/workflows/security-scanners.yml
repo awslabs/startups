@@ -68,25 +68,30 @@ jobs:
           python-version: '3.x'
       - name: Run bandit
         id: bandit
-        # Two-pass scan so per-plugin skips don't leak elsewhere in the repo.
+        # Multi-pass scan so per-plugin skips don't leak elsewhere in the repo.
         # Pass 1: ai-to-aws scripts with the plugin's own config (B101/B105 skipped — see bandit.yml).
-        # Pass 2: everything else with no skips, so future Python anywhere gets full bandit strictness.
-        # The two SARIF outputs are merged into one for upload.
+        # Pass 2: migration-to-aws scripts/tests with the plugin's own config (B101/B105 skipped — see bandit.yml).
+        # Pass 3: everything else with no skips, so future Python anywhere gets full bandit strictness.
+        # The SARIF outputs are merged into one for upload.
         run: |
           pip install "bandit[sarif]==1.9.3"
           PLUGIN_DIR=migrate/plugins/ai-to-aws
           PLUGIN_CFG=$PLUGIN_DIR/bandit.yml
+          PLUGIN2_DIR=migrate/plugins/migration-to-aws
+          PLUGIN2_CFG=$PLUGIN2_DIR/bandit.yml
           set +e
           bandit -r "$PLUGIN_DIR" -c "$PLUGIN_CFG" -f sarif -o bandit-plugin.sarif
           PLUGIN_EXIT=$?
-          bandit -r . --exclude "./$PLUGIN_DIR" -f sarif -o bandit-other.sarif
+          bandit -r "$PLUGIN2_DIR" -c "$PLUGIN2_CFG" -f sarif -o bandit-plugin2.sarif
+          PLUGIN2_EXIT=$?
+          bandit -r . --exclude "./$PLUGIN_DIR,./$PLUGIN2_DIR" -f sarif -o bandit-other.sarif
           OTHER_EXIT=$?
           set -e
-          # Merge: keep pass-1 envelope, concatenate results from pass-2.
-          jq -s '.[0] as $p | .[1] as $o | $p | .runs[0].results += $o.runs[0].results' \
-            bandit-plugin.sarif bandit-other.sarif > bandit-report.sarif
-          # Surface non-zero from either pass.
-          if [ "$PLUGIN_EXIT" -ne 0 ] || [ "$OTHER_EXIT" -ne 0 ]; then
+          # Merge: keep pass-1 envelope, concatenate results from pass-2 and pass-3.
+          jq -s '.[0] as $p | .[1] as $p2 | .[2] as $o | $p | .runs[0].results += $p2.runs[0].results + $o.runs[0].results' \
+            bandit-plugin.sarif bandit-plugin2.sarif bandit-other.sarif > bandit-report.sarif
+          # Surface non-zero from any pass.
+          if [ "$PLUGIN_EXIT" -ne 0 ] || [ "$PLUGIN2_EXIT" -ne 0 ] || [ "$OTHER_EXIT" -ne 0 ]; then
             BANDIT_EXIT=1
           else
             BANDIT_EXIT=0
