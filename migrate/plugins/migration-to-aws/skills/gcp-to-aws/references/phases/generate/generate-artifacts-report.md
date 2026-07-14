@@ -58,10 +58,10 @@ Gather data from all available artifacts. Each section below notes which artifac
 | AI capabilities and integration         | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile`                                                                               | —                                                    |
 | Deferred services                       | Design artifact `resources[].aws_service == "Deferred — specialist engagement"`                                                                         | —                                                    |
 | Observability cost callout              | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`) | —                                                    |
-| **Combined TCO (infra + AI)**           | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`)       | —                                                    |
+| **Combined TCO (infra + AI)**           | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`)         | —                                                    |
 | **Security baseline component costs**   | `estimation-infra.json` → `projected_costs.breakdown.security_baseline.components` (GuardDuty, cloudtrail_s3, etc.)                                     | Static ranges in Appendix G when JSON absent         |
 | **Engineering effort**                  | `generation-infra.json` + `generation-ai.json` → `recommendation.estimated_total_effort_hours`                                                          | —                                                    |
-| **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                   | —                                                    |
+| **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                 | —                                                    |
 | **Pricing confidence / staleness**      | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                       | `estimation-ai.json` accuracy fields                 |
 | **AI optimization opportunities**       | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                             | —                                                    |
 
@@ -114,11 +114,11 @@ Source: estimation artifact `recommendation`, `migration-preview.json`, design a
 
 Combined monthly and annual view **excluding** deferred services (e.g. BigQuery):
 
-| Row | GCP | AWS Balanced | Notes |
-| --- | --- | --- | --- |
-| Infrastructure | `current_costs.gcp_monthly` | `projected_costs.aws_monthly_balanced` | From infra estimate |
-| AI / ML | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate |
-| **Total** | sum | sum | Show monthly Δ and % change |
+| Row            | GCP                                                      | AWS Balanced                                | Notes                       |
+| -------------- | -------------------------------------------------------- | ------------------------------------------- | --------------------------- |
+| Infrastructure | `current_costs.gcp_monthly`                              | `projected_costs.aws_monthly_balanced`      | From infra estimate         |
+| AI / ML        | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate            |
+| **Total**      | sum                                                      | sum                                         | Show monthly Δ and % change |
 
 If `estimation-ai.json` → `optimized_projection` exists, footnote the optimized AI path separately.
 
@@ -378,14 +378,24 @@ Do not list files that were not generated.
 
 Key decisions that shaped this migration plan. Read every object in `design_constraints`, `ai_constraints`, and `startup_constraints` (when present). Schema: `references/shared/schema-preferences.md`.
 
-Render an HTML table with **four columns**:
+Render an HTML table with **five columns**, one row per constraint object (iterate every key in `design_constraints`, `ai_constraints`, and `startup_constraints` when present — do not hardcode a subset):
 
-| Column | Source |
-| ------ | ------ |
-| **Question / assumption** | `prompt` on each constraint object |
-| **Your choice** | formatted `value` (human-readable; expand arrays) |
-| **Source** | `chosen_by` → "User answer", "Extracted from infrastructure", "Default applied", or "Derived" |
-| **Design consequence** | `design_consequence` on each constraint object |
+| Column                    | Source                                                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Question / assumption** | `prompt` on each constraint object                                                                                                              |
+| **Your choice**           | formatted `value` (human-readable; expand arrays)                                                                                               |
+| **Source**                | `chosen_by` → "User answer", "Extracted from infrastructure", "Default applied", or "Derived"                                                   |
+| **Source signal**         | the `source` field when present (shows provenance like `terraform:availability_type=ZONAL` or `default:Q16`); leave blank for user/derived rows |
+| **Design consequence**    | `design_consequence` on each constraint object                                                                                                  |
+
+**Assumption flag:** Rows where `source` starts with `"default:"` are unverified assumptions — render in a visually distinct style (e.g., lighter text or italic) so the reader can spot which values were not explicitly verified from infrastructure.
+
+**Critical-default caveats (required when present):** If any of the following constraints have `chosen_by: "default"` AND the corresponding question ID appears in `metadata.questions_defaulted`:
+
+- `compliance` (Q2): render a warning callout: _"⚠️ Compliance was not explicitly confirmed. The security baseline assumes no regulatory requirements. If SOC 2, PCI, HIPAA, or FedRAMP applies, re-run Clarify or manually add controls."_
+- `gcp_monthly_spend` (Q3): render a warning callout: _"⚠️ GCP spend was not confirmed by the user. Cost comparison uses the default band ($1K–$5K). Actual spend may differ — verify against your GCP billing console."_
+
+Place these callouts at the top of Appendix F, before the table, so they're immediately visible.
 
 **Sort order:** user-answered rows first, then extracted, then default, then derived.
 
@@ -609,7 +619,7 @@ The inline CSS must include:
 
 These move from "example in the fixture" to enforced gate. See `references/shared/validate-migration-report.md` and `fixtures/migration-report-reference.html`.
 
-1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Total Cost of Ownership"), never `Section N — …`. The "Section N" labels used elsewhere in *this spec* are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading. **Genuine sequences keep their numbers.** This ban targets *decorative* heading labels only. Real sequences — the migration cluster order, phased timeline weeks, migration phases, and rollback steps — MUST stay ordered (`<ol>` or a numbered table column) because the order carries information the reader needs. Do not flatten them to bullets to satisfy this rule.
+1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Total Cost of Ownership"), never `Section N — …`. The "Section N" labels used elsewhere in _this spec_ are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading. **Genuine sequences keep their numbers.** This ban targets _decorative_ heading labels only. Real sequences — the migration cluster order, phased timeline weeks, migration phases, and rollback steps — MUST stay ordered (`<ol>` or a numbered table column) because the order carries information the reader needs. Do not flatten them to bullets to satisfy this rule.
 2. **No internal scoring trace.** Per-cluster mapping rationale goes in a collapsible `<details class="why">` ("Why this mapping?") block — never a bare `Rubric:` line. The validator fails on a literal `Rubric:` in the body.
 3. **Security teaser up top, full detail in the appendix.** `exec-security-teaser` carries a 2–3 line summary that links down to `appendix-security` (full control table) and `appendix-security-gap`. Do not render the full control table in the executive flow.
 4. **Expand acronyms** on first use and include a glossary (TCO, DMS, OAI, RTO, CUD, SCC, IMDSv2, P95, RAG) in the assumptions section — the audience is startup founders, not AWS specialists.
