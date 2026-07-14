@@ -18,13 +18,15 @@ _contributes:
 
 ## Step 0: Detect Data Store Presence
 
-Scan `aws-design.json`.services[] to determine which data store types exist in the design:
+Scan `aws-design.json`.services[] to determine which compute and data store types exist in the design:
 
-| Check            | Condition                                                                             | Flag                  |
-| ---------------- | ------------------------------------------------------------------------------------- | --------------------- |
-| Postgres present | Any service with `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"` | `has_postgres = true` |
-| Redis present    | Any service with `aws_service == "ElastiCache Redis"`                                 | `has_redis = true`    |
-| Kafka present    | Any service with `aws_service == "Amazon MSK"`                                        | `has_kafka = true`    |
+| Check             | Condition                                                                             | Flag                   |
+| ----------------- | ------------------------------------------------------------------------------------- | ---------------------- |
+| Beanstalk present | Any service with `aws_service == "Elastic Beanstalk"`                                 | `has_beanstalk = true` |
+| Fargate present   | Any service with `aws_service == "Fargate"` or `aws_service == "ALB"`                 | `has_fargate = true`   |
+| Postgres present  | Any service with `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"` | `has_postgres = true`  |
+| Redis present     | Any service with `aws_service == "ElastiCache Redis"`                                 | `has_redis = true`     |
+| Kafka present     | Any service with `aws_service == "Amazon MSK"`                                        | `has_kafka = true`     |
 
 Also extract:
 
@@ -104,15 +106,21 @@ Before beginning the migration, ensure the following are in place:
 
 ### Application Preparation
 
+{{IF has_beanstalk}}
+
+- [ ] Source bundle contains a Dockerfile at the repository root for Elastic Beanstalk Docker deployment
+      {{ENDIF}}
+      {{IF has_fargate}}
 - [ ] Application Docker image built and pushed to ECR (or container registry)
+      {{ENDIF}}
 - [ ] Environment variables documented and mapped to AWS Secrets Manager / Parameter Store
-- [ ] Health check endpoints identified for each service
+- [ ] Health check endpoints identified for each web service
 
 {{IF containerization_status == "buildpack_only" OR containerization_status == "partial"}}
 
 ### Containerization Prerequisites
 
-Your application currently uses Heroku buildpacks and does not have a Dockerfile. You'll need to create one for Fargate deployment.
+Your application currently uses Heroku buildpacks and does not have a Dockerfile. You'll need to create one for AWS compute deployment.
 
 **Common Procfile → Dockerfile patterns:**
 
@@ -486,6 +494,61 @@ kafka-consumer-groups.sh --bootstrap-server {{TARGET_MSK_BROKERS}} \
 
 ## Phase 3: Application Deployment
 
+{{IF has_beanstalk}}
+
+### Deploy to Elastic Beanstalk
+
+The generated EB path deploys a source bundle containing your Dockerfile. GitHub Actions is the default deploy mechanism; CodePipeline is available only when selected during Clarify.
+
+{{IF eb_deploy_method == "github_actions"}}
+
+### GitHub Actions Deploy (Default)
+
+The generated `.github/workflows/deploy-eb.yml` workflow uses GitHub OIDC role assumption, packages the source bundle, creates an Elastic Beanstalk application version, and updates each generated EB environment.
+
+Before first run, create or provide a GitHub OIDC IAM role with permissions to call `elasticbeanstalk create-storage-location`, `elasticbeanstalk create-application-version`, `elasticbeanstalk update-environment`, and upload the source bundle to the EB storage bucket. Store the role ARN as the repository secret `AWS_ROLE_ARN`.
+
+{{ENDIF}}
+{{IF eb_deploy_method == "codepipeline"}}
+
+### CodePipeline Deploy
+
+The generated `terraform/pipeline.tf` creates an AWS-managed CodePipeline path from GitHub to Elastic Beanstalk. Complete the one-time GitHub connection authorization in the AWS console before expecting push-triggered deployments to run.
+
+{{ENDIF}}
+{{IF eb_deploy_method == "manual"}}
+
+### Manual EB CLI Deploy
+
+No automated deploy artifact was generated. Package and deploy manually:
+
+```bash
+VERSION_LABEL="v$(date +%Y%m%d%H%M%S)"
+BUCKET="$(aws elasticbeanstalk create-storage-location --query S3Bucket --output text --region {{target_region}})"
+zip -r app.zip . -x '.git/*' 'node_modules/*'
+aws s3 cp app.zip "s3://${BUCKET}/{{app_name}}/${VERSION_LABEL}.zip" --region {{target_region}}
+aws elasticbeanstalk create-application-version \
+  --application-name {{app_name}} \
+  --version-label "${VERSION_LABEL}" \
+  --source-bundle "S3Bucket=${BUCKET},S3Key={{app_name}}/${VERSION_LABEL}.zip" \
+  --region {{target_region}}
+for ENVIRONMENT in {{EB_ENVIRONMENT_NAMES}}; do
+  aws elasticbeanstalk update-environment \
+    --environment-name "${ENVIRONMENT}" \
+    --version-label "${VERSION_LABEL}" \
+    --region {{target_region}}
+done
+```
+
+{{ENDIF}}
+
+### EB Config Var Migration
+
+Export all Heroku config vars and import sensitive values to AWS Secrets Manager or SSM Parameter Store. Reference secrets in EB via the `environmentsecrets` namespace configured in `beanstalk.tf`; set non-sensitive config directly as EB environment properties.
+
+{{ENDIF}}
+{{IF has_fargate}}
+
 ### Build and Push Container Image
 
 ```bash
@@ -512,64 +575,29 @@ aws ecs update-service \
   --region {{target_region}}
 ```
 
-### Update Environment Variables
+### Fargate Config Var Migration
 
-Ensure all environment variables from Heroku config vars are set in AWS:
+Export all Heroku config vars and import to AWS Secrets Manager / Parameter Store, then reference them in your ECS task definition.
 
-- Secrets → AWS Secrets Manager
-- Non-sensitive config → ECS task definition environment or Parameter Store
+### ECS Express Mode (Forward-Look)
 
-### Config Var Migration
+This generated path uses standard ECS/Fargate Terraform. If an ECS Express Mode path becomes available in this skill, treat it as an optional simplification for the Fargate override path, not as a replacement for the Elastic Beanstalk default without explicit user choice.
 
-Export all Heroku config vars and import to AWS:
-
-```bash
-# Export all config vars as JSON
-heroku config --json -a {{app_name}} > heroku-config-vars.json
-
-# Import to AWS Secrets Manager (for sensitive values)
-# For each secret:
-aws secretsmanager create-secret \
-  --name "{{app_name}}/DATABASE_URL" \
-  --secret-string "<value>" \
-  --region {{target_region}}
-
-# Import to SSM Parameter Store (for non-sensitive config)
-# For each parameter:
-aws ssm put-parameter \
-  --name "/{{app_name}}/NODE_ENV" \
-  --value "production" \
-  --type String \
-  --region {{target_region}}
-```
-
-Reference these in your ECS task definition:
-
-```json
-"secrets": [
-  {"name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:{{target_region}}:{{AWS_ACCOUNT_ID}}:secret:{{app_name}}/DATABASE_URL"}
-],
-"environment": [
-  {"name": "NODE_ENV", "value": "production"}
-]
-```
-
-### ECS Express Mode (Optional)
-
-> **Simplified deployment option:** If you prefer a Heroku-like deploy experience, consider ECS Express Mode. It provides simplified service deployment with ALB/TLS wired up automatically, using the same underlying Fargate + ALB infrastructure.
->
-> No design changes are needed — the generated Terraform targets standard Fargate, which is compatible with ECS Express Mode. You can opt into Express Mode after initial deployment if desired.
->
-> Underlying cost model: identical to standard Fargate + ALB.
-
----
+{{ENDIF}}
 
 ## Phase 4: Verification
 
 ### Health Checks
 
+{{IF has_beanstalk}}
+
+- [ ] Application responds on EB environment URL: `http://{{EB_ENVIRONMENT_URL}}/`
+- [ ] Health check endpoint returns 200: `http://{{EB_ENVIRONMENT_URL}}/health`
+      {{ENDIF}}
+      {{IF has_fargate}}
 - [ ] Application responds on ALB endpoint: `https://{{ALB_DNS_NAME}}/`
 - [ ] Health check endpoint returns 200: `https://{{ALB_DNS_NAME}}/health`
+      {{ENDIF}}
       {{IF has_postgres}}
 - [ ] Database connectivity confirmed (application can read/write)
 - [ ] Row counts match source database
@@ -602,13 +630,24 @@ Reference these in your ECS task definition:
 
 ### DNS Cutover
 
-1. Update DNS records to point to the AWS ALB:
+1. Update DNS records to point at the active AWS endpoint:
 
-   ```
-   {{app_domain}} → CNAME → {{ALB_DNS_NAME}}
-   ```
+{{IF has_beanstalk}}
 
-2. Set TTL low (60s) before cutover, restore after verification.
+```
+{{app_domain}} → CNAME → {{EB_ENVIRONMENT_URL}}
+```
+
+{{ENDIF}}
+{{IF has_fargate}}
+
+```
+{{app_domain}} → CNAME → {{ALB_DNS_NAME}}
+```
+
+{{ENDIF}}
+
+1. Set TTL low (60s) before cutover, restore after verification.
 
 ### Decommission Heroku
 
@@ -699,6 +738,8 @@ Replace template variables using these sources:
 | `{{TARGET_MSK_*}}` | Placeholder — user fills from Terraform output |
 | `{{AWS_ACCOUNT_ID}}` | Placeholder — user fills with their AWS account ID |
 | `{{ALB_DNS_NAME}}` | Placeholder — user fills from Terraform output |
+| `{{EB_ENVIRONMENT_URL}}` | Elastic Beanstalk web environment CNAME output |
+| `{{EB_ENVIRONMENT_NAMES}}` | Space-separated generated Elastic Beanstalk environment names for all EB process types |
 | `{{MSK_CLUSTER_ARN}}` | Placeholder — user fills from Terraform output |
 | `{{MIGRATION_BUCKET}}` | Placeholder — user creates an S3 bucket for migration artifacts |
 | `{{app_domain}}` | Placeholder — user fills with their application domain |
@@ -745,6 +786,15 @@ This directory contains all artifacts needed to migrate your Heroku application(
 | `terraform/main.tf` | Provider configuration and module declarations |
 | `terraform/variables.tf` | Input variables (region, VPC, naming) |
 | `terraform/outputs.tf` | Output values (endpoints, ARNs, DNS names) |
+{{IF has_beanstalk}}
+| `terraform/beanstalk.tf` | Elastic Beanstalk applications and environments |
+{{IF eb_deploy_method == "github_actions"}}
+| `.github/workflows/deploy-eb.yml` | GitHub Actions source-to-EB deploy workflow |
+{{ENDIF}}
+{{IF eb_deploy_method == "codepipeline"}}
+| `terraform/pipeline.tf` | Optional CodePipeline source-to-EB deploy path |
+{{ENDIF}}
+{{ENDIF}}
 {{IF has_fargate}}
 | `terraform/ecs.tf` | ECS/Fargate task definitions and services |
 | `terraform/alb.tf` | Application Load Balancer configuration |
@@ -834,7 +884,12 @@ terraform output > ../terraform-outputs.txt
 
 ### 5. Deploy Application
 
+{{IF has_beanstalk}}
+Deploy through the selected Elastic Beanstalk deploy method from `MIGRATION_GUIDE.md` Phase 3. The default is the generated GitHub Actions workflow.
+{{ENDIF}}
+{{IF has_fargate}}
 Build and push your container image, then update ECS services. See `MIGRATION_GUIDE.md` Phase 3 for details.
+{{ENDIF}}
 
 ### 6. Verify and Cutover
 
@@ -866,6 +921,8 @@ Follow the verification checklist in `MIGRATION_GUIDE.md` Phase 4, then perform 
 
 ### Conditional Section Rules
 
+- `has_beanstalk`: True if any service in design has `aws_service == "Elastic Beanstalk"`
+- `eb_deploy_method`: `preferences.design_constraints.eb_deploy_method.value`; default to `"github_actions"` when absent and `has_beanstalk` is true
 - `has_fargate`: True if any service in design has `aws_service == "Fargate"`
 - `has_postgres`: True if any service has `aws_service` containing `"RDS PostgreSQL"` or `"Aurora PostgreSQL"`
 - `has_redis`: True if any service has `aws_service == "ElastiCache Redis"`
@@ -1207,7 +1264,7 @@ Verify all generated files:
    - If `containerization_status != "containerized"`: Contains "Containerization Prerequisites" section
    - Contains "Post-Migration Lockdown" section
    - Contains "Config Var Migration" section
-   - Contains "ECS Express Mode" informational paragraph
+   - If has_beanstalk: Contains selected EB deploy method instructions, EB DNS cutover target, and no CodePipeline artifact unless `eb_deploy_method` is `"codepipeline"`
    - Contains "Verification" section with data-store-appropriate checks
    - If `deferred_addons.length > 0`: Contains "Manual Migration Items" section
 

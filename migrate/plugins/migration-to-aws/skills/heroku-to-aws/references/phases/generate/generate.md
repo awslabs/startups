@@ -55,6 +55,8 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "if EKS is in the design, terraform/eks.tf exists WITH cluster + node group resources, AND a kubernetes/ directory has namespace + deployment manifests"
     _on_failure: _halt_and_inform
+  - _assert: "if Elastic Beanstalk is in the design, terraform/beanstalk.tf exists; if preferences.design_constraints.eb_deploy_method.value is github_actions or absent, .github/workflows/deploy-eb.yml exists; if codepipeline, terraform/pipeline.tf exists; if manual, no automated deploy artifact is required"
+    _on_failure: _halt_and_inform
   - _assert: "every designed service is accounted for (generated or listed in generation-warnings.json)"
     _on_failure: _halt_and_inform
   - _assert: "no placeholder {{VARIABLE}} tokens remain in Terraform .tf files (those belong in variables.tf as var.* references)"
