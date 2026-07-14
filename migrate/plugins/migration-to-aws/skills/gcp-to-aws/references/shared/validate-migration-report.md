@@ -25,6 +25,18 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Flags
 - `--no-require-toc` — skip the TOC requirement (for minimal test fixtures only).
 - `--no-readability` — skip the customer-facing readability checks (escape hatch; not for normal Generate runs).
 
+### Check the exit code — do not pattern-match on stdout text alone
+
+The agent must branch on the shell **exit code** of the validator command, not just on whether `REPORT_OK` or `REPORT_FAIL` appears in the text. If `python3` is not on `$PATH` (or the script path is wrong), the shell returns exit code `127` ("command not found") with neither string in its output — parsing for `REPORT_OK`/`REPORT_FAIL` alone leaves that case undefined and produces unpredictable agent behavior.
+
+Handle exactly three outcomes:
+
+| Exit code | Meaning | Action |
+|-----------|---------|--------|
+| `0` | `REPORT_OK` — validation passed | Proceed to Step 5 |
+| `1` | `REPORT_FAIL` — validation ran and found issues | Rename to `migration-report.incomplete.html`, surface failure lines to the user, retry report generation |
+| anything else (e.g. `127` command not found, `126` permission denied, `2` bad arguments) | **Validator did not run** — this is neither `REPORT_OK` nor `REPORT_FAIL` | Do **not** rename or delete the HTML file. Do **not** claim the report passed or failed validation. Tell the user: "Could not run the report validator (`<exit code and stderr>`) — install Python 3 (`python3 --version` to check) or verify `$PLUGIN_ROOT` is correct, then re-run validation manually." The Generate phase may still complete with the unvalidated report, but the user must be told validation did not occur — never silently treat a missing interpreter as a pass. |
+
 ---
 
 ## Scope
