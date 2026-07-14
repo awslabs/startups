@@ -63,36 +63,19 @@ _forbids_files:
 
 # Phase 3: Design AWS Architecture
 
-Single-pass mapping engine that translates each Heroku resource to its AWS equivalent using deterministic lookup tables. No clustering, no dependency graphs — resources are processed as a flat list in input order.
-**Execute ALL steps in order. Do not skip or deviate.**
+## Orientation
 
-The EKS branch (`design-eks.md`, fired by its `_when` trigger when the Kubernetes preference selects EKS) is an ALTERNATIVE path, not an addition: it maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the Fargate path.
+Single-pass mapping engine: translate each Heroku resource to its AWS equivalent
+using deterministic lookup tables. No clustering, no dependency graphs — resources
+are processed as a flat list in input order.
 
-## Lookup Table References (Conditional Loading)
-
-The per-resource sizing/mapping data this phase consults lives in the phase's
-`_knowledge` frontmatter (the `knowledge/design/*.json` files), each gated by a
-`_when` condition. Load a knowledge file only when its `_when` holds; do NOT
-speculatively load knowledge for resource types absent from the inventory — see
-`INTERPRETER.md` § `_knowledge`.
-
----
-
-## Step 1: Run the Mapping Engine
-
-Load `references/phases/design/design-mapping.md` and follow it. It validates
-prerequisites, performs the single-pass resource mapping (loading `design-eks.md`
-for formations when the Kubernetes preference selects EKS), designs the VPC +
-security groups, and adds Cedar/Fir notation + metadata.
-
----
-
-## Step 2: Assemble and Validate
-
-Load `references/phases/design/design-assemble.md` (the phase's assembler) and
-follow it to write `aws-design.json`, run the output route gates + completion
-handoff gate, and update `.phase-status.json`. It owns the artifact-level contract
-for this phase.
+Composed of a mapping fragment + one assembler (declared in the frontmatter
+`_fragments`/`_assemble`); the interpreter runs the fragments whose `_trigger` is
+true, then the assembler, and evaluates the `_knowledge` `_when` guards to load only
+the sizing tables the inventory needs (see `INTERPRETER.md` § `_knowledge`). The EKS
+branch (`design-eks`, fired by its `_when` trigger when the Kubernetes preference
+selects EKS) is an ALTERNATIVE path, not an addition: it maps ALL formations to EKS
+pods + an `eks_cluster` aggregate instead of the Fargate path.
 
 ---
 
