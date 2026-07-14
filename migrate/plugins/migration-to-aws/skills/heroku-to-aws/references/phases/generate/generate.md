@@ -68,36 +68,20 @@ _forbids_files:
 
 # Phase 5: Generate Migration Artifacts
 
-**Execute ALL steps in order. Do not skip or optimize.**
+## Orientation
 
-## Step 0: Validate Prerequisites
+Transform the design + estimate into deployable artifacts in `$MIGRATION_DIR/`: a
+`terraform/` directory, `MIGRATION_GUIDE.md`, `README.md`, database migration
+scripts, and `generation-warnings.json`. This is the multi-artifact phase.
 
-The entry gate (estimate completed, single active phase, all four inputs present + valid
-JSON) is enforced by this phase's `_preconditions` frontmatter per `INTERPRETER.md`
-§ Gate protocol; proceed once it passes.
-
----
-
-## Step 1: Generate Terraform Configurations
-
-Load `references/phases/generate/generate-terraform.md` and execute completely. When the
-design contains EKS (`aws_service: "EKS"`), the `eks-generate` fragment also fires per its
-`_fragments` `_when` trigger; follow `references/phases/generate/generate-eks.md`.
-
----
-
-## Step 2: Generate Documentation and Scripts
-
-Load `references/phases/generate/generate-docs.md` and execute completely.
-
----
-
-## Step 3: Assemble and Validate
-
-Load `references/phases/generate/generate-assemble.md` (the phase's assembler) and
-follow it to validate the complete artifact set (cross-reference checks), run the
-completion handoff gate, and update `.phase-status.json`. It owns the phase's final
-artifact-level contract.
+Composed of the terraform + docs fragments + an EKS-generate fragment + one
+cross-artifact validator assembler (declared in the frontmatter
+`_fragments`/`_assemble`); the interpreter runs each fragment whose `_trigger` is
+true, then the assembler. The `eks-generate` fragment is an ALTERNATIVE compute
+path — it fires only when the design has an `eks_cluster` (its `_when` trigger),
+emitting `eks.tf` + `kubernetes/` manifests. Templates are output skeletons
+(`templates/generate/...`); the fragments are the routing algorithm. Read each unit
+file for its own contract; the assembler owns the cross-artifact completion gate.
 
 ---
 

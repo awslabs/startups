@@ -292,6 +292,18 @@ Table from estimation artifacts with: Current GCP Monthly, Projected AWS Monthly
 
 Include a compact three-tier row or table if the executive report does, matching figures from `estimation-infra.json`.
 
+**Combined TCO (required when both `estimation-infra.json` and `estimation-ai.json` exist):**
+
+|                | GCP monthly                               | AWS Balanced monthly                             |
+| -------------- | ----------------------------------------- | ------------------------------------------------ |
+| Infrastructure | from `current_costs.gcp_monthly`          | from `projected_costs.aws_monthly_balanced`      |
+| AI / ML        | from `current_costs.gcp_monthly_ai_spend` | from `cost_comparison.projected_bedrock_monthly` |
+| **Total**      | sum                                       | sum                                              |
+
+Note BigQuery/deferred services excluded if applicable.
+
+**Security baseline in README:** When `estimation-infra.json` → `projected_costs.breakdown.security_baseline` exists, include a sub-table with component costs (GuardDuty, CloudTrail S3, etc.) from `components` — not only static ranges.
+
 #### Key Decisions
 
 Bullet list from design and generation artifacts: Compute, Database, Storage, and AI/ML (if applicable) with GCP service, AWS service, and rationale. For each GCP→AWS mapping, add how it was chosen using `design-refs/fast-path.md` → **User-facing vocabulary**: **Standard pairing**, **Tailored to your setup**, or **Estimated from billing only** (from the design artifact’s `confidence` field). For any service with `human_expertise_required: true`, append: "(Specialist guidance recommended — contact your AWS account team)".

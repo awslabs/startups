@@ -146,6 +146,8 @@ Output to user: "Cost estimation complete. Proceeding to Phase 5: Generate Migra
 
 **This phase covers financial analysis ONLY.**
 
+**Cost labeling rule (applies to ALL sub-estimate files):** All dollar figures presented to the user in chat summaries, report tables, and metric boxes MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact. This includes the Present Summary output, migration report content, and any user-facing cost references.
+
 FORBIDDEN — Do NOT include ANY of:
 
 - Changes to architecture mappings from the Design phase

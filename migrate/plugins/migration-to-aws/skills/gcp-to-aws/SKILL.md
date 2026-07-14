@@ -112,7 +112,7 @@ Load `references/shared/handoff-gates.md` when executing any phase completion st
 4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Tell the user which phase to re-run.
 5. **Re-entry**: Re-running an earlier phase after downstream phases completed requires explicit user confirmation; downstream phases must be reset to `"pending"`. See `handoff-gates.md` re-entry table.
 
-Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`.
+Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`, then `references/shared/validate-migration-report.md` after the HTML is written.
 
 ---
 
@@ -281,6 +281,7 @@ gcp-to-aws/
 │       ├── schema-estimate-infra.md            # estimation-infra.json schema (loaded by estimate-infra.md at write time)
 │       ├── handoff-gates.md                    # Fail-closed phase handoff protocol (GATE_FAIL / HANDOFF_OK)
 │       ├── validate-artifacts.md               # Pre-report validation (Generate Step 0; read-only)
+│       ├── validate-migration-report.md          # Post-write HTML completeness (Generate Step 4)
 │       ├── migration-complexity.md             # Complexity tier definitions (small/medium/large) for timeline scaling
 │       ├── pricing-cache.md                    # Cached AWS + source provider pricing (±5-25%, primary source)
 │       └── bedrock-quotas.md                   # Bedrock TPM/RPM quota awareness, burndown rates, capacity planning

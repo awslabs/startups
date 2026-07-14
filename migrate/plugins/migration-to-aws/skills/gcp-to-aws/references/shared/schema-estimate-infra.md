@@ -263,20 +263,20 @@ When Part 2B of `estimate-infra.md` produces an observability cost, it is includ
 ```json
 {
   "service": "CloudWatch + X-Ray (Observability)",
-  "low": 7.00,
-  "mid": 10.00,
-  "high": 15.00,
+  "low": 4.00,
+  "mid": 5.21,
+  "high": 8.00,
   "accuracy": "±30%",
   "pricing_source": "cached",
   "components": {
-    "log_ingestion": 5.00,
-    "log_storage": 0.45,
-    "custom_metrics": 3.00,
-    "alarms": 0.50,
+    "log_ingestion": 3.50,
+    "log_storage": 0.21,
+    "custom_metrics": 1.50,
+    "alarms": 0.00,
     "tracing": 0.00
   },
   "volume_source": "heuristic",
-  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch charges from the first GB."
+  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch always-free tier includes 5 GB logs, 10 custom metrics, and 10 alarms per month. Estimate assumes usage above free-tier limits."
 }
 ```
 
