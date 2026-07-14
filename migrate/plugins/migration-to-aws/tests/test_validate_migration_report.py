@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess  # nosec B404 - invoked below with a fixed arg list, no shell
+import subprocess
 import sys
 from pathlib import Path
 
@@ -66,7 +66,7 @@ def run_validator(
         cmd.append("--no-require-toc")
     if not readability:
         cmd.append("--no-readability")
-    result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603 - fixed arg list, no shell, no user input
+    result = subprocess.run(cmd, capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
 
 

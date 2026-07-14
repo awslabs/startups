@@ -78,11 +78,10 @@ run = [
 # =========
 
 [tasks."security:bandit"]
-description = "Run Bandit (multi-pass: ai-to-aws and migration-to-aws plugins with their own skip configs; rest of repo with full strictness — mirrors the CI bandit job in .github/workflows/security-scanners.yml)"
+description = "Run Bandit (two-pass: ai-to-aws plugin with its own skip config; rest of repo with full strictness — mirrors the CI bandit job in .github/workflows/security-scanners.yml)"
 run = [
   "bandit -r migrate/plugins/ai-to-aws -c migrate/plugins/ai-to-aws/bandit.yml -x ./migrate/plugins/ai-to-aws/scripts/.venv",
-  "bandit -r migrate/plugins/migration-to-aws -c migrate/plugins/migration-to-aws/bandit.yml",
-  "bandit -r . --exclude ./.tmp,./node_modules,./migrate/plugins/ai-to-aws,./migrate/plugins/migration-to-aws",
+  "bandit -r . --exclude ./.tmp,./node_modules,./migrate/plugins/ai-to-aws,./migrate/plugins/migration-to-aws/tests",
 ]
 
 [tasks."security:semgrep"]
