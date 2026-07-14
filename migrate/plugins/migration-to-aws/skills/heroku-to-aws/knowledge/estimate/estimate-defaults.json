@@ -1,5 +1,5 @@
 {
-  "_comment": "Tunable estimate-phase assumptions for the heroku-to-aws skill (the heuristic knobs an org adjusts, independent of the cost algorithm and the AWS rate table). AWS rates live in shared/pricing/aws-infra-pricing.json; cost FORMULAS and tier/heuristic logic stay in estimate.md prose. Complexity-tier bands are NOT here (thresholds live in ../shared/estimate/complexity-tiers.json; timelines are inline in estimate-cost-engine.md).",
+  "_comment": "Tunable estimate-phase assumptions for the heroku-to-aws skill (the heuristic knobs an org adjusts, independent of the cost algorithm and the AWS rate table). AWS rates live in references/vendored/pricing/aws-infra-pricing.json; cost FORMULAS and tier/heuristic logic stay in estimate.md prose. Complexity-tier bands are NOT here (thresholds live in references/vendored/estimate/complexity-tiers.json; timelines are inline in estimate-cost-engine.md).",
   "log_volume_gb_per_service": {
     "_comment": "Per-service monthly CloudWatch log-volume heuristic, counted PER DESIGNED SERVICE (MSK is per broker). Used by the observability cost step. Heuristic because Heroku's logging model differs, so source billing doesn't apply.",
     "fargate_task": 3,

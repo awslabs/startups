@@ -30,13 +30,14 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 **Infrastructure:**
 
-| Capability                 | Base LLM          | This Plugin                                                                                               |
-| -------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------- |
-| Terraform generation       | Generic templates | Your actual config translated — instance classes, storage sizes, region, VPC CIDRs, security groups       |
-| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts  |
-| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script           |
-| Cost estimation            | Stale guesses     | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your current bill |
-| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                       |
+| Capability                 | Base LLM                          | This Plugin                                                                                                                                        |
+| -------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Terraform generation       | Generic templates                 | Your actual config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                                                |
+| Security baseline          | Not included                      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts                                           |
+| Database migration tooling | "Use DMS"                         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                                                    |
+| Cost estimation            | Stale guesses                     | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your current bill                                          |
+| Migration plan             | Generic checklist                 | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                                                |
+| Migration report           | Generic summary or missing detail | `migration-report.html` with cost tiers, security baseline (GuardDuty, etc.), combined TCO, and appendices — validated for structural completeness |
 
 **AI/Agentic:**
 
@@ -113,8 +114,30 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 2. **Clarify** — Ask targeted questions about migration preferences, AI priorities, agentic migration approach, database sizing, and timeline.
 3. **Design** — Map source services to AWS equivalents. For AI workloads: select Bedrock models with honest pricing comparison. For agentic workloads: design AgentCore Harness config or Strands architecture.
 4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current spend.
-5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, and documentation.
+5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, `MIGRATION_GUIDE.md`, `README.md`, and **`migration-report.html`** (self-contained HTML assessment).
 6. **Feedback** _(optional)_ — Collect anonymized feedback to improve the tool.
+
+### Migration report (`migration-report.html`)
+
+The Generate phase produces a browser-ready HTML report with:
+
+- Executive summary (verdict, cost tiers, timeline, risks)
+- Combined infra + AI total cost of ownership (when both tracks ran)
+- Security baseline line items (GuardDuty, CloudTrail, budgets, etc.)
+- Detailed appendices: service mappings, per-service costs, migration steps, AI migration, artifacts catalog
+
+After the report is written, run the post-write validator:
+
+```bash
+python3 migrate/plugins/migration-to-aws/scripts/validate-migration-report.py \
+  "$MIGRATION_DIR/migration-report.html" \
+  --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
+```
+
+Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resolve the script from the plugin root (`$PLUGIN_ROOT/scripts/validate-migration-report.py` in an installed copy).
+
+**`REPORT_OK | structure=complete`** means required sections, TOC links, and appendix depth checks passed. It does **not** verify that every dollar figure matches the JSON — review numerics before executive sign-off. See [fixtures/README.md](fixtures/README.md) for the reference HTML + estimation JSON contract.
 
 ### What It Detects
 
@@ -172,66 +195,59 @@ See the [ai-to-aws README](../ai-to-aws/README.md) for full details on prerequis
 - **For AI execution (ai-to-aws):** Python 3.10+, `uv`, and Bedrock model access enabled
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
-## Development
+## Architecture & contributing
 
-This project uses [mise](https://mise.jdx.dev) for tool management and task running.
+This plugin ships two migration skills built on **different architectures**, and this
+matters if you contribute:
 
-```bash
-# Install tools
-mise install
+- **heroku-to-aws** is built on the **phase DSL** — a declarative frontmatter grammar
+  an LLM interprets at runtime, with a static validator that checks the structure
+  before anything runs. It is the reference implementation and the **direction for all
+  new work**.
+- **gcp-to-aws** predates the DSL and uses the **older prose design**. It is maintained,
+  but a future effort will port it onto the DSL.
 
-# Run the full build (lint, format, validate, security)
-mise run build
+**New skills and phases follow the DSL pattern** (`heroku-to-aws`), not the prose
+pattern. The grammar is documented under [`docs/`](docs/) — start with
+[docs/01-concepts.md](docs/01-concepts.md). For the full contributor workflow —
+architecture, build/validate tasks, the vendored shared-files contract, and how to add
+a validator check — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-# Individual tasks
-mise run lint          # All linters (markdown, manifests, cross-refs)
-mise run fmt           # Format with dprint
-mise run fmt:check     # Check formatting
-mise run security      # All security scanners
-```
-
-### Evaluating Changes
-
-Prompt files are the source code of this plugin. Changes to files under
-`skills/gcp-to-aws/` or `skills/heroku-to-aws/` can alter migration behavior
-in subtle ways. Run the evaluation harness before submitting a PR:
+Quick start for a local change:
 
 ```bash
-# 1. Quick structural check (instant, no Claude API calls)
-mise run eval:check
-
-# 2. Run the migration skill against a test fixture (see table below)
-cd tests/fixtures/<FIXTURE_NAME>
-# In Claude Code: "migrate from GCP to AWS"
-
-# 3. Validate the output
-python tools/eval_check.py \
-  --migration-dir .migration/<RUN_ID> \
-  --fixture <FIXTURE_NAME>
-
-# 4. Commit results
-git add .eval-results.json
+mise install     # install pinned tools
+mise run build   # the full gate: lint (md, types, DSL frontmatter, shared-sync, tests) + fmt + security
 ```
 
-#### Test Fixtures
+### Migration report validator (unit tests)
 
-Pick the fixture that covers your change area. For broad changes, run
-`minimal-cloud-run-sql` first, then any fixture specific to your change.
+When changing `generate-artifacts-report.md`, `scripts/validate-migration-report.py`, or `fixtures/migration-report-reference.html`:
 
-| Fixture                    | Use when you changed...                                                 | Invariants |
-| -------------------------- | ----------------------------------------------------------------------- | ---------- |
-| `minimal-cloud-run-sql`    | General prompt changes, state machine, phase ordering, generate phase   | 26         |
-| `bigquery-specialist-gate` | BigQuery handling, specialist gate, analytics exclusion                 | 9          |
-| `ai-workload-openai`       | AI detection, model mapping, lifecycle rules, Category F questions      | 11         |
-| `user-preferences`         | Clarify question flow, preference schema, Design preference consumption | 10         |
-| `negative-services`        | Classification rules, auth exclusion, forbidden service mappings        | 8          |
+```bash
+cd migrate/plugins/migration-to-aws
 
-See [docs/evaluation-guide.md](docs/evaluation-guide.md) for the full workflow
-and how to add new invariants.
+pytest tests/test_validate_migration_report.py -q
+
+python3 scripts/validate-migration-report.py \
+  fixtures/migration-report-reference.html \
+  --estimation-infra fixtures/estimation-infra-reference.json \
+  --estimation-ai fixtures/estimation-ai-reference.json
+
+# Stub must fail (executive summary only — regression guard)
+python3 scripts/validate-migration-report.py \
+  fixtures/migration-report-stub.html \
+  --estimation-infra fixtures/estimation-infra-reference.json \
+  --estimation-ai fixtures/estimation-ai-reference.json \
+  && exit 1 || true
+```
+
+See [fixtures/README.md](fixtures/README.md) for what `REPORT_OK` does and does not guarantee.
 
 ## Security
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+For security issue notifications, see the repo-root
+[CONTRIBUTING](../../../CONTRIBUTING.md#security-issue-notifications).
 
 ## License
 

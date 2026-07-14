@@ -196,7 +196,28 @@ If re-running a phase would leave a downstream artifact stale, add a
 `_stale_if_completed` must equal this phase's `_advances_to`, and `_stale_artifact`
 must be one of that downstream phase's `_produces`. See `design.md` for a live one.
 
-## Step 8 — validate
+## Step 8 — run a phase in a sub-agent (optional)
+
+If a phase does heavy, self-contained work over bulky input (parsing, generation) and
+asks the user nothing, you can dispatch its WORK to a fresh isolated sub-agent so the
+intermediate data never floods the main context. Two frontmatter keys, both on the
+phase:
+
+```yaml
+_interactive: false # affirm the work does not prompt the user (REQUIRED to dispatch)
+_exec:
+  _agent: rw # capability tier: ro | rw | git
+```
+
+Pick the LEAST tier that covers the work (`rw` for a phase that writes artifacts). You
+do not touch the phase's prose body, gates, `_input`, or `_produces` — `_exec` changes
+only _where_ the work runs, never the contract. The interpreter keeps the gates,
+`_init`, and the state transition in the main window; only the fragments + assembler
+move to the worker. `discover` and `generate` are the live examples. See
+[05-exec-agent-dispatch.md](05-exec-agent-dispatch.md) for the full mechanism and
+caveats.
+
+## Step 9 — validate
 
 Run the typed validator against your skill root:
 

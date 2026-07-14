@@ -229,12 +229,14 @@ If this gate fails: STOP and output: "estimate-ai did not produce a valid `estim
 After writing `estimation-ai.json`, present under 25 lines:
 
 1. **Pricing source and accuracy**: State whether prices came from cache or live API, and the accuracy range (±15-25% for AI models from cache, ±5-10% from live API). Example: "AI model estimates based on cached pricing (2026-03-07), accuracy ±15-25%."
-2. Current GCP AI spend vs projected Bedrock cost (recommended model)
-3. Model comparison table: model name, monthly cost, vs source provider %, capabilities match
-4. Recommended model with cost breakdown
+2. Current GCP AI spend vs estimated monthly Bedrock cost (recommended model)
+3. Model comparison table: model name, estimated monthly cost, vs source provider %, capabilities match
+4. Recommended model with estimated monthly cost breakdown
 5. If migration increases cost: flag honestly with non-cost justification
-6. Top 2-3 optimization opportunities with potential savings
+6. Top 2-3 optimization opportunities with potential estimated monthly savings
 7. Optimized projection
+
+**Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact.
 
 ## Generate Phase Integration
 

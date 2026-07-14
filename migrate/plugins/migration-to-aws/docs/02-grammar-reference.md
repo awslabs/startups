@@ -15,10 +15,10 @@ Every `_`-prefixed key is closed: a key not in the set for its unit kind is a
 `unknown … frontmatter key` finding (a typo fails the build rather than being
 silently ignored). The sets, verbatim from `parse.ts`:
 
-- **Phase keys (16):** `_phase`, `_title`, `_kind`, `_requires_phase`, `_init`,
-  `_input`, `_fragments`, `_trigger`, `_assemble`, `_produces`, `_advances_to`,
-  `_re_entry_guard`, `_preconditions`, `_postconditions`, `_forbids_files`,
-  `_knowledge`.
+- **Phase keys (18):** `_phase`, `_title`, `_kind`, `_requires_phase`, `_init`,
+  `_interactive`, `_input`, `_fragments`, `_trigger`, `_assemble`, `_produces`,
+  `_advances_to`, `_exec`, `_re_entry_guard`, `_preconditions`, `_postconditions`,
+  `_forbids_files`, `_knowledge`.
 - **Fragment keys (3):** `_fragment`, `_of_phase`, `_contributes`.
 - **Assembler keys (5):** `_assemble`, `_of_phase`, `_reads`, `_produces`,
   `_knowledge`.
@@ -28,6 +28,8 @@ silently ignored). The sets, verbatim from `parse.ts`:
   `_halt_and_inform`, `_unrecoverable`.
 - **Re-entry guard sub-keys (4):** `_stale_if_completed`, `_stale_artifact`,
   `_on_reentry`, `_on_confirm`.
+- **`_exec` sub-keys (1):** `_agent`. Its value is a capability tier from the closed
+  set `ro` \| `rw` \| `git`.
 
 ## Unit file structure
 
@@ -44,13 +46,14 @@ The phase orchestrator file `references/phases/<name>/<name>.md` composes the ph
 
 ### Identity & role
 
-| Key               | Shape                      | Meaning                                                                                                         |
-| ----------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `_phase`          | string                     | the phase's id (matches the directory/file name)                                                                |
-| `_title`          | string                     | human title                                                                                                     |
-| `_kind`           | `backbone` \| `checkpoint` | `backbone` (default when absent) = a step on the linear lifecycle; `checkpoint` = off-backbone, trigger-entered |
-| `_requires_phase` | phase name                 | the phase that must be `completed` before this one starts (omitted on the head phase)                           |
-| `_init`           | `true`                     | present only on the backbone head — this phase bootstraps migration state before its fragments run              |
+| Key               | Shape                      | Meaning                                                                                                           |
+| ----------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `_phase`          | string                     | the phase's id (matches the directory/file name)                                                                  |
+| `_title`          | string                     | human title                                                                                                       |
+| `_kind`           | `backbone` \| `checkpoint` | `backbone` (default when absent) = a step on the linear lifecycle; `checkpoint` = off-backbone, trigger-entered   |
+| `_requires_phase` | phase name                 | the phase that must be `completed` before this one starts (omitted on the head phase)                             |
+| `_init`           | `true`                     | present only on the backbone head — this phase bootstraps migration state before its fragments run                |
+| `_interactive`    | `true` \| `false`          | (optional) does the phase's WORK prompt the user? `_exec` requires `false`; absent/`true` = the phase runs inline |
 
 ### Composition
 
@@ -63,11 +66,12 @@ The phase orchestrator file `references/phases/<name>/<name>.md` composes the ph
 
 ### Lifecycle & flow
 
-| Key               | Shape                                                                | Meaning                                                                                            |
-| ----------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `_advances_to`    | phase name or a terminal (`complete`)                                | the next phase on success (backbone only; a checkpoint has none)                                   |
-| `_trigger`        | a trigger form (below)                                               | **checkpoint phases only** — how the phase is entered; backbone phases have no phase-level trigger |
-| `_re_entry_guard` | `{ _stale_if_completed, _stale_artifact, _on_reentry, _on_confirm }` | stale-downstream guard (backbone phases with a downstream)                                         |
+| Key               | Shape                                                                | Meaning                                                                                                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_advances_to`    | phase name or a terminal (`complete`)                                | the next phase on success (backbone only; a checkpoint has none)                                                                                                                                               |
+| `_exec`           | `{ _agent: ro \| rw \| git }`                                        | (optional) run the phase's WORK (fragments + assembler) in an isolated sub-agent at this tier; gates + `_init` + state transition stay in the main window. Requires `_interactive: false`. Absent = run inline |
+| `_trigger`        | a trigger form (below)                                               | **checkpoint phases only** — how the phase is entered; backbone phases have no phase-level trigger                                                                                                             |
+| `_re_entry_guard` | `{ _stale_if_completed, _stale_artifact, _on_reentry, _on_confirm }` | stale-downstream guard (backbone phases with a downstream)                                                                                                                                                     |
 
 ### Contract
 
@@ -253,6 +257,26 @@ Every check's `_on_failure` names one of these. Two STOP, two CONTINUE:
 | `_default_and_warn` | apply a documented default; warn; continue | remain `in_progress` |
 | `_halt_and_inform`  | stop; surface a diagnostic                 | retain `in_progress` |
 | `_unrecoverable`    | stop; surface an error                     | revert to `pending`  |
+
+### `_exec._agent` — capability tiers
+
+`_exec` runs a phase's work (its fragments + assembler) in an isolated sub-agent;
+`_agent` names the tier that work runs at. Ordered, closed vocabulary (least → most
+privileged):
+
+| Tier  | Grants                                   | For                                          |
+| ----- | ---------------------------------------- | -------------------------------------------- |
+| `ro`  | read-only (Read / Grep / Glob / ro Bash) | analysis phases that produce NO artifact     |
+| `rw`  | `ro` + Write / Edit                      | a phase that writes its `_produces`          |
+| `git` | `rw` + git ops                           | a phase that mutates the user's repo history |
+
+The author DECLARES the tier; CI verifies it is not below the minimum derivable from
+what the phase produces (a producing phase can't be `ro`), that the tier's
+`agents/generic-phase-worker-<tier>.md` worker is shipped, and that the phase
+declares `_interactive: false` (a dispatched worker is file-only and cannot prompt
+the user). The runtime ENFORCEMENT of the tier is platform-dependent — on a host
+with no sub-agent allow-list it fails open (the phase runs at full access). See
+`INTERPRETER.md` § `_exec`.
 
 ### `_re_entry_guard` sub-keys
 

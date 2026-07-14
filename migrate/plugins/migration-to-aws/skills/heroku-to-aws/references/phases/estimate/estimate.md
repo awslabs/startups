@@ -8,9 +8,9 @@ _input:
   - heroku-resource-inventory.json
 _knowledge:
   - { file: knowledge/estimate/estimate-defaults.json }
-  - { file: ../shared/pricing/aws-infra-pricing.json }
-  - { file: ../shared/estimate/complexity-tiers.json }
-  - { file: ../shared/estimate/estimation-infra.schema.json }
+  - { file: references/vendored/pricing/aws-infra-pricing.json }
+  - { file: references/vendored/estimate/complexity-tiers.json }
+  - { file: references/vendored/estimate/estimation-infra.schema.json }
 _fragments:
   - _id: cost-engine
     _trigger: { _always: true }
@@ -63,25 +63,20 @@ _forbids_files:
 
 # Phase 4: Estimate AWS Costs
 
-**Execute ALL steps in order. Do not skip or optimize.**
+## Orientation
 
-Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture, producing `estimation-infra.json` (conforming to `../shared/estimate/estimation-infra.schema.json`) and classifying migration complexity using the tier thresholds in `../shared/estimate/complexity-tiers.json`.
+Calculate projected monthly AWS costs for the designed Heroku-to-AWS architecture,
+producing `estimation-infra.json` (conforming to
+`references/vendored/estimate/estimation-infra.schema.json`) and classifying
+migration complexity using the tier thresholds in
+`references/vendored/estimate/complexity-tiers.json`.
 
----
-
-## Step 1: Compute the Estimate
-
-Load `references/phases/estimate/estimate-cost-engine.md` and follow it. It selects the
-pricing mode, validates the design inputs, and computes the entire financial picture.
-
----
-
-## Step 2: Assemble and Validate
-
-Load `references/phases/estimate/estimate-assemble.md` (the phase's assembler) and
-follow it to write the final `estimation-infra.json`, run the completion handoff gate,
-update `.phase-status.json`, and present the summary. It owns the artifact-level
-contract for this phase.
+Composed of a cost-engine fragment + one assembler (declared in the frontmatter
+`_fragments`/`_assemble`); the interpreter runs the fragment, then the assembler,
+and evaluates the `_knowledge` guards to load the pricing/defaults/tier data. The
+fragment selects the pricing mode and computes the financial picture; the assembler
+writes the final artifact, runs the completion gate, and presents the summary — read
+each unit file for its own contract.
 
 ---
 

@@ -22,7 +22,7 @@ _contributes:
 
 ### Step 0a: Load Pricing Cache
 
-Read `../../../../shared/pricing/aws-infra-pricing.json` (shared AWS infrastructure pricing data). Check the `_meta.last_updated` date:
+Read `references/vendored/pricing/aws-infra-pricing.json` (shared AWS infrastructure pricing data). Check the `_meta.last_updated` date:
 
 - If ≤ 30 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the file. Set `pricing_source: "cached"`.
 - If > 30 days old: Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable. Attempt MCP (Step 0b) for services not in the file; use the cached rates as fallback with `pricing_source: "cached_stale"`.
@@ -49,12 +49,12 @@ Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts, 10-s
 
 ### Pricing Hierarchy (per-service lookup order)
 
-| Priority | Source                                  | Condition                                    | `pricing_source` value |
-| -------- | --------------------------------------- | -------------------------------------------- | ---------------------- |
-| 1        | `shared/pricing/aws-infra-pricing.json` | Service found in the pricing file            | `"cached"`             |
-| 2        | MCP API (`get_pricing`)                 | Service NOT in the file, MCP available       | `"live"`               |
-| 3        | Pricing file after MCP failure          | MCP attempted but failed, service IS in file | `"cached_fallback"`    |
-| 4        | Unavailable                             | NOT in file AND MCP failed                   | `"unavailable"`        |
+| Priority | Source                                               | Condition                                    | `pricing_source` value |
+| -------- | ---------------------------------------------------- | -------------------------------------------- | ---------------------- |
+| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file            | `"cached"`             |
+| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available       | `"live"`               |
+| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file | `"cached_fallback"`    |
+| 4        | Unavailable                                          | NOT in file AND MCP failed                   | `"unavailable"`        |
 
 For typical Heroku migrations (Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `aws-infra-pricing.json`. Zero MCP calls needed.
 
@@ -107,7 +107,7 @@ When billing data or pricing cache is available, present the Heroku baseline as:
 
 ## Part 2: Calculate Projected AWS Costs
 
-For each service in `aws-design.json → services[]`, calculate monthly cost by applying the formula from the Per-Service Calculation Formulas table below, looking up its rates from `shared/pricing/aws-infra-pricing.json`. Track `pricing_source` per service. (`hours_per_month` = 730, from `_meta`.)
+For each service in `aws-design.json → services[]`, calculate monthly cost by applying the formula from the Per-Service Calculation Formulas table below, looking up its rates from `references/vendored/pricing/aws-infra-pricing.json`. Track `pricing_source` per service. (`hours_per_month` = 730, from `_meta`.)
 
 ### Per-Service Calculation Formulas
 
@@ -209,7 +209,7 @@ tracing_cost          = 0 (do not add X-Ray costs unless tracing detected in sou
 total_observability   = log_ingestion_cost + log_storage_cost + custom_metrics_cost + alarms_cost + tracing_cost
 ```
 
-(All `cloudwatch.*` rates are in `shared/pricing/aws-infra-pricing.json`.)
+(All `cloudwatch.*` rates are in `references/vendored/pricing/aws-infra-pricing.json`.)
 
 ### Step 4: Add Observability Entry
 
@@ -432,7 +432,7 @@ Only include optimizations relevant to the designed architecture. Do not include
 
 ## Part 7: Complexity Tier Classification
 
-Load the tier thresholds declared in `_knowledge` (`../shared/estimate/complexity-tiers.json`). Classify using these inputs from the current artifacts:
+Load the tier thresholds declared in `_knowledge` (`references/vendored/estimate/complexity-tiers.json`). Classify using these inputs from the current artifacts:
 
 | Input                | Source                                                                            | Key                                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -537,7 +537,7 @@ write `estimation-infra.json`, run the handoff gate, and update phase status.
 
 ## Pricing Recipes (MCP Fallback Only)
 
-Only use these recipes when a service is NOT in `shared/pricing/aws-infra-pricing.json` and MCP is available. Do NOT call `get_pricing_service_codes` or `get_pricing_service_attributes` — go directly to `get_pricing`.
+Only use these recipes when a service is NOT in `references/vendored/pricing/aws-infra-pricing.json` and MCP is available. Do NOT call `get_pricing_service_codes` or `get_pricing_service_attributes` — go directly to `get_pricing`.
 
 | AWS Service       | service_code      | filters                                                                                                     | output_options                                                                                                                                     |
 | ----------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
