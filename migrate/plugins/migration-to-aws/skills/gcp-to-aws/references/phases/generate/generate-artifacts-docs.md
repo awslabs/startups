@@ -294,11 +294,11 @@ Include a compact three-tier row or table if the executive report does, matching
 
 **Combined TCO (required when both `estimation-infra.json` and `estimation-ai.json` exist):**
 
-| | GCP monthly | AWS Balanced monthly |
-| --- | --- | --- |
-| Infrastructure | from `current_costs.gcp_monthly` | from `projected_costs.aws_monthly_balanced` |
-| AI / ML | from `current_costs.gcp_monthly_ai_spend` | from `cost_comparison.projected_bedrock_monthly` |
-| **Total** | sum | sum |
+|                | GCP monthly                               | AWS Balanced monthly                             |
+| -------------- | ----------------------------------------- | ------------------------------------------------ |
+| Infrastructure | from `current_costs.gcp_monthly`          | from `projected_costs.aws_monthly_balanced`      |
+| AI / ML        | from `current_costs.gcp_monthly_ai_spend` | from `cost_comparison.projected_bedrock_monthly` |
+| **Total**      | sum                                       | sum                                              |
 
 Note BigQuery/deferred services excluded if applicable.
 

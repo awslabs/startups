@@ -31,10 +31,10 @@ The agent must branch on the shell **exit code** of the validator command, not j
 
 Handle exactly three outcomes:
 
-| Exit code | Meaning | Action |
-|-----------|---------|--------|
-| `0` | `REPORT_OK` — validation passed | Proceed to Step 5 |
-| `1` | `REPORT_FAIL` — validation ran and found issues | Rename to `migration-report.incomplete.html`, surface failure lines to the user, retry report generation |
+| Exit code                                                                                | Meaning                                                                   | Action                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`                                                                                      | `REPORT_OK` — validation passed                                           | Proceed to Step 5                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `1`                                                                                      | `REPORT_FAIL` — validation ran and found issues                           | Rename to `migration-report.incomplete.html`, surface failure lines to the user, retry report generation                                                                                                                                                                                                                                                                                                                                                                                 |
 | anything else (e.g. `127` command not found, `126` permission denied, `2` bad arguments) | **Validator did not run** — this is neither `REPORT_OK` nor `REPORT_FAIL` | Do **not** rename or delete the HTML file. Do **not** claim the report passed or failed validation. Tell the user: "Could not run the report validator (`<exit code and stderr>`) — install Python 3 (`python3 --version` to check) or verify `$PLUGIN_ROOT` is correct, then re-run validation manually." The Generate phase may still complete with the unvalidated report, but the user must be told validation did not occur — never silently treat a missing interpreter as a pass. |
 
 ---
@@ -47,24 +47,24 @@ This validator is a **structural + readability completeness gate**. It does **no
 
 ## Required checks (REPORT_FAIL on any failure)
 
-| # | Check | PASS when |
-|---|-------|-----------|
-| 1 | Section IDs | Each required ID appears **exactly once** on a `<section id="...">` element (not `<div>`) |
-| 2 | Table of contents | `<nav class="toc">` exists; every `href="#id"` matches a `<section id="id">`; every required section is linked |
-| 3 | Appendix content | `appendix-costs` ≥3 data rows; `appendix-services` ≥2 mappings; `appendix-steps` ≥2 phases/rows |
-| 4 | No stubs | Appendix B is not only "see estimation-infra.json"; appendix must render numeric costs from artifacts |
-| 5 | Security costs | If `security_baseline` in estimate: **GuardDuty** or dollar-formatted component costs appear in `appendix-security` / `appendix-costs` (bare `15` in CSS does not count) |
-| 6 | Footer | Contains "draft for review" |
-| 7 | No placeholders | No `[placeholder]` or `TODO` in report body |
-| 8 | Combined TCO | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">` |
-| 9 | Readability — no scoring trace | No literal `Rubric:` in the body. Render per-cluster rationale in a `<details>` "Why this mapping?" block instead |
-| 10 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure. **Genuine sequences keep their numbering** — cluster order, phased weeks, migration phases, and rollback steps stay ordered; only *decorative* section labels are banned |
-| 11 | Security teaser present | If `security_baseline` is in the estimate: exactly the compact `exec-security-teaser` carries it in the exec flow (full table stays in `appendix-security`) |
-| 12 | Verdict banner | If `estimation-infra.json` has a `recommendation` block: `decision-summary` contains a `class="verdict"` element or a "Recommendation:" sentence — not only badges |
-| 13 | No fixture bleed | With `--migration-dir`: the reference canary migration ID does not appear in a real run, and the report's migration ID matches the run folder |
-| 14 | Readability — reader vocabulary | No artifact filename (`*.json`) or Terraform resource ID (`aws_<resource>.<name>`) inside any `exec-*` / `decision-summary` section. The executive flow names what the reader controls; those identifiers live only in the appendices |
-| 15 | Ordered action lists | When `Key decisions ahead` or `Next steps` headings exist in `decision-summary`, the following list is `<ol>`, not `<ul>` |
-| 16 | Configuration provenance | When `<section id="appendix-config">` exists: table includes Question/Assumption and Design consequence columns; ≥2 data rows |
+| #  | Check                              | PASS when                                                                                                                                                                                                                                                                                     |
+| -- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | Section IDs                        | Each required ID appears **exactly once** on a `<section id="...">` element (not `<div>`)                                                                                                                                                                                                     |
+| 2  | Table of contents                  | `<nav class="toc">` exists; every `href="#id"` matches a `<section id="id">`; every required section is linked                                                                                                                                                                                |
+| 3  | Appendix content                   | `appendix-costs` ≥3 data rows; `appendix-services` ≥2 mappings; `appendix-steps` ≥2 phases/rows                                                                                                                                                                                               |
+| 4  | No stubs                           | Appendix B is not only "see estimation-infra.json"; appendix must render numeric costs from artifacts                                                                                                                                                                                         |
+| 5  | Security costs                     | If `security_baseline` in estimate: **GuardDuty** or dollar-formatted component costs appear in `appendix-security` / `appendix-costs` (bare `15` in CSS does not count)                                                                                                                      |
+| 6  | Footer                             | Contains "draft for review"                                                                                                                                                                                                                                                                   |
+| 7  | No placeholders                    | No `[placeholder]` or `TODO` in report body                                                                                                                                                                                                                                                   |
+| 8  | Combined TCO                       | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">`                                                                                                                                                                                |
+| 9  | Readability — no scoring trace     | No literal `Rubric:` in the body. Render per-cluster rationale in a `<details>` "Why this mapping?" block instead                                                                                                                                                                             |
+| 10 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure. **Genuine sequences keep their numbering** — cluster order, phased weeks, migration phases, and rollback steps stay ordered; only _decorative_ section labels are banned |
+| 11 | Security teaser present            | If `security_baseline` is in the estimate: exactly the compact `exec-security-teaser` carries it in the exec flow (full table stays in `appendix-security`)                                                                                                                                   |
+| 12 | Verdict banner                     | If `estimation-infra.json` has a `recommendation` block: `decision-summary` contains a `class="verdict"` element or a "Recommendation:" sentence — not only badges                                                                                                                            |
+| 13 | No fixture bleed                   | With `--migration-dir`: the reference canary migration ID does not appear in a real run, and the report's migration ID matches the run folder                                                                                                                                                 |
+| 14 | Readability — reader vocabulary    | No artifact filename (`*.json`) or Terraform resource ID (`aws_<resource>.<name>`) inside any `exec-*` / `decision-summary` section. The executive flow names what the reader controls; those identifiers live only in the appendices                                                         |
+| 15 | Ordered action lists               | When `Key decisions ahead` or `Next steps` headings exist in `decision-summary`, the following list is `<ol>`, not `<ul>`                                                                                                                                                                     |
+| 16 | Configuration provenance           | When `<section id="appendix-config">` exists: table includes Question/Assumption and Design consequence columns; ≥2 data rows                                                                                                                                                                 |
 
 Checks 9, 10, and 14 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Check 14 scopes to executive-flow sections only — appendices may carry artifact filenames and resource IDs by design. Disable checks 9, 10, and 14 with `--no-readability` only for non-customer fixtures. Check 13 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips. Checks 15–16 apply whenever the corresponding sections/headings exist.
 
@@ -72,16 +72,16 @@ Checks 9, 10, and 14 scan the `<body>` with `<style>` stripped, so CSS class nam
 
 ## Optional sections (recommended — include when data exists)
 
-| Section ID | Include when |
-|------------|--------------|
-| `exec-tco` | Both `estimation-infra.json` and `estimation-ai.json` exist |
-| `exec-architecture` | `aws-design.json` with clusters exists |
-| `exec-security-teaser` | `estimation-infra.json` has `security_baseline` breakdown (compact summary; full table in `appendix-security`) |
-| `appendix-ai` | `estimation-ai.json` or `aws-design-ai.json` exists |
-| `appendix-config` | `preferences.json` exists — question/answer/consequence table from `prompt` and `design_consequence` fields |
-| `appendix-security` | Full security capabilities table (rendered in the appendix) |
-| `appendix-security-gap` | Infra track ran (rendered in the appendix) |
-| `appendix-assumptions` | Pricing confidence, exclusions, validation status, glossary (rendered in the executive flow by design) |
+| Section ID              | Include when                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `exec-tco`              | Both `estimation-infra.json` and `estimation-ai.json` exist                                                    |
+| `exec-architecture`     | `aws-design.json` with clusters exists                                                                         |
+| `exec-security-teaser`  | `estimation-infra.json` has `security_baseline` breakdown (compact summary; full table in `appendix-security`) |
+| `appendix-ai`           | `estimation-ai.json` or `aws-design-ai.json` exists                                                            |
+| `appendix-config`       | `preferences.json` exists — question/answer/consequence table from `prompt` and `design_consequence` fields    |
+| `appendix-security`     | Full security capabilities table (rendered in the appendix)                                                    |
+| `appendix-security-gap` | Infra track ran (rendered in the appendix)                                                                     |
+| `appendix-assumptions`  | Pricing confidence, exclusions, validation status, glossary (rendered in the executive flow by design)         |
 
 ---
 
