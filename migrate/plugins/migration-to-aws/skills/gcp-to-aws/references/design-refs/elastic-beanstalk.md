@@ -105,60 +105,90 @@ Migrated App Engine apps already read `PORT` (App Engine sets it too), so the fi
 
 ## GCP App Engine to EB Mapping
 
-| App Engine Feature          | EB Equivalent                                       |
-| --------------------------- | --------------------------------------------------- |
-| App Engine Standard         | EB with matching platform (Python, Node, etc.)      |
-| App Engine Flexible         | EB Docker platform                                  |
-| `app.yaml` env vars         | EB environment properties                           |
-| `cron.yaml`                 | EB worker + EventBridge scheduled events            |
-| Task queues                 | EB worker + SQS                                     |
-| `instance_class` (F1/F2/F4) | Instance type selection (see Sizing Defaults below) |
-| Automatic scaling min/max   | EB auto-scaling min/max instances                   |
+| App Engine Feature           | EB Equivalent                                                     |
+| ---------------------------- | ----------------------------------------------------------------- |
+| App Engine Standard          | EB with matching platform (Python, Node, etc.)                    |
+| App Engine Flexible          | EB Docker platform                                                |
+| `app.yaml` env vars          | EB environment properties                                         |
+| `cron.yaml`                  | EB worker + EventBridge scheduled events                          |
+| Task queues                  | EB worker + SQS                                                   |
+| `instance_class` (F/B tiers) | Right-sizing signal for instance type (see Sizing Defaults below) |
+| Automatic scaling min/max    | EB auto-scaling min/max instances                                 |
 
 ### Where the config comes from (Terraform)
 
-In Terraform, `google_app_engine_application` is only the **container** for an app — it carries the project/location, not the workload config. The `runtime`, `instance_class`, `env`, and scaling settings live on the **`google_app_engine_standard_app_version`** / **`google_app_engine_flexible_app_version`** resources (one per App Engine _service_/version).
+In Terraform, `google_app_engine_application` is only the **container** for an app — it carries the project/location, not the workload config. The `runtime`, `instance_class`, `env_variables`, and scaling settings live on the **`google_app_engine_standard_app_version`** / **`google_app_engine_flexible_app_version`** resources. Each such resource is one **version** of one **service** (identified by its `service` argument; a service can have many versions).
 
-When mapping, treat the app_version resources as **config sources for the EB mapping**, not skipped resources:
+During discovery these version resources are classified SECONDARY (`configuration`), and the App Engine fan-out step in `phases/design/design-infra.md` reads them when mapping the parent. Treat them as **config sources for the EB mapping**, not skipped resources:
 
-- **One EB environment per App Engine service.** A multi-service App Engine app (multiple `service` values across app_version resources) maps to **multiple EB environments** under one EB application — do **not** collapse it to a single mapping.
-- Read `runtime` → EB platform (via Platform Detection Rules above).
-- Read `instance_class` → EB instance type (see Sizing Defaults).
-- Read `automatic_scaling` / `manual_scaling` → EB min/max instances.
+- **One EB environment per App Engine _service_, not per version.** Group app_version resources by their `service` value. Multiple versions of the same service (e.g. `v1`, `v2` both with `service = "myapp"`) collapse to **one** EB environment — pick the serving/most-recent version for config (prefer `serving_status = "SERVING"`; otherwise the highest `version_id`). Distinct `service` values (e.g. `default`, `worker`) each become a **separate** EB environment under one EB application. Do not emit one env per version, and do not collapse distinct services into one.
+- Read `runtime` → EB platform (via Platform Detection Rules above). For Flexible, `flexible_runtime_settings.operating_system` / `runtime_version` may further qualify it.
+- Read `automatic_scaling` / `basic_scaling` / `manual_scaling` → EB min/max instances (whichever block is present; Standard defaults to automatic).
 - Read `env_variables` → EB environment properties.
+- Derive `instance_type` from **environment type** via Sizing Defaults (below); use the Standard `instance_class` (F/B tiers) or the Flexible `resources` block (`cpu` / `memory_gb`) only to right-size within that band.
 
 If **only** `google_app_engine_application` is present (no app_version resources — e.g. billing-only or partial Terraform), map a single EB environment and detect the platform/runtime from the app source instead, noting the assumption in `warnings`.
 
 ## Sizing Defaults
+
+Instance type is driven by **environment type** (which follows from the availability/uptime preference), not by a direct App Engine instance-class lookup:
 
 | Environment | Type           | Instance   | ALB | Min Instances | Multi-AZ |
 | ----------- | -------------- | ---------- | --- | ------------- | -------- |
 | Dev         | SingleInstance | t3.small   | No  | 1             | No       |
 | Prod        | LoadBalanced   | t3.medium+ | Yes | 2             | Yes      |
 
+**Right-sizing with `instance_class`:** App Engine instance classes have no 1:1 EC2 equivalent (App Engine sizes by memory/CPU limits, not instance families). Use the class only to nudge within the environment band above — start at the band default and step up one size for larger classes (e.g. F4/F4_1G, or B4/B8), rather than mapping each class to a specific type. When unsure, keep the band default and note the assumption in `warnings`.
+
 ## Output Schema
 
-One mapping **per App Engine service** (per app_version resource). `runtime` and `instance_class` are read from the `*_app_version` resource, not from the parent `google_app_engine_application`. `instance_type` follows the Sizing Defaults table (LoadBalanced → t3.medium+; SingleInstance → t3.small).
+The design phase emits **one mapping per App Engine service** (see the App Engine fan-out step in `phases/design/design-infra.md`). `gcp_type` stays `google_app_engine_application` (the Direct Mappings row), and `aws_config.source_service` records which App Engine service the environment came from. `runtime` and `instance_class` are read from that service's `*_app_version` resource, not from the parent; `instance_type` follows the Sizing Defaults table (LoadBalanced → t3.medium+; SingleInstance → t3.small).
+
+Example — a two-service app (`default` + `worker`) produces two mappings under one EB application:
 
 ```json
-{
-  "gcp_type": "google_app_engine_standard_app_version",
-  "gcp_address": "default/v1",
-  "gcp_config": {
-    "service": "default",
-    "runtime": "python39",
-    "instance_class": "F2"
+[
+  {
+    "gcp_type": "google_app_engine_application",
+    "gcp_address": "example-app",
+    "gcp_config": {
+      "source_service": "default",
+      "runtime": "python39",
+      "instance_class": "F2"
+    },
+    "aws_service": "Elastic Beanstalk",
+    "aws_config": {
+      "eb_application": "example-app",
+      "eb_environment": "default",
+      "source_service": "default",
+      "platform": "Python 3.9 running on 64bit Amazon Linux 2023",
+      "environment_type": "LoadBalanced",
+      "instance_type": "t3.medium",
+      "region": "us-east-1"
+    },
+    "confidence": "deterministic",
+    "rationale": "Direct Mapping: App Engine service 'default' → Elastic Beanstalk environment (compute_model absent or managed_platform)"
   },
-  "aws_service": "Elastic Beanstalk",
-  "aws_config": {
-    "eb_application": "example-app",
-    "eb_environment": "default",
-    "platform": "Python 3.9 running on 64bit Amazon Linux 2023",
-    "environment_type": "LoadBalanced",
-    "instance_type": "t3.medium",
-    "region": "us-east-1"
-  },
-  "confidence": "deterministic",
-  "rationale": "Direct Mapping: App Engine service (google_app_engine_standard_app_version) → Elastic Beanstalk environment (compute_model absent or managed_platform)"
-}
+  {
+    "gcp_type": "google_app_engine_application",
+    "gcp_address": "example-app",
+    "gcp_config": {
+      "source_service": "worker",
+      "runtime": "python39",
+      "instance_class": "B2"
+    },
+    "aws_service": "Elastic Beanstalk",
+    "aws_config": {
+      "eb_application": "example-app",
+      "eb_environment": "worker",
+      "source_service": "worker",
+      "platform": "Python 3.9 running on 64bit Amazon Linux 2023",
+      "environment_type": "SingleInstance",
+      "instance_type": "t3.small",
+      "region": "us-east-1"
+    },
+    "confidence": "deterministic",
+    "rationale": "Direct Mapping: App Engine service 'worker' → Elastic Beanstalk environment (compute_model absent or managed_platform)"
+  }
+]
 ```

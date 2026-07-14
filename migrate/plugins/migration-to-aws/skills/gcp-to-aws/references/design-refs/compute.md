@@ -115,8 +115,8 @@ Apply in order; first match wins:
 
 ### Example 4a: App Engine (standard Python web app, default preference)
 
-- GCP: `google_app_engine_standard_app_version` (service=default, runtime=python39, instance_class=F2) under `google_app_engine_application`
-- Note: `runtime`/`instance_class` come from the `*_app_version` resource, not the parent `google_app_engine_application`. Map one EB environment per App Engine service.
+- GCP: `google_app_engine_application` with one service (`default`) whose `google_app_engine_standard_app_version` has runtime=python39, instance_class=F2
+- Note: `runtime`/`instance_class` come from the `*_app_version` resource, not the parent. The App Engine fan-out step (`phases/design/design-infra.md`) emits one EB environment per service; `gcp_type` stays `google_app_engine_application`.
 - Signals: PaaS deployment, `compute_model` absent or `"managed_platform"`
 - Fast-path condition met: `compute_model` not set to `"container_orchestration"` or `"serverless"`
 - → **AWS: Elastic Beanstalk (Python 3.9, LoadBalanced, t3.medium)** — LoadBalanced uses t3.medium+ per `elastic-beanstalk.md` Sizing Defaults
@@ -124,7 +124,7 @@ Apply in order; first match wins:
 
 ### Example 4b: App Engine (user chose container orchestration)
 
-- GCP: `google_app_engine_standard_app_version` (service=default, runtime=python39, instance_class=F2) under `google_app_engine_application`
+- GCP: `google_app_engine_application` with one service (`default`), app_version runtime=python39, instance_class=F2
 - Signals: PaaS deployment, but `compute_model: "container_orchestration"` in preferences
 - Fast-path condition NOT met: falls through to rubric
 - Criterion 1 (Eliminators): EB blocked (user chose container orchestration)
