@@ -1,0 +1,33 @@
+{
+  "projected_costs": {
+    "aws_monthly_balanced": 112,
+    "aws_monthly_premium": 198,
+    "aws_monthly_optimized": 82,
+    "breakdown": {
+      "security_baseline": {
+        "service": "AWS Security Baseline (Tier 1)",
+        "mid": 15,
+        "components": {
+          "cloudtrail_s3": 1.5,
+          "guardduty": 13,
+          "budgets": 0,
+          "free_controls": 0.5
+        }
+      }
+    }
+  },
+  "current_costs": {
+    "gcp_monthly": 165
+  },
+  "recommendation": {
+    "path_label": "migrate_phased",
+    "migrate_if": ["unified AWS operations"],
+    "stay_if": ["BigQuery must cut over in the same window as app infra and cannot use a phased analytics track"]
+  },
+  "cost_comparison": {
+    "option_b_balanced": {
+      "aws_monthly": 112,
+      "percent_change": "-32%"
+    }
+  }
+}

@@ -24,7 +24,7 @@ Check whether `migration-to-aws:gcp-to-aws` appears in your available-skills lis
 > Install it with:
 >
 > ```
-> /plugin install migration-to-aws@startups-for-aws
+> /plugin install migration-to-aws@startups
 > ```
 >
 > Then re-run `/ai-to-aws:llm-to-bedrock`."

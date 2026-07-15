@@ -1,1 +1,0 @@
-../../../gcp-to-aws/references/shared/migration-complexity.md
