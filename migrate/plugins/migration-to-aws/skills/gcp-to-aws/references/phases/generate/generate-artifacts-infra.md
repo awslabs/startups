@@ -354,6 +354,32 @@ Verify these quality rules before reporting completion:
 - [ ] `baseline.tf` does NOT mention "Trusted Advisor" anywhere (Trusted Advisor is docs-action only and out of scope).
 - [ ] Security Hub subscribes to FSBP (always when the compliance-conditional section is emitted) and PCI DSS (only when `compliance` contains `pci`). No other standards subscriptions.
 
+## Step 6: Validate generated Terraform (fmt / init / validate / policy)
+
+After the Step 5 self-check, validate `$MIGRATION_DIR/terraform` and write
+`$MIGRATION_DIR/validation-report.json`.
+
+> Follow the protocol and the policy gate defined by the **tf-best-practices** skill:
+>
+> - Protocol: `skills/tf-best-practices/references/terraform-validation.md`
+>   (`fmt → init → validate → policy → fix-and-retry → offline-fallback`).
+> - Policy gate + invocation, exit codes, and verdict shape: the skill's `SKILL.md` (Part 2).
+> - ALB TLS posture to emit: `skills/tf-best-practices/references/security-posture-rules.md`.
+
+This phase is the **caller** in that protocol. tf-best-practices is a read-only verdict
+producer — it reports whether the Terraform passes. This phase owns everything the skill does
+NOT: pass `$MIGRATION_DIR/terraform` as the target dir, run the fmt/init/validate stages, apply
+the fix-and-retry edits to the reported `violations[]` sites (budget 3), run the retry/skip/abort
+prompt, and write `validation-report.json`.
+
+Caller responsibilities specific to this phase (not owned by the skill):
+
+- Record the skill's policy verdict into `validation-report.json` as `policy_status`
+  (+ `policy_violations` on failure). The verdict is recorded independently of the fmt/init/
+  validate outcome, so a policy failure is never masked by `passed_degraded_offline`.
+- An unresolved `POLICY_FAIL` that the user does not `skip`/`abort` sets top-level
+  `status: "policy_failed"` and blocks Phase Completion (see below).
+
 ## Phase Completion
 
 Report generated files to the parent orchestrator. **Do NOT update `.phase-status.json`** — the parent `generate.md` handles phase completion.
@@ -364,6 +390,9 @@ Before reporting completion, enforce artifact output gate:
 - At minimum: `terraform/main.tf`, `terraform/variables.tf`, and `terraform/outputs.tf` exist.
 - At least one domain file exists among: `vpc.tf`, `security.tf`, `storage.tf`, `database.tf`, `compute.tf`, `monitoring.tf`.
 - `terraform/baseline.tf` MUST exist (baseline is always emitted).
+- `validation-report.json` MUST exist with `policy_status: "POLICY_OK"` (per Step 6). A
+  `POLICY_FAIL` that was not resolved blocks completion unless the user explicitly chose
+  `skip`/`abort` in the Step 6 retry loop.
 
 If this gate fails: STOP and output: "generate-artifacts-infra did not produce required Terraform artifacts; do not complete Generate Stage 2."
 
