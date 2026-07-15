@@ -105,6 +105,7 @@
         <li><a href="#appendix-costs">Appendix B — Cost Estimates</a></li>
         <li><a href="#appendix-steps">Appendix C — Migration Steps &amp; Rollback</a></li>
         <li><a href="#appendix-ai">Appendix D — AI Migration</a></li>
+        <li><a href="#appendix-config">Your Configuration Choices</a></li>
         <li><a href="#appendix-security">Appendix E — AWS Security Posture</a></li>
         <li><a href="#appendix-security-gap">Appendix F — Security Gap Analysis</a></li>
         <li><a href="#appendix-artifacts">Appendix G — Generated Artifacts Catalog</a></li>
@@ -180,14 +181,22 @@
         <li>Cost is the only metric and a dual-run period must be avoided</li>
       </ul>
 
+      <h3>Key decisions ahead</h3>
+      <ol class="compact">
+        <li>Target region and deployment model (Fargate vs EKS)</li>
+        <li>Database migration tooling and cutover window</li>
+        <li>Bedrock model selection for gemini-2.5-flash and imagen-3.0-generate-001</li>
+        <li>BigQuery analytics path with AWS account team or data partner</li>
+      </ol>
+
       <h3>Next steps</h3>
-      <ul class="compact">
+      <ol class="compact">
         <li>Review financial case and security posture with stakeholders</li>
         <li>Engage AWS account team for BigQuery analytics migration path</li>
         <li>Confirm Bedrock model access and quota in us-west-2</li>
         <li>Apply for AWS Activate Founders credits before ramping usage</li>
         <li>Schedule phased cutover per cluster creation order</li>
-      </ul>
+      </ol>
     </section>
 
     <!-- TCO -->
@@ -771,6 +780,72 @@ terraform apply</pre>
         <li>P95 latency within 2&times; of Gemini baseline</li>
         <li>Monthly cost within 20% of <code>estimation-ai.json</code> projection</li>
       </ul>
+    </section>
+
+    <section id="appendix-config">
+      <h2>Your Configuration Choices</h2>
+      <p>Questions and assumptions from the Clarify phase that shaped this migration plan.</p>
+      <table>
+        <caption>Configuration choices with design consequences (from preferences.json).</caption>
+        <thead>
+          <tr>
+            <th scope="col">Question / assumption</th>
+            <th scope="col">Your choice</th>
+            <th scope="col">Source</th>
+            <th scope="col">Design consequence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Do you have any compliance or regulatory requirements?</td>
+            <td>None</td>
+            <td>User answer</td>
+            <td>Tier 1 security baseline only; no Config/Security Hub add-on</td>
+          </tr>
+          <tr>
+            <td>Approximately how much are you spending on GCP per month in total?</td>
+            <td>&lt; $1K</td>
+            <td>User answer</td>
+            <td>Dev-tier sizing baseline for cost comparison</td>
+          </tr>
+          <tr>
+            <td>When can you accept downtime for cutover?</td>
+            <td>Weekly maintenance window</td>
+            <td>User answer</td>
+            <td>Phased cutover in week 3 during declared maintenance window</td>
+          </tr>
+          <tr>
+            <td>How does traffic to your Cloud Run services vary?</td>
+            <td>Active most of the day</td>
+            <td>User answer</td>
+            <td>Fargate hours estimate (~511 hrs/mo) in Balanced tier</td>
+          </tr>
+          <tr>
+            <td>What matters most for your AI workloads?</td>
+            <td>Quality</td>
+            <td>User answer</td>
+            <td>Claude Sonnet 4.6 recommended over lower-cost models</td>
+          </tr>
+          <tr>
+            <td>Detected: Cloud SQL ZONAL &rarr; single-AZ availability</td>
+            <td>Single-AZ</td>
+            <td>Extracted</td>
+            <td>RDS db.t4g.micro single-AZ (not Multi-AZ)</td>
+          </tr>
+          <tr>
+            <td>Detected: GCP region us-west1</td>
+            <td>us-west-2</td>
+            <td>Extracted</td>
+            <td>All resources deploy in us-west-2; Bedrock availability verified</td>
+          </tr>
+          <tr>
+            <td>Are you eligible for AWS startup programs?</td>
+            <td>Eligible Founders (not yet applied)</td>
+            <td>User answer</td>
+            <td>Up to $5K AWS Activate credits callout in report</td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <section id="appendix-security">

@@ -100,15 +100,6 @@ Secrets Migration (only if `scripts/04-migrate-secrets.sh` exists): `./scripts/0
 
 **Section 4: Service Migration** — Per-cluster migration steps from generation-infra.json, organized by creation_order depth.
 
-**Graviton Migration Notes** — Include when any compute resource in `aws-design.json` has `graviton.target_architecture == "arm64"` (see `references/shared/graviton.md`). Add a short subsection in Section 4 listing:
-
-- Which services were migrated to ARM64 (Graviton) and their instance types/runtime platform
-- Any `conditional`-tier services with their `caveats[]` (e.g., "verify native extension `X` has an arm64 build")
-- The build step: container images must be built for arm64 (`docker build --platform linux/arm64`)
-- A recommendation to validate with a load test post-migration (Graviton physical cores may allow further downsizing — not reflected in the cost estimate)
-
-If `cpu_architecture` is `x86` (user opted out) or no compute targets arm64, skip this subsection.
-
 **Human Expertise Advisory (BigQuery / deferred analytics)** — If any service has `human_expertise_required: true` for BigQuery or `aws_service` is **`Deferred — specialist engagement`**, include a prominent callout in Section 4 next to that service:
 
 > **Specialist engagement required (BigQuery):** This plugin **does not** choose an AWS analytics or warehouse target (no Athena/Redshift/Glue recommendation). Engage your **AWS account team** and/or a **data analytics migration partner** before data warehouse, lake, or SQL analytics design. BigQuery work involves query patterns, data movement, ETL/ELT, and BI integration that must be assessed by specialists.
@@ -303,11 +294,11 @@ Include a compact three-tier row or table if the executive report does, matching
 
 **Combined TCO (required when both `estimation-infra.json` and `estimation-ai.json` exist):**
 
-| | GCP monthly | AWS Balanced monthly |
-| --- | --- | --- |
-| Infrastructure | from `current_costs.gcp_monthly` | from `projected_costs.aws_monthly_balanced` |
-| AI / ML | from `current_costs.gcp_monthly_ai_spend` | from `cost_comparison.projected_bedrock_monthly` |
-| **Total** | sum | sum |
+|                | GCP monthly                               | AWS Balanced monthly                             |
+| -------------- | ----------------------------------------- | ------------------------------------------------ |
+| Infrastructure | from `current_costs.gcp_monthly`          | from `projected_costs.aws_monthly_balanced`      |
+| AI / ML        | from `current_costs.gcp_monthly_ai_spend` | from `cost_comparison.projected_bedrock_monthly` |
+| **Total**      | sum                                       | sum                                              |
 
 Note BigQuery/deferred services excluded if applicable.
 

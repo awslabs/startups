@@ -128,6 +128,7 @@ kubectl logs <pod-name> -n <namespace> --previous
 - `iam` — IRSA, Pod Identity, and node role configuration
 - `observability` — CloudWatch Container Insights, Prometheus, and control plane logging
 - `lambda` — Serverless alternative for event-driven or low-traffic workloads
+- `service-mesh` — Istio for mTLS, east-west traffic management, and canary/blue-green shifting
 
 ## Anti-Patterns
 

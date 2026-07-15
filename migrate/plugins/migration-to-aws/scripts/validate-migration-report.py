@@ -325,6 +325,52 @@ def _validate_security_teaser(html: str, estimation_infra: dict | None) -> list[
     ]
 
 
+def _validate_action_lists(html: str) -> list[str]:
+    """Key decisions ahead and Next steps must be ordered lists — actionable sequence."""
+    errors: list[str] = []
+    summary = _section_html(html, "decision-summary") or ""
+    for heading in ("Key decisions ahead", "Next steps"):
+        pattern = re.compile(
+            rf"<h3[^>]*>\s*{re.escape(heading)}\s*</h3>\s*<(ul|ol)\b",
+            re.IGNORECASE | re.DOTALL,
+        )
+        match = pattern.search(summary)
+        if match and match.group(1).lower() == "ul":
+            errors.append(
+                f'decision-summary: "{heading}" must use <ol class="compact"> (ordered action '
+                "items), not a bullet list"
+            )
+    return errors
+
+
+def _validate_appendix_config(html: str) -> list[str]:
+    """When appendix-config is present, require provenance columns."""
+    section = _section_html(html, "appendix-config")
+    if not section:
+        return []
+    errors: list[str] = []
+    if not re.search(r"<table\b", section, re.IGNORECASE):
+        errors.append("appendix-config must contain an HTML table of configuration choices")
+        return errors
+    header = re.search(r"<thead\b.*?</thead>", section, re.DOTALL | re.IGNORECASE)
+    if not header:
+        errors.append("appendix-config table must have <thead> with column headers")
+        return errors
+    hdr_text = header.group(0).lower()
+    if "question" not in hdr_text and "assumption" not in hdr_text:
+        errors.append(
+            'appendix-config table must include a "Question" or "Assumption" column (from preferences.prompt)'
+        )
+    if "consequence" not in hdr_text:
+        errors.append(
+            "appendix-config table must include a Design consequence column (from preferences.design_consequence)"
+        )
+    rows = _count_table_rows(section)
+    if rows < 2:
+        errors.append(f"appendix-config must have >=2 configuration rows (found {rows})")
+    return errors
+
+
 def _validate_verdict(html: str, estimation_infra: dict | None) -> list[str]:
     """When a recommendation block exists, the decision summary must state a
     one-sentence verdict (class="verdict" or 'Recommendation:' text), not only badges."""
@@ -438,6 +484,10 @@ def validate_report(
 
     # Decision summary must state a one-sentence verdict when a recommendation exists.
     errors.extend(_validate_verdict(html, estimation_infra))
+
+    # Ordered action lists and configuration provenance (when sections present).
+    errors.extend(_validate_action_lists(html))
+    errors.extend(_validate_appendix_config(html))
 
     # Catch verbatim copies of the reference fixture into a real run.
     errors.extend(_validate_fixture_bleed(html, migration_dir))

@@ -474,3 +474,63 @@ def test_exec_vocabulary_can_be_disabled(tmp_path: Path) -> None:
     path.write_text(html, encoding="utf-8")
     code, out = run_validator(path, require_toc=False, readability=False)
     assert code == 0, out
+
+
+def test_next_steps_must_be_ordered_list(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="decision-summary"><h2>Decision</h2></section>',
+        '<section id="decision-summary"><h2>Decision</h2>'
+        "<h3>Next steps</h3><ul class=\"compact\"><li>Do something</li></ul></section>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "Next steps" in out
+    assert "<ol>" in out or "ordered" in out.lower()
+
+
+def test_key_decisions_ahead_must_be_ordered_list(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="decision-summary"><h2>Decision</h2></section>',
+        '<section id="decision-summary"><h2>Decision</h2>'
+        '<h3>Key decisions ahead</h3><ul><li>Pick a region</li></ul></section>',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "Key decisions ahead" in out
+
+
+def test_appendix_config_requires_provenance_columns(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="appendix-artifacts">',
+        '<section id="appendix-config"><h2>Config</h2>'
+        "<table><thead><tr><th>Decision</th><th>Value</th></tr></thead>"
+        "<tbody><tr><td>Region</td><td>us-west-2</td></tr></tbody></table></section>"
+        '<section id="appendix-artifacts">',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "appendix-config" in out
+    assert "consequence" in out.lower()
+
+
+def test_appendix_config_passes_with_full_table(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="appendix-artifacts">',
+        '<section id="appendix-config"><h2>Config</h2>'
+        "<table><thead><tr><th>Question</th><th>Choice</th><th>Source</th>"
+        "<th>Design consequence</th></tr></thead>"
+        "<tbody><tr><td>Q?</td><td>A</td><td>User</td><td>Impact</td></tr>"
+        "<tr><td>Q2?</td><td>B</td><td>Extracted</td><td>Impact 2</td></tr>"
+        "</tbody></table></section>"
+        '<section id="appendix-artifacts">',
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 0, out

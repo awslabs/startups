@@ -4,10 +4,11 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 
 ## Plugins
 
-| Plugin                                        | Description                                                                                                                                   | Status    |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **[migration-to-aws](migrate/)**              | Migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and execution planning | Available |
-| **[aws-dev-toolkit](solution-architecture/)** | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS                    | Available |
+| Plugin                                        | Description                                                                                                                                                    | Status    |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **[migration-to-aws](migrate/)**              | Assess & plan: migrate GCP/Azure infrastructure and AI workloads to AWS with resource discovery, architecture mapping, cost analysis, and Terraform generation | Available |
+| **[ai-to-aws](migrate/)**                     | Execute: rewrite LLM SDK calls to Amazon Bedrock, evaluate output quality against your test cases, and deliver a ready-to-merge git branch                     | Available |
+| **[aws-dev-toolkit](solution-architecture/)** | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS                                     | Available |
 
 ## Installation
 
@@ -17,13 +18,41 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 # Add the marketplace
 /plugin marketplace add awslabs/startups
 
-# Install a plugin
+# Install plugins
 /plugin install migration-to-aws@startups-for-aws
+/plugin install ai-to-aws@startups-for-aws
+```
+
+### Codex
+
+```bash
+codex plugin marketplace add awslabs/startups
+codex plugin install migration-to-aws
+codex plugin install ai-to-aws
 ```
 
 ### Cursor
 
 > **Coming soon** — Plugins are not yet published on the Cursor Marketplace.
+
+## How migration-to-aws and ai-to-aws Work Together
+
+**migration-to-aws** handles assessment and planning — it scans your infrastructure (Terraform, billing, source code), maps services to AWS equivalents, estimates costs, and generates validated Terraform configurations and migration scripts.
+
+**ai-to-aws** handles execution for AI/LLM migrations — it takes the assessment from migration-to-aws, rewrites your SDK calls to Amazon Bedrock's Converse API, runs quality evaluation against a golden dataset, and delivers the changes on a git branch ready to merge. (On platforms without subagent dispatch it runs in inline mode — slower, but fully functional.)
+
+```
+┌─────────────────────┐         ┌─────────────────────┐
+│  migration-to-aws   │         │     ai-to-aws       │
+│                     │         │                     │
+│  Discover           │         │  Assess (delegates) │
+│  Clarify            │────────▶│  Rewrite            │
+│  Design             │         │  Evaluate           │
+│  Estimate           │         │  Report             │
+│  Generate           │         │                     │
+└─────────────────────┘         └─────────────────────┘
+     Plan & Artifacts               Execute & Verify
+```
 
 ## Repository Structure
 
@@ -33,6 +62,9 @@ Each top-level folder is owned by a team and contains their plugins, tools, or r
 awslabs/startups/
 ├── .claude-plugin/marketplace.json   # Plugin marketplace (lists all plugins)
 ├── migrate/                          # Migration tools and plugins
+│   └── plugins/
+│       ├── migration-to-aws/         # Assess & plan
+│       └── ai-to-aws/                # Execute (AI/LLM migrations)
 ├── solution-architecture/            # Solution Architecture plugins (aws-dev-toolkit)
 └── ...                               # Future team folders
 ```
