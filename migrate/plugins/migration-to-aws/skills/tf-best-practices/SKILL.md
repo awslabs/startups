@@ -13,6 +13,22 @@ questions for a phase that generates AWS Terraform:
 2. **After writing** — "does the generated `terraform/` pass policy?" (a deterministic,
    **read-only** verdict + a machine-readable report)
 
+## Routing — load the part that matches your context
+
+This skill is entered at two touchpoints in the caller's Generate flow, with the caller's
+own terraform-authoring work in between. **The caller states which touchpoint it is at when it
+loads this skill**, and reads the corresponding part:
+
+| Caller context                                              | Load                                                                                                      | Why                                                                                               |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **About to author `terraform/`** (before writing)           | Part 1 → [`references/security-posture-rules.md`](references/security-posture-rules.md)                   | The "what to emit" AWS authoring rules (gate-enforced + authoring-only + compliance-conditional). |
+| **`terraform/` written, ready to validate** (after writing) | Part 2 → [`references/terraform-validation.md`](references/terraform-validation.md) + run the gate script | The `fmt → init → validate → policy` protocol and the read-only verdict.                          |
+
+Everything this skill states is **source-cloud-agnostic** (pure AWS Terraform). Any GCP/Heroku
+detection or artifact reading is the caller's job; where a rule needs a caller-known fact (e.g.
+declared compliance frameworks), the caller passes it as a **caller-context signal** — see
+`references/security-posture-rules.md` § _Caller-context signals_.
+
 ## Boundary (read this first)
 
 This unit is a **verdict producer, never a mutator**. Its entire write surface is the
@@ -35,16 +51,23 @@ generate phase for how the verdict feeds those decisions.
 Emit generated Terraform that satisfies the posture in
 [`references/security-posture-rules.md`](references/security-posture-rules.md).
 
-These are the "what to emit" rules. Following them makes the Part 2 gate pass by
-construction. This unit does not read the caller's artifacts.
+These are the "what good AWS Terraform looks like" rules. Following them makes the Part 2 gate
+pass by construction. This unit does not read the caller's artifacts — it consumes only
+caller-context signals the caller passes in.
 
-> **Scope.** The posture rules and the Part 2 gate cover internet-facing ALB TLS termination,
-> no-public-database, no-public admin/datastore-port ingress, no-wildcard-IAM, and RDS +
-> ElastiCache encryption-at-rest (see **Policy rules enforced today** below). This unit is
-> intentionally extensible: further cross-cutting posture rules (private-subnet placement as a
-> positive assertion, the account-hardening `baseline.tf` layer, S3 SSE correlation, CloudFront
-> viewer-protocol TLS) are candidates to migrate here over time. Until then those remain the
-> consuming skill's own generation rules.
+> **Scope.** `security-posture-rules.md` covers, in three tiers:
+>
+> - **Gate-enforced** (Part 2 verifies statically): ALB TLS, no-public-database, RDS +
+>   ElastiCache encryption-at-rest, no-public-DB-port ingress, no-public admin/datastore-port
+>   ingress, no-wildcard-IAM.
+> - **Authoring-only** (not gate-checkable, still required): `deletion_protection`,
+>   master-password-via-Secrets-Manager, S3 hardening, Fargate/EKS/ECR settings, private-subnet
+>   placement, backups, baseline monitoring.
+> - **Compliance-conditional** (emitted when the caller declares `soc2`/`pci`/`hipaa`/`fedramp`):
+>   VPC flow logs, S3 access logging, secret rotation, customer-managed KMS.
+>
+> Still the **caller's** own generation concern (candidates to migrate here later): the
+> account-hardening `baseline.tf` layer (CloudTrail, GuardDuty, Config, Security Hub).
 
 ## Part 2 — Policy gate (run after writing `terraform/`)
 
