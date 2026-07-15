@@ -69,7 +69,24 @@ Write `$MIGRATION_DIR/preferences.json`:
     "cost_optimization": "<Q15 value>"
   },
   "design_constraints": {
-    "kubernetes": { "value": "<Q12c value>", "chosen_by": "user|default" }
+    "compute_target": {
+      "default": "<Q12c default target: elastic_beanstalk|ecs-fargate|eks-managed|eks-or-ecs>",
+      "overrides": [
+        {
+          "formation": "<heroku_app>:<process_type>",
+          "value": "<elastic_beanstalk|ecs-fargate>",
+          "reason": "<why this formation differs from the default>",
+          "chosen_by": "user|system_forced"
+        }
+      ],
+      "chosen_by": "user|system_recommended|default",
+      "recommendation": {
+        "value": "elastic_beanstalk|ecs-fargate|eks-managed|eks-or-ecs|mixed",
+        "confidence": "high|medium|low",
+        "reasons": ["<short reason strings>"]
+      }
+    },
+    "eb_deploy_method": { "value": "<Q12d value; omit when resolved compute plan has no EB formations>", "chosen_by": "user|default" }
   },
   "defaults_applied": ["<list of defaulted question IDs>"],
   "sources": {
@@ -89,6 +106,8 @@ Write `$MIGRATION_DIR/preferences.json`:
 5. `global.fir_intent` is `null` when no Fir apps detected (Q11 not fired).
 6. `network.existing_vpc_id` and `network.subnet_ids` are `null`/empty when no Private Space peering exists.
 7. `data.database_ha`, `data.redis_ha`, `data.kafka_retention_days` are omitted entirely when those services are not present in the inventory.
+8. `design_constraints.compute_target` uses the structured Q12c shape (`default`, `overrides`, `chosen_by`, `recommendation`). Existing reused preferences with legacy `compute_target.value` may be read by Design for backward compatibility, but newly assembled preferences MUST write the structured shape.
+9. `design_constraints.eb_deploy_method` is required when the resolved compute plan includes at least one Elastic Beanstalk formation; omit it for all-Fargate or all-EKS targets.
 
 ---
 
@@ -108,8 +127,16 @@ Before handing off to Design:
 - [ ] If peering detected and VPC ID needed → `network.existing_vpc_id` is populated
 - [ ] If Fir apps detected → `global.fir_intent` is populated (not null)
 - [ ] `operational.containerization_status` is populated
-- [ ] `design_constraints.kubernetes.value` is one of: `"eks-managed"`, `"eks-or-ecs"`, `"ecs-fargate"`
-- [ ] `design_constraints.kubernetes.chosen_by` is `"user"` or `"default"`
+- [ ] `design_constraints.compute_target.default` is one of: `"elastic_beanstalk"`, `"ecs-fargate"`, `"eks-managed"`, `"eks-or-ecs"`
+- [ ] `design_constraints.compute_target.chosen_by` is one of: `"user"`, `"system_recommended"`, `"default"`
+- [ ] `design_constraints.compute_target.overrides[]` entries, when present, have `formation`, `value`, `reason`, and `chosen_by`
+- [ ] `design_constraints.compute_target.overrides[].value` is one of: `"elastic_beanstalk"`, `"ecs-fargate"`
+- [ ] `design_constraints.compute_target.overrides[].chosen_by` is one of: `"user"`, `"system_forced"`
+- [ ] `design_constraints.compute_target.recommendation.value` is one of: `"elastic_beanstalk"`, `"ecs-fargate"`, `"eks-managed"`, `"eks-or-ecs"`, `"mixed"`
+- [ ] `design_constraints.compute_target.recommendation.confidence` is one of: `"high"`, `"medium"`, `"low"`
+- [ ] `design_constraints.compute_target.recommendation.reasons` is a non-empty array
+- [ ] If the resolved compute plan includes Elastic Beanstalk → `design_constraints.eb_deploy_method.value` is one of: `"github_actions"`, `"codepipeline"`, `"manual"`
+- [ ] If `design_constraints.eb_deploy_method` is present → `design_constraints.eb_deploy_method.chosen_by` is `"user"` or `"default"`
 - [ ] All entries in `sources` have a value of `"user"` or `"default"`
 - [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`
 - [ ] Only keys with non-null values are present

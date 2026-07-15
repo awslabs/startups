@@ -45,7 +45,10 @@ run = "markdownlint-cli2 '**/*.md' '#node_modules' --fix"
 
 [tasks."lint:frontmatter"]
 description = "Validate phase/fragment/assembler frontmatter (typed, zero-dep; skill-agnostic)"
-run = "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/heroku-to-aws"
+run = [
+  "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/heroku-to-aws",
+  "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/agent-advisor",
+]
 
 [tasks."lint:types"]
 description = "Type-check the frontmatter validator + its test (tsc --noEmit, strict)"
@@ -78,10 +81,10 @@ run = [
 # =========
 
 [tasks."security:bandit"]
-description = "Run Bandit (two-pass: ai-to-aws plugin with its own skip config; rest of repo with full strictness — mirrors the CI bandit job in .github/workflows/security-scanners.yml)"
+description = "Run Bandit (two-pass: migration-to-aws plugin with its own skip config; rest of repo with full strictness — mirrors the CI bandit job in .github/workflows/security-scanners.yml)"
 run = [
-  "bandit -r migrate/plugins/ai-to-aws -c migrate/plugins/ai-to-aws/bandit.yml -x ./migrate/plugins/ai-to-aws/scripts/.venv",
-  "bandit -r . --exclude ./.tmp,./node_modules,./migrate/plugins/ai-to-aws",
+  "bandit -r migrate/plugins/migration-to-aws -c migrate/plugins/migration-to-aws/bandit.yml -x migrate/plugins/migration-to-aws/skills/agent-advisor/scripts/.venv,migrate/plugins/migration-to-aws/skills/llm-to-bedrock/scripts/.venv,migrate/plugins/migration-to-aws/tests",
+  "bandit -r . --exclude ./.tmp,./node_modules,./migrate/plugins/migration-to-aws",
 ]
 
 [tasks."security:semgrep"]
