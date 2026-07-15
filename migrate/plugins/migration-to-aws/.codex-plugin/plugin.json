@@ -39,7 +39,10 @@
     "llm-migration",
     "cost-estimation",
     "cost-comparison",
-    "pricing-comparison"
+    "pricing-comparison",
+    "vercel",
+    "nextjs",
+    "opennext"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
@@ -56,7 +59,8 @@
       "Migrate my OpenAI app to Amazon Bedrock",
       "Estimate AWS costs for my GCP workload",
       "Generate Terraform for my GCP to AWS migration",
-      "Migrate my LangChain app from OpenAI to Bedrock"
+      "Migrate my LangChain app from OpenAI to Bedrock",
+      "Assess my Vercel migration"
     ]
   }
 }

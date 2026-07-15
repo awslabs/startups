@@ -37,6 +37,9 @@
     "llm-migration",
     "cost-estimation",
     "cost-comparison",
-    "pricing-comparison"
+    "pricing-comparison",
+    "vercel",
+    "nextjs",
+    "opennext"
   ]
 }

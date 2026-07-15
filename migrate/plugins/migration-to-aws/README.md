@@ -10,6 +10,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
 - **Heroku → AWS** — Dynos, Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
+- **Vercel → AWS** — an honest assessment (discovery, Coupling Score, Pre-Flight Checks, a three-outcome recommendation) for Next.js apps, with an optional thin scaffold
 
 **For infrastructure migrations:**
 
@@ -53,10 +54,10 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 ## Plugins
 
-| Plugin               | Description                                                                                                              | Status    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------- |
-| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku)              | Available |
-| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
+| Plugin               | Description                                                                                                                                                                  | Status    |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning (GCP, Heroku) plus honest Vercel assessment (discovery, coupling, recommendation) | Available |
+| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws)                                                     | Available |
 
 ## Installation
 
@@ -165,12 +166,22 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 | CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)        |
 | Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                       |
 
+#### Vercel → AWS (assessment only, not a full migration plan)
+
+| Category    | Examples                                                                                                                                      |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute     | OpenNext/SST (Outcome A), ECS Fargate (Outcome B), or a Vercel+AWS Hybrid where only the backend moves (Outcome C)                            |
+| Coupling    | ISR, edge middleware, edge runtime routes, image optimization, streaming SSR, Server Actions/skew, preview deployments, Vercel-managed stores |
+| Pre-Flight  | 10 named checks (M1/M2/B1-B4/S1/I1/O1/U1), computed unconditionally and filtered by the recommended outcome                                   |
+| Peripherals | Blob → S3, Cron → EventBridge Scheduler, KV → ElastiCache, Postgres → RDS/Aurora, Edge Config → Parameter Store/AppConfig                     |
+
 ### Agent Skill Triggers
 
 | Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
 | **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
+| **vercel-to-aws** | "migrate from Vercel", "Vercel to AWS", "move off Vercel", "migrate Next.js off Vercel", "assess my Vercel migration", "leave Vercel", "Vercel to Fargate", "Vercel to OpenNext", "should I migrate off Vercel"                                          |
 
 ### MCP Servers
 
@@ -192,18 +203,24 @@ See the [ai-to-aws README](../ai-to-aws/README.md) for full details on prerequis
 - At least one input source: Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
 - **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
+- **For Vercel assessment:** repo access with a locally-runnable `next build`, plus a read-only, team-scoped Vercel API token, are both required Tier 1 inputs — the assessment does not run without them
 - **For AI execution (ai-to-aws):** Python 3.10+, `uv`, and Bedrock model access enabled
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
 ## Architecture & contributing
 
-This plugin ships two migration skills built on **different architectures**, and this
-matters if you contribute:
+This plugin ships three migration skills built on **different architectures**, and
+this matters if you contribute:
 
-- **heroku-to-aws** is built on the **phase DSL** — a declarative frontmatter grammar
-  an LLM interprets at runtime, with a static validator that checks the structure
-  before anything runs. It is the reference implementation and the **direction for all
-  new work**.
+- **heroku-to-aws** and **vercel-to-aws** are built on the **phase DSL** — a
+  declarative frontmatter grammar an LLM interprets at runtime, with a static
+  validator that checks the structure before anything runs. This is the reference
+  implementation and the **direction for all new work**. `vercel-to-aws` additionally
+  owns its own resumability ledger (`assessment-state.json`, independent of the
+  vendored `.phase-status.json`) since its assessment supports incremental,
+  effort-for-confidence input collection across multiple sessions — see
+  `skills/vercel-to-aws/references/state/assessment-state.schema.json` if you're
+  building a skill with similar "come back later with more input" needs.
 - **gcp-to-aws** predates the DSL and uses the **older prose design**. It is maintained,
   but a future effort will port it onto the DSL.
 
@@ -243,6 +260,26 @@ python3 scripts/validate-migration-report.py \
 ```
 
 See [fixtures/README.md](fixtures/README.md) for what `REPORT_OK` does and does not guarantee.
+
+### Vercel assessment report validator (unit tests)
+
+When changing anything under `skills/vercel-to-aws/references/phases/report/`,
+`scripts/validate-assessment-report.py`, or
+`fixtures/assessment-report-reference.html`:
+
+```bash
+cd migrate/plugins/migration-to-aws
+
+pytest tests/test_validate_assessment_report.py -q
+
+python3 scripts/validate-assessment-report.py \
+  fixtures/assessment-report-reference.html
+
+# Stub must fail (regression guard)
+python3 scripts/validate-assessment-report.py \
+  fixtures/assessment-report-stub.html \
+  && exit 1 || true
+```
 
 ## Security
 
