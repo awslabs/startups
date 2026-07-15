@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.venv/
 
 # Build outputs
 dist/
@@ -10,6 +11,7 @@ __pycache__/
 .dprint/
 .ruff_cache/
 .mise/
+.pytest_cache/
 
 # Temporary files
 .tmp/
