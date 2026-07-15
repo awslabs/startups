@@ -58,10 +58,10 @@ Gather data from all available artifacts. Each section below notes which artifac
 | AI capabilities and integration         | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile`                                                                               | —                                                    |
 | Deferred services                       | Design artifact `resources[].aws_service == "Deferred — specialist engagement"`                                                                         | —                                                    |
 | Observability cost callout              | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`) | —                                                    |
-| **Combined TCO (infra + AI)**           | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`)       | —                                                    |
+| **Combined TCO (infra + AI)**           | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`)         | —                                                    |
 | **Security baseline component costs**   | `estimation-infra.json` → `projected_costs.breakdown.security_baseline.components` (GuardDuty, cloudtrail_s3, etc.)                                     | Static ranges in Appendix G when JSON absent         |
 | **Engineering effort**                  | `generation-infra.json` + `generation-ai.json` → `recommendation.estimated_total_effort_hours`                                                          | —                                                    |
-| **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                   | —                                                    |
+| **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                 | —                                                    |
 | **Pricing confidence / staleness**      | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                       | `estimation-ai.json` accuracy fields                 |
 | **AI optimization opportunities**       | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                             | —                                                    |
 
@@ -93,8 +93,8 @@ Content when `recommendation` block exists:
 3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
 4. **Timeline:** from `generation-infra.json` → `migration_plan.total_weeks` (preferred), OR `migration-preview.json` → `timeline_hint`. Do NOT use `recommendation.next_steps` as timeline — those are action items, not duration.
 5. **Migrate if / Stay if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists. For BigQuery/deferred analytics: **do not** frame specialist engagement as a reason to stay on GCP unless the user must cut over analytics in the **same window** as app infra. Prefer migrate-if bullets that mention parallel specialist planning.
-6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — bullet list
-7. **Next steps (optional):** from `recommendation.next_steps` — compact bullet list separate from timeline
+6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — **ordered list** (`<ol class="compact">`), not bullets. Each item is one concrete decision the reader must make next.
+7. **Next steps (optional):** from `recommendation.next_steps` — **ordered list** (`<ol class="compact">`) of actionable steps separate from timeline. Numbered sequence implies priority order; keep `Migrate if` / `Stay if` as unordered lists.
 
 **Deferred services flag:** If ANY resource in the design artifact has `aws_service == "Deferred — specialist engagement"`, add a prominent callout:
 
@@ -114,11 +114,11 @@ Source: estimation artifact `recommendation`, `migration-preview.json`, design a
 
 Combined monthly and annual view **excluding** deferred services (e.g. BigQuery):
 
-| Row | GCP | AWS Balanced | Notes |
-| --- | --- | --- | --- |
-| Infrastructure | `current_costs.gcp_monthly` | `projected_costs.aws_monthly_balanced` | From infra estimate |
-| AI / ML | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate |
-| **Total** | sum | sum | Show monthly Δ and % change |
+| Row            | GCP                                                      | AWS Balanced                                | Notes                       |
+| -------------- | -------------------------------------------------------- | ------------------------------------------- | --------------------------- |
+| Infrastructure | `current_costs.gcp_monthly`                              | `projected_costs.aws_monthly_balanced`      | From infra estimate         |
+| AI / ML        | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate            |
+| **Total**      | sum                                                      | sum                                         | Show monthly Δ and % change |
 
 If `estimation-ai.json` → `optimized_projection` exists, footnote the optimized AI path separately.
 
@@ -372,24 +372,36 @@ Open any JSON file with a text editor or `cat <filename> | python3 -m json.tool`
 
 Do not list files that were not generated.
 
-### Appendix Section F — Your Configuration (conditional)
+### Appendix Section F — Your Configuration (`appendix-config`, conditional)
 
 **Only include if `preferences.json` exists in `$MIGRATION_DIR/`.**
 
-Key decisions that shaped this migration plan. Each value is read from `preferences.json` using the `.value` field of wrapped preference objects (e.g., `availability.value`, not `availability` directly).
+Key decisions that shaped this migration plan. Read every object in `design_constraints`, `ai_constraints`, and `startup_constraints` (when present). Schema: `references/shared/schema-preferences.md`.
 
-| Decision                 | Your choice                                            | Impact on plan                                                  |
-| ------------------------ | ------------------------------------------------------ | --------------------------------------------------------------- |
-| Target AWS region        | `design_constraints.target_region.value` or equivalent | All resources deployed here; Bedrock model availability checked |
-| Availability requirement | `availability.value`                                   | Drives RDS single-AZ vs Multi-AZ vs Aurora selection            |
-| Monthly GCP spend        | From estimation source or `gcp_monthly_spend.value`    | Cost comparison baseline                                        |
-| Framework                | `ai_framework.value` (if AI track ran)                 | Determines migration effort for AI workloads                    |
-| AI priority              | `ai_priority.value` (if present)                       | Drives Bedrock model selection                                  |
-| Compliance               | `compliance.value` (if present)                        | Triggers Config + Security Hub in baseline.tf                   |
+Render an HTML table with **five columns**, one row per constraint object (iterate every key in `design_constraints`, `ai_constraints`, and `startup_constraints` when present — do not hardcode a subset):
 
-**Source indicators:** Each preference shows `chosen_by`: `"user"` (explicitly answered), `"extracted"` (inferred from IaC/code), or `"default"` (plugin default applied).
+| Column                    | Source                                                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Question / assumption** | `prompt` on each constraint object                                                                                                              |
+| **Your choice**           | formatted `value` (human-readable; expand arrays)                                                                                               |
+| **Source**                | `chosen_by` → "User answer", "Extracted from infrastructure", "Default applied", or "Derived"                                                   |
+| **Source signal**         | the `source` field when present (shows provenance like `terraform:availability_type=ZONAL` or `default:Q16`); leave blank for user/derived rows |
+| **Design consequence**    | `design_consequence` on each constraint object                                                                                                  |
 
-**Full detail:** Open `preferences.json` in this directory.
+**Assumption flag:** Rows where `source` starts with `"default:"` are unverified assumptions — render in a visually distinct style (e.g., lighter text or italic) so the reader can spot which values were not explicitly verified from infrastructure.
+
+**Critical-default caveats (required when present):** If any of the following constraints have `chosen_by: "default"` AND the corresponding question ID appears in `metadata.questions_defaulted`:
+
+- `compliance` (Q2): render a warning callout: _"⚠️ Compliance was not explicitly confirmed. The security baseline assumes no regulatory requirements. If SOC 2, PCI, HIPAA, or FedRAMP applies, re-run Clarify or manually add controls."_
+- `gcp_monthly_spend` (Q3): render a warning callout: _"⚠️ GCP spend was not confirmed by the user. Cost comparison uses the default band ($1K–$5K). Actual spend may differ — verify against your GCP billing console."_
+
+Place these callouts at the top of Appendix F, before the table, so they're immediately visible.
+
+**Sort order:** user-answered rows first, then extracted, then default, then derived.
+
+**Legacy fallback:** If a constraint object lacks `prompt` or `design_consequence` (pre-extension runs), use the catalog in `schema-preferences.md` keyed by constraint name — never omit the appendix or leave cells empty.
+
+**Do not** reduce this section to a key/value dump without question text and consequences.
 
 Source: `preferences.json`
 
@@ -607,7 +619,7 @@ The inline CSS must include:
 
 These move from "example in the fixture" to enforced gate. See `references/shared/validate-migration-report.md` and `fixtures/migration-report-reference.html`.
 
-1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Total Cost of Ownership"), never `Section N — …`. The "Section N" labels used elsewhere in *this spec* are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading. **Genuine sequences keep their numbers.** This ban targets *decorative* heading labels only. Real sequences — the migration cluster order, phased timeline weeks, migration phases, and rollback steps — MUST stay ordered (`<ol>` or a numbered table column) because the order carries information the reader needs. Do not flatten them to bullets to satisfy this rule.
+1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Total Cost of Ownership"), never `Section N — …`. The "Section N" labels used elsewhere in _this spec_ are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading. **Genuine sequences keep their numbers.** This ban targets _decorative_ heading labels only. Real sequences — the migration cluster order, phased timeline weeks, migration phases, and rollback steps — MUST stay ordered (`<ol>` or a numbered table column) because the order carries information the reader needs. Do not flatten them to bullets to satisfy this rule.
 2. **No internal scoring trace.** Per-cluster mapping rationale goes in a collapsible `<details class="why">` ("Why this mapping?") block — never a bare `Rubric:` line. The validator fails on a literal `Rubric:` in the body.
 3. **Security teaser up top, full detail in the appendix.** `exec-security-teaser` carries a 2–3 line summary that links down to `appendix-security` (full control table) and `appendix-security-gap`. Do not render the full control table in the executive flow.
 4. **Expand acronyms** on first use and include a glossary (TCO, DMS, OAI, RTO, CUD, SCC, IMDSv2, P95, RAG) in the assumptions section — the audience is startup founders, not AWS specialists.
@@ -615,6 +627,7 @@ These move from "example in the fixture" to enforced gate. See `references/share
 6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate, phased over 10 weeks — ~$497/mo savings, BigQuery deferred") in addition to the `path_label` badges.
 7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*` or `decision-summary` section.
 8. **One name per concept.** Use a single consistent label for each recommended choice across the whole report. The recommended Bedrock model and the chosen cost tier keep the same name in the verdict, tables, and appendices (always "Claude Sonnet 4.6 (recommended)", always "Balanced"). Do not alternate "recommended / selected target / design target / projected" for the same item — one label is how the reader keeps their bearings.
+9. **Ordered action lists.** In `decision-summary`, `Key decisions ahead` and `Next steps` MUST use `<ol class="compact">`, not `<ul>`. The validator fails when either heading is followed by a bullet list. `Migrate if` / `Stay if` remain unordered lists.
 
 > **Section IDs are stable anchors, not placement hints.** Some `appendix-*` IDs render in the executive flow on purpose (notably `appendix-assumptions`). Do not rename IDs to match position — the validator and TOC key on them.
 
@@ -637,6 +650,8 @@ After generating the HTML file, verify:
 13. **Readability**: No literal `Rubric:` and no numbered headings (`Section 0`, `Section 1b`, `<hN>Section N — …`); security teaser up top with full table in the appendix; tables have `<caption>`/`scope`; acronyms expanded; one-sentence recommendation banner in decision summary
 14. **Reader vocabulary**: No artifact filenames (`*.json`) or Terraform resource IDs (`aws_*.*`) inside `decision-summary` / `exec-*` sections — those names live only in the technical appendices.
 15. **Consistent labels**: The recommended model and the chosen cost tier use one consistent name across verdict, tables, and appendices (no "recommended / selected / design target" drift for the same item).
+16. **Configuration provenance**: When `preferences.json` exists, `appendix-config` table has Question/assumption, Your choice, Source, and Design consequence columns populated from `prompt` and `design_consequence` fields (see `schema-preferences.md`).
+17. **Ordered next steps**: `Key decisions ahead` and `Next steps` in `decision-summary` use `<ol>`, not `<ul>`.
 
 **Run automated validator (mandatory when HTML was written):**
 

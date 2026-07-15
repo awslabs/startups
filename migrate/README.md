@@ -1,10 +1,15 @@
 # Migration to AWS
 
-AI agent skills for migrating workloads from GCP to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), [Codex](https://openai.com/codex), and [Cursor](https://www.cursor.com/).
+AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), [Codex](https://openai.com/codex), and [Cursor](https://www.cursor.com/).
 
 ## What This Does
 
-Point this plugin at your Terraform files, application code, or GCP billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+Point this plugin at your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+
+**Supported migration sources:**
+
+- **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
+- **Heroku → AWS** — Dynos (→ Elastic Beanstalk by default; Fargate or EKS overrides), Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
 
 **For infrastructure migrations:**
 
@@ -21,6 +26,13 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 - **Gives honest pricing comparisons** — finds the best Bedrock option for your workload with current pricing data, including side-by-side estimated monthly cost comparisons against your existing OpenAI/Gemini spend
 - **Generates runnable AI artifacts** — `harness.json`, provider adapters, deployment scripts, incremental migration scripts — tailored to your specific models, tools, and architecture
 
+## Plugins
+
+| Plugin               | Description                                                                                                              | Status    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning                               | Available |
+| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
+
 ## Installation
 
 ### Claude Code
@@ -29,8 +41,9 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 # Add the marketplace
 /plugin marketplace add awslabs/startups --sparse migrate/plugins
 
-# Install the plugin
+# Install the plugins
 /plugin install migration-to-aws@startups
+/plugin install ai-to-aws@startups
 ```
 
 ### Codex
@@ -38,15 +51,30 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 ```bash
 codex plugin marketplace add awslabs/startups
 codex plugin install migration-to-aws
+codex plugin install ai-to-aws
 ```
 
 ### Cursor
 
-> **Coming soon** — Plugins are not yet published on the Cursor Marketplace.
+Install from the [Cursor Marketplace](https://cursor.com/marketplace) (AWS Agent Plugins collection):
+
+1. Open **Cursor Settings**
+2. Go to **Plugins**
+3. Search for **AWS** or **Migration to AWS**
+4. Click **Add to Cursor** and choose user or workspace scope
+5. Confirm it appears under **Plugins → Installed**
+
+Requires [Cursor >= 2.5](https://cursor.com/changelog/2-5). See the [Cursor plugins documentation](https://cursor.com/docs/plugins) for details.
+
+> **Note:** Cursor installs are distributed via the [Agent Plugins for AWS](https://github.com/awslabs/agent-plugins) marketplace. Claude Code and Codex installs use the `awslabs/startups` marketplace above.
+
+**Alternative (local development):** Clone this repository and symlink the plugin directory to `~/.cursor/plugins/local/migration-to-aws`, then reload Cursor.
 
 ## How to Use
 
 After installation, just describe what you want to migrate:
+
+**GCP migrations:**
 
 - "Migrate my GCP infrastructure to AWS"
 - "Move my Cloud Run services to Fargate"
@@ -54,9 +82,20 @@ After installation, just describe what you want to migrate:
 - "Estimate AWS costs for my GCP workload"
 - "Migrate my LangChain agents to AWS"
 
+**Heroku migrations:**
+
+- "Migrate my Heroku app to AWS"
+- "Move my Heroku Postgres to RDS"
+- "Migrate from Heroku to Fargate"
+- "Migrate from Heroku to Elastic Beanstalk"
+- "Estimate AWS costs for my Heroku workload"
+- "Migrate my Heroku Private Space to AWS"
+
 The skill creates a `.migration/<session>/` directory in the current working directory with all artifacts.
 
 ## What It Detects
+
+### GCP → AWS
 
 | Category             | GCP → AWS                                                                                                                                               |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -72,23 +111,37 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 | Agent Architecture   | Single agent, hierarchical, swarm, graph, sequential orchestration                                                                                      |
 | Tools & Memory       | Tool definitions with transport/auth classification, memory backends (Redis, Postgres, vector stores)                                                   |
 
+### Heroku → AWS
+
+| Category       | Heroku → AWS                                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute        | Dynos (all types) → Elastic Beanstalk (default) — Fargate override for direct container control (and horizontally scaled non-web dynos), EKS override for Kubernetes teams |
+| Databases      | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump/bucardo/wal-g migration methods)                                                                         |
+| Caching        | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                                                                                              |
+| Streaming      | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)                                                                                           |
+| Add-ons        | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate                                                                             |
+| Networking     | Private Spaces → VPC with restricted security groups; VPC peering detection and reuse                                                                                      |
+| CI/CD          | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)                                                                                    |
+| Secrets        | Config vars → AWS Secrets Manager or SSM Parameter Store                                                                                                                   |
+| Load Balancing | Web dynos → ALB; non-web → no ALB                                                                                                                                          |
+
 ## What You Get That a Base LLM Can't
 
 **Infrastructure:**
 
-| Capability                 | Base LLM          | This Plugin                                                                                              |
-| -------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
-| Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups  |
-| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts |
-| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script          |
-| Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill    |
-| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                      |
+| Capability                 | Base LLM          | This Plugin                                                                                                                   |
+| -------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                       |
+| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts                      |
+| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                               |
+| Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill |
+| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                           |
 
 **AI/Agentic:**
 
 | Capability               | Base LLM                          | This Plugin                                                                                                                |
 | ------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with estimated monthly costs, honest stay-or-migrate recommendation per model                                  |
+| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with estimated monthly costs, honest stay-or-migrate recommendation per model                  |
 | Agentic migration        | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges |
 | Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage          |
 | Framework gotchas        | Not covered                       | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion     |
@@ -98,9 +151,10 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 ## Agent Skill Triggers
 
-| Agent Skill    | Triggers                                                                                                                                                                                                                                                 |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gcp-to-aws** | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
+| Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"    |
 
 ## MCP Servers
 
@@ -113,8 +167,9 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
-- At least one input source: Terraform files, application code, or GCP billing data
-- **For AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
+- At least one input source: Terraform files, application code, or billing data
+- **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
+- **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
 
 ## Structure
 

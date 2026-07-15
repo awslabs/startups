@@ -7,6 +7,7 @@ min_version = "2026.2.4"
 node = "24"
 "npm:markdownlint-cli2" = "0.17"
 "npm:dprint" = "0.51"
+"npm:typescript" = "5"
 "pipx:pre-commit" = "4"
 "pipx:bandit[sarif]" = "1"
 "pipx:checkov" = "3"
@@ -42,10 +43,34 @@ run = "markdownlint-cli2 '**/*.md' '#node_modules' '#.git'"
 description = "Lint Markdown files with auto-fix"
 run = "markdownlint-cli2 '**/*.md' '#node_modules' --fix"
 
+[tasks."lint:frontmatter"]
+description = "Validate phase/fragment/assembler frontmatter (typed, zero-dep; skill-agnostic)"
+run = "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/heroku-to-aws"
+
+[tasks."lint:types"]
+description = "Type-check the frontmatter validator + its test (tsc --noEmit, strict)"
+run = "cd migrate/plugins/migration-to-aws && tsc --noEmit"
+
+[tasks.test]
+description = "Run the frontmatter-validator test suite (node --test)"
+run = "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts"
+
+[tasks."shared:sync"]
+description = "Sync each skill's references/vendored/ tree from the canonical skills/shared/ source"
+run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --write"
+
+[tasks."shared:check"]
+description = "Verify each skill's vendored shared files are byte-identical to canonical skills/shared/ (CI)"
+run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts"
+
 [tasks.lint]
 description = "Run all linters"
 run = [
   { task = "lint:md" },
+  { task = "lint:types" },
+  { task = "lint:frontmatter" },
+  { task = "shared:check" },
+  { task = "test" },
 ]
 
 # =========
@@ -53,8 +78,11 @@ run = [
 # =========
 
 [tasks."security:bandit"]
-description = "Run Bandit"
-run = ["bandit -r . -x ./.tmp,./node_modules"]
+description = "Run Bandit (two-pass: ai-to-aws plugin with its own skip config; rest of repo with full strictness — mirrors the CI bandit job in .github/workflows/security-scanners.yml)"
+run = [
+  "bandit -r migrate/plugins/ai-to-aws -c migrate/plugins/ai-to-aws/bandit.yml -x ./migrate/plugins/ai-to-aws/scripts/.venv",
+  "bandit -r . --exclude ./.tmp,./node_modules,./migrate/plugins/ai-to-aws,./migrate/plugins/migration-to-aws/tests",
+]
 
 [tasks."security:semgrep"]
 description = "Run SemGrep OSS"
