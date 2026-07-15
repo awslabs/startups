@@ -13,7 +13,7 @@ The question catalog spans **six named categories (A–F)** plus agentic (G) and
 | File                  | Category                                  | Questions | Loaded When                                     |
 | --------------------- | ----------------------------------------- | --------- | ----------------------------------------------- |
 | `clarify-global.md`   | A — Global/Strategic                      | Q1–Q7     | Always                                          |
-| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q8–Q11    | Compute or billing-source resources present     |
+| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q8–Q11b   | Compute or billing-source resources present     |
 | `clarify-database.md` | D — Database                              | Q12–Q13b  | Database resources present                      |
 | `clarify-ai.md`       | F — AI/Bedrock, G — Agentic, H — Programs | Q14–Q27   | `ai-workload-profile.json` exists               |
 | `clarify-ai-only.md`  | _(standalone)_                            | Q1–Q10    | AI-only migration (no infrastructure artifacts) |
@@ -235,7 +235,7 @@ Record all extracted values in `metadata.inventory_clarifications` where applica
 | -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q3.5 (CUDs), Q4 (skipped), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance) |
 | **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                           |
-| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend)                                         |
+| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
 | **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                     |
 | **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                  |
 | **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                                    |
@@ -283,6 +283,7 @@ Every question in an **active** category gets exactly one disposition:
 | Q9    | DETECTED when code scan found none; ESSENTIAL when scan found matches (confirm); PROPOSED when no code was analyzed              | B — no WebSockets                    | Assuming no WebSockets → standard ALB config; correct this if you have realtime/persistent-connection features (**unverified — no code scan**) |
 | Q10   | DETECTED when `min_instances > 0`; PROPOSED otherwise                                                                            | C — `constant-24-7`                  | Assuming 24/7 traffic → conservative (higher) AWS estimate; business-hours-only workloads may be cheaper staying on Cloud Run                  |
 | Q11   | PROPOSED                                                                                                                         | B — `$100-$500`                      | Feeds the migrate-vs-stay analysis for Cloud Run; correct if spend is materially different                                                     |
+| Q11b  | PROPOSED when compatible compute is present; otherwise N/A                                                                       | A — Graviton                         | Default ARM64 targets reduce compute cost; use the decision table in `clarify-compute.md` for compatibility caveats                           |
 | Q12   | DETECTED when dev-tier; ESSENTIAL on mixed tiers; PROPOSED otherwise                                                             | A — `steady`                         | Assuming steady traffic → size from current config, no read replicas                                                                           |
 | Q13   | DETECTED when dev-tier; ESSENTIAL on mixed tiers; PROPOSED otherwise                                                             | B — `medium`                         | Assuming medium I/O → gp3 storage; high-IOPS workloads would need io2/Provisioned IOPS                                                         |
 | Q13b  | DETECTED when disk size unambiguous; ESSENTIAL on conflict; PROPOSED otherwise                                                   | E — `unknown`                        | Unknown size → pgcopydb selected as migration tool (safe at any scale); verify before cutover                                                  |
@@ -467,7 +468,7 @@ Question 2: [Q7 text with context and options]
 
 ### Full Flow variant ("ask me everything")
 
-When the user opted out of the wizard, run the progressive-batch flow: present ALL active questions (no dispositions) in up to three batches — Strategic (Q1–Q7, minus Q4), Infrastructure (Q8–Q13b + Category B), AI (Q14–Q27, Q23–Q26 only if agentic) — writing `preferences-draft.json` between batches with `metadata.batches_completed` / `metadata.batches_remaining` (values: `"strategic"`, `"infrastructure"`, `"ai"`). Per-question skip and "use defaults for the rest" behave as documented. Set `metadata.clarify_mode: "full"`.
+When the user opted out of the wizard, run the progressive-batch flow: present ALL active questions (no dispositions) in up to three batches — Strategic (Q1–Q7, minus Q4), Infrastructure (Q8–Q13b incl. Q11b Graviton + Category B), AI (Q14–Q27, Q23–Q26 only if agentic) — writing `preferences-draft.json` between batches with `metadata.batches_completed` / `metadata.batches_remaining` (values: `"strategic"`, `"infrastructure"`, `"ai"`). Per-question skip and "use defaults for the rest" behave as documented. Set `metadata.clarify_mode: "full"`.
 
 ### Category E Opt-In
 
@@ -536,7 +537,7 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
     "timestamp": "<ISO timestamp>",
     "discovery_artifacts": ["gcp-resource-inventory.json", "ai-workload-profile.json"],
     "questions_asked": ["Q2", "Q7", "Q15"],
-    "questions_defaulted": ["Q5", "Q9", "Q11", "Q16", "Q17", "Q18", "Q21", "Q22", "Q27"],
+    "questions_defaulted": ["Q5", "Q9", "Q11", "Q11b", "Q16", "Q17", "Q18", "Q21", "Q22", "Q27"],
     "questions_skipped_extracted": ["Q1", "Q6", "Q12", "Q13", "Q13b", "Q14", "Q19", "Q20"],
     "questions_skipped_early_exit": ["Q8"],
     "questions_skipped_not_applicable": ["Q3.5", "Q4", "Q10", "Q23", "Q24", "Q25", "Q26"],
@@ -590,6 +591,14 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
       "prompt": "How do you feel about Kubernetes? (default applied)",
       "design_consequence": "Assuming Fargate → no Kubernetes to operate",
       "question_id": "Q8"
+    },
+    "cpu_architecture": {
+      "value": "graviton",
+      "chosen_by": "default",
+      "source": "default:Q11b",
+      "prompt": "Target Graviton (ARM64) for eligible compute? (default applied)",
+      "design_consequence": "Assuming Graviton → ARM64 instance families and Fargate/Lambda runtime platform",
+      "question_id": "Q11b"
     },
     "database_traffic": {
       "value": "steady",
@@ -753,6 +762,7 @@ Documented defaults for every question. Used by: PROPOSED sheet rows (wizard), p
 | Q9 — WebSocket             | B (no)                                               | no constraint                                                                                                            |
 | Q10 — Cloud Run traffic    | C (24/7)                                             | `cloud_run_traffic_pattern: "constant-24-7"`                                                                             |
 | Q11 — Cloud Run spend      | B ($100–$500)                                        | `cloud_run_monthly_spend: "$100-$500"`                                                                                   |
+| Q11b — CPU architecture    | A (Graviton)                                         | `cpu_architecture: "graviton"` (or `"mixed"` if any service is incompatible; `"x86"` if no compatible compute) — usually auto-defaulted without asking; see `clarify-compute.md` Q11b decision table |
 | Q12 — DB traffic           | A (steady)                                           | `database_traffic: "steady"`                                                                                             |
 | Q13 — DB I/O               | B (medium)                                           | `db_io_workload: "medium"`                                                                                               |
 | Q13b — DB size             | E (unknown)                                          | `db_size: "unknown"` → default to pgcopydb                                                                               |
@@ -786,6 +796,7 @@ Before handing off to Design:
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
 - [ ] `design_constraints.target_region` is populated with `value` and `chosen_by`
 - [ ] `design_constraints.availability` is populated when Cloud SQL PostgreSQL/MySQL is in inventory (asked, extracted, or defaulted — Design must not run with absent/null availability)
+- [ ] If compute resources are present, `design_constraints.cpu_architecture` is set to `graviton`, `x86`, or `mixed` per the Q11b decision table
 - [ ] Only keys with non-null values are present in `design_constraints`
 - [ ] Every entry in `design_constraints` and `ai_constraints` has `value` and `chosen_by` fields
 - [ ] Config gap answers recorded in `metadata.inventory_clarifications` (billing mode only)
@@ -813,6 +824,7 @@ Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 3. If `gcp-resource-inventory.json` contains `google_sql_database_instance` → `design_constraints.availability.value` is set (non-null, non-empty).
 4. If `metadata.clarify_mode` is `"wizard"` → at least one constraint has a `source` field OR every active question was essential.
 5. **No sheet/question mixing:** `metadata.questions_asked` contains no question ID that also appears in `metadata.questions_skipped_extracted` or `metadata.questions_defaulted`. (A question may move between lists only if the user converted its sheet row — in which case the override handling moved it to `questions_asked`.)
+6. If compute resources are present (Cloud Run, Cloud Functions, GKE, GCE in `gcp-resource-inventory.json`, or billing-source compute) → `design_constraints.cpu_architecture.value` is set (`graviton` | `x86` | `mixed`), per the Q11b decision table in `clarify-compute.md` — written even when Q11b was auto-defaulted.
 
 **On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
 
