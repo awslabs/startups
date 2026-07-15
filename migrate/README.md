@@ -28,10 +28,9 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 ## Plugins
 
-| Plugin               | Description                                                                                                              | Status    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------- |
-| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning                               | Available |
-| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
+| Plugin               | Description                                                                                                                                                 | Status    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning, and LLM code rewrite to Bedrock (llm-to-bedrock skill) | Available |
 
 ## Installation
 
@@ -41,9 +40,8 @@ Point this plugin at your Terraform files, application code, or billing data. It
 # Add the marketplace
 /plugin marketplace add awslabs/startups --sparse migrate/plugins
 
-# Install the plugins
+# Install the plugin
 /plugin install migration-to-aws@startups
-/plugin install ai-to-aws@startups
 ```
 
 ### Codex
@@ -51,7 +49,6 @@ Point this plugin at your Terraform files, application code, or billing data. It
 ```bash
 codex plugin marketplace add awslabs/startups
 codex plugin install migration-to-aws
-codex plugin install ai-to-aws
 ```
 
 ### Cursor
