@@ -5,7 +5,7 @@ Single `/ai-to-aws:llm-to-bedrock` command that assesses AI workloads (OpenAI, G
 ## Prerequisites
 
 - The `migration-to-aws` plugin (powers the Assess phase):
-  `/plugin install migration-to-aws@startups-for-aws`
+  `/plugin install migration-to-aws@startups`
 - Python 3.10+ and [uv](https://docs.astral.sh/uv/)
 - AWS CLI configured (`aws configure` or SSO)
 - AWS credentials with `bedrock:InvokeModel*` permissions (covers both `InvokeModel` and
@@ -31,8 +31,8 @@ after every phase either way).
 
 ```
 /plugin marketplace add awslabs/startups
-/plugin install ai-to-aws@startups-for-aws
-/plugin install migration-to-aws@startups-for-aws
+/plugin install ai-to-aws@startups
+/plugin install migration-to-aws@startups
 ```
 
 ### Codex
