@@ -53,9 +53,9 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 ## Plugins
 
-| Plugin               | Description                                                                                                                                                                  | Status    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku), and LLM code rewrite to Bedrock (llm-to-bedrock skill) | Available |
+| Plugin               | Description                                                                                                                                                                                                                                        | Status    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku), LLM code rewrite to Bedrock (llm-to-bedrock skill), and a read-only Terraform security policy gate (tf-best-practices skill) | Available |
 
 ## Installation
 
@@ -178,6 +178,21 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 The `llm-to-bedrock` skill (bundled in this plugin) extends the assessment with actual code execution — rewriting your OpenAI / Gemini / Anthropic SDK calls to Amazon Bedrock, running quality evaluation against a golden dataset, and delivering a ready-to-merge git branch.
 
 See [skills/llm-to-bedrock/SKILL.md](skills/llm-to-bedrock/SKILL.md) for full details on prerequisites, usage, and what it does to your repo.
+
+## tf-best-practices
+
+The `tf-best-practices` skill (bundled in this plugin) is a **read-only security policy gate** for AWS Terraform. `gcp-to-aws` calls it during its Generate phase to check the Terraform it emits, but it is **self-contained and has no dependency on the migration workflow** — it reads a `terraform/` directory, evaluates policy, and returns a verdict. It never edits `.tf` files or touches migration state.
+
+It enforces a set of fail-open-on-ambiguity rules (internet-facing ALB TLS termination, no public database, no public admin/datastore-port ingress, no wildcard IAM, and RDS + ElastiCache encryption at rest) via a zero-dependency static HCL reader — no `terraform init`, no provider download, so it runs offline and in sub-second time. It complements, and does not replace, `terraform fmt/init/validate` and deeper scanners like `checkov`/`tfsec`.
+
+**Using it directly** (outside a migration) — you can run the gate against any AWS Terraform directory as a pre-commit or CI check:
+
+```bash
+# Exit 0 = POLICY_OK, 1 = POLICY_FAIL (with violations), 2 = usage error
+python3 skills/tf-best-practices/scripts/validate-terraform-policy.py ./terraform --json verdict.json
+```
+
+The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_hint` for wiring into your own pipeline. For the authoring posture rules and the full rule list, see [skills/tf-best-practices/SKILL.md](skills/tf-best-practices/SKILL.md). (Scope note: `gcp-to-aws` is the only in-tree consumer today; direct standalone use is supported but not yet wired into other skills.)
 
 ## Requirements
 
