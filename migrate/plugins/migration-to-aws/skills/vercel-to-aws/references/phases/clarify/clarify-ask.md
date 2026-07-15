@@ -135,6 +135,56 @@ it purely as a preference signal.
 NEVER feeds a precedence rule as a gate; recorded for the report's Next Steps
 section (Requirement 9.8)"
 
+### Q6 — Current Vercel Spend
+
+Only ask if `discovery.json.usage_metrics.billing_data` is NOT present (i.e. the
+Vercel API did not return billing information). If billing data was successfully
+retrieved from the API, skip this question — the estimate phase will use the
+API-sourced data directly.
+
+> "What's your approximate monthly Vercel spend? This helps me compare AWS
+> costs against your current bill. (Just a ballpark is fine — $0-50, $50-200,
+> $200-1000, or $1000+)"
+
+`design_consequence`: "feeds estimate phase current_costs.vercel_monthly as the
+Vercel baseline for cost comparison; when skipped, estimate derives the baseline
+from Vercel API usage metrics instead"
+
+### Q7 — Database Size (Conditional: Postgres Peripheral Detected)
+
+Only ask if `discovery.json.peripherals[]` contains a `"Postgres"` entry. If no
+Postgres peripheral was detected, skip entirely.
+
+> "Approximately how large is your Vercel Postgres database? This determines
+> which migration tool I'll set up in the scripts.
+> (A) Less than 1 GB
+> (B) 1-10 GB
+> (C) 10-100 GB
+> (D) More than 100 GB"
+
+`design_consequence`: "feeds generate phase migration script selection — pg_dump
+for < 10 GB, AWS DMS for >= 10 GB — and RDS instance sizing in the estimate
+(db.t4g.micro for < 1 GB, db.t4g.small for 1-10 GB, db.r6g.large for 10-100 GB,
+db.r6g.xlarge for > 100 GB)"
+
+### Q8 — Compliance Requirements
+
+Always ask (compliance drives the baseline.tf conditional section, which is
+valuable regardless of migration outcome).
+
+> "Do you have compliance requirements that your AWS environment needs to
+> meet? (Select all that apply, or 'None')
+> (A) SOC 2
+> (B) PCI DSS
+> (C) HIPAA
+> (D) FedRAMP
+> (E) None"
+
+`design_consequence`: "feeds generate phase baseline.tf — compliance answer
+drives the conditional section (AWS Config recorder, Security Hub + standards
+subscriptions) and CloudTrail log retention period (90 days default, up to 2190
+for HIPAA)"
+
 ---
 
 ## Skip Logic (Requirement 2.3, Mandatory)
@@ -146,6 +196,12 @@ it:
   explicitly LOW confidence without a log drain (Requirement 4.4), so this
   question always adds signal (it either confirms or supplements the log-drain
   data, or is the ONLY traffic-shape signal when no log drain exists).
+- **Q6 (Vercel spend) skips** when `discovery.json.usage_metrics.billing_data`
+  is present — the estimate phase uses the API-sourced billing data directly.
+- **Q7 (database size) skips** when no `"Postgres"` entry exists in
+  `discovery.json.peripherals[]` — no database means no sizing question.
+- **Q8 (compliance) is never skippable** — compliance drives baseline.tf and
+  retention periods regardless of what Discover found.
 - **No project-scoping question exists in this fixed set** — if it did, it would
   be skipped when `tier1-signals.json.project_scoping_needed == false` (only one
   in-scope project). This skill's Clarify does not currently ask project scoping
@@ -178,7 +234,7 @@ For each question actually asked (per skip logic), contribute an entry:
 
 For Q5, if skipped because `next_version >= 16.2`, do NOT contribute an entry at
 all — a skipped question has no `clarify-answers.json` entry, distinguishing it
-from a question that was asked and declined.
+from a question that was asked and declined. Same rule for Q6 (skipped when billing data present) and Q7 (skipped when no Postgres detected).
 
 ---
 
@@ -189,6 +245,9 @@ from a question that was asked and declined.
 | Founder gives a vague/non-answer to Q1                   | Record the answer verbatim as given; `recommend-rules.md`'s fallback behavior (§3.4 of design.md) treats a vague Q1 as LOW confidence, feeding rule 4's tiebreak |
 | Founder gives a vague/non-answer to Q4                   | Record verbatim; `recommend-rules.md`'s fallback treats an unanswered/ambiguous Q4 as "not load-bearing," falling through to rule 2                              |
 | Founder answers Q5 with interest but doesn't upgrade now | Record the interest; this does not change ANY downstream logic — it is purely reported in Next Steps                                                             |
+| Founder skips Q6 (Vercel spend)                          | Record `"answer": "skipped"` — estimate phase falls back to plan-based estimation or marks baseline as unavailable                                               |
+| Founder unsure about Q7 (database size)                  | Record `"answer": "unknown"` — generate phase defaults to pg_dump (conservative) and estimate uses db.t4g.small sizing                                           |
+| Founder selects "None" for Q8 (compliance)               | Record `"answer": "none"` — baseline.tf emits the always-on resources only, no compliance-conditional section                                                    |
 
 ---
 

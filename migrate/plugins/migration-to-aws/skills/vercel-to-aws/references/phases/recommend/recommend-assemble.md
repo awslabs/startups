@@ -116,7 +116,7 @@ HANDOFF_OK | phase=recommend | artifacts=recommendation.json
 ```
 
 Then update `.phase-status.json`: mark `phases.recommend` `"completed"`, set
-`current_phase` to `report`, update `last_updated` — in the same turn as
+`current_phase` to `estimate`, update `last_updated` — in the same turn as
 `recommend.md`'s Step 4 output message.
 
 ---

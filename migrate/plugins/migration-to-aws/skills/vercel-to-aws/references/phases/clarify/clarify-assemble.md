@@ -29,13 +29,18 @@ Combine every entry `clarify-ask.md` contributed into one object:
   "Q2_migration_trigger": { "prompt": "...", "answer": "...", "design_consequence": "..." },
   "Q3_devops_bandwidth": { "prompt": "...", "answer": "...", "design_consequence": "..." },
   "Q4_preview_dependence": { "prompt": "...", "answer": "...", "design_consequence": "..." },
-  "Q5_nextjs_upgrade": { "prompt": "...", "answer": "...", "design_consequence": "..." }
+  "Q5_nextjs_upgrade": { "prompt": "...", "answer": "...", "design_consequence": "..." },
+  "Q6_vercel_spend": { "prompt": "...", "answer": "...", "design_consequence": "..." },
+  "Q7_database_size": { "prompt": "...", "answer": "...", "design_consequence": "..." },
+  "Q8_compliance": { "prompt": "...", "answer": "...", "design_consequence": "..." }
 }
 ```
 
-`Q5_nextjs_upgrade` is present ONLY if it was actually asked (i.e.
-`tier1-signals.json.next_version < "16.2.0"`) — per `clarify-ask.md`'s own
-output-contribution rule, a skipped question has no entry at all.
+Conditional-presence rules (a skipped question has no entry at all):
+
+- `Q5_nextjs_upgrade` present ONLY if `tier1-signals.json.next_version < "16.2.0"`
+- `Q6_vercel_spend` present ONLY if `discovery.json.usage_metrics.billing_data` is NOT present
+- `Q7_database_size` present ONLY if `discovery.json.peripherals[]` contains a `"Postgres"` entry
 
 ---
 
@@ -81,10 +86,14 @@ Re-read `clarify-answers.json` from disk, then run the checks declared in
 3. No question was asked whose answer PreScan or Discover already determined —
    spot-check: confirm no entry exists that duplicates a fact already in
    `tier1-signals.json` or `discovery.json` (e.g. no redundant middleware
-   question, since `has_middleware` was already known).
+   question, since `has_middleware` was already known; no `Q6_vercel_spend`
+   when `discovery.json.usage_metrics.billing_data` exists; no
+   `Q7_database_size` when no Postgres peripheral was detected).
 4. If `Q5_nextjs_upgrade` is present, confirm it was not treated as a
    precondition anywhere in this phase's own gates, and confirm the phase
    completed regardless of its answer value.
+5. If `Q8_compliance` is present, confirm its `answer` is either `"none"` or
+   an array of valid values from `{soc2, pci, hipaa, fedramp}`.
 
 **On any failure:** emit exactly:
 

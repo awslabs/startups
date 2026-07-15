@@ -15,15 +15,13 @@ mise run shared:sync    # copy canonical -> every skill's references/vendored/
 CI enforces that these copies are byte-identical to the canonical source
 (`mise run shared:check`, wired into `build`). A stale copy fails the build.
 
-| Vendored path                    | Canonical source                               |
-| -------------------------------- | ---------------------------------------------- |
-| `dsl/INTERPRETER.md`             | `skills/shared/dsl/INTERPRETER.md`             |
-| `state/phase-status.schema.json` | `skills/shared/state/phase-status.schema.json` |
-
-Note: `estimate/complexity-tiers.json`, `estimate/estimation-infra.schema.json`, and
-`pricing/aws-infra-pricing.json` (vendored by `gcp-to-aws` / `heroku-to-aws`) are
-**not** vendored here — this skill has no Estimate phase in v1 (cost estimation
-parity with the GCP skill is deferred to v2; see `requirements.md` Out of Scope).
+| Vendored path                           | Canonical source                                      |
+| --------------------------------------- | ----------------------------------------------------- |
+| `dsl/INTERPRETER.md`                    | `skills/shared/dsl/INTERPRETER.md`                    |
+| `state/phase-status.schema.json`        | `skills/shared/state/phase-status.schema.json`        |
+| `pricing/aws-infra-pricing.json`        | `skills/shared/pricing/aws-infra-pricing.json`        |
+| `estimate/estimation-infra.schema.json` | `skills/shared/estimate/estimation-infra.schema.json` |
+| `estimate/complexity-tiers.json`        | `skills/shared/estimate/complexity-tiers.json`        |
 
 This skill also owns `references/state/assessment-state.schema.json`, which is
 **NOT** part of this vendored directory — it has no canonical source elsewhere in

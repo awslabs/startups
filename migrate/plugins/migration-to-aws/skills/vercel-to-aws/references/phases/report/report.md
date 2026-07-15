@@ -1,7 +1,7 @@
 ---
 _phase: report
 _title: "Write & Validate the Assessment Report"
-_requires_phase: recommend
+_requires_phase: generate
 _input:
   - discovery.json
   - coupling-score.json
@@ -20,7 +20,7 @@ _produces:
   - assessment-report.html
 _advances_to: complete
 _preconditions:
-  - _check_phase_completed: recommend
+  - _check_phase_completed: generate
     _on_failure: _halt_and_inform
 _postconditions:
   - _check_file_exists: assessment-report.html

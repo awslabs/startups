@@ -17,7 +17,7 @@ _assemble:
   _file: phases/recommend/recommend-assemble.md
 _produces:
   - recommendation.json
-_advances_to: report
+_advances_to: estimate
 _preconditions:
   - _check_phase_completed: clarify
     _on_failure: _halt_and_inform
