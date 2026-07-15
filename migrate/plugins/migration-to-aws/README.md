@@ -13,7 +13,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 **For infrastructure migrations:**
 
-- **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Fargate, Heroku Postgres → RDS/Aurora, and more
+- **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, and more
 - **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration, secrets migration, and post-migration validation
@@ -154,23 +154,23 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 
 #### Heroku → AWS
 
-| Category   | Examples                                                                                       |
-| ---------- | ---------------------------------------------------------------------------------------------- |
-| Compute    | Dynos (all types) → Fargate (default) or EKS (when user selects Kubernetes preference)         |
-| Databases  | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods)           |
-| Caching    | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                  |
-| Streaming  | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)               |
-| Add-ons    | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate |
-| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection                    |
-| CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)        |
-| Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                       |
+| Category   | Examples                                                                                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute    | Dynos (all types) → Elastic Beanstalk (default); Fargate override (direct container control, horizontally scaled non-web dynos), EKS override (Kubernetes preference) |
+| Databases  | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods)                                                                                  |
+| Caching    | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                                                                                         |
+| Streaming  | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)                                                                                      |
+| Add-ons    | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate                                                                        |
+| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection                                                                                           |
+| CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)                                                                               |
+| Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                                                                                              |
 
 ### Agent Skill Triggers
 
 | Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"    |
 
 ### MCP Servers
 
