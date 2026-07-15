@@ -368,5 +368,64 @@ class TestExitCodeContract:
         assert result.returncode not in (0, 1)
 
 
+class TestCostComparisonConditional:
+    """Tests for the cost-comparison and artifacts-generated conditional sections."""
+
+    def test_no_error_when_estimation_infra_absent(self):
+        """Without estimation-infra.json, cost-comparison/artifacts-generated are not required."""
+        errors = validator._validate_conditional_sections(MINIMAL_PASS, None, None, None, None)
+        cost_errors = [e for e in errors if "cost-comparison" in e or "artifacts-generated" in e]
+        assert cost_errors == []
+
+    def test_cost_comparison_required_when_estimation_infra_present(self):
+        """When estimation-infra.json is provided, cost-comparison section is required."""
+        estimation = {"phase": "estimate", "projected_costs": {"aws_monthly_balanced": 150}}
+        errors = validator._validate_conditional_sections(MINIMAL_PASS, None, None, None, estimation)
+        cost_errors = [e for e in errors if "cost-comparison" in e]
+        assert len(cost_errors) == 1
+        assert "cost-comparison" in cost_errors[0]
+
+    def test_artifacts_generated_required_when_estimation_infra_present(self):
+        """When estimation-infra.json is provided, artifacts-generated section is required."""
+        estimation = {"phase": "estimate", "projected_costs": {"aws_monthly_balanced": 150}}
+        errors = validator._validate_conditional_sections(MINIMAL_PASS, None, None, None, estimation)
+        artifact_errors = [e for e in errors if "artifacts-generated" in e]
+        assert len(artifact_errors) == 1
+        assert "artifacts-generated" in artifact_errors[0]
+
+    def test_no_error_when_both_sections_present(self):
+        """When both conditional sections are present and estimation exists, no error."""
+        html_with_sections = MINIMAL_PASS.replace(
+            "</body>",
+            '<section id="cost-comparison"><p>Vercel vs AWS</p></section>'
+            '<section id="artifacts-generated"><p>terraform/ and scripts/</p></section>'
+            "</body>",
+        )
+        estimation = {"phase": "estimate", "projected_costs": {"aws_monthly_balanced": 150}}
+        errors = validator._validate_conditional_sections(
+            html_with_sections, None, None, None, estimation
+        )
+        cost_errors = [e for e in errors if "cost-comparison" in e or "artifacts-generated" in e]
+        assert cost_errors == []
+
+    def test_validate_report_passes_estimation_infra_through(self):
+        """Full validate_report properly checks cost sections when estimation provided."""
+        html_with_sections = MINIMAL_PASS.replace(
+            "</body>",
+            '<section id="cost-comparison"><p>An estimated monthly cost of $150.</p></section>'
+            '<section id="artifacts-generated"><p>terraform/ and scripts/</p></section>'
+            "</body>",
+        )
+        estimation = {"phase": "estimate", "projected_costs": {"aws_monthly_balanced": 150}}
+        errors = validator.validate_report(
+            html_with_sections,
+            estimation_infra=estimation,
+            require_toc=False,
+            check_readability=False,
+        )
+        cost_errors = [e for e in errors if "cost-comparison" in e or "artifacts-generated" in e]
+        assert cost_errors == []
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

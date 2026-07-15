@@ -27,6 +27,8 @@ Render exactly these section IDs, always:
 | Section ID              | Content                                                                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `exec-verdict`          | The recommendation, in plain language, with a `class="verdict"` element or a "Recommendation:" sentence                                                                         |
+| `cost-comparison`       | Vercel current vs. AWS projected (three tiers), monthly delta, financial recommendation path — from `estimation-infra.json`                                                      |
+| `artifacts-generated`   | Summary of `terraform/` and `scripts/` deliverables with one-line descriptions — from the generate phase output                                                                 |
 | `what-you-gain`         | Cost mechanics (owning the CDN means caching aggressively enough to serve FEWER origin requests, not just cheaper ones), bill predictability, AWS credits/funding applicability |
 | `what-you-lose`         | Preview deployments FIRST, then skew protection, then the declining-over-time newest-feature-lag risk                                                                           |
 | `coupling-score`        | Per-feature detail from `coupling-score.json`, at least 3 table rows                                                                                                            |
@@ -226,7 +228,7 @@ exception that still produces a number).
 
 An `<ol>`, always. Include: reviewing the findings, the Next.js-upgrade offer
 FRAMED AS AN OFFER (Requirement 9.8 — "optionally upgrading to Next.js 16.2+
-would unlock..."), and the scaffold-checkpoint opt-in.
+would unlock..."), and applying the generated Terraform (reference `MIGRATION_GUIDE.md` for the step-by-step procedure).
 
 ---
 

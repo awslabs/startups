@@ -10,7 +10,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
 - **Heroku → AWS** — Dynos, Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
-- **Vercel → AWS** — an honest assessment (discovery, Coupling Score, Pre-Flight Checks, a three-outcome recommendation) for Next.js apps, with an optional thin scaffold
+- **Vercel → AWS** — a full migration pipeline (assessment, cost estimation, production-ready Terraform, migration scripts) for Next.js apps, with a three-outcome recommendation
 
 **For infrastructure migrations:**
 
@@ -56,7 +56,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 | Plugin               | Description                                                                                                                                                                  | Status    |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning (GCP, Heroku) plus honest Vercel assessment (discovery, coupling, recommendation) | Available |
+| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning (GCP, Heroku) plus full Vercel migration (assessment, cost estimation, production-ready Terraform, migration scripts) | Available |
 | **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws)                                                     | Available |
 
 ## Installation
@@ -166,7 +166,7 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 | CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)        |
 | Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                       |
 
-#### Vercel → AWS (assessment only, not a full migration plan)
+#### Vercel → AWS (full migration: assessment + Terraform generation)
 
 | Category    | Examples                                                                                                                                      |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -203,7 +203,7 @@ See the [ai-to-aws README](../ai-to-aws/README.md) for full details on prerequis
 - At least one input source: Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
 - **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
-- **For Vercel assessment:** repo access with a locally-runnable `next build`, plus a read-only, team-scoped Vercel API token, are both required Tier 1 inputs — the assessment does not run without them
+- **For Vercel migration:** repo access with a locally-runnable `next build`, plus a read-only, team-scoped Vercel API token, are both required Tier 1 inputs — the assessment does not run without them
 - **For AI execution (ai-to-aws):** Python 3.10+, `uv`, and Bedrock model access enabled
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 

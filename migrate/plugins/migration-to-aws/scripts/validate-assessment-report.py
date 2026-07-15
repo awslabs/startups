@@ -54,6 +54,8 @@ CONDITIONAL_SECTION_IDS = {
     "inputs-received": "any finding below HIGH confidence",
     "appendix-m1": "tier1-signals.has_middleware == true",
     "out-of-scope": "recommendation.outcome is 'C' or 'stay'",
+    "cost-comparison": "estimation-infra.json exists (estimate phase completed)",
+    "artifacts-generated": "estimation-infra.json exists (generate phase completed)",
 }
 
 OPTIONAL_SECTION_IDS = list(CONDITIONAL_SECTION_IDS.keys())
@@ -187,6 +189,7 @@ def _validate_conditional_sections(
     recommendation: dict | None,
     preflight_findings: dict | None,
     tier1_signals: dict | None,
+    estimation_infra: dict | None = None,
 ) -> list[str]:
     """Requirement 9.2-9.5 - the four conditional-gate sections."""
     errors: list[str] = []
@@ -221,6 +224,19 @@ def _validate_conditional_sections(
                 f'recommendation.outcome is "{recommendation.get("outcome")}" but no '
                 '<section id="out-of-scope"> (the separability rationale is required '
                 "per Requirement 9.5)"
+            )
+
+    # Cost-comparison and artifacts-generated are required when estimation-infra.json exists
+    if estimation_infra is not None:
+        if counts.get("cost-comparison", 0) < 1:
+            errors.append(
+                'estimation-infra.json exists but no <section id="cost-comparison"> '
+                "(the cost comparison section is required when an estimate has been produced)"
+            )
+        if counts.get("artifacts-generated", 0) < 1:
+            errors.append(
+                'estimation-infra.json exists but no <section id="artifacts-generated"> '
+                "(the artifacts summary section is required when generation has completed)"
             )
 
     return errors
@@ -474,6 +490,7 @@ def validate_report(
     recommendation: dict | None = None,
     preflight_findings: dict | None = None,
     tier1_signals: dict | None = None,
+    estimation_infra: dict | None = None,
     *,
     require_toc: bool = True,
     check_readability: bool = True,
@@ -483,7 +500,7 @@ def validate_report(
 
     errors.extend(_validate_required_sections(html))
     errors.extend(
-        _validate_conditional_sections(html, recommendation, preflight_findings, tier1_signals)
+        _validate_conditional_sections(html, recommendation, preflight_findings, tier1_signals, estimation_infra)
     )
 
     if require_toc:
@@ -537,6 +554,8 @@ def main() -> int:
     parser.add_argument("--recommendation", type=Path, default=None)
     parser.add_argument("--preflight-findings", type=Path, default=None)
     parser.add_argument("--tier1-signals", type=Path, default=None)
+    parser.add_argument("--estimation-infra", type=Path, default=None,
+                        help="Path to estimation-infra.json. Enables cost-comparison/artifacts-generated checks.")
     parser.add_argument(
         "--migration-dir",
         type=Path,
@@ -573,11 +592,16 @@ def main() -> int:
     if args.tier1_signals and args.tier1_signals.is_file():
         tier1_signals = json.loads(args.tier1_signals.read_text(encoding="utf-8"))
 
+    estimation_infra = None
+    if args.estimation_infra and args.estimation_infra.is_file():
+        estimation_infra = json.loads(args.estimation_infra.read_text(encoding="utf-8"))
+
     errors = validate_report(
         html,
         recommendation,
         preflight_findings,
         tier1_signals,
+        estimation_infra,
         require_toc=not args.no_require_toc,
         check_readability=not args.no_readability,
         migration_dir=args.migration_dir,

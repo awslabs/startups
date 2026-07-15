@@ -10,7 +10,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
 - **Heroku → AWS** — Dynos, Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
-- **Vercel → AWS** — an honest assessment (not a full migration plan) for Next.js apps: discovery, a Coupling Score, Pre-Flight Checks, and a three-outcome recommendation (OpenNext/SST, ECS Fargate, or a Vercel+AWS Hybrid), with an optional thin scaffold
+- **Vercel → AWS** — a full migration pipeline for Next.js apps: discovery, Coupling Score, Pre-Flight Checks, a three-outcome recommendation, cost estimation (Vercel vs. AWS comparison), and production-ready Terraform generation with `baseline.tf`, migration scripts, and documentation
 
 **For infrastructure migrations:**
 
@@ -27,13 +27,15 @@ Point this plugin at your Terraform files, application code, or billing data. It
 - **Gives honest pricing comparisons** — finds the best Bedrock option for your workload with current pricing data, including side-by-side estimated monthly cost comparisons against your existing OpenAI/Gemini spend
 - **Generates runnable AI artifacts** — `harness.json`, provider adapters, deployment scripts, incremental migration scripts — tailored to your specific models, tools, and architecture
 
-**For Vercel assessments:**
+**For Vercel migrations:**
 
 - **Derives what it can't export** — Vercel's infrastructure (CloudFront-equivalent behaviors, function tuning, edge routing) isn't directly readable, so discovery works from your build output, source configs (`next.config.js`, `middleware.ts`, `vercel.json`), and the Vercel API instead
 - **Computes a Coupling Score** — ISR, edge middleware, edge runtime routes, image optimization, streaming SSR, preview deployments, and Vercel-managed stores (KV/Postgres/Blob/Edge Config/Cron), each with a detection method and why it matters
 - **Runs 10 named Pre-Flight Checks** — including a flagship check for cached routes that intersect with middleware (a behavior change on every AWS target, not just one), computed unconditionally and filtered to whatever outcome fits you
 - **Recommends one of three honest outcomes** — OpenNext/SST (serverless), ECS Fargate (containerized), or a Vercel+AWS Hybrid (your backend moves, your Next.js app and PR previews stay on Vercel) — via a fixed, auditable decision order, never a guess
 - **Tells you what you'd lose** — PR preview deployments first, always — and says plainly when this tooling isn't a fit for you (a low-traffic app with no AWS credits is often better served by a VPS)
+- **Estimates costs with Vercel comparison** — three-tier AWS projection (Premium/Balanced/Optimized) compared against your current Vercel spend, using cached AWS pricing data with live MCP fallback
+- **Generates production-ready Terraform** — `baseline.tf` (GuardDuty, CloudTrail, IMDSv2, budget alerts), VPC, compute (Fargate/Lambda/SST per outcome), peripherals (RDS, ElastiCache, S3, EventBridge), and numbered migration scripts with dry-run defaults
 
 ## Plugins
 
@@ -199,7 +201,7 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 - At least one input source: Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
 - **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
-- **For Vercel assessment:** repo access with a locally-runnable `next build`, plus a read-only, team-scoped Vercel API token, are both required — the assessment does not run on partial Tier 1 inputs
+- **For Vercel migration:** repo access with a locally-runnable `next build`, plus a read-only, team-scoped Vercel API token, are both required — the assessment does not run on partial Tier 1 inputs
 
 ## Structure
 

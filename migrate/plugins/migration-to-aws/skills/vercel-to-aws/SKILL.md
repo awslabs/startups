@@ -1,6 +1,6 @@
 ---
 name: vercel-to-aws
-description: "Assess and plan migrations from Vercel to AWS for Next.js applications. Triggers on: migrate from Vercel, Vercel to AWS, move off Vercel, migrate Next.js off Vercel, assess my Vercel migration, Vercel migration assessment, leave Vercel, Vercel to Fargate, Vercel to OpenNext, estimate AWS costs for my Vercel app, Vercel coupling score, should I migrate off Vercel. Runs a pipeline of Pre-Scan, Full Discover (with Coupling Score and Pre-Flight Checks computed unconditionally), Clarify, Recommend (a fixed-precedence three-outcome engine: OpenNext/SST, ECS Fargate, or a Vercel+AWS Hybrid), Report (a validated HTML assessment), and an optional Scaffold checkpoint. Unlike GCP or Heroku sources, Vercel's infrastructure (CloudFront behaviors, Lambda tuning, edge routing) cannot be exported directly — it is derived from build output, source configs, and the Vercel REST API. Full cost estimation parity with the GCP skill is deferred to v2. Do not use for: GCP or Heroku migrations to AWS, AWS-to-Vercel reverse migration, general Next.js architecture advice without migration intent, or migrations to non-AWS targets (Cloudflare, a VPS) — those are acknowledged in the report's honesty paragraph but never built."
+description: "Assess and plan migrations from Vercel to AWS for Next.js applications. Triggers on: migrate from Vercel, Vercel to AWS, move off Vercel, migrate Next.js off Vercel, assess my Vercel migration, Vercel migration assessment, leave Vercel, Vercel to Fargate, Vercel to OpenNext, estimate AWS costs for my Vercel app, Vercel coupling score, should I migrate off Vercel. Runs a pipeline of Pre-Scan, Full Discover (with Coupling Score and Pre-Flight Checks computed unconditionally), Clarify, Recommend (a fixed-precedence three-outcome engine: OpenNext/SST, ECS Fargate, or a Vercel+AWS Hybrid), Estimate (three-tier AWS cost projection vs. current Vercel spend), Generate (production-ready Terraform including baseline.tf, VPC, compute, peripherals, migration scripts, and documentation), and Report (a validated HTML assessment). Unlike GCP or Heroku sources, Vercel's infrastructure (CloudFront behaviors, Lambda tuning, edge routing) cannot be exported directly — it is derived from build output, source configs, and the Vercel REST API. Do not use for: GCP or Heroku migrations to AWS, AWS-to-Vercel reverse migration, general Next.js architecture advice without migration intent, or migrations to non-AWS targets (Cloudflare, a VPS) — those are acknowledged in the report's honesty paragraph but never built."
 ---
 
 # Vercel-to-AWS Migration Skill
@@ -8,9 +8,9 @@ description: "Assess and plan migrations from Vercel to AWS for Next.js applicat
 ## Philosophy
 
 - **Derive, don't discover.** Vercel's infrastructure is opaque and unexportable, but it is deterministic from inputs this skill CAN read: the build output, source configs, `vercel.json`, and the Vercel API. Next.js's Adapter API (stable since 16.2) emits a typed, versioned description of the app — routes, prerenders, runtime targets, caching rules, routing decisions — and Vercel's own adapter is open source on the same public contract. This is the highest-authority signal available; prefer it whenever the app qualifies (see Requirement 4.1 signal priority).
-- **Assessment is the durable value, not scaffolding.** Execution (OpenNext, the future verified Adapter-API adapter) commoditizes over time. This skill's differentiation is the assessment/decision/clarify layer, not the Terraform/SST it optionally emits.
+- **Assessment and generation are both first-class deliverables.** The report carries the honest assessment (Coupling Score, Pre-Flight Checks, Confidence_Tier, recommendation traceability). The generate phase delivers actionable artifacts (production-ready Terraform, migration scripts, documentation). Neither is optional.
 - **Honest by construction.** Every report states what the founder loses (preview deployments first), acknowledges non-AWS landing zones as rational for some segments (the out-of-scope paragraph), and carries explicit Confidence_Tier labels reflecting weaker evidence than the GCP skill's line-item billing triangulation. Never present a stub report as complete, and never let a recommendation imply more certainty than its inputs support.
-- **Generation-aware.** Target OpenNext v3 for execution today. Structure the Scaffold phase so its backend-compute and peripheral logic sits behind an interface that can be swapped for the verified Adapter-API-based AWS adapter at its GA without touching assessment/discovery/recommendation logic.
+- **Generation-aware.** Target OpenNext v3 for execution today. Structure the generate phase so its backend-compute and peripheral logic sits behind an interface that can be swapped for the verified Adapter-API-based AWS adapter at its GA without touching assessment/discovery/recommendation logic.
 - **Version upgrade is an offer, never a gate.** If the detected Next.js version is below 16.2, present upgrading as a confidence-upgrade offer (it unlocks the Adapter API's typed build output) — never as a migration prerequisite. The default path for a cost-driven founder is migrate now on OpenNext v3, whatever their current Next.js version.
 - **Compute unconditionally, filter at render.** Coupling Score and all 10 named Pre-Flight Checks are computed during Discover, before Recommend has run — never gated on a recommendation that doesn't exist yet. The Report phase filters and reframes findings by the eventual outcome; if the founder later overrides the recommendation, the previously-computed-but-suppressed findings for that outcome are already on disk.
 - **Precedence, not judgment.** The Recommendation Engine evaluates a fixed, ordered set of rules and stops at the first that fires (`references/shared/vercel-recommendation-engine.md`). It is not a model deciding case-by-case; every recommendation is traceable to exactly one rule.
@@ -75,9 +75,11 @@ All subsequent phases are reached by following each phase's `_advances_to`. On a
 warm start, `current_phase` in `.phase-status.json` is authoritative (see
 `INTERPRETER.md` § The interpreter loop).
 
-**Backbone:** `prescan` -> `discover` -> `clarify` -> `recommend` -> `report` -> `complete`.
+**Backbone:** `prescan` -> `discover` -> `clarify` -> `recommend` -> `estimate` -> `generate` -> `report` -> `complete`.
 
-**Checkpoint (off-backbone):** `scaffold`, entered only when the founder opts in after receiving the report (see § Scaffold Checkpoint below).
+> **Breaking change:** Assessments started before this version (with `scaffold`
+> as a checkpoint in `.phase-status.json`) are NOT compatible with the new
+> backbone. Re-run from `prescan` to benefit from the estimate and generate phases.
 
 **Clarify is mandatory.** Do not skip Clarify or jump straight to Recommend even if
 the founder asks — there is no exception for "quick" or "obvious" assessments. A
@@ -118,7 +120,7 @@ at `prescan`'s `_init` step (identical mechanism to the other two skills).
 ### Assessment State Management
 
 On every phase that reads or writes `assessment-state.json` (`prescan`, `discover`,
-`clarify`, `recommend`, `report`):
+`clarify`, `recommend`, `estimate`, `generate`, `report`):
 
 1. **Read before write.** Load the current `assessment-state.json` (if it exists)
    before making any change — never blind-overwrite.
@@ -139,41 +141,6 @@ On every phase that reads or writes `assessment-state.json` (`prescan`, `discove
    or interact with `_re_entry_guard`'s all-or-nothing phase reset.
 
 ---
-
-## Scaffold Checkpoint
-
-The interpreter loop drives phase sequencing, gates, and state. This section
-defines only the Vercel-specific checkpoint orchestration: WHERE the optional
-`scaffold` checkpoint is offered (a checkpoint's placement is orchestration prose,
-not part of the phase contract).
-
-- **After Report** (once `assessment-report.html` passes validation): Output to
-  the founder:
-
-  ```
-  ─── Optional: Generate IaC Scaffold ───
-
-  Based on the recommended outcome, I can generate a thin working skeleton:
-  ✓ Wires in the Pre-Flight Check remediations already identified (tag cache +
-    revalidation queue together, CloudFront header mappings, etc.)
-  ✓ Uses the dialect appropriate to your outcome (SST + Terraform for OpenNext,
-    Terraform-only for Fargate or the Hybrid path)
-  ✗ Not production-hardened — a working skeleton, not a finished deployment
-
-  [A] Generate scaffold now
-  [B] No thanks, I have the assessment
-  ```
-
-  - If the founder picks **A** -> Load `references/phases/scaffold/scaffold.md`,
-    execute it. Set `phases.scaffold` to `"completed"` once resolved.
-  - If the founder picks **B** -> Set `phases.scaffold` to `"completed"` (checkpoint
-    RESOLVED, not participated — see `INTERPRETER.md` § Backbone vs checkpoint,
-    "Checkpoint status semantics"). Migration is complete.
-
-**Critical constraint**: Follow each phase reference file's workflow exactly. If
-unable to complete a step, stop and report the specific issue. Do not fabricate or
-infer data — every finding traces to an actual signal, and every sub-HIGH
-Confidence_Tier names the specific missing input that would upgrade it.
 
 ---
 
@@ -202,26 +169,35 @@ vercel-to-aws/
 │   │   │   └── discover-assemble.md            # discovery.json / coupling-score.json / preflight-findings.json
 │   │   ├── clarify/
 │   │   │   ├── clarify.md                      # Phase 3: Clarify orchestrator (interactive)
-│   │   │   ├── clarify-ask.md                  # Fixed question set, PreScan/Discover-aware skip logic
+│   │   │   ├── clarify-ask.md                  # Fixed question set (Q1-Q8), PreScan/Discover-aware skip logic
 │   │   │   └── clarify-assemble.md             # clarify-answers.json
 │   │   ├── recommend/
 │   │   │   ├── recommend.md                    # Phase 4: Recommend orchestrator
 │   │   │   ├── recommend-rules.md              # Thin dispatcher to vercel-recommendation-engine.md
 │   │   │   └── recommend-assemble.md           # recommendation.json
+│   │   ├── estimate/
+│   │   │   ├── estimate.md                     # Phase 5: Estimate orchestrator
+│   │   │   ├── estimate-cost-engine.md         # Three-tier AWS cost projection vs. Vercel spend
+│   │   │   └── estimate-assemble.md            # estimation-infra.json
+│   │   ├── generate/
+│   │   │   ├── generate.md                     # Phase 6: Generate orchestrator
+│   │   │   ├── generate-baseline.md            # baseline.tf (GuardDuty, CloudTrail, IMDSv2, budget alerts)
+│   │   │   ├── generate-terraform.md           # VPC, compute, peripherals Terraform
+│   │   │   ├── generate-opennext.md            # Outcome A: SST + Terraform
+│   │   │   ├── generate-fargate.md             # Outcome B: Terraform only (Fargate)
+│   │   │   ├── generate-lambda.md              # Outcome C: API Gateway + Lambda
+│   │   │   ├── generate-peripherals.md         # RDS, ElastiCache, S3, EventBridge
+│   │   │   ├── generate-scripts.md             # Numbered migration scripts (dry-run default)
+│   │   │   ├── generate-docs.md                # MIGRATION_GUIDE.md, README.md
+│   │   │   └── generate-assemble.md            # terraform/, scripts/, docs assembly
 │   │   ├── report/
-│   │   │   ├── report.md                       # Phase 5: Report orchestrator
+│   │   │   ├── report.md                       # Phase 7: Report orchestrator
 │   │   │   ├── report-render.md                # HTML rendering, outcome-filtered findings
 │   │   │   └── report-assemble.md              # Validator invocation, retry-cap loop, report_history
-│   │   └── scaffold/
-│   │       ├── scaffold.md                     # Checkpoint: Scaffold orchestrator
-│   │       ├── scaffold-opennext.md            # Outcome A (or C's A-shaped backend): SST + Terraform
-│   │       ├── scaffold-fargate.md             # Outcome B (or C's B-shaped backend): Terraform only
-│   │       ├── scaffold-peripherals.md         # Peripheral mappings, always runs
-│   │       └── scaffold-assemble.md            # terraform/, sst.config.ts (conditional)
 │   │
 │   ├── shared/
 │   │   ├── vercel-recommendation-engine.md     # The precedence-rule decision table (§7 of requirements.md)
-│   │   └── graviton.md                         # ARM64 default for Scaffold compute (SST/Terraform mechanics)
+│   │   └── graviton.md                         # ARM64 default for compute (SST/Terraform mechanics)
 │   │
 │   ├── state/
 │   │   └── assessment-state.schema.json        # Skill-owned; NOT vendored (no canonical source elsewhere)
@@ -229,7 +205,11 @@ vercel-to-aws/
 │   └── vendored/                               # synced from skills/shared/, same as heroku-to-aws
 │       ├── README.md
 │       ├── dsl/INTERPRETER.md
-│       └── state/phase-status.schema.json
+│       ├── state/phase-status.schema.json
+│       ├── pricing/aws-infra-pricing.json
+│       └── estimate/
+│           ├── estimation-infra.schema.json
+│           └── complexity-tiers.json
 │
 ├── knowledge/
 │   ├── preflight-checks.json                   # M1/M2/B1-B4/S1/I1/O1/U1 definitions
@@ -251,7 +231,9 @@ vercel-to-aws/
 
 ## Defaults
 
-- **IaC output (Scaffold only, when opted in)**: SST + Terraform (Outcome A), Terraform only (Outcome B, Outcome C)
+- **IaC output**: SST + Terraform (Outcome A), Terraform only (Outcome B, Outcome C)
+- **Security baseline**: Always emitted (`baseline.tf` — GuardDuty, CloudTrail, IMDSv2, EBS encryption, budget alerts)
+- **Migration scripts**: All default to dry-run mode (pass `--execute` for destructive actions)
 - **Region**: `us-east-1` (unless the founder specifies otherwise)
 - **Migration mode**: Adapts based on available inputs (Tier 1 required; Tier 2/3 optional and incrementally upgrade confidence)
 - **Cost currency**: USD, always labeled "estimated monthly cost/savings"
