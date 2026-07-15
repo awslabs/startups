@@ -14,7 +14,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 **For infrastructure migrations:**
 
-- **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Fargate, Heroku Postgres → RDS/Aurora, and more
+- **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, and more
 - **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration, secrets migration, and post-migration validation
@@ -54,10 +54,9 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 ## Plugins
 
-| Plugin               | Description                                                                                                                                                                  | Status    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning (GCP, Heroku) plus full Vercel migration (assessment, cost estimation, production-ready Terraform, migration scripts) | Available |
-| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws)                                                     | Available |
+| Plugin               | Description                                                                                                                                                                                                                                                                                                                                                     | Status    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning (GCP, Heroku, and Vercel), LLM code rewrite to Bedrock (llm-to-bedrock skill), full Vercel migration (assessment, cost estimation, production-ready Terraform, migration scripts), and a read-only Terraform security policy gate (tf-best-practices skill) | Available |
 
 ## Installation
 
@@ -67,11 +66,8 @@ Point this plugin at your Terraform files, application code, or billing data. It
 # Add the marketplace
 /plugin marketplace add awslabs/startups --sparse migrate/plugins
 
-# Install the planning plugin
+# Install the plugin
 /plugin install migration-to-aws@startups
-
-# (Optional) Install the AI execution plugin
-/plugin install ai-to-aws@startups
 ```
 
 ### Codex
@@ -80,11 +76,8 @@ Point this plugin at your Terraform files, application code, or billing data. It
 # Add the marketplace
 codex plugin marketplace add awslabs/startups
 
-# Install the planning plugin
+# Install the plugin
 codex plugin install migration-to-aws
-
-# (Optional) Install the AI execution plugin
-codex plugin install ai-to-aws
 ```
 
 ### Cursor
@@ -155,16 +148,16 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 
 #### Heroku → AWS
 
-| Category   | Examples                                                                                       |
-| ---------- | ---------------------------------------------------------------------------------------------- |
-| Compute    | Dynos (all types) → Fargate (default) or EKS (when user selects Kubernetes preference)         |
-| Databases  | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods)           |
-| Caching    | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                  |
-| Streaming  | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)               |
-| Add-ons    | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate |
-| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection                    |
-| CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)        |
-| Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                       |
+| Category   | Examples                                                                                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute    | Dynos (all types) → Elastic Beanstalk (default); Fargate override (direct container control, horizontally scaled non-web dynos), EKS override (Kubernetes preference) |
+| Databases  | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods)                                                                                  |
+| Caching    | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                                                                                         |
+| Streaming  | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)                                                                                      |
+| Add-ons    | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate                                                                        |
+| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection                                                                                           |
+| CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)                                                                               |
+| Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                                                                                              |
 
 #### Vercel → AWS (full migration: assessment + Terraform generation)
 
@@ -180,21 +173,37 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 | Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"    |
 | **vercel-to-aws** | "migrate from Vercel", "Vercel to AWS", "move off Vercel", "migrate Next.js off Vercel", "assess my Vercel migration", "leave Vercel", "Vercel to Fargate", "Vercel to OpenNext", "should I migrate off Vercel"                                          |
 
 ### MCP Servers
 
-| Server           | Purpose                                                         |
-| ---------------- | --------------------------------------------------------------- |
-| **awsknowledge** | AWS documentation, regional availability, architecture guidance |
-| **awspricing**   | Real-time AWS service pricing for cost estimates                |
+| Server            | Purpose                                                                                                                                                                                                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **awsknowledge**  | AWS documentation, regional availability, architecture guidance                                                                                                                                                                                                                                       |
+| **awspricing**    | Real-time AWS service pricing for cost estimates                                                                                                                                                                                                                                                      |
+| **temporal-docs** | Temporal Knowledge Base (feature statuses for the Temporal Worker migration branch). Needs a one-time Google/GitHub login via `/mcp`; when the branch needs it and it isn't authenticated, the skill pauses and asks whether to authenticate, falling back to a public-web lookup only if you decline |
 
-## ai-to-aws
+## llm-to-bedrock
 
-The `ai-to-aws` plugin extends the assessment from `migration-to-aws` with actual code execution — rewriting your LLM SDK calls to Amazon Bedrock, running quality evaluation against a golden dataset, and delivering a ready-to-merge git branch.
+The `llm-to-bedrock` skill (bundled in this plugin) extends the assessment with actual code execution — rewriting your OpenAI / Gemini / Anthropic SDK calls to Amazon Bedrock, running quality evaluation against a golden dataset, and delivering a ready-to-merge git branch.
 
-See the [ai-to-aws README](../ai-to-aws/README.md) for full details on prerequisites, usage, and what it does to your repo.
+See [skills/llm-to-bedrock/SKILL.md](skills/llm-to-bedrock/SKILL.md) for full details on prerequisites, usage, and what it does to your repo.
+
+## tf-best-practices
+
+The `tf-best-practices` skill (bundled in this plugin) is a **read-only security policy gate** for AWS Terraform. `gcp-to-aws` calls it during its Generate phase to check the Terraform it emits, but it is **self-contained and has no dependency on the migration workflow** — it reads a `terraform/` directory, evaluates policy, and returns a verdict. It never edits `.tf` files or touches migration state.
+
+It enforces a set of fail-open-on-ambiguity rules (internet-facing ALB TLS termination, no public database, no public admin/datastore-port ingress, no wildcard IAM, and RDS + ElastiCache encryption at rest) via a zero-dependency static HCL reader — no `terraform init`, no provider download, so it runs offline and in sub-second time. It complements, and does not replace, `terraform fmt/init/validate` and deeper scanners like `checkov`/`tfsec`.
+
+**Using it directly** (outside a migration) — you can run the gate against any AWS Terraform directory as a pre-commit or CI check:
+
+```bash
+# Exit 0 = POLICY_OK, 1 = POLICY_FAIL (with violations), 2 = usage error
+python3 skills/tf-best-practices/scripts/validate-terraform-policy.py ./terraform --json verdict.json
+```
+
+The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_hint` for wiring into your own pipeline. For the authoring posture rules and the full rule list, see [skills/tf-best-practices/SKILL.md](skills/tf-best-practices/SKILL.md). (Scope note: `gcp-to-aws` is the only in-tree consumer today; direct standalone use is supported but not yet wired into other skills.)
 
 ## Requirements
 
@@ -204,7 +213,8 @@ See the [ai-to-aws README](../ai-to-aws/README.md) for full details on prerequis
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
 - **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
 - **For Vercel migration:** repo access with a locally-runnable `next build`, plus a read-only, team-scoped Vercel API token, are both required Tier 1 inputs — the assessment does not run without them
-- **For AI execution (ai-to-aws):** Python 3.10+, `uv`, and Bedrock model access enabled
+- **For AI execution (llm-to-bedrock skill):** Python 3.10+, `uv`, and Bedrock model access enabled
+
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
 ## Architecture & contributing

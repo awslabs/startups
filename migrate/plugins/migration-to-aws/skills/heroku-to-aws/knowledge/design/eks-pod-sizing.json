@@ -1,5 +1,5 @@
 {
-  "_comment": "Dyno type -> EKS pod sizing + node selection. Used by the design EKS branch when design_constraints.kubernetes.value is eks-managed or eks-or-ecs. DIRECT LOOKUP: read req_cpu/req_mem/lim_cpu/lim_mem + node_type per dyno. This file holds DATA only (pod rows, node-rank, cluster constants); the node-group SIZING ALGORITHM lives in design-eks.md prose.",
+  "_comment": "Dyno type -> EKS pod sizing + node selection. Used by the design EKS branch when design_constraints.compute_target.value is eks-managed or eks-or-ecs. DIRECT LOOKUP: read req_cpu/req_mem/lim_cpu/lim_mem + node_type per dyno. This file holds DATA only (pod rows, node-rank, cluster constants); the node-group SIZING ALGORITHM lives in design-eks.md prose.",
   "_match": "exact, case-insensitive, on formation config.dyno_type",
   "_on_not_found": "reject the formation; produce NO entry; warn 'Unsupported dyno type: {dyno_type}. Cannot map to EKS.'; continue (same as the Fargate path)",
 
