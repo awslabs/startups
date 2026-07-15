@@ -13,7 +13,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 **For infrastructure migrations:**
 
-- **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Fargate, Heroku Postgres → RDS/Aurora, and more
+- **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, and more
 - **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration, secrets migration, and post-migration validation
@@ -30,13 +30,14 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 **Infrastructure:**
 
-| Capability                 | Base LLM          | This Plugin                                                                                               |
-| -------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------- |
-| Terraform generation       | Generic templates | Your actual config translated — instance classes, storage sizes, region, VPC CIDRs, security groups       |
-| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts  |
-| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script           |
-| Cost estimation            | Stale guesses     | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your current bill |
-| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                       |
+| Capability                 | Base LLM                          | This Plugin                                                                                                                                        |
+| -------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Terraform generation       | Generic templates                 | Your actual config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                                                |
+| Security baseline          | Not included                      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts                                           |
+| Database migration tooling | "Use DMS"                         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                                                    |
+| Cost estimation            | Stale guesses                     | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your current bill                                          |
+| Migration plan             | Generic checklist                 | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                                                |
+| Migration report           | Generic summary or missing detail | `migration-report.html` with cost tiers, security baseline (GuardDuty, etc.), combined TCO, and appendices — validated for structural completeness |
 
 **AI/Agentic:**
 
@@ -113,8 +114,30 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 2. **Clarify** — Ask targeted questions about migration preferences, AI priorities, agentic migration approach, database sizing, and timeline.
 3. **Design** — Map source services to AWS equivalents. For AI workloads: select Bedrock models with honest pricing comparison. For agentic workloads: design AgentCore Harness config or Strands architecture.
 4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current spend.
-5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, and documentation.
+5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, `MIGRATION_GUIDE.md`, `README.md`, and **`migration-report.html`** (self-contained HTML assessment).
 6. **Feedback** _(optional)_ — Collect anonymized feedback to improve the tool.
+
+### Migration report (`migration-report.html`)
+
+The Generate phase produces a browser-ready HTML report with:
+
+- Executive summary (verdict, cost tiers, timeline, risks)
+- Combined infra + AI total cost of ownership (when both tracks ran)
+- Security baseline line items (GuardDuty, CloudTrail, budgets, etc.)
+- Detailed appendices: service mappings, per-service costs, migration steps, AI migration, artifacts catalog
+
+After the report is written, run the post-write validator:
+
+```bash
+python3 migrate/plugins/migration-to-aws/scripts/validate-migration-report.py \
+  "$MIGRATION_DIR/migration-report.html" \
+  --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
+```
+
+Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resolve the script from the plugin root (`$PLUGIN_ROOT/scripts/validate-migration-report.py` in an installed copy).
+
+**`REPORT_OK | structure=complete`** means required sections, TOC links, and appendix depth checks passed. It does **not** verify that every dollar figure matches the JSON — review numerics before executive sign-off. See [fixtures/README.md](fixtures/README.md) for the reference HTML + estimation JSON contract.
 
 ### What It Detects
 
@@ -131,23 +154,23 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 
 #### Heroku → AWS
 
-| Category   | Examples                                                                                       |
-| ---------- | ---------------------------------------------------------------------------------------------- |
-| Compute    | Dynos (all types) → Fargate (default) or EKS (when user selects Kubernetes preference)         |
-| Databases  | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods)           |
-| Caching    | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                  |
-| Streaming  | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)               |
-| Add-ons    | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate |
-| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection                    |
-| CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)        |
-| Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                       |
+| Category   | Examples                                                                                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute    | Dynos (all types) → Elastic Beanstalk (default); Fargate override (direct container control, horizontally scaled non-web dynos), EKS override (Kubernetes preference) |
+| Databases  | Heroku Postgres → RDS or Aurora (plan-matched sizing, DMS/pg_dump migration methods)                                                                                  |
+| Caching    | Heroku Redis → ElastiCache (plan-matched node types, HA/encryption preserved)                                                                                         |
+| Streaming  | Heroku Kafka → Amazon MSK (broker sizing, topic/partition/replication preserved)                                                                                      |
+| Add-ons    | 13+ common add-ons → deterministic AWS mappings via Fast-Path Table; unknown → specialist gate                                                                        |
+| Networking | Private Spaces → VPC with restricted security groups; VPC peering detection                                                                                           |
+| CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)                                                                               |
+| Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                                                                                              |
 
 ### Agent Skill Triggers
 
 | Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"    |
 
 ### MCP Servers
 
@@ -196,6 +219,30 @@ Quick start for a local change:
 mise install     # install pinned tools
 mise run build   # the full gate: lint (md, types, DSL frontmatter, shared-sync, tests) + fmt + security
 ```
+
+### Migration report validator (unit tests)
+
+When changing `generate-artifacts-report.md`, `scripts/validate-migration-report.py`, or `fixtures/migration-report-reference.html`:
+
+```bash
+cd migrate/plugins/migration-to-aws
+
+pytest tests/test_validate_migration_report.py -q
+
+python3 scripts/validate-migration-report.py \
+  fixtures/migration-report-reference.html \
+  --estimation-infra fixtures/estimation-infra-reference.json \
+  --estimation-ai fixtures/estimation-ai-reference.json
+
+# Stub must fail (executive summary only — regression guard)
+python3 scripts/validate-migration-report.py \
+  fixtures/migration-report-stub.html \
+  --estimation-infra fixtures/estimation-infra-reference.json \
+  --estimation-ai fixtures/estimation-ai-reference.json \
+  && exit 1 || true
+```
+
+See [fixtures/README.md](fixtures/README.md) for what `REPORT_OK` does and does not guarantee.
 
 ## Security
 

@@ -166,5 +166,21 @@
     "custom_metric_month": 0.3,
     "standard_alarm_month": 0.1,
     "xray_per_million_traces": 5
+  },
+  "ec2": {
+    "_comment": "EC2 On-Demand hourly rates (Linux/x86, us-east-1). Used by the Elastic Beanstalk cost formula to price underlying instances. Every instance_type the EB design can emit MUST have a rate here.",
+    "instances": {
+      "t3.micro": 0.0104,
+      "t3.small": 0.0208,
+      "t3.medium": 0.0416,
+      "t3.large": 0.0832,
+      "m5.large": 0.096,
+      "m5.xlarge": 0.192,
+      "m5.2xlarge": 0.384,
+      "m5.4xlarge": 0.768,
+      "r5.xlarge": 0.252,
+      "m5.8xlarge": 1.536
+    },
+    "_instances_note": "Rates match heroku-to-aws/knowledge/design/dyno-eb-sizing.json. Largest Heroku dynos use m5.4xlarge/m5.8xlarge to meet memory requirements."
   }
 }
