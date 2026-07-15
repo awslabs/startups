@@ -31,7 +31,7 @@ Handoff Gate below (this phase's `_postconditions`, re-read from disk).
 
 **Route output gates (fail closed):**
 
-- If inventory had formation resources → `services[]` MUST contain at least one Fargate OR EKS entry (unless all dyno types were unrecognized).
+- If inventory had formation resources → `services[]` MUST contain at least one Elastic Beanstalk, Fargate, or EKS entry (unless all dyno types were unrecognized or all formations were `release` processes).
 - If inventory had `heroku-postgresql` add-ons with recognized plans → `services[]` MUST contain RDS or Aurora entries.
 - If inventory had `heroku-redis` add-ons with recognized plans → `services[]` MUST contain ElastiCache entries.
 - If inventory had `heroku-kafka` add-ons with recognized plans → `services[]` MUST contain MSK entries.

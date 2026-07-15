@@ -7,19 +7,20 @@ _contributes:
 
 # EKS Design Branch
 
-> Conditional formation-mapping fragment. Fires only when the Kubernetes preference
-> selects EKS; the prose below gates on that value (skip when `ecs-fargate` or
+> Conditional formation-mapping fragment. Fires only when the compute target preference
+> selects EKS; the prose below gates on that value (skip when `elastic_beanstalk`, `ecs-fargate`, or
 > absent). When active, it maps ALL formations to EKS pods + a single `eks_cluster`
 > aggregate, contributing to `aws-design.json`. The mapping-engine fragment
-> (`design-mapping.md`) handles the Fargate path and all non-formation resources.
+> (`design-mapping.md`) handles the EB/Fargate paths and all non-formation resources.
 
 ---
 
 ## EKS Branch Logic
 
-When the Kubernetes preference indicates EKS:
+When the compute target preference indicates EKS:
 
 1. **For EACH formation resource** in the inventory:
+   - If `config.process_type == "release"`, skip it and add the same run-once deployment-hook warning used by the EB/Fargate mapping. Do NOT create an EKS Deployment for release commands.
    - Look up dyno type in the `eks-pod-sizing.json` knowledge (`rows.<dyno_type>`)
    - Produce an EKS Deployment entry with pod resource requests and limits
    - Set `aws_service: "EKS"`
