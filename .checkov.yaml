@@ -1,0 +1,12 @@
+# Checkov configuration for awslabs/startups
+# The security-scanners workflow runs `checkov -d .` across the whole repo and
+# auto-discovers this file.
+#
+# skip-path excludes intentionally-non-compliant Terraform TEST FIXTURES that
+# exist to exercise the migration-to-aws terraform-policy validator
+# (scripts/validate-terraform-policy.py + tests/test_validate_terraform_policy.py).
+# These fixtures MUST stay non-compliant (e.g. an ALB that forwards plaintext
+# HTTP) so the validator's failure paths are tested — sanitizing them to satisfy
+# Checkov would defeat their purpose. They are never deployed.
+skip-path:
+  - migrate/plugins/migration-to-aws/fixtures/terraform-policy
