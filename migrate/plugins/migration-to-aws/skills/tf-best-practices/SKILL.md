@@ -38,12 +38,13 @@ Emit generated Terraform that satisfies the posture in
 These are the "what to emit" rules. Following them makes the Part 2 gate pass by
 construction. This unit does not read the caller's artifacts.
 
-> **v1 scope.** The posture rules and the Part 2 gate currently cover **internet-facing
-> ALB TLS termination** only — the concern PR-#130 raised. This unit is intentionally
-> extensible: additional cross-cutting posture rules (private-subnet placement, no-public
-> database, encryption-at-rest, the account-hardening `baseline.tf` layer, …) are candidates
-> to migrate here over time. Until then those remain the consuming skill's own generation
-> rules; tf-best-practices does not yet own them.
+> **Scope.** The posture rules and the Part 2 gate cover internet-facing ALB TLS termination,
+> no-public-database, no-public admin/datastore-port ingress, no-wildcard-IAM, and RDS +
+> ElastiCache encryption-at-rest (see **Policy rules enforced today** below). This unit is
+> intentionally extensible: further cross-cutting posture rules (private-subnet placement as a
+> positive assertion, the account-hardening `baseline.tf` layer, S3 SSE correlation, CloudFront
+> viewer-protocol TLS) are candidates to migrate here over time. Until then those remain the
+> consuming skill's own generation rules.
 
 ## Part 2 — Policy gate (run after writing `terraform/`)
 
@@ -99,21 +100,52 @@ the report write; this unit contributes only the read-only policy stage + verdic
 Each `violations[]` entry is **actionable evidence** — `file` + `line` + `fix_hint` tell the
 caller exactly what to edit. The caller applies the edit; this unit only reports.
 
-## Policy rules enforced today (v1)
+## Policy rules enforced today
 
-Internet-facing ALB TLS posture (an ALB is internet-facing when `internal` is absent,
+Every rule is **fail-open on ambiguity** — it fires only on unambiguous, in-block literal
+evidence, so a valid stack is never falsely blocked (a `POLICY_FAIL` is a hard completion gate
+for the caller, so a false positive would block a real migration).
+
+**Internet-facing ALB TLS posture** (an ALB is internet-facing when `internal` is absent,
 `false`, or variable-driven — fail-safe):
 
 - **`alb_https_listener`** — must have an HTTPS listener on `443` with `certificate_arn` and a
   `forward` action.
 - **`alb_http_redirect`** — an HTTP `:80` listener must `redirect` to HTTPS, never `forward`
-  to targets.
+  to targets. Internal ALBs (`internal = true`) are exempt.
 
-Internal ALBs (`internal = true`) are exempt from the HTTPS requirement.
+**Managed database exposure & encryption** (`aws_db_instance`, `aws_rds_cluster`):
+
+- **`rds_not_public`** — must not set `publicly_accessible = true` (absent/variable → fail-open).
+- **`rds_encryption_at_rest`** — must set `storage_encrypted = true`; missing or literal `false`
+  fires (RDS defaults to unencrypted), variable-driven fails open. S3 is not checked (default
+  SSE-S3 since Jan 2023).
+
+**ElastiCache encryption** (`aws_elasticache_replication_group`):
+
+- **`elasticache_encryption_at_rest`** — must set `at_rest_encryption_enabled = true`; missing
+  or literal `false` fires, variable-driven fails open. `aws_elasticache_cluster` (Memcached)
+  not checked.
+
+**Security group ingress:**
+
+- **`db_sg_no_public_ingress`** — an inline `aws_security_group` ingress covering `5432`/`3306`
+  must not allow `0.0.0.0/0`.
+- **`sg_no_public_admin_ingress`** — an inline ingress must not open a curated never-public
+  admin/datastore port (`22`, `3389`, `6379`, `11211`, `27017`, `9200`/`9300`, `5601`) to
+  `0.0.0.0/0`. Web (`80`/`443`) and app/game ports are not flagged; DB ports are handled by the
+  rule above. Both: separate `aws_security_group_rule` / `aws_vpc_security_group_ingress_rule`
+  resources fail open (not correlated).
+
+**IAM least-privilege** (`aws_iam_policy`, `aws_iam_role_policy`, `aws_iam_group_policy`,
+`aws_iam_user_policy`):
+
+- **`no_wildcard_iam`** — an `Allow` statement must not use `Action`/`Resource` `"*"`.
+  `aws_iam_policy_document` data sources and assume-role trust policies fail open.
 
 > The checker is a zero-dependency static HCL reader (no `terraform init`, no provider
 > download) — it runs even when the registry is unreachable. It uses brace-depth matching
-> for `default_action`, so a valid HTTPS listener written with a nested `forward { ... }`
+> for nested blocks, so a valid HTTPS listener written with a nested `forward { ... }`
 > block is **not** a false failure.
 
 ## Fixtures (also the checker's regression suite)
