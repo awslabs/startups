@@ -1,8 +1,9 @@
 {
-  "_comment": "Tunable estimate-phase assumptions for the heroku-to-aws skill (the heuristic knobs an org adjusts, independent of the cost algorithm and the AWS rate table). AWS rates live in shared/pricing/aws-infra-pricing.json; cost FORMULAS and tier/heuristic logic stay in estimate.md prose. Complexity-tier bands + timelines are NOT here (they live in the shared references/shared/migration-complexity.md).",
+  "_comment": "Tunable estimate-phase assumptions for the heroku-to-aws skill (the heuristic knobs an org adjusts, independent of the cost algorithm and the AWS rate table). AWS rates live in references/vendored/pricing/aws-infra-pricing.json; cost FORMULAS and tier/heuristic logic stay in estimate.md prose. Complexity-tier bands are NOT here (thresholds live in references/vendored/estimate/complexity-tiers.json; timelines are inline in estimate-cost-engine.md).",
   "log_volume_gb_per_service": {
     "_comment": "Per-service monthly CloudWatch log-volume heuristic, counted PER DESIGNED SERVICE (MSK is per broker). Used by the observability cost step. Heuristic because Heroku's logging model differs, so source billing doesn't apply.",
     "fargate_task": 3,
+    "eb_environment": 3,
     "rds_or_aurora_instance": 1,
     "alb": 2,
     "nat_gateway": 1,
@@ -14,7 +15,8 @@
     "compute_savings_plans": {
       "savings_percent": "20-66%",
       "target_services": [
-        "Fargate"
+        "Fargate",
+        "Elastic Beanstalk"
       ],
       "timing": "Post-migration (after 30-90 day baseline)"
     },
@@ -48,6 +50,13 @@
         "Non-critical/batch Fargate tasks"
       ],
       "timing": "If worker dynos exist"
+    },
+    "ec2_spot": {
+      "savings_percent": "60-90%",
+      "target_services": [
+        "Elastic Beanstalk worker environments"
+      ],
+      "timing": "during migration for interruption-tolerant SingleInstance workers"
     }
   }
 }

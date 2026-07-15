@@ -1,6 +1,6 @@
 ---
 name: heroku-to-aws
-description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform. Runs a 6-phase process: discover Heroku resources from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Fargate, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP or Azure migrations to AWS, AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
+description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Elastic Beanstalk, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to Elastic Beanstalk, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform. Runs a 6-phase process: discover Heroku resources from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Elastic Beanstalk by default, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP or Azure migrations to AWS, AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
 ---
 
 # Heroku-to-AWS Migration Skill
@@ -8,9 +8,9 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 ## Philosophy
 
 - **Full platform exit by default**: Heroku is in sustaining engineering (KTLO) — stability and support only, no new investment. Enterprise contracts are no longer sold to new customers. This skill assumes complete departure from Heroku (compute, data, and add-ons) within a user-defined window. Do not recommend indefinite continued use of Heroku.
-- **No legacy-to-legacy**: Do not recommend Elastic Beanstalk or AWS App Runner (no longer accepting new customers as of April 2026) as migration targets. Fargate is the sole compute target. ECS Express Mode may be mentioned as an optional simplified deployment path (same underlying Fargate + ALB cost model).
+- **PaaS-to-PaaS by default, recommendation-shaped**: Elastic Beanstalk (Docker platform, AL2023) is the default compute target because it preserves Heroku's managed platform model (source deployment, platform-managed environments, and lower operational burden than direct container orchestration). Clarify presents a per-formation compute recommendation before asking for confirmation. Fargate remains the override for direct container control and is used automatically for horizontally scaled non-web processes that EB SingleInstance cannot preserve; EKS remains the override for teams with Kubernetes expertise. ECS Express Mode may be mentioned only as a forward-look for the Fargate override path, not as a replacement for the EB default. Do not recommend AWS App Runner (no longer accepting new customers as of April 2026).
 - **Interim cutover is bounded**: If a user chooses data-first migration (database on AWS, app temporarily on Heroku), treat this as a bounded phase (weeks, not quarters). Require a target exit date and surface KTLO platform risk warnings.
-- **Re-platform by default**: Select AWS services that match Heroku workload types (e.g., Dynos → Fargate, Heroku Postgres → RDS/Aurora, Heroku Redis → ElastiCache, Kafka → MSK).
+- **Re-platform by default**: Select AWS services that match Heroku workload types (e.g., Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, Heroku Redis → ElastiCache, Kafka → MSK).
 - **Dev sizing unless specified**: Default to development-tier capacity (e.g., db.t4g.micro, single AZ). Upgrade only on user direction.
 - **No human one-time migration costs**: Do not present human labor, professional services, or people-time work as dollar estimates or "one-time migration cost" budget categories. Vendor charges grounded in data (for example Heroku invoice line items in the infra estimate when billing exists) are allowed.
 - **Terraform + repo as primary discovery**: Terraform files (`.tf` with `heroku_*` resources) and repo artifacts (Procfile, app.json) are the primary data sources for resource discovery. No Platform API calls in v1.
@@ -29,11 +29,17 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 
 ## Phase Structure (frontmatter)
 
-A phase orchestrator file (e.g. `references/phases/discover/discover.md`) may carry a small YAML frontmatter block that names how the phase is composed — its inputs, the **fragments** it runs (each with a trigger), the **assembler** that combines their outputs, what it produces, and what it requires/advances-to. `INTERPRETER.md` is the contract: it lists every frontmatter key and how to act on it (including `_init`, which establishes migration state on the first phase).
+Phase and unit files carry a YAML frontmatter block that declares how the phase is
+composed — its inputs, the fragments it runs, the assembler that combines them,
+what it produces, its gates, and what it requires/advances-to. The DSL interpreter
+contract is the vendored `references/vendored/dsl/INTERPRETER.md`: it defines every
+frontmatter key, the fragment/assembler model, and the interpreter loop. **Load it
+first** (once, at the start of a migration), then execute a phase file's prose
+body. Elsewhere in this skill, `INTERPRETER.md` (without a path) refers to this
+same loaded contract.
 
-**Fragment vs assembler:** a **fragment** does one unit of work and writes its own contribution; fragments are independent (none reads another's output). The **assembler** runs last and combines/validates the fragments' outputs into the phase's final artifact. A phase has 1..N fragments and exactly one assembler.
-
-When a phase file has frontmatter, read it (and `INTERPRETER.md`) first, then execute the phase body. Frontmatter is being introduced phase-by-phase; phases without it run from their prose as before.
+Frontmatter is being introduced phase-by-phase; a phase file without it runs from
+its prose as before.
 
 ---
 
@@ -46,138 +52,45 @@ Each phase loads reference files on demand. To keep per-turn context manageable 
 - **No duplication:** Mapping tables, pricing data, and shared warnings exist in one canonical file. Other files reference them; they do not copy them inline.
 - **Progressive depth:** Phase orchestrators (`design.md`, `generate.md`) contain short routing logic that points to detailed sub-files. Load the sub-file only when its path is selected.
 
-**Conditional reference files (load ONLY when condition is true):**
-
-| File                                       | Condition                                                    |
-| ------------------------------------------ | ------------------------------------------------------------ |
-| `design-refs/postgres-plan-table.md`       | Inventory contains `addon:*:heroku-postgresql:*` resources   |
-| `design-refs/redis-plan-table.md`          | Inventory contains `addon:*:heroku-redis:*` resources        |
-| `design-refs/kafka-plan-table.md`          | Inventory contains `addon:*:heroku-kafka:*` resources        |
-| `references/phases/clarify/clarify.md` Q11 | `heroku_generation == "fir"` detected in any inventory entry |
+Each phase declares its own conditional reference/knowledge loads in frontmatter (a fragment `_trigger` or a `_knowledge` entry's `_when`); do not maintain a separate load-condition table here.
 
 When adding new reference files, verify the phase's total loaded instructions remain under budget. If a new file would exceed ~800 lines when combined with other loaded refs, split it or make it conditional.
 
 ---
 
-## Prerequisites
+## Execution
 
-User must provide:
+This skill is driven by the interpreter loop in `INTERPRETER.md` (§ The interpreter
+loop): it reads `.phase-status.json`, determines the current phase, runs each
+phase's `_preconditions` / fragments / `_assemble` / `_postconditions`, advances on
+`HANDOFF_OK` via `_advances_to`, and validates state. The phase set, ordering, and
+gates are all derived from the phase files' frontmatter and `INTERPRETER.md` — they
+are not restated here.
 
-- **Terraform IaC** (REQUIRED): `.tf` files containing `heroku_*` resource types (primary and required discovery path)
-- **Repo artifacts** (SUPPLEMENTARY): Procfile and/or app.json in the workspace (supplements Terraform with commands, buildpacks, and declared add-ons — cannot stand alone)
-- **Billing data** (OPTIONAL): Heroku Dashboard invoices or Enterprise CSV billing exports (for cost comparison)
+**Cold start (entry phase).** On a cold start — no `.migration/` run with a
+`.phase-status.json` yet — begin at `references/phases/discover/discover.md`, this
+skill's entry phase (the one carrying `_init: true`). The interpreter loads THIS
+phase directly; it does not scan every phase's frontmatter to discover the root.
+All subsequent phases are reached by following each phase's `_advances_to`. On a
+warm start, `current_phase` in `.phase-status.json` is authoritative (see
+`INTERPRETER.md` § The interpreter loop).
 
-If no Terraform files with `heroku_*` resources are found, stop and ask user to provide Heroku Terraform files. Procfile and app.json alone are not sufficient for discovery.
-
-**Note:** Platform API discovery is NOT supported in v1. No API token is required or used.
-
----
-
-## State Machine
-
-This is the execution controller. After completing each phase, consult this table to determine the next action.
-
-| Current State | Condition                                                             | Next Action                                                                            |
-| ------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `discover`    | `phases.discover != "completed"`                                      | Load `references/phases/discover/discover.md`                                          |
-| `clarify`     | `phases.discover == "completed"` AND `phases.clarify != "completed"`  | Load `references/phases/clarify/clarify.md`                                            |
-| `design`      | `phases.clarify == "completed"` AND `phases.design != "completed"`    | Load `references/phases/design/design.md`                                              |
-| `estimate`    | `phases.design == "completed"` AND `phases.estimate != "completed"`   | Load `references/phases/estimate/estimate.md`                                          |
-| `generate`    | `phases.estimate == "completed"` AND `phases.generate != "completed"` | Load `references/phases/generate/generate.md`                                          |
-| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "pending"`   | Set `phases.feedback` to `"completed"` (user had two chances), then migration complete |
-| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "completed"` | Migration planning complete                                                            |
-
-**How to determine current state (deterministic):**
-
-1. Read `$MIGRATION_DIR/.phase-status.json`
-2. If `current_phase` exists, use it (must match one of: discover, clarify, design, estimate, generate, complete)
-3. Otherwise use ordered phase evaluation: `discover` → `clarify` → `design` → `estimate` → `generate`
-4. Pick the **first** phase in that order where `phases.<phase> != "completed"`; if none, state is `complete`
-
-**Phase gate checks**: If prior phase incomplete, do not advance (e.g., cannot enter estimate without completed design).
-
-**Clarify is mandatory:** Do not load `references/phases/design/design.md`, `references/phases/estimate/estimate.md`, or `references/phases/generate/generate.md` unless `$MIGRATION_DIR/.phase-status.json` exists and `phases.clarify` is exactly `"completed"`. A `preferences.json` file alone is **not** sufficient proof that Clarify ran. If the user asks to skip Clarify or jump straight to Design, cost estimate, or artifact generation, refuse briefly, then load `references/phases/clarify/clarify.md` and run Phase 2. There is no exception for "quick" or "obvious" migrations.
-
-**Feedback checkpoints**: Feedback is offered once after Estimate (combined with plan sharing). See the **Feedback Checkpoints** section below for details.
-
-### Handoff Gate Orchestration (Fail Closed)
-
-Load `references/shared/handoff-gates.md` when executing any phase completion step.
-
-1. **Single `$MIGRATION_DIR`**: Use one run directory for the entire migration. Do not mix artifacts across `.migration/*/` sessions.
-2. **Re-read from disk**: Before each phase (and before each handoff gate), Read required artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
-3. **Advance only on `HANDOFF_OK`**: A phase is complete only when its orchestrator emits `HANDOFF_OK | phase=<name> | artifacts=...`. Do not load the next phase without it.
-4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Tell the user which phase to re-run.
-5. **Re-entry**: Re-running an earlier phase after downstream phases completed requires explicit user confirmation; downstream phases must be reset to `"pending"`. See `handoff-gates.md` re-entry table.
-
-Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`.
-
----
-
-## State Validation
-
-When reading `$MIGRATION_DIR/.phase-status.json`, validate before proceeding:
-
-1. **Multiple sessions**: If multiple directories exist under `.migration/`, list them with their phase status and ask: [A] Resume latest, [B] Start fresh, [C] Cancel.
-2. **Invalid JSON**: If `.phase-status.json` fails to parse, STOP. Output: "State file corrupted (invalid JSON). Delete the file and restart the current phase."
-3. **Unrecognized phase**: If `phases` object contains a phase not in {discover, clarify, design, estimate, generate, feedback}, STOP. Output: "Unrecognized phase: [value]. Valid phases: discover, clarify, design, estimate, generate, feedback."
-4. **Unrecognized status**: If any `phases.*` value is not in {pending, in_progress, completed}, STOP. Output: "Unrecognized status: [value]. Valid values: pending, in_progress, completed."
-5. **Invalid `current_phase`** (if present): If `current_phase` is not in {discover, clarify, design, estimate, generate, complete}, STOP. Output: "Unrecognized current_phase: [value]. Valid values: discover, clarify, design, estimate, generate, complete."
-6. **Out-of-order completion**: For ordered phases [discover, clarify, design, estimate, generate], if any later phase is `"completed"` while an earlier phase is not `"completed"`, STOP. Output: "Inconsistent phase ordering detected. Reconcile `.phase-status.json` before resuming."
-7. **Multiple active phases**: Across core phases {discover, clarify, design, estimate, generate}, at most one phase may be `"in_progress"`. If >1, STOP. Output: "Multiple phases are in_progress. Keep only one active phase before resuming."
+**Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
+Design, Estimate, or Generate even if the user asks — there is no exception for
+"quick" or "obvious" migrations. A `preferences.json` that was not produced by an
+actual Clarify run does not count. If asked to skip, refuse briefly and run
+Clarify.
 
 ---
 
 ## State Management
 
-Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created by Phase 1 and persisted across invocations.
-
-**.phase-status.json schema:**
-
-```json
-{
-  "migration_id": "0315-1030",
-  "last_updated": "2026-03-15T10:30:00Z",
-  "current_phase": "discover",
-  "phases": {
-    "discover": "in_progress",
-    "clarify": "pending",
-    "design": "pending",
-    "estimate": "pending",
-    "generate": "pending",
-    "feedback": "pending"
-  }
-}
-```
-
-**Status values:** `"pending"` → `"in_progress"` → `"completed"`. Never goes backward.
-For core phases (discover, clarify, design, estimate, generate), at most one phase may be `"in_progress"` at any time.
-`current_phase` is optional but recommended; when present it is authoritative.
-
-The `.migration/` directory is automatically protected by a `.gitignore` file created in Phase 1.
-
-### Phase Status Update Protocol
-
-Use **read-merge-write** updates for `.phase-status.json`:
-
-1. Read the current file before every update.
-2. Change only the phase keys being advanced and `last_updated`.
-3. Keep prior completed phases unchanged.
-4. Set `current_phase` to the next deterministic phase (or `complete` after generate).
-5. Write the full file in the same turn as your final phase work message.
-
----
-
-## Phase Summary Table
-
-| Phase        | Inputs                                                                                           | Outputs                                                                                                                                               | Reference                                |
-| ------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Discover** | Terraform files with `heroku_*` resources, Procfile, app.json, and/or billing exports            | `heroku-resource-inventory.json`, `.phase-status.json` updated                                                                                        | `references/phases/discover/discover.md` |
-| **Clarify**  | `heroku-resource-inventory.json`                                                                 | `preferences.json`, `.phase-status.json` updated                                                                                                      | `references/phases/clarify/clarify.md`   |
-| **Design**   | `heroku-resource-inventory.json`, `preferences.json`                                             | `aws-design.json`                                                                                                                                     | `references/phases/design/design.md`     |
-| **Estimate** | `aws-design.json`, `preferences.json`, optional billing profile                                  | `estimation-infra.json`, `.phase-status.json` updated                                                                                                 | `references/phases/estimate/estimate.md` |
-| **Generate** | `aws-design.json`, `estimation-infra.json`, `preferences.json`, `heroku-resource-inventory.json` | `terraform/`, `MIGRATION_GUIDE.md`, `README.md`, database migration scripts, `generation-warnings.json` (if applicable), `.phase-status.json` updated | `references/phases/generate/generate.md` |
-| **Feedback** | `.phase-status.json` (discover completed minimum), all existing migration artifacts              | `feedback.json`, `.phase-status.json` updated                                                                                                         | `references/phases/feedback/feedback.md` |
+Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created on
+the first phase and persisted across invocations. The state file is
+`.phase-status.json`; its shape is defined by
+`references/vendored/state/phase-status.schema.json`, and how it is created, validated, and
+updated across the lifecycle is defined in `INTERPRETER.md` § The interpreter loop.
+The `.migration/` directory is protected by a `.gitignore` created at init.
 
 ---
 
@@ -187,7 +100,7 @@ Use **read-merge-write** updates for `.phase-status.json`:
 
 - Provides `get_pricing`, `get_pricing_service_codes`, `get_pricing_service_attributes` tools
 - Only needed during Estimate phase. Discover and Design do not require it.
-- Primary pricing source: `shared/pricing/aws-infra-pricing.json` (cached AWS infrastructure rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the pricing file.
+- Primary pricing source: `references/vendored/pricing/aws-infra-pricing.json` (cached AWS infrastructure rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the pricing file.
 
 ---
 
@@ -195,7 +108,7 @@ Use **read-merge-write** updates for `.phase-status.json`:
 
 ```
 heroku-to-aws/
-├── SKILL.md                                    ← You are here (orchestrator + state machine)
+├── SKILL.md                                    ← You are here (skill entry point)
 │
 ├── references/
 │   ├── phases/
@@ -216,30 +129,29 @@ heroku-to-aws/
 │   │   └── feedback/
 │   │       └── feedback.md                     # Phase 6: Feedback collection (reuses shared)
 │   │
-│   ├── design-refs/
-│   │   ├── fast-path-table.md                  # Add-on → AWS deterministic mappings (13+ entries)
-│   │   ├── dyno-type-table.md                  # Dyno type → Fargate CPU/memory
-│   │   ├── postgres-plan-table.md              # Postgres plan → RDS/Aurora sizing
-│   │   ├── redis-plan-table.md                 # Redis plan → ElastiCache sizing
-│   │   └── kafka-plan-table.md                 # Kafka plan → MSK sizing
-│   │
-│   └── shared/                                 # References shared plugin infrastructure
-│       └── (path reference to ../gcp-to-aws/references/shared/)
-│           ├── handoff-gates.md                # Fail-closed phase handoff protocol
-│           ├── schema-phase-status.md          # .phase-status.json schema
-│           ├── migration-complexity.md         # Complexity tier definitions (Small/Medium/Large)
-│           ├── schema-estimate-infra.md        # estimation-infra.json schema
-│           └── validate-artifacts.md           # Pre-report validation
+│   └── shared/                                 # heroku-to-aws's own shared references
+│           ├── README.md                       # what lives here + pointers to plugin-neutral shared data
+│           ├── heroku-pricing-cache.md          # Heroku plan pricing (source-side baseline)
+│           └── schema-discover-heroku.md        # heroku-resource-inventory.json schema
+│
+├── knowledge/design/                          # design lookup DATA (pure data, referenced by
+│   │                                           #  design.md _knowledge, gated per _when)
+│   ├── dyno-eb-sizing.json                     # Dyno type → Elastic Beanstalk EC2 instance type
+│   ├── dyno-fargate-sizing.json                # Dyno type → Fargate CPU/memory
+│   ├── eks-pod-sizing.json                     # Dyno type → EKS pod sizing + node selection
+│   ├── postgres-rds-sizing.json                # Postgres plan → RDS/Aurora sizing
+│   ├── redis-elasticache-sizing.json           # Redis plan → ElastiCache sizing
+│   ├── kafka-msk-sizing.json                   # Kafka plan → MSK sizing
+│   └── fast-path-addons.json                   # Add-on → AWS deterministic mappings (13+ entries)
 ```
 
-| Condition                                                | Action                                                                                                                                                        |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No Terraform files with `heroku_*` resources found       | Stop. Output: "No Terraform files with heroku_* resources found. Heroku Terraform is required for discovery. Procfile and app.json alone are not sufficient." |
-| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                        |
-| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `shared/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`.  |
-| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                              |
-| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                            |
-| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                    |
+| Condition                                                | Action                                                                                                                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                    |
+| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `references/vendored/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`. |
+| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                                          |
+| Dyno type not in selected compute sizing table           | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                                         |
+| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                                |
 
 ## Defaults
 
@@ -248,80 +160,61 @@ heroku-to-aws/
 - **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, 0.5 CPU for Fargate)
 - **Migration mode**: Adapts based on available inputs (Terraform primary, Procfile/app.json supplementary, billing optional)
 - **Cost currency**: USD
-- **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). See `references/shared/migration-complexity.md` for tier definitions.
+- **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). Complexity tiers are classified per `references/vendored/estimate/complexity-tiers.json`.
 
-## Workflow Execution
+## Feedback & Sharing Checkpoints
 
-When invoked, the agent **MUST follow this exact sequence**:
+The interpreter loop (`INTERPRETER.md` § The interpreter loop) drives phase
+sequencing, gates, and state. This section defines only the heroku-specific
+checkpoint orchestration: WHERE the optional `feedback` checkpoint and plan-share
+are offered (a checkpoint's placement is orchestration prose, not part of the
+phase contract).
 
-1. **Load phase status**: Read `.phase-status.json` from `.migration/*/`.
-   - If missing: Initialize for Phase 1 (Discover)
-   - If exists: Determine current phase using deterministic rules in **State Machine**
+- **After Discover**: No prompt. Proceed directly to Clarify.
 
-2. **Determine phase to execute**:
-   - If `current_phase` exists: execute that phase.
-   - Otherwise execute the first non-completed phase in ordered list: discover → clarify → design → estimate → generate.
-   - If all ordered phases are completed: migration is complete (with feedback finalization rule).
+- **After Estimate** (if `phases.feedback` is `"pending"`): Output to user:
 
-3. **Read phase reference**: Load the full reference file for the target phase.
+  ```
+  ─── Share Your Migration Plan ───
 
-4. **Execute ALL steps in order**: Follow every numbered step in the reference file. **Do not skip, optimize, or deviate.**
+  This link encodes your migration profile for partner matching:
+  ✓ Included: Clarify answers, estimated costs, recommendation path,
+    detected Heroku services, resource names, and workload types.
+  ✗ Excluded: Source code, local file paths, credentials, API tokens,
+    config-var values, and environment secrets.
 
-5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding. Phase orchestrators run **Completion Handoff Gate** checks per `shared/handoff-gates.md`.
+  The link uses a URL fragment (#) — no data is sent to any server
+  when you click it. The landing page decodes everything client-side.
 
-6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `shared/handoff-gates.md`. On `GATE_FAIL`, stop — do not update phase status or load the next phase.
+  [A] Send feedback & share plan
+  [B] Send feedback only
+  [C] No thanks, continue to Generate
+  ```
 
-7. **Update phase status**: Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
+  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Then generate share link. Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **B** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **C** → Set `phases.feedback` to `"completed"`. Continue to Generate.
 
-8. **Feedback and sharing checkpoints**: After Estimate completes, offer feedback and/or plan sharing. This runs **before** advancing to Generate.
+- **After Generate**: Share-only prompt (no feedback re-ask):
 
-   - **After Discover**: No prompt. Proceed directly to Clarify.
+  ```
+  ─── Share Your Completed Plan ───
 
-   - **After Estimate** (if `phases.feedback` is `"pending"`): Output to user:
+  This link encodes your migration profile for partner matching:
+  ✓ Included: Clarify answers, estimated costs, recommendation path,
+    detected Heroku services, resource names, and workload types.
+  ✗ Excluded: Source code, local file paths, credentials, API tokens,
+    config-var values, and environment secrets.
 
-     ```
-     ─── Share Your Migration Plan ───
+  The link uses a URL fragment (#) — no data is sent to any server
+  when you click it. The landing page decodes everything client-side.
 
-     This link encodes your migration profile for partner matching:
-     ✓ Included: Clarify answers, estimated costs, recommendation path,
-       detected Heroku services, resource names, and workload types.
-     ✗ Excluded: Source code, local file paths, credentials, API tokens,
-       config-var values, and environment secrets.
+  [A] Share completed plan
+  [B] No thanks, finish
+  ```
 
-     The link uses a URL fragment (#) — no data is sent to any server
-     when you click it. The landing page decodes everything client-side.
+  - If user picks **A** → Generate share link. Mark migration complete.
+  - If user picks **B** → Mark migration complete.
+  - If `phases.feedback` is still `"pending"`, set it to `"completed"` regardless of choice.
 
-     [A] Send feedback & share plan
-     [B] Send feedback only
-     [C] No thanks, continue to Generate
-     ```
-
-     - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Then generate share link. Set `phases.feedback` to `"completed"`. Continue to Generate.
-     - If user picks **B** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
-     - If user picks **C** → Set `phases.feedback` to `"completed"`. Continue to Generate.
-
-   - **After Generate**: Share-only prompt (no feedback re-ask):
-
-     ```
-     ─── Share Your Completed Plan ───
-
-     This link encodes your migration profile for partner matching:
-     ✓ Included: Clarify answers, estimated costs, recommendation path,
-       detected Heroku services, resource names, and workload types.
-     ✗ Excluded: Source code, local file paths, credentials, API tokens,
-       config-var values, and environment secrets.
-
-     The link uses a URL fragment (#) — no data is sent to any server
-     when you click it. The landing page decodes everything client-side.
-
-     [A] Share completed plan
-     [B] No thanks, finish
-     ```
-
-     - If user picks **A** → Generate share link. Mark migration complete.
-     - If user picks **B** → Mark migration complete.
-     - If `phases.feedback` is still `"pending"`, set it to `"completed"` regardless of choice.
-
-9. **Display summary**: Show user what was accomplished, highlight next phase, or confirm migration completion.
-
-**Critical constraint**: Agent must strictly adhere to the reference file's workflow. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.
+**Critical constraint**: Follow each phase reference file's workflow exactly. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.

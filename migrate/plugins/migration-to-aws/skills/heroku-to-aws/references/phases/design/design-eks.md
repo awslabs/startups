@@ -1,24 +1,34 @@
+---
+_fragment: eks-mapping
+_of_phase: design
+_contributes:
+  - aws-design.json
+---
+
 # EKS Design Branch
 
-**Applies when:** `preferences.json → design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`.
-
-**Skip when:** `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent → use existing Fargate path (dyno-type-table.md).
+> Conditional formation-mapping fragment. Fires only when the compute target preference
+> selects EKS; the prose below gates on that value (skip when `elastic_beanstalk`, `ecs-fargate`, or
+> absent). When active, it maps ALL formations to EKS pods + a single `eks_cluster`
+> aggregate, contributing to `aws-design.json`. The mapping-engine fragment
+> (`design-mapping.md`) handles the EB/Fargate paths and all non-formation resources.
 
 ---
 
 ## EKS Branch Logic
 
-When the Kubernetes preference indicates EKS:
+When the compute target preference indicates EKS:
 
 1. **For EACH formation resource** in the inventory:
-   - Look up dyno type in `design-refs/eks-mapping-table.md`
+   - If `config.process_type == "release"`, skip it and add the same run-once deployment-hook warning used by the EB/Fargate mapping. Do NOT create an EKS Deployment for release commands.
+   - Look up dyno type in the `eks-pod-sizing.json` knowledge (`rows.<dyno_type>`)
    - Produce an EKS Deployment entry with pod resource requests and limits
    - Set `aws_service: "EKS"`
    - Preserve dyno quantity as `replicas` (0–100)
    - If process type is `web` → include Kubernetes Service (type: LoadBalancer) with AWS LB Controller annotations
    - If process type is NOT `web` → Deployment only (no Service)
 
-2. **Produce single EKS cluster entry** (constants from `design-refs/eks-mapping-table.md` → its `cluster` JSON block):
+2. **Produce single EKS cluster entry** (constants from the `eks-pod-sizing.json` knowledge → its `cluster` block):
    - `cluster_name`: from `cluster.cluster_name` (`"heroku-migration-cluster"`)
    - `kubernetes_version`: query the latest EKS-supported stable version at generation time (`aws eks describe-addon-versions`); if the query is unavailable, fall back to `cluster.kubernetes_version_fallback`. Do not hardcode — EKS deprecates older versions on a rolling basis.
    - Node group type: from `cluster.node_group_type_by_pref` keyed on the preference (`eks-managed` → `self-managed`, more control; `eks-or-ecs` → `managed`, less operational burden)
@@ -65,8 +75,8 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
     "container_image": "placeholder:<heroku-app>-<process-type>",
     "process_type": "<process-type>",
     "resources": {
-      "requests": { "cpu": "<from-table>", "memory": "<from-table>" },
-      "limits": { "cpu": "<from-table>", "memory": "<from-table>" }
+      "requests": { "cpu": "<rows.<dyno>.req_cpu>", "memory": "<rows.<dyno>.req_mem>" },
+      "limits": { "cpu": "<rows.<dyno>.lim_cpu>", "memory": "<rows.<dyno>.lim_mem>" }
     },
     "load_balancer": <true if web, false otherwise>,
     "node_group_type": "<managed|self-managed>"
@@ -85,7 +95,7 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
     "node_groups": [
       {
         "name": "general",
-        "instance_types": ["<recommended-from-table>"],
+        "instance_types": ["<node_type of the largest dyno present, per node_size_rank>"],
         "min_size": 2,
         "max_size": <calculated>,
         "desired_size": <calculated>

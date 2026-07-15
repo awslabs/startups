@@ -1,27 +1,35 @@
-# Shared Infrastructure References
+# heroku-to-aws Shared References
 
-This directory references the shared plugin infrastructure located at:
+This directory holds references shared _within_ the heroku-to-aws skill (across its
+phases). It no longer symlinks the gcp-to-aws sibling skill — heroku-to-aws is
+self-contained.
 
-```
-../gcp-to-aws/references/shared/
-```
+| File                        | Purpose                                                     |
+| --------------------------- | ----------------------------------------------------------- |
+| `heroku-pricing-cache.md`   | Heroku plan pricing (source-side baseline for the estimate) |
+| `schema-discover-heroku.md` | `heroku-resource-inventory.json` schema                     |
 
-The heroku-to-aws skill reuses these shared files from the gcp-to-aws sibling skill:
+## Vendored plugin-shared data
 
-| File                       | Purpose                                                     |
-| -------------------------- | ----------------------------------------------------------- |
-| `handoff-gates.md`         | Fail-closed phase handoff protocol (HANDOFF_OK / GATE_FAIL) |
-| `schema-phase-status.md`   | `.phase-status.json` schema (canonical reference)           |
-| `migration-complexity.md`  | Complexity tier definitions (Small/Medium/Large)            |
-| `schema-estimate-infra.md` | `estimation-infra.json` schema                              |
-| `validate-artifacts.md`    | Pre-report validation (Generate Step 0; read-only)          |
+Cross-skill data that other DSL migration skills also use has a canonical home in the
+plugin-neutral `skills/shared/` tree (not owned by any single skill). To keep this
+skill **self-contained** (runnable standalone, without reaching outside its own
+directory), those files are VENDORED into `references/vendored/` — byte-identical
+copies kept in sync by CI. Phase frontmatter `_knowledge` and `INTERPRETER.md`
+reference the vendored copies, never the external source:
 
-## Usage
+| Vendored path                                               | Purpose                                      |
+| ----------------------------------------------------------- | -------------------------------------------- |
+| `references/vendored/dsl/INTERPRETER.md`                    | the DSL runtime contract (the interpreter)   |
+| `references/vendored/state/phase-status.schema.json`        | `.phase-status.json` schema (JSON Schema)    |
+| `references/vendored/estimate/estimation-infra.schema.json` | `estimation-infra.json` schema (JSON Schema) |
+| `references/vendored/estimate/complexity-tiers.json`        | Migration complexity-tier thresholds         |
+| `references/vendored/pricing/aws-infra-pricing.json`        | Cached AWS infrastructure pricing            |
 
-When a phase reference instructs you to "Load `references/shared/<file>`", read the file from:
+See `references/vendored/README.md` for the sync contract (`mise run shared:sync` /
+`shared:check`). Do NOT hand-edit the vendored copies — edit the canonical source.
 
-```
-migrate/plugins/migration-to-aws/skills/gcp-to-aws/references/shared/<file>
-```
-
-This avoids file duplication while maintaining consistent behavior across skills.
+The gate protocol, re-entry, and phase-status lifecycle that used to live in shared
+gcp prose are now defined in `INTERPRETER.md` (§ Gate protocol, § `_re_entry_guard`,
+§ The interpreter loop) and each phase's `_preconditions` / `_postconditions`
+frontmatter.
