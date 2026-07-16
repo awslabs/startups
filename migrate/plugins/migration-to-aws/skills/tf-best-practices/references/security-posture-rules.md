@@ -1,17 +1,40 @@
 # Generated-IaC Security Posture Rules
 
 Cross-cutting security posture that generated AWS Terraform must follow, regardless of the
-source cloud. These are **authoring rules** ("what to emit"); the read-only policy gate
-(`scripts/validate-terraform-policy.py`) verifies the subset it can check statically.
+source cloud (GCP, Heroku, …). These are **authoring rules** — "what good AWS Terraform looks
+like." Load this file **before** writing `terraform/`; emit resources that satisfy it.
 
-> **Scope.** tf-best-practices owns these posture areas as authoring rules AND enforces them
-> in the read-only gate: internet-facing ALB TLS, no-public-database, no-public-DB-port
-> ingress, no-wildcard-IAM, and RDS encryption-at-rest. Each gate rule is **fail-open on
-> ambiguity** — it fires only on unambiguous, in-block literal evidence, so a valid stack is
-> never falsely blocked (the mirror of the ALB rule's fail-safe stance). Remaining posture
-> areas (private-subnet placement as a positive assertion, the account-hardening `baseline.tf`
-> layer, S3 SSE correlation) stay the consuming skill's own generation rules for now and are
-> candidates to migrate here later.
+**Source-agnostic by design.** Every rule here is a statement about AWS Terraform only. This
+file contains **no** GCP/Heroku/source-cloud logic — the consuming skill (the caller) owns all
+source-specific concerns and passes the caller-context signals a rule needs (see below).
+
+## Rule categories
+
+- **Gate-enforced** — the read-only policy gate (`scripts/validate-terraform-policy.py`)
+  statically verifies these after generation: ALB TLS, no-public-database, RDS + ElastiCache
+  encryption-at-rest, no-public-DB-port ingress, no-public admin/datastore-port ingress,
+  no-wildcard-IAM. Each is **fail-open on ambiguity** — fires only on unambiguous in-block
+  literal evidence, so a valid stack is never falsely blocked.
+- **Authoring-only** — best-practice rules the static gate cannot check but the caller must
+  still emit: `deletion_protection`, the master-password-via-Secrets-Manager recipe, S3
+  hardening, EKS/ECR settings, private-subnet placement, backups, and the compliance-conditional
+  emissions below. Not gate-blocked; still required for well-formed output.
+
+## Caller-context signals
+
+A few rules are conditional on facts only the caller knows. The caller passes these when it
+loads this file; the rules reference them abstractly (never a source-cloud artifact):
+
+- **`compliance`** — the set of declared compliance frameworks (`soc2`, `pci`, `hipaa`,
+  `fedramp`), or empty. Gates the **Compliance-conditional emissions** section. The caller
+  derives this from its own requirements gathering and supplies the value; this file only says
+  "if `compliance` includes X, emit Y."
+- **`aws_config` values** (instance classes, CPU/memory, sizes) — the caller reads these from
+  its own design artifact and populates resource attributes; the posture rules constrain the
+  _shape_, not the specific numbers.
+
+The caller also owns any source-cloud detection (e.g. mapping a public-ingress finding from the
+source infra into a warning) — that logic never lives here.
 
 ## Internet-facing ALB — TLS termination and HTTP redirect
 
@@ -146,3 +169,107 @@ not a blanket wildcard and is allowed.
 open (their statements are HCL blocks, not literal JSON the reader can inspect), and assume-role
 trust policies on `aws_iam_role` are out of scope — so a scoped data-source policy is never
 falsely flagged.
+
+---
+
+## Authoring-only rules (not gate-enforced)
+
+The static gate cannot verify these, but well-formed AWS Terraform must still emit them. Apply
+them at authoring time alongside the gate-enforced rules above.
+
+## Database — durability & credential hygiene
+
+**Applies to:** `aws_db_instance`, `aws_rds_cluster` and their supporting resources.
+
+1. **`deletion_protection = true`** by default. Add an inline comment:
+   `# Set to false only when intentionally destroying this cluster.`
+2. **Backups enabled** (`backup_retention_period` > 0).
+3. Emit a **DB subnet group + parameter group + security group**; place the instance in
+   **private subnets**.
+4. **Never** set the master password from a plaintext variable
+   (`master_password = var.database_master_password` is forbidden — it lands in `terraform.tfvars`
+   and state in plaintext). Instead generate it into Secrets Manager and reference it via a data
+   source:
+
+   ```hcl
+   resource "random_password" "db_master" {
+     length  = 32
+     special = true
+   }
+
+   resource "aws_secretsmanager_secret" "db_master" {
+     name = "${var.project_name}/rds/master-credentials"
+   }
+
+   resource "aws_secretsmanager_secret_version" "db_master" {
+     secret_id     = aws_secretsmanager_secret.db_master.id
+     secret_string = jsonencode({ password = random_password.db_master.result })
+   }
+
+   data "aws_secretsmanager_secret_version" "db_master" {
+     secret_id  = aws_secretsmanager_secret.db_master.id
+     depends_on = [aws_secretsmanager_secret_version.db_master]
+   }
+
+   # on the instance/cluster:
+   #   master_password = jsondecode(data.aws_secretsmanager_secret_version.db_master.secret_string)["password"]
+   ```
+
+## S3 — bucket hardening
+
+**Applies to:** application `aws_s3_bucket` resources (not log-sink buckets, which have their
+own policies).
+
+1. **Versioning enabled.**
+2. **Encryption:** SSE-S3 or SSE-KMS (a bucket without an explicit SSE block still has default
+   SSE-S3 since Jan 2023 — do not treat its absence as unencrypted, but prefer an explicit block).
+3. **Block public access** by default (account- and bucket-level).
+4. **Lifecycle policies** for cost/retention where applicable.
+5. If **public content** is required, front it with **CloudFront + Origin Access Control (OAC)** —
+   never a public bucket policy.
+
+## Compute — Fargate / EKS / ECR
+
+1. **Fargate** tasks run in **private subnets**; size from the caller-supplied `aws_config`
+   CPU/memory.
+2. **EKS:** default to a private API endpoint — `endpoint_private_access = true`,
+   `endpoint_public_access = false`. Add a comment: `# Public endpoint disabled. To enable
+   kubectl access from outside the VPC set endpoint_public_access = true and restrict
+   public_access_cidrs to known CIDRs.`
+3. **ECR:** every `aws_ecr_repository` includes `image_scanning_configuration { scan_on_push = true }`
+   (free basic scanning catches known CVEs before images reach production).
+
+## Networking — subnet & egress baseline
+
+1. Span at least **2 Availability Zones**.
+2. **Public + private subnets**; workloads (compute, database) live in private subnets.
+3. **NAT gateway** for private-subnet outbound internet when required.
+
+## Monitoring — baseline observability
+
+1. A **CloudWatch log group per service** with a sane retention (default 30 days).
+2. A **dashboard** with key metrics. (Specific alarm thresholds come from the caller's context —
+   the caller supplies success-metric targets; this rule constrains the shape, not the values.)
+
+---
+
+## Compliance-conditional emissions
+
+These are AWS best-practice hardening steps that apply **only when the caller declares a
+compliance framework**. The **rule lives here**; the **trigger** (the `compliance` set) is a
+caller-context signal (see _Caller-context signals_ above) — the caller passes it in; this file
+never reads a source-cloud artifact.
+
+Apply based on the caller-supplied `compliance` set:
+
+| Emit when `compliance` includes…     | Emit                                                                                                                                                                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pci`, `hipaa`, or `fedramp`         | **VPC flow logs** — `aws_flow_log` for the VPC → a CloudWatch log group. Inline cost note: `# VPC Flow Logs: ~$0.50/GB ingested. Enabled for compliance. Disable if cost is a concern and compliance posture allows.`                                         |
+| `pci`, `hipaa`, or `fedramp`         | **S3 access logging** — `aws_s3_bucket_logging` for every application bucket → a dedicated access-log bucket. Inline cost note: `# S3 access logging: ~$0.023/GB stored. Enabled for compliance. Disable if cost is a concern and compliance posture allows.` |
+| `soc2`, `pci`, `hipaa`, or `fedramp` | **Secret rotation** — a companion `aws_secretsmanager_secret_rotation` (`automatically_after_days = 30`) for every `aws_secretsmanager_secret`, with a TODO comment for the rotation Lambda ARN.                                                              |
+| `pci`, `hipaa`, or `fedramp`         | **Customer-managed KMS** — an `aws_kms_key` referenced via `kms_key_id` on every `aws_secretsmanager_secret` (AWS-managed key is sufficient otherwise).                                                                                                       |
+
+When `compliance` is empty, emit **none** of the above — keep the generated Terraform minimal
+and immediately applyable. (The account-hardening `baseline.tf` layer — CloudTrail, GuardDuty,
+Config, Security Hub — remains the caller's own generation concern for now; it is a candidate to
+migrate here later.)
