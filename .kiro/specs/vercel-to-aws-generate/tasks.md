@@ -31,7 +31,7 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
   - [ ] 1.5 Register the new vendored paths in `tools/sync-vendored-shared.ts` so `mise run shared:check` enforces byte-identity for all 5 vendored files (2 existing + 3 new)
 
 -
-  2. [ ] Extend the Clarify phase with estimate-feeding questions
+  1. [ ] Extend the Clarify phase with estimate-feeding questions
   - [ ] 2.1 Add `vercel_spend` question to `references/phases/clarify/clarify-ask.md`
     - Question: "What is your approximate monthly Vercel spend?" with options ($0-50, $50-200, $200-1000, $1000+, Skip)
     - Skip logic: skip when `discovery.json.usage_metrics.billing_data` is present
@@ -54,11 +54,11 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
   - [ ] 2.4 Update `references/phases/clarify/clarify-assemble.md` to include the three new answers in `clarify-answers.json` and `assessment-state.json.clarify_answers`
 
 -
-  3. [ ] Checkpoint — Clarify extension review
+  1. [ ] Checkpoint — Clarify extension review
   - Verify: the three new questions only appear when their skip-logic conditions are NOT met; `clarify-answers.json` schema still valid; the frontmatter validator passes. Ask the user if questions arise.
 
 -
-  4. [ ] Implement the `estimate` phase
+  1. [ ] Implement the `estimate` phase
   - [ ] 4.1 Create `references/phases/estimate/estimate.md` (orchestrator)
     - Frontmatter: `_phase: estimate`, `_requires_phase: recommend`, `_advances_to: generate`, `_interactive: false`, `_exec: { _agent: rw }`
     - `_input`: `[recommendation.json, discovery.json, clarify-answers.json, coupling-score.json]`
@@ -96,11 +96,11 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
     - _Requirements: 1.3, 1.9_
 
 -
-  5. [ ] Checkpoint — Estimate phase integration
+  1. [ ] Checkpoint — Estimate phase integration
   - Verify: `estimation-infra.json` conforms to the shared schema; Property-16 holds; complexity tier classification is correct for a typical Vercel app (single Next.js app = small tier). Run the frontmatter validator. Ask the user if questions arise.
 
 -
-  6. [ ] Implement the `generate` phase — core infrastructure
+  1. [ ] Implement the `generate` phase — core infrastructure
   - [ ] 6.1 Create `references/phases/generate/generate.md` (orchestrator)
     - Frontmatter: `_phase: generate`, `_requires_phase: estimate`, `_advances_to: report`, `_interactive: false`, `_exec: { _agent: rw }`
     - `_input`: `[recommendation.json, estimation-infra.json, discovery.json, preflight-findings.json, coupling-score.json, clarify-answers.json]`
@@ -147,7 +147,7 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
     - _Requirements: 2.9, 5.9, 9.5_
 
 -
-  7. [ ] Implement the `generate` phase — compute fragments
+  1. [ ] Implement the `generate` phase — compute fragments
   - [ ] 7.1 Create `references/phases/generate/generate-opennext.md` (fragment: compute-opennext)
     - Frontmatter: `_fragment: compute-opennext`, `_of_phase: generate`, `_trigger: { _when: "recommendation.outcome == 'A'" }`, `_contributes: [sst.config.ts, terraform/cdn.tf]`
     - Full app-surface mode: emit `sst.config.ts` (SST/OpenNext — server functions, CloudFront, ISR tag cache + revalidation queue together, image optimization)
@@ -179,7 +179,7 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
     - _Requirements: 9.3_
 
 -
-  8. [ ] Implement the `generate` phase — peripherals and scripts
+  1. [ ] Implement the `generate` phase — peripherals and scripts
   - [ ] 8.1 Create `references/phases/generate/generate-peripherals.md` (fragment: peripherals)
     - Frontmatter: `_fragment: peripherals`, `_of_phase: generate`, `_trigger: { _always: true }`, `_contributes: [terraform/database.tf, terraform/cache.tf, terraform/storage.tf, terraform/scheduling.tf]` (conditional per peripheral)
     - Load `knowledge/peripheral-mappings.json`, map each detected peripheral to AWS Terraform resources:
@@ -214,11 +214,11 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
 -
-  9. [ ] Checkpoint — Generate phase structural validation
+  1. [ ] Checkpoint — Generate phase structural validation
   - Run the frontmatter validator across all new generate phase files. Verify: mutual exclusion triggers on compute fragments are correct, `_produces` lists match `_contributes` across fragments, `_forbids_files` prevents input artifact modification. Ask the user if questions arise.
 
 -
-  10. [ ] Update the `report` phase for post-generate positioning
+  1. [ ] Update the `report` phase for post-generate positioning
   - [ ] 10.1 Update `references/phases/report/report.md` frontmatter
     - Change `_requires_phase` from `recommend` to `generate`
     - Add `estimation-infra.json` and `generation-warnings.json` to `_input`
@@ -243,7 +243,7 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
     - _Requirements: 7.4_
 
 -
-  11. [ ] Update `SKILL.md` and retire the scaffold checkpoint
+  1. [ ] Update `SKILL.md` and retire the scaffold checkpoint
   - [ ] 11.1 Update `SKILL.md` backbone declaration
     - New backbone: `prescan` -> `discover` -> `clarify` -> `recommend` -> `estimate` -> `generate` -> `report` -> `complete`
     - Remove the entire "Scaffold Checkpoint" section (§ Scaffold Checkpoint, the A/B prompt, the tiebreak persistence logic)
@@ -266,7 +266,7 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
     - _Requirements: 1.1_
 
 -
-  12. [ ] Plugin-level integration
+  1. [ ] Plugin-level integration
   - [ ] 12.1 Update `migrate/plugins/migration-to-aws/README.md`
     - Update the Vercel section to mention full Terraform generation (not just "assessment only")
     - Update the Vercel row in the "What It Detects" and "What You Get" tables
@@ -281,7 +281,7 @@ All "code" is markdown phase/fragment files carrying DSL frontmatter, JSON knowl
     - Ensure `mise run lint:frontmatter` covers `skills/vercel-to-aws/references/phases/estimate/*.md` (same glob pattern as heroku — verify it already catches skill subdirectories, or add explicitly)
 
 -
-  13. [ ] Final checkpoint — Full integration validation
+  1. [ ] Final checkpoint — Full integration validation
   - Run `mise run build` (lint:md + lint:types + lint:frontmatter + shared:check + test + fmt:check + security)
   - Run the frontmatter validator specifically against the vercel-to-aws skill (all phases)
   - Run `tests/test_validate_assessment_report.py` (pytest suite — should pass with updated fixtures)

@@ -19,7 +19,7 @@ All "code" is markdown steering documents and Terraform HCL templates. The plugi
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
 -
-  2. [x] Create clarify-org reference files
+  1. [x] Create clarify-org reference files
   - [x] 2.1 Create `skills/gcp-to-aws/references/phases/clarify/clarify-org.md`
     - Define Category G firing rules (full migration, not fast-path, not AI-only)
     - Implement Q7.5 (Organization Structure) question format with pre-computed recommendation display
@@ -37,7 +37,7 @@ All "code" is markdown steering documents and Terraform HCL templates. The plugi
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 9.7, 9.8_
 
 -
-  3. [ ] Modify clarify orchestrators for Category G integration
+  1. [ ] Modify clarify orchestrators for Category G integration
   - [ ] 3.1 Modify `skills/gcp-to-aws/references/phases/clarify/clarify.md`
     - Add Category G (Organization & Guardrails) to the firing rules table
     - Position Category G after Category A (Global/Strategic), before B/C/D/F
@@ -54,11 +54,11 @@ All "code" is markdown steering documents and Terraform HCL templates. The plugi
     - _Requirements: 2.3, 2.4, 2.5, 8.1, 8.7_
 
 -
-  4. [ ] Checkpoint — Clarify phase integration
+  1. [ ] Checkpoint — Clarify phase integration
   - Ensure all tests pass, ask the user if questions arise.
 
 -
-  5. [ ] Create generate-artifacts-org reference
+  1. [ ] Create generate-artifacts-org reference
   - [ ] 5.1 Create `skills/gcp-to-aws/references/phases/generate/generate-artifacts-org.md`
     - Define Branch 1: Single-account path — permission boundary in `baseline.tf`
       - IAM policy resource with Deny statement for security baseline disruption actions
@@ -85,7 +85,7 @@ All "code" is markdown steering documents and Terraform HCL templates. The plugi
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.1, 6.2, 6.3, 6.4_
 
 -
-  6. [ ] Modify generate orchestrators and artifact references
+  1. [ ] Modify generate orchestrators and artifact references
   - [ ] 6.1 Modify `skills/gcp-to-aws/references/phases/generate/generate.md`
     - Add conditional load of `generate-artifacts-org.md` when `org_guardrails` exists in preferences
     - Define branching: if `org_structure == "multi-account"` → load org generation, if single-account + security baseline → load for permission boundary only
@@ -115,11 +115,11 @@ All "code" is markdown steering documents and Terraform HCL templates. The plugi
     - _Requirements: 7.1, 7.2, 7.3, 10.1, 10.2, 10.3, 10.4, 10.5, 11.1, 11.2, 11.3, 11.4, 11.5_
 
 -
-  7. [ ] Checkpoint — Generate phase integration
+  1. [ ] Checkpoint — Generate phase integration
   - Ensure all tests pass, ask the user if questions arise.
 
 -
-  8. [x] Preferences JSON schema and validation
+  1. [x] Preferences JSON schema and validation
   - [x] 8.1 Document `org_guardrails` schema in the recommendation engine reference
     - Define the complete schema: `org_structure`, `guardrail_scps`, `chosen_by`, `recommendation`, `user_override`
     - Document valid value sets for each field
@@ -129,7 +129,7 @@ All "code" is markdown steering documents and Terraform HCL templates. The plugi
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8_
 
 -
-  9. [ ] Integration testing and validation
+  1. [ ] Integration testing and validation
   - [ ]* 9.1 Create Terraform validation test fixtures
     - Create a test `organizations.tf` with all 3 SCPs for `terraform validate`
     - Create a test `organizations.tf` with no SCPs (option E)
@@ -166,7 +166,7 @@ All "code" is markdown steering documents and Terraform HCL templates. The plugi
     - _Requirements: 5.8_
 
 -
-  10. [ ] Final checkpoint — Full integration
+  1. [ ] Final checkpoint — Full integration
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
