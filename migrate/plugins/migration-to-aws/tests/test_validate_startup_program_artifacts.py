@@ -66,7 +66,7 @@ def test_eligible_founders_status_not_checked(tmp_path: Path) -> None:
     prefs = json.loads(
         (PLUGIN_ROOT / "fixtures" / "preferences-unknown-startup.json").read_text()
     )
-    prefs["design_constraints"]["startup_program_status"] = {
+    prefs["startup_constraints"]["startup_program_status"] = {
         "value": "eligible_founders",
         "chosen_by": "user",
     }
@@ -77,3 +77,25 @@ def test_eligible_founders_status_not_checked(tmp_path: Path) -> None:
     )
     code, out = run_validator(tmp_path)
     assert code == 0, out
+
+
+def test_unknown_in_ai_constraints_still_enforced(tmp_path: Path) -> None:
+    """Regression: status under ai_constraints with a non-empty design_constraints must
+    still be found. The old `design_constraints or ai_constraints` short-circuit made the
+    gate a silent no-op on this shape (the one clarify.md's example actually writes)."""
+    prefs = {
+        "design_constraints": {
+            "target_region": {"value": "us-east-1", "chosen_by": "user"}
+        },
+        "ai_constraints": {
+            "startup_program_status": {"value": "unknown", "chosen_by": "default"}
+        },
+    }
+    (tmp_path / "preferences.json").write_text(json.dumps(prefs), encoding="utf-8")
+    (tmp_path / "STARTUP_PROGRAMS.md").write_text(
+        "**your status: eligible_founders**\n",
+        encoding="utf-8",
+    )
+    code, out = run_validator(tmp_path)
+    assert code == 1, out
+    assert "STARTUP_FAIL" in out

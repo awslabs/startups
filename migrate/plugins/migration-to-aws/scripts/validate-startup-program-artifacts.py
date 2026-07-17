@@ -31,20 +31,26 @@ ACTIVATE_LINK_RE = re.compile(r'href=["\']https?://aws\.amazon\.com/startups/cre
 ACTIVATE_MENTION_RE = re.compile(r"\baws\s+activate\b", re.IGNORECASE)
 
 
+# preferences.json blocks that may carry startup_program_status. Canonical home is
+# startup_constraints (see schema-preferences.md "startup_constraints optional (Q27)"),
+# but tolerate ai_constraints / design_constraints so a producer-side placement change
+# can never silently disable this gate. Search ALL blocks — never short-circuit on the
+# first truthy block (a truthy design_constraints without the key must not stop the search).
+_STATUS_BLOCKS = ("startup_constraints", "ai_constraints", "design_constraints")
+
+
 def _load_status(migration_dir: Path) -> tuple[str | None, dict | None]:
     prefs_path = migration_dir / "preferences.json"
     if not prefs_path.is_file():
         return None, None
     prefs = json.loads(prefs_path.read_text(encoding="utf-8"))
-    constraints = prefs.get("design_constraints") or prefs.get("ai_constraints") or {}
-    block = constraints.get("startup_program_status") or prefs.get("startup_constraints", {}).get(
-        "startup_program_status"
-    )
-    if isinstance(block, dict):
-        value = block.get("value")
-        if isinstance(value, list):
-            value = value[0] if value else None
-        return value, prefs
+    for block_name in _STATUS_BLOCKS:
+        block = (prefs.get(block_name) or {}).get("startup_program_status")
+        if isinstance(block, dict):
+            value = block.get("value")
+            if isinstance(value, list):
+                value = value[0] if value else None
+            return value, prefs
     return None, prefs
 
 

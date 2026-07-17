@@ -699,18 +699,20 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
       "design_consequence": "Assuming moderate complexity → Sonnet-class model",
       "question_id": "Q22"
     },
+    "ai_capabilities_required": {
+      "value": ["text_generation", "streaming"],
+      "chosen_by": "derived",
+      "prompt": "Derived from detected capabilities and your answers",
+      "design_consequence": "Required capabilities union enforced in Bedrock model mapping and validation checklist"
+    }
+  },
+  "startup_constraints": {
     "startup_program_status": {
       "value": "eligible_founders",
       "chosen_by": "user",
       "question_id": "Q27",
       "prompt": "Have you applied for AWS Activate credits?",
       "design_consequence": "Activate Founders ($5K) callout in report and STARTUP_PROGRAMS.md"
-    },
-    "ai_capabilities_required": {
-      "value": ["text_generation", "streaming"],
-      "chosen_by": "derived",
-      "prompt": "Derived from detected capabilities and your answers",
-      "design_consequence": "Required capabilities union enforced in Bedrock model mapping and validation checklist"
     }
   }
 }
