@@ -10,13 +10,13 @@ AgentCore services have different regional footprints. Always validate via `get_
 
 **As of July 2026:**
 
-| Service                | Availability          | Regions                                                                                                                                                                                         |
-| ---------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service                | Availability           | Regions                                                                                                                                                                                         |
+| ---------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | AgentCore Runtime (GA) | All commercial regions | us-east-1, us-east-2, us-west-2, us-west-1, ap-southeast-1, ap-southeast-2, ap-northeast-1, ap-northeast-2, ap-south-1, eu-central-1, eu-west-1, eu-west-2, eu-north-1, sa-east-1, ca-central-1 |
-| AgentCore Harness (GA) | All commercial regions | Same as Runtime (GA June 2026)                                                                                                                                                                   |
+| AgentCore Harness (GA) | All commercial regions | Same as Runtime (GA June 2026)                                                                                                                                                                  |
 | AgentCore Memory (GA)  | All commercial regions | Same as Runtime                                                                                                                                                                                 |
 | AgentCore Gateway (GA) | All commercial regions | Same as Runtime                                                                                                                                                                                 |
-| AgentCore Policy (GA)  | 13 regions            | us-east-1, us-east-2, us-west-2, us-west-1, ap-southeast-1, ap-southeast-2, ap-northeast-1, ap-south-1, eu-central-1, eu-west-1, eu-west-2, eu-north-1, ca-central-1                            |
+| AgentCore Policy (GA)  | 13 regions             | us-east-1, us-east-2, us-west-2, us-west-1, ap-southeast-1, ap-southeast-2, ap-northeast-1, ap-south-1, eu-central-1, eu-west-1, eu-west-2, eu-north-1, ca-central-1                            |
 
 **IMPORTANT:** These lists go stale. The `get_regional_availability` MCP call is the source of truth. Use the table above only as a fallback if the MCP call fails.
 
