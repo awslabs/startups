@@ -119,6 +119,23 @@ If **no source code files were found** (Step 0 exit gate), do **not** set `webso
 
 ---
 
+## Step 2.7: Graviton (ARM64) Compatibility Scan
+
+After Step 2.5, assess each detected compute workload for Graviton (ARM64) compatibility and emit a `graviton_profile` entry per service. **Load** `references/shared/schema-graviton.md` for the detection-signal tables and the `graviton_profile` schema; **load** `references/shared/graviton.md` for tier definitions.
+
+For each compute workload (web service, worker, function, container) detected from source code and manifests:
+
+1. Determine the **language runtime** from the dependency manifest. Python, Node.js, Go, PHP, Ruby, and pure-JVM Java (Corretto/OpenJDK, no JNI) → `tier: "ready"`.
+2. Scan for **risk signals** (downgrade to `conditional`): native C extensions (`node-gyp`, niche Python C packages), native gem extensions, JNI (`System.loadLibrary`, `JNI_OnLoad`), recompile-required languages (Rust/C/C++ without x86 assembly), `platform: linux/amd64` pinned in `docker-compose.yml` or build config.
+3. Scan for **blockers** (`tier: "incompatible"`): GPU/CUDA usage (`import cuda`, `torch.cuda`, `nvidia`) → caveat `"route to G5/G6"`; Windows/.NET Framework targets.
+4. If a `Dockerfile` is present, record whether its `FROM` base image has a multi-arch variant as a `signal`.
+
+Write a `graviton_profile` array into the discovery output (alongside `models[]`/`workloads[]` when present, otherwise in the discovery metadata). Each entry uses the schema in `schema-graviton.md` with `source: "app_code"`. `graviton_profile` is an empty array when no compute workloads are detected.
+
+If **no source code files were found** (Step 0 exit gate), do **not** emit `graviton_profile` from this file — `discover-iac.md` will emit coarser profiles from `machine_type` signals, and Clarify will confirm architecture.
+
+---
+
 ## Step 3: Flag AI Signals
 
 Scan source code files and dependency manifests for AI-relevant patterns. For each match, record the pattern, file location, and confidence score.
