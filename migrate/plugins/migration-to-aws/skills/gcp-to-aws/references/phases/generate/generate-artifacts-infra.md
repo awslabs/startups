@@ -315,6 +315,15 @@ For each domain with resources in the generation manifest:
 - **Domain resource wiring** the skill's rules assume you emit — DB subnet group + parameter
   group; per-service Fargate/Lambda IAM roles; compute auto-scaling — populated with this
   migration's `aws_config` values.
+- **CPU architecture (Graviton/ARM64):** read each compute resource's
+  `graviton.target_architecture` from `aws-design.json` (see `references/shared/graviton.md`).
+  When `arm64`: emit `aws_ecs_task_definition` with
+  `runtime_platform { cpu_architecture = "ARM64" operating_system_family = "LINUX" }`,
+  `aws_lambda_function` with `architectures = ["arm64"]`, and the Graviton instance type from
+  `aws_config` (e.g., `m7g.xlarge`) on EC2/EKS launch templates — add inline comment
+  `# Graviton (ARM64) — ~15-20% cheaper than x86; build images with --platform linux/arm64`.
+  When `x86_64`: emit x86 types with a comment citing the blocker from `graviton.caveats`.
+  EKS arm64 node groups are single-arch on dev tier.
 
 **Domain-specific wiring** (posture is owned by the `tf-best-practices` skill — these rows list
 only the gcp-to-aws resource wiring / value population per domain; for every security rule,
@@ -326,7 +335,7 @@ follow the posture the skill returned in Step 3.0):
 | Security   | Emit per-service Fargate/Lambda IAM roles and Secrets Manager resources per the skill's posture (least-privilege, no plaintext master password, compliance-conditional rotation/KMS). Populate ARNs/role names from the cluster's `secondary_resources`.                            |
 | Storage    | Emit S3 buckets per the skill's posture (versioning, SSE, block-public-access, CloudFront/OAC for public, compliance-conditional access logging). Populate bucket names/lifecycle from design.                                                                                      |
 | Database   | Emit RDS/Aurora per the skill's posture (private, encrypted, `deletion_protection`, master-password-via-Secrets-Manager, DB-port SG scoping). Populate engine/version/instance class from `aws_config`; add the Cloud SQL `authorized_networks` warning (Step 3.1) when applicable. |
-| Compute    | Emit Fargate/EKS/ECR per the skill's posture (private subnets, EKS private endpoint, ECR scan-on-push). Populate task CPU/memory and autoscaling from `aws_config`.                                                                                                                 |
+| Compute    | Emit Fargate/EKS/ECR per the skill's posture (private subnets, EKS private endpoint, ECR scan-on-push). Populate task CPU/memory and autoscaling from `aws_config`. Apply Graviton/ARM64 wiring from the CPU architecture rule above.                                               |
 | Monitoring | Emit CloudWatch log groups/dashboard/alarms per the skill's monitoring baseline; source alarm thresholds from `generation-infra.json` success_metrics.                                                                                                                              |
 
 ## Step 4: Generate outputs.tf
