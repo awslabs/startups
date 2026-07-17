@@ -288,6 +288,28 @@ When Part 2B of `estimate-infra.md` produces an observability cost, it is includ
 - `mid` equals the sum of all `components` values
 - This entry REPLACES any CloudWatch/log/metric portion in the "Supporting" row — never both
 
+## `architecture_comparison` (optional — Graviton/ARM64)
+
+Present in `estimation-infra.json` only when `preferences.json` → `design_constraints.cpu_architecture.value` is `graviton` or `mixed` (see `estimate-infra.md` Part 2C and `shared/schema-graviton.md`). Omit entirely for `x86`.
+
+```json
+"architecture_comparison": {
+  "graviton_monthly": 245.00,
+  "x86_equivalent_monthly": 298.00,
+  "savings_amount": 53.00,
+  "savings_percent": 17.8,
+  "note": "Hourly price savings only; performance uplift may allow further downsizing after load testing"
+}
+```
+
+**Validation for architecture_comparison entry:**
+
+- All four numeric fields present; `savings_amount` equals `x86_equivalent_monthly − graviton_monthly`
+- `savings_percent` equals `savings_amount / x86_equivalent_monthly × 100` (one decimal)
+- Models the hourly price discount **only** — never performance-uplift capacity reduction
+- Not a fourth pricing tier — Graviton is the architecture within the Balanced/Premium/Optimized totals
+- Canonical field definitions live in `shared/schema-graviton.md`
+
 ## Output Validation Checklist
 
 - `design_source` is `"infrastructure"`
