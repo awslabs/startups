@@ -34,15 +34,23 @@ resource "google_sql_database_instance" "db" {
   }
 }
 
-resource "google_cloud_run_v2_service" "orders_api" {
+# Declared as the LEGACY v1 resource type while the live capture maps the same
+# service to google_cloud_run_v2_service (the real-project bug).
+# → Step 6 type-alias rule: must merge as ONE resource (live+terraform, IaC
+#   address kept, config.live_type = google_cloud_run_v2_service) — NEVER a
+#   not_found_live + unmanaged_by_terraform pair. Also carries image drift
+#   (v40 here vs v42 live).
+resource "google_cloud_run_service" "orders_api" {
   name     = "orders-api"
   location = "us-central1"
   template {
-    service_account = google_service_account.app.email
-    containers {
-      image = "us-central1-docker.pkg.dev/acme-prod/apps/orders-api:v40"
-      resources {
-        limits = { cpu = "2", memory = "1Gi" }
+    spec {
+      service_account_name = google_service_account.app.email
+      containers {
+        image = "us-central1-docker.pkg.dev/acme-prod/apps/orders-api:v40"
+        resources {
+          limits = { cpu = "2", memory = "1Gi" }
+        }
       }
     }
   }

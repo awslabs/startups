@@ -192,7 +192,7 @@ Only after `HANDOFF_OK`. In the **same turn** as the output message below, use t
 Output to user — build message from whichever artifacts exist:
 
 - If `gcp-resource-inventory.json` exists: "Discovered X total resources across Y clusters."
-- If live discovery ran: "Live discovery captured N resources from project [id]." Plus, when IaC also ran: "Drift check: A resources live but not in Terraform, B in Terraform but not live, C config conflicts (live values used)."
+- If live discovery ran: "Live discovery captured N resources from project [id]." Plus, when IaC also ran: "Drift check: A resources live but not in Terraform, B in Terraform but not live, C config conflicts (live values used)." Plus, when `live_metadata.unmapped_asset_types` is non-empty: "Skipped M unmapped asset types (top: X, Y, Z) — full list in live_metadata."
 - If `ai-workload-profile.json` exists: "Detected AI workloads (source: [ai_source])."
 - If `billing-profile.json` exists: "Parsed billing data ($Z/month across N services)."
 

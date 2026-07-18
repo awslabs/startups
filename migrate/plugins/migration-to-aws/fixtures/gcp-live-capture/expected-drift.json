@@ -11,10 +11,12 @@
       "expected_config_conflict_fields": ["settings.tier"],
       "must_not_have": ["not_found_live", "unmanaged_by_terraform"]
     },
-    "google_cloud_run_v2_service.orders_api": {
+    "google_cloud_run_service.orders_api": {
       "source": "live+terraform",
       "classification": "PRIMARY",
-      "note": "matched by GCP name 'orders-api'; live image tag v42 overrides tf v40 as a sizing/capacity-class override or lands in config_conflicts — either is acceptable, but silent loss of the live value is not"
+      "config_must_include": { "live_type": "google_cloud_run_v2_service" },
+      "must_not_have": ["not_found_live", "unmanaged_by_terraform"],
+      "note": "TYPE-ALIAS LOCK: Terraform declares the LEGACY v1 type; live maps to v2. Step 6 aliasing must merge them as ONE resource keeping the IaC address — a not_found_live/unmanaged pair here is the exact real-project false-drift bug. Live image v42 overrides tf v40 (config conflict recorded)."
     },
     "google_storage_bucket.assets": {
       "not_found_live": true,

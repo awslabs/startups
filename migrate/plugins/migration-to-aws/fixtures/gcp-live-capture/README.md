@@ -10,7 +10,9 @@ exercises the designed-for behaviors:
   annotation and a service account, driving the Step 4 edge-inference rules; its
   env list has NAMES ONLY (including secret-looking names like
   `STRIPE_SECRET_KEY` — if a value ever appears in output, the projection rule
-  broke).
+  broke). Terraform declares it as the LEGACY `google_cloud_run_service` (v1)
+  type while live maps to v2 — locking the Step 6 type-alias rule (one merged
+  resource, never a false not_found_live/unmanaged pair).
 - **orders-db** (Cloud SQL) — live tier `db-custom-2-8192` vs Terraform's
   `db-f1-micro`: the classic console-resize drift (Step 6 rule 1).
 - **cache** (Memorystore Redis), **web-frontend** (Cloud Run), two secrets, and

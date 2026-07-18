@@ -124,6 +124,24 @@ def main() -> int:
     doc = json.dumps(inv)
     check("aws_" not in doc.lower().replace("aws-design", ""), "possible AWS naming in discover artifact")
 
+    # Secret hygiene: no env entry anywhere may carry a value payload, and env
+    # data must appear only as name lists (env_var_names), never env objects.
+    def walk(node, path="$"):
+        if isinstance(node, dict):
+            if "name" in node and ("value" in node or "valueFrom" in node):
+                check(False, f"env-like object with a value payload at {path}")
+            for k, v in node.items():
+                if k == "env":
+                    check(False, f"raw 'env' key at {path} — spec requires env_var_names (names only)")
+                walk(v, f"{path}.{k}")
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                walk(v, f"{path}[{i}]")
+
+    walk(inv)
+    for env_name in ("STRIPE_SECRET_KEY", "DATABASE_URL", "REDIS_URL"):
+        check(f'"{env_name}": ' not in doc, f"fixture env name {env_name} appears as a KEY (value paired) — names must be list items only")
+
     if FAILS:
         print(f"FAIL ({len(FAILS)}):")
         for f in FAILS:
