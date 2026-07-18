@@ -73,7 +73,7 @@ User must provide at least one GCP source:
 - **Application code**: Source files with GCP SDK or AI framework imports
 - **Billing data**: GCP billing/cost/usage export files (CSV or JSON)
 
-If no files are found, offer live discovery before stopping (see `discover.md` Step 1d). Live discovery covers infrastructure only — AI/agentic workload detection still requires application code.
+If no Terraform is found (even when app code or billing files exist — they cannot produce an infrastructure inventory), offer live discovery per `discover.md` Step 1d; stop only when nothing will produce any artifact. Live discovery covers infrastructure only — AI/agentic workload detection still requires application code.
 
 ---
 
