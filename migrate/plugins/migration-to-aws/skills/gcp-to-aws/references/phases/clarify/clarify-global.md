@@ -173,11 +173,11 @@ If `billing-profile.json` does not exist or `commitments.has_active_cuds == fals
 
 ---
 
-## Q4 — _(Skipped)_
+## Q4 — _(Skipped in wizard mode)_
 
-Credits program eligibility is inferred from Q3 (GCP spend) alone. No question asked.
+**Do not infer funding stage or AWS Activate tier from GCP spend (Q3) or AI spend (Q15).** Self-funded and VC-backed startups can have identical monthly bills.
 
-Default: `funding_stage`: not set.
+Activate package selection is owned by **Q27** (`startup_program_status`) when Category H fires. In full Clarify flow, Q4 may be asked explicitly if product adds a standalone funding-stage question; until then, `funding_stage` is not set.
 
 ---
 
