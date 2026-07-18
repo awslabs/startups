@@ -42,7 +42,9 @@ exercises the designed-for behaviors:
 1. As above, but also copy `workspace-terraform/main.tf` into the scratch root.
 2. `main.tf` is deliberately stale — each divergence is commented with the
    Step 6 merge rule it exercises.
-3. Check outputs against `expected-drift.json`.
+3. Check outputs against `expected-drift.json` — machine-checkable via
+   `python3 check_expected_drift.py <run-dir>` (exits non-zero on any failed
+   assertion).
 
 **What a run must never produce** (either scenario): env var or secret values
 anywhere; any mutating `gcloud` command; AWS service names in discover

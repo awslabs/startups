@@ -124,15 +124,18 @@ Runs AFTER 1a–1c sub-discoveries complete, so its IaC merge sees their output.
   with your consent)? This catches resources managed outside Terraform."
   On yes → Load `references/phases/discover/discover-live.md`. On no → continue
   (do not re-ask this run).
-- Else if NO files were found by 1a–1c → offer live discovery as the primary
-  source instead of stopping: "No local GCP sources detected (Terraform, app
-  code, or billing exports) — but I can discover your project directly via your
-  authenticated gcloud CLI (read-only, with your consent). Proceed?"
-  On yes → Load `references/phases/discover/discover-live.md`.
-  On no (or gcloud unavailable / consent declined inside the sub-file) → STOP
-  and output: "No GCP sources detected. Provide at least one source type
-  (Terraform files, application code, or billing exports), or re-run and accept
-  live discovery."
+- Else if NO Terraform was found (regardless of whether 1b/1c found app code or
+  billing files — those cannot produce an infrastructure inventory) → offer live
+  discovery as the primary infrastructure source: "No Terraform detected — I can
+  discover your project's infrastructure directly via your authenticated gcloud
+  CLI (read-only, with your consent). Proceed?" On yes → Load
+  `references/phases/discover/discover-live.md`. On no → continue with whatever
+  1b/1c produced (billing-only design path remains the fallback).
+- If, after the offer, NO sub-discovery produced or will produce any artifact
+  (nothing found by 1a–1c AND live was declined or unavailable) → STOP and
+  output: "No GCP sources detected. Provide at least one source type (Terraform
+  files, application code, or billing exports), or re-run and accept live
+  discovery."
 
 ## Step 2: Check Outputs
 

@@ -42,6 +42,7 @@ Each phase loads reference files on demand. To keep per-turn context manageable 
 | `design-refs/design-ref-harness.md`              | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "harness"`  |
 | `design-refs/design-ref-agentic-to-agentcore.md` | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "strands"`  |
 | `shared/retarget-gotchas.md`                     | `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "retarget"` |
+| `shared/graviton.md`                             | Compute, DB, or cache in inventory OR `graviton_profile` present (Design/Estimate/Generate)        |
 
 When adding new reference files, verify the phase's total loaded instructions remain under budget. If a new file would exceed ~800 lines when combined with other loaded refs, split it or make it conditional.
 
@@ -286,6 +287,8 @@ gcp-to-aws/
 │       ├── validate-migration-report.md          # Post-write HTML completeness (Generate Step 4)
 │       ├── migration-complexity.md             # Complexity tier definitions (small/medium/large) for timeline scaling
 │       ├── pricing-cache.md                    # Cached AWS + source provider pricing (±5-25%, primary source)
+│       ├── graviton.md                         # Graviton/ARM64 tiers, mapping, per-phase rules (conditional load)
+│       ├── schema-graviton.md                  # graviton_profile + cpu_architecture + architecture_comparison schemas
 │       └── bedrock-quotas.md                   # Bedrock TPM/RPM quota awareness, burndown rates, capacity planning
 ```
 
@@ -302,6 +305,7 @@ gcp-to-aws/
 - **IaC output**: Terraform configurations, migration scripts, AI migration code, and documentation
 - **Region**: `us-east-1` (unless user specifies, or GCP region → AWS region mapping suggests otherwise)
 - **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, 0.5 CPU for Fargate)
+- **CPU architecture**: Graviton (ARM64) for all eligible compute when the workload is arm64-compatible; x86 only for incompatible workloads (Windows/.NET Framework, GPU/CUDA, RDS SQL Server). See `references/shared/graviton.md`.
 - **Migration mode**: Adapts based on available inputs (infrastructure, AI, or billing-only)
 - **Cost currency**: USD
 - **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). See `references/shared/migration-complexity.md` for tier definitions.
