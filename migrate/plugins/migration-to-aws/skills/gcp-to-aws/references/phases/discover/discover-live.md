@@ -45,20 +45,21 @@
    - Missing → tell the user: "The gcloud CLI isn't installed. Install it
      (https://cloud.google.com/sdk/docs/install) and tell me to continue, or skip
      live discovery." Wait. If skipped → exit cleanly.
-2. **Authenticated:** run `gcloud auth list --filter=status:ACTIVE --format="value(account)"`.
+2. **Project:** run `gcloud config get-value project` (a local config read — no
+   credentials needed, which is why this step precedes the auth check).
+   - Show the result and ask: "Discover project `[project-id]`? [Y] Yes /
+     [N] Use a different project (type its ID)". Set `$GCP_PROJECT` accordingly.
+     If the value is empty, ask the user to type the project ID. One project per
+     run — for multiple projects, run the migration once per project.
+3. **Authenticated:** run `gcloud auth list --filter=status:ACTIVE --format="value(account)"`.
    - Empty → do NOT hand off yet: credentials may come from ADC
      (`GOOGLE_APPLICATION_CREDENTIALS`) or service-account impersonation, which
-     `auth list` does not show. Probe read-only:
+     `auth list` does not show. Probe read-only with the project just resolved:
      `gcloud projects describe "$GCP_PROJECT" --format="value(projectId)"`.
      Probe succeeds → proceed (record `account: "adc"` in the manifest).
      Probe fails → tell the user: "Your gcloud CLI has no usable credentials.
      Run `gcloud auth login` in your terminal — it needs a browser, so I can't
      run it for you — then tell me to continue." Wait. If declined → exit cleanly.
-3. **Project:** run `gcloud config get-value project`.
-   - Show the result and ask: "Discover project `[project-id]`? [Y] Yes /
-     [N] Use a different project (type its ID)". Set `$GCP_PROJECT` accordingly.
-     If the value is empty, ask the user to type the project ID. One project per
-     run — for multiple projects, run the migration once per project.
 
 ## Step 1: Consent Gate
 
