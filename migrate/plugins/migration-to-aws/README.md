@@ -103,7 +103,7 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 
 ### Workflow
 
-1. **Discover** — Scan Terraform files, application code, and/or billing data — or, for Heroku, inventory your account live via the authenticated Heroku CLI (read-only, consent-gated). Detects infrastructure resources, AI models, agentic frameworks, tools, and orchestration patterns.
+1. **Discover** — Scan Terraform files, application code, and/or billing data — or inventory your GCP project or Heroku account live via the authenticated `gcloud`/`heroku` CLI (read-only, consent-gated, with drift detection against any Terraform found). Detects infrastructure resources, AI models, agentic frameworks, tools, and orchestration patterns.
 2. **Clarify** — Ask targeted questions about migration preferences, AI priorities, agentic migration approach, database sizing, and timeline.
 3. **Design** — Map source services to AWS equivalents. For AI workloads: select Bedrock models with honest pricing comparison. For agentic workloads: design AgentCore Harness config or Strands architecture.
 4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current spend.
@@ -198,9 +198,22 @@ The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
-- At least one input source: an authenticated Heroku CLI (Heroku migrations), Terraform files, application code, or billing data
-- **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
+- At least one input source: an authenticated `gcloud` or `heroku` CLI (live discovery), Terraform files, application code, or billing data
+- **For GCP infrastructure migration:** an authenticated `gcloud` CLI (recommended — live, read-only discovery with your consent, with drift detection against any Terraform found) or Terraform files / billing exports
+- **For GCP AI/agentic migration:** Application source code is required (billing/IaC/live discovery alone cannot detect agent architecture)
 - **For Heroku migration:** an authenticated Heroku CLI (recommended) or Terraform files with `heroku_*` resources (Procfile/app.json supplements but cannot stand alone)
+
+### Live GCP discovery — how it works
+
+No Terraform or exports needed. If `gcloud auth login` works in your terminal, just
+ask your agent to migrate ("Migrate my GCP infrastructure to AWS" or "Discover my
+GCP project and estimate AWS costs"). The agent confirms the target project and asks
+for your consent, then inventories it using read-only list/describe commands — it
+captures resource names, types, regions, sizing, network topology, and env var
+**names only**. It never reads env var values, secret values, database contents, or
+access tokens, and never runs a command that creates, changes, or deletes anything.
+If you also have Terraform, the agent cross-checks it against your live project and
+reports drift. (AI/agentic workload detection still needs your application code.)
 
 ### Live Heroku discovery — how it works
 
