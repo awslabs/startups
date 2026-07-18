@@ -4,7 +4,7 @@ AI agent skills for migrating workloads to AWS, built for [Claude Code](https://
 
 ## What This Does
 
-Point this plugin at your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+Point this plugin at your Heroku account (via your authenticated Heroku CLI, read-only and consent-gated), your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
 
 **Supported migration sources:**
 
@@ -82,6 +82,7 @@ After installation, just describe what you want to migrate:
 **Heroku migrations:**
 
 - "Migrate my Heroku app to AWS"
+- "Discover my Heroku apps and estimate AWS costs"
 - "Move my Heroku Postgres to RDS"
 - "Migrate from Heroku to Fargate"
 - "Migrate from Heroku to Elastic Beanstalk"
@@ -89,6 +90,8 @@ After installation, just describe what you want to migrate:
 - "Migrate my Heroku Private Space to AWS"
 
 The skill creates a `.migration/<session>/` directory in the current working directory with all artifacts.
+
+**Live Heroku discovery — how it works:** No Terraform or exports needed. If `heroku login` works in your terminal, just ask — the agent requests your consent, then inventories your account using read-only list/info CLI commands. It captures app names, dyno types, add-on plans and prices, domains, pipelines, and config var **key names only**. It never reads config var values, credentials, or your API token, and never runs a command that creates, changes, or deletes anything. If you also have `heroku_*` Terraform, the agent cross-checks it against your live account and reports drift.
 
 ## What It Detects
 
@@ -164,9 +167,9 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
-- At least one input source: Terraform files, application code, or billing data
+- At least one input source: an authenticated Heroku CLI (Heroku migrations), Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
-- **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
+- **For Heroku migration:** an authenticated Heroku CLI (recommended — live, read-only discovery with your consent) or Terraform files with `heroku_*` resources (Procfile/app.json supplements but cannot stand alone). When both are available, live data is authoritative for current state and Terraform drift is surfaced.
 
 ## Structure
 
