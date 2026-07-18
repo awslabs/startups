@@ -36,8 +36,9 @@ designed-for behavior:
    merge rule it exercises (config conflicts, plan change, terraform-only,
    live-only, scaled-to-zero gap-fill).
 3. Check the assembled `heroku-resource-inventory.json` against
-   `expected-drift.json` — it lists the assertions (merged sources, conflict
-   fields, drift counts, and `must_not_exist` entries).
+   `expected-drift.json` — machine-checkable via
+   `python3 check_expected_drift.py <run-dir>` (exits non-zero on any failed
+   assertion, including secret-hygiene checks for config-var values).
 
 **What a run must never produce** (from either scenario):
 
