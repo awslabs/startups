@@ -96,6 +96,15 @@ gcloud asset search-all-resources --project="$GCP_PROJECT" \
 - Success → record `method: "asset_search"` in the manifest, then run only the
   **enrichment rows** (marked E) of the table below for asset types that were
   found (asset search returns names/types/locations but thin config).
+
+  > **Why not `gcloud asset list --content-type=resource` (full metadata, one
+  > call)?** Deliberate. Full `resource.data` includes env var VALUES (Cloud
+  > Run, Functions) and instance metadata values — writing it to
+  > `live-capture/` would put secret material on disk and break this file's
+  > "values never captured" contract. Thin search + the projected enrichment
+  > rows below keep values out of the captures entirely. The same applies to
+  > `search-all-resources --read-mask` with resource data. Do NOT "optimize"
+  > this into a full-metadata dump.
 - Failure (Cloud Asset API not enabled, or permission denied) → record
   `method: "per_service"` and run every applicable table row. Do NOT try to
   enable the API (that would be a mutation).
@@ -210,6 +219,17 @@ Live captures contain resolved values, which often beat HCL references. Build
 
 No other inference — do not guess relationships from names, labels, or env var
 names.
+
+> **Why not Cloud Asset Inventory relationship types?** Deliberate. CAI's
+> relationship data (including `relationships.*` queries on
+> `search-all-resources` — the query SYNTAX works on the standard endpoint,
+> which misleads) requires the Security Command Center Premium/Enterprise tier
+> or Gemini Cloud Assist, which the startups this skill targets do not have;
+> without the entitlement those queries return nothing. Most relationship types
+> are also unavailable in the search API entirely. Resolved-config inference
+> above needs only `roles/viewer` and covers the workload-shaped edges that
+> matter for migration sequencing. Do NOT add `relationships.*` queries to the
+> capture set.
 
 ## Step 5: Cluster (Simplified Mode)
 
