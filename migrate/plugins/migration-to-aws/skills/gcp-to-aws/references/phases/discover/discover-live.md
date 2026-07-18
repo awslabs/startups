@@ -187,28 +187,29 @@ Synthesize Terraform-style identity so downstream design-refs (keyed on
 
 **Asset/CLI type → Terraform type mapping:**
 
-| Captured type                                  | Terraform `type`                                                                                         |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `run.googleapis.com/Service` / row 1           | `google_cloud_run_v2_service`                                                                            |
-| `sqladmin.googleapis.com/Instance` / row 2     | `google_sql_database_instance`                                                                           |
-| `container.googleapis.com/Cluster` / row 3     | `google_container_cluster`                                                                               |
-| row 4 with `environment: GEN_2`                | `google_cloudfunctions2_function`                                                                        |
-| row 4 with `environment: GEN_1` (or unset)     | `google_cloudfunctions_function`                                                                         |
-| `storage.googleapis.com/Bucket` / row 5        | `google_storage_bucket`                                                                                  |
-| `pubsub.googleapis.com/Topic` / row 6          | `google_pubsub_topic`                                                                                    |
-| `compute.googleapis.com/Instance` / row 7      | `google_compute_instance`                                                                                |
-| `compute.googleapis.com/Network` / row 8       | `google_compute_network`                                                                                 |
-| `compute.googleapis.com/Subnetwork` / row 9    | `google_compute_subnetwork`                                                                              |
-| `redis.googleapis.com/Instance` / row 10       | `google_redis_instance`                                                                                  |
-| `secretmanager.googleapis.com/Secret` / row 11 | `google_secret_manager_secret`                                                                           |
-| `iam.googleapis.com/ServiceAccount` / row 12   | `google_service_account`                                                                                 |
-| `dns.googleapis.com/ManagedZone` / row 13      | `google_dns_managed_zone`                                                                                |
-| `spanner.googleapis.com/Instance` / row 14     | `google_spanner_instance`                                                                                |
-| `firestore.googleapis.com/Database` / row 15   | `google_firestore_database`                                                                              |
-| `bigquery.googleapis.com/Dataset` / row 17     | `google_bigquery_dataset` (triggers the BigQuery specialist gate downstream — include it)                |
-| `aiplatform.googleapis.com/Endpoint` / row 16  | `google_vertex_ai_endpoint`                                                                              |
-| `aiplatform.googleapis.com/*` (other)          | `google_vertex_ai_*` (matching suffix)                                                                   |
-| Any other asset type                           | Do NOT guess a mapping. Count it in `live_metadata.unmapped_asset_types` and exclude from the inventory. |
+| Captured type                                  | Terraform `type`                                                                                                                                     |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run.googleapis.com/Service` / row 1           | `google_cloud_run_v2_service`                                                                                                                        |
+| `sqladmin.googleapis.com/Instance` / row 2     | `google_sql_database_instance`                                                                                                                       |
+| `container.googleapis.com/Cluster` / row 3     | `google_container_cluster`                                                                                                                           |
+| row 4 with `environment: GEN_2`                | `google_cloudfunctions2_function`                                                                                                                    |
+| row 4 with `environment: GEN_1` (or unset)     | `google_cloudfunctions_function`                                                                                                                     |
+| `storage.googleapis.com/Bucket` / row 5        | `google_storage_bucket`                                                                                                                              |
+| `pubsub.googleapis.com/Topic` / row 6          | `google_pubsub_topic`                                                                                                                                |
+| `compute.googleapis.com/Instance` / row 7      | `google_compute_instance`                                                                                                                            |
+| `compute.googleapis.com/Network` / row 8       | `google_compute_network`                                                                                                                             |
+| `compute.googleapis.com/Subnetwork` / row 9    | `google_compute_subnetwork`                                                                                                                          |
+| `compute.googleapis.com/Firewall`              | `google_compute_firewall` (SECONDARY, role network_path — parity with IaC classification)                                                            |
+| `redis.googleapis.com/Instance` / row 10       | `google_redis_instance`                                                                                                                              |
+| `secretmanager.googleapis.com/Secret` / row 11 | `google_secret_manager_secret`                                                                                                                       |
+| `iam.googleapis.com/ServiceAccount` / row 12   | `google_service_account` — `name` MUST be the email local-part (e.g. `app-sa` from `app-sa@…`), NEVER the display name, or IaC merge matching breaks |
+| `dns.googleapis.com/ManagedZone` / row 13      | `google_dns_managed_zone`                                                                                                                            |
+| `spanner.googleapis.com/Instance` / row 14     | `google_spanner_instance`                                                                                                                            |
+| `firestore.googleapis.com/Database` / row 15   | `google_firestore_database`                                                                                                                          |
+| `bigquery.googleapis.com/Dataset` / row 17     | `google_bigquery_dataset` (triggers the BigQuery specialist gate downstream — include it)                                                            |
+| `aiplatform.googleapis.com/Endpoint` / row 16  | `google_vertex_ai_endpoint`                                                                                                                          |
+| `aiplatform.googleapis.com/*` (other)          | `google_vertex_ai_*` (matching suffix)                                                                                                               |
+| Any other asset type                           | Do NOT guess a mapping. Count it in `live_metadata.unmapped_asset_types` and exclude from the inventory.                                             |
 
 **Classification:** apply `discover-iac.md` Step 3S rules — the Priority 1 PRIMARY
 types list, everything else SECONDARY with role inferred from type
@@ -278,7 +279,14 @@ If `gcp-resource-inventory.json` does NOT already exist, skip to Step 7 (live is
 the sole source).
 
 Otherwise the IaC inventory + clusters are the BASE. Match live↔IaC entries by
-Terraform `type` + GCP resource name (live `name` vs the IaC resource's
+Terraform `type` + GCP resource name, treating these type pairs as EQUIVALENT
+for matching (same underlying service; live always maps to the newer type):
+`google_cloud_run_service` ≡ `google_cloud_run_v2_service`, and
+`google_cloudfunctions_function` ≡ `google_cloudfunctions2_function` when the
+GCP name matches. Without this aliasing, a v1-declared resource produces FALSE
+drift (flagged both `not_found_live` and `unmanaged_by_terraform`). The merged
+entry keeps the IaC address; a note in `config` (`"live_type"`) records the
+newer live type. Match names as: live `name` vs the IaC resource's
 `config.name`, falling back to the address name component). Then:
 
 1. **Matched:** keep the IaC entry (its address, classification, cluster,
