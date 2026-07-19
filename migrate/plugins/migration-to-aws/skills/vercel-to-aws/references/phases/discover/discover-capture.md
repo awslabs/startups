@@ -82,16 +82,34 @@ once after backoff — documented per-endpoint limits are 200–1000 reads/min,
 orders of magnitude above this capture's volume): record `failed`/partial in the
 manifest and continue — never a halt.
 
-| # | Endpoint (GET)                                                                           | Output file                  | Notes                                                                                                                                                                                                                                                                                                     |
-| - | ---------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | `/v2/teams`                                                                              | `teams.json`                 | team ids for subsequent calls                                                                                                                                                                                                                                                                             |
-| 2 | `/v10/projects?teamId=<id>`                                                              | `projects.json`              | framework, latest deployment metadata                                                                                                                                                                                                                                                                     |
-| 3 | `/v6/deployments?projectId=<id>&limit=20`                                                | `deployments-<project>.json` | production vs preview, timestamps, state                                                                                                                                                                                                                                                                  |
-| 4 | `/v10/projects/<id>/env?teamId=<id>&decrypt=false` **piped through key-name projection** | `env-keys-<project>.json`    | KEY NAMES ONLY — e.g. `... \| jq '[.envs[].key] \| sort'`; never write the raw response (rule 3). The documented response schema carries `value`/`vsmValue`/`legacyValue` fields even with `decrypt=false` — the projection is the REAL protection, not the query param                                   |
-| 5 | `/v9/projects/<id>/domains?teamId=<id>`                                                  | `domains-<project>.json`     | custom domains (paginated — max 100/page)                                                                                                                                                                                                                                                                 |
-| 6 | project cron configuration — OpenAPI-discovered                                          | `crons-<project>.json`       | NOT in the public REST reference; look it up via `vercel api list` and use the GET endpoint found there, else record `skipped` (the `vercel.json` cron declarations from `discover-configs.md` remain the primary source)                                                                                 |
-| 7 | storage/stores enumeration — OpenAPI-discovered                                          | `stores.json`                | store endpoints exist (documented rate limits) but their paths are NOT in the public REST reference; look up the GET endpoints via `vercel api list`, else record `skipped` and rely on env-name + dependency signals (`@vercel/kv`, `KV_REST_API_*`, etc.), which the coupling item already corroborates |
-| 8 | usage/analytics aggregates as exposed for the plan (best-effort)                         | `usage-<project>.json`       | coarse invocation/bandwidth aggregates; absent on many plans — record `skipped`, not an error                                                                                                                                                                                                             |
+| # | Endpoint (GET)                                                                           | Output file                  | Notes                                                                                                                                                                                                                                                                                                                                                                             |
+| - | ---------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | `/v2/teams`                                                                              | `teams.json`                 | team ids for subsequent calls                                                                                                                                                                                                                                                                                                                                                     |
+| 2 | `/v10/projects?teamId=<id>`                                                              | `projects.json`              | framework, latest deployment metadata                                                                                                                                                                                                                                                                                                                                             |
+| 3 | `/v6/deployments?projectId=<id>&limit=20`                                                | `deployments-<project>.json` | production vs preview, timestamps, state                                                                                                                                                                                                                                                                                                                                          |
+| 4 | `/v10/projects/<id>/env?teamId=<id>&decrypt=false` **piped through key-name projection** | `env-keys-<project>.json`    | KEY NAMES ONLY — e.g. `... \| jq '[.envs[].key] \| sort'`; never write the raw response (rule 3). The documented response schema carries `value`/`vsmValue`/`legacyValue` fields even with `decrypt=false` — the projection is the REAL protection, not the query param                                                                                                           |
+| 5 | `/v9/projects/<id>/domains?teamId=<id>`                                                  | `domains-<project>.json`     | custom domains (paginated — max 100/page)                                                                                                                                                                                                                                                                                                                                         |
+| 6 | project cron configuration — OpenAPI-discovered                                          | `crons-<project>.json`       | NOT in the public REST reference; resolve via `vercel api list` under the discovery constraints below (path must contain a `crons` segment), else record `skipped` (the `vercel.json` cron declarations from `discover-configs.md` remain the primary source)                                                                                                                     |
+| 7 | storage/stores enumeration — OpenAPI-discovered                                          | `stores.json`                | store endpoints exist (documented rate limits) but their paths are NOT in the public REST reference; resolve via `vercel api list` under the discovery constraints below (path must contain a `stores` or `storage` segment), else record `skipped` and rely on env-name + dependency signals (`@vercel/kv`, `KV_REST_API_*`, etc.), which the coupling item already corroborates |
+| 8 | usage/analytics aggregates as exposed for the plan (best-effort)                         | `usage-<project>.json`       | coarse invocation/bandwidth aggregates; absent on many plans — record `skipped`, not an error                                                                                                                                                                                                                                                                                     |
+
+**OpenAPI-discovery constraints (rows 6–7).** These two rows are the only ones
+whose paths are not pinned in this file, because Vercel does not document them —
+pinning guessed paths would be fake precision that breaks silently when they
+move. The discovery step is therefore constrained so it stays as narrow as the
+pinned rows:
+
+1. The resolved operation MUST be `GET` in the OpenAPI spec — never call a
+   discovered endpoint with any other method, regardless of what the spec
+   offers.
+2. The resolved path MUST contain the row's subject segment (`crons` for row 6;
+   `stores`/`storage` for row 7). A GET endpoint that merely _mentions_ crons or
+   stores in its description does not qualify.
+3. Record the exact resolved path verbatim in the manifest entry's `endpoint`
+   field and set `"discovered_via": "vercel api list"` — the audit trail that
+   lets the parse fragments and any reviewer see precisely what was called.
+4. No matching GET endpoint in the spec → record `skipped` with a note. Never
+   substitute a "close enough" endpoint.
 
 ## Step 3: Header-Probe Capture (network, Tier 2 only)
 
@@ -131,8 +149,11 @@ bot-challenge responses are captured as-is (they are findings, not errors).
 }
 ```
 
-Every attempted or deliberately skipped row gets an entry. The manifest is the
-parse fragments' index — its existence is what tells `discover.md` capture ran.
+Every attempted or deliberately skipped row gets an entry. OpenAPI-discovered
+rows (6–7) additionally carry the exact resolved path in `endpoint` and
+`"discovered_via": "vercel api list"` per the discovery constraints above. The
+manifest is the parse fragments' index — its existence is what tells
+`discover.md` capture ran.
 
 ## Step 5: Return to `discover.md`
 

@@ -31,13 +31,15 @@
       "endpoint": "project cron configuration (OpenAPI-discovered row 6)",
       "file": "api/crons-acme-shop.json",
       "status": "skipped",
-      "note": "no GET cron endpoint found via vercel api list — crons from vercel.json only"
+      "discovered_via": "vercel api list",
+      "note": "no GET endpoint with a crons path segment found via vercel api list — crons from vercel.json only"
     },
     {
-      "endpoint": "storage/stores enumeration (OpenAPI-discovered row 7)",
+      "endpoint": "/v1/storage/stores?teamId=team_abc123",
       "file": "api/stores.json",
       "status": "ok",
-      "note": "GET endpoint located via vercel api list"
+      "discovered_via": "vercel api list",
+      "note": "GET endpoint with a storage/stores path segment located via vercel api list; exact resolved path recorded per the rows 6–7 discovery constraints"
     },
     {
       "endpoint": "usage aggregates",
