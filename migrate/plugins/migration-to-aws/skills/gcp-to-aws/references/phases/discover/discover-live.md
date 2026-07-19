@@ -124,38 +124,64 @@ the project; the Step 2 scale guard handles large outputs.)
   "is not enabled", or "API [has not been / is not] enabled" — the common
   startup case; Cloud Asset API is off by default):
 
-  Offer **once** (user-driven enable — never run `gcloud services enable`
-  yourself; that would be a mutation):
+  Offer **once** (user-driven enable — never run `gcloud services enable` or
+  IAM mutations yourself):
 
   ```
   ─── Cloud Asset Inventory not enabled ───
 
   The Cloud Asset API is not enabled on [$GCP_PROJECT]. Enabling it gives a
   fuller inventory in one call (including resources outside the per-service
-  list). I will not enable it for you.
+  list). I will not change your project for you.
 
-  To turn it on, run this in your terminal:
+  1. Enable the API (pick one):
 
-    gcloud services enable cloudasset.googleapis.com --project="$GCP_PROJECT"
+       gcloud services enable cloudasset.googleapis.com --project="$GCP_PROJECT"
 
-  Or in the console: APIs & Services → Library → search "Cloud Asset API" →
-  Enable. Propagation can take up to a minute.
+     Or console: APIs & Services → Library → search "Cloud Asset API" → Enable.
+     Propagation can take up to a minute.
 
-  [Y] I've enabled it — retry Cloud Asset Inventory
+  2. IAM — your identity also needs Cloud Asset Viewer on the project
+     (`roles/cloudasset.viewer`). Owner/Editor usually already include enough
+     access; otherwise ask an admin to grant that role. Docs:
+     https://docs.cloud.google.com/asset-inventory/docs/view-assets
+
+  [Y] I've enabled it (and have access) — retry Cloud Asset Inventory
   [N] Continue with per-service fallback
   ```
 
   - **[Y]** → wait for the user, then re-run the asset-search command **once**.
     Success → continue as the Success path above; record
     `cai_enable_offered: true`, `cai_enable_accepted: true` in the manifest.
-    Still failing → tell the user briefly, then fall through to per-service
-    (same as [N]); record `cai_enable_accepted: true` and the retry failure
-    note.
+    Still failing → tell the user briefly (if 403/PERMISSION_DENIED, mention
+    `roles/cloudasset.viewer` again), then fall through to per-service (same
+    as [N]); record `cai_enable_accepted: true` and the retry failure note.
   - **[N]** / no response treated as decline → fall through to per-service;
     record `cai_enable_offered: true`, `cai_enable_accepted: false`.
 
-  **Permission denied / other errors** (403 without the disable signals above,
-  network errors, etc.): do **not** offer enable — enabling will not help.
+  **Permission denied** (403 / `PERMISSION_DENIED` without the disable signals
+  above — API may already be on, but the identity lacks Cloud Asset access):
+
+  Offer **once** (IAM guidance only — never grant roles yourself):
+
+  ```
+  ─── Cloud Asset Inventory permission denied ───
+
+  The Cloud Asset API appears enabled, but this identity cannot search assets
+  on [$GCP_PROJECT]. Grant Cloud Asset Viewer (`roles/cloudasset.viewer`) on
+  the project (or a role that includes `cloudasset.assets.searchAllResources` /
+  list permissions), then retry. Docs:
+  https://docs.cloud.google.com/asset-inventory/docs/view-assets
+
+  [Y] I've updated IAM — retry Cloud Asset Inventory
+  [N] Continue with per-service fallback
+  ```
+
+  Same [Y]/[N] recording rules as the enable soft-ask
+  (`cai_enable_offered` / `cai_enable_accepted` — here "enable" means "CAI
+  access remediation offered").
+
+  **Other errors** (network, unexpected failures): do **not** soft-ask.
   Fall through to per-service immediately; record `cai_enable_offered: false`.
 
   **Per-service fallthrough:** record `method: "per_service"` and run every
@@ -412,8 +438,9 @@ The parent `discover.md` owns the phase status update — do not touch
 | Error                                              | Behavior                                                                                                                     |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | gcloud missing / no active account / user declines | Exit cleanly with no output (orchestrator falls back to file-based sources)                                                  |
-| Asset search fails (API not enabled)               | Soft-ask once with enable how-to; on [Y] retry once; on [N]/retry-fail fall back to per-service (agent never enables)     |
-| Asset search fails (permission denied / other)     | Fall back to per-service immediately — do not offer enable                                                                   |
+| Asset search fails (API not enabled)               | Soft-ask once: enable API + `roles/cloudasset.viewer` how-to + docs link; on [Y] retry once; on [N]/retry-fail → per-service (agent never mutates) |
+| Asset search fails (permission denied)             | Soft-ask once: grant `roles/cloudasset.viewer` + docs link; on [Y] retry once; on [N]/retry-fail → per-service                                                 |
+| Asset search fails (other errors)                  | Fall back to per-service immediately — do not soft-ask                                                                                                          |
 | Individual row fails (API not enabled, 403)        | Record `failed`/`skipped`, continue — never a halt (no per-row enable soft-ask)                                              |
 | Token expired mid-run                              | Stop capturing; hand off ("run `gcloud auth login`, then tell me to continue"); on resume re-run Step 2 (captures overwrite) |
 | Capture file unparseable                           | Record warning, skip that file, continue                                                                                     |

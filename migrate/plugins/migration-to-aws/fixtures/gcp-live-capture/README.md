@@ -54,10 +54,11 @@ anywhere; any mutating `gcloud` command (including `gcloud services enable`);
 AWS service names in discover artifacts; a halt caused by the failed
 asset-search/pubsub captures.
 
-**Soft-ask note:** live capture (Step 2a) may offer a user-driven
-`gcloud services enable cloudasset.googleapis.com` when CAI is disabled. Replay
-skips Step 2 entirely (`manifest.json` already present), so the soft-ask does
-not fire here — the fixture models the post-decline / per-service outcome.
+**Soft-ask note:** live capture (Step 2a) may offer user-driven remediation when
+CAI fails — enable `cloudasset.googleapis.com` and/or grant
+`roles/cloudasset.viewer` (see https://docs.cloud.google.com/asset-inventory/docs/view-assets).
+Replay skips Step 2 entirely (`manifest.json` already present), so the soft-ask
+does not fire here — the fixture models the post-decline / per-service outcome.
 
 ## Regenerating / extending
 
