@@ -82,7 +82,26 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Extract `billing_profile.line_items[]` for per-app breakdown
    - Set `current_costs.source: "billing_data"`
 
-2. **Heroku pricing cache** — If no billing data, Load `references/shared/heroku-pricing-cache.md` and derive costs from discovered resources:
+2. **Live-captured prices + dyno cache** — If no billing data but live discovery
+   ran (add-on resources carry `config.monthly_price_usd` — the account's actual
+   billed plan rates from the Platform API capture):
+   - **Add-ons:** sum `config.monthly_price_usd` across add-on resources — these
+     are exact, and they price plans the cache has never heard of (no
+     `"unpriced_heroku"` holes for priced add-ons)
+   - **Dynos:** the API does not price formations; look up each formation's
+     `dyno_type` in `references/shared/heroku-pricing-cache.md` (±5% published
+     flat rates) × `quantity`
+   - Set `current_costs.source: "live_prices_plus_cache"`
+   - Set `current_costs.accuracy: "exact for add-ons, ±5% for dynos"`
+   - An add-on WITHOUT `monthly_price_usd` (e.g. a Terraform-only entry) falls
+     through to the rung-3 cache lookup for that resource only; if neither
+     prices it, mark `"unpriced_heroku"` and add to warnings
+   - `baseline_note` (mandatory): "Derived from your account's actual add-on
+     prices plus published dyno rates — not an invoice. Excludes usage-based
+     charges (bandwidth, build minutes), team seats, credits, and discounts;
+     your invoice may differ."
+
+3. **Heroku pricing cache** — If no billing data and no live-captured prices, Load `references/shared/heroku-pricing-cache.md` and derive costs from discovered resources:
    - For each resource in inventory, look up its plan in the cache tables (case-insensitive exact match)
    - Multiply dyno costs by `formation.quantity`
    - Sum all matched resources to get `heroku_monthly_estimated`
@@ -90,18 +109,18 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Set `current_costs.accuracy: "±5%"`
    - If any resource plan is not found in cache, mark as `"unpriced_heroku"` and exclude from total; add to warnings
 
-3. **User-provided** — If pricing cache produces zero matched resources (unlikely with Terraform discovery), ask: "I need your current Heroku monthly spend to produce a meaningful cost comparison. What is your approximate Heroku monthly cost?" Use the answer.
+4. **User-provided** — If neither live prices nor the pricing cache match any resource (unlikely with Terraform or live discovery), ask: "I need your current Heroku monthly spend to produce a meaningful cost comparison. What is your approximate Heroku monthly cost?" Use the answer.
    - Set `current_costs.source: "user_provided"`
 
-4. **Unavailable** — If user declines: present AWS costs without Heroku comparison.
+5. **Unavailable** — If user declines: present AWS costs without Heroku comparison.
    - Set `current_costs.source: "unavailable"`
    - Note: "Heroku baseline unavailable — AWS costs shown without comparison."
 
-When billing data or pricing cache is available, present the Heroku baseline as:
+Whenever a baseline was determined (any source except `"unavailable"`), present it as:
 
-- Total monthly cost
+- Total monthly cost, with its source and accuracy stated plainly (invoice data vs actual plan prices vs rate card vs user estimate)
 - Per-app breakdown (dyno, add-on, platform charges)
-- Billing period
+- Billing period (billing-data source only) or `baseline_note` (derived sources)
 
 ---
 
@@ -255,15 +274,22 @@ This entry REPLACES any CloudWatch entries in a "Supporting" row — never doubl
 
 ## Part 3: Cost Comparison (Heroku vs AWS)
 
-### When Billing Data Available
+### When a Heroku Baseline Was Determined (any Part 1 source except `"unavailable"`)
+
+The comparison is the point of this phase — it runs whenever Part 1 produced a
+baseline, from ANY source. Do not reserve it for billing data: a
+`live_prices_plus_cache` or `pricing_cache` baseline yields the same side-by-side
+with its accuracy labeled honestly.
 
 Present a side-by-side comparison:
 
-- **Heroku current monthly total** (from `billing_profile.total_monthly_cost`)
+- **Heroku current monthly total** (from Part 1's baseline, labeled with `current_costs.source` and its accuracy; when derived rather than invoiced, repeat the `baseline_note` caveat next to the number)
 - **AWS Premium / Balanced / Optimized monthly totals**
 - **Difference** (savings or increase) per tier vs Heroku — monthly and annual
 - **Per-app breakdown** for the Balanced tier: for each Heroku app, show:
-  - Current Heroku spend (from `billing_profile.line_items` filtered by app)
+  - Current Heroku spend — from `billing_profile.line_items` filtered by app
+    (billing source), or from that app's summed live prices + cache dyno rates
+    (derived sources)
   - Projected AWS spend (sum of services mapped from that app)
   - Difference
 
@@ -271,7 +297,8 @@ Include in `estimation-infra.json`:
 
 ```json
 "cost_comparison": {
-  "heroku_monthly_baseline": "<total from billing>",
+  "heroku_monthly_baseline": "<Part 1 baseline total>",
+  "baseline_source": "<current_costs.source>",
   "option_a_premium": {
     "aws_monthly": "<premium total>",
     "monthly_difference": "<premium - heroku>",
@@ -293,9 +320,9 @@ Include in `estimation-infra.json`:
 }
 ```
 
-### When Billing Data NOT Available
+### When NO Baseline Was Determined (`current_costs.source == "unavailable"`)
 
-Omit `cost_comparison` section or set `heroku_monthly_baseline` to null. Present AWS costs without comparison. State: "Heroku billing data not available — showing projected AWS costs only. Provide Heroku invoices and re-run discovery to see side-by-side comparison."
+Omit the `cost_comparison` section or set `heroku_monthly_baseline` to null. Present AWS costs without comparison. State: "Heroku baseline unavailable — showing projected AWS costs only. Run live discovery (or provide Heroku invoices) and re-run to see the side-by-side comparison."
 
 ---
 
@@ -303,25 +330,31 @@ Omit `cost_comparison` section or set `heroku_monthly_baseline` to null. Present
 
 Heroku does not charge egress fees for data transfer during migration (unlike GCP). However, there may be time-based costs during parallel operation.
 
-### IF billing data IS available:
+Key this section off baseline presence (any Part 1 source except `"unavailable"`), not billing data specifically — a derived baseline prices the dual-run window just as well, with the same accuracy caveat as the baseline itself.
+
+### IF a Heroku baseline WAS determined:
 
 ```json
 "migration_cost_considerations": {
-  "billing_data_available": true,
+  "baseline_available": true,
+  "baseline_source": "<current_costs.source>",
   "categories": [
-    "Heroku platform fees during parallel operation (both Heroku and AWS running simultaneously during cutover window)"
+    "Heroku platform fees during parallel operation (both Heroku and AWS running simultaneously during cutover window): ~<Part 1 baseline total>/month for the duration of the cutover"
   ],
   "note": "Heroku charges are subscription-based. During migration, both Heroku and AWS costs apply until Heroku apps are decommissioned. No data transfer egress fees from Heroku."
 }
 ```
 
-### IF billing data is NOT available:
+When the baseline is derived (`live_prices_plus_cache` or `pricing_cache`), append to the note: "Dual-run figure is derived from plan prices, not invoices — actual parallel-operation cost may differ by usage-based charges."
+
+### IF NO baseline was determined (`current_costs.source == "unavailable"`):
 
 ```json
 "migration_cost_considerations": {
-  "billing_data_available": false,
+  "baseline_available": false,
+  "baseline_source": "unavailable",
   "categories": [],
-  "note": "Parallel operation costs depend on Heroku billing. Provide Heroku invoices for dual-run cost projections."
+  "note": "Parallel operation costs depend on Heroku spend. Run live discovery (or provide Heroku invoices) for dual-run cost projections."
 }
 ```
 
