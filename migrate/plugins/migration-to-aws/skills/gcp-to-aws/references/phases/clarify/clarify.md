@@ -13,7 +13,7 @@ The question catalog spans **six named categories (A–F)** plus agentic (G) and
 | File                  | Category                                  | Questions | Loaded When                                     |
 | --------------------- | ----------------------------------------- | --------- | ----------------------------------------------- |
 | `clarify-global.md`   | A — Global/Strategic                      | Q1–Q7     | Always                                          |
-| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q8–Q11    | Compute or billing-source resources present     |
+| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q8–Q11b   | Compute or billing-source resources present     |
 | `clarify-database.md` | D — Database                              | Q12–Q13b  | Database resources present                      |
 | `clarify-ai.md`       | F — AI/Bedrock, G — Agentic, H — Programs | Q14–Q27   | `ai-workload-profile.json` exists               |
 | `clarify-ai-only.md`  | _(standalone)_                            | Q1–Q10    | AI-only migration (no infrastructure artifacts) |
@@ -231,16 +231,16 @@ Record all extracted values in `metadata.inventory_clarifications` where applica
 
 ### Category Firing Rules (unchanged)
 
-| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                                  |
-| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q3.5 (CUDs), Q4 (skipped), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance) |
-| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                           |
-| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend)                                         |
-| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                     |
-| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                  |
-| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                                    |
-| **G**    | Agentic            | `agentic_profile.is_agentic == true`                                           | `clarify-ai.md`       | Q23–Q26                                                                                                                    |
-| **H**    | Startup Programs   | Fires with Category F                                                          | `clarify-ai.md`       | Q27                                                                                                                        |
+| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                                                                                       |
+| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q3.5 (CUDs), Q4 (skipped), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance)                                                      |
+| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                                                                                |
+| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
+| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                                                                          |
+| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                                                                       |
+| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                                                                                         |
+| **G**    | Agentic            | `agentic_profile.is_agentic == true`                                           | `clarify-ai.md`       | Q23–Q26                                                                                                                                                                         |
+| **H**    | Startup Programs   | Fires with Category F                                                          | `clarify-ai.md`       | Q27                                                                                                                                                                             |
 
 **If no IaC, billing data, or code is available** (empty discovery): only Category A is active. All service-specific categories are skipped.
 
@@ -272,9 +272,9 @@ Every question in an **active** category gets exactly one disposition:
 | ----- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Q1    | DETECTED when single-region extraction succeeded; **ESSENTIAL** when multiple regions or no inventory                            | —                                    | All AWS resources deploy to this region; drives latency and service availability                                                               |
 | Q2    | **ESSENTIAL — always**                                                                                                           | —                                    | — (gates security baseline, regions, and service catalog; never assumed)                                                                       |
-| Q3    | DETECTED when billing extraction succeeded; **ESSENTIAL** when no billing data                                                   | —                                    | Anchors the AWS-vs-GCP savings comparison and credits-tier recommendation                                                                      |
+| Q3    | DETECTED when billing extraction succeeded; **ESSENTIAL** when no billing data                                                   | —                                    | Anchors the AWS-vs-GCP savings comparison and dev-tier sizing baseline                                                                         |
 | Q3.5  | **ESSENTIAL** when it fires (billing shows active CUDs); N/A otherwise                                                           | —                                    | — (billing already shows active commitments; assuming "none" would be wrong)                                                                   |
-| Q4    | Always skipped (inferred from Q3)                                                                                                | —                                    | —                                                                                                                                              |
+| Q4    | N/A in wizard mode (funding not inferred from spend); optional in full flow                                                      | —                                    | —                                                                                                                                              |
 | Q5    | PROPOSED                                                                                                                         | B — AWS-only                         | Assuming AWS-only → ECS Fargate eligible; if multi-cloud portability is required, all containers go to EKS instead                             |
 | Q6    | DETECTED when all Cloud SQL instances agree; **ESSENTIAL** on conflict/missing; PROPOSED when no Cloud SQL signal but DB present | B — `multi-az`                       | Assuming Multi-AZ RDS → automatic failover, roughly 2x single-AZ database cost; say "single-az" for dev-grade, "mission-critical" for Aurora   |
 | Q7    | **ESSENTIAL — always**                                                                                                           | —                                    | — (cutover strategy selects DMS vs pg_dump/pgcopydb and the entire migration runbook shape; never assumed)                                     |
@@ -283,11 +283,12 @@ Every question in an **active** category gets exactly one disposition:
 | Q9    | DETECTED when code scan found none; ESSENTIAL when scan found matches (confirm); PROPOSED when no code was analyzed              | B — no WebSockets                    | Assuming no WebSockets → standard ALB config; correct this if you have realtime/persistent-connection features (**unverified — no code scan**) |
 | Q10   | DETECTED when `min_instances > 0`; PROPOSED otherwise                                                                            | C — `constant-24-7`                  | Assuming 24/7 traffic → conservative (higher) AWS estimate; business-hours-only workloads may be cheaper staying on Cloud Run                  |
 | Q11   | PROPOSED                                                                                                                         | B — `$100-$500`                      | Feeds the migrate-vs-stay analysis for Cloud Run; correct if spend is materially different                                                     |
+| Q11b  | PROPOSED when compatible compute is present; otherwise N/A                                                                       | A — Graviton                         | Default ARM64 targets reduce compute cost; use the decision table in `clarify-compute.md` for compatibility caveats                            |
 | Q12   | DETECTED when dev-tier; ESSENTIAL on mixed tiers; PROPOSED otherwise                                                             | A — `steady`                         | Assuming steady traffic → size from current config, no read replicas                                                                           |
 | Q13   | DETECTED when dev-tier; ESSENTIAL on mixed tiers; PROPOSED otherwise                                                             | B — `medium`                         | Assuming medium I/O → gp3 storage; high-IOPS workloads would need io2/Provisioned IOPS                                                         |
 | Q13b  | DETECTED when disk size unambiguous; ESSENTIAL on conflict; PROPOSED otherwise                                                   | E — `unknown`                        | Unknown size → pgcopydb selected as migration tool (safe at any scale); verify before cutover                                                  |
 | Q14   | DETECTED when auto-detection resolves; PROPOSED otherwise                                                                        | `["direct"]`                         | Framework determines AI migration effort (gateway = config change; Agents SDK = weeks)                                                         |
-| Q15   | **ESSENTIAL** when Category F fires                                                                                              | —                                    | — (anchors Bedrock savings comparison and credits tier; no discovery signal exists)                                                            |
+| Q15   | **ESSENTIAL** when Category F fires                                                                                              | —                                    | — (anchors Bedrock savings comparison and token-volume derivation; no discovery signal exists)                                                 |
 | Q16   | PROPOSED                                                                                                                         | E — `balanced`                       | Assuming balanced priority → Sonnet-class default model; say "cost" or "speed" to shift the model family                                       |
 | Q17   | PROPOSED                                                                                                                         | J — none                             | Assuming no specialized feature → Q16 priority decides the model; name a feature (tool use, long context, RAG…) to override                    |
 | Q18   | PROPOSED                                                                                                                         | A — `low`                            | Assuming low volume → on-demand pricing, no provisioned throughput analysis                                                                    |
@@ -299,7 +300,7 @@ Every question in an **active** category gets exactly one disposition:
 | Q24   | **ESSENTIAL** when Category G fires                                                                                              | B — `session`                        | — (memory requirement changes the AgentCore architecture)                                                                                      |
 | Q25   | **ESSENTIAL** when Category G fires                                                                                              | B — `medium`                         | — (task duration gates runtime selection and session limits)                                                                                   |
 | Q26   | PROPOSED when Category G fires                                                                                                   | path-based (see `clarify-ai.md`)     | Incremental migration → A/B test Bedrock per-invocation before committing; full swap is faster but riskier                                     |
-| Q27   | PROPOSED when Category H fires                                                                                                   | D — `unknown`                        | Unknown credit status → report includes both Activate tiers; answering saves you reading the wrong one                                         |
+| Q27   | **ESSENTIAL** when Category H fires (same trigger as Category F)                                                                 | —                                    | — (self-funded vs VC-backed vs already has credits — never inferred from spend; gates Founders vs Portfolio guidance)                          |
 
 **Multi-workload confirmation table** (`clarify-ai.md`, fires when `workloads[]` ≥ 2): unchanged — it runs during Step 4 as part of the AI essentials, after the sheet is confirmed. Its high-confidence rows behave like DETECTED sheet rows; medium/low-confidence rows behave like essential questions (max 2 per row).
 
@@ -348,7 +349,8 @@ Present the sheet in two sections (omit rows for questions that are ESSENTIAL or
 | AI priority | Balanced | Sonnet-class default model |
 | AI latency | Important (<2s) | Sonnet + streaming; <500ms would force Haiku/Nova |
 | WebSockets | None (unverified — no code scan) | Standard ALB config |
-| Activate credits | Unknown | Report includes both credit tiers |
+
+Q27 (AWS Activate credits) is **not** on this sheet — it is asked in Step 4 when AI workloads are detected.
 
 Reply:
 - **"looks good"** — I'll record these and ask only the [N] essential questions.
@@ -451,7 +453,7 @@ Question 2: [Q7 text with context and options]
 ...
 ```
 
-**If the essential count exceeds 7** (e.g., agentic + billing gaps + conflicts), split into two batches — core (Q1/Q2/Q3/Q3.5/Q7 + conflicts) first, then AI/agentic (Q15, Q23–Q25, multi-workload confirmations) — and write `preferences-draft.json` between them (same schema as `preferences.json` plus `metadata.wizard_stage`).
+**If the essential count exceeds 7** (e.g., agentic + billing gaps + conflicts), split into two batches — core (Q1/Q2/Q3/Q3.5/Q7 + conflicts) first, then AI/agentic (Q15, **Q27**, Q23–Q25, multi-workload confirmations) — and write `preferences-draft.json` between them (same schema as `preferences.json` plus `metadata.wizard_stage`).
 
 **Wait for the user's response.** Do NOT proceed to Design without a response or an explicit "use defaults for the rest."
 
@@ -460,6 +462,7 @@ Question 2: [Q7 text with context and options]
 - Q2 defaults to A (none) — record `chosen_by: "default"` and add a report caveat that compliance was not confirmed.
 - Q7 defaults to D (flexible).
 - Q3 defaults to B ($1K–$5K) with a report caveat that spend was not confirmed.
+- **Q27 must not be silently defaulted in wizard mode** when Category H fired — if the user skips it, record `startup_program_status: "unknown"` with `chosen_by: "default"` and `source: "default:Q27"`; downstream artifacts must use neutral Activate copy (both tiers, no "your status: eligible_*").
 - Q3.5, Q23–Q25, and unresolved multi-instance conflicts fall back to their documented defaults (Q3.5 → E; Q23 → framework-based; Q24 → session; Q25 → medium; conflicts → most conservative posture) with `chosen_by: "default"`.
   Then skip to Category E opt-in, then Step 5.
 
@@ -467,7 +470,7 @@ Question 2: [Q7 text with context and options]
 
 ### Full Flow variant ("ask me everything")
 
-When the user opted out of the wizard, run the progressive-batch flow: present ALL active questions (no dispositions) in up to three batches — Strategic (Q1–Q7, minus Q4), Infrastructure (Q8–Q13b + Category B), AI (Q14–Q27, Q23–Q26 only if agentic) — writing `preferences-draft.json` between batches with `metadata.batches_completed` / `metadata.batches_remaining` (values: `"strategic"`, `"infrastructure"`, `"ai"`). Per-question skip and "use defaults for the rest" behave as documented. Set `metadata.clarify_mode: "full"`.
+When the user opted out of the wizard, run the progressive-batch flow: present ALL active questions (no dispositions) in up to three batches — Strategic (Q1–Q7, minus Q4), Infrastructure (Q8–Q13b incl. Q11b Graviton + Category B), AI (Q14–Q27, Q23–Q26 only if agentic) — writing `preferences-draft.json` between batches with `metadata.batches_completed` / `metadata.batches_remaining` (values: `"strategic"`, `"infrastructure"`, `"ai"`). Per-question skip and "use defaults for the rest" behave as documented. Set `metadata.clarify_mode: "full"`.
 
 ### Category E Opt-In
 
@@ -535,8 +538,8 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
     "migration_type": "full",
     "timestamp": "<ISO timestamp>",
     "discovery_artifacts": ["gcp-resource-inventory.json", "ai-workload-profile.json"],
-    "questions_asked": ["Q2", "Q7", "Q15"],
-    "questions_defaulted": ["Q5", "Q9", "Q11", "Q16", "Q17", "Q18", "Q21", "Q22", "Q27"],
+    "questions_asked": ["Q2", "Q7", "Q15", "Q27"],
+    "questions_defaulted": ["Q5", "Q9", "Q11", "Q11b", "Q16", "Q17", "Q18", "Q21", "Q22"],
     "questions_skipped_extracted": ["Q1", "Q6", "Q12", "Q13", "Q13b", "Q14", "Q19", "Q20"],
     "questions_skipped_early_exit": ["Q8"],
     "questions_skipped_not_applicable": ["Q3.5", "Q4", "Q10", "Q23", "Q24", "Q25", "Q26"],
@@ -590,6 +593,14 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
       "prompt": "How do you feel about Kubernetes? (default applied)",
       "design_consequence": "Assuming Fargate → no Kubernetes to operate",
       "question_id": "Q8"
+    },
+    "cpu_architecture": {
+      "value": "graviton",
+      "chosen_by": "default",
+      "source": "default:Q11b",
+      "prompt": "Target Graviton (ARM64) for eligible compute? (default applied)",
+      "design_consequence": "Assuming Graviton → ARM64 instance families and Fargate/Lambda runtime platform",
+      "question_id": "Q11b"
     },
     "database_traffic": {
       "value": "steady",
@@ -688,19 +699,20 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
       "design_consequence": "Assuming moderate complexity → Sonnet-class model",
       "question_id": "Q22"
     },
-    "startup_program_status": {
-      "value": "unknown",
-      "chosen_by": "default",
-      "source": "default:Q27",
-      "prompt": "Are you eligible for AWS startup programs? (default applied)",
-      "design_consequence": "Unknown credit status → report includes both Activate tiers",
-      "question_id": "Q27"
-    },
     "ai_capabilities_required": {
       "value": ["text_generation", "streaming"],
       "chosen_by": "derived",
       "prompt": "Derived from detected capabilities and your answers",
       "design_consequence": "Required capabilities union enforced in Bedrock model mapping and validation checklist"
+    }
+  },
+  "startup_constraints": {
+    "startup_program_status": {
+      "value": "eligible_founders",
+      "chosen_by": "user",
+      "question_id": "Q27",
+      "prompt": "Have you applied for AWS Activate credits?",
+      "design_consequence": "Activate Founders ($5K) callout in report and STARTUP_PROGRAMS.md"
     }
   }
 }
@@ -735,43 +747,44 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 
 Documented defaults for every question. Used by: PROPOSED sheet rows (wizard), per-question skips, "use defaults for the rest", and the fast paths.
 
-| Question                   | Default                                              | Constraint                                                                                                               |
-| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Q1 — Location              | A (single region)                                    | `target_region`: closest AWS region to GCP region                                                                        |
-| Q2 — Compliance            | A (none)                                             | no constraint _(essential — defaulted only via "use defaults for the rest", with report caveat)_                         |
-| Q3 — GCP spend             | B ($1K–$5K)                                          | `gcp_monthly_spend: "$1K-$5K"` _(essential when no billing — same caveat rule as Q2)_                                    |
-| Q3.5 — GCP CUDs            | E (none)                                             | `cud_status: "none"` _(essential when it fires — billing shows CUDs, so only defaulted via "use defaults for the rest")_ |
-| Q4 — Funding stage         | _(skip in IDE mode)_                                 | no constraint                                                                                                            |
-| Q5 — Multi-cloud           | B (AWS-only)                                         | no constraint                                                                                                            |
-| Q6 — Uptime                | B (significant)                                      | `availability: "multi-az"`                                                                                               |
-| Q7 — Maintenance           | D (flexible)                                         | `cutover_strategy: "flexible"`                                                                                           |
-| Cat B — Cloud SQL HA       | Zonal                                                | `metadata.inventory_clarifications`                                                                                      |
-| Cat B — Cloud Run count    | 1 service                                            | `metadata.inventory_clarifications`                                                                                      |
-| Cat B — Memorystore memory | estimate from usage                                  | `metadata.inventory_clarifications`                                                                                      |
-| Cat B — Functions gen      | Gen 1                                                | `metadata.inventory_clarifications`                                                                                      |
-| Q8 — K8s sentiment         | C (Fargate)                                          | `kubernetes: "ecs-fargate"`                                                                                              |
-| Q9 — WebSocket             | B (no)                                               | no constraint                                                                                                            |
-| Q10 — Cloud Run traffic    | C (24/7)                                             | `cloud_run_traffic_pattern: "constant-24-7"`                                                                             |
-| Q11 — Cloud Run spend      | B ($100–$500)                                        | `cloud_run_monthly_spend: "$100-$500"`                                                                                   |
-| Q12 — DB traffic           | A (steady)                                           | `database_traffic: "steady"`                                                                                             |
-| Q13 — DB I/O               | B (medium)                                           | `db_io_workload: "medium"`                                                                                               |
-| Q13b — DB size             | E (unknown)                                          | `db_size: "unknown"` → default to pgcopydb                                                                               |
-| Q14 — AI framework         | _(auto-detect)_                                      | `ai_framework` from code detection, fallback `["direct"]`                                                                |
-| Q15 — AI spend             | B ($500–$2K)                                         | `ai_monthly_spend: "$500-$2K"` _(essential — defaulted only via "use defaults for the rest")_                            |
-| Q16 — AI priority          | E (balanced)                                         | `ai_priority: "balanced"`                                                                                                |
-| Q17 — Critical feature     | J (none)                                             | no additional override                                                                                                   |
-| Q18 — Volume + cost        | A (low + quality)                                    | `ai_token_volume: "low"`                                                                                                 |
-| Q19 — Current model        | _(auto-detect)_                                      | `ai_model_baseline` from code detection                                                                                  |
-| Q20 — Input types          | A (text only)                                        | no constraint                                                                                                            |
-| Q21 — AI latency           | B (important)                                        | `ai_latency: "important"`                                                                                                |
-| Q22 — Task complexity      | B (moderate)                                         | `ai_complexity: "moderate"`                                                                                              |
-| Q23 — Agentic approach     | _(framework-based auto-detect; see `clarify-ai.md`)_ | `ai_constraints.agentic.migration_approach`                                                                              |
-| Q24 — Agent memory         | B (session)                                          | `ai_constraints.agentic.memory_requirement: "session"`                                                                   |
-| Q25 — Task duration        | B (medium)                                           | `ai_constraints.agentic.task_duration: "medium"`                                                                         |
-| Q26 — Incremental          | path-based                                           | `incremental_migration`: `true` for Harness path, `false` for retarget                                                   |
-| Q27 — Activate credits     | D (unknown)                                          | `startup_program_status: "unknown"`                                                                                      |
-| Q-E1 — HA upgrade          | B (no)                                               | `ha_upgrade: false`                                                                                                      |
-| Q-E2 — Right-sizing        | B (no)                                               | `right_sizing: false`                                                                                                    |
+| Question                   | Default                                                                                                           | Constraint                                                                                                                                                                                           |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1 — Location              | A (single region)                                                                                                 | `target_region`: closest AWS region to GCP region                                                                                                                                                    |
+| Q2 — Compliance            | A (none)                                                                                                          | no constraint _(essential — defaulted only via "use defaults for the rest", with report caveat)_                                                                                                     |
+| Q3 — GCP spend             | B ($1K–$5K)                                                                                                       | `gcp_monthly_spend: "$1K-$5K"` _(essential when no billing — same caveat rule as Q2)_                                                                                                                |
+| Q3.5 — GCP CUDs            | E (none)                                                                                                          | `cud_status: "none"` _(essential when it fires — billing shows CUDs, so only defaulted via "use defaults for the rest")_                                                                             |
+| Q4 — Funding stage         | _(skip in IDE mode)_                                                                                              | no constraint                                                                                                                                                                                        |
+| Q5 — Multi-cloud           | B (AWS-only)                                                                                                      | no constraint                                                                                                                                                                                        |
+| Q6 — Uptime                | B (significant)                                                                                                   | `availability: "multi-az"`                                                                                                                                                                           |
+| Q7 — Maintenance           | D (flexible)                                                                                                      | `cutover_strategy: "flexible"`                                                                                                                                                                       |
+| Cat B — Cloud SQL HA       | Zonal                                                                                                             | `metadata.inventory_clarifications`                                                                                                                                                                  |
+| Cat B — Cloud Run count    | 1 service                                                                                                         | `metadata.inventory_clarifications`                                                                                                                                                                  |
+| Cat B — Memorystore memory | estimate from usage                                                                                               | `metadata.inventory_clarifications`                                                                                                                                                                  |
+| Cat B — Functions gen      | Gen 1                                                                                                             | `metadata.inventory_clarifications`                                                                                                                                                                  |
+| Q8 — K8s sentiment         | C (Fargate)                                                                                                       | `kubernetes: "ecs-fargate"`                                                                                                                                                                          |
+| Q9 — WebSocket             | B (no)                                                                                                            | no constraint                                                                                                                                                                                        |
+| Q10 — Cloud Run traffic    | C (24/7)                                                                                                          | `cloud_run_traffic_pattern: "constant-24-7"`                                                                                                                                                         |
+| Q11 — Cloud Run spend      | B ($100–$500)                                                                                                     | `cloud_run_monthly_spend: "$100-$500"`                                                                                                                                                               |
+| Q11b — CPU architecture    | A (Graviton)                                                                                                      | `cpu_architecture: "graviton"` (or `"mixed"` if any service is incompatible; `"x86"` if no compatible compute) — usually auto-defaulted without asking; see `clarify-compute.md` Q11b decision table |
+| Q12 — DB traffic           | A (steady)                                                                                                        | `database_traffic: "steady"`                                                                                                                                                                         |
+| Q13 — DB I/O               | B (medium)                                                                                                        | `db_io_workload: "medium"`                                                                                                                                                                           |
+| Q13b — DB size             | E (unknown)                                                                                                       | `db_size: "unknown"` → default to pgcopydb                                                                                                                                                           |
+| Q14 — AI framework         | _(auto-detect)_                                                                                                   | `ai_framework` from code detection, fallback `["direct"]`                                                                                                                                            |
+| Q15 — AI spend             | B ($500–$2K)                                                                                                      | `ai_monthly_spend: "$500-$2K"` _(essential — defaulted only via "use defaults for the rest")_                                                                                                        |
+| Q16 — AI priority          | E (balanced)                                                                                                      | `ai_priority: "balanced"`                                                                                                                                                                            |
+| Q17 — Critical feature     | J (none)                                                                                                          | no additional override                                                                                                                                                                               |
+| Q18 — Volume + cost        | A (low + quality)                                                                                                 | `ai_token_volume: "low"`                                                                                                                                                                             |
+| Q19 — Current model        | _(auto-detect)_                                                                                                   | `ai_model_baseline` from code detection                                                                                                                                                              |
+| Q20 — Input types          | A (text only)                                                                                                     | no constraint                                                                                                                                                                                        |
+| Q21 — AI latency           | B (important)                                                                                                     | `ai_latency: "important"`                                                                                                                                                                            |
+| Q22 — Task complexity      | B (moderate)                                                                                                      | `ai_complexity: "moderate"`                                                                                                                                                                          |
+| Q23 — Agentic approach     | _(framework-based auto-detect; see `clarify-ai.md`)_                                                              | `ai_constraints.agentic.migration_approach`                                                                                                                                                          |
+| Q24 — Agent memory         | B (session)                                                                                                       | `ai_constraints.agentic.memory_requirement: "session"`                                                                                                                                               |
+| Q25 — Task duration        | B (medium)                                                                                                        | `ai_constraints.agentic.task_duration: "medium"`                                                                                                                                                     |
+| Q26 — Incremental          | path-based                                                                                                        | `incremental_migration`: `true` for Harness path, `false` for retarget                                                                                                                               |
+| Q27 — Activate credits     | _(essential when Category H fires — ask in Step 4; skip only via explicit answer or "use defaults for the rest")_ | `startup_program_status` per answer; skip → `"unknown"` with neutral downstream copy                                                                                                                 |
+| Q-E1 — HA upgrade          | B (no)                                                                                                            | `ha_upgrade: false`                                                                                                                                                                                  |
+| Q-E2 — Right-sizing        | B (no)                                                                                                            | `right_sizing: false`                                                                                                                                                                                |
 
 ---
 
@@ -781,11 +794,12 @@ Before handing off to Design:
 
 - [ ] In wizard mode, the Step 2.5 Assumption Sheet was shown (detected + assumed sections) and the user responded before any essential question was asked
 - [ ] Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` has a `source` field with the correct prefix (`terraform:`, `billing:`, `inventory:`, `ai-profile:`, or `default:<Qid>`)
-- [ ] Essential questions (Q2, Q7, and conditional Q1/Q3/Q3.5/Q15/Q23–Q25/conflicts) were asked, answered, or explicitly defaulted via "use defaults for the rest"
+- [ ] Essential questions (Q2, Q7, and conditional Q1/Q3/Q3.5/**Q27**/Q15/Q23–Q25/conflicts) were asked, answered, or explicitly defaulted via "use defaults for the rest"
 - [ ] If `bigquery_present` was **true**, the Step 4 BigQuery specialist advisory was shown before questions — **or**, if Step 0 option A (reuse preferences), the same advisory was shown after BigQuery detection
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
 - [ ] `design_constraints.target_region` is populated with `value` and `chosen_by`
 - [ ] `design_constraints.availability` is populated when Cloud SQL PostgreSQL/MySQL is in inventory (asked, extracted, or defaulted — Design must not run with absent/null availability)
+- [ ] If compute resources are present, `design_constraints.cpu_architecture` is set to `graviton`, `x86`, or `mixed` per the Q11b decision table
 - [ ] Only keys with non-null values are present in `design_constraints`
 - [ ] Every entry in `design_constraints` and `ai_constraints` has `value` and `chosen_by` fields
 - [ ] Config gap answers recorded in `metadata.inventory_clarifications` (billing mode only)
@@ -813,6 +827,7 @@ Load `shared/handoff-gates.md`. **Re-read from disk** before checking.
 3. If `gcp-resource-inventory.json` contains `google_sql_database_instance` → `design_constraints.availability.value` is set (non-null, non-empty).
 4. If `metadata.clarify_mode` is `"wizard"` → at least one constraint has a `source` field OR every active question was essential.
 5. **No sheet/question mixing:** `metadata.questions_asked` contains no question ID that also appears in `metadata.questions_skipped_extracted` or `metadata.questions_defaulted`. (A question may move between lists only if the user converted its sheet row — in which case the override handling moved it to `questions_asked`.)
+6. If compute resources are present (Cloud Run, Cloud Functions, GKE, GCE in `gcp-resource-inventory.json`, or billing-source compute) → `design_constraints.cpu_architecture.value` is set (`graviton` | `x86` | `mixed`), per the Q11b decision table in `clarify-compute.md` — written even when Q11b was auto-defaulted.
 
 **On any FAIL:** Emit `GATE_FAIL | phase=clarify | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to answer the missing question or re-run Clarify.
 

@@ -166,55 +166,32 @@ heroku-to-aws/
 
 The interpreter loop (`INTERPRETER.md` § The interpreter loop) drives phase
 sequencing, gates, and state. This section defines only the heroku-specific
-checkpoint orchestration: WHERE the optional `feedback` checkpoint and plan-share
-are offered (a checkpoint's placement is orchestration prose, not part of the
-phase contract).
+checkpoint orchestration: WHERE the optional `feedback` checkpoint is offered (a
+checkpoint's placement is orchestration prose, not part of the phase contract).
+
+> **Plan-share links are GATED OFF.** The share landing page
+> (`https://aws.amazon.com/startups/migrate/connect`) is not yet live (404). Do
+> NOT offer, generate, or present a share link at any checkpoint. The share-link
+> spec is preserved in `references/phases/feedback/feedback-collect.md` Step 3
+> (itself gated) for when the page ships; restoring the share prompts here is the
+> un-gating change.
 
 - **After Discover**: No prompt. Proceed directly to Clarify.
 
 - **After Estimate** (if `phases.feedback` is `"pending"`): Output to user:
 
   ```
-  ─── Share Your Migration Plan ───
+  Would you like to share quick feedback? (5 optional questions +
+  anonymized usage data — never resource names, file paths, or
+  account IDs)
 
-  This link encodes your migration profile for partner matching:
-  ✓ Included: Clarify answers, estimated costs, recommendation path,
-    detected Heroku services, resource names, and workload types.
-  ✗ Excluded: Source code, local file paths, credentials, API tokens,
-    config-var values, and environment secrets.
-
-  The link uses a URL fragment (#) — no data is sent to any server
-  when you click it. The landing page decodes everything client-side.
-
-  [A] Send feedback & share plan
-  [B] Send feedback only
-  [C] No thanks, continue to Generate
+  [A] Yes, share feedback
+  [B] No thanks, continue to Generate
   ```
 
-  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Then generate share link. Set `phases.feedback` to `"completed"`. Continue to Generate.
-  - If user picks **B** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
-  - If user picks **C** → Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **B** → Set `phases.feedback` to `"completed"`. Continue to Generate.
 
-- **After Generate**: Share-only prompt (no feedback re-ask):
-
-  ```
-  ─── Share Your Completed Plan ───
-
-  This link encodes your migration profile for partner matching:
-  ✓ Included: Clarify answers, estimated costs, recommendation path,
-    detected Heroku services, resource names, and workload types.
-  ✗ Excluded: Source code, local file paths, credentials, API tokens,
-    config-var values, and environment secrets.
-
-  The link uses a URL fragment (#) — no data is sent to any server
-  when you click it. The landing page decodes everything client-side.
-
-  [A] Share completed plan
-  [B] No thanks, finish
-  ```
-
-  - If user picks **A** → Generate share link. Mark migration complete.
-  - If user picks **B** → Mark migration complete.
-  - If `phases.feedback` is still `"pending"`, set it to `"completed"` regardless of choice.
+- **After Generate**: No prompt. If `phases.feedback` is still `"pending"`, set it to `"completed"` and mark the migration complete.
 
 **Critical constraint**: Follow each phase reference file's workflow exactly. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.
