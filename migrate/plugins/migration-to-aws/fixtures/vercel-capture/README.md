@@ -6,8 +6,10 @@ without a Vercel account or a real Next.js build. The synthetic project
 `acme-shop` exercises the designed-for paths:
 
 - **Manifest fallback** — Next.js 15.1.0 (< 16.2), so `build.method:
-  "manifests"`; the captured `routes-manifest` / `prerender-manifest` /
-  `app-path-routes-manifest` drive route dispositions, including the two subtle
+  "manifests"`; the captured `capture/build/` manifests (`routes-manifest` /
+  `prerender-manifest` / `app-path-routes-manifest`, exactly the three files
+  the capture manifest's `build.files` names) drive route dispositions,
+  including the two subtle
   cases: `/blog/[slug]` is genuinely ISR (real `initialRevalidateSeconds`
   entries in `prerender-manifest.json`), and `/api/checkout` is a Route Handler
   the manifests do NOT classify (must land `dynamic` at LOW confidence with the
