@@ -22,18 +22,23 @@
       "note": "reduced to key names via jq before write"
     },
     {
-      "endpoint": "/v5/projects/prj_acmeshop01/domains?teamId=team_acme01",
+      "endpoint": "/v9/projects/prj_acmeshop01/domains?teamId=team_acme01",
       "file": "api/domains-acme-shop.json",
       "status": "ok",
       "note": null
     },
     {
-      "endpoint": "/v1/projects/prj_acmeshop01/crons?teamId=team_acme01",
+      "endpoint": "project cron configuration (OpenAPI-discovered row 6)",
       "file": "api/crons-acme-shop.json",
       "status": "skipped",
-      "note": "endpoint 404 on this plan — crons from vercel.json only"
+      "note": "no GET cron endpoint found via vercel api list — crons from vercel.json only"
     },
-    { "endpoint": "/v1/storage/stores?teamId=team_acme01", "file": "api/stores.json", "status": "ok", "note": null },
+    {
+      "endpoint": "storage/stores enumeration (OpenAPI-discovered row 7)",
+      "file": "api/stores.json",
+      "status": "ok",
+      "note": "GET endpoint located via vercel api list"
+    },
     {
       "endpoint": "usage aggregates",
       "file": "api/usage-acme-shop.json",
