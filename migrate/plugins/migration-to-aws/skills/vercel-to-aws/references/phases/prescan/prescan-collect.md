@@ -51,8 +51,26 @@ regardless of the build outcome.
 Per Requirement 1.7: when requesting the token from the founder, state explicitly:
 
 > "I'll need a Vercel API token to enumerate your projects, deployments, env var
-> names, domains, crons, and storage integrations. Please use a **read-only,
-> team-scoped** token — and plan to revoke it once this assessment completes."
+> names, domains, crons, and storage integrations. Two honest notes before you
+> create one:
+>
+> 1. **Vercel tokens can't be made read-only** — they scope by resource
+>    (account / team / single project), not by permission. On my side, this
+>    assessment only ever issues read (GET) requests, enforced by the endpoint
+>    whitelist in the capture step — but the token itself could do more, so
+>    scope it as narrowly as possible: a **project-scoped** token if one project
+>    is in scope (Dashboard → Account Settings → Tokens, or
+>    `vercel tokens create <name> --project <PROJECT_ID>` if you already hold a
+>    classic account token), team-scoped only if we need to discover multiple
+>    projects.
+> 2. Pick the **shortest practical expiration**, and revoke it the moment this
+>    assessment completes (`vercel tokens rm <token-id>`, or from the same
+>    dashboard page)."
+
+The token is held ONLY as an environment variable (`VERCEL_TOKEN`) in the main
+window for this run — see `discover-capture.md`'s Security Contract for how the
+capture step uses it without it ever entering an artifact or a dispatched
+worker.
 
 - If a token is supplied: validate it can authenticate against the Vercel API
   (a lightweight call, e.g. listing the team). Record `vercel_token_present: true`.

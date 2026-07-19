@@ -212,7 +212,7 @@ The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_
 - At least one input source: Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
 - **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
-- **For Vercel migration:** repo access with a locally-runnable `next build`, plus a read-only, team-scoped Vercel API token, are both required Tier 1 inputs — the assessment does not run without them
+- **For Vercel migration:** repo access with a locally-runnable `next build`, plus a Vercel API token, are both required Tier 1 inputs — the assessment does not run without them. Vercel tokens can't be permission-scoped to read-only, so scope by resource instead (project-scoped when one project is in scope), pick a short expiration, and revoke after the assessment; the skill only ever issues read (GET) requests, enforced by its capture-step endpoint whitelist
 - **For AI execution (llm-to-bedrock skill):** Python 3.10+, `uv`, and Bedrock model access enabled
 
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.

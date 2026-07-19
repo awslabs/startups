@@ -5,47 +5,57 @@ _contributes:
   - discovery.json (deployments, env_var_names, domains, storage_integrations, usage_metrics, peripherals, api_routes, backend_service_detected sections)
 ---
 
-# Discover Phase: Vercel REST API Enumeration (Always Runs)
+# Discover Phase: Vercel API Capture Parsing (Always Runs)
 
-> Self-contained fragment. Always runs using the token validated in
-> `prescan-collect.md`. Enumerates everything the API surface exposes: projects,
-> deployments, env var NAMES (never values), domains, cron jobs, Edge Config,
-> KV/Postgres/Blob store integrations, and coarse usage metrics.
+> Self-contained PARSE-ONLY fragment. Reads the API captures that
+> `discover-capture.md` wrote to `$MIGRATION_DIR/capture/api/` (indexed by
+> `capture/manifest.json`) — this fragment runs in the dispatched worker, which
+> has no network access and never sees the token. It parses everything the
+> capture exposes: projects, deployments, env var NAMES (never values), domains,
+> cron jobs, Edge Config, KV/Postgres/Blob store integrations, and coarse usage
+> metrics. Process only manifest entries with `status: "ok"`; carry every
+> `failed`/`skipped` entry into the corresponding section as
+> `"unavailable: <note>"`.
 
 **Execute ALL steps in order. Do not skip or optimize.**
 
 ---
 
-## Step 1: Enumerate Deployments
+## Step 1: Parse Deployments
 
-For each in-scope project (`tier1-signals.json.project_list`), list recent
-deployments: production vs. preview, timestamps, status.
-
----
-
-## Step 2: Enumerate Env Var Names (Never Values)
-
-List environment variable KEYS only. Per Requirement 1.6, NEVER fetch, log, or
-persist a value — not even for the "infrastructure-pointing env var hostnames"
-Tier 3 input, which is scoped to hostnames extracted from values the FOUNDER
-explicitly shares out-of-band, not something this fragment fetches directly via
-the API.
+From `capture/api/deployments-<project>.json` for each in-scope project
+(`tier1-signals.json.project_list`): recent deployments, production vs. preview,
+timestamps, status.
 
 ---
 
-## Step 3: Enumerate Domains and Crons
+## Step 2: Parse Env Var Names (Never Values)
 
-List custom domains and any Vercel Cron job configurations (supplementing what
-`vercel.json` already declared in `discover-configs.md` — the API may show
-crons configured outside `vercel.json` too).
+Read `capture/api/env-keys-<project>.json` — already reduced to KEY names by the
+capture step's projection rule. Per Requirement 1.6, values are NEVER fetched,
+logged, or persisted anywhere in the pipeline; if this file unexpectedly
+contains objects with value-like payloads instead of a plain key-name array,
+DISCARD it, record a warning, and continue — never copy any part of it. (The
+"infrastructure-pointing env var hostnames" Tier 3 input remains scoped to
+hostnames the FOUNDER explicitly shares out-of-band.)
 
 ---
 
-## Step 4: Enumerate Storage Integrations
+## Step 3: Parse Domains and Crons
 
-List Vercel KV, Postgres, Blob, and Edge Config integrations attached to the
-project(s). For each, record the integration type and any AWS-relevant metadata
-(e.g. approximate size, region) the API exposes without requiring secret access.
+From `capture/api/domains-<project>.json` and `capture/api/crons-<project>.json`:
+custom domains and Cron jobs (supplementing what `vercel.json` already declared
+in `discover-configs.md` — the API capture may show crons configured outside
+`vercel.json` too).
+
+---
+
+## Step 4: Parse Storage Integrations
+
+From `capture/api/stores.json`: Vercel KV, Postgres, Blob, and Edge Config
+integrations attached to the project(s). For each, record the integration type
+and any AWS-relevant metadata (e.g. approximate size, region) the capture
+exposes.
 
 Contribute these to `peripherals[]` — this feeds the Recommendation Engine's
 separability check (Requirement 7.1 rule 1) and the Scaffold phase's
@@ -66,8 +76,10 @@ Engine's separability check directly.
 
 ## Step 6: Coarse Usage Metrics
 
-Pull whatever usage aggregates the API exposes (invocation counts, bandwidth) at
-whatever granularity is available. Per Requirement 4.4, a finding resting SOLELY
+From `capture/api/usage-<project>.json` when present (many plans expose none —
+the manifest will say `skipped`; record the section as unavailable). Parse
+whatever aggregates were captured (invocation counts, bandwidth) at whatever
+granularity is available. Per Requirement 4.4, a finding resting SOLELY
 on this coarse usage data (with no log-drain backing) is LOW confidence — record
 it as such, with `upgrade_input: "7-14 day log drain/observability export"`.
 
@@ -101,22 +113,24 @@ specific finding (per the recompute short-circuit mechanism in
 
 ## Error Handling
 
-| Error Category                                                        | Behavior                                                                                               |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| API rate-limited mid-enumeration                                      | Record what succeeded, mark remaining sections `"unavailable: rate_limited"`, retry once after backoff |
-| Token lacks scope for a specific endpoint (e.g. storage integrations) | Record that section as `"unavailable: insufficient_token_scope"`, continue with the rest               |
-| Zero deployments found for an in-scope project                        | Record as a LOW-confidence finding, note the project may be dormant/unused                             |
+| Error Category                                                            | Behavior                                                                          |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Capture file named in the manifest is missing or malformed                | Record a warning, mark that section `"unavailable: capture_unreadable"`, continue |
+| Manifest records `failed: rate_limited` / `insufficient_token_scope` etc. | Mark the corresponding section `"unavailable: <note>"`, continue with the rest    |
+| Zero deployments found for an in-scope project                            | Record as a LOW-confidence finding, note the project may be dormant/unused        |
 
 ---
 
 ## Scope Boundary
 
-**This fragment covers Vercel REST API enumeration ONLY.**
+**This fragment covers PARSING the API captures ONLY.**
 
 FORBIDDEN — Do NOT include ANY of:
 
+- Any network call or `curl` — capture already happened in the main window
+  (`discover-capture.md`); this worker has no network and no token
 - Fetching or persisting env var VALUES (names only, ever)
-- Header probing (that is `discover-probe.md`'s job)
+- Header-probe parsing (that is `discover-probe.md`'s job)
 - Computing the Recommendation Engine's separability verdict (this fragment
   contributes the raw signals; `recommend-rules.md` makes the decision)
 - AWS service names or recommendations

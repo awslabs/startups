@@ -16,18 +16,19 @@ _contributes:
 
 ---
 
-## Step 1: Run the Adapter API Build
+## Step 1: Read the Adapter API Build Capture
 
-Run `next build` with the Adapter API's typed output enabled (per the project's
-Next.js 16.2+ configuration). Consume the resulting typed, versioned description
-of the app: routes, prerenders, runtime targets, caching rules, routing
-decisions.
+Read the typed Adapter API build output that `discover-capture.md` Step 1 copied
+to `$MIGRATION_DIR/capture/build/` (the build itself ran in the main window —
+this worker has no shell). Consume the typed, versioned description of the app:
+routes, prerenders, runtime targets, caching rules, routing decisions.
 
-If the build fails here despite `prescan-collect.md` having recorded
-`next_build_health: "clean"` (a transient failure, environment drift since
-PreScan ran), record this discrepancy as a finding at LOW confidence and fall
-back — signal `discover.md` to load `discover-manifests.md` instead for this run.
-Do not silently retry indefinitely.
+If the manifest records `build.prescan_discrepancy: true` (the capture-step
+build failed despite PreScan's `"clean"` record — transient failure or
+environment drift), record that discrepancy as a finding at LOW confidence.
+When the manifest records `build.method: "manifests"` or `"unavailable"`, this
+fragment does not apply — `discover.md`'s trigger routes to
+`discover-manifests.md` instead.
 
 ---
 
@@ -99,19 +100,21 @@ structure. This fragment contributes the `route_disposition` array and
 
 ## Error Handling
 
-| Error Category                                                          | Behavior                                                                             |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Build succeeds but produces no typed output (misconfigured Adapter API) | Record `adapter_api_used: false` with a reason, fall back to `discover-manifests.md` |
-| Build times out                                                         | Record a LOW-confidence finding, fall back to `discover-manifests.md`                |
+| Error Category                                                         | Behavior                                                                             |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Captured adapter output missing or untyped (misconfigured Adapter API) | Record `adapter_api_used: false` with a reason, fall back to `discover-manifests.md` |
+| Captured adapter output malformed/unparseable                          | Record a LOW-confidence finding, fall back to `discover-manifests.md`                |
 
 ---
 
 ## Scope Boundary
 
-**This fragment covers the Adapter API build path ONLY.**
+**This fragment covers PARSING the Adapter API build capture ONLY.**
 
 FORBIDDEN — Do NOT include ANY of:
 
+- Running `next build` or any shell command — the build ran in the main window
+  (`discover-capture.md` Step 1); this worker has no shell
 - A full Vercel-vs-OpenNext infrastructure diff (explicitly out of scope, Step 3)
 - AWS service names or recommendations
 - Coupling Score or Pre-Flight Check computation (separate fragments)

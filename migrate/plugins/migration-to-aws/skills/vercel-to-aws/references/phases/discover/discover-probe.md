@@ -7,24 +7,26 @@ _contributes:
 
 # Discover Phase: Header-Probe Confirmation (Tier 2 Only)
 
-> Self-contained fragment. Triggered ONLY when Tier 2's production URL +
-> throwaway test account were supplied (checked by `discover.md` Step 3 before
-> loading this file). This fragment is CONFIRMATION-ONLY per Requirement 4.1 —
-> its findings never serve as a primary signal; they confirm or contradict what
+> Self-contained PARSE-ONLY fragment. Triggered ONLY when the capture manifest
+> records probe captures (`capture/manifest.json` → `probe.attempted: true` —
+> the probing itself, with the Tier 2 production URL + throwaway test account,
+> happened in the main window via `discover-capture.md` Step 3; this worker has
+> no network). This fragment is CONFIRMATION-ONLY per Requirement 4.1 — its
+> findings never serve as a primary signal; they confirm or contradict what
 > `discover-configs.md`/`discover-adapter.md` already determined.
 
 **Execute ALL steps in order. Do not skip or optimize.**
 
 ---
 
-## Step 1: Curl Production Routes
+## Step 1: Parse Probed Route Headers
 
-Using the supplied production URL and test account credentials (never persisted
-beyond this run), curl a representative sample of routes — ideally overlapping
-with the route-disposition comparison from `discover-adapter.md`/
-`discover-manifests.md` so the probe can confirm or contradict those findings.
+Read each `capture/probe/<route-slug>.headers` file listed in the manifest —
+header captures of a representative route sample, ideally overlapping with the
+route-disposition comparison from `discover-adapter.md`/`discover-manifests.md`
+so the probe can confirm or contradict those findings.
 
-For each probed route, read:
+For each probed route, read from its headers file:
 
 - `x-vercel-cache` — hit/miss/stale, confirms actual caching behavior.
 - `cache-control` — the response's actual cache directive.
@@ -102,13 +104,14 @@ primary) and `computed_from_inputs: ["production_url_and_test_account"]`.
 
 ## Scope Boundary
 
-**This fragment covers header-probe confirmation ONLY.**
+**This fragment covers header-probe-capture PARSING only.**
 
 FORBIDDEN — Do NOT include ANY of:
 
+- Any network call or `curl` — probing already happened in the main window
+  (`discover-capture.md` Step 3, which enforces headers-only capture and the
+  founder-authorization rule)
 - Treating any probe result as a PRIMARY signal (always confirmation-only)
-- Probing without a supplied test account (never speculatively probe production
-  routes founder did not explicitly authorize testing against)
 - AWS service names or recommendations
 
 **Your ONLY job: confirm or flag discrepancies against existing findings via

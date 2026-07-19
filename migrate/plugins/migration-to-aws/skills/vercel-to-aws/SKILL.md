@@ -159,11 +159,12 @@ vercel-to-aws/
 │   │   │   └── prescan-assemble.md             # tier1-signals.json + assessment-state.json seed
 │   │   ├── discover/
 │   │   │   ├── discover.md                     # Phase 2: Discover orchestrator
-│   │   │   ├── discover-adapter.md             # Adapter API build (Next >= 16.2, clean build)
-│   │   │   ├── discover-manifests.md           # .next manifest fallback (Next < 16.2)
+│   │   │   ├── discover-capture.md             # Main-window capture pre-work (build + GET-only API + probe; holds the token)
+│   │   │   ├── discover-adapter.md             # Adapter API build-capture parsing (Next >= 16.2, clean build)
+│   │   │   ├── discover-manifests.md           # .next manifest-capture fallback parsing (Next < 16.2)
 │   │   │   ├── discover-configs.md             # next.config.js, middleware.ts, vercel.json
-│   │   │   ├── discover-api.md                 # Vercel REST API enumeration
-│   │   │   ├── discover-probe.md               # Header-probe confirmation (Tier 2 only)
+│   │   │   ├── discover-api.md                 # Vercel API capture parsing (env NAMES only)
+│   │   │   ├── discover-probe.md               # Header-probe capture parsing (Tier 2 only)
 │   │   │   ├── discover-coupling.md            # Coupling Score (unconditional)
 │   │   │   ├── discover-preflight.md           # 10 named Pre-Flight Checks (unconditional)
 │   │   │   └── discover-assemble.md            # discovery.json / coupling-score.json / preflight-findings.json
