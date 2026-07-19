@@ -42,17 +42,30 @@ Produce the same shape of finding as `discover-adapter.md` Step 2, but at LOWER
 confidence since this is the fallback signal.
 
 **Classify PAGE routes from the manifests, never from source-level `revalidate`
-exports alone.** `routes-manifest.json`'s `staticRoutes`/`dynamicRoutes` and
-`prerender-manifest.json`'s `routes` map are the build's OWN routing decision,
-which can override a source-level `export const revalidate = N`: a dynamic
-route segment (e.g. `/blog/[slug]`) with a `revalidate` export but NO
-`generateStaticParams` has nothing to prerender, so Next.js classifies it
-`dynamic` in `routes-manifest.json` and it never appears in
-`prerender-manifest.json` at all — despite the `revalidate` export still being
-present in source. Only a route that actually appears in
-`prerender-manifest.json` with an `initialRevalidateSeconds` value is genuinely
-`isr`. Do not infer `isr` from a source-level `revalidate` export by itself;
-always cross-check against `prerender-manifest.json`'s actual routes:
+exports alone — and read the two manifests for what they each actually
+classify.** `routes-manifest.json`'s `staticRoutes`/`dynamicRoutes` arrays
+classify PATH SHAPE (fixed path vs dynamic `[param]` segments), NOT rendering
+mode — a fixed-path page that renders per-request (e.g. it reads `cookies()`)
+still sits in `staticRoutes`. The rendering disposition comes from
+`prerender-manifest.json` membership:
+
+- In `prerender-manifest.json.routes` with a numeric
+  `initialRevalidateSeconds` → `isr`
+- In `prerender-manifest.json.routes` with `initialRevalidateSeconds: false`
+  → `static`
+- ABSENT from `prerender-manifest.json` entirely → `dynamic` (rendered
+  per-request), regardless of which `routes-manifest.json` array holds it
+
+The prerender manifest is also the build's OWN decision, which can override a
+source-level `export const revalidate = N`: a dynamic route segment (e.g.
+`/blog/[slug]`) with a `revalidate` export but NO `generateStaticParams` has
+nothing to prerender, so it never appears in `prerender-manifest.json` —
+despite the `revalidate` export still being present in source. Only a route
+that actually appears in `prerender-manifest.json` with an
+`initialRevalidateSeconds` value is genuinely `isr`. Do not infer `isr` from a
+source-level `revalidate` export by itself, and do not infer `static` from
+`staticRoutes` membership by itself; always resolve the disposition against
+`prerender-manifest.json`'s actual routes:
 
 ```json
 {
