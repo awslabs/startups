@@ -3,8 +3,9 @@
 Canned `gcloud` CLI outputs for testing the `gcp-to-aws` live-discovery path
 (`references/phases/discover/discover-live.md`) without a GCP project. The
 synthetic project `acme-prod` uses **per-service fallback mode** (the manifest
-records the Cloud Asset API fast path as `failed` — the common startup case) and
-exercises the designed-for behaviors:
+records the Cloud Asset API fast path as `failed` — the common startup case
+after the user declines the enable soft-ask, or a permission error skips it)
+and exercises the designed-for behaviors:
 
 - **orders-api** (Cloud Run) — carries the `run.googleapis.com/cloudsql-instances`
   annotation and a service account, driving the Step 4 edge-inference rules; its
@@ -49,8 +50,14 @@ exercises the designed-for behaviors:
    assertion).
 
 **What a run must never produce** (either scenario): env var or secret values
-anywhere; any mutating `gcloud` command; AWS service names in discover
-artifacts; a halt caused by the failed asset-search/pubsub captures.
+anywhere; any mutating `gcloud` command (including `gcloud services enable`);
+AWS service names in discover artifacts; a halt caused by the failed
+asset-search/pubsub captures.
+
+**Soft-ask note:** live capture (Step 2a) may offer a user-driven
+`gcloud services enable cloudasset.googleapis.com` when CAI is disabled. Replay
+skips Step 2 entirely (`manifest.json` already present), so the soft-ask does
+not fire here — the fixture models the post-decline / per-service outcome.
 
 ## Regenerating / extending
 

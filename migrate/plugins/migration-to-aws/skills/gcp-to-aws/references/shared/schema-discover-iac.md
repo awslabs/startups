@@ -128,6 +128,8 @@ Live gcloud discovery produces the same inventory/cluster schemas with these add
     "captured_at": "2026-07-20T18:20:00Z",
     "project": "acme-prod",
     "method": "asset_search",
+    "cai_enable_offered": false,
+    "cai_enable_accepted": null,
     "capture_warnings": [],
     "unmapped_asset_types": {},
     "drift": {

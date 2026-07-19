@@ -118,13 +118,56 @@ the project; the Step 2 scale guard handles large outputs.)
   > rows below keep values out of the captures entirely. The same applies to
   > `search-all-resources --read-mask` with resource data. Do NOT "optimize"
   > this into a full-metadata dump.
-- Failure (Cloud Asset API not enabled, or permission denied) → record
-  `method: "per_service"` and run every applicable table row. Do NOT try to
-  enable the API (that would be a mutation).
+- Failure → classify the error, then branch:
+
+  **API not enabled** (stderr matches `SERVICE_DISABLED`, "has not been used",
+  "is not enabled", or "API [has not been / is not] enabled" — the common
+  startup case; Cloud Asset API is off by default):
+
+  Offer **once** (user-driven enable — never run `gcloud services enable`
+  yourself; that would be a mutation):
+
+  ```
+  ─── Cloud Asset Inventory not enabled ───
+
+  The Cloud Asset API is not enabled on [$GCP_PROJECT]. Enabling it gives a
+  fuller inventory in one call (including resources outside the per-service
+  list). I will not enable it for you.
+
+  To turn it on, run this in your terminal:
+
+    gcloud services enable cloudasset.googleapis.com --project="$GCP_PROJECT"
+
+  Or in the console: APIs & Services → Library → search "Cloud Asset API" →
+  Enable. Propagation can take up to a minute.
+
+  [Y] I've enabled it — retry Cloud Asset Inventory
+  [N] Continue with per-service fallback
+  ```
+
+  - **[Y]** → wait for the user, then re-run the asset-search command **once**.
+    Success → continue as the Success path above; record
+    `cai_enable_offered: true`, `cai_enable_accepted: true` in the manifest.
+    Still failing → tell the user briefly, then fall through to per-service
+    (same as [N]); record `cai_enable_accepted: true` and the retry failure
+    note.
+  - **[N]** / no response treated as decline → fall through to per-service;
+    record `cai_enable_offered: true`, `cai_enable_accepted: false`.
+
+  **Permission denied / other errors** (403 without the disable signals above,
+  network errors, etc.): do **not** offer enable — enabling will not help.
+  Fall through to per-service immediately; record `cai_enable_offered: false`.
+
+  **Per-service fallthrough:** record `method: "per_service"` and run every
+  applicable table row below. Always keep the failed asset-search entry in
+  `captures[]` with `status: "failed"` and the stderr summary in `note`.
 
 **2b. Capture Command Table.** Each row redirects to the named file. On
 "API not enabled" / permission errors: record the row as `failed` or `skipped`
 in the manifest and continue — a missing service is normal, never a halt.
+(Unlike the CAI fast path, do **not** soft-ask to enable individual service
+APIs — too many rows, and "service not deployed" vs "API disabled" is ambiguous
+from list errors alone.)
 
 | #  | Command (always with `--project="$GCP_PROJECT"`)                                                                                                                                                                                                                                                                                                                                                         | Output file             | Mode |
 | -- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ---- |
@@ -173,13 +216,17 @@ raw file directly.
   "account": "<active account email>",
   "project": "<$GCP_PROJECT>",
   "method": "asset_search|per_service",
+  "cai_enable_offered": false,
+  "cai_enable_accepted": null,
   "captures": [
     { "command": "<row command>", "file": "<file>", "status": "ok|failed|skipped", "note": null }
   ]
 }
 ```
 
-Every attempted or deliberately skipped row gets an entry.
+Every attempted or deliberately skipped row gets an entry. `cai_enable_offered` /
+`cai_enable_accepted` record the Step 2a soft-ask (`accepted` is `true` /
+`false` / `null` when never offered).
 
 ## Step 3: Map Captures to Inventory Resources
 
@@ -339,13 +386,16 @@ write/update:
      "captured_at": "<from manifest>",
      "project": "<$GCP_PROJECT>",
      "method": "asset_search|per_service",
+     "cai_enable_offered": false,
+     "cai_enable_accepted": null,
      "capture_warnings": ["<failed/skipped manifest entries>"],
      "unmapped_asset_types": { "<asset type>": 2 },
      "drift": { "resources_live_only": 0, "resources_terraform_only": 0, "config_conflicts": [] }
    }
    ```
 
-   (`drift` present only when Step 6 merged.)
+   Copy `cai_enable_offered` / `cai_enable_accepted` from the manifest. (`drift`
+   present only when Step 6 merged.)
 
 2. `$MIGRATION_DIR/gcp-resource-clusters.json` — exact schema (merged or fresh).
 3. Validate per `discover-iac.md` Step 7c (every resource in exactly one cluster,
@@ -362,8 +412,9 @@ The parent `discover.md` owns the phase status update — do not touch
 | Error                                              | Behavior                                                                                                                     |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | gcloud missing / no active account / user declines | Exit cleanly with no output (orchestrator falls back to file-based sources)                                                  |
-| Asset search fails (API not enabled, 403)          | Fall back to per-service rows; record in manifest                                                                            |
-| Individual row fails (API not enabled, 403)        | Record `failed`/`skipped`, continue — never a halt                                                                           |
+| Asset search fails (API not enabled)               | Soft-ask once with enable how-to; on [Y] retry once; on [N]/retry-fail fall back to per-service (agent never enables)     |
+| Asset search fails (permission denied / other)     | Fall back to per-service immediately — do not offer enable                                                                   |
+| Individual row fails (API not enabled, 403)        | Record `failed`/`skipped`, continue — never a halt (no per-row enable soft-ask)                                              |
 | Token expired mid-run                              | Stop capturing; hand off ("run `gcloud auth login`, then tell me to continue"); on resume re-run Step 2 (captures overwrite) |
 | Capture file unparseable                           | Record warning, skip that file, continue                                                                                     |
 | Every capture failed                               | Exit with no output; tell the user which permissions are missing (`roles/viewer` covers all rows)                            |

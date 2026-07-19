@@ -4,12 +4,14 @@
   "account": "founder@acme-demo.com",
   "project": "acme-prod",
   "method": "per_service",
+  "cai_enable_offered": true,
+  "cai_enable_accepted": false,
   "captures": [
     {
-      "command": "gcloud asset search-all-resources --project=acme-prod --format=json",
+      "command": "gcloud asset search-all-resources --scope=projects/acme-prod --format=json",
       "file": "assets.json",
       "status": "failed",
-      "note": "Cloud Asset API has not been used in project acme-prod before or it is disabled"
+      "note": "Cloud Asset API has not been used in project acme-prod before or it is disabled (user declined enable soft-ask)"
     },
     {
       "command": "gcloud run services list --project=acme-prod --region=- --format=json(...)",
