@@ -49,12 +49,20 @@ Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts, 10-s
 
 ### Pricing Hierarchy (per-service lookup order)
 
-| Priority | Source                                               | Condition                                    | `pricing_source` value |
-| -------- | ---------------------------------------------------- | -------------------------------------------- | ---------------------- |
-| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file            | `"cached"`             |
-| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available       | `"live"`               |
-| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file | `"cached_fallback"`    |
-| 4        | Unavailable                                          | NOT in file AND MCP failed                   | `"unavailable"`        |
+| Priority | Source                                               | Condition                                                                                | `pricing_source` value |
+| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
+| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file                                                        | `"cached"`             |
+| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available                                                   | `"live"`               |
+| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file                                             | `"cached_fallback"`    |
+| 4        | Formula constants / well-known published rate        | NOT in file, MCP failed, but this file's own formulas carry the rate (state it verbatim) | `"estimated"`          |
+| 5        | Unavailable                                          | NOT in file, MCP failed, no formula constant either                                      | `"unavailable"`        |
+
+Row 4 is the documented home of the `services_by_source.estimated` bucket the
+schema and assembler already carry: a service priced from a rate this file
+itself states (never a guessed or remembered number) is `"estimated"`, always
+accompanied by a warning naming the rate and its source. Only a service with
+no cache entry, no MCP, AND no stated formula rate is `"unavailable"` and
+excluded from totals.
 
 For typical Heroku migrations (Elastic Beanstalk, Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `aws-infra-pricing.json`. Zero MCP calls needed.
 
@@ -185,7 +193,7 @@ When `aws-design.json` contains Elastic Beanstalk services (`aws_service: "Elast
 
 1. **EC2 instances**: Look up the instance type's hourly rate in `ec2.instances[instance_type]` × 730 hours × the running instance estimate. For the Balanced tier, use steady-state `min_instances` so EB and Fargate comparisons use comparable running-capacity assumptions. Show `max_instances` as scaling headroom, not as 730 hours of guaranteed spend.
 2. **ALB** (LoadBalanced environments only): use the same ALB formula as standalone ALB entries: `alb.monthly_fixed` plus an LCU estimate. SingleInstance non-web environments do NOT incur ALB cost.
-3. **EBS storage**: EC2 On-Demand pricing does not include EBS root volumes. Either add a small per-instance gp3 root-volume estimate when a rate is available, or explicitly list EBS root volume cost as a known minor omission requiring verification. Do not claim a 30GB EC2 allowance.
+3. **EBS storage**: EC2 On-Demand pricing does not include EBS root volumes. Add per instance: `ebs.gp3_per_gb_month` × (`aws_config.root_volume_gb` when the design specifies one, else `ebs.eb_root_volume_gb_default`) × the running instance estimate. Do not claim a 30GB EC2 allowance.
 4. **NAT Gateway**: If the VPC design places EB instances in private subnets that require outbound internet access, include the same NAT Gateway line used by the other compute paths.
 
 **Total EB monthly cost** = (EC2_hourly × 730 × running_instance_estimate) + ALB_costs (web only) + applicable networking/storage supporting costs. EB itself charges $0 — all costs are the underlying resources.
@@ -390,11 +398,11 @@ Present monthly and annual cost difference between Heroku baseline and each AWS 
 ```json
 "roi_analysis": {
   "recurring_savings": {
-    "monthly_difference_balanced": "<negative = AWS cheaper>",
-    "monthly_difference_optimized": "<negative = AWS cheaper>",
+    "monthly_difference_balanced": "<aws_balanced - heroku; negative = AWS cheaper>",
+    "monthly_difference_optimized": "<aws_optimized - heroku; negative = AWS cheaper>",
     "annual_difference_balanced": "<× 12>",
     "annual_difference_optimized": "<× 12>",
-    "note": "Negative = AWS cheaper. Positive = Heroku cheaper on pure cost basis."
+    "note": "Sign convention: difference = AWS minus Heroku, so negative = AWS cheaper. This is the OPPOSITE sign of financial_summary.monthly_savings_* (savings = Heroku minus AWS) — same fact, difference-vs-savings framing. Any presentation of either number MUST label it (e.g. 'AWS is $X/mo cheaper'), never print a bare signed value."
   },
   "operational_efficiency_factors": [...],
   "non_cost_benefits": [...],

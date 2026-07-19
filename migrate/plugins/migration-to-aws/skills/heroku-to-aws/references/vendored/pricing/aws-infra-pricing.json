@@ -115,6 +115,12 @@
     "monthly_fixed": 32.85,
     "per_gb_processed": 0.045
   },
+  "ebs": {
+    "_comment": "EBS volume pricing (us-east-1). Used to price EC2-backed compute root volumes (Elastic Beanstalk instances, EKS nodes) so EB estimates need no known-omission caveat.",
+    "gp3_per_gb_month": 0.08,
+    "eb_root_volume_gb_default": 8,
+    "_default_note": "eb_root_volume_gb_default is the AL2023 EB default root size; use aws_config.root_volume_gb when the design specifies one."
+  },
   "rds_proxy": {
     "per_vcpu_hour": 0.015
   },

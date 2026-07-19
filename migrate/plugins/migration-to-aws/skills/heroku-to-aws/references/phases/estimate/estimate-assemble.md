@@ -45,6 +45,12 @@ any single cost-engine Part; the schema leaves its shape open):
 }
 ```
 
+Sign convention: savings = Heroku minus AWS (positive = you save by migrating).
+This is deliberately the OPPOSITE sign of
+`roi_analysis.recurring_savings.monthly_difference_*` (difference = AWS minus
+Heroku) — same fact, savings-vs-difference framing. When presenting either,
+always label the direction in words; never print a bare signed value.
+
 Write to `$MIGRATION_DIR/estimation-infra.json`.
 
 ---
