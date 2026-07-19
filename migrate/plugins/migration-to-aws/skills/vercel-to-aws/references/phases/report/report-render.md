@@ -27,7 +27,7 @@ Render exactly these section IDs, always:
 | Section ID              | Content                                                                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `exec-verdict`          | The recommendation, in plain language, with a `class="verdict"` element or a "Recommendation:" sentence                                                                         |
-| `cost-comparison`       | Vercel current vs. AWS projected (three tiers), monthly delta, financial recommendation path — from `estimation-infra.json`                                                      |
+| `cost-comparison`       | Vercel current vs. AWS projected (three tiers), monthly delta, financial recommendation path — from `estimation-infra.json`                                                     |
 | `artifacts-generated`   | Summary of `terraform/` and `scripts/` deliverables with one-line descriptions — from the generate phase output                                                                 |
 | `what-you-gain`         | Cost mechanics (owning the CDN means caching aggressively enough to serve FEWER origin requests, not just cheaper ones), bill predictability, AWS credits/funding applicability |
 | `what-you-lose`         | Preview deployments FIRST, then skew protection, then the declining-over-time newest-feature-lag risk                                                                           |
