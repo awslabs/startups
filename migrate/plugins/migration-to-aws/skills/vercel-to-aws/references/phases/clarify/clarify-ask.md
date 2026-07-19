@@ -152,8 +152,29 @@ from Vercel API usage metrics instead"
 
 ### Q7 — Database Size (Conditional: Postgres Peripheral Detected)
 
-Only ask if `discovery.json.peripherals[]` contains a `"Postgres"` entry. If no
-Postgres peripheral was detected, skip entirely.
+Only relevant if `discovery.json.peripherals[]` contains a `"postgres"` entry
+(the schema's lowercase type value — match case-insensitively; a literal
+capital-P match would wrongly skip this question).
+If no Postgres peripheral was detected, skip entirely.
+
+**When Discover already measured the size, confirm — don't ask cold** (the
+skip-logic principle: never ask what discovery already determined). If a
+postgres entry in `discovery.json.storage_integrations[]` carries
+`metadata.sizeBytes`, derive the band (A < 1 GB, B 1-10 GB, C 10-100 GB,
+D > 100 GB; decimal GB — `sizeBytes / 1e9`) and present it as a confirmation
+instead of the open question:
+
+> "Your Vercel Postgres store '{name}' reports ~{X} GB, which puts it in the
+> {band} band — I'll size the migration tooling and RDS instance accordingly.
+> Sound right, or is the effective size different? (Store metadata can lag
+> reality — e.g. pending imports or recent heavy growth.)"
+
+Record the confirmed band as the answer, noting `"derived from
+storage_integrations sizeBytes, founder-confirmed"` in the entry — or the
+founder's correction when they give one (their number wins; it is Tier 3
+founder-attested input).
+
+**Only when no `sizeBytes` is available**, ask the original open question:
 
 > "Approximately how large is your Vercel Postgres database? This determines
 > which migration tool I'll set up in the scripts.
@@ -198,7 +219,7 @@ it:
   data, or is the ONLY traffic-shape signal when no log drain exists).
 - **Q6 (Vercel spend) skips** when `discovery.json.usage_metrics.billing_data`
   is present — the estimate phase uses the API-sourced billing data directly.
-- **Q7 (database size) skips** when no `"Postgres"` entry exists in
+- **Q7 (database size) skips** when no `"postgres"` entry (case-insensitive) exists in
   `discovery.json.peripherals[]` — no database means no sizing question.
 - **Q8 (compliance) is never skippable** — compliance drives baseline.tf and
   retention periods regardless of what Discover found.

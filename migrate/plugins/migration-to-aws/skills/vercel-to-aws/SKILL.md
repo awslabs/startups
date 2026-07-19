@@ -120,7 +120,10 @@ at `prescan`'s `_init` step (identical mechanism to the other two skills).
 ### Assessment State Management
 
 On every phase that reads or writes `assessment-state.json` (`prescan`, `discover`,
-`clarify`, `recommend`, `estimate`, `generate`, `report`):
+`clarify`, `recommend`, `estimate`, `generate`, `report` — note `estimate` and
+`generate` are READ-ONLY consumers: no estimate/generate phase file specifies a
+write to it, and none should be improvised; their outputs live in their own
+artifacts):
 
 1. **Read before write.** Load the current `assessment-state.json` (if it exists)
    before making any change — never blind-overwrite.

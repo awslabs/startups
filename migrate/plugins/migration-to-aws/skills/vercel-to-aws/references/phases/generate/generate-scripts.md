@@ -80,7 +80,7 @@ Migrates Vercel environment variables to AWS Secrets Manager:
 
 ## Step 3: Emit `scripts/03-migrate-database.sh` (If Postgres Detected)
 
-Conditional: only when `discovery.json.peripherals[]` contains `"Postgres"`.
+Conditional: only when `discovery.json.peripherals[]` contains `"postgres"` (the schema's lowercase type value; match case-insensitively).
 
 Select migration tool based on `clarify-answers.json.Q7_database_size`:
 

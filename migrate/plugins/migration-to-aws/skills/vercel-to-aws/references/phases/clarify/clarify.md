@@ -30,7 +30,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "every answer entry has prompt, answer, and design_consequence fields populated (design_consequence may state 'not yet determined - feeds recommend phase rule N' when the consequence depends on a rule that hasn't run)"
     _on_failure: _halt_and_inform
-  - _assert: "no question was asked whose answer PreScan or Discover already determined (e.g. no middleware question when tier1-signals.json.has_middleware is false)"
+  - _assert: "no question was asked COLD whose answer PreScan or Discover already determined (e.g. no middleware question when tier1-signals.json.has_middleware is false); presenting a discovery-derived value for founder CONFIRMATION (e.g. Q7's size band from storage_integrations sizeBytes) is the sanctioned form, not a violation"
     _on_failure: _halt_and_inform
   - _assert: "the Next.js-upgrade question, if asked, is not gated as a precondition for any other question or for phase completion"
     _on_failure: _halt_and_inform
@@ -111,11 +111,10 @@ Recommend. Load `references/phases/recommend/recommend.md` now."
 
 ## Error Handling
 
-| Error Category                                                                                                              | Behavior                                                                          |
-| --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Founder declines to answer a question                                                                                       | Record `answer: "declined"`, apply the fallback per                               |
-| `references/shared/vercel-recommendation-engine.md` § Fallback Behavior — never block phase completion on a declined answer |                                                                                   |
-| Founder asks to skip Clarify entirely                                                                                       | Refuse briefly, explain the question set is already minimized, run Clarify anyway |
+| Error Category                        | Behavior                                                                                                                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Founder declines to answer a question | Record `answer: "declined"`, apply the fallback per `references/shared/vercel-recommendation-engine.md` § Fallback Behavior — never block phase completion on a declined answer |
+| Founder asks to skip Clarify entirely | Refuse briefly, explain the question set is already minimized, run Clarify anyway                                                                                               |
 
 ---
 

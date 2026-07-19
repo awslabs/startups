@@ -40,7 +40,7 @@ Conditional-presence rules (a skipped question has no entry at all):
 
 - `Q5_nextjs_upgrade` present ONLY if `tier1-signals.json.next_version < "16.2.0"`
 - `Q6_vercel_spend` present ONLY if `discovery.json.usage_metrics.billing_data` is NOT present
-- `Q7_database_size` present ONLY if `discovery.json.peripherals[]` contains a `"Postgres"` entry
+- `Q7_database_size` present ONLY if `discovery.json.peripherals[]` contains a `"postgres"` entry (the schema's lowercase type value; match case-insensitively)
 
 ---
 

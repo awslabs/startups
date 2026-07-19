@@ -109,12 +109,25 @@ For each script in `scripts/`:
 
 ```
 ### Step N: <Script Purpose>
-Script: `scripts/0N-<name>.sh`
-Dry-run: `./scripts/0N-<name>.sh`
-Execute: `./scripts/0N-<name>.sh --execute`
+Script: `scripts/0M-<name>.sh`
+Dry-run: `./scripts/0M-<name>.sh`
+Execute: `./scripts/0M-<name>.sh --execute`
 Verify: <how to confirm success>
 Rollback: <how to undo>
 ```
+
+Guide step numbers (`N`) count the scripts that actually exist, in order —
+they do NOT have to match the script file numbers (`M`): the script set is
+conditional (03 only with a Postgres peripheral, 04 only under Outcome B, 05
+only under A/B), so gaps in the file numbering are normal. Note any gap
+explicitly (e.g. "there is no 04 — that step is Outcome B only") so the founder
+doesn't hunt for a missing file.
+
+**Provisioning slot (not a script):** between the prerequisites step (01) and
+the first mutating script (02), insert an unnumbered "Provision Infrastructure"
+section covering `terraform apply` (per `terraform/README.md`'s bootstrap) and,
+under Outcome A, `npx sst deploy` — the infrastructure must exist before
+secrets/data migrate into it. Give it Verify and Rollback lines like any step.
 
 ### 2.4 Verification Checklist
 

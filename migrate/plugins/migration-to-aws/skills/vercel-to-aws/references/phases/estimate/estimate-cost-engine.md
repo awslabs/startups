@@ -61,12 +61,21 @@ Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts,
 
 ### Pricing Hierarchy (per-service lookup order)
 
-| Priority | Source                                               | Condition                                    | `pricing_source` value |
-| -------- | ---------------------------------------------------- | -------------------------------------------- | ---------------------- |
-| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file            | `"cached"`             |
-| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available       | `"live"`               |
-| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file | `"cached_fallback"`    |
-| 4        | Unavailable                                          | NOT in file AND MCP failed                   | `"unavailable"`        |
+| Priority | Source                                               | Condition                                                                                | `pricing_source` value |
+| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
+| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file                                                        | `"cached"`             |
+| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available                                                   | `"live"`               |
+| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file                                             | `"cached_fallback"`    |
+| 4        | Formula constants / well-known published rate        | NOT in file, MCP failed, but this file's own formulas carry the rate (state it verbatim) | `"estimated"`          |
+| 5        | Unavailable                                          | NOT in file, MCP failed, no formula constant either                                      | `"unavailable"`        |
+
+Row 4 is the documented home of the `services_by_source.estimated` bucket the
+schema and assembler template already carry: a service priced from a rate this
+file itself states (the Lambda per-request/GB-second constants in the Outcome A
+table are the canonical example — never a guessed or remembered number) is
+`"estimated"`, always accompanied by a warning naming the rate and its source.
+Only a service with no cache entry, no MCP, AND no stated formula rate is
+`"unavailable"` and excluded from totals.
 
 For typical Vercel migrations (Fargate, Lambda, API Gateway, CloudFront, S3,
 NAT Gateway, ALB, RDS, ElastiCache, EventBridge, Secrets Manager), ALL prices
@@ -261,7 +270,7 @@ Read `references/vendored/estimate/complexity-tiers.json`. Evaluate tiers from
 - `monthly_spend`: `projected_costs.aws_monthly_balanced`
 - `multi_region`: always `false` for Vercel migrations (single-region default)
 - `compliance_present`: `clarify-answers.json.Q8_compliance.answer != "none"`
-- `has_databases`: `discovery.json.peripherals[]` contains `"Postgres"`
+- `has_databases`: `discovery.json.peripherals[]` contains `"postgres"` (case-insensitive)
 - `availability_multi_az`: only in Premium tier (Balanced is single-AZ default)
 
 Record `complexity_tier` and `complexity_inputs` (the values that fed the
