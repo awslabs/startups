@@ -120,6 +120,42 @@ before proceeding.
 
 ---
 
+## Step 6: Validate the Terraform (best-effort, never blocks)
+
+Static checks first (no tooling required — perform them by reading the files):
+
+1. **Syntax**: every `.tf` file is syntactically valid HCL
+2. **Reference integrity**: every `resource`/`module` reference resolves to a
+   declaration within the generated configuration
+3. **Variable completeness**: every `var.*` reference has a corresponding
+   `variable` block in `variables.tf`
+4. **Output references**: every `output` references a declared resource
+   attribute
+
+Then, if a `terraform` binary is available, run in `$MIGRATION_DIR/terraform/`:
+
+```
+terraform init -backend=false && terraform validate
+```
+
+(`-backend=false` skips S3 backend configuration — validation does not need
+state access, only provider schemas.)
+
+- **Validate passes** → record nothing (a pass is not a warning) and move on.
+- **Validate FAILS** → append the error to
+  `generation-warnings.json.warnings[]` as
+  `{ "service": "terraform_validate", "reason": "<first error line(s)>", "action": "Fix before terraform plan — see terraform validate output" }`
+  and continue to the Completion Gate. A validate failure is a warning the
+  founder must see, not a generation halt.
+- **Cannot run** (no Terraform binary, or `init` fails for network/registry
+  reasons) → append
+  `{ "service": "terraform_validate", "reason": "validation skipped: <binary missing | provider download failed>", "action": "From a network-connected shell: cd terraform/ && terraform init && terraform validate" }`
+  and continue. Same degraded-offline convention as the heroku/gcp generate
+  phases: the configuration SHOULD pass `terraform validate` with network
+  access; absence of tooling must never block generation.
+
+---
+
 ## Completion Gate
 
 Run the checks declared in `generate.md`'s `_postconditions`:
