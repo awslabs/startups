@@ -16,9 +16,7 @@ _produces:
   - tier1-signals.json
   - assessment-state.json
 _advances_to: discover
-_interactive: false
-_exec:
-  _agent: rw
+_interactive: true
 _preconditions:
   - _check_single_active_phase: true
     _on_failure: _halt_and_inform
@@ -45,6 +43,13 @@ Lightweight orchestrator that delegates to two independent fragments: Tier 1 inp
 collection (the three required inputs) and a build-free workspace/API scan. Neither
 fragment depends on the other's output — they run in either order and contribute
 their own section of `tier1-signals.json`.
+
+This phase is `_interactive: true` and runs INLINE in the main window, never
+dispatched: its work converses with the founder (the token request), runs the
+shell (the Tier 1 `next build` health attempt), and calls the Vercel API (token
+validation, project enumeration) — none of which a dispatched worker can do, and
+the token must never transit an artifact to reach one. Its work is light enough
+that inline execution costs little context.
 
 **Execute ALL steps in order. Do not skip or deviate.**
 
@@ -175,7 +180,10 @@ This phase's artifacts are declared in `_produces` and its scope boundary in
 
 FORBIDDEN — Do NOT include ANY of:
 
-- Running `next build` or any build step (that is Discover's job)
+- Running the Adapter API build or producing `.next` manifests for Discover
+  (Discover's capture pre-work owns those; the ONE plain `next build` health
+  attempt in `prescan-collect.md` Step 1b is Tier 1 input validation, not
+  discovery)
 - AWS service names, recommendations, or equivalents
 - Coupling Score computation or Pre-Flight Check computation
 - Clarify questions

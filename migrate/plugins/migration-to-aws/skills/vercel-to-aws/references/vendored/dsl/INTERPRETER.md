@@ -9,6 +9,24 @@ block, read it first and act on the keys below, then execute the phase's prose b
 Frontmatter is being introduced phase-by-phase. A phase file with no frontmatter
 runs entirely from its prose, as before.
 
+## Skill bindings (what SKILL.md declares)
+
+This contract is skill-agnostic; a skill BINDS it in its SKILL.md. Every binding has
+a default, so a skill that declares nothing (e.g. heroku-to-aws) runs entirely on the
+defaults. Where a skill declares a binding, the declaration is part of this contract
+— not an override of it.
+
+| Binding           | Default                                              | A skill MAY declare                                                                                                                                                                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entry phase       | — (always declared)                                  | the backbone head carrying `_init: true` (§ The interpreter loop, step 1)                                                                                                                                                                                                                                               |
+| Run root          | `.migration/`                                        | its own state directory (e.g. `.agent-advisor/`). Throughout this contract, `.migration/` means "the skill's run root" and `$MIGRATION_DIR` means "the run directory under it" — a skill may name that variable differently (e.g. `$RUN_DIR`); the run-id format (`MMDD-HHMM`) and single-run discipline are unchanged. |
+| State shape       | `references/vendored/state/phase-status.schema.json` | its own state-file shape, documented in SKILL.md, when its state carries skill-specific keys. The update protocol and validation below still apply.                                                                                                                                                                     |
+| Resolved statuses | `pending` / `in_progress` / `completed`              | additional RESOLVED statuses (e.g. `skipped`, `not_applicable`) for phases its routing marks not-applicable. A resolved status satisfies `_requires_phase` and the backbone walk exactly like `completed`; state validation treats declared statuses as recognized.                                                     |
+| Backbone routing  | every backbone phase runs                            | conditional-routing prose (e.g. "entry-point routing"): rules that resolve a backbone phase WITHOUT running it. When the loop advances into such a phase, mark it per the rule (e.g. `skipped`) and continue along its `_advances_to` in the same step — never leave it `pending` behind a completed successor.         |
+
+Checkpoint PLACEMENT was already the skill's to declare (§ Backbone vs checkpoint);
+these bindings extend the same principle to naming, state shape, and routing.
+
 ## The interpreter loop
 
 This is the execution controller — how you drive a migration from invocation to
@@ -17,8 +35,8 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
 
 **On each invocation:**
 
-1. **Load state.** Find the run directory under `.migration/` and read its
-   `.phase-status.json`. If none exists, this is a COLD START: load the skill's
+1. **Load state.** Find the run directory under the skill's run root (§ Skill
+   bindings; default `.migration/`) and read its `.phase-status.json`. If none exists, this is a COLD START: load the skill's
    DECLARED entry phase (the skill's SKILL.md names it) and run it — it carries
    `_init: true` and establishes state (see § `_init`). Do NOT scan every phase's
    frontmatter to find the root; the skill declares its own entry so this is a
@@ -34,9 +52,10 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
      authoritative). This is the normal WARM-START path.
    - Otherwise (state exists but has no `current_phase`) walk the backbone in order
      (see § Backbone vs checkpoint) and pick the FIRST phase whose
-     `phases.<phase>` is not `"completed"`. If all backbone phases are
-     `"completed"`, the state is the terminal (`complete`). (On a cold start there
-     is no state to read — step 1's declared entry phase is used directly.)
+     `phases.<phase>` is not RESOLVED (`"completed"` or a skill-declared resolved
+     status — § Skill bindings). If all backbone phases are resolved, the state is
+     the terminal (`complete`). (On a cold start there is no state to read —
+     step 1's declared entry phase is used directly.)
 3. **Validate state before proceeding.** See § State-file validation below. STOP
    on any inconsistency rather than guessing.
 4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
@@ -68,7 +87,9 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
 7. **Update state.** After `HANDOFF_OK`, apply the phase-status update protocol
    below, then load the next phase — the current phase's `_advances_to` — and
    repeat from step 4. When `_advances_to` is a terminal (`complete`), the
-   migration is complete.
+   migration is complete. If the skill's routing (§ Skill bindings) marks the next
+   phase not-applicable, resolve it per the routing rule (e.g. set it `skipped`)
+   and continue along that phase's `_advances_to` — in the same state write.
 
 Checkpoint phases (§ Backbone vs checkpoint) are OFF this loop — they are entered
 by their own `_trigger` at a point the skill's orchestrator (SKILL.md) chooses,
@@ -76,8 +97,9 @@ and return control without changing `current_phase`.
 
 ### State discipline
 
-- **Single run directory.** Use ONE `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`)
-  for the entire migration; do not mix artifacts across `.migration/*/` sessions.
+- **Single run directory.** Use ONE `$MIGRATION_DIR` (`<run root>/[MMDD-HHMM]/`;
+  default `.migration/[MMDD-HHMM]/`) for the entire migration; do not mix artifacts
+  across sessions under the run root.
 - **Re-read from disk.** Before each phase and before each gate, read the required
   artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
 
@@ -93,7 +115,9 @@ Update `.phase-status.json` with read-merge-write, never a blind overwrite:
 5. Write the full file in the same turn as the phase's final output message.
 
 Status values progress `"pending"` → `"in_progress"` → `"completed"` and never go
-backward (except a confirmed re-entry reset — see § `_re_entry_guard`). At most one
+backward (except a confirmed re-entry reset — see § `_re_entry_guard`). A
+skill-declared resolved status (§ Skill bindings) is set directly from `"pending"`
+when the skill's routing resolves the phase without running it. At most one
 backbone phase is `"in_progress"` at a time.
 
 ### State-file validation
@@ -101,12 +125,13 @@ backbone phase is `"in_progress"` at a time.
 When reading `.phase-status.json`, STOP (surface the diagnostic, do not proceed or
 guess) on any of:
 
-1. **Multiple run directories** under `.migration/`: list them with their phase
-   status and ask `[A] Resume latest / [B] Start fresh / [C] Cancel`.
+1. **Multiple run directories** under the skill's run root: list them with their
+   phase status and ask `[A] Resume latest / [B] Start fresh / [C] Cancel`.
 2. **Invalid JSON:** "State file corrupted (invalid JSON). Delete the file and
    restart the current phase."
 3. **Unrecognized phase name** in `phases` (not a phase the skill declares).
-4. **Unrecognized status** (not `pending` / `in_progress` / `completed`).
+4. **Unrecognized status** (not `pending` / `in_progress` / `completed` or a
+   resolved status the skill declares — § Skill bindings).
 5. **Invalid `current_phase`** (present but not a declared phase or the terminal).
 6. **Out-of-order completion:** a later backbone phase is `"completed"` while an
    earlier one is not — "Inconsistent phase ordering detected. Reconcile
@@ -487,6 +512,11 @@ BEFORE running any of its fragments. This replaces what was previously written
 out as a per-phase "initialize" step. Exactly one phase per skill carries `_init:
 true` — the backbone head / declared entry phase — so this setup runs once, on the
 cold start that begins a migration.
+
+(Paths below use the default run root `.migration/` — substitute the skill's
+declared run root (§ Skill bindings). A skill that declares its own state shape
+writes `.phase-status.json` per its SKILL.md's state-file section instead of the
+shared schema in step 4.)
 
 1. Check for an existing `.migration/` directory at the project root.
    - **If existing runs are found:** list them with their phase status and ask:

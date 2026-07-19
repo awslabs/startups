@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "migration_id": "0721-1725",
+  "last_updated": "2026-07-21T17:25:00Z",
+  "inputs_received": {
+    "tier1": {
+      "repo_access": { "received": true, "received_at": "2026-07-21T17:25:00Z" },
+      "vercel_api_token": { "received": true, "received_at": "2026-07-21T17:25:00Z" },
+      "project_scope": { "received": true, "received_at": "2026-07-21T17:25:00Z" }
+    },
+    "tier2": {},
+    "tier3": {}
+  },
+  "findings": {},
+  "clarify_answers": {},
+  "report_history": []
+}

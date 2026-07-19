@@ -17,20 +17,21 @@ _contributes:
 
 ---
 
-## Step 1: Locate `.next` Build Manifests
+## Step 1: Read the Captured `.next` Build Manifests
 
-If a `.next` directory exists (from a prior build, even if `next build` failed
-during this PreScan/Discover run), read:
+Read the manifest files that `discover-capture.md` Step 1 copied to
+`$MIGRATION_DIR/capture/build/` (whether from a pre-existing `.next/` or the
+capture step's one best-effort `next build` — building is the capture step's
+job in the main window; this worker has no shell):
 
-- `.next/routes-manifest.json` — static/dynamic route classification, redirects,
+- `routes-manifest.json` — static/dynamic route classification, redirects,
   headers, rewrites.
-- `.next/prerender-manifest.json` — ISR/SSG prerender configuration per route.
+- `prerender-manifest.json` — ISR/SSG prerender configuration per route.
+- `app-path-routes-manifest.json` — API Route Handler enumeration (Step 2).
 
-If no `.next` directory exists at all (build never succeeded, ever), attempt a
-best-effort `next build` here specifically to produce these manifests (this is
-Discover's job, not PreScan's — PreScan never builds). If that also fails,
-record `manifest_availability: "unavailable"` and produce route-disposition
-findings from `discover-configs.md`'s source-config parsing alone, at reduced
+If the capture manifest records `build.method: "unavailable"`, record
+`manifest_availability: "unavailable"` and produce route-disposition findings
+from `discover-configs.md`'s source-config parsing alone, at reduced
 confidence.
 
 ---
@@ -114,10 +115,10 @@ confidence) and `manifest_metadata` object, each finding carrying
 
 ## Error Handling
 
-| Error Category                                   | Behavior                                                                                                               |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| No `.next` directory and best-effort build fails | Record `manifest_availability: "unavailable"`, degrade to source-config-only findings, continue — do not halt Discover |
-| Manifest JSON malformed                          | Record a parse warning, skip the malformed section, continue with what parsed                                          |
+| Error Category                                         | Behavior                                                                                                               |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Capture manifest records `build.method: "unavailable"` | Record `manifest_availability: "unavailable"`, degrade to source-config-only findings, continue — do not halt Discover |
+| Captured manifest JSON malformed                       | Record a parse warning, skip the malformed section, continue with what parsed                                          |
 
 ---
 
@@ -127,7 +128,9 @@ confidence) and `manifest_metadata` object, each finding carrying
 
 FORBIDDEN — Do NOT include ANY of:
 
-- Running the Adapter API build path (that is `discover-adapter.md`'s job, and
+- Running `next build` or any shell command — any best-effort build ran in the
+  main window (`discover-capture.md` Step 1); this worker has no shell
+- Parsing the Adapter API output path (that is `discover-adapter.md`'s job, and
   this fragment is mutually exclusive with it)
 - AWS service names or recommendations
 - Coupling Score or Pre-Flight Check computation

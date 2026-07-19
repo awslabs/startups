@@ -1,0 +1,6 @@
+{
+  "stores": [
+    { "id": "store_kv_01", "type": "kv", "name": "acme-cart-cache", "region": "iad1", "sizeBytes": 52428800 },
+    { "id": "store_pg_01", "type": "postgres", "name": "acme-orders-db", "region": "iad1", "sizeBytes": 3221225472 }
+  ]
+}
