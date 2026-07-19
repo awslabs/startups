@@ -82,9 +82,13 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Extract `billing_profile.line_items[]` for per-app breakdown
    - Set `current_costs.source: "billing_data"`
 
-2. **Live-captured prices + dyno cache** — If no billing data but live discovery
-   ran (add-on resources carry `config.monthly_price_usd` — the account's actual
-   billed plan rates from the Platform API capture):
+2. **Live-captured prices + dyno cache** — If no billing data AND at least one
+   add-on resource carries `config.monthly_price_usd` (the account's actual
+   billed plan rates from the Platform API capture). The gate is the presence of
+   live prices, not merely that live discovery ran: a live run that captured
+   ZERO priced add-ons (e.g. a dyno-only app) has nothing live-priced in it —
+   fall to rung 3, whose `pricing_cache` label and ±5% accuracy describe that
+   baseline honestly.
    - **Add-ons:** sum `config.monthly_price_usd` across add-on resources — these
      are exact, and they price plans the cache has never heard of (no
      `"unpriced_heroku"` holes for priced add-ons)
