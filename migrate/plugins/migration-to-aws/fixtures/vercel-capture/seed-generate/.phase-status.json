@@ -1,0 +1,14 @@
+{
+  "migration_id": "0721-1725",
+  "last_updated": "2026-07-19T20:41:09Z",
+  "current_phase": "generate",
+  "phases": {
+    "prescan": "completed",
+    "discover": "completed",
+    "clarify": "completed",
+    "recommend": "completed",
+    "estimate": "completed",
+    "generate": "pending",
+    "report": "pending"
+  }
+}

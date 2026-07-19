@@ -41,6 +41,33 @@ without a Vercel account or a real Next.js build. The synthetic project
    `python3 check_expected_discovery.py <run-dir>` (exits non-zero on any
    failed assertion, including secret-hygiene checks).
 
+**Estimate replay** (seeded mid-pipeline, no discover run needed):
+
+1. Scratch directory with `workspace/*` at root; copy `seed-estimate/*`
+   (including `.phase-status.json`) into `.migration/0721-1725/`. The seeds
+   are a validated discover→clarify→recommend chain replay's outputs: Q6
+   spend answered `$200-1000`, recommendation an unresolved `["A","B"]`
+   tiebreak (Q1 traffic shape declined, no log drain).
+2. Resume the run — the Estimate phase starts. Expect a `user_provided`
+   baseline of exactly **$600/mo** (the documented range midpoint), BOTH
+   outcomes priced (`projected_costs` = Outcome A, `tiebreak_alternative` =
+   Outcome B, Property-16 on each), and tiebreak honesty in the summary.
+3. `python3 check_expected_estimate.py <run-dir>`.
+
+**Generate replay** (seeded post-estimate):
+
+1. Scratch directory with `workspace/*` at root; copy `seed-generate/*`
+   (including `.phase-status.json`) into `.migration/0721-1725/`.
+2. Resume the run — Generate starts and, per `generate.md`, must ASK which
+   tiebreak path to take: the replay founder answers "Outcome A
+   (OpenNext/SST)".
+3. Expect the full artifact set (sst.config.ts + terraform/ + scripts/ +
+   docs + generation-warnings.json), OpenNext/Fargate mutual exclusion, no
+   placeholder tokens, no compliance resources (Q8 = none), and assembler
+   Step 6's terraform validate handled per environment (pass = no warning
+   entry; fail/skip = exactly one entry with a founder-facing action).
+4. `python3 check_expected_generate.py <run-dir>`.
+
 **What a run must never produce:** env var values or token material anywhere;
 any network call or `next build`; AWS recommendations inside discover
 artifacts; a halt caused by the skipped crons/usage captures.

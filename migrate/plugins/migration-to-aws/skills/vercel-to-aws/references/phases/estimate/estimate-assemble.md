@@ -56,6 +56,7 @@ metadata:
     "estimated_effort": "<complexity tier -> effort range>",
     "one_time_costs": "<data transfer, parallel-run period>"
   },
+  "tiebreak_alternative": { "outcome": "B", "aws_monthly_premium": <N>, "aws_monthly_balanced": <N>, "aws_monthly_optimized": <N>, "breakdown": { ... } },
   "complexity_tier": "small" | "medium" | "large",
   "complexity_inputs": { ... },
   "financial_summary": {
@@ -73,10 +74,19 @@ metadata:
 
 ---
 
+`tiebreak_alternative` is present ONLY when `recommendation.json.outcome` is
+the unresolved array `["A", "B"]` (see the cost engine's Part 2 tiebreak
+handling); `projected_costs` then reflects Outcome A and the alternative
+reflects Outcome B.
+
+---
+
 ## Step 2: Validate Property-16 (Arithmetic Integrity)
 
-Read back `estimation-infra.json.projected_costs.breakdown`. For each tier
-(premium, mid/balanced, low/optimized):
+Read back `estimation-infra.json.projected_costs.breakdown`. When
+`tiebreak_alternative` is present, run this same check a second time on its
+breakdown against its own totals. For each tier (premium, mid/balanced,
+low/optimized):
 
 1. Sum all per-service values for that tier.
 2. Compare to the corresponding total (`projected_costs.aws_monthly_premium`,
@@ -158,6 +168,12 @@ After `HANDOFF_OK`, output a brief cost summary:
 
 If Vercel baseline is unavailable, omit the Vercel row and note "Vercel
 baseline unavailable — comparison not shown."
+
+If `tiebreak_alternative` is present (unresolved A-vs-B outcome), show BOTH
+paths' tiers side by side (columns "AWS — Outcome A (serverless)" and "AWS —
+Outcome B (Fargate)"), and close with: "The outcome is an unresolved tiebreak —
+the Generate phase will ask you to pick, and {resolving_input} would also
+resolve it."
 
 ---
 

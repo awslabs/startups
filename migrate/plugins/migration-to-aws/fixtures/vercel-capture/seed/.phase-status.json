@@ -7,6 +7,8 @@
     "discover": "in_progress",
     "clarify": "pending",
     "recommend": "pending",
+    "estimate": "pending",
+    "generate": "pending",
     "report": "pending"
   }
 }

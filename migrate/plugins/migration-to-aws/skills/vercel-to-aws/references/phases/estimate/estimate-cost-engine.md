@@ -119,6 +119,22 @@ Read `recommendation.json.outcome` to determine which AWS services to price.
 For each service, look up the rate in the pricing cache (Step 0a) or MCP
 (Step 0b), then apply the cost formula.
 
+**Unresolved tiebreak (`outcome == ["A", "B"]`):** this phase is
+non-interactive, so it cannot ask the founder to pick (Generate owns that ask).
+Price BOTH candidate outcomes — the cost delta between them is itself a
+resolving input for the founder's pick:
+
+- `projected_costs` (all three tiers + `breakdown`, and everything downstream
+  of them: comparison, complexity, Property-16) is computed from **Outcome A's
+  service set** — the array's first element, matching the engine's ordering.
+- Add a top-level `tiebreak_alternative` object with the SAME tier structure
+  (`aws_monthly_premium/balanced/optimized` + `breakdown`) computed from
+  **Outcome B's service set**. Property-16 applies to it independently.
+- `financial_summary.one_liner` and `recommendation.path_label` MUST state
+  that the outcome is an unresolved A-vs-B tiebreak, give both balanced
+  totals, and say that Generate will ask the founder to pick (naming
+  `recommendation.resolving_input` as the other way to resolve it).
+
 ### Outcome A (OpenNext/SST) — Services to Price
 
 | AWS Service                      | Sizing Source                                                         | Formula                                          |
