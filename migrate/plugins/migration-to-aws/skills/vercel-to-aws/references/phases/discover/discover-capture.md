@@ -66,22 +66,32 @@ keeping: note it in the manifest (`build.prescan_discrepancy: true`) so
 
 ## Step 2: API Capture (network, GET-only)
 
-For each in-scope project from `tier1-signals.json.project_list`. Every row:
-`curl -sS -H "Authorization: Bearer $VERCEL_TOKEN"` against `api.vercel.com`,
-output to the named file under `$MIGRATION_DIR/capture/api/`. On 403 (token
-scope) or 429 (rate limit, retry once after backoff): record `failed`/partial in
-the manifest and continue — never a halt.
+For each in-scope project from `tier1-signals.json.project_list`.
 
-| # | Endpoint (GET)                                                                           | Output file                  | Notes                                                                                            |
-| - | ---------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------ |
-| 1 | `/v2/teams`                                                                              | `teams.json`                 | team ids for subsequent calls                                                                    |
-| 2 | `/v10/projects?teamId=<id>`                                                              | `projects.json`              | framework, latest deployment metadata                                                            |
-| 3 | `/v6/deployments?projectId=<id>&limit=20`                                                | `deployments-<project>.json` | production vs preview, timestamps, state                                                         |
-| 4 | `/v10/projects/<id>/env?teamId=<id>&decrypt=false` **piped through key-name projection** | `env-keys-<project>.json`    | KEY NAMES ONLY — e.g. `... \| jq '[.envs[].key] \| sort'`; never write the raw response (rule 3) |
-| 5 | `/v5/projects/<id>/domains?teamId=<id>`                                                  | `domains-<project>.json`     | custom domains                                                                                   |
-| 6 | `/v1/projects/<id>/crons?teamId=<id>`                                                    | `crons-<project>.json`       | crons configured outside `vercel.json`; if the endpoint 404s on this plan, record `skipped`      |
-| 7 | `/v1/storage/stores?teamId=<id>`                                                         | `stores.json`                | KV / Postgres / Blob / Edge Config integrations + AWS-relevant metadata (size, region)           |
-| 8 | usage/analytics aggregates as exposed for the plan (best-effort)                         | `usage-<project>.json`       | coarse invocation/bandwidth aggregates; absent on many plans — record `skipped`, not an error    |
+**Transport — prefer `vercel api`, fall back to `curl`:** when the Vercel CLI is
+installed, run rows as `vercel api <endpoint> --token "$VERCEL_TOKEN"` — it
+authenticates the same way, auto-paginates with `--paginate` (list endpoints cap
+at 100 per page and return `pagination.next` cursors), and its `vercel api list`
+subcommand exposes the live OpenAPI spec for the rows below marked
+"OpenAPI-discovered". (The command is beta; on any wobble, fall back to raw
+`curl`.) Raw-curl form: `curl -sS -H "Authorization: Bearer $VERCEL_TOKEN"`
+against `api.vercel.com`, following `pagination.next` cursors manually when a
+response is paginated. Either way, output goes to the named file under
+`$MIGRATION_DIR/capture/api/`. On 403 (token scope) or 429 (rate limit, retry
+once after backoff — documented per-endpoint limits are 200–1000 reads/min,
+orders of magnitude above this capture's volume): record `failed`/partial in the
+manifest and continue — never a halt.
+
+| # | Endpoint (GET)                                                                           | Output file                  | Notes                                                                                                                                                                                                                                                                                                     |
+| - | ---------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | `/v2/teams`                                                                              | `teams.json`                 | team ids for subsequent calls                                                                                                                                                                                                                                                                             |
+| 2 | `/v10/projects?teamId=<id>`                                                              | `projects.json`              | framework, latest deployment metadata                                                                                                                                                                                                                                                                     |
+| 3 | `/v6/deployments?projectId=<id>&limit=20`                                                | `deployments-<project>.json` | production vs preview, timestamps, state                                                                                                                                                                                                                                                                  |
+| 4 | `/v10/projects/<id>/env?teamId=<id>&decrypt=false` **piped through key-name projection** | `env-keys-<project>.json`    | KEY NAMES ONLY — e.g. `... \| jq '[.envs[].key] \| sort'`; never write the raw response (rule 3). The documented response schema carries `value`/`vsmValue`/`legacyValue` fields even with `decrypt=false` — the projection is the REAL protection, not the query param                                   |
+| 5 | `/v9/projects/<id>/domains?teamId=<id>`                                                  | `domains-<project>.json`     | custom domains (paginated — max 100/page)                                                                                                                                                                                                                                                                 |
+| 6 | project cron configuration — OpenAPI-discovered                                          | `crons-<project>.json`       | NOT in the public REST reference; look it up via `vercel api list` and use the GET endpoint found there, else record `skipped` (the `vercel.json` cron declarations from `discover-configs.md` remain the primary source)                                                                                 |
+| 7 | storage/stores enumeration — OpenAPI-discovered                                          | `stores.json`                | store endpoints exist (documented rate limits) but their paths are NOT in the public REST reference; look up the GET endpoints via `vercel api list`, else record `skipped` and rely on env-name + dependency signals (`@vercel/kv`, `KV_REST_API_*`, etc.), which the coupling item already corroborates |
+| 8 | usage/analytics aggregates as exposed for the plan (best-effort)                         | `usage-<project>.json`       | coarse invocation/bandwidth aggregates; absent on many plans — record `skipped`, not an error                                                                                                                                                                                                             |
 
 ## Step 3: Header-Probe Capture (network, Tier 2 only)
 
