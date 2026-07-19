@@ -206,20 +206,39 @@ from list errors alone.)
 | 7  | `gcloud compute instances list --format="json(name, zone, machineType, status, networkInterfaces[].network, networkInterfaces[].subnetwork, disks[].diskSizeGb, serviceAccounts[].email, labels)"`                                                                                                                                                                                                       | `gce.json`              | E    |
 | 8  | `gcloud compute networks list --format="json(name, autoCreateSubnetworks, subnetworks)"`                                                                                                                                                                                                                                                                                                                 | `networks.json`         | E    |
 | 9  | `gcloud compute networks subnets list --format="json(name, region, network, ipCidrRange)"`                                                                                                                                                                                                                                                                                                               | `subnets.json`          | E    |
-| 10 | `gcloud redis instances list --region=<each region seen in the asset-search results or rows 1–9> --format="json(name, tier, memorySizeGb, redisVersion, authorizedNetwork, locationId)"`                                                                                                                                                                                                                 | `redis-<region>.json`   | E    |
+| 10 | `gcloud redis instances list --region=<each walk region — see the region-walk note below> --format="json(name, tier, memorySizeGb, redisVersion, authorizedNetwork, locationId)"`                                                                                                                                                                                                                        | `redis-<region>.json`   | E    |
 | 11 | `gcloud secrets list --format="json(name, replication, createTime)"` — secret NAMES only, never `versions access`                                                                                                                                                                                                                                                                                        | `secrets.json`          | E    |
 | 12 | `gcloud iam service-accounts list --format="json(email, displayName, disabled)"`                                                                                                                                                                                                                                                                                                                         | `sa.json`               | E    |
 | 13 | `gcloud dns managed-zones list --format="json(name, dnsName, visibility)"`                                                                                                                                                                                                                                                                                                                               | `dns.json`              |      |
 | 14 | `gcloud spanner instances list --format="json(name, config, nodeCount, processingUnits)"`                                                                                                                                                                                                                                                                                                                | `spanner.json`          |      |
 | 15 | `gcloud firestore databases list --format="json(name, type, locationId)"`                                                                                                                                                                                                                                                                                                                                | `firestore.json`        |      |
-| 16 | `gcloud ai endpoints list --region=<each region seen> --format="json(name, displayName, deployedModels[].model)"` — only if asset search found `aiplatform.googleapis.com/*` assets or per-service mode                                                                                                                                                                                                  | `vertex-<region>.json`  | E    |
+| 16 | `gcloud ai endpoints list --region=<each walk region — see the region-walk note below> --format="json(name, displayName, deployedModels[].model)"` — only if asset search found `aiplatform.googleapis.com/*` assets or per-service mode                                                                                                                                                                 | `vertex-<region>.json`  | E    |
 | 17 | `bq ls --project_id="$GCP_PROJECT" --format=json` — dataset names/locations only (the `bq` CLI ships with the Cloud SDK; if unavailable, record `skipped` — BigQuery presence then requires the asset-search path)                                                                                                                                                                                       | `bq.json`               | E    |
 | 18 | `gcloud compute firewall-rules list --format="json(name, network, direction, priority)"` — deliberately minimal projection (no source ranges or target tags; the IaC path carries full rule config when Terraform exists)                                                                                                                                                                                | `firewalls.json`        | E    |
 | 19 | `gcloud compute networks vpc-access connectors describe <connector-id> --region=<from the connector id> --format="json(name, network)"` — ONLY for each distinct `run.googleapis.com/vpc-access-connector` annotation value seen in row 1 output; resolves connector → VPC for edge inference                                                                                                            | `connector-<name>.json` | E    |
+| 20 | `gcloud compute regions list --format="json(name)"` — per-service mode only: enumerates the region walk for rows 10 and 16 (region names only; one cheap call)                                                                                                                                                                                                                                           | `regions.json`          |      |
 
 **Row 1 note:** managed Cloud Run lists services across ALL regions when
 `--region` is omitted — do not pass a `--region` flag (a `--region=-` form is
 not documented).
+
+**Region-walk note (rows 10 and 16):** Redis and Vertex endpoint lists are
+per-region, so their coverage is exactly the set of regions walked. Determine it
+by mode:
+
+- **Asset-search mode:** walk the regions of the matching assets in
+  `assets.json` (`redis.googleapis.com/*` locations for row 10,
+  `aiplatform.googleapis.com/*` locations for row 16). Asset search is
+  project-wide, so no region can hide an instance from this walk.
+- **Per-service mode:** walk EVERY region from row 20's `regions.json`. Do NOT
+  derive the walk from regions seen in other rows' output — that heuristic
+  fails in both directions (an instance in a region with no other footprint is
+  silently missed on custom-mode VPCs, while auto-mode VPC subnets inflate the
+  "seen" set to every region anyway, without the honesty of saying so).
+- **Row 20 failed?** Fall back to the regions seen in rows 1–9 output, and
+  append to the manifest (→ `live_metadata.capture_warnings`):
+  `"regions list unavailable — redis/vertex walk limited to regions observed in
+  other captures; instances in other regions are not covered"`.
 
 **Sizing caveat:** SQL `settings.dataDiskSizeGb` is PROVISIONED disk, not actual
 data volume. Downstream database-migration tool selection must treat it as an
@@ -435,16 +454,16 @@ The parent `discover.md` owns the phase status update — do not touch
 
 ## Error Handling
 
-| Error                                              | Behavior                                                                                                                     |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| gcloud missing / no active account / user declines | Exit cleanly with no output (orchestrator falls back to file-based sources)                                                  |
+| Error                                              | Behavior                                                                                                                                           |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| gcloud missing / no active account / user declines | Exit cleanly with no output (orchestrator falls back to file-based sources)                                                                        |
 | Asset search fails (API not enabled)               | Soft-ask once: enable API + `roles/cloudasset.viewer` how-to + docs link; on [Y] retry once; on [N]/retry-fail → per-service (agent never mutates) |
-| Asset search fails (permission denied)             | Soft-ask once: grant `roles/cloudasset.viewer` + docs link; on [Y] retry once; on [N]/retry-fail → per-service                                                 |
-| Asset search fails (other errors)                  | Fall back to per-service immediately — do not soft-ask                                                                                                          |
-| Individual row fails (API not enabled, 403)        | Record `failed`/`skipped`, continue — never a halt (no per-row enable soft-ask)                                              |
-| Token expired mid-run                              | Stop capturing; hand off ("run `gcloud auth login`, then tell me to continue"); on resume re-run Step 2 (captures overwrite) |
-| Capture file unparseable                           | Record warning, skip that file, continue                                                                                     |
-| Every capture failed                               | Exit with no output; tell the user which permissions are missing (`roles/viewer` covers all rows)                            |
+| Asset search fails (permission denied)             | Soft-ask once: grant `roles/cloudasset.viewer` + docs link; on [Y] retry once; on [N]/retry-fail → per-service                                     |
+| Asset search fails (other errors)                  | Fall back to per-service immediately — do not soft-ask                                                                                             |
+| Individual row fails (API not enabled, 403)        | Record `failed`/`skipped`, continue — never a halt (no per-row enable soft-ask)                                                                    |
+| Token expired mid-run                              | Stop capturing; hand off ("run `gcloud auth login`, then tell me to continue"); on resume re-run Step 2 (captures overwrite)                       |
+| Capture file unparseable                           | Record warning, skip that file, continue                                                                                                           |
+| Every capture failed                               | Exit with no output; tell the user which permissions are missing (`roles/viewer` covers all rows)                                                  |
 
 **Key principle:** partial results are better than no results. Record what failed;
 never fabricate what wasn't captured.

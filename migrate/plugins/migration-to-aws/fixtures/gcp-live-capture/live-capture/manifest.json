@@ -14,7 +14,7 @@
       "note": "Cloud Asset API has not been used in project acme-prod before or it is disabled (user declined enable soft-ask)"
     },
     {
-      "command": "gcloud run services list --project=acme-prod --region=- --format=json(...)",
+      "command": "gcloud run services list --project=acme-prod --format=json(...)",
       "file": "run.json",
       "status": "ok",
       "note": null
@@ -68,10 +68,28 @@
       "note": null
     },
     {
+      "command": "gcloud compute regions list --project=acme-prod --format=json(name)",
+      "file": "regions.json",
+      "status": "ok",
+      "note": "per-service mode: enumerates the region walk for redis/vertex rows"
+    },
+    {
       "command": "gcloud redis instances list --project=acme-prod --region=us-central1 --format=json(...)",
       "file": "redis-us-central1.json",
       "status": "ok",
       "note": null
+    },
+    {
+      "command": "gcloud redis instances list --project=acme-prod --region=us-east1 --format=json(...)",
+      "file": "redis-us-east1.json",
+      "status": "ok",
+      "note": "empty result"
+    },
+    {
+      "command": "gcloud redis instances list --project=acme-prod --region=europe-west1 --format=json(...)",
+      "file": "redis-europe-west1.json",
+      "status": "ok",
+      "note": "empty result"
     },
     {
       "command": "gcloud secrets list --project=acme-prod --format=json(...)",

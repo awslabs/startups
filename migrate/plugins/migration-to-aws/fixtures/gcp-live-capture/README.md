@@ -26,6 +26,11 @@ and exercises the designed-for behaviors:
   drift" negative case).
 - Empty `gke.json` / `functions.json` / `gce.json` — services with nothing
   deployed produce no entries and no errors.
+- **Region walk** (`regions.json` + three `redis-<region>.json` captures) — in
+  per-service mode the redis/vertex walk enumerates regions from
+  `gcloud compute regions list` (capture table row 20), not from regions seen
+  in other rows' output; only `us-central1` has an instance, the other two are
+  empty results, not errors.
 
 ## How to replay
 
