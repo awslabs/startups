@@ -92,7 +92,8 @@ an error if it differs (inventory changed — user must re-Discover).
     "aws_monthly_optimized": 0,
     "complexity_tier": "small",
     "pricing_source": "cached",
-    "region_note": null
+    "region_note": null,
+    "calculator_url": null
   },
   "paths": {
     "preferences": "scenarios/scenario-003.preferences.json",

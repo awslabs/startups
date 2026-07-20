@@ -67,6 +67,9 @@ Render, in order:
 | -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
 
 - Mark the active row (`index.active_scenario_id`).
+- For each scenario with a non-null `estimation_summary.calculator_url`,
+  render the scenario name as a link (or an adjacent "open in AWS Pricing
+  Calculator" link) — stakeholders can open and edit the estimate there.
 - Under the table: active vs baseline knob deltas; any `region_note`; remind
   inventory is frozen and Terraform matches the **active** scenario only.
 

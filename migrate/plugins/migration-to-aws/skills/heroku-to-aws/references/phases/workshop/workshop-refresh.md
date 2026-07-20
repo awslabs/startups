@@ -117,6 +117,28 @@ Execute Estimate per **Inner runs** above. Overwrite
 6. Update `index.json`: append scenario, set `active_scenario_id`, set
    `preferences.workshop.active_scenario_id` to match; write preferences.
 
+### 6b. Shareable calculator link (best-effort, never blocks)
+
+If the `aws-pricing-calculator` MCP server is available (its tools respond —
+try `get_server_info` once; do NOT retry on failure):
+
+1. Prefer the one-shot `build_estimate` (create + add services + lint + save):
+   name `"Heroku migration — {scenario label} ({target_region})"`, services
+   from the scenario's Balanced-tier `estimation-infra.json` breakdown, each
+   with the scenario's `target_region` — the calculator computes REGIONAL
+   prices server-side, which is exactly what the us-east-1 cache cannot do.
+   On a structured needs-field-discovery response, resolve via
+   `get_service_fields` and retry ONCE; else fall back to
+   `create_estimate` → `add_service` → `export_estimate`.
+2. Store the returned URL as `estimation_summary.calculator_url` in the
+   scenario manifest.
+3. Any tool failure or an unmappable service → set `calculator_url: null`,
+   note the reason once in chat, continue. The workshop's own numbers remain
+   authoritative; the link is a complementary stakeholder artifact.
+
+If the server is not configured: set `calculator_url: null` silently (the
+sheet already explains regional-rate limits).
+
 ### 7. Hand back
 
 Return to `workshop.md` → run `workshop-compare.md`.

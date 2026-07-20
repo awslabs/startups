@@ -45,6 +45,9 @@ Under the table:
   (`preferences_subset` from the active manifest).
 - If any scenario has a non-null `region_note`, quote it once (and remind:
   regional deltas need awspricing MCP).
+- For each scenario with a non-null `estimation_summary.calculator_url`, one
+  line: `{scenario}: {url}` — a shareable calculator.aws estimate stakeholders
+  can open and edit (AWS computes regional prices server-side there).
 - Remind: discovery inventory is frozen; Generate uses the **active** working-tree
   artifacts.
 
