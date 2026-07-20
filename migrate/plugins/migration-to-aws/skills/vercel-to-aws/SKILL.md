@@ -1,6 +1,6 @@
 ---
 name: vercel-to-aws
-description: "Assess and plan migrations from Vercel to AWS for Next.js applications. Triggers on: migrate from Vercel, Vercel to AWS, move off Vercel, migrate Next.js off Vercel, assess my Vercel migration, Vercel migration assessment, leave Vercel, Vercel to Fargate, Vercel to OpenNext, estimate AWS costs for my Vercel app, Vercel coupling score, should I migrate off Vercel. Runs a pipeline of Pre-Scan, Full Discover (with Coupling Score and Pre-Flight Checks computed unconditionally), Clarify, Recommend (a fixed-precedence three-outcome engine: OpenNext/SST, ECS Fargate, or a Vercel+AWS Hybrid), Estimate (three-tier AWS cost projection vs. current Vercel spend), Generate (production-ready Terraform including baseline.tf, VPC, compute, peripherals, migration scripts, and documentation), and Report (a validated HTML assessment). Unlike GCP or Heroku sources, Vercel's infrastructure (CloudFront behaviors, Lambda tuning, edge routing) cannot be exported directly — it is derived from build output, source configs, and the Vercel REST API. Do not use for: GCP or Heroku migrations to AWS, AWS-to-Vercel reverse migration, general Next.js architecture advice without migration intent, or migrations to non-AWS targets (Cloudflare, a VPS) — those are acknowledged in the report's honesty paragraph but never built."
+description: "Assess and plan migrations from Vercel to AWS for Next.js applications. Triggers on: migrate from Vercel, Vercel to AWS, move off Vercel, migrate Next.js off Vercel, assess my Vercel migration, Vercel migration assessment, leave Vercel, Vercel to Fargate, Vercel to OpenNext, estimate AWS costs for my Vercel app, Vercel coupling score, should I migrate off Vercel, what-if workshop, reprice Vercel migration, compare migration scenarios, workshop mode. Runs a pipeline of Pre-Scan, Full Discover (with Coupling Score and Pre-Flight Checks computed unconditionally), Clarify, Recommend (a fixed-precedence three-outcome engine: OpenNext/SST, ECS Fargate, or a Vercel+AWS Hybrid), Estimate (three-tier AWS cost projection vs. current Vercel spend), Generate (production-ready Terraform including baseline.tf, VPC, compute, peripherals, migration scripts, and documentation), and Report (a validated HTML assessment). After Estimate, an optional what-if workshop can reprice traffic/outcome/region/Multi-AZ/arch scenarios without re-discovery. Unlike GCP or Heroku sources, Vercel's infrastructure (CloudFront behaviors, Lambda tuning, edge routing) cannot be exported directly — it is derived from build output, source configs, and the Vercel REST API. Do not use for: GCP or Heroku migrations to AWS, AWS-to-Vercel reverse migration, general Next.js architecture advice without migration intent, or migrations to non-AWS targets (Cloudflare, a VPS) — those are acknowledged in the report's honesty paragraph but never built."
 ---
 
 # Vercel-to-AWS Migration Skill
@@ -9,13 +9,14 @@ description: "Assess and plan migrations from Vercel to AWS for Next.js applicat
 
 - **Derive, don't discover.** Vercel's infrastructure is opaque and unexportable, but it is deterministic from inputs this skill CAN read: the build output, source configs, `vercel.json`, and the Vercel API. Next.js's Adapter API (stable since 16.2) emits a typed, versioned description of the app — routes, prerenders, runtime targets, caching rules, routing decisions — and Vercel's own adapter is open source on the same public contract. This is the highest-authority signal available; prefer it whenever the app qualifies (see Requirement 4.1 signal priority).
 - **Assessment and generation are both first-class deliverables.** The report carries the honest assessment (Coupling Score, Pre-Flight Checks, Confidence_Tier, recommendation traceability). The generate phase delivers actionable artifacts (production-ready Terraform, migration scripts, documentation). Neither is optional.
-- **Honest by construction.** Every report states what the founder loses (preview deployments first), acknowledges non-AWS landing zones as rational for some segments (the out-of-scope paragraph), and carries explicit Confidence_Tier labels reflecting weaker evidence than the GCP skill's line-item billing triangulation. Never present a stub report as complete, and never let a recommendation imply more certainty than its inputs support.
+- **Honest by construction.** Every report states what the founder loses (preview deployments first), acknowledges non-AWS landing zones as rational for some segments (the out-of-scope paragraph), and carries explicit Confidence_Tier labels. When FOCUS `/v1/billing/charges` (or `vercel usage`) was captured, Vercel spend triangulation is line-item-backed; otherwise confidence stays weaker than the GCP skill's billing export path and Clarify Q6 / plan estimation fill the gap. Never present a stub report as complete, and never let a recommendation imply more certainty than its inputs support.
 - **Generation-aware.** Target OpenNext v3 for execution today. Structure the generate phase so its backend-compute and peripheral logic sits behind an interface that can be swapped for the verified Adapter-API-based AWS adapter at its GA without touching assessment/discovery/recommendation logic.
 - **Version upgrade is an offer, never a gate.** If the detected Next.js version is below 16.2, present upgrading as a confidence-upgrade offer (it unlocks the Adapter API's typed build output) — never as a migration prerequisite. The default path for a cost-driven founder is migrate now on OpenNext v3, whatever their current Next.js version.
 - **Compute unconditionally, filter at render.** Coupling Score and all 10 named Pre-Flight Checks are computed during Discover, before Recommend has run — never gated on a recommendation that doesn't exist yet. The Report phase filters and reframes findings by the eventual outcome; if the founder later overrides the recommendation, the previously-computed-but-suppressed findings for that outcome are already on disk.
 - **Precedence, not judgment.** The Recommendation Engine evaluates a fixed, ordered set of rules and stops at the first that fires (`references/shared/vercel-recommendation-engine.md`). It is not a model deciding case-by-case; every recommendation is traceable to exactly one rule.
 - **Never a dialect mismatch.** SST/OpenNext is used ONLY for the Next.js app surface under Outcome A (and Outcome C's A-shaped backend recursion never triggers it — that recursion always emits Terraform). Outcome B and Outcome C never emit SST. This exception is documented inline wherever it appears, not left implicit.
 - **Report is a rendering, not the deliverable's completion.** A failed report validation does not mean the assessment failed — the underlying findings and recommendation remain valid. The Report phase retries up to 2 additional times on validation failure, then surfaces the incomplete report and stops; it never presents a stub as done.
+- **What-if after Estimate:** After costs are computed, SAs can enter a what-if workshop checkpoint (`references/phases/workshop/workshop.md`) to change traffic shape, outcome (A/B/C/stay), region, Balanced Multi-AZ, or CPU architecture, refresh Recommend when needed + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Workshop arch defaults to **arm64** here (Graviton-first per `graviton.md`); heroku-to-aws defaults workshop arch to **x86_64**.
 
 ---
 
@@ -120,10 +121,7 @@ at `prescan`'s `_init` step (identical mechanism to the other two skills).
 ### Assessment State Management
 
 On every phase that reads or writes `assessment-state.json` (`prescan`, `discover`,
-`clarify`, `recommend`, `estimate`, `generate`, `report` — note `estimate` and
-`generate` are READ-ONLY consumers: no estimate/generate phase file specifies a
-write to it, and none should be improvised; their outputs live in their own
-artifacts):
+`clarify`, `recommend`, `estimate`, `generate`, `report`):
 
 1. **Read before write.** Load the current `assessment-state.json` (if it exists)
    before making any change — never blind-overwrite.
@@ -183,6 +181,12 @@ vercel-to-aws/
 │   │   │   ├── estimate.md                     # Phase 5: Estimate orchestrator
 │   │   │   ├── estimate-cost-engine.md         # Three-tier AWS cost projection vs. Vercel spend
 │   │   │   └── estimate-assemble.md            # estimation-infra.json
+│   │   ├── workshop/
+│   │   │   ├── workshop.md                     # Checkpoint: optional post-Estimate what-if
+│   │   │   ├── workshop-sheet.md               # Assumption sheet knobs
+│   │   │   ├── workshop-refresh.md             # Patch → Recommend? → Estimate → snapshot
+│   │   │   ├── workshop-compare.md             # Side-by-side scenarios
+│   │   │   └── workshop-assemble.md            # Resolve checkpoint → return to Generate
 │   │   ├── generate/
 │   │   │   ├── generate.md                     # Phase 6: Generate orchestrator
 │   │   │   ├── generate-baseline.md            # baseline.tf (GuardDuty, CloudTrail, IMDSv2, budget alerts)
@@ -201,7 +205,8 @@ vercel-to-aws/
 │   │
 │   ├── shared/
 │   │   ├── vercel-recommendation-engine.md     # The precedence-rule decision table (§7 of requirements.md)
-│   │   └── graviton.md                         # ARM64 default for compute (SST/Terraform mechanics)
+│   │   ├── graviton.md                         # ARM64 default for compute (SST/Terraform mechanics)
+│   │   └── schema-workshop-scenarios.md        # scenarios/ + clarify-answers.workshop contract
 │   │
 │   ├── state/
 │   │   └── assessment-state.schema.json        # Skill-owned; NOT vendored (no canonical source elsewhere)
@@ -242,5 +247,14 @@ vercel-to-aws/
 - **Migration mode**: Adapts based on available inputs (Tier 1 required; Tier 2/3 optional and incrementally upgrade confidence)
 - **Cost currency**: USD, always labeled "estimated monthly cost/savings"
 - **Execution target**: OpenNext v3 (swappable for the verified Adapter-API AWS adapter behind an interface once it reaches GA)
+
+**What-if workshop checkpoint:** After Estimate, offer the optional `workshop`
+checkpoint (`_kind: checkpoint`, never `current_phase`) per
+`estimate-assemble.md`. Outer Estimate keeps `current_phase: estimate` until
+workshop is resolved (exited via `workshop-assemble.md` or declined). Warm start:
+if the user says "what if", "reprice", "workshop mode", or "compare scenarios"
+and Estimate artifacts already exist, load
+`references/phases/workshop/workshop.md` directly (respect Generate re-entry
+when Terraform was already produced).
 
 **Critical constraint**: Follow each phase reference file's workflow exactly. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.

@@ -26,12 +26,19 @@ Clarify-gated decision the way gcp-to-aws's Q11b is for its polyglot workload
 mix; it applies unconditionally here because every compute fragment in this
 skill runs the same runtime (Node.js, via `next start` or a Lambda handler).
 
-**Do not ask the founder about this.** Adding a Clarify question for this
-would be a 6th fixed question purely to confirm a default that has no real
+**Do not ask the founder about this in Clarify.** Adding a Clarify question for
+this would be a 6th fixed question purely to confirm a default that has no real
 counter-signal in this skill's fixed workload shape — this skill's 5-question
 minimalism (Requirement 3.1) is deliberate; do not erode it for a decision
 that's safe to default silently, the same way `db.t4g`-class defaults are
 applied without a question elsewhere in this plugin.
+
+**What-if workshop exception:** After Estimate, the optional workshop sheet
+(`references/phases/workshop/`) may set
+`clarify-answers.json.workshop.cpu_architecture` to `x86_64` or `arm64` for
+side-by-side reprice. That override applies only to Estimate (and Generate that
+follows the active scenario) — it is not a Clarify question and does not change
+the silent ARM64 default when workshop is unused.
 
 ## The One Relevant Compatibility Signal This Skill Already Detects
 

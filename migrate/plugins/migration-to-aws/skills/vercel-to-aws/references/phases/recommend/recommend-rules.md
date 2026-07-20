@@ -16,6 +16,12 @@ _contributes:
 **Execute ALL steps in order. Do not skip or deviate. Do not duplicate the
 engine's decision table here — load and follow it.**
 
+**Workshop note:** When `clarify-answers.json.workshop.outcome_override` is set
+to `A`|`B`|`C`|`stay`, `workshop-refresh.md` patches `recommendation.json`
+with `fired_rule: "workshop_override"` (declared contract — not an invented
+`rule_id` field) and does **not** run this fragment. When override is `null`,
+workshop re-invokes Recommend normally through this path.
+
 ---
 
 ## Step 1: Gather Signals
@@ -87,6 +93,12 @@ how unambiguous the firing rule's signal was. Compose `reasons` citing the
 ACTUAL signal values observed this run (the founder's actual Q4 answer content,
 the actual peripheral list, the actual coupling items) — never a generic
 placeholder string.
+
+**Workshop transcript hygiene:** If a Clarify answer object carries
+`workshop_note` (edited in the what-if workshop), any `reasons[]` entry that
+cites that knob MUST be prefixed with `workshop assumption:` so the report does
+not present an SA hypothesis as founder testimony. Untouched answers (no
+`workshop_note`) keep normal founder-sourced phrasing.
 
 ---
 

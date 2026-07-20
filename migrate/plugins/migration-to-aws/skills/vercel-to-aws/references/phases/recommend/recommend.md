@@ -28,11 +28,11 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: recommendation.json
     _on_failure: _halt_and_inform
-  - _assert: "recommendation.outcome is one of {A, B, C, stay} or the array [A, B]; recommendation.fired_rule names exactly one of the 4 precedence rules and reflects ONLY the outer (top-level) decision - it is never changed by a backend-level tiebreak inside the Step-1 recursion; recommendation.tiebreak is true only when rule 4 fired AT THE OUTER LEVEL (never true when outcome is 'C', since only Rule 1 produces 'C')"
+  - _assert: "recommendation.outcome is one of {A, B, C, stay} or the array [A, B]; recommendation.fired_rule is exactly one of {1, 2, 3, 4, workshop_override} and reflects ONLY the outer (top-level) decision - it is never changed by a backend-level tiebreak inside the Step-1 recursion; when fired_rule is 1|2|3|4, tiebreak is true only when rule 4 fired AT THE OUTER LEVEL (never true when outcome is 'C', since only Rule 1 produces 'C'); when fired_rule is workshop_override, tiebreak MUST be false and resolving_input MUST be null"
     _on_failure: _halt_and_inform
-  - _assert: "if outcome is C, recommendation.separable is true; if separable is false, outcome MUST be 'stay'"
+  - _assert: "if outcome is C, recommendation.separable is true; if separable is false, outcome MUST be 'stay'; if outcome is A or B, separable and backend_shape/backend_tiebreak/backend_resolving_input MUST be absent (engine constraint — present only for C/stay)"
     _on_failure: _halt_and_inform
-  - _assert: "if outcome is C, recommendation.backend_shape is one of {A-shaped, B-shaped, [A-shaped, B-shaped], null} and is never used to imply a partial OpenNext/SST scaffold; if backend_shape is the 2-element array, recommendation.backend_tiebreak is true and recommendation.backend_resolving_input is non-null (mirroring tiebreak/resolving_input one level down, per vercel-recommendation-engine.md's Step-1 Recursion field-shape rule); backend_tiebreak and the outer tiebreak are never both true"
+  - _assert: "if outcome is C, recommendation.backend_shape is one of {A-shaped, B-shaped, [A-shaped, B-shaped]} (non-null) and is never used to imply a partial OpenNext/SST scaffold; if backend_shape is the 2-element array, recommendation.backend_tiebreak is true and recommendation.backend_resolving_input is non-null (mirroring tiebreak/resolving_input one level down, per vercel-recommendation-engine.md's Step-1 Recursion field-shape rule); backend_tiebreak and the outer tiebreak are never both true; when fired_rule is workshop_override and outcome is C, backend_shape MUST be exactly A-shaped or B-shaped (not the tiebreak array)"
     _on_failure: _halt_and_inform
   - _assert: "recommendation.outcome and recommendation.backend_shape are never 'EKS' or 'Amplify' - those are report-prose callouts, never engine outputs"
     _on_failure: _halt_and_inform

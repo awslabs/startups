@@ -65,7 +65,9 @@ Calculate projected monthly AWS costs for the recommended Vercel-to-AWS
 architecture, producing `estimation-infra.json` (conforming to
 `references/vendored/estimate/estimation-infra.schema.json`) and classifying
 migration complexity using the tier thresholds in
-`references/vendored/estimate/complexity-tiers.json`.
+`references/vendored/estimate/complexity-tiers.json`. After a successful
+assemble, the skill **offers the optional what-if workshop**
+(`references/phases/workshop/workshop.md`) before Generate.
 
 ---
 

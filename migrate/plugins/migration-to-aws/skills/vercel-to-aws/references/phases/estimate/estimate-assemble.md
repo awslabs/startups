@@ -81,6 +81,21 @@ reflects Outcome B.
 
 ---
 
+
+Also attach optional workshop metadata when present:
+
+```json
+{
+  "workshop": {
+    "scenario_id": "<clarify-answers.workshop.active_scenario_id or null>",
+    "region_note": "<from cost-engine, or null>"
+  }
+}
+```
+
+Omit `workshop` when neither field is set.
+
+
 ## Step 2: Validate Property-16 (Arithmetic Integrity)
 
 Read back `estimation-infra.json.projected_costs.breakdown`. When
@@ -137,14 +152,29 @@ GATE_FAIL | phase=estimate | field=<failing field> | reason=<missing|invalid|ari
 
 Do NOT modify artifacts to force a pass. Do NOT update `.phase-status.json`.
 
-**On all-pass:** emit exactly:
+**On all-pass (outer Estimate only):** emit exactly:
 
 ```
 HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json
 ```
 
-Then update `.phase-status.json`: mark `phases.estimate` `"completed"`, set
-`current_phase` to `generate`, update `last_updated`.
+### Inner workshop reprice — skip state transition
+
+When invoked from `workshop-refresh.md` (inner reprice): write
+`estimation-infra.json`, optionally soft-check Property-16, present a brief
+summary, then **return to the workshop loop**. Do **not** emit `HANDOFF_OK`, do
+**not** update `.phase-status.json`, do **not** offer the what-if workshop below.
+
+### Outer Estimate — deferred Generate advance
+
+After outer-run `HANDOFF_OK`:
+
+1. Mark `phases.estimate` → `"completed"`.
+2. Ensure `phases.workshop` exists (seed `"pending"` if missing).
+3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
+   `"estimate"` until the workshop checkpoint is resolved (entered then exited,
+   or declined).
+4. Offer the what-if workshop below.
 
 ---
 
@@ -177,10 +207,36 @@ resolve it."
 
 ---
 
+
+
+---
+
+## Post-Estimate: What-If Workshop Offer
+
+After outer-run `HANDOFF_OK`, the summary above, and the deferred phase-status
+update — offer:
+
+```
+Estimate complete. Before Generate, you can run a what-if workshop:
+change traffic shape, outcome (A/B/C), region, Multi-AZ, or CPU architecture
+(arm64 vs x86) and compare priced scenarios without re-discovering.
+
+[A] Enter what-if workshop
+[B] Proceed toward Generate
+```
+
+- **A** → Load `references/phases/workshop/workshop.md` (checkpoint; baseline
+  capture if `scenarios/` missing, then the sheet). Keep
+  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
+- **B** → Mark `phases.workshop` → `"completed"` (resolved/declined). Set
+  `current_phase` → `"generate"`. Continue toward Generate / Report per
+  `SKILL.md`.
+
 ## Scope Boundary
 
 **This assembler covers writing `estimation-infra.json`, Property-16
-validation, the completion gate, and the user-facing summary ONLY.**
+validation, the completion gate, the user-facing summary, and the workshop
+offer ONLY.**
 
 FORBIDDEN — Do NOT include ANY of:
 
@@ -188,4 +244,4 @@ FORBIDDEN — Do NOT include ANY of:
 - Terraform generation
 - Advancing `.phase-status.json` before `HANDOFF_OK` is emitted
 
-**Your ONLY job: write, validate, gate, present, hand off.**
+**Your ONLY job: write, validate, gate, present, hand off (and offer workshop).**

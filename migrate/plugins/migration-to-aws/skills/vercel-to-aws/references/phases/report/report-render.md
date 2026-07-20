@@ -158,16 +158,23 @@ ALWAYS render this section, regardless of outcome. Read
 `clarify_answers.*`. State:
 
 - Which precedence rule fired (use the word "fired" or "rule" — the validator
-  checks for this).
+  checks for this). When `fired_rule` is `"workshop_override"` (what-if
+  workshop), say that an SA **workshop override** set the outcome (not an
+  engine precedence rule), cite `recommendation.outcome` / `backend_shape`, and
+  still use the word "rule" or "fired" so validators pass.
 - Map AT LEAST the preview-dependence answer (`Q4`) and the traffic-shape
-  answer/absence (`Q1`) to their design consequences.
+  answer/absence (`Q1`) to their design consequences. If a Clarify answer has
+  `workshop_note`, quote the **original** founder answer from that note and
+  label the current value as a workshop assumption (do not present the edited
+  answer as founder testimony).
 - If `recommendation.tiebreak == true`: state which rule WOULD have applied
   had the log drain data been available (use the phrase "log drain" or
   "resolving" — the validator checks for this too).
 - If a conflicted profile was resolved by precedence (Requirement 7.3): state
   explicitly that this was resolved by precedence, not a judgment call, citing
   which rule fired first and which would have applied to the same signals had
-  an earlier rule not already won.
+  an earlier rule not already won. Skip this bullet when
+  `fired_rule == "workshop_override"`.
 
 ---
 

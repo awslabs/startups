@@ -250,7 +250,7 @@ separately from this engine:
 ```json
 {
   "outcome": "A" | "B" | "C" | "stay" | ["A", "B"],
-  "fired_rule": 1 | 2 | 3 | 4,
+  "fired_rule": 1 | 2 | 3 | 4 | "workshop_override",
   "tiebreak": false,
   "separable": true,
   "backend_shape": "A-shaped" | "B-shaped" | ["A-shaped", "B-shaped"] | null,
@@ -279,6 +279,12 @@ separately from this engine:
   `fired_rule`; it is tracked entirely separately (see `backend_tiebreak`
   below), specifically so this constraint never has to account for a
   recursion-internal tiebreak.
+- **Workshop exception:** `fired_rule: "workshop_override"` is legal only when
+  `workshop-refresh.md` forces an outcome (not when this engine runs). In that
+  case `tiebreak` is always `false` and `resolving_input` is always `null`;
+  field surgery per override target is owned by `workshop-refresh.md` (drop
+  `separable`/`backend_*` for A/B; require `separable: true` +
+  `backend_shape` A- or B-shaped for C).
 - `tiebreak` refers to the OUTER decision ONLY (Step 4 firing at the top level,
   which can only happen when `outcome` is the 2-element `["A","B"]` array —
   i.e. `outcome` is never `"C"` when `tiebreak == true`, since Rule 1 already

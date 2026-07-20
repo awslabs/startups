@@ -8,7 +8,8 @@
     "clarify": "completed",
     "recommend": "completed",
     "estimate": "completed",
-    "generate": "pending",
+    "workshop": "completed",
+    "generate": "in_progress",
     "report": "pending"
   }
 }

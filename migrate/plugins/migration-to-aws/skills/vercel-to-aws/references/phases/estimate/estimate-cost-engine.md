@@ -33,6 +33,22 @@ infrastructure pricing data). Check the `_meta.last_updated` date:
 Each service object carries its rates and (where relevant) a
 `multi_az_handling` key. Look up the rates from there — do not hardcode them.
 
+### Step 0a-workshop: What-if knobs (when present)
+
+Read optional `clarify-answers.json.workshop` (created by
+`references/phases/workshop/`). Defaults when absent match skill norms:
+
+1. `target_region` (default `us-east-1`). Pricing cache is us-east-1 — when
+   `workshop.target_region` differs, prefer MCP lookups for that region; when
+   still using cache rates, set `workshop.region_note`:
+   `"Rates from us-east-1 cache applied to {target_region} — verify via awspricing MCP for regional deltas."`
+2. `availability_multi_az_balanced` — when `true`, price Balanced-tier data
+   services Multi-AZ (Premium already does).
+3. `cpu_architecture` — `arm64` (default) or `x86_64`; Graviton rates when
+   workshop is an explicit comparison override.
+4. Carry `workshop.active_scenario_id` into the contribution as
+   `workshop.scenario_id` for the assembler.
+
 ### Step 0b: MCP Availability Check (only if cache stale or service not listed)
 
 Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts,

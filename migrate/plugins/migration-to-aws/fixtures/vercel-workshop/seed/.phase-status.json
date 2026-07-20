@@ -1,13 +1,13 @@
 {
-  "migration_id": "0721-1725",
-  "last_updated": "2026-07-21T17:56:00Z",
+  "migration_id": "0719-vw",
+  "last_updated": "2026-07-19T18:30:00Z",
   "current_phase": "estimate",
   "phases": {
     "prescan": "completed",
     "discover": "completed",
     "clarify": "completed",
     "recommend": "completed",
-    "estimate": "pending",
+    "estimate": "completed",
     "workshop": "pending",
     "generate": "pending",
     "report": "pending"

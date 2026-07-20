@@ -27,7 +27,7 @@ Write `recommend-rules.md`'s contribution directly, adding phase metadata:
   "phase": "recommend",
   "timestamp": "<ISO 8601>",
   "outcome": "A" | "B" | "C" | "stay" | ["A", "B"],
-  "fired_rule": 1 | 2 | 3 | 4,
+  "fired_rule": 1 | 2 | 3 | 4 | "workshop_override",
   "tiebreak": false,
   "separable": true,
   "backend_shape": "A-shaped" | "B-shaped" | ["A-shaped", "B-shaped"] | null,
@@ -38,6 +38,17 @@ Write `recommend-rules.md`'s contribution directly, adding phase metadata:
   "resolving_input": null
 }
 ```
+
+`fired_rule: "workshop_override"` is legal **only** when produced by
+`workshop-refresh.md`'s outcome-override path (not by the precedence engine).
+Field surgery for that path is owned by `workshop-refresh.md` § Outcome override
+patch — do not invent parallel fields such as `rule_id` / `rule_rationale`.
+
+When `fired_rule` is `"workshop_override"`: `tiebreak` is always `false`,
+`resolving_input` is always `null`. For outcomes `A`/`B`, omit `separable` and
+all `backend_*` keys. For `C`, require `separable: true` and
+`backend_shape` of `"A-shaped"` or `"B-shaped"`. For `stay`, require a boolean
+`separable` and omit `backend_*`.
 
 ---
 
@@ -86,19 +97,24 @@ Re-read `recommendation.json` from disk, then run the checks declared in
 
 1. The file exists and parses as valid JSON.
 2. `outcome` is one of `{A, B, C, stay}` or the array `[A, B]`; `fired_rule`
-   names exactly one of the 4 rules AND reflects only the OUTER decision;
-   `tiebreak` is `true` only when rule 4 fired AT THE OUTER LEVEL (never `true`
-   when `outcome == "C"`, since only Rule 1 produces `"C"`).
+   is exactly one of `{1, 2, 3, 4, "workshop_override"}` AND reflects only the
+   OUTER decision. When `fired_rule` is numeric: `tiebreak` is `true` only when
+   rule 4 fired AT THE OUTER LEVEL (never `true` when `outcome == "C"`). When
+   `fired_rule == "workshop_override"`: `tiebreak` MUST be `false` and
+   `resolving_input` MUST be `null`.
 3. If `outcome == "C"`, `separable == true`; if `separable == false`, `outcome`
-   MUST be `"stay"`.
+   MUST be `"stay"`. If `outcome` is `A` or `B`, `separable` and `backend_*`
+   keys MUST be absent.
 4. If `outcome == "C"`, `backend_shape` is one of `{A-shaped, B-shaped,
-   [A-shaped, B-shaped], null}` and this document's own review confirms it is
+   [A-shaped, B-shaped]}` (non-null) and this document's own review confirms it is
    never used anywhere to imply a partial OpenNext/SST scaffold (a documentation
    check, not a runtime one — this constraint is enforced structurally by
    `scaffold-opennext.md`/`scaffold-fargate.md` never being triggered together).
    If `backend_shape` is the 2-element array, `backend_tiebreak == true` and
    `backend_resolving_input` is non-null; `backend_tiebreak` and the outer
-   `tiebreak` are never both `true` in the same recommendation.
+   `tiebreak` are never both `true` in the same recommendation. For
+   `workshop_override` + `C`, `backend_shape` MUST be exactly `A-shaped` or
+   `B-shaped`.
 5. `outcome` and `backend_shape` are never `"EKS"` or `"Amplify"`.
 
 **On any failure:** emit exactly:
@@ -109,7 +125,7 @@ GATE_FAIL | phase=recommend | field=<failing field> | reason=<missing|invalid>
 
 Do NOT modify artifacts to force a pass. Do NOT update `.phase-status.json`.
 
-**On all-pass:** emit exactly:
+**On all-pass (outer Recommend only):** emit exactly:
 
 ```
 HANDOFF_OK | phase=recommend | artifacts=recommendation.json
@@ -118,6 +134,11 @@ HANDOFF_OK | phase=recommend | artifacts=recommendation.json
 Then update `.phase-status.json`: mark `phases.recommend` `"completed"`, set
 `current_phase` to `estimate`, update `last_updated` — in the same turn as
 `recommend.md`'s Step 4 output message.
+
+> **Inner workshop reprice:** When Recommend is invoked from
+> `workshop-refresh.md`, stop after writing `recommendation.json` (and soft
+> validation). Do **not** emit `HANDOFF_OK` or update `.phase-status.json` —
+> see `workshop-refresh.md` § Inner runs.
 
 ---
 
