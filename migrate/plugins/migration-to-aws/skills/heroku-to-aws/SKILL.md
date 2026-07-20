@@ -134,7 +134,9 @@ heroku-to-aws/
 │   │   ├── generate/
 │   │   │   ├── generate.md                     # Phase 5: Generate orchestrator
 │   │   │   ├── generate-terraform.md           # Terraform configurations
-│   │   │   └── generate-docs.md                # MIGRATION_GUIDE.md + README.md
+│   │   │   ├── generate-docs.md                # MIGRATION_GUIDE.md + README.md
+│   │   │   ├── generate-report.md              # migration-report.html (stakeholder + scenarios)
+│   │   │   └── generate-eks.md                 # EKS manifests when design has EKS
 │   │   └── feedback/
 │   │       └── feedback.md                     # Phase 6: Feedback collection (reuses shared)
 │   │

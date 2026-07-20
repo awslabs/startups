@@ -812,6 +812,7 @@ This directory contains all artifacts needed to migrate your Heroku application(
 | `terraform/security-groups.tf` | Security group rules |
 | `MIGRATION_GUIDE.md` | Step-by-step migration procedure |
 | `README.md` | This file — artifact listing and quick start |
+| `migration-report.html` | Stakeholder summary (costs + optional what-if scenarios); draft for review |
 {{IF has_postgres}}
 | `scripts/migrate-postgres.sh` | PostgreSQL data migration script |
 {{ENDIF}}
@@ -830,7 +831,8 @@ This directory contains all artifacts needed to migrate your Heroku application(
 
 > **SA tip:** After Estimate (before or instead of regenerating), you can re-enter
 > what-if workshop mode to change region, HA, compute target, or Graviton
-> preference and compare up to 5 scenarios without re-discovery.
+> preference and compare up to 5 scenarios without re-discovery. Generated
+> `migration-report.html` includes the scenario comparison when variants exist.
 
 ---
 
