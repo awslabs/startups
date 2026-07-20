@@ -2,7 +2,7 @@
 
 **Standalone flow** — Used when ONLY `ai-workload-profile.json` exists (no infrastructure or billing artifacts). Infrastructure stays on GCP; only AI/LLM calls move to AWS Bedrock.
 
-Produces the same `preferences.json` output but with `design_constraints` limited to region and `ai_constraints` fully populated. Questions are presented in **two progressive batches** with an intermediate save — partial answers persist across sessions.
+Produces the same `preferences.json` output but with `design_constraints` limited to region and compliance, `startup_constraints` populated, and `ai_constraints` fully populated. Questions are presented in **two progressive batches** with an intermediate save — partial answers persist across sessions.
 
 ---
 
@@ -51,9 +51,9 @@ Check `$MIGRATION_DIR/` for existing state:
 
 If `migration-preview.json` exists and `ai_complexity_signal == "likely_simple"` (single model, non-agentic, no multi-provider, no multi-model routing):
 
-> "Your AI migration looks straightforward — one model swapping to Bedrock. I only need 3 quick answers to complete your migration plan."
+> "Your AI migration looks straightforward — one model swapping to Bedrock. I only need 5 quick answers to complete your migration plan."
 
-Present **only Q2, Q3, Q4** (Q1 framework is extracted; Q5 model is extracted; Q6 capabilities are extracted; Q7–Q10 use defaults). After answering, skip directly to Step 3.
+Present **only Q1.5, Q2, Q3, Q4, Q11** (Q1 framework is extracted; Q5 model is extracted; Q6 capabilities are extracted; Q7–Q10 use defaults). **Q1.5 (compliance) and Q11 (Activate status) are never dropped from the fast path** — compliance gates Bedrock regions and models, and Activate status cannot be inferred from spend. After answering, skip directly to Step 3.
 
 If `ai_complexity_signal` is `"standard"` or `"complex"`, or `migration-preview.json` is absent, continue to Step 1.75 (mini assumption sheet), then Step 2.
 
@@ -88,11 +88,11 @@ Questions resolved on this sheet are **not** re-asked in the batches below; reco
 
 ---
 
-## Step 2: Ask Questions in Progressive Batches (Q1–Q10)
+## Step 2: Ask Questions in Progressive Batches (Q1–Q11, incl. Q1.5)
 
 Questions are presented in two batches with a save after the first. The user can skip individual questions (defaults applied), say **"use defaults for the rest"** to apply defaults for all remaining questions and proceed immediately, or answer normally.
 
-### Batch 1 — AI Strategy & Setup (Q1–Q5)
+### Batch 1 — AI Strategy & Setup (Q1–Q5 + Q1.5)
 
 Present with this intro:
 
@@ -117,6 +117,28 @@ _Skip when:_ `integration.gateway_type` AND `integration.frameworks` are both po
 > A) No framework — direct API calls | B) LLM router/gateway | C) LangChain / LangGraph | D) Multi-agent framework | E) OpenAI Agents SDK | F) MCP/A2A | G) Voice platform
 
 Interpret → `ai_framework` array. Default: auto-detect, fallback `["direct"]`.
+
+## Q1.5 — Do you have any compliance or regulatory requirements? (select all that apply)
+
+Compliance gates Bedrock regions, models, and logging **even though your infrastructure stays on GCP** — customer data flows to AWS the moment model calls do. Same answer options and decision logic as Q2 in `clarify-global.md`; the impacts below are the Bedrock-specific subset that applies on this path.
+
+> Even with infrastructure staying on GCP, your prompts and completions will be processed on AWS. Compliance requirements determine which Bedrock regions, models, and configurations are available.
+>
+> A) None | B) SOC 2 / ISO 27001 | C) PCI DSS | D) HIPAA | E) FedRAMP / Government | F) GDPR / Data residency | G) CCPA / CPRA | H) I don't know
+>
+> _(Multiple selections allowed)_
+
+| Answer            | Bedrock Impact                                                                                                                                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| None              | Full model catalog, any Bedrock region; `global.` inference profiles allowed                                                                                                                                                    |
+| SOC 2 / ISO 27001 | CloudTrail on Bedrock API calls; encryption at rest for Knowledge Bases and logs                                                                                                                                                |
+| PCI DSS           | No cardholder data in prompts without tokenization; CloudTrail + scoped IAM; dedicated logging config                                                                                                                           |
+| HIPAA             | BAA required before PHI in prompts; BAA-eligible Bedrock models only; **Guardrails PII masking does NOT apply to CloudWatch logs — original content is logged; encrypt with KMS + restrict IAM**; us-east-1/us-west-2 preferred |
+| FedRAMP           | GovCloud Bedrock only (us-gov-east-1/us-gov-west-1) — materially smaller model catalog; verify target model availability before committing the migration                                                                        |
+| GDPR              | EU Bedrock regions (eu-west-1, eu-central-1); **geographic (`eu.`) inference profiles only — `global.` profiles route outside the EU boundary**; document cross-border transfer from GCP EU                                     |
+| CCPA / CPRA       | Prompt/completion retention policy; deletion workflow for logged content; CloudTrail audit logging                                                                                                                              |
+
+Interpret → `design_constraints.compliance` array (same format as the full flow). Default: A → `"none"` with `chosen_by: "default"` — add a report caveat that compliance was not confirmed. Cross-check with Q4: a GDPR answer constrains the target region jointly with cross-cloud latency.
 
 ## Q2 — What matters most for your AI application?
 
@@ -210,7 +232,7 @@ After the user responds to Batch 1:
 ```
 Got it — your AI strategy preferences are saved.
 
-Last section — 5 questions about your technical requirements, then we're ready to design.
+Last section — 6 questions about your technical requirements, then we're ready to design.
 You can answer each, skip individual ones, or say "use defaults for the rest."
 
 --- Technical Requirements ---
@@ -218,7 +240,7 @@ You can answer each, skip individual ones, or say "use defaults for the rest."
 
 **"Use defaults for the rest" handling:** If the user says this during Batch 1, apply defaults for all unanswered Batch 1 questions and all Batch 2 questions, then skip directly to Step 3.
 
-### Batch 2 — Technical Requirements (Q6–Q10)
+### Batch 2 — Technical Requirements (Q6–Q11)
 
 ## Q6 — What input types must the model accept: text only, images (vision), or audio/video?
 
@@ -283,6 +305,28 @@ Same decision logic as Q17 in `clarify-ai.md`.
 
 Interpret → `ai_critical_feature`. Default: J → no override.
 
+## Q11 — Have you applied for AWS Activate credits?
+
+Same rationale, eligibility rules, and answer semantics as Q27 in `clarify-ai.md`. AI-only migrations are exactly the workloads Activate credits offset — Bedrock usage (Claude, Llama, Nova) is credit-eligible. **Never infer funding stage or Activate tier from Q3 spend** (Q27 rule applies here unchanged).
+
+> AWS Activate credits offset Bedrock costs during and after migration — including Claude, Llama, and Nova models. Eligible startups can get $5K–$200K depending on funding stage.
+>
+> A) Yes — already have AWS Activate credits
+> B) No — haven't applied yet (self-funded or pre-VC)
+> C) No — VC/accelerator-backed but haven't applied
+> D) I don't know
+
+| Answer                     | Recommendation Impact                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Already have credits       | Note credit balance in migration plan; flag Bedrock usage as credit-eligible                                          |
+| No — self-funded           | Flag **AWS Activate Founders** (up to $5,000, self-service): aws.amazon.com/startups/credits — apply before migrating |
+| No — VC/accelerator-backed | Flag **AWS Activate Portfolio** (up to $200,000): requires Activate Provider Org ID from your VC/accelerator          |
+| Don't know                 | Surface both tiers; recommend checking with investors/accelerator for Org ID                                          |
+
+Escalations (adapted to AI-only signals): if `ai_monthly_spend` is `">$10K"`, also flag **AWS Credits for AI Startups** ($200,000+, invite-only — contact your AWS Account Manager). If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND the workload is agentic (Q1 includes D/E/F or Q10 = F), also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort): aws.amazon.com/startups/generative-ai/accelerator
+
+Interpret → `startup_program_status`: A → `"has_credits"`, B → `"eligible_founders"`, C → `"eligible_portfolio"`, D → `"unknown"`. Default: D → `"unknown"` — downstream artifacts must use neutral Activate copy (both tiers, no "your status: eligible_*").
+
 ### Batch 2 Complete
 
 After the user responds to Batch 2, interpret all Batch 2 answers and proceed to Step 3.
@@ -297,25 +341,27 @@ Write `$MIGRATION_DIR/preferences.json`:
 
 **Schema — AI-only structure:**
 
-| Field                      | Path                                      | Notes                                       |
-| -------------------------- | ----------------------------------------- | ------------------------------------------- |
-| `migration_type`           | `metadata.migration_type`                 | `"ai-only"` — downstream skips infra phases |
-| `discovery_artifacts`      | `metadata.discovery_artifacts`            | `["ai-workload-profile.json"]`              |
-| `questions_asked`          | `metadata.questions_asked`                | Array of Q IDs actually presented           |
-| `questions_defaulted`      | `metadata.questions_defaulted`            | Array of Q IDs where defaults used          |
-| `questions_extracted`      | `metadata.questions_extracted`            | Array of Q IDs skipped via auto-detect      |
-| `target_region`            | `design_constraints.target_region`        | Derived from GCP region or cross-cloud pref |
-| `ai_framework`             | `ai_constraints.ai_framework`             | From Q1                                     |
-| `ai_priority`              | `ai_constraints.ai_priority`              | From Q2                                     |
-| `ai_monthly_spend`         | `ai_constraints.ai_monthly_spend`         | From Q3                                     |
-| `cross_cloud`              | `ai_constraints.cross_cloud`              | From Q4 (unique to AI-only)                 |
-| `ai_model_baseline`        | `ai_constraints.ai_model_baseline`        | From Q5                                     |
-| `ai_vision`                | `ai_constraints.ai_vision`                | From Q6                                     |
-| `ai_token_volume`          | `ai_constraints.ai_token_volume`          | From Q7                                     |
-| `ai_latency`               | `ai_constraints.ai_latency`               | From Q8                                     |
-| `ai_complexity`            | `ai_constraints.ai_complexity`            | From Q9                                     |
-| `ai_critical_feature`      | `ai_constraints.ai_critical_feature`      | From Q10                                    |
-| `ai_capabilities_required` | `ai_constraints.ai_capabilities_required` | Derived from `capabilities_summary`         |
+| Field                      | Path                                         | Notes                                       |
+| -------------------------- | -------------------------------------------- | ------------------------------------------- |
+| `migration_type`           | `metadata.migration_type`                    | `"ai-only"` — downstream skips infra phases |
+| `discovery_artifacts`      | `metadata.discovery_artifacts`               | `["ai-workload-profile.json"]`              |
+| `questions_asked`          | `metadata.questions_asked`                   | Array of Q IDs actually presented           |
+| `questions_defaulted`      | `metadata.questions_defaulted`               | Array of Q IDs where defaults used          |
+| `questions_extracted`      | `metadata.questions_extracted`               | Array of Q IDs skipped via auto-detect      |
+| `target_region`            | `design_constraints.target_region`           | Derived from GCP region or cross-cloud pref |
+| `compliance`               | `design_constraints.compliance`              | From Q1.5 — gates Bedrock regions/models    |
+| `startup_program_status`   | `startup_constraints.startup_program_status` | From Q11 — same field as full-flow Q27      |
+| `ai_framework`             | `ai_constraints.ai_framework`                | From Q1                                     |
+| `ai_priority`              | `ai_constraints.ai_priority`                 | From Q2                                     |
+| `ai_monthly_spend`         | `ai_constraints.ai_monthly_spend`            | From Q3                                     |
+| `cross_cloud`              | `ai_constraints.cross_cloud`                 | From Q4 (unique to AI-only)                 |
+| `ai_model_baseline`        | `ai_constraints.ai_model_baseline`           | From Q5                                     |
+| `ai_vision`                | `ai_constraints.ai_vision`                   | From Q6                                     |
+| `ai_token_volume`          | `ai_constraints.ai_token_volume`             | From Q7                                     |
+| `ai_latency`               | `ai_constraints.ai_latency`                  | From Q8                                     |
+| `ai_complexity`            | `ai_constraints.ai_complexity`               | From Q9                                     |
+| `ai_critical_feature`      | `ai_constraints.ai_critical_feature`         | From Q10                                    |
+| `ai_capabilities_required` | `ai_constraints.ai_capabilities_required`    | Derived from `capabilities_summary`         |
 
 Each `ai_constraints` field uses `{ "value": ..., "chosen_by": "user"|"extracted"|"derived" }` format. No nulls. All schema rules from `clarify.md` apply.
 
