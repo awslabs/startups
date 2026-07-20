@@ -2,26 +2,13 @@
 
 ## Inner runs (artifact-only) — mandatory
 
-When re-running Design or Estimate from this file: **rewrite artifacts only**.
-Do **not** advance the backbone mid-workshop.
-
-| Allowed                                               | Forbidden                                               |
-| ----------------------------------------------------- | ------------------------------------------------------- |
-| Overwrite `aws-design.json` / `estimation-infra.json` | Set design/estimate to `in_progress`                    |
-| Soft-validate estimate invariants before snapshot     | Emit `HANDOFF_OK` from Design or Estimate               |
-| Brief chat note that reprice finished                 | Touch `current_phase` or advance to `generate`          |
-| Keep `phases.workshop` as `in_progress`               | Run Estimate's post-Estimate workshop offer (recursion) |
-
-Leave `phases.design` and `phases.estimate` as `"completed"`. Leave
-`current_phase` at `"estimate"` until `workshop-assemble.md`.
-
-Concrete slices:
-
-1. **Design** — run `design.md` / `design-infra.md` enough to rewrite
-   `aws-design.json` (and siblings if the run uses them). Skip handoff and
-   phase-status updates.
-2. **Estimate** — run `estimate.md` / `estimate-infra.md` enough to rewrite
-   `estimation-infra.json`. Skip `HANDOFF_OK`, phase-status, and the workshop offer.
+Follow the canonical allowed/forbidden contract in
+`references/vendored/workshop/workshop-invariants.md` § 3 for every inner
+Design/Estimate run. GCP specifics: Design follows `design.md` § Inner
+workshop reprice and Estimate follows `estimate.md` § Inner workshop
+reprice (both skip state transitions); `phases.design`/`phases.estimate`
+stay `"completed"`; `current_phase` stays `"estimate"` until
+`workshop-assemble.md`.
 
 ## Baseline capture
 
@@ -86,22 +73,13 @@ workshop reprice. Chat note after Estimate:
 
 ### 6b. Shareable calculator link (best-effort, never blocks)
 
-If the `aws-pricing-calculator` MCP server is available (try `get_server_info`
-once; do NOT retry on failure):
-
-1. Prefer the one-shot `build_estimate` (create + add + lint + save): name
-   `"GCP migration — {scenario label} ({target_region})"`, services from the
-   scenario's Balanced-tier `estimation-infra.json` breakdown, each with the
-   scenario's `target_region` — the calculator computes REGIONAL prices
-   server-side, which the us-east-1 cache cannot. On a structured
-   needs-field-discovery response, resolve via `get_service_fields` and retry
-   ONCE; else fall back to `create_estimate` → `add_service` →
-   `export_estimate`.
-2. Store the URL as `estimation_summary.calculator_url` in the manifest.
-3. Any failure or unmappable service → `calculator_url: null`, one chat note,
-   continue. Workshop numbers stay authoritative; the link is a stakeholder
-   artifact. (This aligns with #49's Estimate-phase calculator integration —
-   same server, same degradation rules.)
+Follow the canonical procedure in
+`references/vendored/workshop/workshop-invariants.md` § 6 with
+`{SKILL_LABEL}` = "GCP" — probe once, prefer `build_estimate` on the
+scenario's Balanced-tier services, store the URL as
+`estimation_summary.calculator_url`, null + one chat note on any failure.
+(Aligns with #49's Estimate-phase calculator integration — same server,
+same degradation rules.)
 
 ### 7. Hand back
 

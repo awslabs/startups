@@ -7,31 +7,13 @@ _of_phase: workshop
 
 ## Inner runs (artifact-only) — mandatory
 
-When this fragment re-runs Recommend or Estimate, treat them like an `_exec`
-worker's WORK slice (`INTERPRETER.md` § `_exec`): **fragments + assembler
-artifact write only**. Do **not** advance the backbone mid-workshop.
-
-| Allowed                                                   | Forbidden                                                                                                                        |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Overwrite `recommendation.json` / `estimation-infra.json` | Set recommend/estimate to `in_progress`                                                                                          |
-| Soft-validate before snapshot                             | Emit `HANDOFF_OK` from Recommend or Estimate                                                                                     |
-| Brief chat note that reprice finished                     | Touch `.phase-status.json` `current_phase` or advance to `generate`                                                              |
-| Keep `phases.workshop` as `in_progress`                   | Run Estimate's post-Estimate workshop offer (recursion)                                                                          |
-|                                                           | Evaluate Recommend/Estimate `_preconditions` that fail on `_check_single_active_phase` because workshop is already `in_progress` |
-
-Leave `phases.recommend` and `phases.estimate` as `"completed"`. Leave
-`current_phase` at `"estimate"` until the user exits via `workshop-assemble.md`.
-
-Concrete file slices:
-
-1. **Recommend** (when not using `outcome_override` patch) — run recommend
-   fragments + write portion of `recommend-assemble.md`. Skip `HANDOFF_OK` and
-   phase-status advance. Also refresh the synthetic
-   `findings.recommend.fired_rule` entry in `assessment-state.json` when that
-   file exists.
-2. **Estimate** — run `estimate-cost-engine.md` + write + Present Summary in
-   `estimate-assemble.md`. Skip `HANDOFF_OK`, phase-status, deferred-advance,
-   and the what-if workshop offer.
+Follow `references/vendored/workshop/workshop-invariants.md` § 3 (canonical
+allowed/forbidden contract) for every inner Recommend/Estimate run. Vercel
+specifics: leave `phases.recommend` and `phases.estimate` as `"completed"`;
+inner Recommend = fragments + the write portion of `recommend-assemble.md`
+only; inner Estimate = `estimate-cost-engine.md` + write + Present Summary,
+skipping `HANDOFF_OK`, phase-status, deferred-advance, and the workshop
+offer; `current_phase` stays `"estimate"` until `workshop-assemble.md`.
 
 ## Baseline capture (no Recommend/Estimate yet)
 
@@ -160,22 +142,11 @@ Cost-engine MUST honor `workshop.target_region`,
 
 ### 6b. Shareable calculator link (best-effort, never blocks)
 
-If the `aws-pricing-calculator` MCP server is available (try `get_server_info`
-once; do NOT retry on failure):
-
-1. Prefer the one-shot `build_estimate` (create + add + lint + save): name
-   `"Vercel migration — {scenario label} ({target_region})"`, services from
-   the scenario's Balanced-tier `estimation-infra.json` breakdown (the
-   PRIMARY outcome's set; skip `tiebreak_alternative`), each with the
-   scenario's `target_region` — the calculator computes REGIONAL prices
-   server-side, which the us-east-1 cache cannot. On a structured
-   needs-field-discovery response, resolve via `get_service_fields` and retry
-   ONCE; else fall back to `create_estimate` → `add_service` →
-   `export_estimate`.
-2. Store the URL as `estimation_summary.calculator_url` in the manifest.
-3. Any failure or unmappable service → `calculator_url: null`, one chat note,
-   continue. Workshop numbers stay authoritative; the link is a stakeholder
-   artifact.
+Follow `references/vendored/workshop/workshop-invariants.md` § 6 with
+`{SKILL_LABEL}` = "Vercel" and the PRIMARY outcome's Balanced services
+(skip `tiebreak_alternative`) — probe once, prefer `build_estimate`, store
+the URL as `estimation_summary.calculator_url`, null + one chat note on
+any failure.
 
 ### 7. Hand back
 

@@ -20,66 +20,12 @@ _contributes:
 
 ## Step 0: Pricing Mode Selection
 
-### Step 0a: Load Pricing Cache
-
-Read `references/vendored/pricing/aws-infra-pricing.json` (shared AWS infrastructure pricing data). Check the `_meta.last_updated` date:
-
-- If ≤ 30 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the file. Set `pricing_source: "cached"`.
-- If > 30 days old: Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable. Attempt MCP (Step 0b) for services not in the file; use the cached rates as fallback with `pricing_source: "cached_stale"`.
-
-**Region honesty:** Read `preferences.json.global.target_region`. The pricing cache
-`_meta.region` is `us-east-1`. When `target_region` differs:
-
-1. Prefer MCP `get_pricing` with that region for services you look up live.
-2. When still using cache rates, set
-   `workshop.region_note` (and surface in the estimate narrative):
-   `"Rates from us-east-1 cache applied to {target_region} — verify via awspricing MCP for regional deltas."`
-3. When regions match, set `workshop.region_note` to `null` / omit.
-
-**Scenario metadata:** If `preferences.workshop.active_scenario_id` is set, carry
-it into the cost-engine contribution as `workshop.scenario_id` for the assembler.
-
-**Fargate arch rates:** When a Fargate service has `aws_config.cpu_architecture`
-of `ARM64` (or preferences `workshop.cpu_architecture` is `arm64`), use
-`fargate.per_vcpu_hour_arm64` / `fargate.per_gb_mem_hour_arm64` when present;
-else x86 Fargate rates + warning.
-
-Each service object carries its rates and (where relevant) a `multi_az_handling` key. Look up the rates from there — do not hardcode them. Apply the cost formula from the Per-Service Calculation Formulas table below.
-
-### Step 0b: MCP Availability Check (only if cache stale or service not listed)
-
-Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts, 10-second timeout per attempt):
-
-1. **Attempt 1**: Call `get_pricing_service_codes()`
-2. **If timeout/error after 10s**: Wait 1 second, retry (Attempt 2)
-3. **If still fails after 10s**: Wait 2 seconds, retry (Attempt 3)
-4. **If all 3 attempts fail**: Use cached prices. Set `pricing_source: "cached_fallback"`.
-
-### Step 0c: Display Pricing Mode to User
-
-**Before any calculation**, surface the pricing status:
-
-- **Cache fresh + all services covered**: "Pricing source: cached (updated [date], ±5-10% accuracy). Live pricing API not required."
-- **Cache stale + MCP available**: "Pricing source: live API (awspricing MCP). Cache is stale ([date]) — using real-time pricing."
-- **Cache stale + MCP unavailable**: "⚠️ Pricing source: stale cache only (updated [date]). The awspricing MCP server is unreachable. Proceeding with cached pricing; accuracy ±5-10% for infrastructure."
-- **Service not in cache + MCP unavailable**: "⚠️ Some services not in pricing cache and MCP unreachable. Those services will show `pricing_source: unavailable` in the estimate."
-
-### Pricing Hierarchy (per-service lookup order)
-
-| Priority | Source                                               | Condition                                                                                | `pricing_source` value |
-| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
-| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file                                                        | `"cached"`             |
-| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available                                                   | `"live"`               |
-| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file                                             | `"cached_fallback"`    |
-| 4        | Formula constants / well-known published rate        | NOT in file, MCP failed, but this file's own formulas carry the rate (state it verbatim) | `"estimated"`          |
-| 5        | Unavailable                                          | NOT in file, MCP failed, no formula constant either                                      | `"unavailable"`        |
-
-Row 4 is the documented home of the `services_by_source.estimated` bucket the
-schema and assembler already carry: a service priced from a rate this file
-itself states (never a guessed or remembered number) is `"estimated"`, always
-accompanied by a warning naming the rate and its source. Only a service with
-no cache entry, no MCP, AND no stated formula rate is `"unavailable"` and
-excluded from totals.
+Execute `references/vendored/estimate/pricing-mode.md` (the canonical
+Step 0, vendored from `skills/shared/estimate/pricing-mode.md` and kept
+byte-identical by `shared:sync`) as this step: cache staleness check, MCP
+retry ladder, pricing-mode display, and the per-service pricing hierarchy
+(including the `estimated` and `unavailable` rungs). Do not restate or
+fork that logic here.
 
 For typical Heroku migrations (Elastic Beanstalk, Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `aws-infra-pricing.json`. Zero MCP calls needed.
 

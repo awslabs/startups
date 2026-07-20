@@ -10,30 +10,11 @@ _of_phase: workshop
 
 ## Inner runs (artifact-only) — mandatory
 
-When this fragment re-runs Design or Estimate, treat them like an `_exec` worker's
-WORK slice (`INTERPRETER.md` § `_exec`): **fragments + assembler artifact write
-only**. Do **not** advance the backbone mid-workshop.
-
-| Allowed                                               | Forbidden                                                                                                                     |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Overwrite `aws-design.json` / `estimation-infra.json` | Set `phases.design` / `phases.estimate` to `in_progress`                                                                      |
-| Soft-validate Property-16 / schema before snapshot    | Emit `HANDOFF_OK` from Design or Estimate                                                                                     |
-| Brief chat note that reprice finished                 | Touch `.phase-status.json` `current_phase` or advance to `generate`                                                           |
-| Keep `phases.workshop` as `in_progress`               | Run Estimate's post-Estimate workshop offer (recursion)                                                                       |
-|                                                       | Evaluate Design/Estimate `_preconditions` that fail on `_check_single_active_phase` because workshop is already `in_progress` |
-
-Leave `phases.design` and `phases.estimate` as `"completed"`. Leave
-`current_phase` at `"estimate"` until the user exits workshop via
-`workshop-assemble.md`.
-
-Concrete file slices:
-
-1. **Design** — run `design.md` fragments + the **write** portion of
-   `design-assemble.md`. Skip Completion Handoff Gate `HANDOFF_OK` and Step 8
-   (phase-status / advance).
-2. **Estimate** — run `estimate-cost-engine.md` + the **write + Present Summary**
-   portions of `estimate-assemble.md`. Skip `HANDOFF_OK`, phase-status update,
-   deferred-advance logic, and the what-if workshop offer.
+Follow `references/vendored/workshop/workshop-invariants.md` § 3 (canonical
+allowed/forbidden contract) for every inner Design/Estimate run. Heroku
+specifics: leave `phases.design` and `phases.estimate` as `"completed"`;
+the inner Estimate skips the post-Estimate workshop offer; `current_phase`
+stays `"estimate"` until `workshop-assemble.md`.
 
 ## Baseline capture (no Design yet)
 
@@ -119,25 +100,10 @@ Execute Estimate per **Inner runs** above. Overwrite
 
 ### 6b. Shareable calculator link (best-effort, never blocks)
 
-If the `aws-pricing-calculator` MCP server is available (its tools respond —
-try `get_server_info` once; do NOT retry on failure):
-
-1. Prefer the one-shot `build_estimate` (create + add services + lint + save):
-   name `"Heroku migration — {scenario label} ({target_region})"`, services
-   from the scenario's Balanced-tier `estimation-infra.json` breakdown, each
-   with the scenario's `target_region` — the calculator computes REGIONAL
-   prices server-side, which is exactly what the us-east-1 cache cannot do.
-   On a structured needs-field-discovery response, resolve via
-   `get_service_fields` and retry ONCE; else fall back to
-   `create_estimate` → `add_service` → `export_estimate`.
-2. Store the returned URL as `estimation_summary.calculator_url` in the
-   scenario manifest.
-3. Any tool failure or an unmappable service → set `calculator_url: null`,
-   note the reason once in chat, continue. The workshop's own numbers remain
-   authoritative; the link is a complementary stakeholder artifact.
-
-If the server is not configured: set `calculator_url: null` silently (the
-sheet already explains regional-rate limits).
+Follow `references/vendored/workshop/workshop-invariants.md` § 6 with
+`{SKILL_LABEL}` = "Heroku" — probe once, prefer `build_estimate` on the
+scenario's Balanced-tier services, store the URL as
+`estimation_summary.calculator_url`, null + one chat note on any failure.
 
 ### 7. Hand back
 

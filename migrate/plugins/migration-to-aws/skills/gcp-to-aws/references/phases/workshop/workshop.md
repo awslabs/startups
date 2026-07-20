@@ -47,6 +47,12 @@
 | No BigQuery target knobs    | Keep deferred specialist rows; do not invent warehouse targets     |
 | No agentic outcome override | Do not mutate `ai_constraints.agentic.*` in v1                     |
 
+These rules restate the canonical contract in
+`references/vendored/workshop/workshop-invariants.md` (vendored from
+`skills/shared/workshop/workshop-invariants.md`, kept byte-identical by
+`shared:sync`). When this table and that file disagree, the invariants
+file wins — fix this table.
+
 ## Decline without entering
 
 When Estimate offer **[B] Proceed toward Generate** is chosen, mark
