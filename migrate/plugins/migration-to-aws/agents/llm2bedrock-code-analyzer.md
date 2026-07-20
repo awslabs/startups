@@ -353,6 +353,7 @@ Return ONE flat object: the typed fields and `summary` are all top-level sibling
   "source_provider": "openai",
   "source_models": ["gpt-4o"],
   "target_models": ["gpt-4o -> us.anthropic.claude-sonnet-4-6"],
+  "_comment_target_models": "example only — the real mapping comes from the migration plan, never from this illustration",
   "same_model_family": false,
   "bedrock_provider_available": true,
   "prompt_locations": ["app.py:42 : SYSTEM_PROMPT constant"],

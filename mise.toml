@@ -58,6 +58,10 @@ run = "cd migrate/plugins/migration-to-aws && tsc --noEmit"
 description = "Run the frontmatter-validator test suite (node --test)"
 run = "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts"
 
+[tasks."lint:model-ids"]
+description = "Fail on known-bad Bedrock model IDs (EOL-as-target, fabricated dated forms) outside the catalog files (CI)"
+run = "python3 migrate/plugins/migration-to-aws/tools/model-id-lint.py"
+
 [tasks."shared:sync"]
 description = "Sync each skill's references/vendored/ tree from the canonical skills/shared/ source"
 run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --write"
@@ -72,6 +76,7 @@ run = [
   { task = "lint:md" },
   { task = "lint:types" },
   { task = "lint:frontmatter" },
+  { task = "lint:model-ids" },
   { task = "shared:check" },
   { task = "test" },
 ]

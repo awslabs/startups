@@ -197,7 +197,7 @@ Choose the rewrite approach based on framework:
 
 ## Framework WITH Bedrock Provider (Vercel AI SDK, LangChain, LlamaIndex)
 
-> **Model IDs in the examples below are illustrative and age.** The authoritative target IDs come from the migration plan (`aws_model_id`); never copy an example ID into a rewrite. Before the first rewrite, verify each plan ID resolves in the target region: `aws bedrock list-foundation-models --region <region> --query "modelSummaries[?contains(modelId, '<id-fragment>')]"` (or rely on the preflight probe, which converse-pings every target). If a plan ID no longer resolves, STOP and surface it — do not substitute a model yourself.
+> **Model IDs in the examples below are illustrative and age.** The authoritative target IDs come from the migration plan (`aws_model_id`); never copy an example ID into a rewrite. Prefer the geo-prefixed inference-profile form (`us.anthropic...`) in rewritten code — bare foundation-model IDs (`anthropic...`) appear in pricing tables but often reject on-demand invocation (see the IAM inference-profile known-fix). Before the first rewrite, verify each plan ID resolves in the target region: `aws bedrock list-foundation-models --region <region> --query "modelSummaries[?contains(modelId, '<id-fragment>')]"` (or rely on the preflight probe, which converse-pings every target). If a plan ID no longer resolves, STOP and surface it — do not substitute a model yourself.
 
 Minimal changes — swap provider configuration only:
 
