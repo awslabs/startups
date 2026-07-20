@@ -51,6 +51,17 @@ This is deliberately the OPPOSITE sign of
 Heroku) — same fact, savings-vs-difference framing. When presenting either,
 always label the direction in words; never print a bare signed value.
 
+Also attach optional workshop metadata when present (does not affect Property-16):
+
+```json
+{
+  "workshop": {
+    "scenario_id": "<preferences.workshop.active_scenario_id or null>",
+    "region_note": "<from cost-engine, or null>"
+  }
+}
+```
+
 Write to `$MIGRATION_DIR/estimation-infra.json`.
 
 ---
@@ -62,11 +73,18 @@ and enforced per `INTERPRETER.md` § Gate protocol: **re-read `estimation-infra.
 from disk**, run the mechanical checks (`_check_file_exists` / `_validate_json`) and
 the `_assert` judgment checks (recommendation shape, the Property-16 total-invariant,
 every-service-priced, complexity tier), then emit `GATE_FAIL` (do NOT patch artifacts;
-STOP) or `HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json` and advance.
+STOP) or `HANDOFF_OK | phase=estimate | artifacts=estimation-infra.json`.
 
 One check needs this fragment's context: `estimation-infra.json` must also pass
 `references/vendored/estimate/estimation-infra.schema.json` validation (the schema shape) — verify that as part
 of the `_validate_json` postcondition.
+
+### Inner workshop reprice — skip this gate's state transition
+
+When invoked from `workshop-refresh.md` (inner reprice): write
+`estimation-infra.json`, optionally soft-check Property-16, present a brief
+summary, then **return to the workshop loop**. Do **not** emit `HANDOFF_OK`, do
+**not** update `.phase-status.json`, do **not** offer the what-if workshop below.
 
 ---
 
@@ -88,3 +106,43 @@ After writing `estimation-infra.json`, present a concise summary to the user:
 8. **Recommendation**: `path_label` with one-line justification
 
 Keep under 25 lines. The user can ask for details or re-read `estimation-infra.json`.
+
+---
+
+## Phase status after outer Estimate (deferred Generate advance)
+
+After outer-run `HANDOFF_OK` (not an inner workshop reprice):
+
+1. Mark `phases.estimate` → `"completed"`.
+2. Ensure `phases.workshop` exists (seed `"pending"` if the key is missing).
+3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
+   `"estimate"` until the workshop checkpoint is resolved (entered then exited, or
+   declined). This matches checkpoint semantics: workshop never owns
+   `current_phase`, and mid-workshop fixtures correctly stay on `estimate`.
+4. Offer the what-if workshop below.
+
+---
+
+## Post-Estimate: What-If Workshop Offer
+
+After outer-run `HANDOFF_OK`, the summary above, and the deferred phase-status
+update — offer:
+
+```
+Estimate complete. Before Generate, you can run a what-if workshop:
+change region, HA, compute target, or CPU architecture (x86 vs Graviton)
+and compare priced scenarios without re-discovering inventory.
+
+[A] Enter what-if workshop
+[B] Proceed toward Generate
+```
+
+- **A** → Load `references/phases/workshop/workshop.md` (checkpoint) and follow it
+  (baseline capture if `scenarios/` missing, then the sheet). Keep
+  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
+- **B** → Mark `phases.workshop` → `"completed"` (resolved/declined — no
+  `scenarios/` required). Set `current_phase` → `"generate"`. Continue with the
+  Feedback/Generate checkpoints in `SKILL.md`.
+
+On first workshop entry after this Estimate, `workshop-refresh.md` baseline
+capture snapshots the current artifacts as `scenario-001` before any edits.

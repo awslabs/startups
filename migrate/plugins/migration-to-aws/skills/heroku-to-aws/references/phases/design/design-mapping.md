@@ -56,6 +56,21 @@ Extract from `preferences.json`:
 - `data.database_ha` → overrides availability for database specifically (if present)
 - `data.redis_ha` → Redis HA configuration
 - `operational.log_retention_days` → CloudWatch log retention
+- `operational.cost_optimization` → narrative bias only in v1 (conservative/balanced/aggressive); does not invent instance sizes outside the sizing tables
+- `workshop.cpu_architecture` → `"x86_64"` (default when absent) or `"arm64"` (Graviton-capable classes where tables provide them)
+
+### CPU architecture resolution (workshop)
+
+Resolve once before mapping formations:
+
+1. `cpu_architecture` = `preferences.workshop.cpu_architecture` if set, else `"x86_64"`.
+2. When `"arm64"`:
+   - **Elastic Beanstalk**: use `ec2_instance_type_arm64` from the matched `dyno-eb-sizing.json` row when present; else use `ec2_instance_type` and append warning `architecture_fallback_x86` naming the formation.
+   - **Fargate**: set `aws_config.cpu_architecture` to `"ARM64"` (task size from `dyno-fargate-sizing.json` unchanged — Fargate ARM is a runtime arch flag). Prefer Estimate rates `fargate.per_vcpu_hour_arm64` / `per_gb_mem_hour_arm64` when present.
+   - **EKS**: use `node_type_arm64` from `eks-pod-sizing.json` when present; else `node_type` + `architecture_fallback_x86` warning.
+   - **RDS / ElastiCache**: sizing tables already emit Graviton classes (`db.t4g.*`, `db.m6g.*`, `cache.t4g.*`, etc.) — leave as-is. Do not invent non-table classes.
+3. When `"x86_64"`: use the default x86 columns (`ec2_instance_type`, `node_type`); for Fargate set `aws_config.cpu_architecture` to `"X86_64"` or omit (platform default).
+4. Never invent instance types or rates. Honest fallback + warning only.
 
 ---
 
@@ -119,7 +134,9 @@ Continue with the next resource after the Fargate entry is appended. This guard 
 
      Do NOT produce an EB mapping for this formation. Continue to next resource.
 
-   - **If found**: Extract `ec2_instance_type` from the matched row.
+   - **If found**: Extract the instance type using the CPU architecture
+     resolution above (`ec2_instance_type_arm64` when `cpu_architecture` is
+     `arm64` and the column exists; otherwise `ec2_instance_type`).
 
 4. **Environment type and tier**:
 
@@ -140,7 +157,8 @@ Continue with the next resource after the Fargate entry is appended. This guard 
      "aws_config": {
        "region": "{target_region}",
        "platform": "Docker running on 64bit Amazon Linux 2023",
-       "instance_type": "<from table>",
+       "instance_type": "<from table per CPU architecture resolution>",
+       "cpu_architecture": "<x86_64|arm64 from preferences.workshop>",
        "environment_type": "<LoadBalanced for web, SingleInstance for non-web>",
        "tier": "WebServer",
        "min_instances": 1,
@@ -194,6 +212,7 @@ Continue with the next resource after the Fargate entry is appended. This guard 
        "region": "{target_region}",
        "task_cpu": <fargate_cpu>,
        "task_memory": <fargate_memory>,
+       "cpu_architecture": "<X86_64|ARM64 from preferences.workshop>",
        "desired_count": <desired_count>,
        "container_image": "placeholder:{heroku_app}-{process_type}",
        "process_type": "{process_type}",

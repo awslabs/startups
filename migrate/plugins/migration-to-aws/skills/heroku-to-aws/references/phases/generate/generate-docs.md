@@ -826,6 +826,11 @@ This directory contains all artifacts needed to migrate your Heroku application(
 | `preferences.json` | Migration preferences (input) |
 | `aws-design.json` | Designed AWS architecture (input) |
 | `estimation-infra.json` | Cost estimates (input) |
+| `scenarios/` | Optional what-if workshop snapshots (baseline + priced variants; see skill workshop docs) |
+
+> **SA tip:** After Estimate (before or instead of regenerating), you can re-enter
+> what-if workshop mode to change region, HA, compute target, or Graviton
+> preference and compare up to 5 scenarios without re-discovery.
 
 ---
 

@@ -27,6 +27,24 @@ Read `references/vendored/pricing/aws-infra-pricing.json` (shared AWS infrastruc
 - If ≤ 30 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the file. Set `pricing_source: "cached"`.
 - If > 30 days old: Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable. Attempt MCP (Step 0b) for services not in the file; use the cached rates as fallback with `pricing_source: "cached_stale"`.
 
+**Region honesty:** Read `preferences.json.global.target_region`. The pricing cache
+`_meta.region` is `us-east-1`. When `target_region` differs:
+
+1. Prefer MCP `get_pricing` with that region for services you look up live.
+2. When still using cache rates, set
+   `workshop.region_note` (and surface in the estimate narrative):
+   `"Rates from us-east-1 cache applied to {target_region} — verify via awspricing MCP for regional deltas."`
+3. When regions match, set `workshop.region_note` to `null` / omit.
+
+**Scenario metadata:** If `preferences.workshop.active_scenario_id` is set, carry
+it into the cost-engine contribution as `workshop.scenario_id` for the assembler.
+
+**Fargate arch rates:** When a Fargate service has `aws_config.cpu_architecture`
+of `ARM64` (or preferences `workshop.cpu_architecture` is `arm64`), use
+`fargate.per_vcpu_hour_arm64` / `fargate.per_gb_mem_hour_arm64` when present;
+else x86 Fargate rates + warning.
+
+
 Each service object carries its rates and (where relevant) a `multi_az_handling` key. Look up the rates from there — do not hardcode them. Apply the cost formula from the Per-Service Calculation Formulas table below.
 
 ### Step 0b: MCP Availability Check (only if cache stale or service not listed)

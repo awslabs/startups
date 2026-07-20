@@ -4,10 +4,11 @@ This directory holds references shared _within_ the heroku-to-aws skill (across 
 phases). It no longer symlinks the gcp-to-aws sibling skill — heroku-to-aws is
 self-contained.
 
-| File                        | Purpose                                                     |
-| --------------------------- | ----------------------------------------------------------- |
-| `heroku-pricing-cache.md`   | Heroku plan pricing (source-side baseline for the estimate) |
-| `schema-discover-heroku.md` | `heroku-resource-inventory.json` schema                     |
+| File                             | Purpose                                                               |
+| -------------------------------- | --------------------------------------------------------------------- |
+| `heroku-pricing-cache.md`        | Heroku plan pricing (source-side baseline for the estimate)           |
+| `schema-discover-heroku.md`      | `heroku-resource-inventory.json` schema                               |
+| `schema-workshop-scenarios.md`   | What-if workshop `scenarios/` + `preferences.workshop` contract       |
 
 ## Vendored plugin-shared data
 
