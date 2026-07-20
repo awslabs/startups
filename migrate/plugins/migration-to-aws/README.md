@@ -4,7 +4,7 @@ AI agent skills for migrating workloads to AWS, built for [Claude Code](https://
 
 ## What This Does
 
-Point this plugin at your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+Point this plugin at your Heroku account (via your authenticated Heroku CLI, read-only and consent-gated), your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
 
 **Supported migration sources:**
 
@@ -103,7 +103,7 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 
 ### Workflow
 
-1. **Discover** — Scan Terraform files, application code, and/or billing data. Detects infrastructure resources, AI models, agentic frameworks, tools, and orchestration patterns.
+1. **Discover** — Scan Terraform files, application code, and/or billing data — or, for Heroku, inventory your account live via the authenticated Heroku CLI (read-only, consent-gated). Detects infrastructure resources, AI models, agentic frameworks, tools, and orchestration patterns.
 2. **Clarify** — Ask targeted questions about migration preferences, AI priorities, agentic migration approach, database sizing, and timeline.
 3. **Design** — Map source services to AWS equivalents. For AI workloads: select Bedrock models with honest pricing comparison. For agentic workloads: design AgentCore Harness config or Strands architecture.
 4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current spend.
@@ -198,9 +198,21 @@ The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
-- At least one input source: Terraform files, application code, or billing data
+- At least one input source: an authenticated Heroku CLI (Heroku migrations), Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
-- **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
+- **For Heroku migration:** an authenticated Heroku CLI (recommended) or Terraform files with `heroku_*` resources (Procfile/app.json supplements but cannot stand alone)
+
+### Live Heroku discovery — how it works
+
+No Terraform or exports needed. If `heroku login` works in your terminal, just ask
+your agent to migrate ("Migrate my Heroku app to AWS" or "Discover my Heroku apps
+and estimate AWS costs"). The agent asks for your consent, then inventories your
+account using read-only list/info CLI commands — it captures app names, dyno types,
+add-on plans and prices, domains, pipelines, and config var **key names only**. It
+never reads config var values, credentials, or your API token, and never runs a
+command that creates, changes, or deletes anything. If you also have `heroku_*`
+Terraform, the agent cross-checks it against your live account and reports drift.
+
 - **For AI execution (llm-to-bedrock skill):** Python 3.10+, `uv`, and Bedrock model access enabled
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
