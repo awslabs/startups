@@ -29,11 +29,14 @@ Max **5** scenarios. Warn + name eviction before deleting oldest non-baseline.
 "workshop": {
   "active": true,
   "last_sheet_at": "2026-07-19T20:00:00Z",
-  "active_scenario_id": "scenario-002"
+  "active_scenario_id": "scenario-002",
+  "graviton_note": "1 incompatible — graviton applies where tier: ready"
 }
 ```
 
 Clarify does **not** write this. Workshop creates/patches it.
+`graviton_note` is optional — set when the sheet showed Graviton risk-signal
+tiers and the SA picked `graviton` or `mixed` (see `workshop-sheet.md`).
 
 ## v1 knobs (sheet)
 

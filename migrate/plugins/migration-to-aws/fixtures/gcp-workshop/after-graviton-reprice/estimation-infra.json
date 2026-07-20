@@ -4,19 +4,26 @@
     "status": "cached"
   },
   "projected_costs": {
-    "aws_monthly_premium": 110,
-    "aws_monthly_balanced": 85,
-    "aws_monthly_optimized": 62
+    "aws_monthly_premium": 110.0,
+    "aws_monthly_balanced": 85.0,
+    "aws_monthly_optimized": 62.0
   },
   "complexity_tier": "small",
   "recommendation": {
     "path": "migrate_optimized",
-    "path_label": "Migrate",
+    "path_label": "Migrate optimized",
     "migrate_if": [
-      "ok"
+      "costs favor AWS"
     ],
     "stay_if": [
-      "not"
+      "heavy custom networking"
     ]
+  },
+  "architecture_comparison": {
+    "graviton_monthly": 85.0,
+    "x86_equivalent_monthly": 95.0,
+    "savings_amount": 10.0,
+    "savings_percent": 10.5,
+    "note": "Partial Graviton: worker remains x86 (incompatible). Hourly savings only on ready services."
   }
 }

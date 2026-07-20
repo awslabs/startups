@@ -86,16 +86,22 @@ This is the execution controller. After completing each phase, consult this tabl
 | `clarify`     | `phases.discover == "completed"` AND `phases.clarify != "completed"`  | Load `references/phases/clarify/clarify.md`                                            |
 | `design`      | `phases.clarify == "completed"` AND `phases.design != "completed"`    | Load `references/phases/design/design.md`                                              |
 | `estimate`    | `phases.design == "completed"` AND `phases.estimate != "completed"`   | Load `references/phases/estimate/estimate.md`                                          |
-| `generate`    | `phases.estimate == "completed"` AND `phases.generate != "completed"` | Load `references/phases/generate/generate.md`                                          |
+| `workshop`    | `current_phase == "estimate"` AND `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or `"in_progress"` | **Do not recompute Estimate.** If `workshop` is `"pending"`, present the post-Estimate workshop offer from `estimate.md`. If `"in_progress"`, load `references/phases/workshop/workshop.md`. |
+| `generate`    | `phases.estimate == "completed"` AND `phases.workshop == "completed"` AND `phases.generate != "completed"` | Load `references/phases/generate/generate.md` (workshop resolved — entered+exited or declined) |
 | `complete`    | `phases.generate == "completed"` AND `phases.feedback == "pending"`   | Set `phases.feedback` to `"completed"` (user had two chances), then migration complete |
 | `complete`    | `phases.generate == "completed"` AND `phases.feedback == "completed"` | Migration planning complete                                                            |
 
 **How to determine current state (deterministic):**
 
 1. Read `$MIGRATION_DIR/.phase-status.json`
-2. If `current_phase` exists, use it (must match one of: discover, clarify, design, estimate, generate, complete)
-3. Otherwise use ordered phase evaluation: `discover` → `clarify` → `design` → `estimate` → `generate`
-4. Pick the **first** phase in that order where `phases.<phase> != "completed"`; if none, state is `complete`
+2. **Workshop resume (mandatory):** If `current_phase == "estimate"` AND
+   `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or
+   `"in_progress"`, follow the `workshop` row above — **never** re-run Estimate
+   on a plain "continue my migration" / resume. Explicit "what if" / "reprice" /
+   "workshop mode" phrases also load `workshop.md` when Estimate artifacts exist.
+3. If `current_phase` exists (and step 2 did not apply), use it (must match one of: discover, clarify, design, estimate, generate, complete)
+4. Otherwise use ordered phase evaluation: `discover` → `clarify` → `design` → `estimate` → `generate`
+5. Pick the **first** phase in that order where `phases.<phase> != "completed"`; if none, state is `complete`. When evaluating `generate`, require `phases.workshop == "completed"` (seed `"pending"` on Discover so a missing key is not treated as resolved).
 
 **Phase gate checks**: If prior phase incomplete, do not advance (e.g., cannot enter estimate without completed design).
 

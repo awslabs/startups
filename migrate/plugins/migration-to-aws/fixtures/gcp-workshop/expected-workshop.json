@@ -8,5 +8,8 @@
   "generate_must_not_be_completed": true,
   "current_phase_must_be": "estimate",
   "workshop_phase_must_be": "in_progress",
+  "must_have_graviton_note": true,
+  "must_keep_incompatible_worker_x86": true,
+  "q11b_prompt_must_contain": "ARM64 compatibility",
   "max_scenarios": 5
 }

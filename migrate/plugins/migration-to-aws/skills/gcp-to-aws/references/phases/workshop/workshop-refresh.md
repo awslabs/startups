@@ -58,9 +58,19 @@ If generate completed, require re-entry confirm and reset generate to `pending`.
 Apply sheet edits. Set `workshop.active: true`, `workshop.last_sheet_at` now.
 Leave non-knob fields (including AI/agentic constraints) untouched.
 
+**Graviton caveat carry-forward:** If the sheet showed a Graviton risk-signal
+caveat (any `graviton_profile` entry with `tier` in
+`{incompatible, conditional, unknown}`) and the SA set
+`cpu_architecture` to `graviton` or `mixed`, set
+`preferences.workshop.graviton_note` to a short string naming the counts, e.g.
+`"1 incompatible, 0 conditional — graviton applies where tier: ready"`. Clear
+`graviton_note` when arch is `x86` or when no risk-signal tiers exist.
+
 ### 4–5. Inner Design then Estimate
 
-Per **Inner runs**. Chat note after Estimate:
+Per **Inner runs**. Design must follow `design.md` § Inner workshop reprice
+(skip handoff / phase-status). Estimate must follow `estimate.md` § Inner
+workshop reprice. Chat note after Estimate:
 "Workshop reprice Estimate complete; returning to workshop loop."
 
 ### 6. Snapshot
@@ -69,7 +79,10 @@ Per **Inner runs**. Chat note after Estimate:
 2. If length would exceed 5, **warn and name** oldest non-baseline before delete.
 3. Copy prefs / design / estimation into `scenarios/{id}.*`.
 4. `preferences_subset`: differing knob paths vs baseline.
-5. Update index + `workshop.active_scenario_id`.
+5. Label: summarize the subset; if `workshop.graviton_note` is set, append
+   `(caveat: <graviton_note>)` to the scenario `label` and copy the note into
+   the manifest as `graviton_note`.
+6. Update index + `workshop.active_scenario_id`.
 
 ### 7. Hand back
 

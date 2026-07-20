@@ -23,8 +23,20 @@ def main():
     check(len(sc)>=exp['min_scenarios'], 'too few scenarios')
     check(idx.get('active_scenario_id')==exp['active_scenario_id'], 'active id')
     prefs=json.loads((run/'preferences.json').read_text())
-    arch=(((prefs.get('design_constraints') or {}).get('cpu_architecture') or {}).get('value'))
-    check(arch==exp['active_cpu_architecture'], f'arch={arch}')
+    ca=((prefs.get('design_constraints') or {}).get('cpu_architecture') or {})
+    check(ca.get('value')==exp['active_cpu_architecture'], f"arch={ca.get('value')}")
+    if exp.get('q11b_prompt_must_contain'):
+        check(exp['q11b_prompt_must_contain'] in (ca.get('prompt') or ''), 'Q11b prompt missing real clarify text')
+    if exp.get('must_have_graviton_note'):
+        note=(prefs.get('workshop') or {}).get('graviton_note') or ''
+        check(bool(note), 'missing workshop.graviton_note')
+        check('incompatible' in note.lower(), 'graviton_note should mention incompatible')
+    if exp.get('must_keep_incompatible_worker_x86'):
+        design=json.loads((run/'aws-design.json').read_text())
+        worker=next((s for s in design.get('services',[]) if s.get('source_resource_id')=='run:worker'), None)
+        check(worker is not None, 'missing worker service')
+        if worker:
+            check(worker.get('aws_config',{}).get('cpu_architecture')=='X86_64', 'incompatible worker must stay X86_64')
     est=json.loads((run/'estimation-infra.json').read_text())
     base_m=run/'scenarios'/f"{exp['baseline_scenario_id']}.json"
     if base_m.exists() and exp.get('balanced_must_differ_from_baseline'):
