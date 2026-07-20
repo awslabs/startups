@@ -73,8 +73,10 @@ are not restated here.
 skill's entry phase (the one carrying `_init: true`). The interpreter loads THIS
 phase directly; it does not scan every phase's frontmatter to discover the root.
 All subsequent phases are reached by following each phase's `_advances_to`. On a
-warm start, `current_phase` in `.phase-status.json` is authoritative (see
-`INTERPRETER.md` § The interpreter loop).
+warm start, `current_phase` in `.phase-status.json` is authoritative **except**
+when deferred-advance checkpoint resume applies (`INTERPRETER.md` § The
+interpreter loop step 2 — Estimate completed + `workshop` pending/in_progress
+must not re-run Estimate).
 
 **Backbone:** `prescan` -> `discover` -> `clarify` -> `recommend` -> `estimate` -> `generate` -> `report` -> `complete`.
 
@@ -251,10 +253,18 @@ vercel-to-aws/
 **What-if workshop checkpoint:** After Estimate, offer the optional `workshop`
 checkpoint (`_kind: checkpoint`, never `current_phase`) per
 `estimate-assemble.md`. Outer Estimate keeps `current_phase: estimate` until
-workshop is resolved (exited via `workshop-assemble.md` or declined). Warm start:
-if the user says "what if", "reprice", "workshop mode", or "compare scenarios"
-and Estimate artifacts already exist, load
-`references/phases/workshop/workshop.md` directly (respect Generate re-entry
-when Terraform was already produced).
+workshop is resolved (exited via `workshop-assemble.md` or declined).
+
+**Workshop resume (mandatory):** If `current_phase == "estimate"` AND
+`phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or
+`"in_progress"`, **do not recompute Estimate**. If `"pending"`, re-present the
+post-Estimate workshop offer from `estimate-assemble.md`. If `"in_progress"`,
+load `references/phases/workshop/workshop.md`. Generate must wait until
+`phases.workshop == "completed"` (entered+exited or declined).
+
+**Warm start / explicit what-if:** If the user says "what if", "reprice",
+"workshop mode", or "compare scenarios" and Estimate artifacts already exist,
+load `references/phases/workshop/workshop.md` directly (respect Generate
+re-entry when Terraform was already produced).
 
 **Critical constraint**: Follow each phase reference file's workflow exactly. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.
