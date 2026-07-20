@@ -45,6 +45,12 @@ any single cost-engine Part; the schema leaves its shape open):
 }
 ```
 
+Sign convention: savings = Heroku minus AWS (positive = you save by migrating).
+This is deliberately the OPPOSITE sign of
+`roi_analysis.recurring_savings.monthly_difference_*` (difference = AWS minus
+Heroku) — same fact, savings-vs-difference framing. When presenting either,
+always label the direction in words; never print a bare signed value.
+
 Write to `$MIGRATION_DIR/estimation-infra.json`.
 
 ---
@@ -69,7 +75,7 @@ of the `_validate_json` postcondition.
 After writing `estimation-infra.json`, present a concise summary to the user:
 
 1. **Pricing source and accuracy** — State cache age and accuracy range
-2. **Heroku baseline vs AWS projected** (balanced tier) — one-line comparison (if billing available)
+2. **Heroku baseline vs AWS projected** (balanced tier) — one-line comparison (if a baseline was determined, labeled with its source; include the derived-baseline caveat when the source is not billing data)
 3. **Three-tier table**: Premium, Balanced, Optimized with monthly totals
    - Premium: _Highest resilience / highest monthly estimate_
    - Balanced: _Default scenario; compare Heroku to this first_
@@ -77,7 +83,7 @@ After writing `estimation-infra.json`, present a concise summary to the user:
    - One-line note: Three figures are pricing scenarios for the same architecture (not three Terraform stacks). Generated Terraform aligns with Balanced.
 4. **Per-service cost breakdown** (balanced tier, 1 line per service)
 5. **Migration complexity**: tier + timeline range
-6. **Monthly and annual savings** (or increase) vs Heroku per tier (if comparison available)
+6. **Monthly and annual savings** (or increase) vs Heroku per tier (if a baseline was determined)
 7. **Top 2-3 optimization opportunities** with savings potential
 8. **Recommendation**: `path_label` with one-line justification
 
