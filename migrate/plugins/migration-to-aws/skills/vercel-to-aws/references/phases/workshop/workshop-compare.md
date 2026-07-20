@@ -1,5 +1,5 @@
 ---
-_fragment: workshop-compare
+_fragment: compare
 _of_phase: workshop
 ---
 

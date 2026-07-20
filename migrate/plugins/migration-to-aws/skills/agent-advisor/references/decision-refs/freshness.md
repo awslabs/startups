@@ -9,7 +9,7 @@
 - FedRAMP certification status for AgentCore and Lambda MicroVMs
 - Any Bedrock model price (defer to migration-to-aws pricing cache; never hardcode here)
 
-## Temporal branch (temporal-worker.md Step 4)
+## Temporal (design.md — Freshness, temporal units only)
 
 Volatile facts to re-verify when the Temporal branch generates a plan. The awsknowledge
 MCP does not cover Temporal-side facts; each fact below names its actual verification

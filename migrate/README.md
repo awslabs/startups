@@ -4,13 +4,12 @@ AI agent skills for migrating workloads to AWS, built for [Claude Code](https://
 
 ## What This Does
 
-Point this plugin at your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+Point this plugin at your Heroku account (via your authenticated Heroku CLI, read-only and consent-gated), your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
 
 **Supported migration sources:**
 
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
 - **Heroku → AWS** — Dynos (→ Elastic Beanstalk by default; Fargate or EKS overrides), Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
-- **Vercel → AWS** — a full migration pipeline for Next.js apps: discovery, Coupling Score, Pre-Flight Checks, a three-outcome recommendation, cost estimation (Vercel vs. AWS comparison), and production-ready Terraform generation with `baseline.tf`, migration scripts, and documentation
 
 **For infrastructure migrations:**
 
@@ -27,6 +26,14 @@ Point this plugin at your Terraform files, application code, or billing data. It
 - **Gives honest pricing comparisons** — finds the best Bedrock option for your workload with current pricing data, including side-by-side estimated monthly cost comparisons against your existing OpenAI/Gemini spend
 - **Generates runnable AI artifacts** — `harness.json`, provider adapters, deployment scripts, incremental migration scripts — tailored to your specific models, tools, and architecture
 
+**For running AI agents on AWS (agent-advisor):**
+
+- **Recommends the right runtime** — deterministic scoring picks AgentCore, ECS/EKS, Lambda, AWS Batch, or Lambda MicroVMs for your agent, based on session duration, traffic shape, isolation, memory, and ops preferences — not a generic "use AgentCore"
+- **Decomposes multi-workload systems into units** — a system of several agents, batch jobs, and services is broken into workload units, each scored independently, with a consolidation option (one platform vs best-fit-per-unit) and a whole-system architecture
+- **Handles Temporal workers** — self-hosted or Temporal Cloud; worker polling tiers and Activity execution classes become units, Workflow orchestration code is never rewritten
+- **Generates a layered recommendation, a migration plan, and a deployable POC** — from "which runtime" through a full plan (reusing the migration engine) to runnable proof-of-concept code and deploy scripts on the chosen runtime
+- **Not a cloud migration** — this is the entry point for deciding how and where to run agents on AWS, whether you're building fresh, deploying existing code, or adding AgentCore capabilities to agents already on AWS
+
 **For Vercel migrations:**
 
 - **Derives what it can't export** — Vercel's infrastructure (CloudFront-equivalent behaviors, function tuning, edge routing) isn't directly readable, so discovery works from your build output, source configs (`next.config.js`, `middleware.ts`, `vercel.json`), and the Vercel API instead
@@ -39,9 +46,9 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 ## Plugins
 
-| Plugin               | Description                                                                                                                                                 | Status    |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning, and LLM code rewrite to Bedrock (llm-to-bedrock skill) | Available |
+| Plugin               | Description                                                                                                                                                                                                                           | Status    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **migration-to-aws** | Assess, plan & execute: GCP/Heroku resource discovery, architecture mapping, cost analysis, execution planning, LLM code rewrite to Bedrock (llm-to-bedrock skill), and AI-agent runtime selection + POC on AWS (agent-advisor skill) | Available |
 
 ## Installation
 
@@ -93,6 +100,7 @@ After installation, just describe what you want to migrate:
 **Heroku migrations:**
 
 - "Migrate my Heroku app to AWS"
+- "Discover my Heroku apps and estimate AWS costs"
 - "Move my Heroku Postgres to RDS"
 - "Migrate from Heroku to Fargate"
 - "Migrate from Heroku to Elastic Beanstalk"
@@ -107,7 +115,17 @@ After installation, just describe what you want to migrate:
 - "Vercel to Fargate"
 - "Vercel coupling score"
 
-The skill creates a `.migration/<session>/` directory in the current working directory with all artifacts.
+**Running AI agents on AWS (agent-advisor):**
+
+- "Which runtime should I use for my agent — AgentCore, ECS, EKS, or Lambda?"
+- "Deploy my LangGraph agent on AWS and build a POC"
+- "I have an agent idea — what should I build on AWS?"
+- "Migrate my Temporal workers to AWS"
+- "I'm already on AWS and want to add AgentCore memory/gateway to my agent"
+
+GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor writes a `.agent-advisor/<session>/` directory. Both land in the current working directory with all artifacts.
+
+**Live Heroku discovery — how it works:** No Terraform or exports needed. If `heroku login` works in your terminal, just ask — the agent requests your consent, then inventories your account using read-only list/info CLI commands. It captures app names, dyno types, add-on plans and prices, domains, pipelines, and config var **key names only**. It never reads config var values, credentials, or your API token, and never runs a command that creates, changes, or deletes anything. If you also have `heroku_*` Terraform, the agent cross-checks it against your live account and reports drift.
 
 ## What It Detects
 
@@ -179,27 +197,30 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 ## Agent Skill Triggers
 
-| Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"    |
-| **vercel-to-aws** | "migrate from Vercel", "Vercel to AWS", "move off Vercel", "migrate Next.js off Vercel", "assess my Vercel migration", "leave Vercel", "Vercel to Fargate", "Vercel to OpenNext", "should I migrate off Vercel"                                          |
+| Agent Skill       | Triggers                                                                                                                                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS"                                                                        |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                                                           |
+| **vercel-to-aws** | "migrate from Vercel", "Vercel to AWS", "move off Vercel", "migrate Next.js off Vercel", "assess my Vercel migration", "leave Vercel", "Vercel to Fargate", "Vercel to OpenNext", "should I migrate off Vercel"                                                                                                                 |
+| **agent-advisor** | "which runtime for my agent", "AgentCore vs ECS vs EKS vs Lambda", "deploy an AI agent on AWS", "I have an agent idea — what do I build", "move my agents to AWS with a plan", "add AgentCore memory/gateway/identity to my agent", "migrate Temporal workers to AWS", "run Temporal on AWS", "build a POC for my agent on AWS" |
 
 ## MCP Servers
 
-| Server           | Purpose                                                         |
-| ---------------- | --------------------------------------------------------------- |
-| **awsknowledge** | AWS documentation, regional availability, architecture guidance |
-| **awspricing**   | Real-time AWS service pricing for cost estimates                |
+| Server            | Purpose                                                                                                                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **awsknowledge**  | AWS documentation, regional availability, architecture guidance                                                                                                                                                       |
+| **awspricing**    | Real-time AWS service pricing for cost estimates                                                                                                                                                                      |
+| **temporal-docs** | Temporal Knowledge Base, operated by kapa.ai (queries are sent to that third-party service). Used only by the agent-advisor Temporal branch; one-time login via `/mcp`, falls back to a public-web lookup if declined |
 
 ## Requirements
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
-- At least one input source: Terraform files, application code, or billing data
+- At least one input source: an authenticated Heroku CLI (Heroku migrations), Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
-- **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
+- **For Heroku migration:** an authenticated Heroku CLI (recommended — live, read-only discovery with your consent) or Terraform files with `heroku_*` resources (Procfile/app.json supplements but cannot stand alone). When both are available, live data is authoritative for current state and Terraform drift is surfaced.
 - **For Vercel migration:** repo access with a locally-runnable `next build`, plus a Vercel API token, are both required — the assessment does not run on partial Tier 1 inputs. Vercel tokens can't be permission-scoped to read-only, so scope by resource instead (project-scoped when one project is in scope), pick a short expiration, and revoke after the assessment; the skill only ever issues read (GET) requests, enforced by its capture-step endpoint whitelist
+- **For agent-advisor:** `uv` (for deterministic scoring); application source code when deploying/migrating existing agents (an idea-only run needs no code)
 
 ## Structure
 

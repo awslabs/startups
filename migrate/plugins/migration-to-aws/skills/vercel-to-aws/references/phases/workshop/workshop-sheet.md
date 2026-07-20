@@ -1,5 +1,5 @@
 ---
-_fragment: workshop-sheet
+_fragment: sheet
 _of_phase: workshop
 ---
 

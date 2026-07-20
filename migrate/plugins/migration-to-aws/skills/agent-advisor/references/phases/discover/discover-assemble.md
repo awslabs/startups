@@ -17,3 +17,10 @@ _produces:
 > phase's completion gate. See `discover.md` § Step 2 for the mapping onto
 > scoring keys and the determinism-boundary caveat (only high-confidence signals
 > are written; everything else is left for Clarify).
+
+**Unit confirmation (ONLY when the draft has more than one unit):** present the draft
+inventory with AskUserQuestion — one option per proposed action (accept as-is / merge
+two units / split a unit / rename) plus free-text via "Other". Apply the user's edits,
+re-check the grouping rule, then write `units[]`. A single-unit draft is recorded
+SILENTLY — no question, no mention (collapse invariant: single-unit runs see zero new
+interaction).

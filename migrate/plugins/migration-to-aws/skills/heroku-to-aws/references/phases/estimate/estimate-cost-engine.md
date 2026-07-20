@@ -49,12 +49,20 @@ Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts, 10-s
 
 ### Pricing Hierarchy (per-service lookup order)
 
-| Priority | Source                                               | Condition                                    | `pricing_source` value |
-| -------- | ---------------------------------------------------- | -------------------------------------------- | ---------------------- |
-| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file            | `"cached"`             |
-| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available       | `"live"`               |
-| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file | `"cached_fallback"`    |
-| 4        | Unavailable                                          | NOT in file AND MCP failed                   | `"unavailable"`        |
+| Priority | Source                                               | Condition                                                                                | `pricing_source` value |
+| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
+| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file                                                        | `"cached"`             |
+| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available                                                   | `"live"`               |
+| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file                                             | `"cached_fallback"`    |
+| 4        | Formula constants / well-known published rate        | NOT in file, MCP failed, but this file's own formulas carry the rate (state it verbatim) | `"estimated"`          |
+| 5        | Unavailable                                          | NOT in file, MCP failed, no formula constant either                                      | `"unavailable"`        |
+
+Row 4 is the documented home of the `services_by_source.estimated` bucket the
+schema and assembler already carry: a service priced from a rate this file
+itself states (never a guessed or remembered number) is `"estimated"`, always
+accompanied by a warning naming the rate and its source. Only a service with
+no cache entry, no MCP, AND no stated formula rate is `"unavailable"` and
+excluded from totals.
 
 For typical Heroku migrations (Elastic Beanstalk, Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `aws-infra-pricing.json`. Zero MCP calls needed.
 
@@ -82,7 +90,30 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Extract `billing_profile.line_items[]` for per-app breakdown
    - Set `current_costs.source: "billing_data"`
 
-2. **Heroku pricing cache** — If no billing data, Load `references/shared/heroku-pricing-cache.md` and derive costs from discovered resources:
+2. **Live-captured prices + dyno cache** — If no billing data AND at least one
+   add-on resource carries `config.monthly_price_usd` (the account's actual
+   billed plan rates from the Platform API capture). The gate is the presence of
+   live prices, not merely that live discovery ran: a live run that captured
+   ZERO priced add-ons (e.g. a dyno-only app) has nothing live-priced in it —
+   fall to rung 3, whose `pricing_cache` label and ±5% accuracy describe that
+   baseline honestly.
+   - **Add-ons:** sum `config.monthly_price_usd` across add-on resources — these
+     are exact, and they price plans the cache has never heard of (no
+     `"unpriced_heroku"` holes for priced add-ons)
+   - **Dynos:** the API does not price formations; look up each formation's
+     `dyno_type` in `references/shared/heroku-pricing-cache.md` (±5% published
+     flat rates) × `quantity`
+   - Set `current_costs.source: "live_prices_plus_cache"`
+   - Set `current_costs.accuracy: "exact for add-ons, ±5% for dynos"`
+   - An add-on WITHOUT `monthly_price_usd` (e.g. a Terraform-only entry) falls
+     through to the rung-3 cache lookup for that resource only; if neither
+     prices it, mark `"unpriced_heroku"` and add to warnings
+   - `baseline_note` (mandatory): "Derived from your account's actual add-on
+     prices plus published dyno rates — not an invoice. Excludes usage-based
+     charges (bandwidth, build minutes), team seats, credits, and discounts;
+     your invoice may differ."
+
+3. **Heroku pricing cache** — If no billing data and no live-captured prices, Load `references/shared/heroku-pricing-cache.md` and derive costs from discovered resources:
    - For each resource in inventory, look up its plan in the cache tables (case-insensitive exact match)
    - Multiply dyno costs by `formation.quantity`
    - Sum all matched resources to get `heroku_monthly_estimated`
@@ -90,18 +121,18 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Set `current_costs.accuracy: "±5%"`
    - If any resource plan is not found in cache, mark as `"unpriced_heroku"` and exclude from total; add to warnings
 
-3. **User-provided** — If pricing cache produces zero matched resources (unlikely with Terraform discovery), ask: "I need your current Heroku monthly spend to produce a meaningful cost comparison. What is your approximate Heroku monthly cost?" Use the answer.
+4. **User-provided** — If neither live prices nor the pricing cache match any resource (unlikely with Terraform or live discovery), ask: "I need your current Heroku monthly spend to produce a meaningful cost comparison. What is your approximate Heroku monthly cost?" Use the answer.
    - Set `current_costs.source: "user_provided"`
 
-4. **Unavailable** — If user declines: present AWS costs without Heroku comparison.
+5. **Unavailable** — If user declines: present AWS costs without Heroku comparison.
    - Set `current_costs.source: "unavailable"`
    - Note: "Heroku baseline unavailable — AWS costs shown without comparison."
 
-When billing data or pricing cache is available, present the Heroku baseline as:
+Whenever a baseline was determined (any source except `"unavailable"`), present it as:
 
-- Total monthly cost
+- Total monthly cost, with its source and accuracy stated plainly (invoice data vs actual plan prices vs rate card vs user estimate)
 - Per-app breakdown (dyno, add-on, platform charges)
-- Billing period
+- Billing period (billing-data source only) or `baseline_note` (derived sources)
 
 ---
 
@@ -162,7 +193,7 @@ When `aws-design.json` contains Elastic Beanstalk services (`aws_service: "Elast
 
 1. **EC2 instances**: Look up the instance type's hourly rate in `ec2.instances[instance_type]` × 730 hours × the running instance estimate. For the Balanced tier, use steady-state `min_instances` so EB and Fargate comparisons use comparable running-capacity assumptions. Show `max_instances` as scaling headroom, not as 730 hours of guaranteed spend.
 2. **ALB** (LoadBalanced environments only): use the same ALB formula as standalone ALB entries: `alb.monthly_fixed` plus an LCU estimate. SingleInstance non-web environments do NOT incur ALB cost.
-3. **EBS storage**: EC2 On-Demand pricing does not include EBS root volumes. Either add a small per-instance gp3 root-volume estimate when a rate is available, or explicitly list EBS root volume cost as a known minor omission requiring verification. Do not claim a 30GB EC2 allowance.
+3. **EBS storage**: EC2 On-Demand pricing does not include EBS root volumes. Add per instance: `ebs.gp3_per_gb_month` × (`aws_config.root_volume_gb` when the design specifies one, else `ebs.eb_root_volume_gb_default`) × the running instance estimate. Do not claim a 30GB EC2 allowance.
 4. **NAT Gateway**: If the VPC design places EB instances in private subnets that require outbound internet access, include the same NAT Gateway line used by the other compute paths.
 
 **Total EB monthly cost** = (EC2_hourly × 730 × running_instance_estimate) + ALB_costs (web only) + applicable networking/storage supporting costs. EB itself charges $0 — all costs are the underlying resources.
@@ -255,15 +286,22 @@ This entry REPLACES any CloudWatch entries in a "Supporting" row — never doubl
 
 ## Part 3: Cost Comparison (Heroku vs AWS)
 
-### When Billing Data Available
+### When a Heroku Baseline Was Determined (any Part 1 source except `"unavailable"`)
+
+The comparison is the point of this phase — it runs whenever Part 1 produced a
+baseline, from ANY source. Do not reserve it for billing data: a
+`live_prices_plus_cache` or `pricing_cache` baseline yields the same side-by-side
+with its accuracy labeled honestly.
 
 Present a side-by-side comparison:
 
-- **Heroku current monthly total** (from `billing_profile.total_monthly_cost`)
+- **Heroku current monthly total** (from Part 1's baseline, labeled with `current_costs.source` and its accuracy; when derived rather than invoiced, repeat the `baseline_note` caveat next to the number)
 - **AWS Premium / Balanced / Optimized monthly totals**
 - **Difference** (savings or increase) per tier vs Heroku — monthly and annual
 - **Per-app breakdown** for the Balanced tier: for each Heroku app, show:
-  - Current Heroku spend (from `billing_profile.line_items` filtered by app)
+  - Current Heroku spend — from `billing_profile.line_items` filtered by app
+    (billing source), or from that app's summed live prices + cache dyno rates
+    (derived sources)
   - Projected AWS spend (sum of services mapped from that app)
   - Difference
 
@@ -271,7 +309,8 @@ Include in `estimation-infra.json`:
 
 ```json
 "cost_comparison": {
-  "heroku_monthly_baseline": "<total from billing>",
+  "heroku_monthly_baseline": "<Part 1 baseline total>",
+  "baseline_source": "<current_costs.source>",
   "option_a_premium": {
     "aws_monthly": "<premium total>",
     "monthly_difference": "<premium - heroku>",
@@ -293,9 +332,9 @@ Include in `estimation-infra.json`:
 }
 ```
 
-### When Billing Data NOT Available
+### When NO Baseline Was Determined (`current_costs.source == "unavailable"`)
 
-Omit `cost_comparison` section or set `heroku_monthly_baseline` to null. Present AWS costs without comparison. State: "Heroku billing data not available — showing projected AWS costs only. Provide Heroku invoices and re-run discovery to see side-by-side comparison."
+Omit the `cost_comparison` section or set `heroku_monthly_baseline` to null. Present AWS costs without comparison. State: "Heroku baseline unavailable — showing projected AWS costs only. Run live discovery (or provide Heroku invoices) and re-run to see the side-by-side comparison."
 
 ---
 
@@ -303,25 +342,31 @@ Omit `cost_comparison` section or set `heroku_monthly_baseline` to null. Present
 
 Heroku does not charge egress fees for data transfer during migration (unlike GCP). However, there may be time-based costs during parallel operation.
 
-### IF billing data IS available:
+Key this section off baseline presence (any Part 1 source except `"unavailable"`), not billing data specifically — a derived baseline prices the dual-run window just as well, with the same accuracy caveat as the baseline itself.
+
+### IF a Heroku baseline WAS determined:
 
 ```json
 "migration_cost_considerations": {
-  "billing_data_available": true,
+  "baseline_available": true,
+  "baseline_source": "<current_costs.source>",
   "categories": [
-    "Heroku platform fees during parallel operation (both Heroku and AWS running simultaneously during cutover window)"
+    "Heroku platform fees during parallel operation (both Heroku and AWS running simultaneously during cutover window): ~<Part 1 baseline total>/month for the duration of the cutover"
   ],
   "note": "Heroku charges are subscription-based. During migration, both Heroku and AWS costs apply until Heroku apps are decommissioned. No data transfer egress fees from Heroku."
 }
 ```
 
-### IF billing data is NOT available:
+When the baseline is derived (`live_prices_plus_cache` or `pricing_cache`), append to the note: "Dual-run figure is derived from plan prices, not invoices — actual parallel-operation cost may differ by usage-based charges."
+
+### IF NO baseline was determined (`current_costs.source == "unavailable"`):
 
 ```json
 "migration_cost_considerations": {
-  "billing_data_available": false,
+  "baseline_available": false,
+  "baseline_source": "unavailable",
   "categories": [],
-  "note": "Parallel operation costs depend on Heroku billing. Provide Heroku invoices for dual-run cost projections."
+  "note": "Parallel operation costs depend on Heroku spend. Run live discovery (or provide Heroku invoices) for dual-run cost projections."
 }
 ```
 
@@ -353,11 +398,11 @@ Present monthly and annual cost difference between Heroku baseline and each AWS 
 ```json
 "roi_analysis": {
   "recurring_savings": {
-    "monthly_difference_balanced": "<negative = AWS cheaper>",
-    "monthly_difference_optimized": "<negative = AWS cheaper>",
+    "monthly_difference_balanced": "<aws_balanced - heroku; negative = AWS cheaper>",
+    "monthly_difference_optimized": "<aws_optimized - heroku; negative = AWS cheaper>",
     "annual_difference_balanced": "<× 12>",
     "annual_difference_optimized": "<× 12>",
-    "note": "Negative = AWS cheaper. Positive = Heroku cheaper on pure cost basis."
+    "note": "Sign convention: difference = AWS minus Heroku, so negative = AWS cheaper. This is the OPPOSITE sign of financial_summary.monthly_savings_* (savings = Heroku minus AWS) — same fact, difference-vs-savings framing. Any presentation of either number MUST label it (e.g. 'AWS is $X/mo cheaper'), never print a bare signed value."
   },
   "operational_efficiency_factors": [...],
   "non_cost_benefits": [...],

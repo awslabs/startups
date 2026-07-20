@@ -1,5 +1,5 @@
 ---
-_fragment: workshop-refresh
+_fragment: refresh
 _of_phase: workshop
 ---
 
