@@ -1,13 +1,14 @@
 {
   "_comment": "Shared AWS infrastructure pricing rates (us-east-1, USD) for the estimate phase. Rates evolve on AWS's cadence, independent of the cost algorithm, so they live here as DATA and the estimate procedure does a lookup, not a guess. Each service carries its rates + a multi_az_handling key; the cost FORMULAS live in the estimate phase's prose (the algorithm is not data). Currently consumed by the heroku-to-aws skill; intended to be shared with gcp-to-aws. AI-model / Lambda / DynamoDB / Redshift / Athena / SageMaker rates are NOT here (gcp-specific; they remain in the gcp-to-aws pricing cache).",
   "_meta": {
-    "last_updated": "2026-06-14",
+    "last_updated": "2026-07-19",
     "region": "us-east-1",
     "currency": "USD",
     "accuracy": "±5-10% infrastructure",
     "hours_per_month": 730,
     "staleness_days": 30,
-    "staleness_note": "If more than staleness_days past last_updated, infrastructure rates remain reliable; set pricing_source=cached_stale and note it. AI-model rates (not used for heroku->aws) may have drifted."
+    "staleness_note": "If more than staleness_days past last_updated, infrastructure rates remain reliable; set pricing_source=cached_stale and note it. AI-model rates (not used for heroku->aws) may have drifted.",
+    "last_verification": "2026-07-19 spot-check against published pricing pages: Fargate Linux/x86 us-east-1 ($0.000011244/vCPU-s = $0.04048/hr; $0.000001235/GB-s = the published $0.004445/hr GB rate) matches, and Heroku dyno flat rates match devcenter; no rate changes applied this refresh."
   },
   "_multi_az_convention": {
     "_comment": "THE TRAP: a design's multi_az:true means different things per service. Each service rate below carries multi_az_handling so the formula applies the RIGHT adjustment, never a blanket multiplier.",
