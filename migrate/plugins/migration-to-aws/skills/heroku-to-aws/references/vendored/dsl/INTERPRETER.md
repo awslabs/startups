@@ -48,19 +48,33 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
    dispatched sub-agent never bootstraps state; it is handed an initialized
    `$MIGRATION_DIR`).
 2. **Determine the current phase (deterministic):**
-   - If `current_phase` is present in `.phase-status.json`, use it (it is
+   - **Deferred-advance checkpoint resume (mandatory):** If `current_phase` is
+     set, `phases.<current_phase>` is already `"completed"`, and a skill-declared
+     checkpoint key (e.g. `workshop`) is `"pending"` or `"in_progress"` because
+     that backbone phase defers advancing `current_phase` until the checkpoint
+     resolves (see SKILL.md checkpoint orchestration — what-if workshop after
+     Estimate is the canonical case), **do not re-run** the completed backbone
+     phase. Follow SKILL.md: re-present the checkpoint offer if `"pending"`, or
+     load `references/phases/<checkpoint>/<checkpoint>.md` if `"in_progress"`.
+     Explicit phrases that match the checkpoint `_trigger` also enter it when its
+     `_requires_phase` artifacts exist — still without re-running Estimate (or
+     whichever predecessor completed).
+   - Else if `current_phase` is present in `.phase-status.json`, use it (it is
      authoritative). This is the normal WARM-START path.
    - Otherwise (state exists but has no `current_phase`) walk the backbone in order
      (see § Backbone vs checkpoint) and pick the FIRST phase whose
      `phases.<phase>` is not RESOLVED (`"completed"` or a skill-declared resolved
      status — § Skill bindings). If all backbone phases are resolved, the state is
      the terminal (`complete`). (On a cold start there is no state to read —
-     step 1's declared entry phase is used directly.)
+     step 1's declared entry phase is used directly.) When the skill gates a later
+     backbone phase on a checkpoint being `"completed"` (e.g. Generate requires
+     `phases.workshop == "completed"`), honor that gate while walking.
 3. **Validate state before proceeding.** See § State-file validation below. STOP
    on any inconsistency rather than guessing.
 4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
    `references/phases/<phase>/<phase>.md`. Load it in full and read its
-   frontmatter first.
+   frontmatter first. (Checkpoint resume from step 2 loads the checkpoint
+   orchestrator instead — still never as `current_phase`.)
 5. **Run the phase.** Run its `_preconditions` entry gate (§ Gate protocol) in
    THIS (main) window; if it passes, set the phase `in_progress`, then run the
    phase's WORK — its `_fragments` (each when its `_trigger` fires) then its

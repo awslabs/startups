@@ -73,8 +73,10 @@ are not restated here.
 skill's entry phase (the one carrying `_init: true`). The interpreter loads THIS
 phase directly; it does not scan every phase's frontmatter to discover the root.
 All subsequent phases are reached by following each phase's `_advances_to`. On a
-warm start, `current_phase` in `.phase-status.json` is authoritative (see
-`INTERPRETER.md` § The interpreter loop).
+warm start, `current_phase` in `.phase-status.json` is authoritative **except**
+when deferred-advance checkpoint resume applies (`INTERPRETER.md` § The
+interpreter loop step 2 — Estimate completed + `workshop` pending/in_progress
+must not re-run Estimate).
 
 **Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
 Design, Estimate, or Generate even if the user asks — there is no exception for
@@ -206,6 +208,13 @@ contract). Both are `_kind: checkpoint` — off-backbone, trigger-entered, never
 
   - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
   - If user picks **B** → Set `phases.feedback` to `"completed"`. Continue to Generate.
+
+- **Workshop resume (mandatory):** If `current_phase == "estimate"` AND
+  `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or
+  `"in_progress"`, **do not recompute Estimate**. If `"pending"`, re-present the
+  post-Estimate workshop offer from `estimate-assemble.md`. If `"in_progress"`,
+  load `references/phases/workshop/workshop.md`. Generate must wait until
+  `phases.workshop == "completed"` (entered+exited or declined).
 
 - **Warm start / explicit what-if**: If the user says "what if", "reprice",
   "workshop mode", or "compare scenarios" and Estimate artifacts already exist,
