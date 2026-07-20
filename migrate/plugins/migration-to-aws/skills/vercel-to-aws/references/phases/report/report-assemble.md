@@ -2,29 +2,29 @@
 _assemble: report-assemble
 _of_phase: report
 _reads:
-  - render (assessment-report.html content)
+  - render (migration-report.html content)
 _produces:
-  - assessment-report.html
+  - migration-report.html
 ---
 
 # Report Phase: Assembler
 
-> Writes `report-render.md`'s content to `assessment-report.html`, invokes
+> Writes `report-render.md`'s content to `migration-report.html`, invokes
 > `scripts/validate-assessment-report.py` immediately after, branches on the
 > validator's shell exit code, retries within a 2-additional-attempt cap on
 > fail-with-errors, appends a capped `report_history` entry to
 > `assessment-state.json`, and runs the completion gate. This is the SINGLE
-> creator of `assessment-report.html` and the sole owner of the retry-cap
+> creator of `migration-report.html` and the sole owner of the retry-cap
 > loop.
 
 **Execute ALL steps in order. Do not skip or deviate.**
 
 ---
 
-## Step 1: Write `assessment-report.html`
+## Step 1: Write `migration-report.html`
 
 Write `report-render.md`'s rendered content to
-`$MIGRATION_DIR/assessment-report.html`.
+`$MIGRATION_DIR/migration-report.html`.
 
 ---
 
@@ -34,7 +34,7 @@ Run:
 
 ```bash
 python3 "$PLUGIN_ROOT/scripts/validate-assessment-report.py" \
-  "$MIGRATION_DIR/assessment-report.html" \
+  "$MIGRATION_DIR/migration-report.html" \
   --recommendation "$MIGRATION_DIR/recommendation.json" \
   --preflight-findings "$MIGRATION_DIR/preflight-findings.json" \
   --tier1-signals "$MIGRATION_DIR/tier1-signals.json" \
@@ -56,16 +56,16 @@ alone** (per Requirement 12.2 and `design.md` § 4.1):
 
 Per Requirement 12.3-12.4:
 
-1. Rename the failed HTML to `$MIGRATION_DIR/assessment-report.incomplete.html`
+1. Rename the failed HTML to `$MIGRATION_DIR/migration-report.incomplete.html`
    (never delete unless the founder explicitly asks).
 2. Emit all failure lines (from the validator's stderr) to the founder.
 3. Retry report generation: re-run `report-render.md`'s Step 1-11 addressing
-   the specific failures reported, re-write `assessment-report.html`, and
+   the specific failures reported, re-write `migration-report.html`, and
    return to Step 2 above.
 4. **Retry cap: maximum 2 additional attempts** (3 total including the first).
    Track attempt count for this reason within this phase invocation.
 5. **If the retry cap is reached without a passing validation:**
-   - Surface the incomplete report (`assessment-report.incomplete.html`) and
+   - Surface the incomplete report (`migration-report.incomplete.html`) and
      its most recent failure list to the founder.
    - **STOP.** Do not present a stub as complete.
    - **Critically:** per Requirement 12.4, the underlying ASSESSMENT is still
@@ -84,7 +84,7 @@ Per Requirement 12.3-12.4:
 
 Per Requirement 12.2: this is NEVER treated as a pass.
 
-1. Do NOT rename or delete `assessment-report.html`.
+1. Do NOT rename or delete `migration-report.html`.
 2. Do NOT claim the report passed or failed validation.
 3. Tell the founder: "Could not run the report validator (exit code {N},
    stderr: {stderr}) — install Python 3 (`python3 --version` to check) or
@@ -94,7 +94,7 @@ Per Requirement 12.2: this is NEVER treated as a pass.
    silently treat a missing interpreter (or any other non-0/1 exit) as a pass.
    If completing under this condition, still write the `report_history` entry
    (Step 5) but mark it with `validated: false` so a future diff knows this
-   entry's `assessment-report.html` was never actually validated.
+   entry's `migration-report.html` was never actually validated.
 
 ---
 
@@ -125,10 +125,10 @@ Read the current `assessment-state.json` (read-merge-write):
 
 ## Completion Gate
 
-Re-read `assessment-report.html` from disk, then run the checks declared in
+Re-read `migration-report.html` from disk, then run the checks declared in
 `report.md`'s `_postconditions`:
 
-1. `assessment-report.html` exists.
+1. `migration-report.html` exists.
 2. The validator invocation exited `0` within the retry cap (or, per Step 4,
    the founder was explicitly told validation did not occur — this counts as
    satisfying the `_assert` since the constraint is "branch on exit code
@@ -140,7 +140,7 @@ Re-read `assessment-report.html` from disk, then run the checks declared in
 **On any failure (including retry-cap exhaustion at Step 3.5):** emit exactly:
 
 ```
-GATE_FAIL | phase=report | field=assessment-report.html | reason=<invalid|validator_exhausted_retries>
+GATE_FAIL | phase=report | field=migration-report.html | reason=<invalid|validator_exhausted_retries>
 ```
 
 Do NOT modify artifacts to force a pass. Do NOT update `.phase-status.json`
@@ -150,7 +150,7 @@ to `"completed"` in this case — see Step 3.5's guidance on leaving
 **On all-pass:** emit exactly:
 
 ```
-HANDOFF_OK | phase=report | artifacts=assessment-report.html
+HANDOFF_OK | phase=report | artifacts=migration-report.html
 ```
 
 Then update `.phase-status.json`: mark `phases.report` `"completed"`, set

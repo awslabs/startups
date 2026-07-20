@@ -39,7 +39,7 @@ _postconditions:
 _forbids_files:
   - README.md
   - "terraform/**"
-  - assessment-report.html
+  - migration-report.html
 ---
 
 # Phase 4: Apply Precedence Rules -> Outcome

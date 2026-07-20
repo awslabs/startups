@@ -37,7 +37,7 @@ _postconditions:
 _forbids_files:
   - README.md
   - "terraform/**"
-  - assessment-report.html
+  - migration-report.html
 ---
 
 # Phase 3: Clarify - Ask What Discovery Can't Answer

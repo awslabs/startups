@@ -2,12 +2,12 @@
 _fragment: render
 _of_phase: report
 _contributes:
-  - assessment-report.html (all sections)
+  - migration-report.html (all sections)
 ---
 
 # Report Phase: Render
 
-> Self-contained fragment. Renders the full `assessment-report.html` document
+> Self-contained fragment. Renders the full `migration-report.html` document
 > from every upstream artifact. Applies the outcome-based Pre-Flight Check
 > filter/reframe, the reader-vocabulary rule, and the cost-labeling rule as
 > AUTHORING discipline — `report-assemble.md`'s validator invocation is what
@@ -314,7 +314,7 @@ tone the rest of this skill aims for.
 
 ## Output Contribution for Parent Orchestrator
 
-The full `assessment-report.html` document, per the sections above. This is
+The full `migration-report.html` document, per the sections above. This is
 handed to `report-assemble.md` for the write + validate + retry-cap loop.
 
 ---
@@ -330,7 +330,7 @@ handed to `report-assemble.md` for the write + validate + retry-cap loop.
 
 ## Scope Boundary
 
-**This fragment covers rendering `assessment-report.html`'s content ONLY.**
+**This fragment covers rendering `migration-report.html`'s content ONLY.**
 
 FORBIDDEN — Do NOT include ANY of:
 

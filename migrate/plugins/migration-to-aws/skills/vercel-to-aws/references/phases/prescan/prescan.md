@@ -34,7 +34,7 @@ _postconditions:
 _forbids_files:
   - README.md
   - "terraform/**"
-  - assessment-report.html
+  - migration-report.html
 ---
 
 # Phase 1: Collect Tier 1 Inputs & Pre-Scan

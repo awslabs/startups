@@ -178,7 +178,7 @@ Define decision points:
 | `scripts/`               | Numbered migration scripts (run in order)                     |
 | `MIGRATION_GUIDE.md`     | Step-by-step migration procedures with rollback               |
 | `estimation-infra.json`  | Full cost breakdown (three tiers)                             |
-| `assessment-report.html` | Complete assessment with Coupling Score and findings          |
+| `migration-report.html` | Complete assessment with Coupling Score and findings          |
 | `scenarios/`             | Optional what-if workshop snapshots (included in the report when ≥2) |
 | `recommendation.json`    | Decision traceability (which rule fired and why)              |
 

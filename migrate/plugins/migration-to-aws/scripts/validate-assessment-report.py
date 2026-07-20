@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate assessment-report.html completeness after the Report phase.
+"""Validate migration-report.html completeness after the Report phase.
 
 Fork of scripts/validate-migration-report.py (GCP skill), adapted for
 vercel-to-aws's outcome-filtered pre-flight-finding report structure. Checks
@@ -12,7 +12,7 @@ script itself did not run (e.g. python3 missing) - the caller must branch on
 the shell exit code, never on stdout text alone.
 
 Usage:
-  python3 validate-assessment-report.py /path/to/assessment-report.html
+  python3 validate-assessment-report.py /path/to/migration-report.html
   python3 validate-assessment-report.py report.html \\
       --recommendation recommendation.json \\
       --preflight-findings preflight-findings.json \\
@@ -574,8 +574,8 @@ def validate_report(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate assessment-report.html")
-    parser.add_argument("report_path", type=Path, help="Path to assessment-report.html")
+    parser = argparse.ArgumentParser(description="Validate migration-report.html")
+    parser.add_argument("report_path", type=Path, help="Path to migration-report.html")
     parser.add_argument("--recommendation", type=Path, default=None)
     parser.add_argument("--preflight-findings", type=Path, default=None)
     parser.add_argument("--tier1-signals", type=Path, default=None)
@@ -632,7 +632,7 @@ def main() -> int:
         migration_dir=args.migration_dir,
     )
     if errors:
-        print("REPORT_FAIL | assessment-report.html", file=sys.stderr)
+        print("REPORT_FAIL | migration-report.html", file=sys.stderr)
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         return 1

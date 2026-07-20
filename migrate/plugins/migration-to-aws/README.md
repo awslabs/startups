@@ -271,11 +271,11 @@ python3 scripts/validate-migration-report.py \
 
 See [fixtures/README.md](fixtures/README.md) for what `REPORT_OK` does and does not guarantee.
 
-### Vercel assessment report validator (unit tests)
+### Vercel migration report validator (unit tests)
 
 When changing anything under `skills/vercel-to-aws/references/phases/report/`,
-`scripts/validate-assessment-report.py`, or
-`fixtures/assessment-report-reference.html`:
+`scripts/validate-assessment-report.py` (Vercel HTML gate; output file is
+`migration-report.html`), or `fixtures/assessment-report-reference.html`:
 
 ```bash
 cd migrate/plugins/migration-to-aws

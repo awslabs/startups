@@ -70,7 +70,7 @@ _postconditions:
 _forbids_files:
   - README.md
   - "terraform/**"
-  - assessment-report.html
+  - migration-report.html
 ---
 
 # Phase 2: Full Discovery, Coupling Score, Pre-Flight Checks
