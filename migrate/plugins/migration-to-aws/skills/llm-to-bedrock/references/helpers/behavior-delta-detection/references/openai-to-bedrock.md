@@ -239,7 +239,7 @@ tool_config = {
     "tools": [{"toolSpec": {"name": "Result", "inputSchema": {"json": {"type": "object", "properties": {"answer": {"type": "string"}}}}}}],
     "toolChoice": {"tool": {"name": "Result"}},
 }
-response = bedrock.converse(modelId="us.anthropic.claude-sonnet-4-20250514-v1:0", messages=messages_bedrock, toolConfig=tool_config)
+response = bedrock.converse(modelId="us.anthropic.claude-sonnet-4-6", messages=messages_bedrock, toolConfig=tool_config)
 tool_use_block = next(b for b in response["output"]["message"]["content"] if "toolUse" in b)
 result = tool_use_block["toolUse"]["input"]
 ```
