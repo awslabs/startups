@@ -10,10 +10,10 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
     "discover": "completed",
     "clarify": "completed",
     "design": "in_progress",
-      "estimate": "pending",
-      "workshop": "pending",
-      "generate": "pending",
-      "feedback": "pending"
+    "estimate": "pending",
+    "workshop": "pending",
+    "generate": "pending",
+    "feedback": "pending"
   }
 }
 ```

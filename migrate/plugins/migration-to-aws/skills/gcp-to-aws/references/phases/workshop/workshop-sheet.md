@@ -7,12 +7,12 @@
 
 From `$MIGRATION_DIR/preferences.json`:
 
-| Knob | Path | Allowed values |
-| ---- | ---- | -------------- |
-| Target region | `design_constraints.target_region.value` | Valid AWS region code |
-| Availability | `design_constraints.availability.value` | `single-az`, `multi-az`, `multi-az-ha`, `multi-region` |
-| Kubernetes / compute | `design_constraints.kubernetes.value` | `eks-managed`, `eks-or-ecs`, `ecs-fargate` — omit row if key absent |
-| CPU architecture | `design_constraints.cpu_architecture.value` | `graviton`, `x86`, `mixed` — omit row if key absent |
+| Knob                 | Path                                        | Allowed values                                                      |
+| -------------------- | ------------------------------------------- | ------------------------------------------------------------------- |
+| Target region        | `design_constraints.target_region.value`    | Valid AWS region code                                               |
+| Availability         | `design_constraints.availability.value`     | `single-az`, `multi-az`, `multi-az-ha`, `multi-region`              |
+| Kubernetes / compute | `design_constraints.kubernetes.value`       | `eks-managed`, `eks-or-ecs`, `ecs-fargate` — omit row if key absent |
+| CPU architecture     | `design_constraints.cpu_architecture.value` | `graviton`, `x86`, `mixed` — omit row if key absent                 |
 
 When patching wrapper objects, preserve `chosen_by`, `prompt`, and
 `design_consequence` (set `chosen_by` to `"user"` on edit). Prefer the catalog

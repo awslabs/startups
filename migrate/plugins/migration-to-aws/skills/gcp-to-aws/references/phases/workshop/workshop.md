@@ -38,14 +38,14 @@
 
 ## Hard rules
 
-| Rule | Behavior |
-| ---- | -------- |
-| Inventory frozen | Never write `gcp-resource-inventory.json`, clusters, or `capture/` |
-| Inner Design/Estimate | Artifact rewrite only — see `workshop-refresh.md` § Inner runs |
-| Max 5 scenarios | Warn + name eviction before delete |
-| Working tree = active | prefs / design / estimation match active scenario |
-| No BigQuery target knobs | Keep deferred specialist rows; do not invent warehouse targets |
-| No agentic outcome override | Do not mutate `ai_constraints.agentic.*` in v1 |
+| Rule                        | Behavior                                                           |
+| --------------------------- | ------------------------------------------------------------------ |
+| Inventory frozen            | Never write `gcp-resource-inventory.json`, clusters, or `capture/` |
+| Inner Design/Estimate       | Artifact rewrite only — see `workshop-refresh.md` § Inner runs     |
+| Max 5 scenarios             | Warn + name eviction before delete                                 |
+| Working tree = active       | prefs / design / estimation match active scenario                  |
+| No BigQuery target knobs    | Keep deferred specialist rows; do not invent warehouse targets     |
+| No agentic outcome override | Do not mutate `ai_constraints.agentic.*` in v1                     |
 
 ## Decline without entering
 

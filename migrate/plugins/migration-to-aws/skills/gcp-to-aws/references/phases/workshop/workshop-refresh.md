@@ -5,12 +5,12 @@
 When re-running Design or Estimate from this file: **rewrite artifacts only**.
 Do **not** advance the backbone mid-workshop.
 
-| Allowed | Forbidden |
-| ------- | --------- |
-| Overwrite `aws-design.json` / `estimation-infra.json` | Set design/estimate to `in_progress` |
-| Soft-validate estimate invariants before snapshot | Emit `HANDOFF_OK` from Design or Estimate |
-| Brief chat note that reprice finished | Touch `current_phase` or advance to `generate` |
-| Keep `phases.workshop` as `in_progress` | Run Estimate's post-Estimate workshop offer (recursion) |
+| Allowed                                               | Forbidden                                               |
+| ----------------------------------------------------- | ------------------------------------------------------- |
+| Overwrite `aws-design.json` / `estimation-infra.json` | Set design/estimate to `in_progress`                    |
+| Soft-validate estimate invariants before snapshot     | Emit `HANDOFF_OK` from Design or Estimate               |
+| Brief chat note that reprice finished                 | Touch `current_phase` or advance to `generate`          |
+| Keep `phases.workshop` as `in_progress`               | Run Estimate's post-Estimate workshop offer (recursion) |
 
 Leave `phases.design` and `phases.estimate` as `"completed"`. Leave
 `current_phase` at `"estimate"` until `workshop-assemble.md`.

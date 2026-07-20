@@ -13,9 +13,9 @@
    - `last_updated` → now
 4. Emit:
 
-```
-HANDOFF_OK | phase=workshop | artifacts=scenarios/index.json | return_to=generate
-```
+   ```
+   HANDOFF_OK | phase=workshop | artifacts=scenarios/index.json | return_to=generate
+   ```
 
 5. Output: "Workshop paused. Active scenario: `{id}`. Proceeding toward Generate."
 

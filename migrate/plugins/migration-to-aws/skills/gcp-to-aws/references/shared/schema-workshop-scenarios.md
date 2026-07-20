@@ -40,11 +40,11 @@ tiers and the SA picked `graviton` or `mixed` (see `workshop-sheet.md`).
 
 ## v1 knobs (sheet)
 
-| Path | Notes |
-| ---- | ----- |
-| `design_constraints.target_region.value` | AWS region |
-| `design_constraints.availability.value` | HA posture |
-| `design_constraints.kubernetes.value` | When present |
+| Path                                        | Notes                                       |
+| ------------------------------------------- | ------------------------------------------- |
+| `design_constraints.target_region.value`    | AWS region                                  |
+| `design_constraints.availability.value`     | HA posture                                  |
+| `design_constraints.kubernetes.value`       | When present                                |
 | `design_constraints.cpu_architecture.value` | `graviton` \| `x86` \| `mixed` when present |
 
 Cross-skill arch defaults: heroku workshop defaults x86; vercel defaults arm64;

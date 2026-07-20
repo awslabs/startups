@@ -2,11 +2,11 @@
 
 Infra-route pilot for `gcp-to-aws` (`references/phases/workshop/`).
 
-| Path | Role |
-| ---- | ---- |
-| `seed/` | Post-Estimate baseline (`cpu_architecture=x86`, real Q11b prompt, mixed graviton_profile) |
-| `after-graviton-reprice/` | After Apply with `graviton` + caveat (worker stays x86) |
-| `check_expected_workshop.py` | Stdlib asserter |
+| Path                         | Role                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------- |
+| `seed/`                      | Post-Estimate baseline (`cpu_architecture=x86`, real Q11b prompt, mixed graviton_profile) |
+| `after-graviton-reprice/`    | After Apply with `graviton` + caveat (worker stays x86)                                   |
+| `check_expected_workshop.py` | Stdlib asserter                                                                           |
 
 ```bash
 python3 check_expected_workshop.py after-graviton-reprice

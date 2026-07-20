@@ -39,13 +39,13 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
      "last_updated": "[ISO 8601 timestamp]",
      "current_phase": "discover",
      "phases": {
-      "discover": "in_progress",
-      "clarify": "pending",
-      "design": "pending",
-      "estimate": "pending",
-      "workshop": "pending",
-      "generate": "pending",
-      "feedback": "pending"
+       "discover": "in_progress",
+       "clarify": "pending",
+       "design": "pending",
+       "estimate": "pending",
+       "workshop": "pending",
+       "generate": "pending",
+       "feedback": "pending"
      }
    }
    ```

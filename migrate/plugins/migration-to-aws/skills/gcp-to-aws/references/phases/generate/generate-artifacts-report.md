@@ -64,7 +64,7 @@ Gather data from all available artifacts. Each section below notes which artifac
 | **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                 | —                                                    |
 | **Pricing confidence / staleness**      | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                       | `estimation-ai.json` accuracy fields                 |
 | **AI optimization opportunities**       | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                             | —                                                    |
-| **What-if workshop scenarios**          | `scenarios/index.json` + each `scenarios/scenario-NNN.json` manifest (`estimation_summary`, `preferences_subset`, optional `graviton_note`)               | — (omit section when workshop unused)                |
+| **What-if workshop scenarios**          | `scenarios/index.json` + each `scenarios/scenario-NNN.json` manifest (`estimation_summary`, `preferences_subset`, optional `graviton_note`)             | — (omit section when workshop unused)                |
 
 ## Step 1: Build Executive Summary Section
 
@@ -189,21 +189,21 @@ Omit entirely when workshop was declined or never entered.
 | Scenario | Region | HA | Compute | Arch | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
 | -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
 
-   Resolve knobs from each scenario's preferences copy (or
-   `preferences_subset` / `estimation_summary` on the manifest): Region ←
-   `design_constraints.target_region.value`; HA ←
-   `design_constraints.availability.value`; Compute ←
-   `design_constraints.kubernetes.value` when present; Arch ←
-   `design_constraints.cpu_architecture.value`. Costs and complexity ←
-   `estimation_summary`.
+Resolve knobs from each scenario's preferences copy (or
+`preferences_subset` / `estimation_summary` on the manifest): Region ←
+`design_constraints.target_region.value`; HA ←
+`design_constraints.availability.value`; Compute ←
+`design_constraints.kubernetes.value` when present; Arch ←
+`design_constraints.cpu_architecture.value`. Costs and complexity ←
+`estimation_summary`.
 3. Mark the active row (`scenario_id == index.active_scenario_id`) with
-   `class="active-scenario"` or an "(active)" label.
+`class="active-scenario"` or an "(active)" label.
 4. Under the table: active vs baseline knob deltas (plain language); any
-   `graviton_note` / `region_note`; remind that discovery inventory is frozen
-   and generated Terraform matches the **active** scenario only.
+`graviton_note` / `region_note`; remind that discovery inventory is frozen
+and generated Terraform matches the **active** scenario only.
 5. TOC: link `#what-if-scenarios` only when rendered. Place this section in the
-   executive flow immediately after `exec-costs` (before security teaser /
-   timeline).
+executive flow immediately after `exec-costs` (before security teaser /
+timeline).
 
 **Section 4 — Security & Cost Guardrails (teaser — full table in Appendix G):**
 
