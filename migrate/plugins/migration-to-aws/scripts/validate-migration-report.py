@@ -44,6 +44,7 @@ OPTIONAL_SECTION_IDS = [
     "exec-tco",
     "exec-architecture",
     "exec-security-teaser",
+    "what-if-scenarios",
     "appendix-ai",
     "appendix-config",
     "appendix-security",
@@ -89,6 +90,7 @@ EXEC_SECTION_IDS = (
     "exec-costs",
     "exec-architecture",
     "exec-security-teaser",
+    "what-if-scenarios",
     "exec-timeline",
     "exec-risks",
 )
@@ -491,6 +493,23 @@ def validate_report(
 
     # Catch verbatim copies of the reference fixture into a real run.
     errors.extend(_validate_fixture_bleed(html, migration_dir))
+
+    # What-if workshop scenario table — required when ≥2 scenarios were snapshotted.
+    if migration_dir is not None:
+        index_path = migration_dir / "scenarios" / "index.json"
+        if index_path.is_file():
+            try:
+                index = json.loads(index_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                index = None
+            scenarios = (index or {}).get("scenarios") or []
+            counts = _section_id_counts(html)
+            if len(scenarios) >= 2 and counts.get("what-if-scenarios", 0) < 1:
+                errors.append(
+                    'scenarios/index.json has ≥2 scenarios but no '
+                    '<section id="what-if-scenarios"> (workshop compare table is '
+                    "required in the migration report when variants exist)"
+                )
 
     return errors
 

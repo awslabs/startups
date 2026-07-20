@@ -43,6 +43,7 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
        "clarify": "pending",
        "design": "pending",
        "estimate": "pending",
+       "workshop": "pending",
        "generate": "pending",
        "feedback": "pending"
      }
