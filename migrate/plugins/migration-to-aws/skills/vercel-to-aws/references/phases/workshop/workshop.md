@@ -3,6 +3,7 @@ _phase: workshop
 _title: "What-If Workshop (Optional)"
 _kind: sidebar
 _requires_phase: estimate
+_gates: generate
 _trigger:
   {
     _when: "user opts in post-Estimate (estimate-assemble offer [A], or says what if / reprice / workshop mode / compare scenarios)",

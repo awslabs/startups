@@ -34,6 +34,10 @@
 - Warm-start rule: `current_phase == "estimate"` AND
   `phases.estimate == "completed"` AND `phases.workshop == "pending"` →
   present the workshop offer; NEVER recompute Estimate.
+- The hold-Generate rule above is DECLARED, not just prose: the workshop
+  phase's frontmatter carries `_gates: generate` (INTERPRETER.md § `_gates`),
+  so Generate must not start while `phases.workshop` is unresolved. Declining
+  resolves the sidebar (`"completed"`) and lifts the gate.
 - If Generate (or later) is already `completed`, apply the Estimate re-entry
   guard (confirm → reset downstream to pending) before any refresh.
 

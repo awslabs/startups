@@ -280,6 +280,43 @@ _produces:
     assert.match(findings.map((f) => f.message).join('\n'), /sidebar phase 'feedback' must declare a phase-level _trigger/);
   });
 
+  // ---- _gates (sidebar holds a backbone phase) ----
+  it('accepts a sidebar with _gates naming an existing backbone phase', () => {
+    const files = chainSkill();
+    files['references/phases/feedback/feedback.md'] = files[
+      'references/phases/feedback/feedback.md'
+    ].replace('_kind: sidebar', '_kind: sidebar\n_gates: clarify');
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
+  it('rejects _gates naming a phase that does not exist on disk (dangling gate)', () => {
+    const files = chainSkill();
+    files['references/phases/feedback/feedback.md'] = files[
+      'references/phases/feedback/feedback.md'
+    ].replace('_kind: sidebar', '_kind: sidebar\n_gates: generate');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /_gates 'generate' names no existing phase/);
+  });
+
+  it('rejects _gates naming a terminal', () => {
+    const files = chainSkill();
+    files['references/phases/feedback/feedback.md'] = files[
+      'references/phases/feedback/feedback.md'
+    ].replace('_kind: sidebar', '_kind: sidebar\n_gates: complete');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /_gates 'complete' names a terminal/);
+  });
+
+  it('rejects _gates on a backbone phase', () => {
+    const files = chainSkill();
+    files['references/phases/discover/discover.md'] = files[
+      'references/phases/discover/discover.md'
+    ].replace('_init: true', '_init: true\n_gates: clarify');
+    const findings = validateFixture(files);
+    assert.match(findings.map((f) => f.message).join('\n'), /backbone phase 'discover' must NOT declare _gates/);
+  });
+
   it('rejects a backbone phase that declares a phase-level _trigger', () => {
     const files = chainSkill();
     files['references/phases/clarify/clarify.md'] = files[

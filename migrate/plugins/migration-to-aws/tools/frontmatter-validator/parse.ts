@@ -21,7 +21,7 @@ const PHASE_KEYS = new Set([
   "_phase", "_title", "_kind", "_requires_phase", "_init", "_interactive",
   "_input", "_fragments", "_trigger", "_assemble", "_produces", "_advances_to",
   "_exec", "_re_entry_guard", "_preconditions", "_postconditions",
-  "_forbids_files", "_knowledge",
+  "_forbids_files", "_knowledge", "_gates",
 ]);
 /** The closed vocabulary of check kinds usable in _preconditions/_postconditions. */
 export const CHECK_KINDS = new Set([
@@ -299,6 +299,7 @@ export function parsePhase(path: string, fm: string): PhaseFrontmatter {
     produces: artifactList(fm, "_produces").map((a) => a.file),
     producesRefs: artifactList(fm, "_produces"),
     advancesTo: scalar(fm, "_advances_to"),
+    gates: scalar(fm, "_gates"),
     exec: parseExec(fm),
     reEntryGuard: parseReEntryGuard(fm),
     preconditions: parseChecks(fm, "_preconditions"),
