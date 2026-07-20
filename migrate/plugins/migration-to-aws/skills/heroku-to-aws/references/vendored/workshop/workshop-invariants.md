@@ -23,9 +23,9 @@
   "Inventory changed since baseline. Re-run Discover before workshop reprice."
   on any difference.
 
-## 2. Checkpoint state semantics
+## 2. Sidebar state semantics
 
-- The workshop is a checkpoint: it NEVER becomes `current_phase`. Entry sets
+- The workshop is a sidebar: it NEVER becomes `current_phase`. Entry sets
   `phases.workshop: "in_progress"`; `current_phase` stays at `"estimate"`
   until exit/decline.
 - Exit to Generate (assembler): `phases.workshop: "completed"`,

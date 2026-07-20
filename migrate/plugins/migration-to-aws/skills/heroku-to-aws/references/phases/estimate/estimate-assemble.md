@@ -116,8 +116,8 @@ After outer-run `HANDOFF_OK` (not an inner workshop reprice):
 1. Mark `phases.estimate` → `"completed"`.
 2. Ensure `phases.workshop` exists (seed `"pending"` if the key is missing).
 3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
-   `"estimate"` until the workshop checkpoint is resolved (entered then exited, or
-   declined). This matches checkpoint semantics: workshop never owns
+   `"estimate"` until the workshop sidebar is resolved (entered then exited, or
+   declined). This matches sidebar semantics: workshop never owns
    `current_phase`, and mid-workshop fixtures correctly stay on `estimate`.
 4. Offer the what-if workshop below.
 
@@ -137,12 +137,12 @@ and compare priced scenarios without re-discovering inventory.
 [B] Proceed toward Generate
 ```
 
-- **A** → Load `references/phases/workshop/workshop.md` (checkpoint) and follow it
+- **A** → Load `references/phases/workshop/workshop.md` (sidebar) and follow it
   (baseline capture if `scenarios/` missing, then the sheet). Keep
   `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
 - **B** → Mark `phases.workshop` → `"completed"` (resolved/declined — no
   `scenarios/` required). Set `current_phase` → `"generate"`. Continue with the
-  Feedback/Generate checkpoints in `SKILL.md`.
+  Feedback/Generate sidebars in `SKILL.md`.
 
 On first workshop entry after this Estimate, `workshop-refresh.md` baseline
 capture snapshots the current artifacts as `scenario-001` before any edits.

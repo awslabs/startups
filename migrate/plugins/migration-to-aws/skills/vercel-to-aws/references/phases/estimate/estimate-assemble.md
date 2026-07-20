@@ -170,7 +170,7 @@ After outer-run `HANDOFF_OK`:
 1. Mark `phases.estimate` → `"completed"`.
 2. Ensure `phases.workshop` exists (seed `"pending"` if missing).
 3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
-   `"estimate"` until the workshop checkpoint is resolved (entered then exited,
+   `"estimate"` until the workshop sidebar is resolved (entered then exited,
    or declined).
 4. Offer the what-if workshop below.
 
@@ -221,7 +221,7 @@ change traffic shape, outcome (A/B/C), region, Multi-AZ, or CPU architecture
 [B] Proceed toward Generate
 ```
 
-- **A** → Load `references/phases/workshop/workshop.md` (checkpoint; baseline
+- **A** → Load `references/phases/workshop/workshop.md` (sidebar; baseline
   capture if `scenarios/` missing, then the sheet). Keep
   `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
 - **B** → Mark `phases.workshop` → `"completed"` (resolved/declined). Set

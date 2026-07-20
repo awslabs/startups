@@ -9,10 +9,10 @@ _produces:
   - scenarios/index.json
 ---
 
-# Workshop — Assemble (checkpoint resolve)
+# Workshop — Assemble (sidebar resolve)
 
-> Marks the workshop checkpoint resolved and returns control to the backbone.
-> Does **not** set `current_phase` to `workshop` (forbidden for checkpoints).
+> Marks the workshop sidebar resolved and returns control to the backbone.
+> Does **not** set `current_phase` to `workshop` (forbidden for sidebars).
 
 ## When exiting to Generate
 
@@ -20,7 +20,7 @@ _produces:
 2. Ensure `scenarios/index.json` exists (baseline-only is enough if user entered
    then exited without Apply).
 3. Update `.phase-status.json`:
-   - `phases.workshop` → `"completed"` (checkpoint resolved — participated)
+   - `phases.workshop` → `"completed"` (sidebar resolved — participated)
    - `current_phase` → `"generate"`
    - `last_updated` → now
 4. Emit:

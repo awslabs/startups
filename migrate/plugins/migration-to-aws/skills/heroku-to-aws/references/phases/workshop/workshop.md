@@ -1,7 +1,7 @@
 ---
 _phase: workshop
 _title: "What-If Workshop (Optional)"
-_kind: checkpoint
+_kind: sidebar
 _requires_phase: estimate
 _trigger:
   {
@@ -45,9 +45,9 @@ _postconditions:
     _on_failure: _warn_and_skip
 ---
 
-# Phase: What-If Workshop (Checkpoint)
+# Phase: What-If Workshop (Sidebar)
 
-> **Checkpoint** (`_kind: checkpoint`), not a backbone step — same class as
+> **Sidebar** (`_kind: sidebar`), not a backbone step — same class as
 > `feedback`. Entered only when its `_trigger` fires; has **no** `_advances_to`;
 > never becomes `current_phase`. Returns control to the Estimate→Generate flow.
 > Contract: `references/shared/schema-workshop-scenarios.md`.
@@ -60,7 +60,7 @@ _postconditions:
 2. If `phases.generate` (or later) is `completed`, apply Estimate `_re_entry_guard`
    confirm → `reset_downstream_to_pending` before refreshing.
 3. Set `phases.workshop` to `"in_progress"` (do not change `current_phase` —
-   checkpoints never own it). Prefer leaving `current_phase` at `estimate` until
+   sidebars never own it). Prefer leaving `current_phase` at `estimate` until
    the user exits workshop to Generate (see `estimate-assemble.md` deferred
    advance).
 
@@ -72,7 +72,7 @@ _postconditions:
    - **Apply & reprice** → `workshop-refresh.md` (inner Design/Estimate) →
      `workshop-compare.md`
    - **Compare scenarios** → `workshop-compare.md`
-   - **Exit to Generate** → `workshop-assemble.md` (resolve checkpoint) → return
+   - **Exit to Generate** → `workshop-assemble.md` (resolve sidebar) → return
    - **Exit to full Clarify** → danger; Clarify re-entry only on explicit confirm
 
 ## Hard rules
@@ -95,5 +95,5 @@ file wins — fix this table.
 
 When Estimate offer **[B] Proceed toward Generate** is chosen, do not enter this
 phase's fragments — mark `phases.workshop` `"completed"` (resolved/declined) per
-checkpoint semantics in `INTERPRETER.md`, then advance `current_phase` to
+sidebar semantics in `INTERPRETER.md`, then advance `current_phase` to
 `generate`.

@@ -1,6 +1,6 @@
-# Phase: What-If Workshop (Optional Checkpoint)
+# Phase: What-If Workshop (Optional Sidebar)
 
-> **Checkpoint**, not a backbone step — same class as Feedback. Entered only when
+> **Sidebar**, not a backbone step — same class as Feedback. Entered only when
 > the user opts in after Estimate (or says what if / reprice / workshop mode /
 > compare scenarios). Never becomes `current_phase`. Returns control to the
 > Estimate→Generate flow. Contract:
@@ -57,4 +57,4 @@ file wins — fix this table.
 
 When Estimate offer **[B] Proceed toward Generate** is chosen, mark
 `phases.workshop` `"completed"` (resolved/declined), set `current_phase` to
-`"generate"`, then continue Feedback/Generate checkpoints in `SKILL.md`.
+`"generate"`, then continue Feedback/Generate sidebars in `SKILL.md`.

@@ -111,7 +111,7 @@ message.
 Output to the founder: "Your assessment report is ready:
 `$MIGRATION_DIR/migration-report.html`. [one-sentence recommendation summary].
 Would you like a scaffold generated for this outcome?" (See `SKILL.md` §
-Scaffold Checkpoint for the exact prompt.)
+Scaffold Sidebar for the exact prompt.)
 
 ---
 
@@ -131,7 +131,7 @@ Scaffold Checkpoint for the exact prompt.)
 
 FORBIDDEN — Do NOT include ANY of:
 
-- Terraform/SST generation (that is the Scaffold checkpoint's job)
+- Terraform/SST generation (that is the Scaffold sidebar's job)
 - Re-running the Recommendation Engine or Discover's fragments
 - Presenting a validator-did-not-run result as a pass
 
