@@ -1,0 +1,15 @@
+{
+  "migration_id": "0719-gcp-ws",
+  "resources": [
+    {
+      "id": "run:web",
+      "type": "google_cloud_run_v2_service",
+      "name": "web"
+    },
+    {
+      "id": "sql:main",
+      "type": "google_sql_database_instance",
+      "name": "main"
+    }
+  ]
+}

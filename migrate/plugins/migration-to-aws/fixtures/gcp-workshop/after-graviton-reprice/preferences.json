@@ -1,0 +1,33 @@
+{
+  "design_constraints": {
+    "target_region": {
+      "value": "us-east-1",
+      "chosen_by": "default",
+      "prompt": "region",
+      "design_consequence": "deploy region"
+    },
+    "availability": {
+      "value": "single-az",
+      "chosen_by": "default",
+      "prompt": "ha",
+      "design_consequence": "RDS AZ"
+    },
+    "kubernetes": {
+      "value": "ecs-fargate",
+      "chosen_by": "user",
+      "prompt": "compute",
+      "design_consequence": "Fargate"
+    },
+    "cpu_architecture": {
+      "value": "graviton",
+      "chosen_by": "user",
+      "prompt": "arch",
+      "design_consequence": "instance family"
+    }
+  },
+  "workshop": {
+    "active": true,
+    "last_sheet_at": "2026-07-19T19:05:00Z",
+    "active_scenario_id": "scenario-002"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "baseline_scenario_id": "scenario-001",
+  "active_scenario_id": "scenario-002",
+  "max_scenarios": 5,
+  "inventory_fingerprint": "0b5d7ee9a96ec6e4c48983e5dbc7fb7e52c134e66da297307d4f7681aeb6929c",
+  "scenarios": [
+    {
+      "scenario_id": "scenario-001",
+      "label": "baseline",
+      "created_at": "2026-07-19T18:30:00Z",
+      "source": "baseline",
+      "manifest": "scenarios/scenario-001.json"
+    },
+    {
+      "scenario_id": "scenario-002",
+      "label": "graviton",
+      "created_at": "2026-07-19T19:05:00Z",
+      "source": "workshop",
+      "manifest": "scenarios/scenario-002.json"
+    }
+  ]
+}

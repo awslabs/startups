@@ -1,0 +1,19 @@
+{
+  "phase": "design",
+  "services": [
+    {
+      "aws_service": "ECS Fargate",
+      "aws_config": {
+        "cpu_architecture": "X86_64",
+        "region": "us-east-1"
+      }
+    },
+    {
+      "aws_service": "RDS PostgreSQL",
+      "aws_config": {
+        "instance_class": "db.t4g.micro",
+        "multi_az": false
+      }
+    }
+  ]
+}
