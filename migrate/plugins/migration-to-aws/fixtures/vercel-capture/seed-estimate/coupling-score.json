@@ -1,0 +1,100 @@
+{
+  "phase": "discover",
+  "timestamp": "2026-07-21T17:42:00Z",
+  "items": [
+    {
+      "id": "isr",
+      "title": "ISR / on-demand revalidation",
+      "detected": true,
+      "detection_method": "prerender-manifest.json shows /blog/[slug] prerendered with initialRevalidateSeconds: 3600 (2 paths); no revalidateTag/revalidatePath calls found in the available source configs",
+      "weight_rationale": "Portable via OpenNext but requires the tag cache and revalidation queue to be provisioned as a unit, not independently - see Pre-Flight Check I1.",
+      "confidence": "MEDIUM",
+      "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "id": "edge_middleware",
+      "title": "Edge middleware",
+      "detected": true,
+      "detection_method": "middleware.ts exists (prescan has_middleware: true); matcher covers /dashboard/:path* (auth_gating) and /old-blog/:path* (rewrite)",
+      "weight_rationale": "Behavioral divergence on every AWS outcome - see Pre-Flight Check M1 (flagship).",
+      "confidence": "MEDIUM",
+      "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "id": "edge_runtime_routes",
+      "title": "Edge runtime routes",
+      "detected": false,
+      "detection_method": "no runtime: 'edge' declarations found in next.config.js or available route segment configs",
+      "weight_rationale": "Edge runtime routes hit Lambda@Edge-style constraints (smaller runtime, limited Node API surface) when migrated.",
+      "confidence": "MEDIUM",
+      "upgrade_input": "full app/ source tree access (only build manifests and top-level configs are present in the workspace)",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "id": "image_optimization",
+      "title": "Image optimization",
+      "detected": true,
+      "detection_method": "next.config.js images.remotePatterns configured for cdn.acme-shop.com; next/image component usage not directly verifiable (app/ source tree not present in workspace)",
+      "weight_rationale": "Portable - OpenNext ships its own sharp-based image optimization; see Pre-Flight Check B3 for the duplicate-dependency conflict.",
+      "confidence": "MEDIUM",
+      "upgrade_input": "full app/ source tree access (only build manifests and top-level configs are present in the workspace)",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "id": "streaming_ssr",
+      "title": "Streaming SSR",
+      "detected": false,
+      "detection_method": "no streaming response patterns (ReadableStream, Response with stream body) found; route handler source files not present in workspace to scan",
+      "weight_rationale": "A known Lambda workaround exists for empty-body streams (see Pre-Flight Check S1); next start (Outcome B) streams natively.",
+      "confidence": "MEDIUM",
+      "upgrade_input": "full app/ source tree access (only build manifests and top-level configs are present in the workspace)",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "id": "server_actions_version_skew",
+      "title": "Server Actions / version skew exposure",
+      "detected": "unknown",
+      "detection_method": "Next.js 15.1.0 (App Router in use per app-path-routes-manifest.json) supports Server Actions, but Server Actions usage in source cannot be verified - app/ source tree not present in workspace",
+      "weight_rationale": "Vercel handles skew protection (mismatched client/server deploy versions) automatically; the AWS path must address this explicitly regardless of outcome.",
+      "confidence": "LOW",
+      "upgrade_input": "full app/ source tree access (only build manifests and top-level configs are present in the workspace)",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "id": "preview_deployments",
+      "title": "Preview deployments",
+      "detected": "pending_clarify",
+      "detection_method": "Clarify Q4 (team workflow) - not detectable from code alone; note: the deployments API capture shows 2 recent preview deployments, suggesting active use, but the resolved value comes from clarify-answers.json",
+      "weight_rationale": "No AWS equivalent exists; drives the Outcome C (Hybrid) precedence rule. The single heaviest 'what you lose' item in every report.",
+      "confidence": "LOW",
+      "upgrade_input": "Clarify Q4 answer (preview-deployment workflow dependence)",
+      "computed_from_inputs": ["clarify_q4_preview_dependence"]
+    },
+    {
+      "id": "vercel_managed_stores",
+      "title": "Vercel KV / Postgres / Blob / Edge Config / Cron",
+      "detected": true,
+      "detection_method": "Vercel API stores capture: KV store 'acme-cart-cache' (50 MB, iad1) and Postgres store 'acme-orders-db' (3 GB, iad1); one cron in vercel.json; @vercel/kv and @vercel/postgres are package.json dependencies",
+      "weight_rationale": "Clean peripheral mappings exist for all of these - see knowledge/peripheral-mappings.json.",
+      "confidence": "MEDIUM",
+      "upgrade_input": "infrastructure-pointing env var hostnames shared explicitly by the founder (Tier 3)",
+      "computed_from_inputs": ["vercel_api_token"]
+    },
+    {
+      "id": "vercel_injected_headers",
+      "title": "Vercel-injected headers (geo, IP)",
+      "detected": false,
+      "detection_method": "grep for x-vercel-ip-* and similar headers across middleware.ts and available server code found no usage",
+      "weight_rationale": "Needs a CloudFront-headers rewrite mapping - see Pre-Flight Check M2.",
+      "confidence": "MEDIUM",
+      "upgrade_input": "full app/ source tree access (only build manifests and top-level configs are present in the workspace)",
+      "computed_from_inputs": ["repo_access"]
+    }
+  ],
+  "phased_migration_candidate": {
+    "flagged": false,
+    "note": "coupling is spread across ISR, middleware, and managed stores at ordinary levels - no single component is at unusually high coupling relative to the rest"
+  }
+}
