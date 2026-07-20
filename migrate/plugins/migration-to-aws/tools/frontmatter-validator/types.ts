@@ -73,8 +73,8 @@ export interface PhaseFrontmatter {
   sourceFile: string; // absolute path, for messages
   phase: string; // _phase
   title: string | null;
-  /** _kind: 'checkpoint' (off-backbone, trigger-entered) or 'backbone' (default when absent). */
-  role: "backbone" | "checkpoint";
+  /** _kind: 'sidebar' (off-backbone, trigger-entered) or 'backbone' (default when absent). */
+  role: "backbone" | "sidebar";
   requiresPhase: string | null;
   init: boolean; // _init
   /** _interactive: does this phase's WORK (fragments + assembler) prompt the user?
@@ -82,7 +82,7 @@ export interface PhaseFrontmatter {
    *  (a file-only worker cannot converse). null = the key is absent (unspecified). */
   interactive: boolean | null;
   fragments: FragmentRef[];
-  /** phase-level _trigger (checkpoint phases only) — how the phase is entered. null for backbone. */
+  /** phase-level _trigger (sidebar phases only) — how the phase is entered. null for backbone. */
   trigger: Trigger | null;
   assembleFile: string | null; // _assemble._file
   produces: string[]; // _produces filenames (bare + conditional, filename only)

@@ -44,7 +44,7 @@ it reads `.phase-status.json`, determines the current phase, runs each phase's
 `_preconditions` / fragments / `_assemble` / `_postconditions`, advances on `HANDOFF_OK`
 via `_advances_to`, and validates state. The backbone (intake → discover → clarify →
 confirm → design → estimate → generate → migration-plan → poc → complete) and the
-one checkpoint branch (add-capabilities) are derived
+one sidebar branch (add-capabilities) are derived
 from the phase files' frontmatter — they are not restated here.
 
 **Cold start (entry phase).** With no run under `.agent-advisor/` carrying a
@@ -67,8 +67,8 @@ phase (the one carrying `_init: true`). On a warm start, `current_phase` in
 
 ## Routing & gates (orchestration)
 
-Checkpoint placement and conditional backbone routing are orchestration prose owned by
-this file (`INTERPRETER.md` § Skill bindings, § Backbone vs checkpoint).
+Sidebar placement and conditional backbone routing are orchestration prose owned by
+this file (`INTERPRETER.md` § Skill bindings, § Backbone vs sidebar).
 
 **Entry-point routing:**
 

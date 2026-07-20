@@ -146,7 +146,7 @@ After outer-run `HANDOFF_OK`, use the Phase Status Update Protocol
 1. Set `phases.estimate` to `"completed"`
 2. Ensure `phases.workshop` exists (seed `"pending"` if missing)
 3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
-   `"estimate"` until the workshop checkpoint is resolved (entered then exited,
+   `"estimate"` until the workshop sidebar is resolved (entered then exited,
    or declined)
 4. Offer the what-if workshop below (infra route only)
 
@@ -167,7 +167,7 @@ and compare priced scenarios without re-discovering inventory.
 - **A** → Load `references/phases/workshop/workshop.md`. Keep
   `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
 - **B** → Mark `phases.workshop` → `"completed"`. Set `current_phase` →
-  `"generate"`. Continue with Feedback/Generate checkpoints in `SKILL.md`.
+  `"generate"`. Continue with Feedback/Generate sidebars in `SKILL.md`.
 
 For AI-only / billing-only runs (no infra inventory), skip the workshop offer and
 set `phases.workshop` → `"completed"`, `current_phase` → `"generate"`.

@@ -17,7 +17,7 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 - **Flat resource model**: Heroku resources are organized per-app without dependency graphs or clustering. No topological sorting, typed edges, or cluster formation logic. Resources are processed as a flat list in input order.
 - **Deterministic mappings**: Core services use fixed lookup tables (Dyno Type Table, Postgres Plan Table, Redis Plan Table, Kafka Plan Table). Common add-ons use the Fast-Path Table. Unknown add-ons hit the specialist gate.
 - **DMS has Heroku constraints**: AWS DMS cannot perform continuous replication (CDC) with Heroku Postgres because Heroku does not grant the REPLICATION role. DMS is for one-time bulk migration with a cutover window only. The skill must surface this constraint when DMS is selected.
-- **What-if after Estimate**: After costs are computed, SAs can enter an optional what-if workshop checkpoint (`references/phases/workshop/workshop.md`) to change region, HA, compute target, or CPU architecture (x86 vs Graviton), refresh Design + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Region dollar deltas need awspricing MCP; without it, rates stay us-east-1-cache-based. Workshop arch defaults to **x86_64** here (EB tables historically x86-first); vercel-to-aws defaults workshop arch to **arm64**.
+- **What-if after Estimate**: After costs are computed, SAs can enter an optional what-if workshop sidebar (`references/phases/workshop/workshop.md`) to change region, HA, compute target, or CPU architecture (x86 vs Graviton), refresh Design + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Region dollar deltas need awspricing MCP; without it, rates stay us-east-1-cache-based. Workshop arch defaults to **x86_64** here (EB tables historically x86-first); vercel-to-aws defaults workshop arch to **arm64**.
 
 ---
 
@@ -74,7 +74,7 @@ skill's entry phase (the one carrying `_init: true`). The interpreter loads THIS
 phase directly; it does not scan every phase's frontmatter to discover the root.
 All subsequent phases are reached by following each phase's `_advances_to`. On a
 warm start, `current_phase` in `.phase-status.json` is authoritative **except**
-when deferred-advance checkpoint resume applies (`INTERPRETER.md` § The
+when deferred-advance sidebar resume applies (`INTERPRETER.md` § The
 interpreter loop step 2 — Estimate completed + `workshop` pending/in_progress
 must not re-run Estimate).
 
@@ -128,11 +128,11 @@ heroku-to-aws/
 │   │   ├── estimate/
 │   │   │   └── estimate.md                     # Phase 4: Cost projection
 │   │   ├── workshop/
-│   │   │   ├── workshop.md                     # Checkpoint: optional post-Estimate what-if
+│   │   │   ├── workshop.md                     # Sidebar: optional post-Estimate what-if
 │   │   │   ├── workshop-sheet.md               # Assumption sheet knobs
 │   │   │   ├── workshop-refresh.md             # Patch prefs → Design → Estimate → snapshot
 │   │   │   ├── workshop-compare.md             # Side-by-side scenarios
-│   │   │   └── workshop-assemble.md            # Resolve checkpoint → return to Generate
+│   │   │   └── workshop-assemble.md            # Resolve sidebar → return to Generate
 │   │   ├── generate/
 │   │   │   ├── generate.md                     # Phase 5: Generate orchestrator
 │   │   │   ├── generate-terraform.md           # Terraform configurations
@@ -176,25 +176,25 @@ heroku-to-aws/
 - **Cost currency**: USD
 - **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). Complexity tiers are classified per `references/vendored/estimate/complexity-tiers.json`.
 
-## Feedback & Sharing Checkpoints
+## Feedback & Sharing Sidebars
 
 The interpreter loop (`INTERPRETER.md` § The interpreter loop) drives phase
 sequencing, gates, and state. This section defines only the heroku-specific
-checkpoint orchestration: WHERE the optional `workshop` and `feedback`
-checkpoints are offered (placement is orchestration prose, not part of the phase
-contract). Both are `_kind: checkpoint` — off-backbone, trigger-entered, never
+sidebar orchestration: WHERE the optional `workshop` and `feedback`
+sidebars are offered (placement is orchestration prose, not part of the phase
+contract). Both are `_kind: sidebar` — off-backbone, trigger-entered, never
 `current_phase`.
 
 > **Plan-share links are GATED OFF.** The share landing page
 > (`https://aws.amazon.com/startups/migrate/connect`) is not yet live (404). Do
-> NOT offer, generate, or present a share link at any checkpoint. The share-link
+> NOT offer, generate, or present a share link at any sidebar. The share-link
 > spec is preserved in `references/phases/feedback/feedback-collect.md` Step 3
 > (itself gated) for when the page ships; restoring the share prompts here is the
 > un-gating change.
 
 - **After Discover**: No prompt. Proceed directly to Clarify.
 
-- **After Estimate**: First offer the what-if workshop checkpoint per
+- **After Estimate**: First offer the what-if workshop sidebar per
   `estimate-assemble.md` (Enter workshop / Proceed toward Generate). Outer
   Estimate keeps `current_phase: estimate` until workshop is resolved (entered
   then exited via `workshop-assemble.md`, or declined). If the user enters
