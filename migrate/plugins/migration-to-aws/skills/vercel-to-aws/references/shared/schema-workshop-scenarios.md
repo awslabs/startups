@@ -124,7 +124,8 @@ differs (re-Discover required).
     "aws_monthly_optimized": 0,
     "complexity_tier": "small",
     "pricing_source": "cached",
-    "region_note": null
+    "region_note": null,
+    "calculator_url": null
   },
   "paths": {
     "clarify_answers": "scenarios/scenario-003.clarify-answers.json",

@@ -26,5 +26,7 @@ _of_phase: workshop
 | -------- | ------- | ------ | ---- | -------- | ------- | ------------ | ------------- | -------------- | ---------- |
 
 Under the table: active vs baseline `preferences_subset`; any `region_note`
-(remind: regional deltas need awspricing MCP); reminder that
-discovery/coupling/preflight are frozen. Keep under 25 lines.
+(remind: regional deltas need awspricing MCP); one `{scenario}: {url}` line
+per non-null `estimation_summary.calculator_url` (shareable, editable
+calculator.aws estimate — AWS computes regional prices server-side there);
+reminder that discovery/coupling/preflight are frozen. Keep under 25 lines.

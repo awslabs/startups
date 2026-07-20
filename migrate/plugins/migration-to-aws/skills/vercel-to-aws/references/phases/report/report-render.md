@@ -242,6 +242,9 @@ render `<section id="what-if-scenarios">` **after** `cost-comparison` and
    - Active vs baseline knob deltas from the active manifest's
      `preferences_subset` (plain language — no internal JSON path dump).
    - Any non-null `region_note` once (regional dollar deltas need awspricing).
+   - For each scenario with a non-null `estimation_summary.calculator_url`,
+     render an "open in AWS Pricing Calculator" link — stakeholders can open
+     and edit that estimate (AWS computes regional prices server-side).
    - Reminder: discovery / coupling / preflight are frozen; generated Terraform
      matches the **active** scenario only.
 5. TOC: include a link to `#what-if-scenarios` only when this section is rendered.
