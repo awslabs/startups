@@ -1,0 +1,28 @@
+{
+  "Q1_traffic_shape": {
+    "prompt": "traffic shape?",
+    "answer": "spiky \u2014 peak:median ~8:1",
+    "workshop_note": "edited in what-if workshop 2026-07-19T19:00:00Z; original: sustained",
+    "design_consequence": "feeds recommend A vs B"
+  },
+  "Q2_migration_trigger": {
+    "prompt": "trigger?",
+    "answer": "bill size",
+    "design_consequence": "report narrative"
+  },
+  "Q7_database_size": {
+    "prompt": "db size?",
+    "answer": "10-50GB",
+    "design_consequence": "RDS class"
+  },
+  "workshop": {
+    "active": true,
+    "target_region": "us-east-1",
+    "availability_multi_az_balanced": false,
+    "cpu_architecture": "x86_64",
+    "outcome_override": "B",
+    "backend_shape_override": null,
+    "last_sheet_at": "2026-07-19T19:00:00Z",
+    "active_scenario_id": "scenario-002"
+  }
+}

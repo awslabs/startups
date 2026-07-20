@@ -64,6 +64,14 @@
         "migrate_if": { "type": "array" },
         "stay_if": { "type": "array" }
       }
+    },
+    "workshop": {
+      "type": "object",
+      "description": "Optional what-if workshop metadata. Omitted when workshop unused.",
+      "properties": {
+        "scenario_id": { "type": ["string", "null"] },
+        "region_note": { "type": ["string", "null"] }
+      }
     }
   }
 }

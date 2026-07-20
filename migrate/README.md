@@ -34,6 +34,16 @@ Point this plugin at your Heroku account (via your authenticated Heroku CLI, rea
 - **Generates a layered recommendation, a migration plan, and a deployable POC** — from "which runtime" through a full plan (reusing the migration engine) to runnable proof-of-concept code and deploy scripts on the chosen runtime
 - **Not a cloud migration** — this is the entry point for deciding how and where to run agents on AWS, whether you're building fresh, deploying existing code, or adding AgentCore capabilities to agents already on AWS
 
+**For Vercel migrations:**
+
+- **Derives what it can't export** — Vercel's infrastructure (CloudFront-equivalent behaviors, function tuning, edge routing) isn't directly readable, so discovery works from your build output, source configs (`next.config.js`, `middleware.ts`, `vercel.json`), and the Vercel API instead
+- **Computes a Coupling Score** — ISR, edge middleware, edge runtime routes, image optimization, streaming SSR, preview deployments, and Vercel-managed stores (KV/Postgres/Blob/Edge Config/Cron), each with a detection method and why it matters
+- **Runs 10 named Pre-Flight Checks** — including a flagship check for cached routes that intersect with middleware (a behavior change on every AWS target, not just one), computed unconditionally and filtered to whatever outcome fits you
+- **Recommends one of three honest outcomes** — OpenNext/SST (serverless), ECS Fargate (containerized), or a Vercel+AWS Hybrid (your backend moves, your Next.js app and PR previews stay on Vercel) — via a fixed, auditable decision order, never a guess
+- **Tells you what you'd lose** — PR preview deployments first, always — and says plainly when this tooling isn't a fit for you (a low-traffic app with no AWS credits is often better served by a VPS)
+- **Estimates costs with Vercel comparison** — three-tier AWS projection (Premium/Balanced/Optimized) compared against your current Vercel spend, using cached AWS pricing data with live MCP fallback
+- **Generates production-ready Terraform** — `baseline.tf` (GuardDuty, CloudTrail, IMDSv2, budget alerts), VPC, compute (Fargate/Lambda/SST per outcome), peripherals (RDS, ElastiCache, S3, EventBridge), and numbered migration scripts with dry-run defaults
+
 ## Plugins
 
 | Plugin               | Description                                                                                                                                                                                                                           | Status    |
@@ -97,6 +107,14 @@ After installation, just describe what you want to migrate:
 - "Estimate AWS costs for my Heroku workload"
 - "Migrate my Heroku Private Space to AWS"
 
+**Vercel assessments:**
+
+- "Migrate my Next.js app off Vercel"
+- "Assess my Vercel migration"
+- "Should I migrate off Vercel"
+- "Vercel to Fargate"
+- "Vercel coupling score"
+
 **Running AI agents on AWS (agent-advisor):**
 
 - "Which runtime should I use for my agent — AgentCore, ECS, EKS, or Lambda?"
@@ -141,6 +159,18 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 | Secrets        | Config vars → AWS Secrets Manager or SSM Parameter Store                                                                                                                   |
 | Load Balancing | Web dynos → ALB; non-web → no ALB                                                                                                                                          |
 
+### Vercel → AWS
+
+| Category            | Vercel → AWS                                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Compute (Outcome A) | Next.js app → OpenNext/SST (server functions, CloudFront, ISR tag cache + revalidation queue, image optimization) |
+| Compute (Outcome B) | Next.js app → ECS Fargate (`next start` behind ALB + CloudFront)                                                  |
+| Compute (Outcome C) | Backend/API routes → API Gateway + Lambda or Fargate (Terraform); Next.js app + PR previews stay on Vercel        |
+| Storage             | Blob → S3, Postgres → RDS/Aurora (Neon often correct to keep), KV → ElastiCache (Upstash often correct to keep)   |
+| Config/Secrets      | Edge Config → Parameter Store/AppConfig, env vars → Secrets Manager/SSM                                           |
+| Scheduling          | Cron → EventBridge Scheduler                                                                                      |
+| Detect-only         | Preview deployments (no AWS equivalent — this drives the Hybrid outcome and is the top "what you lose" item)      |
+
 ## What You Get That a Base LLM Can't
 
 **Infrastructure:**
@@ -171,6 +201,7 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS"                                                                        |
 | **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                                                           |
+| **vercel-to-aws** | "migrate from Vercel", "Vercel to AWS", "move off Vercel", "migrate Next.js off Vercel", "assess my Vercel migration", "leave Vercel", "Vercel to Fargate", "Vercel to OpenNext", "should I migrate off Vercel"                                                                                                                 |
 | **agent-advisor** | "which runtime for my agent", "AgentCore vs ECS vs EKS vs Lambda", "deploy an AI agent on AWS", "I have an agent idea — what do I build", "move my agents to AWS with a plan", "add AgentCore memory/gateway/identity to my agent", "migrate Temporal workers to AWS", "run Temporal on AWS", "build a POC for my agent on AWS" |
 
 ## MCP Servers
@@ -188,6 +219,7 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 - At least one input source: an authenticated Heroku CLI (Heroku migrations), Terraform files, application code, or billing data
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
 - **For Heroku migration:** an authenticated Heroku CLI (recommended — live, read-only discovery with your consent) or Terraform files with `heroku_*` resources (Procfile/app.json supplements but cannot stand alone). When both are available, live data is authoritative for current state and Terraform drift is surfaced.
+- **For Vercel migration:** repo access with a locally-runnable `next build`, plus a Vercel API token, are both required — the assessment does not run on partial Tier 1 inputs. Vercel tokens can't be permission-scoped to read-only, so scope by resource instead (project-scoped when one project is in scope), pick a short expiration, and revoke after the assessment; the skill only ever issues read (GET) requests, enforced by its capture-step endpoint whitelist
 - **For agent-advisor:** `uv` (for deterministic scoring); application source code when deploying/migrating existing agents (an idea-only run needs no code)
 
 ## Structure

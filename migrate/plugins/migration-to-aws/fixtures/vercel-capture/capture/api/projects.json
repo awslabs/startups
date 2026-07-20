@@ -1,0 +1,13 @@
+{
+  "projects": [
+    {
+      "id": "prj_acmeshop01",
+      "name": "acme-shop",
+      "framework": "nextjs",
+      "nodeVersion": "20.x",
+      "latestDeployments": [
+        { "id": "dpl_prod042", "target": "production", "readyState": "READY", "createdAt": 1784050000000 }
+      ]
+    }
+  ]
+}

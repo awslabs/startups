@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vercel-to-AWS Assessment - reference-startup</title>
+<style>
+.verdict { font-weight: bold; }
+.trace-entry { margin-bottom: 1em; }
+.preflight-check-card { border: 1px solid #ccc; padding: 0.5em; }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <a href="#exec-verdict">Verdict</a>
+  <a href="#what-you-gain">What You Gain</a>
+  <a href="#what-you-lose">What You Lose</a>
+  <a href="#coupling-score">Coupling Score</a>
+  <a href="#preflight-findings">Pre-Flight Findings</a>
+  <a href="#decision-traceability">Decision Traceability</a>
+  <a href="#next-steps">Next Steps</a>
+</nav>
+
+<section id="exec-verdict">
+  <p class="verdict">Recommendation: migrate to ECS Fargate. Your sustained traffic and small team's preference for predictable, debuggable infrastructure both point the same way.</p>
+</section>
+
+<section id="what-you-gain">
+  <p>Owning your CDN configuration means you can cache aggressively enough to serve fewer origin requests, not just cheaper ones. Your bill becomes predictable instead of usage-spiky.</p>
+  <p>Separately, AWS Activate offers eligible early-stage startups credits (Founders tier: up to $5,000 self-service; Portfolio tier: up to $200,000 for VC/accelerator-backed companies) that apply directly to the AWS services this migration would use. Worth checking eligibility before finalizing a budget.</p>
+</section>
+
+<section id="what-you-lose">
+  <p>Preview deployments as you know them go away first. Your reviewers will need a different workflow for testing branches before merge. Skew protection (keeping mismatched client/server deploys from breaking users mid-deploy) also needs to be handled explicitly on AWS instead of automatically.</p>
+</section>
+
+<section id="inputs-received">
+  <p>Two findings above would upgrade with more input: the ISR completeness finding would firm up if you confirm your autoscaling instance count, and the uncached-route cost estimate would go from a rough guess to a firm number with 7-14 days of log drain data.</p>
+</section>
+
+<section id="appendix-m1">
+  <p>We detected middleware.ts on your project. Its matcher intersects several cached routes, and it appears to perform an authentication check. On every AWS target, a cached response from the CDN skips middleware entirely - so a visitor could receive a cached page that never had its auth check run.</p>
+</section>
+
+<section id="coupling-score">
+  <table>
+    <thead><tr><th>Feature</th><th>Detected</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>ISR / revalidation</td><td>Yes</td><td>Portable, needs a tag cache and queue together</td></tr>
+      <tr><td>Edge middleware</td><td>Yes</td><td>Behavioral divergence on every AWS target</td></tr>
+      <tr><td>Preview deployments</td><td>Yes (load-bearing)</td><td>No AWS equivalent exists</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="preflight-findings">
+  <div class="preflight-check-card">Your middleware runs auth checks on some pages that are also cached by the CDN - those checks get skipped on a cache hit.</div>
+  <div class="preflight-check-card">A handful of your API routes fire much more often than they're cached, which is estimated monthly cost of roughly $85 you could trim with better caching.</div>
+</section>
+
+<section id="decision-traceability">
+  <div class="trace-entry">The recommendation rule that fired: your team said production ownership and predictable debugging matter more than minimal ops overhead, and your traffic is steady rather than spiky - that combination pointed to the container-based path over the serverless one.</div>
+</section>
+
+<section id="out-of-scope">
+  <p>If you were a single low-traffic app with no AWS credits, a small VPS would be the more rational choice and this tooling would not be for you. That is not your situation here, since a separable backend surface exists.</p>
+</section>
+
+<section id="next-steps">
+  <ol>
+    <li>Review the coupling score and pre-flight findings above with your team.</li>
+    <li>Optionally upgrading to Next.js 16.2+ would unlock higher-confidence discovery for a future re-assessment - entirely your call, not required to proceed.</li>
+    <li>Opt in to the scaffold checkpoint when you are ready for a working Terraform skeleton.</li>
+  </ol>
+</section>
+
+<footer>
+  <p>This is a draft for review. Verify all figures before acting on this report.</p>
+</footer>
+
+</body>
+</html>

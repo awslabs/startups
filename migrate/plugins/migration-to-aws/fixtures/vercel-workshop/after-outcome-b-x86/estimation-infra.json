@@ -1,0 +1,54 @@
+{
+  "phase": "estimate",
+  "design_source": "recommendation.json",
+  "timestamp": "2026-07-19T19:05:00Z",
+  "pricing_source": {
+    "status": "cached",
+    "message": "us-east-1 cache"
+  },
+  "current_costs": {
+    "source": "user_provided",
+    "vercel_monthly": 125,
+    "baseline_note": "Q6 midpoint"
+  },
+  "projected_costs": {
+    "aws_monthly_premium": 180.0,
+    "aws_monthly_balanced": 165.0,
+    "aws_monthly_optimized": 110.0,
+    "aws_annual_optimized": 1320.0,
+    "breakdown": {
+      "total": {
+        "premium": 210.0,
+        "mid": 165.0,
+        "low": 130.0
+      },
+      "Fargate": {
+        "premium": 130.0,
+        "mid": 105.0,
+        "low": 85.0,
+        "pricing_source": "cached"
+      },
+      "RDS PostgreSQL": {
+        "premium": 80.0,
+        "mid": 60.0,
+        "low": 45.0,
+        "pricing_source": "cached"
+      }
+    }
+  },
+  "complexity_tier": "small",
+  "recommendation": {
+    "path": "migrate_optimized",
+    "path_label": "Migrate Optimized",
+    "migrate_if": [
+      "want AWS ownership"
+    ],
+    "stay_if": [
+      "preview DX critical"
+    ]
+  },
+  "workshop": {
+    "scenario_id": "scenario-002",
+    "region_note": null
+  }
+}

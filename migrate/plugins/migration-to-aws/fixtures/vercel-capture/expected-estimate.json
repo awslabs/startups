@@ -1,0 +1,36 @@
+{
+  "_comment": "Expected Estimate-phase outcomes for a replay seeded from seed-estimate/ (the validated discover->clarify->recommend chain outputs: Q6 spend answered $200-1000, recommendation an unresolved [A,B] tiebreak). Asserts the user-provided baseline midpoint, the both-paths tiebreak pricing (projected_costs = Outcome A, tiebreak_alternative = Outcome B, Property-16 on each), and the tiebreak honesty in the summary fields. Checked by check_expected_estimate.py.",
+  "current_costs": {
+    "source": "user_provided",
+    "vercel_monthly": 600.0,
+    "_math": "Q6_vercel_spend answer '$200-1000' -> documented midpoint $600 (estimate-cost-engine.md Part 1 rung 2)"
+  },
+  "tiebreak": {
+    "projected_costs_is_outcome_a": true,
+    "alternative_present": true,
+    "alternative_required_fields": [
+      "aws_monthly_premium",
+      "aws_monthly_balanced",
+      "aws_monthly_optimized",
+      "breakdown"
+    ],
+    "summary_must_mention": ["tiebreak", "log drain"]
+  },
+  "projected_costs": {
+    "tiers_positive": ["aws_monthly_premium", "aws_monthly_balanced", "aws_monthly_optimized"],
+    "balanced_equals_breakdown_sum": true
+  },
+  "cost_comparison": {
+    "vercel_monthly": 600.0,
+    "delta_consistent": true
+  },
+  "peripheral_services_must_be_priced": ["postgres", "kv", "cron"],
+  "recommendation_path_enum": ["migrate_optimized", "migrate_phased", "stay"],
+  "complexity_tier_enum": ["small", "medium", "large"],
+  "pricing_source_status_enum": ["cached", "cached_stale", "live", "cached_fallback", "unavailable"],
+  "must_not_exist": [
+    "terraform files (estimate _forbids_files)",
+    "any env var VALUE or token material",
+    "an api_billing_data source claim (no billing data exists in this scenario)"
+  ]
+}

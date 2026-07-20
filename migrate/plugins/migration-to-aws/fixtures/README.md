@@ -3,6 +3,7 @@
 Also see:
 
 - `gcp-workshop/` — GCP what-if workshop seed + graviton reprice + `check_expected_workshop.py`
+- `vercel-workshop/` — Vercel what-if workshop seed + outcome-B/x86 reprice + `check_expected_workshop.py`
 
 ## Migration report reference fixture
 
