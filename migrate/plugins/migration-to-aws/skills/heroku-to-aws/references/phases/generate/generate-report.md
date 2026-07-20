@@ -18,13 +18,13 @@ _contributes:
 
 ## Inputs
 
-| Artifact | Use |
-| -------- | --- |
-| `estimation-infra.json` | Recommendation path, three cost tiers, complexity |
-| `aws-design.json` | Short service count / primary compute target |
-| `preferences.json` | Region, HA, arch (active scenario = working tree) |
-| `scenarios/index.json` + manifests | What-if table when ≥2 scenarios |
-| `MIGRATION_GUIDE.md` | Must already exist (docs fragment ran first) |
+| Artifact                                                                                                                       | Use                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `estimation-infra.json`                                                                                                        | Recommendation path, three cost tiers, complexity                                                                                                                               |
+| `aws-design.json`                                                                                                              | Short service count / primary compute target                                                                                                                                    |
+| `preferences.json`                                                                                                             | Region, HA, arch (active scenario = working tree)                                                                                                                               |
+| `scenarios/index.json` + manifests **+ each scenario's `scenarios/scenario-NNN.preferences.json` / `.aws-design.json` copies** | What-if table when ≥2 scenarios — manifests carry the cost tiers/complexity; the per-scenario Region/HA/Compute/Arch columns come from the scenario's preferences/design copies |
+| `MIGRATION_GUIDE.md`                                                                                                           | Must already exist (docs fragment ran first)                                                                                                                                    |
 
 ---
 
@@ -47,11 +47,11 @@ service count.
 Write a **self-contained** HTML file to `$MIGRATION_DIR/migration-report.html`
 (inline CSS only). Required section IDs:
 
-| Section ID | Content |
-| ---------- | ------- |
-| `decision-summary` | Verdict / path label, complexity, one-sentence next action |
-| `exec-costs` | Heroku-vs-AWS or AWS three-tier table (estimated monthly); Balanced primary |
-| `next-steps` | Ordered list pointing to `MIGRATION_GUIDE.md` phases (not a procedure dump) |
+| Section ID         | Content                                                                                                                                                                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `decision-summary` | Verdict / path label, complexity, one-sentence next action                                                                                                                                                                             |
+| `exec-costs`       | Heroku-vs-AWS side-by-side when a Heroku baseline exists (`current_costs.source != "unavailable"`); otherwise the AWS three-tier table with a one-line note that no Heroku baseline was available. Estimated monthly; Balanced primary |
+| `next-steps`       | Ordered list pointing to `MIGRATION_GUIDE.md` phases (not a procedure dump)                                                                                                                                                            |
 
 ### Conditional — `what-if-scenarios`
 
@@ -127,9 +127,17 @@ part of Generate for heroku-to-aws (stakeholder deliverable), but a report
 failure should not delete Terraform/docs; repair the HTML and continue.
 
 Optional (non-blocking): if
-`$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py` exists, run it with
-`--migration-dir "$MIGRATION_DIR"` and branch on exit code the same way GCP
-does for its report validator. v1 may omit the script.
+`$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py` exists, run:
+
+```
+python3 scripts/validate-heroku-migration-report.py \
+  "$MIGRATION_DIR/migration-report.html" --migration-dir "$MIGRATION_DIR"
+```
+
+Exit 0 (`REPORT_OK`) → continue. Non-zero (`REPORT_FAIL | ...`) → repair the
+named section(s) and re-run once; if it still fails, keep the best HTML, record
+the failure line in `generation-warnings.json`, and continue (never a
+generation halt).
 
 ---
 
