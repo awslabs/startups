@@ -1,12 +1,12 @@
 {
-  "migration_id": "0715-1820",
-  "last_updated": "2026-07-15T18:36:00Z",
+  "migration_id": "0719-workshop",
+  "last_updated": "2026-07-19T18:30:00Z",
   "current_phase": "estimate",
   "phases": {
     "discover": "completed",
     "clarify": "completed",
     "design": "completed",
-    "estimate": "in_progress",
+    "estimate": "completed",
     "workshop": "pending",
     "generate": "pending",
     "feedback": "pending"

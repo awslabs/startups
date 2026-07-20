@@ -75,8 +75,11 @@ Composed of a cost-engine fragment + one assembler (declared in the frontmatter
 `_fragments`/`_assemble`); the interpreter runs the fragment, then the assembler,
 and evaluates the `_knowledge` guards to load the pricing/defaults/tier data. The
 fragment selects the pricing mode and computes the financial picture; the assembler
-writes the final artifact, runs the completion gate, and presents the summary — read
-each unit file for its own contract.
+writes the final artifact, runs the completion gate, presents the summary, and
+**offers the optional what-if workshop checkpoint**
+(`references/phases/workshop/workshop.md`, `_kind: checkpoint`) before Generate —
+read each unit file for its own contract. Outer Estimate defers
+`current_phase → generate` until workshop is resolved (see `estimate-assemble.md`).
 
 ---
 

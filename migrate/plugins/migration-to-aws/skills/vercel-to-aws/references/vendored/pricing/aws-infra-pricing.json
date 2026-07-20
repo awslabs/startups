@@ -1,7 +1,7 @@
 {
   "_comment": "Shared AWS infrastructure pricing rates (us-east-1, USD) for the estimate phase. Rates evolve on AWS's cadence, independent of the cost algorithm, so they live here as DATA and the estimate procedure does a lookup, not a guess. Each service carries its rates + a multi_az_handling key; the cost FORMULAS live in the estimate phase's prose (the algorithm is not data). Currently consumed by the heroku-to-aws skill; intended to be shared with gcp-to-aws. AI-model / Lambda / DynamoDB / Redshift / Athena / SageMaker rates are NOT here (gcp-specific; they remain in the gcp-to-aws pricing cache).",
   "_meta": {
-    "last_updated": "2026-06-14",
+    "last_updated": "2026-07-19",
     "region": "us-east-1",
     "currency": "USD",
     "accuracy": "\u00b15-10% infrastructure",
@@ -201,6 +201,6 @@
       "r6g.xlarge": 0.2016,
       "r6g.4xlarge": 0.8064
     },
-    "_instances_note": "Rates match heroku-to-aws/knowledge/design/dyno-eb-sizing.json. Largest Heroku dynos use m5.4xlarge/m5.8xlarge to meet memory requirements."
+    "_instances_note": "x86 rates match dyno-eb-sizing ec2_instance_type; Graviton rates ~20% below x86 counterparts for workshop arm64 path \u2014 verify via MCP for large estimates."
   }
 }
