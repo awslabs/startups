@@ -13,16 +13,16 @@ _of_phase: workshop
 From `clarify-answers.json` (+ defaults when `workshop` absent) and baseline
 `recommendation.json` (for separability gating):
 
-| Knob | Path | Allowed / notes |
-| ---- | ---- | --------------- |
-| Traffic shape | `Q1_traffic_shape.answer` | spiky / sustained / founder text (feeds Recommend A vs B) |
-| DB size | `Q7_database_size.answer` | Only if key exists (Postgres peripheral) |
-| Vercel spend | `Q6_vercel_spend.answer` | Only if key exists AND no `discovery.usage_metrics.billing_data` |
-| Target region | `workshop.target_region` | AWS region; default `us-east-1` |
-| Balanced Multi-AZ | `workshop.availability_multi_az_balanced` | boolean; default `false` |
-| CPU architecture | `workshop.cpu_architecture` | `arm64` (default, matches `graviton.md`) or `x86_64` |
-| Outcome override | `workshop.outcome_override` | `null` (engine) or `A` / `B` / `C` / `stay` — see C gating |
-| Backend shape (C only) | `workshop.backend_shape_override` | `A-shaped` or `B-shaped`; required when override is `C` |
+| Knob                   | Path                                      | Allowed / notes                                                  |
+| ---------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| Traffic shape          | `Q1_traffic_shape.answer`                 | spiky / sustained / founder text (feeds Recommend A vs B)        |
+| DB size                | `Q7_database_size.answer`                 | Only if key exists (Postgres peripheral)                         |
+| Vercel spend           | `Q6_vercel_spend.answer`                  | Only if key exists AND no `discovery.usage_metrics.billing_data` |
+| Target region          | `workshop.target_region`                  | AWS region; default `us-east-1`                                  |
+| Balanced Multi-AZ      | `workshop.availability_multi_az_balanced` | boolean; default `false`                                         |
+| CPU architecture       | `workshop.cpu_architecture`               | `arm64` (default, matches `graviton.md`) or `x86_64`             |
+| Outcome override       | `workshop.outcome_override`               | `null` (engine) or `A` / `B` / `C` / `stay` — see C gating       |
+| Backend shape (C only) | `workshop.backend_shape_override`         | `A-shaped` or `B-shaped`; required when override is `C`          |
 
 Show current `recommendation.json.outcome` (and `separable` / `backend_shape`
 when present) as read-only context on the sheet.

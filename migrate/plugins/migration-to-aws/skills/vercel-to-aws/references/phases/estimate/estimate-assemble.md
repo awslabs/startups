@@ -81,7 +81,6 @@ reflects Outcome B.
 
 ---
 
-
 Also attach optional workshop metadata when present:
 
 ```json
@@ -94,7 +93,6 @@ Also attach optional workshop metadata when present:
 ```
 
 Omit `workshop` when neither field is set.
-
 
 ## Step 2: Validate Property-16 (Arithmetic Integrity)
 
@@ -206,8 +204,6 @@ the Generate phase will ask you to pick, and {resolving_input} would also
 resolve it."
 
 ---
-
-
 
 ---
 

@@ -5,12 +5,12 @@ Port of the Heroku workshop pattern for `vercel-to-aws`
 preflight stay frozen; Recommend (or outcome override) + Estimate refresh under
 `scenarios/`.
 
-| Path | Role |
-| ---- | ---- |
-| `seed/` | Post-Estimate baseline (outcome A, arm64-default skill path) |
-| `after-outcome-b-x86/` | After Apply: `outcome_override=B`, `cpu_architecture=x86_64`, spiky traffic |
-| `expected-workshop.json` | Asserter expectations |
-| `check_expected_workshop.py` | Stdlib checker |
+| Path                         | Role                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `seed/`                      | Post-Estimate baseline (outcome A, arm64-default skill path)                |
+| `after-outcome-b-x86/`       | After Apply: `outcome_override=B`, `cpu_architecture=x86_64`, spiky traffic |
+| `expected-workshop.json`     | Asserter expectations                                                       |
+| `check_expected_workshop.py` | Stdlib checker                                                              |
 
 ## Assert
 
@@ -40,6 +40,6 @@ the replay in the PR.
 6. Compare scenarios → Exit to Generate via `workshop-assemble` (`current_phase:
    generate`).
 
-Partner one-liner: *After Estimate, reprice OpenNext vs Fargate vs hybrid,
+Partner one-liner: _After Estimate, reprice OpenNext vs Fargate vs hybrid,
 region, Multi-AZ, and arch — up to 5 scenarios, no re-discovery. (Region dollar
-deltas need awspricing MCP.)*
+deltas need awspricing MCP.)_

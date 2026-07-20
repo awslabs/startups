@@ -45,24 +45,24 @@ Clarify interview does **not** write this. Workshop creates/patches it:
 }
 ```
 
-| Field | Type | Rules |
-| ----- | ---- | ----- |
-| `active` | boolean | `true` while in workshop mode |
-| `target_region` | string | AWS region code; default `us-east-1` |
-| `availability_multi_az_balanced` | boolean | When `true`, Balanced tier prices Multi-AZ data services (Premium already does) |
-| `cpu_architecture` | string | `"arm64"` (skill default per `graviton.md`) or `"x86_64"`. Cross-skill: heroku-to-aws defaults workshop arch to `x86_64`. |
-| `outcome_override` | string\|null | `null` = re-run precedence engine; `"A"`\|`"B"`\|`"C"`\|`"stay"` forces that outcome with `fired_rule: "workshop_override"` (declared contract — never invent `rule_id`) |
-| `backend_shape_override` | string\|null | Required `"A-shaped"` or `"B-shaped"` when `outcome_override` is `"C"`; otherwise `null`. Offer C only when baseline `recommendation.separable === true`. |
-| `last_sheet_at` | string | ISO 8601 UTC |
-| `active_scenario_id` | string | matches `scenarios/index.json` |
+| Field                            | Type         | Rules                                                                                                                                                                    |
+| -------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `active`                         | boolean      | `true` while in workshop mode                                                                                                                                            |
+| `target_region`                  | string       | AWS region code; default `us-east-1`                                                                                                                                     |
+| `availability_multi_az_balanced` | boolean      | When `true`, Balanced tier prices Multi-AZ data services (Premium already does)                                                                                          |
+| `cpu_architecture`               | string       | `"arm64"` (skill default per `graviton.md`) or `"x86_64"`. Cross-skill: heroku-to-aws defaults workshop arch to `x86_64`.                                                |
+| `outcome_override`               | string\|null | `null` = re-run precedence engine; `"A"`\|`"B"`\|`"C"`\|`"stay"` forces that outcome with `fired_rule: "workshop_override"` (declared contract — never invent `rule_id`) |
+| `backend_shape_override`         | string\|null | Required `"A-shaped"` or `"B-shaped"` when `outcome_override` is `"C"`; otherwise `null`. Offer C only when baseline `recommendation.separable === true`.                |
+| `last_sheet_at`                  | string       | ISO 8601 UTC                                                                                                                                                             |
+| `active_scenario_id`             | string       | matches `scenarios/index.json`                                                                                                                                           |
 
 Sheet also edits existing Clarify answers when present:
 
-| Knob | Path |
-| ---- | ---- |
-| Traffic shape | `Q1_traffic_shape.answer` |
-| DB size (if Postgres) | `Q7_database_size.answer` |
-| Vercel spend (only if no `discovery.usage_metrics.billing_data`) | `Q6_vercel_spend.answer` |
+| Knob                                                             | Path                      |
+| ---------------------------------------------------------------- | ------------------------- |
+| Traffic shape                                                    | `Q1_traffic_shape.answer` |
+| DB size (if Postgres)                                            | `Q7_database_size.answer` |
+| Vercel spend (only if no `discovery.usage_metrics.billing_data`) | `Q6_vercel_spend.answer`  |
 
 **Transcript provenance:** when any of those answers change, set
 `workshop_note` on that question object:

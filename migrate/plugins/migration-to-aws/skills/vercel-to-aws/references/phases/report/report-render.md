@@ -44,13 +44,13 @@ Render these ONLY when their trigger holds — check
 `recommendation.json`/`preflight-findings.json`/`tier1-signals.json` before
 deciding:
 
-| Section ID           | Trigger                                                                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `exec-tiebreak`      | `recommendation.tiebreak == true` — the Outcome A/B side-by-side                                                                           |
-| `inputs-received`    | any finding across `discovery.json`/`coupling-score.json`/`preflight-findings.json` has `confidence != "HIGH"` — confidence-upgrade offers |
-| `appendix-m1`        | `tier1-signals.json.has_middleware == true`                                                                                                |
-| `out-of-scope`       | `recommendation.outcome` is `"C"` or `"stay"` — the separability rationale                                                                 |
-| `what-if-scenarios`  | `$MIGRATION_DIR/scenarios/index.json` exists and `scenarios[]` has **≥ 2** entries (workshop produced a baseline + at least one variant)   |
+| Section ID          | Trigger                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `exec-tiebreak`     | `recommendation.tiebreak == true` — the Outcome A/B side-by-side                                                                           |
+| `inputs-received`   | any finding across `discovery.json`/`coupling-score.json`/`preflight-findings.json` has `confidence != "HIGH"` — confidence-upgrade offers |
+| `appendix-m1`       | `tier1-signals.json.has_middleware == true`                                                                                                |
+| `out-of-scope`      | `recommendation.outcome` is `"C"` or `"stay"` — the separability rationale                                                                 |
+| `what-if-scenarios` | `$MIGRATION_DIR/scenarios/index.json` exists and `scenarios[]` has **≥ 2** entries (workshop produced a baseline + at least one variant)   |
 
 ---
 
@@ -233,8 +233,8 @@ render `<section id="what-if-scenarios">` **after** `cost-comparison` and
    clarify/recommendation copies when needed for display columns.
 2. Build an HTML table matching `workshop-compare.md` columns:
 
-| Scenario | Outcome | Region | Arch | Multi-AZ | Traffic | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
-| -------- | ------- | ------ | ---- | -------- | ------- | ------------ | ------------- | -------------- | ---------- |
+   | Scenario | Outcome | Region | Arch | Multi-AZ | Traffic | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
+   | -------- | ------- | ------ | ---- | -------- | ------- | ------------ | ------------- | -------------- | ---------- |
 
 3. Mark the active row (`scenario_id == index.active_scenario_id`) with
    `class="active-scenario"` or an "(active)" suffix in the Scenario cell.

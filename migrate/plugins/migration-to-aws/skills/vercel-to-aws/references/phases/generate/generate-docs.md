@@ -172,15 +172,15 @@ Define decision points:
 
 ## Artifacts
 
-| Directory/File           | Purpose                                                       |
-| ------------------------ | ------------------------------------------------------------- |
-| `terraform/`             | Production-ready Terraform (apply to provision AWS resources) |
-| `scripts/`               | Numbered migration scripts (run in order)                     |
-| `MIGRATION_GUIDE.md`     | Step-by-step migration procedures with rollback               |
-| `estimation-infra.json`  | Full cost breakdown (three tiers)                             |
-| `migration-report.html` | Complete assessment with Coupling Score and findings          |
-| `scenarios/`             | Optional what-if workshop snapshots (included in the report when ≥2) |
-| `recommendation.json`    | Decision traceability (which rule fired and why)              |
+| Directory/File          | Purpose                                                              |
+| ----------------------- | -------------------------------------------------------------------- |
+| `terraform/`            | Production-ready Terraform (apply to provision AWS resources)        |
+| `scripts/`              | Numbered migration scripts (run in order)                            |
+| `MIGRATION_GUIDE.md`    | Step-by-step migration procedures with rollback                      |
+| `estimation-infra.json` | Full cost breakdown (three tiers)                                    |
+| `migration-report.html` | Complete assessment with Coupling Score and findings                 |
+| `scenarios/`            | Optional what-if workshop snapshots (included in the report when ≥2) |
+| `recommendation.json`   | Decision traceability (which rule fired and why)                     |
 
 ## Quick Start
 

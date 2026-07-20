@@ -79,13 +79,13 @@ _postconditions:
 
 ## Hard rules
 
-| Rule | Behavior |
-| ---- | -------- |
-| Discovery frozen | Never write discovery / coupling / preflight / `capture/` |
+| Rule                     | Behavior                                                       |
+| ------------------------ | -------------------------------------------------------------- |
+| Discovery frozen         | Never write discovery / coupling / preflight / `capture/`      |
 | Inner Recommend/Estimate | Artifact rewrite only — see `workshop-refresh.md` § Inner runs |
-| Max 5 scenarios | Warn + name eviction before delete |
-| Working tree = active | clarify / recommendation / estimation match active scenario |
-| No Generate in loop | Mark stale via re-entry; user confirms |
+| Max 5 scenarios          | Warn + name eviction before delete                             |
+| Working tree = active    | clarify / recommendation / estimation match active scenario    |
+| No Generate in loop      | Mark stale via re-entry; user confirms                         |
 
 ## Decline without entering
 

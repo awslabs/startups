@@ -11,13 +11,13 @@ When this fragment re-runs Recommend or Estimate, treat them like an `_exec`
 worker's WORK slice (`INTERPRETER.md` § `_exec`): **fragments + assembler
 artifact write only**. Do **not** advance the backbone mid-workshop.
 
-| Allowed | Forbidden |
-| ------- | --------- |
-| Overwrite `recommendation.json` / `estimation-infra.json` | Set recommend/estimate to `in_progress` |
-| Soft-validate before snapshot | Emit `HANDOFF_OK` from Recommend or Estimate |
-| Brief chat note that reprice finished | Touch `.phase-status.json` `current_phase` or advance to `generate` |
-| Keep `phases.workshop` as `in_progress` | Run Estimate's post-Estimate workshop offer (recursion) |
-| | Evaluate Recommend/Estimate `_preconditions` that fail on `_check_single_active_phase` because workshop is already `in_progress` |
+| Allowed                                                   | Forbidden                                                                                                                        |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Overwrite `recommendation.json` / `estimation-infra.json` | Set recommend/estimate to `in_progress`                                                                                          |
+| Soft-validate before snapshot                             | Emit `HANDOFF_OK` from Recommend or Estimate                                                                                     |
+| Brief chat note that reprice finished                     | Touch `.phase-status.json` `current_phase` or advance to `generate`                                                              |
+| Keep `phases.workshop` as `in_progress`                   | Run Estimate's post-Estimate workshop offer (recursion)                                                                          |
+|                                                           | Evaluate Recommend/Estimate `_preconditions` that fail on `_check_single_active_phase` because workshop is already `in_progress` |
 
 Leave `phases.recommend` and `phases.estimate` as `"completed"`. Leave
 `current_phase` at `"estimate"` until the user exits via `workshop-assemble.md`.
@@ -49,6 +49,7 @@ When `scenarios/` or `scenarios/index.json` is absent:
 5. Write `scenarios/index.json` (`baseline` / `active` = `scenario-001`,
    `max_scenarios: 5`).
 6. Ensure `clarify-answers.json.workshop` exists with defaults:
+
    ```json
    {
      "active": true,
@@ -61,6 +62,7 @@ When `scenarios/` or `scenarios/index.json` is absent:
      "active_scenario_id": "scenario-001"
    }
    ```
+
 7. If baseline-only, return to `workshop.md` for the sheet.
 
 ## Apply & reprice
@@ -121,11 +123,11 @@ Common fields for every override:
 
 Per-target field surgery (engine Constraints):
 
-| Override | Required surgery |
-| -------- | ---------------- |
-| `A` or `B` | **Omit** `separable`, `backend_shape`, `backend_tiebreak`, `backend_resolving_input`. Append a reason naming the target (OpenNext vs Fargate). |
-| `C` | Set `separable: true`. Set `backend_shape` from `workshop.backend_shape_override` (`A-shaped` or `B-shaped` only — never the tiebreak array). Set `backend_tiebreak: false`, `backend_resolving_input: null`. If baseline `recommendation.separable === false` or `backend_shape_override` is missing/invalid, **STOP** and re-present the sheet (do not write). |
-| `stay` | Set `separable` to baseline's boolean if present, else `false`. **Omit** all `backend_*` keys. |
+| Override   | Required surgery                                                                                                                                                                                                                                                                                                                                                 |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `A` or `B` | **Omit** `separable`, `backend_shape`, `backend_tiebreak`, `backend_resolving_input`. Append a reason naming the target (OpenNext vs Fargate).                                                                                                                                                                                                                   |
+| `C`        | Set `separable: true`. Set `backend_shape` from `workshop.backend_shape_override` (`A-shaped` or `B-shaped` only — never the tiebreak array). Set `backend_tiebreak: false`, `backend_resolving_input: null`. If baseline `recommendation.separable === false` or `backend_shape_override` is missing/invalid, **STOP** and re-present the sheet (do not write). |
+| `stay`     | Set `separable` to baseline's boolean if present, else `false`. **Omit** all `backend_*` keys.                                                                                                                                                                                                                                                                   |
 
 Also update `assessment-state.json.findings.recommend.fired_rule` (when the
 file exists) so the report's decision-traceability appendix sees
