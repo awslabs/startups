@@ -7,6 +7,9 @@ _fragments:
   - _id: terraform
     _trigger: { _always: true }
     _file: phases/discover/discover-terraform.md
+  - _id: live
+    _trigger: { _when: "$MIGRATION_DIR/live-capture/manifest.json exists (the live-capture pre-work ran — see Orientation § Live capture)" }
+    _file: phases/discover/discover-live.md
   - _id: billing
     _trigger: { _glob: "**/*{billing,invoice}*.{csv,json}" }
     _file: phases/discover/discover-billing.md
@@ -26,7 +29,7 @@ _re_entry_guard:
 _preconditions:
   - _check_single_active_phase: true
     _on_failure: _halt_and_inform
-  - _assert: "at least one .tf file containing a heroku_* resource exists in the workspace"
+  - _assert: "at least one Heroku source is available: a .tf file containing a heroku_* resource exists in the workspace, OR $MIGRATION_DIR/live-capture/manifest.json exists. Evaluating this check is where live capture is offered: if no heroku_* Terraform is found, load references/phases/discover/discover-live-capture.md in the MAIN window and run it (consent-gated); fail this check only after the user declines live capture or capture cannot run"
     _on_failure: _unrecoverable
 _postconditions:
   - _check_file_exists: heroku-resource-inventory.json
@@ -39,7 +42,11 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "no forbidden clustering fields are present (cluster_id, creation_order_depth, edges, dependencies, must_migrate_together)"
     _on_failure: _halt_and_inform
-  - _assert: "metadata.discovery_sources reflects which sub-discoveries actually ran; if the terraform sub-discovery ran, resources[] contains at least one Terraform-sourced resource"
+  - _assert: "metadata.discovery_sources reflects which sub-discoveries actually produced data; if heroku_* Terraform files were FOUND in the workspace (not merely that the terraform fragment ran — it always runs and may exit empty), resources[] contains at least one Terraform-sourced resource"
+    _on_failure: _halt_and_inform
+  - _assert: "if the live fragment ran ($MIGRATION_DIR/live-capture/manifest.json exists), resources[] contains at least one live-sourced resource, a live_metadata section is present, and 'live' appears in metadata.discovery_sources"
+    _on_failure: _halt_and_inform
+  - _assert: "no config var VALUES appear anywhere in the inventory — config entries carry key names only"
     _on_failure: _halt_and_inform
   - _assert: "if a billing/invoice file was present in the workspace, heroku-resource-inventory.json has a billing_profile section"
     _on_failure: _halt_and_inform
@@ -64,10 +71,42 @@ owns only lifecycle + the cross-cutting `_postconditions`.
 Two facts the contract can't express: Procfile/app.json parsing is integrated into
 the terraform fragment (there is no standalone Procfile fragment) — when present
 alongside Terraform, they supplement resource data with commands, buildpacks, and
-declared add-ons. And Platform API discovery is NOT supported in v1: no API calls
-are made, discovery is entirely file-based. Billing data, when present, is embedded
-in `heroku-resource-inventory.json` (not a separate file); all user communication
+declared add-ons. Billing data, when present, is embedded in
+`heroku-resource-inventory.json` (not a separate file); all user communication
 is via output messages only (no report/log files).
+
+### Live capture (main-window pre-work)
+
+Live discovery reads the user's Heroku account through their authenticated Heroku
+CLI — read-only, consent-gated, key-names-only for config vars. It is split in two
+because the dispatched `rw` worker has no shell and cannot converse with the user:
+
+1. **Capture** (`discover-live-capture.md`) — runs in the MAIN window, after
+   `_init` and before the phase's work is dispatched. It asks for consent, preflights
+   the CLI (`heroku auth:whoami`), runs an exact-command whitelist of list/info
+   commands, and writes raw output to `$MIGRATION_DIR/live-capture/` plus a
+   `manifest.json` index. It writes NO inventory entries.
+2. **Parse** (`discover-live.md`, the `live` fragment) — runs in the worker with the
+   other fragments. Its `_trigger` is the manifest's existence; it maps captures to
+   inventory entries with `source: "live"`.
+
+**Explicit ordering (cold start):** run `_init` state setup FIRST (create
+`$MIGRATION_DIR`, write `.phase-status.json`), THEN evaluate the source
+`_precondition` — offering and running capture as part of that evaluation — then
+dispatch the phase's work. Capture writes into `$MIGRATION_DIR/live-capture/`, so
+it cannot run before `_init` has created the run directory.
+
+**When to offer capture:** while evaluating the source `_precondition`, scan the
+workspace first (free). If NO `heroku_*` Terraform is found, offer live capture as
+the primary source — load `discover-live-capture.md` — instead of failing the check.
+If Terraform IS found, still offer capture once as an optional live cross-check
+("catch resources managed outside Terraform"); a decline is fine and is not
+re-asked. Never run capture without explicit consent.
+
+**Source-of-truth rule (for the assembler):** when both Terraform and live entries
+exist, live is authoritative for current state (config values, plans, quantities);
+Terraform supplements structure and provenance. Disagreements are surfaced as drift,
+never silently resolved — see `discover-assemble.md` § Merge & Drift Rules.
 
 ---
 
@@ -78,6 +117,8 @@ completion message from the inventory contents:
 
 - "Discovered X total resources across Y apps."
 - If billing data available: "Parsed billing data ($Z/month)."
+- If live discovery ran: "Live discovery captured N apps via the Heroku CLI."
+- If both live and Terraform ran: "Drift check: N resources live but not in Terraform, M in Terraform but not live, K config conflicts (live values used)."
 - If Terraform secondary: "Supplemented with Terraform-sourced resources (N conflicts resolved)."
 - If Pipeline detected: "Detected N pipeline(s) (detect-only)."
 - If Cedar/Fir mixed: "Generation detection: N Cedar, M Fir, P unknown."
@@ -90,12 +131,14 @@ Format: "Discover phase complete. [artifact summaries] Next required step: Phase
 
 Non-fatal discovery errors and their handling (fatal source/gate failures are handled by `_preconditions`/`_postconditions` + `INTERPRETER.md` § `_on_error`):
 
-| Error Category                                    | Behavior                                       |
-| ------------------------------------------------- | ---------------------------------------------- |
-| Terraform parse error (malformed HCL)             | Log warning, skip malformed blocks, continue   |
-| Procfile/app.json parse error                     | Record warning per-app, continue               |
-| Generation detection unresolvable (no stack attr) | Set `heroku_generation` to `unknown`, continue |
-| Pipeline detection from Terraform incomplete      | Record with available data, continue           |
+| Error Category                                     | Behavior                                                                                       |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Terraform parse error (malformed HCL)              | Log warning, skip malformed blocks, continue                                                   |
+| Procfile/app.json parse error                      | Record warning per-app, continue                                                               |
+| Generation detection unresolvable (no stack attr)  | Set `heroku_generation` to `unknown`, continue                                                 |
+| Pipeline detection from Terraform incomplete       | Record with available data, continue                                                           |
+| Live capture partially failed (some apps 403 etc.) | Parse the `ok` captures, mark failed apps `discovery_failed`, confidence `reduced`, continue   |
+| Live capture declined or CLI unavailable           | Skip the `live` fragment (no manifest → trigger never fires), continue with file-based sources |
 
 ---
 

@@ -25,3 +25,7 @@ Seconds-long, stateless, event-driven agent tasks (single tool call, classificat
 
 15-minute hard cap; no long sessions, no cross-session memory without external state.
 Hands off to migration-to-aws for compute-layer config.
+
+## Serving & security notes
+
+Entry: handler function invoked via invoke API or function URL; event-source wiring as needed. IAM: execution role with `bedrock:InvokeModel` (model-bearing units only — a model-less unit omits it) + service-specific permissions. Networking: public service endpoints over TLS; VPC endpoints only if policy demands.
