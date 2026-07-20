@@ -84,6 +84,25 @@ workshop reprice. Chat note after Estimate:
    the manifest as `graviton_note`.
 6. Update index + `workshop.active_scenario_id`.
 
+### 6b. Shareable calculator link (best-effort, never blocks)
+
+If the `aws-pricing-calculator` MCP server is available (try `get_server_info`
+once; do NOT retry on failure):
+
+1. Prefer the one-shot `build_estimate` (create + add + lint + save): name
+   `"GCP migration — {scenario label} ({target_region})"`, services from the
+   scenario's Balanced-tier `estimation-infra.json` breakdown, each with the
+   scenario's `target_region` — the calculator computes REGIONAL prices
+   server-side, which the us-east-1 cache cannot. On a structured
+   needs-field-discovery response, resolve via `get_service_fields` and retry
+   ONCE; else fall back to `create_estimate` → `add_service` →
+   `export_estimate`.
+2. Store the URL as `estimation_summary.calculator_url` in the manifest.
+3. Any failure or unmappable service → `calculator_url: null`, one chat note,
+   continue. Workshop numbers stay authoritative; the link is a stakeholder
+   artifact. (This aligns with #49's Estimate-phase calculator integration —
+   same server, same degradation rules.)
+
 ### 7. Hand back
 
 Return to `workshop.md` → `workshop-compare.md`.

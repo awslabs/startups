@@ -19,4 +19,6 @@
 | -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
 
 Under the table: active vs baseline `preferences_subset`; any `region_note`;
-reminder that inventory is frozen. Keep under 25 lines.
+one `{scenario}: {url}` line per non-null `estimation_summary.calculator_url`
+(shareable, editable calculator.aws estimate — AWS computes regional prices
+server-side there); reminder that inventory is frozen. Keep under 25 lines.

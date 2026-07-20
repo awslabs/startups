@@ -54,3 +54,13 @@ GCP uses Clarify's `graviton`/`x86`/`mixed` vocabulary.
 
 `inventory_fingerprint` = SHA-256 hex of `gcp-resource-inventory.json` bytes.
 Abort refresh on drift.
+
+## Scenario manifest extras
+
+Each `scenario-NNN.json` manifest's `estimation_summary` carries the three
+monthly tiers, `complexity_tier`, `pricing_source`, optional
+`graviton_note`/`region_note`, and `calculator_url` — a shareable
+calculator.aws estimate URL produced by `workshop-refresh.md` § 6b via the
+`aws-pricing-calculator` MCP when available, else `null`. AWS computes
+regional prices server-side when the link is opened, which is the honest
+answer to region repricing without live pricing access.
