@@ -37,3 +37,7 @@ Hooks: /ready, /launch, /resume, /suspend, /terminate. Hook failure/timeout term
 
 Not agent-purpose-built (no /invocations contract, no built-in services). 5 TPS
 launch cap is the decisive weakness for high-volume platforms.
+
+## Serving & security notes
+
+Entry: ARM64 handler packaging + lifecycle hooks (/ready, /launch, /resume, /suspend, /terminate); event-source wiring as needed. IAM: execution role with `bedrock:InvokeModel` (model-bearing units only — a model-less unit omits it) + service-specific permissions. Networking: per-MicroVM URL over TLS; public service endpoints; VPC endpoints only if policy demands.

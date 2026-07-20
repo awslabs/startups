@@ -1,0 +1,25 @@
+{
+  "deployments": [
+    {
+      "uid": "dpl_prod042",
+      "state": "READY",
+      "target": "production",
+      "created": 1784050000000,
+      "url": "acme-shop-h3k2j1.vercel.app"
+    },
+    {
+      "uid": "dpl_prev107",
+      "state": "READY",
+      "target": null,
+      "created": 1784040000000,
+      "url": "acme-shop-git-feat-cart-acme.vercel.app"
+    },
+    {
+      "uid": "dpl_prev106",
+      "state": "ERROR",
+      "target": null,
+      "created": 1784030000000,
+      "url": "acme-shop-git-fix-nav-acme.vercel.app"
+    }
+  ]
+}

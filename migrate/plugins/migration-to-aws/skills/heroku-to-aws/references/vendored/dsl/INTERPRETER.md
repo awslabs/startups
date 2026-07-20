@@ -394,13 +394,13 @@ heroku-to-aws's own gate contract — phases do NOT load any shared gate file.
 Each entry is a single check plus an `_on_failure` action (see the `_on_error`
 dictionary below). Closed vocabulary of check kinds:
 
-| Check                        | Arg                       | Passes when                                                    |
-| ---------------------------- | ------------------------- | -------------------------------------------------------------- |
-| `_check_phase_completed`     | a phase name              | `.phase-status.json` `phases.<name> == "completed"`            |
-| `_check_single_active_phase` | `true`                    | at most one core phase is `in_progress`                        |
-| `_check_file_exists`         | filename or `[names]`     | each named file exists in `$MIGRATION_DIR/`                    |
-| `_validate_json`             | filename or `[names]`     | each named file parses as valid JSON                           |
-| `_assert`                    | an opaque prose predicate | you (the interpreter) evaluate the prose against the artifacts |
+| Check                        | Arg                       | Passes when                                                                                                  |
+| ---------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `_check_phase_completed`     | a phase name              | `.phase-status.json` `phases.<name>` is `"completed"` or a skill-declared resolved status (§ Skill bindings) |
+| `_check_single_active_phase` | `true`                    | at most one core phase is `in_progress`                                                                      |
+| `_check_file_exists`         | filename or `[names]`     | each named file exists in `$MIGRATION_DIR/`                                                                  |
+| `_validate_json`             | filename or `[names]`     | each named file parses as valid JSON                                                                         |
+| `_assert`                    | an opaque prose predicate | you (the interpreter) evaluate the prose against the artifacts                                               |
 
 `_assert` is the JUDGMENT escape hatch: arithmetic (e.g. the Property-16 total ==
 sum invariant), enum-membership over an artifact's runtime content (e.g.

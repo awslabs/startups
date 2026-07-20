@@ -1,0 +1,205 @@
+{
+  "phase": "discover",
+  "timestamp": "2026-07-21T17:42:00Z",
+  "signal_source_used": "manifest_fallback",
+  "route_disposition": [
+    {
+      "route": "/",
+      "disposition": "static",
+      "confidence": "MEDIUM",
+      "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+      "source": "prerender-manifest.json (initialRevalidateSeconds: false)",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "route": "/dashboard",
+      "disposition": "dynamic",
+      "confidence": "MEDIUM",
+      "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+      "note": "routes-manifest.json places /dashboard in staticRoutes (fixed path shape) but it is ABSENT from prerender-manifest.json entirely, so it renders per-request; consistent with the session-cookie auth gate middleware applies to /dashboard/:path*",
+      "source": "prerender-manifest.json (absent) resolved over routes-manifest.json staticRoutes membership",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "route": "/blog/[slug]",
+      "disposition": "isr",
+      "revalidate_seconds": 3600,
+      "confidence": "MEDIUM",
+      "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+      "note": "prerender-manifest.json contains /blog/launch-post and /blog/hiring with initialRevalidateSeconds: 3600 (srcRoute /blog/[slug]) and a dynamicRoutes entry with fallback: null - genuinely ISR per the build's own decision",
+      "source": "prerender-manifest.json routes + dynamicRoutes",
+      "computed_from_inputs": ["repo_access"]
+    },
+    {
+      "route": "/api/checkout",
+      "disposition": "dynamic",
+      "confidence": "LOW",
+      "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output, which classifies Route Handlers directly (this fragment's manifest sources only classify page routes, so this value is inferred from the absence of a static-export declaration rather than manifest-sourced)",
+      "note": "API Route Handler from app-path-routes-manifest.json ('/api/checkout/route'); no 'export const dynamic = \"force-static\"' declaration found (route source file not present in workspace to inspect), so default dynamic",
+      "source": "app-path-routes-manifest.json",
+      "computed_from_inputs": ["repo_access"]
+    }
+  ],
+  "manifest_metadata": {
+    "adapter_api_used": false,
+    "next_version": "15.1.0",
+    "manifest_availability": "available",
+    "fallback_reason": "next_version < 16.2",
+    "confidence": "HIGH",
+    "computed_from_inputs": ["repo_access"]
+  },
+  "next_config": {
+    "route_segment_configs": [],
+    "route_segment_configs_note": "no route source files (app/ tree) present in the workspace to cross-reference; no revalidate/dynamic/runtime:'edge' declarations found",
+    "image_config": {
+      "remotePatterns": [{ "protocol": "https", "hostname": "cdn.acme-shop.com" }],
+      "domains": [],
+      "custom_loader": false
+    },
+    "has_output_file_tracing_excludes": false,
+    "confidence": "HIGH",
+    "computed_from_inputs": ["repo_access"]
+  },
+  "middleware_analysis": {
+    "matcher": ["/dashboard/:path*", "/old-blog/:path*"],
+    "per_matcher_pattern": [
+      {
+        "pattern": "/dashboard/:path*",
+        "classification": "auth_gating",
+        "evidence": "middleware body branches on pathname.startsWith('/dashboard'); missing 'session' cookie triggers NextResponse.redirect to /login",
+        "confidence": "MEDIUM",
+        "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)"
+      },
+      {
+        "pattern": "/old-blog/:path*",
+        "classification": "rewrite",
+        "evidence": "middleware body branches on pathname.startsWith('/old-blog/'); NextResponse.rewrite to the /blog/ equivalent path on every request",
+        "confidence": "MEDIUM",
+        "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)"
+      }
+    ],
+    "classification": null,
+    "classification_note": "per_matcher_pattern entries diverge (auth_gating vs rewrite), so the collapsed classification is null per discover-configs.md Step 5",
+    "geo_ip_headers_used": [],
+    "confidence": "MEDIUM",
+    "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+    "computed_from_inputs": ["repo_access"]
+  },
+  "vercel_json_config": {
+    "headers": [
+      {
+        "source": "/(.*)",
+        "headers": [{ "key": "X-Frame-Options", "value": "DENY" }]
+      }
+    ],
+    "redirects": [],
+    "rewrites": [],
+    "function_config": {
+      "app/api/checkout/route.ts": { "maxDuration": 30 }
+    },
+    "regions": [],
+    "crons": [{ "path": "/api/cron/digest", "schedule": "0 8 * * *" }],
+    "confidence": "HIGH",
+    "computed_from_inputs": ["repo_access"]
+  },
+  "streaming_routes_with_empty_body_risk": [],
+  "streaming_scan_note": "no route handler source files present in the workspace to scan; no streaming patterns found",
+  "deployments": [
+    { "uid": "dpl_prod042", "state": "READY", "target": "production", "created": 1784050000000 },
+    { "uid": "dpl_prev107", "state": "READY", "target": "preview", "created": 1784040000000 },
+    { "uid": "dpl_prev106", "state": "ERROR", "target": "preview", "created": 1784030000000 }
+  ],
+  "deployments_meta": {
+    "confidence": "MEDIUM",
+    "upgrade_input": "7-14 day log drain/observability export",
+    "note": "1 production deployment READY; 2 recent preview deployments (one READY, one ERROR) - the team actively uses preview deployments",
+    "computed_from_inputs": ["vercel_api_token"]
+  },
+  "env_var_names": [
+    "DATABASE_URL",
+    "KV_REST_API_TOKEN",
+    "KV_REST_API_URL",
+    "NEXT_PUBLIC_SITE_URL",
+    "NODE_ENV",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET"
+  ],
+  "env_var_names_meta": {
+    "confidence": "MEDIUM",
+    "upgrade_input": "infrastructure-pointing env var hostnames shared explicitly by the founder (Tier 3)",
+    "note": "key names only per Requirement 1.6 - values never fetched or persisted",
+    "computed_from_inputs": ["vercel_api_token"]
+  },
+  "domains": ["acme-shop.vercel.app", "www.acme-shop.com"],
+  "domains_meta": {
+    "confidence": "MEDIUM",
+    "upgrade_input": "infrastructure-pointing env var hostnames shared explicitly by the founder (Tier 3)",
+    "computed_from_inputs": ["vercel_api_token"]
+  },
+  "crons": [
+    {
+      "path": "/api/cron/digest",
+      "schedule": "0 8 * * *",
+      "source": "vercel.json",
+      "confidence": "HIGH",
+      "note": "API cron capture was skipped (manifest: 'no GET endpoint with a crons path segment found via vercel api list - crons from vercel.json only'); this cron path /api/cron/digest does NOT appear in app-path-routes-manifest.json - discrepancy recorded",
+      "computed_from_inputs": ["repo_access"]
+    }
+  ],
+  "crons_api_capture": "unavailable: no GET endpoint with a crons path segment found via vercel api list - crons from vercel.json only",
+  "storage_integrations": [
+    {
+      "type": "kv",
+      "metadata": { "id": "store_kv_01", "name": "acme-cart-cache", "region": "iad1", "sizeBytes": 52428800 },
+      "confidence": "MEDIUM",
+      "upgrade_input": "infrastructure-pointing env var hostnames shared explicitly by the founder (Tier 3)",
+      "computed_from_inputs": ["vercel_api_token"]
+    },
+    {
+      "type": "postgres",
+      "metadata": { "id": "store_pg_01", "name": "acme-orders-db", "region": "iad1", "sizeBytes": 3221225472 },
+      "confidence": "MEDIUM",
+      "upgrade_input": "infrastructure-pointing env var hostnames shared explicitly by the founder (Tier 3)",
+      "computed_from_inputs": ["vercel_api_token"]
+    }
+  ],
+  "peripherals": [
+    {
+      "type": "kv",
+      "source": "vercel_api",
+      "confidence": "MEDIUM",
+      "upgrade_input": "infrastructure-pointing env var hostnames shared explicitly by the founder (Tier 3)",
+      "computed_from_inputs": ["vercel_api_token"]
+    },
+    {
+      "type": "postgres",
+      "source": "vercel_api",
+      "confidence": "MEDIUM",
+      "upgrade_input": "infrastructure-pointing env var hostnames shared explicitly by the founder (Tier 3)",
+      "computed_from_inputs": ["vercel_api_token"]
+    },
+    { "type": "cron", "source": "vercel.json", "confidence": "HIGH", "computed_from_inputs": ["repo_access"] }
+  ],
+  "api_routes": ["/api/checkout", "/api/cron/digest"],
+  "api_routes_meta": {
+    "confidence": "MEDIUM",
+    "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+    "note": "/api/checkout from app-path-routes-manifest.json; /api/cron/digest referenced only by vercel.json crons and absent from the build manifest",
+    "computed_from_inputs": ["repo_access"]
+  },
+  "backend_service_detected": false,
+  "backend_service_detected_meta": {
+    "confidence": "MEDIUM",
+    "upgrade_input": "upgrade to Next.js >= 16.2 for the Adapter API's typed build output (a confidence upgrade offer, never a migration prerequisite)",
+    "note": "app/api tree is 1-2 routes (checkout, cron digest) - not substantial enough to stand alone as a separable backend service; no separate backend Vercel project in the projects capture",
+    "computed_from_inputs": ["repo_access", "vercel_api_token"]
+  },
+  "usage_metrics": {
+    "status": "unavailable: no usage aggregates exposed on hobby/pro plan without observability",
+    "confidence": "LOW",
+    "upgrade_input": "7-14 day log drain/observability export",
+    "computed_from_inputs": ["vercel_api_token", "log_drain_export"]
+  },
+  "header_probe_results": [],
+  "probe_limitations": ["probe not attempted - Tier 2 production URL + throwaway test account not supplied"]
+}

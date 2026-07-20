@@ -22,7 +22,7 @@ _preconditions:
 _postconditions:
   - _check_file_exists: plan.md
     _on_failure: _halt_and_inform
-  - _assert: "a deployment plan (plan.md) and a runtime-appropriate POC under poc/ were written (Step 3 dispatch on the verdict), with the resolved Bedrock model id (or a TODO: verify placeholder — never a fabricated id) and deploy.sh guardrails; Mode B additionally left a created-resources ledger + cleanup.sh"
+  - _assert: "a deployment plan (plan.md) and a runtime-appropriate POC under poc/ were written (Step 3 dispatch on each unit's effective_runtime — the consolidated superset when platform.mode is consolidated, else the unit's resolved runtime — NOT the raw split verdict), with the resolved Bedrock model id (or a TODO: verify placeholder — never a fabricated id) and deploy.sh guardrails; Mode B additionally left a created-resources ledger + cleanup.sh"
     _on_failure: _halt_and_inform
 ---
 
@@ -42,8 +42,11 @@ the generated deploy steps in the user's account under the Step 4 safety contrac
 
 ## When this phase runs
 
-- entry_point ∈ {`build_scratch`, `build_deploy`}, any verdict (or co_recommend
-  `chosen_runtime`) in {agentcore, ecs, eks, lambda, lambda_microvms}.
+- entry_point ∈ {`build_scratch`, `build_deploy`}, the PRIMARY unit's `effective_runtime` in
+  {agentcore, ecs, eks, lambda, lambda_microvms} (the primary is always an agent unit per Clarify's scope gate). In a MULTI-unit system every unit still gets its own POC per Step 3 dispatch,
+  including non-agent `batch`/`fargate`/`serverless_workers` units (their shapes are in
+  `poc-shapes.md`, and a model-less non-agent unit omits Bedrock wiring); the gate keys on the
+  primary agent unit, but the POC generation covers all units.
 - For `migrate`: POC runs ONLY if `phases.migration_plan == "completed"` (the POC implements
   the produced plan). Without a plan, migrate has nothing to implement — the flow completes
   after Generate/handoff.
@@ -91,20 +94,45 @@ the POC "plan could not be applied — see aws-design-ai.json" in plan.md and th
 Key the trigger on `primary_pattern` (a schema'd, checklist-enforced field) — NOT on the
 `migration_path` string, whose value is free-form outside mantle/converse/gpt-oss.
 
-## Step 2 — Resolve the Bedrock model id (verify, don't guess)
+## Step 2 — Resolve the Bedrock model id per unit (verify, don't guess)
 
-**Plan-backed:** when `aws-design-ai.json` is loaded, take the model id from
-`design_blocks[0].target_bedrock_model` (or, if `design_blocks` is absent, the FIRST entry
-of `ai_architecture.bedrock_models[].aws_model_id`) — the plan already region-validated it.
-`bedrock_models[]` may carry alternative/backup entries; the primary is always the first
-design block. The MCP check below then only confirms the id is still current.
-**Not plan-backed:** resolve as follows.
+**For EACH unit** in `design.json.units[]` **whose `model_recommendation` is non-null**, resolve
+the Bedrock model id for that unit — the recommendation and the POC code MUST agree **per unit**.
+A multi-unit system where the POC code for one unit uses a different model than that same unit's
+recommendation is a bug. (This is per-unit, not per-system: it is perfectly correct for
+content-review to run Nova Lite while support-chat runs Sonnet — as long as EACH unit's POC
+matches THAT unit's recommendation.)
 
-`design.json.model_recommendation` carries an internal model key (e.g. `claude_sonnet_4_6`). The
-POC needs the **real Bedrock model/inference-profile id**. Verify it via the awsknowledge MCP per
+**Model-less units.** A non-agent unit (batch/service/light_io/temporal_worker_poll) can have
+`model_recommendation: null` — it calls no Bedrock model. For such a unit do NOT resolve or
+fabricate a model id: its POC omits all Bedrock wiring (no model env var like `BEDROCK_MODEL_ID`,
+no `bedrock:InvokeModel` IAM permission, no model-access prerequisite in the README, no
+model-invocation code) — the generated POC is the runtime shape ALONE (container/job + its
+trigger), never a Bedrock-calling agent. This applies to a model-less SECONDARY unit in a mixed
+system (the primary is always an agent unit per Clarify's scope gate). Only dereference
+`model_recommendation.model` when it is non-null.
+
+**`design.json` is the single source of truth for the model, and it is already reconciled.**
+When a migration plan ran, its Phase C Step 3.5 (`migration-plan.md`) already reconciled every
+unit's `model_recommendation` in `design.json` with the plan's per-unit choice (plan wins) and
+back-wrote `recommendation.md`/`recommendation-report.html` to match. So by the time the POC
+runs, `design.json.units[<id>].model_recommendation.model` is authoritative for every unit —
+plan-backed or not. Resolve each unit's model from ITS OWN entry; never take one unit's model
+for another.
+
+For each unit, `design.json.units[<id>].model_recommendation.model` carries an internal model
+key (e.g. `claude_sonnet_4_6`, `nova_lite`). The POC needs the **real Bedrock
+model/inference-profile id** for THAT unit. Verify it via the awsknowledge MCP per
 `references/decision-refs/freshness.md` (same anti-fabrication rule). If the MCP is not called,
 write the id as a clearly-marked `TODO: verify model id` placeholder in the generated files and
 say so in the README — never fabricate an id as if verified.
+
+**Plan-backed cross-check (optional):** when `aws-design-ai.json` is loaded you may confirm a
+unit's id against its OWN matching design block — match the block whose `source_paths[]`
+overlap that unit's `evidence` (NOT `design_blocks[0]`, which is only the first unit's block).
+The block's `target_bedrock_model` should already equal the reconciled `model_recommendation`
+(Step 3.5 made them agree); if they somehow differ, `design.json` wins because reconciliation
+is authoritative. The MCP check then only confirms the id is still current.
 
 **Strip environment annotations from the model id.** The running assistant's model name may
 carry a context-window annotation like `[1m]` (e.g. `us.anthropic.claude-sonnet-4-6[1m]`).
@@ -113,6 +141,10 @@ call with it 404s. Before writing the id into any generated file, strip any trai
 `[...]` bracket annotation. The id you emit must be exactly what Bedrock accepts (e.g.
 `us.anthropic.claude-sonnet-4-6`). If unsure of the exact id, use the `TODO: verify model id`
 placeholder rather than a bracket-tagged string.
+
+**Single-unit path:** when `units[]` length is 1, the above logic applies to the one unit —
+resolve from `design.json.units[0].model_recommendation`, not a system-level field. The
+model id is always per-unit.
 
 ## Step 2.5 — Write the deployment plan (`$RUN_DIR/plan.md`)
 
@@ -124,12 +156,30 @@ derive every item from `design.json` / `confirm.json` — plus, when plan-backed
 (one stage per design_block where sensible), and add a final "full migration" pointer to
 the complete guide in `migration_plan_ctx.migration_dir`. Never from assumptions. Include:
 
-1. **Goal** — one line: stand up an AgentCore POC of <the user's agent> to validate the loop.
-2. **Prerequisites** — AWS account + credentials, target region, Bedrock model access enabled
-   for the resolved model id, `uv` + `agentcore` CLI installed. Mark any `TODO: verify` items.
-3. **What gets created** — the AWS resources the POC provisions (AgentCore Runtime + the
-   confirmed services from `confirm.json`, e.g. Gateway/Memory), so the user knows the blast radius
-   and that it is billable.
+The plan is the deploy source-of-truth for whatever runtime the POC actually targets — it MUST
+match each unit's **effective runtime** (Step 3 dispatch), never assume AgentCore. Key items 1–3
+on the effective runtime:
+
+1. **Goal** — one line: stand up a POC of the user's agent/workload on its effective runtime
+   to validate it. (AgentCore → "validate the agent loop"; ECS/EKS/Fargate → "validate the
+   container + Bedrock connectivity" for a model-bearing unit, or just "validate the container
+   runs" for a model-less unit; Lambda → "validate the function + trigger"; Lambda MicroVMs
+   → "validate the microVM function (or standard-Lambda fallback if unverified)"; AWS Batch →
+   "validate the job submits and runs"; Temporal worker → "validate the worker connects and picks
+   up tasks".) Never claim "Bedrock connectivity" for a unit whose `model_recommendation` is null.
+2. **Prerequisites** — AWS account + credentials, target region, **Bedrock model access for the
+   resolved model id ONLY when the unit is model-bearing** (a model-less non-agent unit —
+   `model_recommendation: null` — has NO Bedrock prerequisite; omit it), plus the runtime's
+   tooling: `uv` + `agentcore` CLI for AgentCore; Docker + AWS CLI + Terraform for ECS / Fargate /
+   Lambda / Lambda MicroVMs / Batch; Docker + AWS CLI + **`kubectl` + an existing EKS cluster (no
+   Terraform)** for EKS. Only list the tools the effective runtime actually needs. Mark any
+   `TODO: verify` items.
+3. **What gets created** — the AWS resources THIS runtime's shape provisions (from
+   `poc-shapes.md`): AgentCore Runtime + confirmed services for AgentCore; the resources in the
+   shape's Terraform create-whitelist for ECS/Fargate/Lambda/Lambda MicroVMs/Batch; for EKS, the
+   Kubernetes objects `kubectl apply` creates in the `agent-advisor-poc-<run_id>` namespace (no
+   cluster, no Terraform-managed AWS resources) — so the user knows the blast radius and that it
+   is billable.
 4. **Staged steps** — numbered, each with a **verification** and, where relevant, a **rollback**.
    Match the stages to the POC variant:
    - **Harness (3-H):** Stage 1 review generated `harness.json` + system prompt → values match
@@ -147,10 +197,36 @@ the complete guide in `migration_plan_ctx.migration_dir`. Never from assumptions
    - **Hello-agent (3a–3e):** Stage 1 review `agent.py` + config → values match intent.
      Stage 2 `./deploy.sh` → `/ping` returns healthy. Stage 3 smoke test: POST
      `/invocations` → model responds. Stage 4 (Memory, if enabled) validate recall.
-   - Rollback (all variants): how to tear down if a stage fails. Code/3-F path:
-     `agentcore destroy` — `TODO: verify`. Harness path: the `@aws/agentcore` CLI has no
-     destroy command; it provisions via CDK, so teardown is deleting the deployment's
-     CloudFormation stack (`aws cloudformation delete-stack`).
+     For every non-AgentCore runtime below, Stage 1 reviews the generated code + the shape's IaC
+     against `poc-shapes.md`'s create-whitelist, and Stage 2 runs the local compile/build check
+     (`python -m py_compile`; `docker build` where the shape has a Dockerfile). The deploy and
+     smoke stages differ PER RUNTIME — match the shape exactly, do not assume Terraform + run-task
+     for all:
+   - **ecs / fargate (`ecs-poc.tf`):** Stage 3 `./deploy.sh` (typed-confirm, build/push image,
+     `terraform apply`) → resources created. Stage 4 smoke: one-off `aws ecs run-task` /
+     `execute-command` that curls the container's localhost endpoint → responds.
+   - **eks (`k8s/*.yaml`, requires an existing cluster):** Stage 3 `./deploy.sh` (build/push image,
+     then `kubectl apply -f k8s/` into `agent-advisor-poc-<run_id>`) → pods Ready. Stage 4 smoke:
+     `kubectl port-forward` + local curl → responds. NOT Terraform, NOT run-task.
+   - **lambda (`lambda-poc.tf`):** Stage 3 `./deploy.sh` (`terraform apply`) → function created.
+     Stage 4 smoke: `aws lambda invoke` (or trigger via the SQS event source) → returns.
+   - **lambda_microvms:** Stage 3 `./deploy.sh` per the lambda_microvms shape → deployed. Stage 4
+     smoke depends on the fallback state (`poc-shapes.md` lambda_microvms rule): if the MicroVMs
+     config was MCP-verified this run (`microvms.tf` enabled), invoke the microVM endpoint per the
+     shape; if NOT verified (`microvms.tf.disabled` stays disabled — the POC deployed as standard
+     Lambda), use the standard Lambda smoke path (`aws lambda invoke`). Never assume a microVM
+     endpoint exists when the config is unverified.
+   - **batch (`batch-poc.tf`):** Stage 3 `./deploy.sh` (`terraform apply`) → job definition/queue
+     created. Stage 4 smoke: `aws batch submit-job` then poll to SUCCEEDED.
+   - **temporal_worker_poll:** Stage 3 `./deploy.sh`; Stage 4 the connectivity-and-pickup smoke
+     worker on the isolated `poc-smoke-<run_id>` queue → the target result comes back.
+   - Rollback — match the runtime: **AgentCore code/3-F** → `agentcore destroy` (`TODO: verify`);
+     **AgentCore Harness** → no CLI destroy, delete the CDK CloudFormation stack
+     (`aws cloudformation delete-stack`); **ecs / fargate / lambda / lambda_microvms / batch** →
+     `terraform destroy` against the shape's `.tf` (plus deleting the ECR repo if the shape created
+     one); **eks** → `kubectl delete -f k8s/` (deletes exactly what `kubectl apply` created — the
+     `agent-advisor-poc-<run_id>` namespace; NOT `terraform destroy`), per `poc-shapes.md`. Never
+     tell a non-AgentCore plan to run `agentcore destroy`.
 5. **Cost note** — POC-scale is small but non-zero; point to recommendation §10, no dollar figures.
 6. **Open placeholders** — the `TODO: verify` items (model id / CLI flags / teardown) to confirm
    against AWS docs before deploying.
@@ -160,14 +236,61 @@ stages, same placeholders). If they diverge, the plan is the source of truth for
 
 ## Step 3 — Write the POC under `$RUN_DIR/poc/`
 
-**RUNTIME DISPATCH FIRST** — check `design.json.verdict` (or co_recommend
-`chosen_runtime`):
+**Multi-unit system decision gate:** The number of `poc/<unit-id>/` directories equals
+`design.json.units[].length`. A Temporal system is never one `poc/app/` just because
+Temporal orchestrates it — count the units. If `units[]` has MORE THAN ONE unit, the
+system is MULTI-UNIT and must create `poc/<unit-id>/` for EACH unit and apply the
+per-unit runtime dispatch (below) to each unit's own verdict. This applies to Temporal
+systems too — a Temporal system with a `temporal_worker_poll` unit plus Activity-class
+units (agent_session / batch / lambda) IS multi-unit, NOT one app. Do NOT collapse it
+into a single `poc/app/` via the agentcore 3-F/3-H monolith path; the 3-F/3-H/3a-e
+branches are the PER-UNIT shape for an agent_session unit that landed on agentcore,
+applied INSIDE that unit's `poc/<unit-id>/` directory — never to the whole system.
+Only if there is exactly ONE unit → flat layout (`poc/app/` or the single-unit shape),
+and the 3-F/3-H/3a-e agentcore branches apply to that one unit.
 
+**Multi-unit POC structure (>1 unit):** Create `poc/<unit-id>/` per unit and apply the
+per-unit runtime dispatch below to EACH unit on its **effective runtime** (its own verdict
+under `split`, or the consolidated superset `platform.runtime` under `consolidated` — see
+"Effective runtime" below) (AgentCore branches for agent units on agentcore; poc-shapes.md
+shapes for the rest). **For each unit, use
+THAT unit's model id from Step 2** — the handler/agent code, deploy.sh, and README for
+unit `content-review` must use `content-review`'s `model_recommendation`, NOT unit[0]'s.
+Then write a top-level `poc/README.md` with the deploy ORDER (providers before consumers),
+per-unit `deploy.sh` pointers, and interconnect stubs — env-var wiring only (queue URL /
+endpoint URL passed between units), no cross-unit IaC. ONE aggregated cost warning +
+typed `deploy` confirmation up front (sum the per-unit warnings); each unit's deploy.sh
+keeps its own guardrails.
+
+**Effective runtime (resolve BEFORE dispatch).** For each unit, the runtime the POC deploys
+on is its **effective runtime**, NOT necessarily its raw `verdict`:
+
+- If `design.json.platform.mode == "consolidated"`, EVERY unit deploys on the consolidated
+  superset `design.json.platform.runtime` (e.g. the user chose "consolidate onto ECS" — all
+  units ship on ecs, regardless of each unit's own split verdict). The unit's original
+  `verdict` still describes what it would have been on its own (the report shows the
+  trade-off), but the POC, deploy.sh, and IaC target the superset runtime.
+- Otherwise (`split`), the effective runtime IS the unit's own `verdict` (or co_recommend
+  `chosen_runtime`).
+
+**Per-unit runtime dispatch** — dispatch on the **effective runtime** resolved above (not
+the raw verdict):
+
+- **`temporal_worker_poll` units** → the "Temporal worker POC" shape in
+  `references/decision-refs/poc-shapes.md`, whose BASE shape follows the unit's
+  **effective_runtime**: `ecs` → ecs base; `eks` → eks base (kubectl + existing cluster,
+  Kubernetes Secret for the connection material, NO Terraform); `serverless_workers` is
+  PRE-RELEASE and smoke-deploys on the ecs base. The Temporal deltas (smoke worker,
+  `poc-smoke-<run_id>` queue, connection env contract) apply on whichever base the
+  effective_runtime selected — an EKS-selected worker gets a Kubernetes POC, not ECS Fargate.
 - **agentcore** → the AgentCore branches below (3-H / 3-F / 3a–3e), unchanged.
-- **ecs / eks / lambda / lambda_microvms** → load
+- **batch / ecs / eks / fargate / lambda / lambda_microvms** → load
   `${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/references/decision-refs/poc-shapes.md`
-  and generate EXACTLY the shape specified for the verdict (artifacts,
-  Terraform create-whitelist, auth modes, smoke path, teardown). The
+  and generate EXACTLY the shape specified for the effective runtime (artifacts,
+  Terraform create-whitelist, auth modes, smoke path, teardown). **`fargate` uses the
+  `## ecs` shape** — ECS-on-Fargate is the ecs shape's launch type (W5/W6 map to fargate;
+  the ecs shape already provisions Fargate tasks), so a `fargate` verdict resolves to the
+  ecs shape with no separate authoring. The
   deploy.sh guardrails template from 3d applies to every runtime (typed
   `deploy` confirmation, cost warning, env-var parameterization, no
   credentials). Steps 2 (model id) and 2.5 (plan.md) already ran and their
@@ -322,8 +445,9 @@ instead (same `/invocations` + `/ping` contract; base URL and model id from the 
 the endpoint URL `TODO: verify` if not MCP-checked this run). For `"converse"`, absent, or
 not plan-backed: use the boto3 template below.
 
-Use this template verbatim, substituting `<MODEL_ID>` with the Step 2 value (or the
-`TODO: verify model id` placeholder if the MCP was not called):
+Use this template verbatim, substituting `<MODEL_ID>` with the Step 2 value **for this unit**
+(or the `TODO: verify model id` placeholder if the MCP was not called). In a multi-unit POC,
+each unit's agent.py uses THAT unit's model id from `design.json.units[<unit-id>].model_recommendation`:
 
 ```python
 """Minimal AgentCore POC agent — proves the Bedrock loop works end to end.

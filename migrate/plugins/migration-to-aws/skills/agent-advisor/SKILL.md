@@ -1,6 +1,6 @@
 ---
 name: agent-advisor
-description: "Unified entry point for AI-agent work on AWS: evaluate and pick a runtime, generate a full migration plan (for existing workloads), and build an executable POC — all in one flow. Triggers on: which runtime for my agent, AgentCore vs ECS vs EKS vs Lambda, AgentCore vs Lambda MicroVMs, deploy an AI agent on AWS, agent architecture on AWS, I have an agent idea what do I build, move my agents to AWS, migrate my agents to AWS with a plan, agent migration plan, add AgentCore services, add memory/gateway/identity/policy to my agent, enable AgentCore Memory, add observability to my agent, I'm already on AWS and want to add agent capabilities, migrate Temporal workers to AWS, Temporal to AWS, run Temporal on AWS, Temporal workers on AWS, we use Temporal and want to move to AWS, our service is orchestrated by Temporal, what do I build on AWS for my Temporal workers, move a Temporal-based service to AWS, Temporal Cloud or self-hosted on AWS. Runs a phased flow: Intake (entry point + technical background), Discover (lightweight code detection), Clarify (adaptive questions), deterministic scoring, Design (runtime + deployment model + services + model), Estimate (coarse cost), Generate (layered recommendation doc + scaffolding), then optional gated stages: Migration Plan (full plan generated in-skill by reusing this plugin's gcp-to-aws engine, with the advisor's decisions carried over) and POC (deployment plan + deployable proof-of-concept on the recommended runtime — AgentCore, ECS, EKS, or Lambda; generated deliverables by default, or assisted build in your account on explicit opt-in). An add-capabilities branch (for teams already running agents on AWS) recommends which AgentCore services to enable on any runtime — no runtime scoring. A temporal-worker branch moves Temporal Workers to AWS (ECS/EKS/Serverless Workers polling tier + per-Activity execution tier) without rewriting Workflow orchestration code — never a Step Functions translation. Not for: pure LLM SDK rewrite without agent architecture (use llm-to-bedrock) or detailed per-model pricing."
+description: "Unified entry point for AI-agent work on AWS: evaluate and pick a runtime, generate a full migration plan (for existing workloads), and build an executable POC — all in one flow. Triggers on: which runtime for my agent, AgentCore vs ECS vs EKS vs Lambda, AgentCore vs Lambda MicroVMs, deploy an AI agent on AWS, agent architecture on AWS, I have an agent idea what do I build, move my agents to AWS, migrate my agents to AWS with a plan, agent migration plan, add AgentCore services, add memory/gateway/identity/policy to my agent, enable AgentCore Memory, add observability to my agent, I'm already on AWS and want to add agent capabilities, migrate Temporal workers to AWS, Temporal to AWS, run Temporal on AWS, Temporal workers on AWS, we use Temporal and want to move to AWS, our service is orchestrated by Temporal, what do I build on AWS for my Temporal workers, move a Temporal-based service to AWS, Temporal Cloud or self-hosted on AWS. Runs a phased flow: Intake (entry point + technical background), Discover (lightweight code detection), Clarify (adaptive questions), deterministic scoring, Design (runtime + deployment model + services + model), Estimate (coarse cost), Generate (layered recommendation doc + scaffolding), then optional gated stages: Migration Plan (full plan generated in-skill by reusing this plugin's gcp-to-aws engine, with the advisor's decisions carried over) and POC (deployment plan + deployable proof-of-concept on the recommended runtime — AgentCore, ECS, EKS, or Lambda; generated deliverables by default, or assisted build in your account on explicit opt-in). Systems with several workloads (interacting or independent agents, batch jobs, services) are decomposed into workload units, each getting its own verdict with a consolidation option. An add-capabilities branch (for teams already running agents on AWS) recommends which AgentCore services to enable on any runtime — no runtime scoring. Temporal systems dissolve into the same unit flow — worker polling tiers and Activity execution classes become units (rules in the Temporal decision reference); Workflow orchestration code is never rewritten — never a Step Functions translation. Requires at least one agentic component: a purely non-agent system (only plain services / batch jobs / HTTP endpoints, or a Temporal worker whose Activities are all non-agent) is out of scope — Clarify halts it (scope gate) and points to migration-to-aws / heroku-to-aws / llm-to-bedrock. Not for: pure compute/data migration with no AI agent; pure LLM SDK rewrite without agent architecture (use llm-to-bedrock); or detailed per-model pricing."
 ---
 
 # AWS Agent Advisor
@@ -44,7 +44,7 @@ it reads `.phase-status.json`, determines the current phase, runs each phase's
 `_preconditions` / fragments / `_assemble` / `_postconditions`, advances on `HANDOFF_OK`
 via `_advances_to`, and validates state. The backbone (intake → discover → clarify →
 confirm → design → estimate → generate → migration-plan → poc → complete) and the
-three checkpoint branches (add-capabilities, temporal-worker, temporal-poc) are derived
+one checkpoint branch (add-capabilities) are derived
 from the phase files' frontmatter — they are not restated here.
 
 **Cold start (entry phase).** With no run under `.agent-advisor/` carrying a
@@ -72,26 +72,14 @@ this file (`INTERPRETER.md` § Skill bindings, § Backbone vs checkpoint).
 
 **Entry-point routing:**
 
-- `build_scratch` → skip Discover; Clarify → Confirm → Design → Estimate → Generate → **Gate 2 → POC (if AgentCore)**. No migration plan (nothing existing to migrate).
-- `build_deploy` → Discover (if code) → Clarify → Confirm → Design → Estimate → Generate → **Gate 1 → Migration Plan (if existing non-AWS AI workload detected and user confirms)** → **Gate 2 → POC (if AgentCore)**.
-- `migrate` → Discover (if code) → Clarify → Confirm → Design → **(skip Estimate)** → Generate → **Gate 1 → Migration Plan (in-skill, reusing the sibling `gcp-to-aws` skill)** → **Gate 2 → POC (if AgentCore and the plan was produced)**. Declining Gate 1 keeps the classic handoff: pointer to `/migration-to-aws:llm-to-bedrock` with `handoff-summary.md`.
+- `build_scratch` → skip Discover; Clarify → Confirm → Design → Estimate → Generate → **Gate 2 → POC (any winning runtime)**. No migration plan (nothing existing to migrate).
+- `build_deploy` → Discover (if code) → Clarify → Confirm → Design → Estimate → Generate → **Gate 1 → Migration Plan (if existing non-AWS AI workload detected and user confirms)** → **Gate 2 → POC (any winning runtime)**.
+- `migrate` → Discover (if code) → Clarify → Confirm → Design → Estimate (target-state run cost; migration TCO comparison stays with the Migration Plan engine) → Generate → **Gate 1 → Migration Plan (in-skill, reusing the sibling `gcp-to-aws` skill)** → **Gate 2 → POC (any winning runtime, when the plan was produced)**. Declining Gate 1 keeps the classic handoff: pointer to `/migration-to-aws:llm-to-bedrock` with `handoff-summary.md`.
 - `add_capabilities` → load `references/phases/add-capabilities/add-capabilities.md` and follow it (no runtime
   scoring; writes `capabilities-recommendation.md`). This is a self-contained branch — it does
   NOT pass through Clarify / Confirm / Design / Estimate / Generate, so the phase gate
   below never applies to it.
-- `temporal_worker` → load `references/phases/temporal-worker/temporal-worker.md` and follow it (moves Temporal
-  Workers to AWS; Workflow orchestration code untouched; writes `temporal-migration-plan.md`).
-  Same self-contained-branch exemption as `add_capabilities`. Entered two ways: Intake detects a
-  Temporal signal in the opening message and the user confirms, or Discover (under `migrate` /
-  `build_deploy`) detects the Temporal SDK and the user accepts the offer — both persist
-  `entry_point = temporal_worker` in `.phase-status.json` before loading the branch. If the user
-  DECLINES Discover's offer, `temporal_branch_declined: true` is persisted and the normal flow
-  continues; a resumed session must not re-offer the branch.
-
-**Checkpoint re-entry order:** on resume, evaluate the `temporal_poc` trigger
-(`phases.temporal_poc == "in_progress"`, set when the user answers Gate T "yes" —
-temporal-worker.md Step 5.7) BEFORE the `temporal_worker` trigger, which would otherwise
-swallow the route.
+- Temporal detection routes into `migrate` with temporal units pre-seeded (see discover).
 
 **Gate semantics (backbone tail):**
 
@@ -158,25 +146,27 @@ Stage 3 reads gcp-to-aws artifacts ONLY via this recorded path, never by re-glob
 
 ## Files
 
-| File                                                   | Purpose                                                                 |
-| ------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `references/vendored/dsl/INTERPRETER.md`               | Vendored DSL execution contract (interpreter loop + gate protocol)      |
-| `references/phases/intake/intake.md`                   | Entry point + technical background + open context                       |
-| `references/phases/discover/discover.md`               | Lightweight code detection                                              |
-| `references/phases/clarify/clarify.md`                 | Clarify orchestrator + answer mapping to scoring keys                   |
-| `references/phases/clarify/clarify-technical.md`       | Technical-background question wording                                   |
-| `references/phases/clarify/clarify-business.md`        | Business-background question wording                                    |
-| `references/phases/confirm/confirm.md`                 | Winner-specific follow-ups                                              |
-| `references/phases/design/design.md`                   | Assemble recommendation; Migrate handoff branch                         |
-| `references/phases/estimate/estimate.md`               | Coarse cost magnitude                                                   |
-| `references/phases/generate/generate.md`               | Layered recommendation doc + scaffolding                                |
-| `references/phases/migration-plan/migration-plan.md`   | Stage 2: full migration plan via the sibling gcp-to-aws engine          |
-| `references/phases/temporal-worker/temporal-worker.md` | Temporal Worker migration branch (self-contained)                       |
-| `references/phases/temporal-poc/temporal-poc.md`       | Temporal worker POC (Gate T): smoke worker + ECS Terraform              |
-| `references/decision-refs/temporal.md`                 | Temporal branch source of truth: Tier 1/2 tables, runbooks, commercials |
-| `references/decision-refs/poc-shapes.md`               | Per-runtime POC deploy shapes (ECS/EKS/Lambda/MicroVMs/Temporal)        |
-| `references/decision-refs/*.md`                        | Runtime service cards, model defaults, freshness                        |
-| `references/runtimes/*.json`                           | Runtime registry (read by scoring.py)                                   |
-| `scripts/scoring.py`                                   | Deterministic scoring engine                                            |
-| `scripts/test_temporal_decision_refs.py`               | Content lock for the Temporal decision reference                        |
-| `scripts/test_poc_shapes.py`                           | Content lock for the POC deploy shapes                                  |
+| File                                                 | Purpose                                                                                                        |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `references/vendored/dsl/INTERPRETER.md`             | Vendored DSL execution contract (interpreter loop + gate protocol)                                             |
+| `references/phases/intake/intake.md`                 | Entry point + technical background + open context                                                              |
+| `references/phases/discover/discover.md`             | Lightweight code detection                                                                                     |
+| `references/phases/clarify/clarify.md`               | Clarify orchestrator + answer mapping to scoring keys                                                          |
+| `references/phases/clarify/clarify-technical.md`     | Technical-background question wording                                                                          |
+| `references/phases/clarify/clarify-business.md`      | Business-background question wording                                                                           |
+| `references/phases/confirm/confirm.md`               | Winner-specific follow-ups                                                                                     |
+| `references/phases/design/design.md`                 | Assemble recommendation; Migrate handoff branch                                                                |
+| `references/phases/estimate/estimate.md`             | Coarse cost magnitude                                                                                          |
+| `references/phases/generate/generate.md`             | Layered recommendation doc + scaffolding                                                                       |
+| `references/phases/migration-plan/migration-plan.md` | Stage 2: full migration plan via the sibling gcp-to-aws engine                                                 |
+| `references/decision-refs/temporal.md`               | Temporal rules: Tier 1/2 tables, adapter, runbooks, commercials (consumed by discover/clarify/design/generate) |
+| `references/decision-refs/poc-shapes.md`             | Per-runtime POC deploy shapes (ECS/EKS/Lambda/MicroVMs/Temporal)                                               |
+| `references/decision-refs/*.md`                      | Runtime service cards, model defaults, freshness                                                               |
+| `references/decision-refs/workload-classes.md`       | Deterministic verdicts for non-agent workload units (batch/service/io)                                         |
+| `references/runtimes/*.json`                         | Runtime registry (read by scoring.py)                                                                          |
+| `scripts/scoring.py`                                 | Deterministic scoring engine                                                                                   |
+| `scripts/test_temporal_decision_refs.py`             | Content lock for the Temporal decision reference                                                               |
+| `scripts/test_poc_shapes.py`                         | Content lock for the POC deploy shapes                                                                         |
+| `scripts/test_workload_classes.py`                   | Content lock for workload-classes.md (verdicts table)                                                          |
+| `scripts/test_unit_grouping.py`                      | Unit grouping + pattern matching (workload-class assignment)                                                   |
+| `scripts/test_collapse_invariant.py`                 | Collapse-invariant ordering enforcement (A→B implies [B] ⊆ [A] outputs)                                        |

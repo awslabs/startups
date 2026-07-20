@@ -1,0 +1,27 @@
+{
+  "scenario_id": "scenario-002",
+  "label": "outcome B + x86",
+  "created_at": "2026-07-19T19:05:00Z",
+  "source": "workshop",
+  "preferences_subset": {
+    "Q1_traffic_shape.answer": "spiky \u2014 peak:median ~8:1",
+    "workshop.cpu_architecture": "x86_64",
+    "workshop.outcome_override": "B"
+  },
+  "clarify_fingerprint": "c82337bf7f27a50e277bcb9e80b69e3035940d1cdab542a12cc8599dc6e90195",
+  "recommendation_fingerprint": "f52d32757be87da4e969a6dd78f0b3c96698f95941eb9ec8deb735eb2d96c1de",
+  "estimation_summary": {
+    "outcome": "B",
+    "aws_monthly_premium": 180.0,
+    "aws_monthly_balanced": 165.0,
+    "aws_monthly_optimized": 110.0,
+    "complexity_tier": "small",
+    "pricing_source": "cached",
+    "region_note": null
+  },
+  "paths": {
+    "clarify_answers": "scenarios/scenario-002.clarify-answers.json",
+    "recommendation": "scenarios/scenario-002.recommendation.json",
+    "estimation_infra": "scenarios/scenario-002.estimation-infra.json"
+  }
+}
