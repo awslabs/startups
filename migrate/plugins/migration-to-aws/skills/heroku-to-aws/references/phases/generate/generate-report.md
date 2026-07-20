@@ -59,14 +59,16 @@ When `scenarios/index.json` exists and `scenarios[]` has **≥ 2** entries,
 render `<section id="what-if-scenarios">` **after** `exec-costs` and **before**
 `next-steps`:
 
-1. Table columns (same as `workshop-compare.md`):
+Render, in order:
+
+- Table columns (must stay in sync with `workshop-compare.md`'s table):
 
 | Scenario | Region | HA | Compute | Arch | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
 | -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
 
-2. Mark the active row (`index.active_scenario_id`).
-3. Under the table: active vs baseline knob deltas; any `region_note`; remind
-   inventory is frozen and Terraform matches the **active** scenario only.
+- Mark the active row (`index.active_scenario_id`).
+- Under the table: active vs baseline knob deltas; any `region_note`; remind
+  inventory is frozen and Terraform matches the **active** scenario only.
 
 Omit the section when workshop was declined or never entered.
 

@@ -39,12 +39,12 @@ Optional object assembled/patched by the workshop (not by Clarify interview):
 }
 ```
 
-| Field | Type | Rules |
-| ----- | ---- | ----- |
-| `active` | boolean | `true` while the user is in workshop mode |
-| `cpu_architecture` | string | `"x86_64"` (default) or `"arm64"` |
-| `last_sheet_at` | string | ISO 8601 UTC of last sheet apply |
-| `active_scenario_id` | string | matches a `scenario_id` in `scenarios/index.json` |
+| Field                | Type    | Rules                                             |
+| -------------------- | ------- | ------------------------------------------------- |
+| `active`             | boolean | `true` while the user is in workshop mode         |
+| `cpu_architecture`   | string  | `"x86_64"` (default) or `"arm64"`                 |
+| `last_sheet_at`      | string  | ISO 8601 UTC of last sheet apply                  |
+| `active_scenario_id` | string  | matches a `scenario_id` in `scenarios/index.json` |
 
 Omit `workshop` entirely on Clarify-first assemble. Workshop refresh creates it.
 

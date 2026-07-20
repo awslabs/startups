@@ -4,12 +4,12 @@ Canned Estimate → workshop reprice artifacts for the `heroku-to-aws` what-if
 workshop checkpoint (`references/phases/workshop/`, `_kind: checkpoint`).
 Discovery inventory is frozen; Design + Estimate refresh under `scenarios/`.
 
-| Path | Role |
-| ---- | ---- |
-| `seed/` | Post-Estimate baseline (x86 EB `t3.small`, single-AZ) before workshop |
-| `after-arm64-reprice/` | After Apply & reprice with `workshop.cpu_architecture=arm64` (`t4g.small`) |
-| `expected-workshop.json` | Assertions for the asserter |
-| `check_expected_workshop.py` | Stdlib checker |
+| Path                         | Role                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `seed/`                      | Post-Estimate baseline (x86 EB `t3.small`, single-AZ) before workshop      |
+| `after-arm64-reprice/`       | After Apply & reprice with `workshop.cpu_architecture=arm64` (`t4g.small`) |
+| `expected-workshop.json`     | Assertions for the asserter                                                |
+| `check_expected_workshop.py` | Stdlib checker                                                             |
 
 ## Assert a run
 
@@ -48,7 +48,7 @@ demo alone is not enough for the house bar.
 8. **Exit to Generate** — `workshop-assemble` marks workshop completed and sets
    `current_phase: generate`; working tree matches the active scenario.
 
-Partner one-liner: *SAs can run a what-if workshop after Estimate: change region,
+Partner one-liner: _SAs can run a what-if workshop after Estimate: change region,
 HA, compute target, or Graviton preference and compare up to 5 priced scenarios
 without re-discovery. (Region dollar deltas need awspricing MCP; otherwise rates
-stay us-east-1-cache-based.)*
+stay us-east-1-cache-based.)_

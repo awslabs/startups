@@ -1,5 +1,5 @@
 ---
-_fragment: workshop-refresh
+_fragment: refresh
 _of_phase: workshop
 ---
 
@@ -14,13 +14,13 @@ When this fragment re-runs Design or Estimate, treat them like an `_exec` worker
 WORK slice (`INTERPRETER.md` § `_exec`): **fragments + assembler artifact write
 only**. Do **not** advance the backbone mid-workshop.
 
-| Allowed | Forbidden |
-| ------- | --------- |
-| Overwrite `aws-design.json` / `estimation-infra.json` | Set `phases.design` / `phases.estimate` to `in_progress` |
-| Soft-validate Property-16 / schema before snapshot | Emit `HANDOFF_OK` from Design or Estimate |
-| Brief chat note that reprice finished | Touch `.phase-status.json` `current_phase` or advance to `generate` |
-| Keep `phases.workshop` as `in_progress` | Run Estimate's post-Estimate workshop offer (recursion) |
-| | Evaluate Design/Estimate `_preconditions` that fail on `_check_single_active_phase` because workshop is already `in_progress` |
+| Allowed                                               | Forbidden                                                                                                                     |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Overwrite `aws-design.json` / `estimation-infra.json` | Set `phases.design` / `phases.estimate` to `in_progress`                                                                      |
+| Soft-validate Property-16 / schema before snapshot    | Emit `HANDOFF_OK` from Design or Estimate                                                                                     |
+| Brief chat note that reprice finished                 | Touch `.phase-status.json` `current_phase` or advance to `generate`                                                           |
+| Keep `phases.workshop` as `in_progress`               | Run Estimate's post-Estimate workshop offer (recursion)                                                                       |
+|                                                       | Evaluate Design/Estimate `_preconditions` that fail on `_check_single_active_phase` because workshop is already `in_progress` |
 
 Leave `phases.design` and `phases.estimate` as `"completed"`. Leave
 `current_phase` at `"estimate"` until the user exits workshop via

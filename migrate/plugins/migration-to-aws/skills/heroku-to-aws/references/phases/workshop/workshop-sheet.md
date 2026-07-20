@@ -1,5 +1,5 @@
 ---
-_fragment: workshop-sheet
+_fragment: sheet
 _of_phase: workshop
 ---
 
@@ -12,15 +12,15 @@ _of_phase: workshop
 
 From `$MIGRATION_DIR/preferences.json`:
 
-| Knob | Path | Allowed values |
-| ---- | ---- | -------------- |
-| Target region | `global.target_region` | Valid AWS region code |
-| Availability | `global.availability` | `single-az`, `multi-az`, `multi-az-ha`, `multi-region` (as used by Clarify) |
-| Database HA | `data.database_ha` | Same family; omit row if key absent (no Postgres) |
-| Redis HA | `data.redis_ha` | As Clarify; omit row if key absent |
-| Compute target | `design_constraints.compute_target.default` | `elastic_beanstalk`, `ecs-fargate`, `eks-managed`, `eks-or-ecs` — keep existing `overrides[]` |
-| Cost optimization | `operational.cost_optimization` | `conservative`, `balanced`, `aggressive` |
-| CPU architecture | `workshop.cpu_architecture` | `x86_64` (default if missing), `arm64` |
+| Knob              | Path                                        | Allowed values                                                                                |
+| ----------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Target region     | `global.target_region`                      | Valid AWS region code                                                                         |
+| Availability      | `global.availability`                       | `single-az`, `multi-az`, `multi-az-ha`, `multi-region` (as used by Clarify)                   |
+| Database HA       | `data.database_ha`                          | Same family; omit row if key absent (no Postgres)                                             |
+| Redis HA          | `data.redis_ha`                             | As Clarify; omit row if key absent                                                            |
+| Compute target    | `design_constraints.compute_target.default` | `elastic_beanstalk`, `ecs-fargate`, `eks-managed`, `eks-or-ecs` — keep existing `overrides[]` |
+| Cost optimization | `operational.cost_optimization`             | `conservative`, `balanced`, `aggressive`                                                      |
+| CPU architecture  | `workshop.cpu_architecture`                 | `x86_64` (default if missing), `arm64`                                                        |
 
 ## Step 2: Present the sheet
 

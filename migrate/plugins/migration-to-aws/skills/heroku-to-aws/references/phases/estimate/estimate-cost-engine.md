@@ -44,7 +44,6 @@ of `ARM64` (or preferences `workshop.cpu_architecture` is `arm64`), use
 `fargate.per_vcpu_hour_arm64` / `fargate.per_gb_mem_hour_arm64` when present;
 else x86 Fargate rates + warning.
 
-
 Each service object carries its rates and (where relevant) a `multi_az_handling` key. Look up the rates from there — do not hardcode them. Apply the cost formula from the Per-Service Calculation Formulas table below.
 
 ### Step 0b: MCP Availability Check (only if cache stale or service not listed)

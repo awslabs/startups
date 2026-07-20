@@ -1,5 +1,5 @@
 ---
-_fragment: workshop-compare
+_fragment: compare
 _of_phase: workshop
 ---
 
@@ -34,10 +34,10 @@ For each entry in `index.scenarios[]` (stable order: baseline first, then by
 
 Output a markdown table:
 
-| Scenario | Region | HA | Compute | Arch | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
-| -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
-| baseline | … | … | … | … | … | … | … | … |
-| scenario-002 *(active)* | … | … | … | … | … | … | … | … |
+| Scenario                | Region | HA | Compute | Arch | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
+| ----------------------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
+| baseline                | …      | …  | …       | …    | …            | …             | …              | …          |
+| scenario-002 _(active)_ | …      | …  | …       | …    | …            | …             | …              | …          |
 
 Under the table:
 

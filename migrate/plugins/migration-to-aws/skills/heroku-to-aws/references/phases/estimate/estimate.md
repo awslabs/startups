@@ -81,7 +81,6 @@ writes the final artifact, runs the completion gate, presents the summary, and
 read each unit file for its own contract. Outer Estimate defers
 `current_phase → generate` until workshop is resolved (see `estimate-assemble.md`).
 
-
 ---
 
 ## Scope Boundary
