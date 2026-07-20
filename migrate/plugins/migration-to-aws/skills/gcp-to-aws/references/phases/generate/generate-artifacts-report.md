@@ -64,6 +64,7 @@ Gather data from all available artifacts. Each section below notes which artifac
 | **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                 | —                                                    |
 | **Pricing confidence / staleness**      | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                       | `estimation-ai.json` accuracy fields                 |
 | **AI optimization opportunities**       | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                             | —                                                    |
+| **What-if workshop scenarios**          | `scenarios/index.json` + each `scenarios/scenario-NNN.json` manifest (`estimation_summary`, `preferences_subset`, optional `graviton_note`)               | — (omit section when workshop unused)                |
 
 ## Step 1: Build Executive Summary Section
 
@@ -174,6 +175,35 @@ Source: `aws-design.json`, `generation-infra.json`
 > **Observability cost note:** [Pull the `note` field verbatim]
 
 - Source: estimation artifact
+
+**Section 3b — What-if scenarios (`what-if-scenarios`, OPTIONAL):**
+
+Render **only when** `$MIGRATION_DIR/scenarios/index.json` exists and
+`scenarios[]` has **≥ 2** entries (baseline + at least one workshop variant).
+Omit entirely when workshop was declined or never entered.
+
+1. Load `scenarios/index.json`. For each entry (baseline first, then by
+   `created_at`), read the manifest at `entry.manifest`.
+2. HTML table matching `workshop-compare.md` columns:
+
+| Scenario | Region | HA | Compute | Arch | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
+| -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
+
+   Resolve knobs from each scenario's preferences copy (or
+   `preferences_subset` / `estimation_summary` on the manifest): Region ←
+   `design_constraints.target_region.value`; HA ←
+   `design_constraints.availability.value`; Compute ←
+   `design_constraints.kubernetes.value` when present; Arch ←
+   `design_constraints.cpu_architecture.value`. Costs and complexity ←
+   `estimation_summary`.
+3. Mark the active row (`scenario_id == index.active_scenario_id`) with
+   `class="active-scenario"` or an "(active)" label.
+4. Under the table: active vs baseline knob deltas (plain language); any
+   `graviton_note` / `region_note`; remind that discovery inventory is frozen
+   and generated Terraform matches the **active** scenario only.
+5. TOC: link `#what-if-scenarios` only when rendered. Place this section in the
+   executive flow immediately after `exec-costs` (before security teaser /
+   timeline).
 
 **Section 4 — Security & Cost Guardrails (teaser — full table in Appendix G):**
 
@@ -520,7 +550,7 @@ The output MUST include these `id` attributes (content from Steps 1–2; gates c
 | `appendix-steps`     | Appendix C                             |
 | `appendix-artifacts` | Appendix E                             |
 
-Optional IDs (include when data exists): `exec-tco`, `exec-architecture`, `exec-security-teaser`, `appendix-ai`, `appendix-config`, `appendix-security`, `appendix-security-gap`, `appendix-assumptions`.
+Optional IDs (include when data exists): `exec-tco`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `appendix-ai`, `appendix-config`, `appendix-security`, `appendix-security-gap`, `appendix-assumptions`.
 
 ```html
 <!DOCTYPE html>
@@ -539,6 +569,7 @@ Optional IDs (include when data exists): `exec-tco`, `exec-architecture`, `exec-
       <section id="decision-summary"><!-- Section 0 --></section>
       <section id="exec-services"><!-- Primary services --></section>
       <section id="exec-costs"><!-- Cost headline --></section>
+      <!-- <section id="what-if-scenarios"> when scenarios/index.json has ≥2 entries -->
       <section id="exec-timeline"><!-- Timeline --></section>
       <section id="exec-risks"><!-- Top risks --></section>
     </div>
@@ -636,7 +667,7 @@ These move from "example in the fixture" to enforced gate. See `references/share
 4. **Expand acronyms** on first use and include a glossary (TCO, DMS, OAI, RTO, CUD, SCC, IMDSv2, P95, RAG) in the assumptions section — the audience is startup founders, not AWS specialists.
 5. **Accessible tables and diagrams.** Every table has a `<caption>` and `scope="col"` on header cells. The architecture diagram is wrapped in `<figure role="img" aria-label="…">` with a `<figcaption>` text alternative.
 6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate, phased over 10 weeks — ~$497/mo savings, BigQuery deferred") in addition to the `path_label` badges.
-7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*` or `decision-summary` section.
+7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate", "workshop scenario comparison" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*`, `what-if-scenarios`, or `decision-summary` section.
 8. **One name per concept.** Use a single consistent label for each recommended choice across the whole report. The recommended Bedrock model and the chosen cost tier keep the same name in the verdict, tables, and appendices (always "Claude Sonnet 4.6 (recommended)", always "Balanced"). Do not alternate "recommended / selected target / design target / projected" for the same item — one label is how the reader keeps their bearings.
 9. **Ordered action lists.** In `decision-summary`, `Key decisions ahead` and `Next steps` MUST use `<ol class="compact">`, not `<ul>`. The validator fails when either heading is followed by a bullet list. `Migrate if` / `Stay if` remain unordered lists.
 
