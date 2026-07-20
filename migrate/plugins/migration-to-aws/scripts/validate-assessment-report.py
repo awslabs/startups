@@ -56,6 +56,7 @@ CONDITIONAL_SECTION_IDS = {
     "out-of-scope": "recommendation.outcome is 'C' or 'stay'",
     "cost-comparison": "estimation-infra.json exists (estimate phase completed)",
     "artifacts-generated": "estimation-infra.json exists (generate phase completed)",
+    "what-if-scenarios": "scenarios/index.json has ≥2 scenarios (workshop variants)",
 }
 
 OPTIONAL_SECTION_IDS = list(CONDITIONAL_SECTION_IDS.keys())
@@ -190,8 +191,9 @@ def _validate_conditional_sections(
     preflight_findings: dict | None,
     tier1_signals: dict | None,
     estimation_infra: dict | None = None,
+    migration_dir: Path | None = None,
 ) -> list[str]:
-    """Requirement 9.2-9.5 - the four conditional-gate sections."""
+    """Requirement 9.2-9.5 - conditional-gate sections + workshop scenarios."""
     errors: list[str] = []
     counts = _section_id_counts(html)
 
@@ -238,6 +240,22 @@ def _validate_conditional_sections(
                 'estimation-infra.json exists but no <section id="artifacts-generated"> '
                 "(the artifacts summary section is required when generation has completed)"
             )
+
+    # What-if workshop scenario table — required when ≥2 scenarios were snapshotted
+    if migration_dir is not None:
+        index_path = migration_dir / "scenarios" / "index.json"
+        if index_path.is_file():
+            try:
+                index = json.loads(index_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                index = None
+            scenarios = (index or {}).get("scenarios") or []
+            if len(scenarios) >= 2 and counts.get("what-if-scenarios", 0) < 1:
+                errors.append(
+                    'scenarios/index.json has ≥2 scenarios but no '
+                    '<section id="what-if-scenarios"> (workshop compare table is '
+                    "required in the assessment report when variants exist)"
+                )
 
     return errors
 
@@ -500,7 +518,14 @@ def validate_report(
 
     errors.extend(_validate_required_sections(html))
     errors.extend(
-        _validate_conditional_sections(html, recommendation, preflight_findings, tier1_signals, estimation_infra)
+        _validate_conditional_sections(
+            html,
+            recommendation,
+            preflight_findings,
+            tier1_signals,
+            estimation_infra,
+            migration_dir,
+        )
     )
 
     if require_toc:

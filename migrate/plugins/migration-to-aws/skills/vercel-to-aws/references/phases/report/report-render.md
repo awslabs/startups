@@ -44,12 +44,13 @@ Render these ONLY when their trigger holds — check
 `recommendation.json`/`preflight-findings.json`/`tier1-signals.json` before
 deciding:
 
-| Section ID        | Trigger                                                                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `exec-tiebreak`   | `recommendation.tiebreak == true` — the Outcome A/B side-by-side                                                                           |
-| `inputs-received` | any finding across `discovery.json`/`coupling-score.json`/`preflight-findings.json` has `confidence != "HIGH"` — confidence-upgrade offers |
-| `appendix-m1`     | `tier1-signals.json.has_middleware == true`                                                                                                |
-| `out-of-scope`    | `recommendation.outcome` is `"C"` or `"stay"` — the separability rationale                                                                 |
+| Section ID           | Trigger                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `exec-tiebreak`      | `recommendation.tiebreak == true` — the Outcome A/B side-by-side                                                                           |
+| `inputs-received`    | any finding across `discovery.json`/`coupling-score.json`/`preflight-findings.json` has `confidence != "HIGH"` — confidence-upgrade offers |
+| `appendix-m1`        | `tier1-signals.json.has_middleware == true`                                                                                                |
+| `out-of-scope`       | `recommendation.outcome` is `"C"` or `"stay"` — the separability rationale                                                                 |
+| `what-if-scenarios`  | `$MIGRATION_DIR/scenarios/index.json` exists and `scenarios[]` has **≥ 2** entries (workshop produced a baseline + at least one variant)   |
 
 ---
 
@@ -218,6 +219,35 @@ the primary visible label a founder reads.
 Per Requirement 9.4: whenever `tier1-signals.json.has_middleware == true`,
 render a dedicated M1 detail section — this one IS allowed to use "M1" and
 technical detail since it's an appendix section, not in `EXEC_SECTION_IDS`.
+
+---
+
+## Step 8b: Render `what-if-scenarios` (if triggered)
+
+When `$MIGRATION_DIR/scenarios/index.json` exists and lists **≥ 2** scenarios,
+render `<section id="what-if-scenarios">` **after** `cost-comparison` and
+**before** `artifacts-generated` / `next-steps`.
+
+1. Load `scenarios/index.json`. For each entry (baseline first, then by
+   `created_at`), read the manifest at `entry.manifest` plus the linked
+   clarify/recommendation copies when needed for display columns.
+2. Build an HTML table matching `workshop-compare.md` columns:
+
+| Scenario | Outcome | Region | Arch | Multi-AZ | Traffic | Premium $/mo | Balanced $/mo | Optimized $/mo | Complexity |
+| -------- | ------- | ------ | ---- | -------- | ------- | ------------ | ------------- | -------------- | ---------- |
+
+3. Mark the active row (`scenario_id == index.active_scenario_id`) with
+   `class="active-scenario"` or an "(active)" suffix in the Scenario cell.
+4. Under the table (short prose, not a second table):
+   - Active vs baseline knob deltas from the active manifest's
+     `preferences_subset` (plain language — no internal JSON path dump).
+   - Any non-null `region_note` once (regional dollar deltas need awspricing).
+   - Reminder: discovery / coupling / preflight are frozen; generated Terraform
+     matches the **active** scenario only.
+5. TOC: include a link to `#what-if-scenarios` only when this section is rendered.
+
+Omit the entire section when workshop was declined or never entered (no index,
+or only a lone baseline with no variant).
 
 ---
 
