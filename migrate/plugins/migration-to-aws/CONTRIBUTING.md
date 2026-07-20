@@ -5,14 +5,24 @@ is structured, how to build and validate a change, and which architecture to fol
 for new work. For what the plugin does and how to install it, see the
 [README](README.md).
 
-## Architecture: two skills, two generations
+## Architecture: four skills, two generations
 
-The plugin ships two migration skills that are built on **different architectures**:
+The plugin ships four skills. Two are built on the **phase DSL**; two use the **older prose
+design**:
 
-| Skill             | Architecture                          | Status                     |
-| ----------------- | ------------------------------------- | -------------------------- |
-| **heroku-to-aws** | the **phase DSL** (checkable grammar) | current direction          |
-| **gcp-to-aws**    | the **older prose design**            | maintained, not yet ported |
+| Skill              | Architecture                                       | Status                                            |
+| ------------------ | -------------------------------------------------- | ------------------------------------------------- |
+| **heroku-to-aws**  | the **phase DSL** (checkable grammar)              | reference implementation; current direction       |
+| **agent-advisor**  | the **phase DSL** (checkable grammar)              | AI-agent runtime advisor + migration plan + POC   |
+| **gcp-to-aws**     | the **older prose design**                         | maintained, not yet ported                        |
+| **llm-to-bedrock** | prose SKILL.md (single-file, no phase frontmatter) | AI-execution skill (SDK rewrite → Bedrock + eval) |
+
+The two DSL skills (`heroku-to-aws`, `agent-advisor`) are what `mise run lint:frontmatter`
+validates. `gcp-to-aws` and `llm-to-bedrock` are prose skills — `llm-to-bedrock` is a single
+`SKILL.md` (no phase files), and `gcp-to-aws` predates the DSL. `agent-advisor` reuses the
+`gcp-to-aws` engine for its Migration Plan stage, and the migration skills delegate their
+AI-execution step to `llm-to-bedrock` — so a change to one skill can affect another; keep
+cross-skill contracts in mind.
 
 **`heroku-to-aws` is the reference implementation of the phase DSL** — a declarative
 frontmatter grammar an LLM interprets at runtime, with a static validator that checks
@@ -30,10 +40,12 @@ half-follows.
 
 ### Future direction — new work uses the DSL
 
-**The intended direction for this plugin is the DSL.** When you author a new migration
-skill, or add a phase to an existing one, follow the `heroku-to-aws` DSL pattern, not
-the `gcp-to-aws` prose pattern. New skills should be DSL-native from the start; a future
-effort will port `gcp-to-aws` onto the DSL. Do not add new prose-orchestration skills.
+**The intended direction for this plugin is the DSL.** When you author a new migration skill,
+or add a phase to an existing one, follow the `heroku-to-aws` DSL pattern, not the `gcp-to-aws`
+prose pattern.
+Study `agent-advisor` too if your skill needs gated optional stages or reuses another skill's
+engine — it exercises those DSL features. New skills should be DSL-native from the start; a
+future effort will port `gcp-to-aws` onto the DSL. Do not add new prose-orchestration skills.
 
 If you are extending `gcp-to-aws` specifically (a bug fix, a service mapping), match its
 existing prose style for consistency within that skill — but net-new skills go DSL.
@@ -68,15 +80,15 @@ mise run build          # the full gate: lint + fmt:check + security
 
 `build` is the complete pre-push gate. Its pieces (all runnable individually):
 
-| Task                        | What it checks                                                    |
-| --------------------------- | ----------------------------------------------------------------- |
-| `mise run lint:md`          | markdownlint over all `.md`                                       |
-| `mise run lint:types`       | `tsc --noEmit` (strict) on the frontmatter validator + its test   |
-| `mise run lint:frontmatter` | the typed DSL validator over `skills/heroku-to-aws` phase files   |
-| `mise run shared:check`     | vendored shared files are byte-identical to canonical (see below) |
-| `mise run test`             | the frontmatter-validator test suite (`node --test`)              |
-| `mise run fmt:check`        | dprint formatting (run `mise run fmt` to fix)                     |
-| `mise run security`         | bandit, semgrep, gitleaks, checkov, grype                         |
+| Task                        | What it checks                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `mise run lint:md`          | markdownlint over all `.md`                                                                                  |
+| `mise run lint:types`       | `tsc --noEmit` (strict) on the frontmatter validator + its test                                              |
+| `mise run lint:frontmatter` | the typed DSL validator over the DSL skills' phase files (`skills/heroku-to-aws` and `skills/agent-advisor`) |
+| `mise run shared:check`     | vendored shared files are byte-identical to canonical (see below)                                            |
+| `mise run test`             | the frontmatter-validator test suite (`node --test`)                                                         |
+| `mise run fmt:check`        | dprint formatting (run `mise run fmt` to fix)                                                                |
+| `mise run security`         | bandit, semgrep, gitleaks, checkov, grype                                                                    |
 
 The DSL validator is skill-agnostic. To validate a skill other than the default:
 
