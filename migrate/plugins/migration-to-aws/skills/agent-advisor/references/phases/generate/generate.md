@@ -18,6 +18,8 @@ _produces:
   - recommendation-report.html
 _advances_to: migration-plan
 _preconditions:
+  - _check_phase_completed: estimate
+    _on_failure: _halt_and_inform
   - _check_file_exists: design.json
     _on_failure: _unrecoverable
   - _validate_json: design.json

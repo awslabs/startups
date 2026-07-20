@@ -16,6 +16,9 @@ _produces:
   - answers.json
   - scoring-result.json
 _advances_to: confirm
+_preconditions:
+  - _check_phase_completed: discover
+    _on_failure: _halt_and_inform
 _postconditions:
   - _check_file_exists: answers.json
     _on_failure: _halt_and_inform
