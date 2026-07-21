@@ -6,8 +6,9 @@ _input:
   - heroku-resource-inventory.json
   - preferences.json
 _knowledge:
-  - { file: knowledge/design/dyno-fargate-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is ecs-fargate or absent" }
-  - { file: knowledge/design/eks-pod-sizing.json, _when: "inventory has a formation AND design_constraints.kubernetes.value is eks-managed or eks-or-ecs" }
+  - { file: knowledge/design/dyno-eb-sizing.json, _when: "inventory has a formation AND (design_constraints.compute_target.default is elastic_beanstalk OR design_constraints.compute_target.value is elastic_beanstalk OR design_constraints.compute_target is absent OR any compute_target override is elastic_beanstalk)" }
+  - { file: knowledge/design/dyno-fargate-sizing.json, _when: "inventory has a formation AND (design_constraints.compute_target.default is ecs-fargate OR design_constraints.compute_target.value is ecs-fargate OR design_constraints.compute_target.default is elastic_beanstalk OR design_constraints.compute_target.value is elastic_beanstalk OR design_constraints.compute_target is absent OR any compute_target override is ecs-fargate)" }
+  - { file: knowledge/design/eks-pod-sizing.json, _when: "inventory has a formation AND (design_constraints.compute_target.default is eks-managed or eks-or-ecs OR design_constraints.compute_target.value is eks-managed or eks-or-ecs)" }
   - { file: knowledge/design/postgres-rds-sizing.json, _when: "inventory has a heroku-postgresql addon" }
   - { file: knowledge/design/redis-elasticache-sizing.json, _when: "inventory has a heroku-redis addon" }
   - { file: knowledge/design/kafka-msk-sizing.json, _when: "inventory has a heroku-kafka addon" }
@@ -17,7 +18,7 @@ _fragments:
     _trigger: { _always: true }
     _file: phases/design/design-mapping.md
   - _id: eks-mapping
-    _trigger: { _when: "preferences.design_constraints.kubernetes.value is 'eks-managed' or 'eks-or-ecs'" }
+    _trigger: { _when: "preferences.design_constraints.compute_target.default is 'eks-managed' or 'eks-or-ecs' OR preferences.design_constraints.compute_target.value is 'eks-managed' or 'eks-or-ecs'" }
     _file: phases/design/design-eks.md
 _assemble:
   _file: phases/design/design-assemble.md
@@ -72,10 +73,17 @@ are processed as a flat list in input order.
 Composed of a mapping fragment + one assembler (declared in the frontmatter
 `_fragments`/`_assemble`); the interpreter runs the fragments whose `_trigger` is
 true, then the assembler, and evaluates the `_knowledge` `_when` guards to load only
-the sizing tables the inventory needs (see `INTERPRETER.md` § `_knowledge`). The EKS
-branch (`design-eks`, fired by its `_when` trigger when the Kubernetes preference
-selects EKS) is an ALTERNATIVE path, not an addition: it maps ALL formations to EKS
-pods + an `eks_cluster` aggregate instead of the Fargate path.
+the sizing tables the inventory needs (see `INTERPRETER.md` § `_knowledge`). The
+compute target branch is selected by `design_constraints.compute_target`: Elastic
+Beanstalk is the default, Fargate is the direct-container override, and EKS is the
+Kubernetes-team alternative. The preferred shape is `compute_target.default` plus
+per-formation `overrides[]`; legacy `compute_target.value` is accepted only for
+reused older preferences. The EKS branch (`design-eks`, fired by its `_when` trigger
+when the global compute target selects EKS) is an ALTERNATIVE path, not an addition:
+it maps ALL formations to EKS pods + an `eks_cluster` aggregate instead of the
+EB/Fargate paths. On the EB default path, persistent non-web formations with
+`quantity > 1` route to Fargate to preserve Heroku worker capacity because EB
+SingleInstance cannot horizontally scale that process model.
 
 ---
 

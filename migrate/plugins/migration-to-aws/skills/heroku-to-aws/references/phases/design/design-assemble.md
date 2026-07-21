@@ -31,7 +31,7 @@ Handoff Gate below (this phase's `_postconditions`, re-read from disk).
 
 **Route output gates (fail closed):**
 
-- If inventory had formation resources → `services[]` MUST contain at least one Fargate OR EKS entry (unless all dyno types were unrecognized).
+- If inventory had formation resources → `services[]` MUST contain at least one Elastic Beanstalk, Fargate, or EKS entry (unless all dyno types were unrecognized or all formations were `release` processes).
 - If inventory had `heroku-postgresql` add-ons with recognized plans → `services[]` MUST contain RDS or Aurora entries.
 - If inventory had `heroku-redis` add-ons with recognized plans → `services[]` MUST contain ElastiCache entries.
 - If inventory had `heroku-kafka` add-ons with recognized plans → `services[]` MUST contain MSK entries.
@@ -52,6 +52,11 @@ Step 7, then emit `GATE_FAIL` (STOP; do not patch artifacts) or
 ---
 
 ## Step 8: Update Phase Status and Hand Off
+
+> **Inner workshop reprice:** When Design is invoked from
+> `workshop-refresh.md`, stop after writing `aws-design.json` (and soft
+> validation). Skip this Step 8 and do **not** emit `HANDOFF_OK` — see
+> `workshop-refresh.md` § Inner runs.
 
 Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.design` completed and advance per `_advances_to` — in the **same turn** as the output message below.
 

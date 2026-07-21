@@ -131,12 +131,46 @@ Load `shared/handoff-gates.md`. **Re-read from disk** each active estimate artif
 
 **On PASS:** Emit `HANDOFF_OK | phase=estimate | artifacts=<comma-separated active estimate files>`.
 
-After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+### Inner workshop reprice — skip state transition
 
-- Set `phases.estimate` to `"completed"`
-- Set `current_phase` to `"generate"`
+When Estimate is invoked from `workshop-refresh.md` (inner reprice): write the
+estimate artifact(s), present a brief summary, then **return to the workshop
+loop**. Do **not** emit `HANDOFF_OK`, do **not** update `.phase-status.json`, do
+**not** offer the what-if workshop below.
 
-Output to user: "Cost estimation complete. Proceeding to Phase 5: Generate Migration Artifacts."
+### Outer Estimate — deferred Generate advance
+
+After outer-run `HANDOFF_OK`, use the Phase Status Update Protocol
+(read-merge-write) — **in the same turn** as the summary:
+
+1. Set `phases.estimate` to `"completed"`
+2. Ensure `phases.workshop` exists (seed `"pending"` if missing)
+3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
+   `"estimate"` until the workshop sidebar is resolved (entered then exited,
+   or declined)
+4. Offer the what-if workshop below (infra route only)
+
+### Post-Estimate: What-If Workshop Offer
+
+When `gcp-resource-inventory.json` + `aws-design.json` + `estimation-infra.json`
+exist, offer:
+
+```
+Estimate complete. Before Generate, you can run a what-if workshop:
+change region, availability/HA, compute (EKS/ECS), or Graviton preference
+and compare priced scenarios without re-discovering inventory.
+
+[A] Enter what-if workshop
+[B] Proceed toward Generate
+```
+
+- **A** → Load `references/phases/workshop/workshop.md`. Keep
+  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
+- **B** → Mark `phases.workshop` → `"completed"`. Set `current_phase` →
+  `"generate"`. Continue with Feedback/Generate sidebars in `SKILL.md`.
+
+For AI-only / billing-only runs (no infra inventory), skip the workshop offer and
+set `phases.workshop` → `"completed"`, `current_phase` → `"generate"`.
 
 ## Reference Files
 

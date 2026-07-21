@@ -8,8 +8,8 @@
     {
       "name": "migration-to-aws",
       "source": "./migrate/plugins/migration-to-aws",
-      "version": "1.4.0",
-      "description": "Migrate from GCP to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Cloud SQL → Aurora, GKE → EKS), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't. Pair with the ai-to-aws plugin to execute AI/LLM migrations automatically (rewrite, evaluate, deliver a branch)."
+      "version": "1.6.0",
+      "description": "Migrate from GCP, Heroku, or Vercel to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Heroku Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. For Vercel: computes a Coupling Score and 10 Pre-Flight Checks, then recommends OpenNext/SST, ECS Fargate, or a Vercel+AWS Hybrid via a fixed, auditable decision order. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't. The bundled llm-to-bedrock skill executes AI/LLM migrations automatically (rewrite, evaluate, deliver a branch)."
     },
     {
       "name": "aws-startup-advisor",
@@ -22,12 +22,6 @@
       "source": "./solution-architecture/plugins/aws-dev-toolkit",
       "version": "1.0.0",
       "description": "AWS development toolkit for building, migrating, cost optimizing and performing architecture reviews on AWS. Authored by the Startup Solution Architects by distilling hard won lessons from speaking with countless orgs. You'll find insights for building on AWS that are not publicly documented elsewhere."
-    },
-    {
-      "name": "ai-to-aws",
-      "source": "./migrate/plugins/ai-to-aws",
-      "version": "1.0.1",
-      "description": "End-to-end AI migration to Amazon Bedrock: assess your codebase, design the architecture, then execute — rewriting SDK calls, evaluating quality, and delivering a ready-to-merge git branch. Requires the migration-to-aws plugin (it powers the Assess phase). With both installed, use /ai-to-aws:llm-to-bedrock for AI workloads — it adds the Execute half on top of migration-to-aws's assessment."
     }
   ]
 }

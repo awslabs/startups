@@ -85,6 +85,18 @@ Count resources matching these types. This is the **primary resource count**.
 - **If primary resource count ≤ 8:** Use **simplified discovery** (Step 3S below). Skip Steps 3-6.
 - **If primary resource count > 8:** Use **full discovery** (Steps 3-6, unchanged).
 
+## Step 2.6: Graviton (ARM64) Signal Scan
+
+From IaC alone, architecture compatibility can only be inferred coarsely. **Load** `references/shared/schema-graviton.md` for the IaC signal table and `graviton_profile` schema.
+
+For each compute resource extracted in Step 1 (`google_compute_instance`, `google_cloud_run_service`/`_v2_`, `google_container_cluster`, `google_app_engine_application`), emit a coarse `graviton_profile` entry with `source: "iac"`:
+
+- Default `tier: "conditional"` and record the GCP `machine_type` (or Cloud Run CPU) as a `signal` — Design maps it to the Graviton equivalent via the table in `graviton.md`.
+- If a Windows AMI data source or a `.csproj` targeting `net48` is present → `tier: "incompatible"`, caveat `"Windows/.NET Framework — not supported on Graviton"`.
+- If architecture cannot be inferred at all → `tier: "unknown"` (Clarify will ask Q11b).
+
+If `discover-app-code.md` already emitted a `graviton_profile` for the same service (`source: "app_code"`, higher fidelity), do **not** overwrite it — app-code signals win. IaC profiles fill gaps only.
+
 ## Step 3S: Simplified Discovery (≤ 8 primary resources)
 
 For small projects, skip the full clustering pipeline. Instead:

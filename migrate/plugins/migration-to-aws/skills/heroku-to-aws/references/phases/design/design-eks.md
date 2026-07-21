@@ -7,19 +7,20 @@ _contributes:
 
 # EKS Design Branch
 
-> Conditional formation-mapping fragment. Fires only when the Kubernetes preference
-> selects EKS; the prose below gates on that value (skip when `ecs-fargate` or
+> Conditional formation-mapping fragment. Fires only when the compute target preference
+> selects EKS; the prose below gates on that value (skip when `elastic_beanstalk`, `ecs-fargate`, or
 > absent). When active, it maps ALL formations to EKS pods + a single `eks_cluster`
 > aggregate, contributing to `aws-design.json`. The mapping-engine fragment
-> (`design-mapping.md`) handles the Fargate path and all non-formation resources.
+> (`design-mapping.md`) handles the EB/Fargate paths and all non-formation resources.
 
 ---
 
 ## EKS Branch Logic
 
-When the Kubernetes preference indicates EKS:
+When the compute target preference indicates EKS:
 
 1. **For EACH formation resource** in the inventory:
+   - If `config.process_type == "release"`, skip it and add the same run-once deployment-hook warning used by the EB/Fargate mapping. Do NOT create an EKS Deployment for release commands.
    - Look up dyno type in the `eks-pod-sizing.json` knowledge (`rows.<dyno_type>`)
    - Produce an EKS Deployment entry with pod resource requests and limits
    - Set `aws_service: "EKS"`
@@ -35,7 +36,7 @@ When the Kubernetes preference indicates EKS:
 
 3. **Node group sizing:**
    - Determine the largest dyno type present across all formations.
-   - Select instance type using the **largest-pod-class-wins** rule: use the recommended `node_type` for the largest dyno present, ranked by the JSON's `node_size_rank` (higher = larger). On a rank tie between `m6i.4xlarge` and `r6i.4xlarge`, prefer `m6i.4xlarge` unless a RAM-optimized dyno (`*-l-ram`) is the only dyno at that rank, in which case use `r6i.4xlarge`. All pods from smaller classes fit on those nodes with room to spare.
+   - Select instance type using the **largest-pod-class-wins** rule: use the recommended `node_type` (or `node_type_arm64` when `preferences.workshop.cpu_architecture` is `arm64` and that column exists — see `design-mapping.md` CPU architecture resolution) for the largest dyno present, ranked by the JSON's `node_size_rank` (higher = larger). On a rank tie between `m6i.4xlarge` and `r6i.4xlarge` (or their `m6g`/`r6g` arm counterparts), prefer the general-purpose family unless a RAM-optimized dyno (`*-l-ram`) is the only dyno at that rank. All pods from smaller classes fit on those nodes with room to spare.
    - Calculate node count:
      - `min_size` = 2 (HA)
      - `desired_size` = `max(min_size, ceil(total_pods / 4))` — clamp UP to `min_size`; AWS rejects `desired_size < min_size`, which would otherwise happen for small workloads (`total_pods <= 4`).

@@ -1,6 +1,6 @@
 ---
 name: heroku-to-aws
-description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform. Runs a 6-phase process: discover Heroku resources from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Fargate, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP or Azure migrations to AWS, AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
+description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Elastic Beanstalk, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to Elastic Beanstalk, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform, what-if workshop, reprice Heroku migration, compare migration scenarios, workshop mode. Runs a 6-phase process: discover Heroku resources live via the authenticated Heroku CLI (read-only, consent-gated) and/or from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. After Estimate, an optional what-if workshop can reprice region/HA/compute/Graviton scenarios without re-discovery. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Elastic Beanstalk by default, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP or Azure migrations to AWS, AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
 ---
 
 # Heroku-to-AWS Migration Skill
@@ -8,15 +8,16 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 ## Philosophy
 
 - **Full platform exit by default**: Heroku is in sustaining engineering (KTLO) — stability and support only, no new investment. Enterprise contracts are no longer sold to new customers. This skill assumes complete departure from Heroku (compute, data, and add-ons) within a user-defined window. Do not recommend indefinite continued use of Heroku.
-- **No legacy-to-legacy**: Do not recommend Elastic Beanstalk or AWS App Runner (no longer accepting new customers as of April 2026) as migration targets. Fargate is the sole compute target. ECS Express Mode may be mentioned as an optional simplified deployment path (same underlying Fargate + ALB cost model).
+- **PaaS-to-PaaS by default, recommendation-shaped**: Elastic Beanstalk (Docker platform, AL2023) is the default compute target because it preserves Heroku's managed platform model (source deployment, platform-managed environments, and lower operational burden than direct container orchestration). Clarify presents a per-formation compute recommendation before asking for confirmation. Fargate remains the override for direct container control and is used automatically for horizontally scaled non-web processes that EB SingleInstance cannot preserve; EKS remains the override for teams with Kubernetes expertise. ECS Express Mode may be mentioned only as a forward-look for the Fargate override path, not as a replacement for the EB default. Do not recommend AWS App Runner (no longer accepting new customers as of April 2026).
 - **Interim cutover is bounded**: If a user chooses data-first migration (database on AWS, app temporarily on Heroku), treat this as a bounded phase (weeks, not quarters). Require a target exit date and surface KTLO platform risk warnings.
-- **Re-platform by default**: Select AWS services that match Heroku workload types (e.g., Dynos → Fargate, Heroku Postgres → RDS/Aurora, Heroku Redis → ElastiCache, Kafka → MSK).
+- **Re-platform by default**: Select AWS services that match Heroku workload types (e.g., Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, Heroku Redis → ElastiCache, Kafka → MSK).
 - **Dev sizing unless specified**: Default to development-tier capacity (e.g., db.t4g.micro, single AZ). Upgrade only on user direction.
 - **No human one-time migration costs**: Do not present human labor, professional services, or people-time work as dollar estimates or "one-time migration cost" budget categories. Vendor charges grounded in data (for example Heroku invoice line items in the infra estimate when billing exists) are allowed.
-- **Terraform + repo as primary discovery**: Terraform files (`.tf` with `heroku_*` resources) and repo artifacts (Procfile, app.json) are the primary data sources for resource discovery. No Platform API calls in v1.
+- **Live-first discovery, read-only and consent-gated**: The user's authenticated Heroku CLI is a first-class discovery source — most startups have no `heroku_*` Terraform, and the account is authoritative for what actually runs. Live capture is strictly read-only (an exact-command whitelist of list/info commands), requires explicit consent, never captures config var values (key names only), and never extracts the API token. Terraform files (`.tf` with `heroku_*` resources) and repo artifacts (Procfile, app.json) remain fully supported; when both live and Terraform data exist, live wins for current state, Terraform supplements structure and provenance, and disagreements are surfaced as drift — never silently resolved.
 - **Flat resource model**: Heroku resources are organized per-app without dependency graphs or clustering. No topological sorting, typed edges, or cluster formation logic. Resources are processed as a flat list in input order.
 - **Deterministic mappings**: Core services use fixed lookup tables (Dyno Type Table, Postgres Plan Table, Redis Plan Table, Kafka Plan Table). Common add-ons use the Fast-Path Table. Unknown add-ons hit the specialist gate.
 - **DMS has Heroku constraints**: AWS DMS cannot perform continuous replication (CDC) with Heroku Postgres because Heroku does not grant the REPLICATION role. DMS is for one-time bulk migration with a cutover window only. The skill must surface this constraint when DMS is selected.
+- **What-if after Estimate**: After costs are computed, SAs can enter an optional what-if workshop sidebar (`references/phases/workshop/workshop.md`) to change region, HA, compute target, or CPU architecture (x86 vs Graviton), refresh Design + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Region dollar deltas need awspricing MCP; without it, rates stay us-east-1-cache-based. Workshop arch defaults to **x86_64** here (EB tables historically x86-first); vercel-to-aws defaults workshop arch to **arm64**.
 
 ---
 
@@ -72,8 +73,10 @@ are not restated here.
 skill's entry phase (the one carrying `_init: true`). The interpreter loads THIS
 phase directly; it does not scan every phase's frontmatter to discover the root.
 All subsequent phases are reached by following each phase's `_advances_to`. On a
-warm start, `current_phase` in `.phase-status.json` is authoritative (see
-`INTERPRETER.md` § The interpreter loop).
+warm start, `current_phase` in `.phase-status.json` is authoritative **except**
+when deferred-advance sidebar resume applies (`INTERPRETER.md` § The
+interpreter loop step 2 — Estimate completed + `workshop` pending/in_progress
+must not re-run Estimate).
 
 **Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
 Design, Estimate, or Generate even if the user asks — there is no exception for
@@ -114,7 +117,9 @@ heroku-to-aws/
 │   ├── phases/
 │   │   ├── discover/
 │   │   │   ├── discover.md                     # Phase 1: Discover orchestrator
-│   │   │   ├── discover-terraform.md           # Terraform discovery (primary)
+│   │   │   ├── discover-terraform.md           # Terraform discovery
+│   │   │   ├── discover-live-capture.md        # Live CLI capture (main-window pre-work, consent-gated)
+│   │   │   ├── discover-live.md                # Live discovery fragment (parses live-capture/)
 │   │   │   └── discover-billing.md             # Billing data parsing
 │   │   ├── clarify/
 │   │   │   └── clarify.md                      # Phase 2: Adaptive questions (12–15, batched ≤5)
@@ -122,20 +127,30 @@ heroku-to-aws/
 │   │   │   └── design.md                       # Phase 3: Design orchestrator (flat single-pass mapping)
 │   │   ├── estimate/
 │   │   │   └── estimate.md                     # Phase 4: Cost projection
+│   │   ├── workshop/
+│   │   │   ├── workshop.md                     # Sidebar: optional post-Estimate what-if
+│   │   │   ├── workshop-sheet.md               # Assumption sheet knobs
+│   │   │   ├── workshop-refresh.md             # Patch prefs → Design → Estimate → snapshot
+│   │   │   ├── workshop-compare.md             # Side-by-side scenarios
+│   │   │   └── workshop-assemble.md            # Resolve sidebar → return to Generate
 │   │   ├── generate/
 │   │   │   ├── generate.md                     # Phase 5: Generate orchestrator
 │   │   │   ├── generate-terraform.md           # Terraform configurations
-│   │   │   └── generate-docs.md                # MIGRATION_GUIDE.md + README.md
+│   │   │   ├── generate-docs.md                # MIGRATION_GUIDE.md + README.md
+│   │   │   ├── generate-report.md              # migration-report.html (stakeholder + scenarios)
+│   │   │   └── generate-eks.md                 # EKS manifests when design has EKS
 │   │   └── feedback/
 │   │       └── feedback.md                     # Phase 6: Feedback collection (reuses shared)
 │   │
 │   └── shared/                                 # heroku-to-aws's own shared references
 │           ├── README.md                       # what lives here + pointers to plugin-neutral shared data
 │           ├── heroku-pricing-cache.md          # Heroku plan pricing (source-side baseline)
-│           └── schema-discover-heroku.md        # heroku-resource-inventory.json schema
+│           ├── schema-discover-heroku.md        # heroku-resource-inventory.json schema
+│           └── schema-workshop-scenarios.md     # scenarios/ + preferences.workshop contract
 │
 ├── knowledge/design/                          # design lookup DATA (pure data, referenced by
 │   │                                           #  design.md _knowledge, gated per _when)
+│   ├── dyno-eb-sizing.json                     # Dyno type → Elastic Beanstalk EC2 instance type
 │   ├── dyno-fargate-sizing.json                # Dyno type → Fargate CPU/memory
 │   ├── eks-pod-sizing.json                     # Dyno type → EKS pod sizing + node selection
 │   ├── postgres-rds-sizing.json                # Postgres plan → RDS/Aurora sizing
@@ -149,7 +164,7 @@ heroku-to-aws/
 | `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                    |
 | awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `references/vendored/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`. |
 | User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                                          |
-| Dyno type not in Dyno Type Table                         | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to Fargate."                                                                        |
+| Dyno type not in selected compute sizing table           | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                                         |
 | Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                                |
 
 ## Defaults
@@ -157,63 +172,61 @@ heroku-to-aws/
 - **IaC output**: Terraform configurations, migration scripts, and documentation
 - **Region**: `us-east-1` (unless user specifies otherwise)
 - **Sizing**: Development tier (e.g., `db.t4g.micro` for databases, 0.5 CPU for Fargate)
-- **Migration mode**: Adapts based on available inputs (Terraform primary, Procfile/app.json supplementary, billing optional)
+- **Migration mode**: Adapts based on available inputs (live CLI discovery recommended, Terraform supported, Procfile/app.json supplementary, billing optional)
 - **Cost currency**: USD
 - **Timeline assumption**: 2-16 weeks depending on migration complexity — small (2-6 weeks), medium (6-12 weeks), large (12-18 weeks). Complexity tiers are classified per `references/vendored/estimate/complexity-tiers.json`.
 
-## Feedback & Sharing Checkpoints
+## Feedback & Sharing Sidebars
 
 The interpreter loop (`INTERPRETER.md` § The interpreter loop) drives phase
 sequencing, gates, and state. This section defines only the heroku-specific
-checkpoint orchestration: WHERE the optional `feedback` checkpoint and plan-share
-are offered (a checkpoint's placement is orchestration prose, not part of the
-phase contract).
+sidebar orchestration: WHERE the optional `workshop` and `feedback`
+sidebars are offered (placement is orchestration prose, not part of the phase
+contract). Both are `_kind: sidebar` — off-backbone, trigger-entered, never
+`current_phase`.
+
+> **Plan-share links are GATED OFF.** The share landing page
+> (`https://aws.amazon.com/startups/migrate/connect`) is not yet live (404). Do
+> NOT offer, generate, or present a share link at any sidebar. The share-link
+> spec is preserved in `references/phases/feedback/feedback-collect.md` Step 3
+> (itself gated) for when the page ships; restoring the share prompts here is the
+> un-gating change.
 
 - **After Discover**: No prompt. Proceed directly to Clarify.
 
-- **After Estimate** (if `phases.feedback` is `"pending"`): Output to user:
+- **After Estimate**: First offer the what-if workshop sidebar per
+  `estimate-assemble.md` (Enter workshop / Proceed toward Generate). Outer
+  Estimate keeps `current_phase: estimate` until workshop is resolved (entered
+  then exited via `workshop-assemble.md`, or declined). If the user enters
+  workshop, follow `references/phases/workshop/workshop.md`. Then, if
+  `phases.feedback` is `"pending"`:
 
   ```
-  ─── Share Your Migration Plan ───
+  Would you like to share quick feedback? (5 optional questions +
+  anonymized usage data — never resource names, file paths, or
+  account IDs)
 
-  This link encodes your migration profile for partner matching:
-  ✓ Included: Clarify answers, estimated costs, recommendation path,
-    detected Heroku services, resource names, and workload types.
-  ✗ Excluded: Source code, local file paths, credentials, API tokens,
-    config-var values, and environment secrets.
-
-  The link uses a URL fragment (#) — no data is sent to any server
-  when you click it. The landing page decodes everything client-side.
-
-  [A] Send feedback & share plan
-  [B] Send feedback only
-  [C] No thanks, continue to Generate
+  [A] Yes, share feedback
+  [B] No thanks, continue to Generate
   ```
 
-  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Then generate share link. Set `phases.feedback` to `"completed"`. Continue to Generate.
-  - If user picks **B** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
-  - If user picks **C** → Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **B** → Set `phases.feedback` to `"completed"`. Continue to Generate.
 
-- **After Generate**: Share-only prompt (no feedback re-ask):
+- **Workshop resume (mandatory):** If `current_phase == "estimate"` AND
+  `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or
+  `"in_progress"`, **do not recompute Estimate**. If `"pending"`, re-present the
+  post-Estimate workshop offer from `estimate-assemble.md`. If `"in_progress"`,
+  load `references/phases/workshop/workshop.md`. Generate must wait until
+  `phases.workshop == "completed"` (entered+exited or declined).
 
-  ```
-  ─── Share Your Completed Plan ───
+- **Warm start / explicit what-if**: If the user says "what if", "reprice",
+  "workshop mode", or "compare scenarios" and Estimate artifacts already exist,
+  load `references/phases/workshop/workshop.md` directly (respect Generate
+  `_re_entry_guard` when Terraform was already produced). Knobs on the pilot
+  sheet: region, HA, compute target, cost optimization, CPU architecture
+  (x86 vs Graviton). There is no traffic-multiplier knob in v1.
 
-  This link encodes your migration profile for partner matching:
-  ✓ Included: Clarify answers, estimated costs, recommendation path,
-    detected Heroku services, resource names, and workload types.
-  ✗ Excluded: Source code, local file paths, credentials, API tokens,
-    config-var values, and environment secrets.
-
-  The link uses a URL fragment (#) — no data is sent to any server
-  when you click it. The landing page decodes everything client-side.
-
-  [A] Share completed plan
-  [B] No thanks, finish
-  ```
-
-  - If user picks **A** → Generate share link. Mark migration complete.
-  - If user picks **B** → Mark migration complete.
-  - If `phases.feedback` is still `"pending"`, set it to `"completed"` regardless of choice.
+- **After Generate**: No prompt. If `phases.feedback` is still `"pending"`, set it to `"completed"` and mark the migration complete.
 
 **Critical constraint**: Follow each phase reference file's workflow exactly. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.

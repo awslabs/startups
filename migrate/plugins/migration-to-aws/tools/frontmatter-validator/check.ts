@@ -44,26 +44,26 @@ export function check(skill: BoundSkill): Finding[] {
     // closed vocab
     for (const k of phase.unknownKeys) add(pf, `unknown phase frontmatter key '${k}'`);
 
-    // backbone/checkpoint contract (see INTERPRETER.md § _kind):
+    // backbone/sidebar contract (see INTERPRETER.md § _kind):
     //   backbone (default): MUST have _advances_to; MUST NOT have a phase-level _trigger.
-    //   checkpoint: MUST have a phase-level _trigger; MUST NOT have _advances_to
+    //   sidebar: MUST have a phase-level _trigger; MUST NOT have _advances_to
     //               (off-backbone — entered by its trigger, returns control).
-    if (phase.role === "checkpoint") {
+    if (phase.role === "sidebar") {
       if (!phase.trigger) {
-        add(pf, `checkpoint phase '${phase.phase}' must declare a phase-level _trigger (how it is entered)`);
+        add(pf, `sidebar phase '${phase.phase}' must declare a phase-level _trigger (how it is entered)`);
       } else if (phase.trigger.kind === "unknown") {
-        add(pf, `checkpoint phase '${phase.phase}' has an unrecognized phase _trigger form: ${phase.trigger.raw}`);
+        add(pf, `sidebar phase '${phase.phase}' has an unrecognized phase _trigger form: ${phase.trigger.raw}`);
       }
       if (phase.advancesTo) {
-        add(pf, `checkpoint phase '${phase.phase}' must NOT declare _advances_to (it is off-backbone; it returns control, it does not advance)`);
+        add(pf, `sidebar phase '${phase.phase}' must NOT declare _advances_to (it is off-backbone; it returns control, it does not advance)`);
       }
     } else {
       // backbone
       if (!phase.advancesTo) {
-        add(pf, `backbone phase '${phase.phase}' must declare _advances_to (or mark it '_kind: checkpoint' if it is an off-backbone checkpoint)`);
+        add(pf, `backbone phase '${phase.phase}' must declare _advances_to (or mark it '_kind: sidebar' if it is an off-backbone sidebar)`);
       }
       if (phase.trigger) {
-        add(pf, `backbone phase '${phase.phase}' must NOT declare a phase-level _trigger (only checkpoint phases are trigger-entered)`);
+        add(pf, `backbone phase '${phase.phase}' must NOT declare a phase-level _trigger (only sidebar phases are trigger-entered)`);
       }
     }
 
@@ -297,9 +297,9 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
 
-  // ---- Backbone chain-consistency (backbone phases only; checkpoints excluded) ----
+  // ---- Backbone chain-consistency (backbone phases only; sidebars excluded) ----
   // The backbone is the linear lifecycle wired by _advances_to (forward) and
-  // _requires_phase (backward). Checkpoints (_kind: checkpoint) are off-backbone and
+  // _requires_phase (backward). Sidebars (_kind: sidebar) are off-backbone and
   // are NOT part of this graph. Enforced only once >1 phase declares frontmatter AND
   // every backbone _advances_to target is either a terminal or a declared phase
   // (i.e. the backbone is fully present — tolerant of partial rollout).
@@ -364,10 +364,10 @@ export function check(skill: BoundSkill): Finding[] {
     }
   }
   for (const p of initPhases) {
-    //   (b) the `_init` phase must be a backbone phase (a checkpoint is off-backbone,
+    //   (b) the `_init` phase must be a backbone phase (a sidebar is off-backbone,
     //       trigger-entered — it can never be the entry).
-    if (p.role === "checkpoint") {
-      add(skill.rel(p.sourceFile), `checkpoint phase '${p.phase}' declares '_init: true' — only a backbone phase can be the entry (checkpoints are off-backbone, trigger-entered)`);
+    if (p.role === "sidebar") {
+      add(skill.rel(p.sourceFile), `sidebar phase '${p.phase}' declares '_init: true' — only a backbone phase can be the entry (sidebars are off-backbone, trigger-entered)`);
     }
     //   (c) the `_init` phase must be the backbone head (no _requires_phase) — the
     //       entry cannot depend on an upstream phase.

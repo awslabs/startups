@@ -1,7 +1,7 @@
 {
   "name": "migration-to-aws",
-  "version": "1.1.0",
-  "description": "Migrate from GCP to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Cloud SQL → RDS or Aurora, GKE → EKS), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't.",
+  "version": "1.5.0",
+  "description": "Migrate from GCP, Heroku, or Vercel to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Heroku Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't.",
   "author": {
     "name": "Amazon Web Services",
     "url": "https://aws.amazon.com"
@@ -39,7 +39,32 @@
     "llm-migration",
     "cost-estimation",
     "cost-comparison",
-    "pricing-comparison"
+    "pricing-comparison",
+    "agent-runtime",
+    "agentcore",
+    "lambda-microvms",
+    "deploy-ai-agent",
+    "agent-architecture",
+    "choose-agent-runtime",
+    "agentcore-vs-lambda",
+    "where-to-run-my-agent",
+    "add-agentcore-services",
+    "bedrock-migration",
+    "openai-to-bedrock-execute",
+    "llm-to-bedrock",
+    "rewrite-sdk-calls",
+    "bedrock-code-rewrite",
+    "ai-migration-execute",
+    "temporal",
+    "temporal-cloud",
+    "temporal-workers",
+    "temporal-to-aws",
+    "durable-execution",
+    "vercel",
+    "vercel-to-aws",
+    "next-js",
+    "nextjs",
+    "opennext"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
@@ -49,14 +74,18 @@
     "longDescription": "Point this plugin at your Terraform files, application code, or GCP billing data. It runs a structured 6-phase migration assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.\n\nFor AI-focused startups, it detects your entire AI stack (models, agents, tools, orchestration patterns) and recommends three migration paths: retarget (keep your framework, swap models), AgentCore Harness (config-based managed agents), or Strands Agents (AWS-native multi-agent SDK).\n\nGenerates Terraform configurations, migration scripts, provider adapters, harness.json, and documentation — all tailored to your specific stack.",
     "developerName": "Amazon Web Services",
     "category": "Developer Tools",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "websiteURL": "https://github.com/awslabs/startups/tree/main/migrate",
     "defaultPrompt": [
       "Migrate my GCP infrastructure to AWS",
       "Migrate my OpenAI app to Amazon Bedrock",
       "Estimate AWS costs for my GCP workload",
       "Generate Terraform for my GCP to AWS migration",
-      "Migrate my LangChain app from OpenAI to Bedrock"
+      "Migrate my LangChain app from OpenAI to Bedrock",
+      "Assess my Vercel migration"
     ]
   }
 }

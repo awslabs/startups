@@ -20,43 +20,14 @@ _contributes:
 
 ## Step 0: Pricing Mode Selection
 
-### Step 0a: Load Pricing Cache
+Execute `references/vendored/estimate/pricing-mode.md` (the canonical
+Step 0, vendored from `skills/shared/estimate/pricing-mode.md` and kept
+byte-identical by `shared:sync`) as this step: cache staleness check, MCP
+retry ladder, pricing-mode display, and the per-service pricing hierarchy
+(including the `estimated` and `unavailable` rungs). Do not restate or
+fork that logic here.
 
-Read `references/vendored/pricing/aws-infra-pricing.json` (shared AWS infrastructure pricing data). Check the `_meta.last_updated` date:
-
-- If ≤ 30 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the file. Set `pricing_source: "cached"`.
-- If > 30 days old: Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable. Attempt MCP (Step 0b) for services not in the file; use the cached rates as fallback with `pricing_source: "cached_stale"`.
-
-Each service object carries its rates and (where relevant) a `multi_az_handling` key. Look up the rates from there — do not hardcode them. Apply the cost formula from the Per-Service Calculation Formulas table below.
-
-### Step 0b: MCP Availability Check (only if cache stale or service not listed)
-
-Attempt to reach awspricing MCP with **up to 2 retries** (3 total attempts, 10-second timeout per attempt):
-
-1. **Attempt 1**: Call `get_pricing_service_codes()`
-2. **If timeout/error after 10s**: Wait 1 second, retry (Attempt 2)
-3. **If still fails after 10s**: Wait 2 seconds, retry (Attempt 3)
-4. **If all 3 attempts fail**: Use cached prices. Set `pricing_source: "cached_fallback"`.
-
-### Step 0c: Display Pricing Mode to User
-
-**Before any calculation**, surface the pricing status:
-
-- **Cache fresh + all services covered**: "Pricing source: cached (updated [date], ±5-10% accuracy). Live pricing API not required."
-- **Cache stale + MCP available**: "Pricing source: live API (awspricing MCP). Cache is stale ([date]) — using real-time pricing."
-- **Cache stale + MCP unavailable**: "⚠️ Pricing source: stale cache only (updated [date]). The awspricing MCP server is unreachable. Proceeding with cached pricing; accuracy ±5-10% for infrastructure."
-- **Service not in cache + MCP unavailable**: "⚠️ Some services not in pricing cache and MCP unreachable. Those services will show `pricing_source: unavailable` in the estimate."
-
-### Pricing Hierarchy (per-service lookup order)
-
-| Priority | Source                                               | Condition                                    | `pricing_source` value |
-| -------- | ---------------------------------------------------- | -------------------------------------------- | ---------------------- |
-| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Service found in the pricing file            | `"cached"`             |
-| 2        | MCP API (`get_pricing`)                              | Service NOT in the file, MCP available       | `"live"`               |
-| 3        | Pricing file after MCP failure                       | MCP attempted but failed, service IS in file | `"cached_fallback"`    |
-| 4        | Unavailable                                          | NOT in file AND MCP failed                   | `"unavailable"`        |
-
-For typical Heroku migrations (Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `aws-infra-pricing.json`. Zero MCP calls needed.
+For typical Heroku migrations (Elastic Beanstalk, Fargate, RDS, Aurora, ElastiCache, ALB, NAT Gateway, S3, CloudWatch, Secrets Manager, EventBridge, SES, OpenSearch, MQ), ALL prices are in `aws-infra-pricing.json`. Zero MCP calls needed.
 
 ---
 
@@ -82,7 +53,30 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Extract `billing_profile.line_items[]` for per-app breakdown
    - Set `current_costs.source: "billing_data"`
 
-2. **Heroku pricing cache** — If no billing data, Load `references/shared/heroku-pricing-cache.md` and derive costs from discovered resources:
+2. **Live-captured prices + dyno cache** — If no billing data AND at least one
+   add-on resource carries `config.monthly_price_usd` (the account's actual
+   billed plan rates from the Platform API capture). The gate is the presence of
+   live prices, not merely that live discovery ran: a live run that captured
+   ZERO priced add-ons (e.g. a dyno-only app) has nothing live-priced in it —
+   fall to rung 3, whose `pricing_cache` label and ±5% accuracy describe that
+   baseline honestly.
+   - **Add-ons:** sum `config.monthly_price_usd` across add-on resources — these
+     are exact, and they price plans the cache has never heard of (no
+     `"unpriced_heroku"` holes for priced add-ons)
+   - **Dynos:** the API does not price formations; look up each formation's
+     `dyno_type` in `references/shared/heroku-pricing-cache.md` (±5% published
+     flat rates) × `quantity`
+   - Set `current_costs.source: "live_prices_plus_cache"`
+   - Set `current_costs.accuracy: "exact for add-ons, ±5% for dynos"`
+   - An add-on WITHOUT `monthly_price_usd` (e.g. a Terraform-only entry) falls
+     through to the rung-3 cache lookup for that resource only; if neither
+     prices it, mark `"unpriced_heroku"` and add to warnings
+   - `baseline_note` (mandatory): "Derived from your account's actual add-on
+     prices plus published dyno rates — not an invoice. Excludes usage-based
+     charges (bandwidth, build minutes), team seats, credits, and discounts;
+     your invoice may differ."
+
+3. **Heroku pricing cache** — If no billing data and no live-captured prices, Load `references/shared/heroku-pricing-cache.md` and derive costs from discovered resources:
    - For each resource in inventory, look up its plan in the cache tables (case-insensitive exact match)
    - Multiply dyno costs by `formation.quantity`
    - Sum all matched resources to get `heroku_monthly_estimated`
@@ -90,18 +84,18 @@ Use the best available source for Heroku monthly baseline (first match wins):
    - Set `current_costs.accuracy: "±5%"`
    - If any resource plan is not found in cache, mark as `"unpriced_heroku"` and exclude from total; add to warnings
 
-3. **User-provided** — If pricing cache produces zero matched resources (unlikely with Terraform discovery), ask: "I need your current Heroku monthly spend to produce a meaningful cost comparison. What is your approximate Heroku monthly cost?" Use the answer.
+4. **User-provided** — If neither live prices nor the pricing cache match any resource (unlikely with Terraform or live discovery), ask: "I need your current Heroku monthly spend to produce a meaningful cost comparison. What is your approximate Heroku monthly cost?" Use the answer.
    - Set `current_costs.source: "user_provided"`
 
-4. **Unavailable** — If user declines: present AWS costs without Heroku comparison.
+5. **Unavailable** — If user declines: present AWS costs without Heroku comparison.
    - Set `current_costs.source: "unavailable"`
    - Note: "Heroku baseline unavailable — AWS costs shown without comparison."
 
-When billing data or pricing cache is available, present the Heroku baseline as:
+Whenever a baseline was determined (any source except `"unavailable"`), present it as:
 
-- Total monthly cost
+- Total monthly cost, with its source and accuracy stated plainly (invoice data vs actual plan prices vs rate card vs user estimate)
 - Per-app breakdown (dyno, add-on, platform charges)
-- Billing period
+- Billing period (billing-data source only) or `baseline_note` (derived sources)
 
 ---
 
@@ -113,27 +107,28 @@ For each service in `aws-design.json → services[]`, calculate monthly cost by 
 
 Rates below come from the named keys in `aws-infra-pricing.json` — do not hardcode them here. The formula shape + key inputs are shown for reference.
 
-| AWS Service               | Formula (rates from `aws-infra-pricing.json`)                                                                                            | Key inputs from `aws_config`                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Fargate**               | (task_cpu/1024 × `fargate.per_vcpu_hour` + task_memory/1024 × `fargate.per_gb_mem_hour`) × 730 × desired_count                           | `task_cpu`, `task_memory`, `desired_count`                                    |
-| **EKS (cluster + nodes)** | `eks.control_plane_monthly` + `eks.node_rates_monthly[type]` × node_count + ALB per web service                                          | `eks_cluster.node_groups[].instance_types`, `desired_size`, web service count |
-| **ALB**                   | `alb.monthly_fixed` + LCU estimate (`alb.per_lcu_hour` × 730)                                                                            | Per web service with `load_balancer: true`                                    |
-| **RDS PostgreSQL**        | `rds_postgresql.instances[class]` × 730 + storage_gb × `rds_postgresql.storage_per_gb_month` (rate is baked_in Multi-AZ — do NOT double) | `instance_class`, `storage_gb`, `multi_az`                                    |
-| **Aurora PostgreSQL**     | `aurora_postgresql.instances[class]` × 730 + storage_gb × `aurora_postgresql.storage_per_gb_month` + I/O estimate (intrinsic multi-AZ)   | `instance_class`, `storage_gb`                                                |
-| **ElastiCache Redis**     | `elasticache.nodes[type]` × 730 (× 2 if Multi-AZ — `multiplier_x2`)                                                                      | `node_type`, `multi_az`                                                       |
-| **MSK**                   | `msk.brokers[type]` × 730 × broker_count + storage_gb × `msk.storage_per_gb_month` (intrinsic multi-AZ)                                  | `broker_instance_type`, `broker_count`, `storage_per_broker_gb`               |
-| **CloudWatch Logs**       | log_volume_gb × `cloudwatch.log_ingestion_per_gb` + storage × `cloudwatch.log_storage_per_gb_month`                                      | `retention_days`, estimated log volume                                        |
-| **S3**                    | storage_gb × `fast_path_services.s3.storage_per_gb_month` + request estimates (or `s3.monthly_baseline_est`)                             | `storage_gb` (from Bucketeer/Cloudinary mapping)                              |
-| **Amazon SES**            | `fast_path_services.ses.monthly_baseline_est` (flat baseline; see `_basis`)                                                              | Flat estimate from SendGrid mapping                                           |
-| **EventBridge Scheduler** | `fast_path_services.eventbridge.monthly_baseline_est` (flat; per_million_events basis)                                                   | From Heroku Scheduler mapping                                                 |
-| **Amazon MQ**             | `fast_path_services.amazon_mq.instance_monthly_est` + storage                                                                            | From CloudAMQP mapping                                                        |
-| **Amazon OpenSearch**     | `fast_path_services.opensearch.instance_monthly_est` + storage                                                                           | From Bonsai Elasticsearch mapping                                             |
-| **Secrets Manager**       | secret_count × `fast_path_services.secrets_manager.per_secret_month` + API calls × `per_10k_api_calls` (or `monthly_baseline_est`)       | Config var count from inventory                                               |
-| **NAT Gateway**           | `nat_gateway.monthly_fixed` + data processing estimate (`nat_gateway.per_gb_processed`)                                                  | From VPC design (if new VPC)                                                  |
-| **RDS Proxy**             | `rds_proxy.per_vcpu_hour` × 730 × vCPUs                                                                                                  | When connection pooling mapped                                                |
-| **Route 53**              | `route53.hosted_zone_monthly` + query estimate (`route53.per_million_queries`)                                                           | When DNS strategy = route53                                                   |
-| **CloudFront**            | `fast_path_services.cloudfront.per_gb_first_10tb` × GB + request costs (or `cloudfront.monthly_baseline_est`)                            | From Cloudinary composite mapping                                             |
-| **X-Ray**                 | `cloudwatch.xray_per_million_traces` × trace_millions                                                                                    | Only if tracing detected in source                                            |
+| AWS Service               | Formula (rates from `aws-infra-pricing.json`)                                                                                                            | Key inputs from `aws_config`                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Elastic Beanstalk**     | EC2: `ec2.instances[instance_type]` × 730 × running instance estimate + ALB: `alb.monthly_fixed` + LCU estimate (if LoadBalanced). EB service fee is $0. | `instance_type`, `min_instances`, `max_instances`, `environment_type`         |
+| **Fargate**               | (task_cpu/1024 × `fargate.per_vcpu_hour` + task_memory/1024 × `fargate.per_gb_mem_hour`) × 730 × desired_count                                           | `task_cpu`, `task_memory`, `desired_count`                                    |
+| **EKS (cluster + nodes)** | `eks.control_plane_monthly` + `eks.node_rates_monthly[type]` × node_count + ALB per web service                                                          | `eks_cluster.node_groups[].instance_types`, `desired_size`, web service count |
+| **ALB**                   | `alb.monthly_fixed` + LCU estimate (`alb.per_lcu_hour` × 730)                                                                                            | Per web service with `load_balancer: true`                                    |
+| **RDS PostgreSQL**        | `rds_postgresql.instances[class]` × 730 + storage_gb × `rds_postgresql.storage_per_gb_month` (rate is baked_in Multi-AZ — do NOT double)                 | `instance_class`, `storage_gb`, `multi_az`                                    |
+| **Aurora PostgreSQL**     | `aurora_postgresql.instances[class]` × 730 + storage_gb × `aurora_postgresql.storage_per_gb_month` + I/O estimate (intrinsic multi-AZ)                   | `instance_class`, `storage_gb`                                                |
+| **ElastiCache Redis**     | `elasticache.nodes[type]` × 730 (× 2 if Multi-AZ — `multiplier_x2`)                                                                                      | `node_type`, `multi_az`                                                       |
+| **MSK**                   | `msk.brokers[type]` × 730 × broker_count + storage_gb × `msk.storage_per_gb_month` (intrinsic multi-AZ)                                                  | `broker_instance_type`, `broker_count`, `storage_per_broker_gb`               |
+| **CloudWatch Logs**       | log_volume_gb × `cloudwatch.log_ingestion_per_gb` + storage × `cloudwatch.log_storage_per_gb_month`                                                      | `retention_days`, estimated log volume                                        |
+| **S3**                    | storage_gb × `fast_path_services.s3.storage_per_gb_month` + request estimates (or `s3.monthly_baseline_est`)                                             | `storage_gb` (from Bucketeer/Cloudinary mapping)                              |
+| **Amazon SES**            | `fast_path_services.ses.monthly_baseline_est` (flat baseline; see `_basis`)                                                                              | Flat estimate from SendGrid mapping                                           |
+| **EventBridge Scheduler** | `fast_path_services.eventbridge.monthly_baseline_est` (flat; per_million_events basis)                                                                   | From Heroku Scheduler mapping                                                 |
+| **Amazon MQ**             | `fast_path_services.amazon_mq.instance_monthly_est` + storage                                                                                            | From CloudAMQP mapping                                                        |
+| **Amazon OpenSearch**     | `fast_path_services.opensearch.instance_monthly_est` + storage                                                                                           | From Bonsai Elasticsearch mapping                                             |
+| **Secrets Manager**       | secret_count × `fast_path_services.secrets_manager.per_secret_month` + API calls × `per_10k_api_calls` (or `monthly_baseline_est`)                       | Config var count from inventory                                               |
+| **NAT Gateway**           | `nat_gateway.monthly_fixed` + data processing estimate (`nat_gateway.per_gb_processed`)                                                                  | From VPC design (if new VPC)                                                  |
+| **RDS Proxy**             | `rds_proxy.per_vcpu_hour` × 730 × vCPUs                                                                                                                  | When connection pooling mapped                                                |
+| **Route 53**              | `route53.hosted_zone_monthly` + query estimate (`route53.per_million_queries`)                                                                           | When DNS strategy = route53                                                   |
+| **CloudFront**            | `fast_path_services.cloudfront.per_gb_first_10tb` × GB + request costs (or `cloudfront.monthly_baseline_est`)                                            | From Cloudinary composite mapping                                             |
+| **X-Ray**                 | `cloudwatch.xray_per_million_traces` × trace_millions                                                                                                    | Only if tracing detected in source                                            |
 
 ### Unpriced Resource Handling
 
@@ -155,6 +150,19 @@ When `aws-design.json` contains EKS services (`aws_service: "EKS"`):
 
 **Total EKS monthly cost** = `eks.control_plane_monthly` + (node_monthly_rate × node_count) + ALB_costs + NAT_costs. Pods are NOT charged a per-task cost (compute is billed via the EC2 nodes); ALB and NAT are the separate lines above, not re-added here.
 
+### Elastic Beanstalk Cost Calculation
+
+When `aws-design.json` contains Elastic Beanstalk services (`aws_service: "Elastic Beanstalk"`):
+
+1. **EC2 instances**: Look up the instance type's hourly rate in `ec2.instances[instance_type]` × 730 hours × the running instance estimate. For the Balanced tier, use steady-state `min_instances` so EB and Fargate comparisons use comparable running-capacity assumptions. Show `max_instances` as scaling headroom, not as 730 hours of guaranteed spend.
+2. **ALB** (LoadBalanced environments only): use the same ALB formula as standalone ALB entries: `alb.monthly_fixed` plus an LCU estimate. SingleInstance non-web environments do NOT incur ALB cost.
+3. **EBS storage**: EC2 On-Demand pricing does not include EBS root volumes. Add per instance: `ebs.gp3_per_gb_month` × (`aws_config.root_volume_gb` when the design specifies one, else `ebs.eb_root_volume_gb_default`) × the running instance estimate. Do not claim a 30GB EC2 allowance.
+4. **NAT Gateway**: If the VPC design places EB instances in private subnets that require outbound internet access, include the same NAT Gateway line used by the other compute paths.
+
+**Total EB monthly cost** = (EC2_hourly × 730 × running_instance_estimate) + ALB_costs (web only) + applicable networking/storage supporting costs. EB itself charges $0 — all costs are the underlying resources.
+
+**EB vs Fargate cost comparison note**: When presenting EB estimates alongside a Fargate alternative, disclose that EB pricing is EC2-instance based while Fargate pricing is task-size based. Use comparable running-capacity assumptions for the Balanced tier.
+
 **EKS vs Fargate cost comparison note**: When presenting EKS estimates alongside the Heroku baseline, include this note:
 
 > "EKS with EC2 nodes is typically cheaper than Fargate for sustained workloads (>60% utilization) because there is no per-pod Fargate surcharge. However, EKS has a higher base cost (`eks.control_plane_monthly` control plane + minimum 2 nodes) and requires Kubernetes operational expertise."
@@ -163,11 +171,11 @@ When `aws-design.json` contains EKS services (`aws_service: "EKS"`):
 
 Calculate 3 cost tiers to show the optimization range:
 
-| Tier          | Description              | Adjustments                                                                                       |
-| ------------- | ------------------------ | ------------------------------------------------------------------------------------------------- |
-| **Premium**   | Highest resilience       | Multi-AZ everything, latest-gen instances, no Spot, enhanced monitoring                           |
-| **Balanced**  | Standard setup (default) | On-demand pricing, Multi-AZ where configured, standard monitoring                                 |
-| **Optimized** | Cost-minimized           | Reserved pricing assumption (20-40% discount), Fargate Spot where applicable, S3-IA for cold data |
+| Tier          | Description              | Adjustments                                                                                                                |
+| ------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **Premium**   | Highest resilience       | Multi-AZ everything, latest-gen instances, no Spot, enhanced monitoring                                                    |
+| **Balanced**  | Standard setup (default) | On-demand pricing, Multi-AZ where configured, standard monitoring                                                          |
+| **Optimized** | Cost-minimized           | Reserved pricing assumption (20-40% discount), Spot for interruption-tolerant workers (EB or Fargate), S3-IA for cold data |
 
 **Balanced** is the primary comparison tier. Generated Terraform (Phase 5) aligns with **Balanced**.
 
@@ -187,7 +195,7 @@ Heroku includes basic logging via its log drain. AWS CloudWatch charges from the
 
 ### Step 1: Estimate Log Volume
 
-Use the per-service log-volume heuristic from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `log_volume_gb_per_service` (billing data not applicable for log volume since Heroku's logging model differs). Keyed by service: `fargate_task` (per task), `rds_or_aurora_instance` (per instance), `alb` (per load balancer), `nat_gateway` (per gateway), `elasticache_node` (per node), `msk_broker` (per broker).
+Use the per-service log-volume heuristic from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `log_volume_gb_per_service` (billing data not applicable for log volume since Heroku's logging model differs). Keyed by service: `fargate_task` (per task), `eb_environment` (per Elastic Beanstalk environment), `rds_or_aurora_instance` (per instance), `alb` (per load balancer), `nat_gateway` (per gateway), `elasticache_node` (per node), `msk_broker` (per broker).
 
 Sum across all applicable services.
 
@@ -241,15 +249,22 @@ This entry REPLACES any CloudWatch entries in a "Supporting" row — never doubl
 
 ## Part 3: Cost Comparison (Heroku vs AWS)
 
-### When Billing Data Available
+### When a Heroku Baseline Was Determined (any Part 1 source except `"unavailable"`)
+
+The comparison is the point of this phase — it runs whenever Part 1 produced a
+baseline, from ANY source. Do not reserve it for billing data: a
+`live_prices_plus_cache` or `pricing_cache` baseline yields the same side-by-side
+with its accuracy labeled honestly.
 
 Present a side-by-side comparison:
 
-- **Heroku current monthly total** (from `billing_profile.total_monthly_cost`)
+- **Heroku current monthly total** (from Part 1's baseline, labeled with `current_costs.source` and its accuracy; when derived rather than invoiced, repeat the `baseline_note` caveat next to the number)
 - **AWS Premium / Balanced / Optimized monthly totals**
 - **Difference** (savings or increase) per tier vs Heroku — monthly and annual
 - **Per-app breakdown** for the Balanced tier: for each Heroku app, show:
-  - Current Heroku spend (from `billing_profile.line_items` filtered by app)
+  - Current Heroku spend — from `billing_profile.line_items` filtered by app
+    (billing source), or from that app's summed live prices + cache dyno rates
+    (derived sources)
   - Projected AWS spend (sum of services mapped from that app)
   - Difference
 
@@ -257,7 +272,8 @@ Include in `estimation-infra.json`:
 
 ```json
 "cost_comparison": {
-  "heroku_monthly_baseline": "<total from billing>",
+  "heroku_monthly_baseline": "<Part 1 baseline total>",
+  "baseline_source": "<current_costs.source>",
   "option_a_premium": {
     "aws_monthly": "<premium total>",
     "monthly_difference": "<premium - heroku>",
@@ -279,9 +295,9 @@ Include in `estimation-infra.json`:
 }
 ```
 
-### When Billing Data NOT Available
+### When NO Baseline Was Determined (`current_costs.source == "unavailable"`)
 
-Omit `cost_comparison` section or set `heroku_monthly_baseline` to null. Present AWS costs without comparison. State: "Heroku billing data not available — showing projected AWS costs only. Provide Heroku invoices and re-run discovery to see side-by-side comparison."
+Omit the `cost_comparison` section or set `heroku_monthly_baseline` to null. Present AWS costs without comparison. State: "Heroku baseline unavailable — showing projected AWS costs only. Run live discovery (or provide Heroku invoices) and re-run to see the side-by-side comparison."
 
 ---
 
@@ -289,25 +305,31 @@ Omit `cost_comparison` section or set `heroku_monthly_baseline` to null. Present
 
 Heroku does not charge egress fees for data transfer during migration (unlike GCP). However, there may be time-based costs during parallel operation.
 
-### IF billing data IS available:
+Key this section off baseline presence (any Part 1 source except `"unavailable"`), not billing data specifically — a derived baseline prices the dual-run window just as well, with the same accuracy caveat as the baseline itself.
+
+### IF a Heroku baseline WAS determined:
 
 ```json
 "migration_cost_considerations": {
-  "billing_data_available": true,
+  "baseline_available": true,
+  "baseline_source": "<current_costs.source>",
   "categories": [
-    "Heroku platform fees during parallel operation (both Heroku and AWS running simultaneously during cutover window)"
+    "Heroku platform fees during parallel operation (both Heroku and AWS running simultaneously during cutover window): ~<Part 1 baseline total>/month for the duration of the cutover"
   ],
   "note": "Heroku charges are subscription-based. During migration, both Heroku and AWS costs apply until Heroku apps are decommissioned. No data transfer egress fees from Heroku."
 }
 ```
 
-### IF billing data is NOT available:
+When the baseline is derived (`live_prices_plus_cache` or `pricing_cache`), append to the note: "Dual-run figure is derived from plan prices, not invoices — actual parallel-operation cost may differ by usage-based charges."
+
+### IF NO baseline was determined (`current_costs.source == "unavailable"`):
 
 ```json
 "migration_cost_considerations": {
-  "billing_data_available": false,
+  "baseline_available": false,
+  "baseline_source": "unavailable",
   "categories": [],
-  "note": "Parallel operation costs depend on Heroku billing. Provide Heroku invoices for dual-run cost projections."
+  "note": "Parallel operation costs depend on Heroku spend. Run live discovery (or provide Heroku invoices) for dual-run cost projections."
 }
 ```
 
@@ -339,11 +361,11 @@ Present monthly and annual cost difference between Heroku baseline and each AWS 
 ```json
 "roi_analysis": {
   "recurring_savings": {
-    "monthly_difference_balanced": "<negative = AWS cheaper>",
-    "monthly_difference_optimized": "<negative = AWS cheaper>",
+    "monthly_difference_balanced": "<aws_balanced - heroku; negative = AWS cheaper>",
+    "monthly_difference_optimized": "<aws_optimized - heroku; negative = AWS cheaper>",
     "annual_difference_balanced": "<× 12>",
     "annual_difference_optimized": "<× 12>",
-    "note": "Negative = AWS cheaper. Positive = Heroku cheaper on pure cost basis."
+    "note": "Sign convention: difference = AWS minus Heroku, so negative = AWS cheaper. This is the OPPOSITE sign of financial_summary.monthly_savings_* (savings = Heroku minus AWS) — same fact, difference-vs-savings framing. Any presentation of either number MUST label it (e.g. 'AWS is $X/mo cheaper'), never print a bare signed value."
   },
   "operational_efficiency_factors": [...],
   "non_cost_benefits": [...],
@@ -357,24 +379,24 @@ Present monthly and annual cost difference between Heroku baseline and each AWS 
 
 Present applicable optimizations with estimated savings. These are **incremental post-migration actions** beyond the Balanced on-demand baseline.
 
-The savings ranges + applicability come from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `optimization_savings_ranges` (keys: `compute_savings_plans`, `database_savings_plans`, `rds_reserved_instances`, `s3_intelligent_tiering`, `fargate_spot`; each carries `savings_percent` / `target_services` / `timing`). Include ONLY opportunities relevant to the designed architecture (per each entry's `target_services` / `timing`).
+The savings ranges + applicability come from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `optimization_savings_ranges` (keys: `compute_savings_plans`, `database_savings_plans`, `rds_reserved_instances`, `s3_intelligent_tiering`, `fargate_spot`, `ec2_spot`; each carries `savings_percent` / `target_services` / `timing`). Include ONLY opportunities relevant to the designed architecture (per each entry's `target_services` / `timing`).
 
 **Emit in `optimization_opportunities[]`:**
 
-### Compute Savings Plans (when Fargate in design)
+### Compute Savings Plans (when Fargate or Elastic Beanstalk/EC2 in design)
 
 ```json
 {
   "opportunity": "Compute Savings Plans",
   "type": "compute_savings_plan",
-  "target_services": ["Fargate"],
+  "target_services": ["Fargate", "Elastic Beanstalk"],
   "savings_percent": "20-66%",
   "savings_monthly": null,
   "commitment": "1-year or 3-year",
   "timing": "post-migration (after 30-90 days of usage data)",
   "implementation_effort": "low",
   "prerequisite": "Establish AWS compute usage baseline before committing",
-  "description": "Heroku dyno billing is flat-rate per dyno type. Fargate usage patterns may differ — establish AWS baseline before Savings Plan commitment. Use Cost Explorer recommendations after 30+ days.",
+  "description": "Heroku dyno billing is flat-rate per dyno type. Fargate tasks and EB-backed EC2 usage patterns may differ — establish AWS baseline before Savings Plan commitment. Use Cost Explorer recommendations after 30+ days.",
   "references": [
     "https://aws.amazon.com/savingsplans/compute-pricing/",
     "https://aws.amazon.com/savingsplans/faqs/"
@@ -409,6 +431,23 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 }
 ```
 
+### EC2 Spot for EB SingleInstance Workers (when interruption-tolerant worker dynos exist)
+
+```json
+{
+  "opportunity": "Spot Instances for EB Worker Environments",
+  "type": "ec2_spot",
+  "target_services": ["Elastic Beanstalk"],
+  "savings_percent": "60-90%",
+  "savings_monthly": "<calculated based on worker environment EC2 costs>",
+  "commitment": "none",
+  "timing": "during migration (for fault-tolerant workers)",
+  "implementation_effort": "medium",
+  "prerequisite": "Worker tasks must be fault-tolerant and idempotent",
+  "description": "Interruption-tolerant persistent EB SingleInstance worker environments can use Spot-backed EC2 capacity. Configure Spot with aws:ec2:instances EnableSpot and related Spot options; do not describe these workers as SQS consumers unless the application actually uses SQS."
+}
+```
+
 ### Fargate Spot (when worker dynos exist)
 
 ```json
@@ -426,7 +465,7 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 }
 ```
 
-Only include optimizations relevant to the designed architecture. Do not include EC2-specific optimizations if no EC2 in design.
+Only include optimizations relevant to the designed architecture. Do not include EC2-specific optimizations if no Elastic Beanstalk/EC2 in design.
 
 ---
 

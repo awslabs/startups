@@ -31,7 +31,7 @@ Strands Agents is an open-source SDK from AWS (open-sourced May 2025, 1.0 releas
 
 - Working LangGraph/CrewAI/AutoGen system where retarget (model swap) is sufficient
 - Team needs to ship in < 2 weeks (retarget or Harness is faster)
-- Simple single-agent pattern (Harness is simpler — config vs code)
+- Simple single-agent pattern (Harness is simpler and GA — config vs code)
 - Team has no Python/TypeScript expertise (Strands SDK is Python and TypeScript)
 
 ---
@@ -63,7 +63,7 @@ Map the detected `agentic_profile.framework` and `orchestration_pattern` to Stra
 | `graph.add_conditional_edges("a", router_fn)` | `builder.add_edge("a", "b", condition=fn)` | Condition function receives state, returns bool.                                            |
 | `graph.set_entry_point("start")`              | `builder.set_entry_point("start")`         | Direct mapping.                                                                             |
 | `graph.compile()`                             | `builder.build()`                          | Returns executable graph.                                                                   |
-| `MemorySaver` / checkpointing                 | `SessionManager` with S3 or file backend   | Different API but same concept — durable state across invocations.                          |
+| `MemorySaver` / sidebaring                    | `SessionManager` with S3 or file backend   | Different API but same concept — durable state across invocations.                          |
 
 **Key difference:** LangGraph nodes are arbitrary functions; Strands graph nodes are Agents. For non-agent nodes (pure data transformation), wrap in a minimal Agent with a focused system prompt and no tools.
 

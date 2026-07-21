@@ -14,6 +14,9 @@ _fragments:
   - _id: docs
     _trigger: { _always: true }
     _file: phases/generate/generate-docs.md
+  - _id: report
+    _trigger: { _always: true }
+    _file: phases/generate/generate-report.md
   - _id: eks-generate
     _trigger: { _when: "aws-design.json has an eks_cluster entry OR a service with aws_service == 'EKS'" }
     _file: phases/generate/generate-eks.md
@@ -28,6 +31,7 @@ _produces:
   - terraform/terraform.tfvars.example
   - MIGRATION_GUIDE.md
   - README.md
+  - migration-report.html
   - generation-warnings.json
 _advances_to: complete
 _interactive: false
@@ -43,7 +47,7 @@ _preconditions:
   - _validate_json: [aws-design.json, estimation-infra.json, preferences.json, heroku-resource-inventory.json]
     _on_failure: _unrecoverable
 _postconditions:
-  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, generation-warnings.json]
+  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json]
     _on_failure: _halt_and_inform
   - _assert: "terraform/main.tf has valid provider configuration; terraform/variables.tf declares at least an aws_region variable"
     _on_failure: _halt_and_inform
@@ -51,9 +55,13 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "MIGRATION_GUIDE.md has Prerequisites and Verification sections; README.md lists the artifacts"
     _on_failure: _halt_and_inform
+  - _assert: "migration-report.html has decision-summary, exec-costs, next-steps, and draft-for-review footer; if scenarios/index.json has ≥2 scenarios, also what-if-scenarios"
+    _on_failure: _halt_and_inform
   - _assert: "if Postgres is in the design, scripts/migrate-postgres.sh exists; if Redis is in the design, scripts/migrate-redis.sh exists"
     _on_failure: _halt_and_inform
   - _assert: "if EKS is in the design, terraform/eks.tf exists WITH cluster + node group resources, AND a kubernetes/ directory has namespace + deployment manifests"
+    _on_failure: _halt_and_inform
+  - _assert: "if Elastic Beanstalk is in the design, terraform/beanstalk.tf exists; if preferences.design_constraints.eb_deploy_method.value is github_actions or absent, .github/workflows/deploy-eb.yml exists; if codepipeline, terraform/pipeline.tf exists; if manual, no automated deploy artifact is required"
     _on_failure: _halt_and_inform
   - _assert: "every designed service is accounted for (generated or listed in generation-warnings.json)"
     _on_failure: _halt_and_inform
@@ -71,10 +79,11 @@ _forbids_files:
 ## Orientation
 
 Transform the design + estimate into deployable artifacts in `$MIGRATION_DIR/`: a
-`terraform/` directory, `MIGRATION_GUIDE.md`, `README.md`, database migration
-scripts, and `generation-warnings.json`. This is the multi-artifact phase.
+`terraform/` directory, `MIGRATION_GUIDE.md`, `README.md`, `migration-report.html`
+(stakeholder summary + optional what-if scenarios), database migration scripts,
+and `generation-warnings.json`. This is the multi-artifact phase.
 
-Composed of the terraform + docs fragments + an EKS-generate fragment + one
+Composed of the terraform + docs + report fragments + an EKS-generate fragment + one
 cross-artifact validator assembler (declared in the frontmatter
 `_fragments`/`_assemble`); the interpreter runs each fragment whose `_trigger` is
 true, then the assembler. The `eks-generate` fragment is an ALTERNATIVE compute

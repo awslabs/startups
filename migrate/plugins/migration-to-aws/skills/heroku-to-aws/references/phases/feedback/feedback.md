@@ -1,10 +1,10 @@
 ---
 _phase: feedback
 _title: "Feedback (Optional)"
-_kind: checkpoint
+_kind: sidebar
 _requires_phase: discover
 _input: "**/.phase-status.json"
-_trigger: { _when: "the user opts in to providing feedback at a feedback checkpoint" }
+_trigger: { _when: "the user opts in to providing feedback at a feedback sidebar" }
 _fragments:
   - _id: collect
     _trigger: { _always: true }
@@ -30,7 +30,7 @@ _forbids_files:
 
 # Phase 6: Feedback (Optional)
 
-Collects user feedback and generates a shareable migration plan link. Reuses the shared feedback infrastructure (trace builder, payload encoder) adapted for Heroku-to-AWS's flat resource model.
+Collects user feedback. Reuses the shared feedback infrastructure (trace builder) adapted for Heroku-to-AWS's flat resource model. (Plan-share links are GATED OFF until the landing page ships — see `feedback-collect.md` Step 3.)
 
 **Execute ALL steps in order. Do not skip or deviate.**
 
@@ -38,10 +38,10 @@ Collects user feedback and generates a shareable migration plan link. Reuses the
 
 ## Sub-Files
 
-- **feedback-collect.md** → the collection work: detect IDE/version, build the anonymized trace, present the survey link, optionally generate a share link, and write `feedback.json`.
+- **feedback-collect.md** → the collection work: detect IDE/version, build the anonymized trace, present the survey link, and write `feedback.json` (share-link generation is gated off in its Step 3).
 - **feedback-assemble.md** → the assembler: output gate, phase-status update, and marking the migration complete.
 
-This is an **optional checkpoint phase** (`_kind: checkpoint`), not a step on the linear backbone. It is entered only when the user opts in at a feedback checkpoint (its `_trigger`), and it returns control to the flow rather than advancing a `current_phase` — so it has no `_advances_to`. SKILL.md decides where the feedback checkpoint is offered (see the Feedback & Sharing Checkpoints section there).
+This is an **optional sidebar phase** (`_kind: sidebar`), not a step on the linear backbone. It is entered only when the user opts in at a feedback sidebar (its `_trigger`), and it returns control to the flow rather than advancing a `current_phase` — so it has no `_advances_to`. SKILL.md decides where the feedback sidebar is offered (see the Feedback & Sharing Sidebars section there).
 
 ---
 
@@ -56,7 +56,7 @@ If not: **STOP**. Output: "Feedback requires at least the Discover phase to be c
 
 Load `references/phases/feedback/feedback-collect.md` and follow it. It detects the
 IDE + plugin version, builds the anonymized trace (`trace.json`), presents the survey
-link, optionally generates a shareable plan link, and writes `feedback.json`.
+link, and writes `feedback.json` (share-link generation is gated off in its Step 3).
 
 ---
 

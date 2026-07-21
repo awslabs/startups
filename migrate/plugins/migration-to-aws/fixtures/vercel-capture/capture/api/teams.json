@@ -1,0 +1,5 @@
+{
+  "teams": [
+    { "id": "team_acme01", "slug": "acme", "name": "Acme Inc" }
+  ]
+}

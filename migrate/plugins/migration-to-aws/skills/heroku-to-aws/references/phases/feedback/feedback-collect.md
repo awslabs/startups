@@ -9,9 +9,10 @@ _contributes:
 # Feedback Phase: Collect
 
 > Self-contained feedback-collection sub-file. Detects the IDE + plugin version,
-> builds an anonymized trace, presents the survey link, optionally generates a
-> shareable plan link, and writes `feedback.json`. The final output gate + phase
-> completion are owned by the assembler (`feedback-assemble.md`).
+> builds an anonymized trace, presents the survey link, and writes
+> `feedback.json`. (Share-link generation is spec'd in Step 3 but GATED OFF until
+> the landing page ships.) The final output gate + phase completion are owned by
+> the assembler (`feedback-assemble.md`).
 
 **Execute ALL steps in order. Do not skip or deviate.**
 
@@ -87,9 +88,14 @@ Answer the 5 quick questions, then paste the trace into the
 
 ---
 
-## Step 3: Generate Share Link (if applicable)
+## Step 3: Generate Share Link (GATED OFF — do not run)
 
-**Only run if invoked from a combined feedback+share flow (SKILL.md option A).** Otherwise skip to Step 4.
+> **This step is disabled until the share landing page ships.**
+> `https://aws.amazon.com/startups/migrate/connect` currently returns 404, so a
+> generated link would dead-end for the user. Skip directly to Step 4 and leave
+> `share_link_presented: false` in `feedback.json`. The spec below is preserved
+> so the feature can be re-enabled by removing this gate (here and in SKILL.md
+> § Feedback & Sharing Sidebars) once the page is live and verified.
 
 Required artifacts: `preferences.json`, `estimation-infra.json`. If missing, output "Cannot generate share link — required artifacts not found." and skip to Step 4.
 
@@ -112,7 +118,7 @@ Required artifacts: `preferences.json`, `estimation-infra.json`. If missing, out
   "resource_names": [{ "type": "<resource_type>", "name": "<heroku_app>" }],
   "workload_types": ["infra"],
   "spend_band": "<under-10k|10k-50k|50k-100k|over-100k|unknown>",
-  "share_checkpoint": "<after_estimate|after_generate>",
+  "share_sidebar": "<after_estimate|after_generate>",
   "phases_completed": ["<completed phases>"]
 }
 ```
@@ -140,12 +146,12 @@ Write `$MIGRATION_DIR/feedback.json`:
   "trace_included": true,
   "share_link_presented": false,
   "share_link_generated_at": null,
-  "share_checkpoint": null
+  "share_sidebar": null
 }
 ```
 
 - If trace failed: `"trace_included": false`
-- If share link generated: `"share_link_presented": true`, populate `share_link_generated_at` and `share_checkpoint`
+- If share link generated: `"share_link_presented": true`, populate `share_link_generated_at` and `share_sidebar`
 
 When `feedback.json` (and `trace.json`, if `trace_included`) are written, control passes to
 the assembler (`feedback-assemble.md`) for the output gate and phase completion.

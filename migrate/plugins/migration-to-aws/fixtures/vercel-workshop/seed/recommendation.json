@@ -1,0 +1,13 @@
+{
+  "phase": "recommend",
+  "timestamp": "2026-07-19T18:00:00Z",
+  "outcome": "A",
+  "fired_rule": 3,
+  "tiebreak": false,
+  "resolving_input": null,
+  "confidence": "medium",
+  "reasons": [
+    "Sustained traffic shape from founder Clarify answer",
+    "Standard Next.js app profile → OpenNext/SST (outcome A)"
+  ]
+}

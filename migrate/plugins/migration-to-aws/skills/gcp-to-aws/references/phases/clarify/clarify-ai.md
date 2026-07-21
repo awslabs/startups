@@ -170,14 +170,15 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 > D) > $10,000/month
 > E) I don't know
 
-| Answer               | Recommendation Impact                                                                                                                                                                                                                                                                                                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| < $500/month         | **AWS Activate Founders** (up to $5,000 credits, self-service, no VC needed — apply at aws.amazon.com/startups/credits); Bedrock free tier covers initial testing; Bedrock cost comparison shows modest savings                                                                                                                                                                                                                  |
-| $500–$2,000/month    | **AWS Activate Portfolio** (up to $200,000 credits for VC/accelerator-backed startups — requires Activate Provider Org ID); Bedrock cost comparison highlighted; credits apply to Bedrock third-party models including Claude                                                                                                                                                                                                    |
-| $2,000–$10,000/month | **AWS Activate Portfolio** (up to $200,000); Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (up to $1M credits, cohort-based, adjacent to the credits-hub funnel)                                                                                                                                                                      |
-| > $10,000/month      | **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; see aws.amazon.com/startups/credits); dedicated AI migration support; Bedrock provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort — aws.amazon.com/startups/generative-ai/accelerator) |
+| Answer               | Recommendation Impact                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| < $500/month         | Low token-volume baseline for Bedrock cost comparison; Bedrock free tier may cover initial testing                                                                                                         |
+| $500–$2,000/month    | Mid band for Bedrock savings comparison and token-volume derivation                                                                                                                                        |
+| $2,000–$10,000/month | Higher band — Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility) |
+| > $10,000/month      | High band — provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility)                                |
+| I don't know         | Use mid-band estimate with ±25% accuracy caveat in `estimation-ai.json`                                                                                                                                    |
 
-**Activate eligibility (Founders & Portfolio):** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
+**Do not map spend bands to AWS Activate Founders vs Portfolio.** Funding stage is not inferable from monthly AI spend — ask **Q27** instead.
 
 Interpret → `ai_monthly_spend`. Default: B → `"$500-$2K"`.
 
@@ -411,7 +412,7 @@ _Skip when:_ Auto-detection fully resolves AND user has no preference signal. Us
 > Your agent system can migrate to AWS in different ways, each with different effort and risk:
 >
 > A) **Retarget** — Keep your current framework ([framework name]), swap the model layer to Bedrock. Fastest path, lowest risk. Your orchestration code stays the same.
-> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(Preview — 4 regions: us-east-1, us-west-2, eu-central-1, ap-southeast-2)_
+> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(GA — all commercial regions where AgentCore is available)_
 > C) **Strands native** — Rewrite orchestration using AWS Strands SDK on AgentCore. Most AWS-integrated, highest effort. Best for teams wanting full AWS-native multi-agent capabilities.
 > D) **I'm not sure** — Help me decide based on my workload.
 
@@ -495,7 +496,7 @@ Interpret → `ai_constraints.agentic.incremental_migration`: A → `true`, B �
 
 ## Category H — Startup Programs (Always fires when Category F fires)
 
-_Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). Ask once, after Q26 if agentic, or after Q22 if non-agentic.
+_Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). **Q27 is ESSENTIAL** in wizard mode — ask in the Step 4 essentials batch after Q15 (and after Q26 if agentic). Do not place Q27 on the assumption sheet; funding stage cannot be defaulted from spend.
 
 ---
 

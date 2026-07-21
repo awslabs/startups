@@ -9,10 +9,10 @@ _contributes:
 
 > Self-contained mapping sub-file (the always-on path). Validates prerequisites,
 > initializes the design structure, performs the single-pass resource mapping
-> (Fargate/RDS/ElastiCache/MSK/fast-path/deferred), designs the VPC + security
-> groups, and adds Cedar/Fir notation + metadata. When the Kubernetes preference
+> (Elastic Beanstalk/Fargate/RDS/ElastiCache/MSK/fast-path/deferred), designs the VPC + security
+> groups, and adds Cedar/Fir notation + metadata. When the compute target preference
 > selects EKS, formation mapping is handled by `design-eks.md` instead of the
-> Fargate branch below. The final artifact write, output checks, handoff gate, and
+> EB/Fargate branches below. The final artifact write, output checks, handoff gate, and
 > phase-status update are owned by the assembler (`design-assemble.md`).
 
 **Execute ALL steps in order. Do not skip or deviate.**
@@ -56,6 +56,21 @@ Extract from `preferences.json`:
 - `data.database_ha` → overrides availability for database specifically (if present)
 - `data.redis_ha` → Redis HA configuration
 - `operational.log_retention_days` → CloudWatch log retention
+- `operational.cost_optimization` → narrative bias only in v1 (conservative/balanced/aggressive); does not invent instance sizes outside the sizing tables
+- `workshop.cpu_architecture` → `"x86_64"` (default when absent) or `"arm64"` (Graviton-capable classes where tables provide them)
+
+### CPU architecture resolution (workshop)
+
+Resolve once before mapping formations:
+
+1. `cpu_architecture` = `preferences.workshop.cpu_architecture` if set, else `"x86_64"`.
+2. When `"arm64"`:
+   - **Elastic Beanstalk**: use `ec2_instance_type_arm64` from the matched `dyno-eb-sizing.json` row when present; else use `ec2_instance_type` and append warning `architecture_fallback_x86` naming the formation.
+   - **Fargate**: set `aws_config.cpu_architecture` to `"ARM64"` (task size from `dyno-fargate-sizing.json` unchanged — Fargate ARM is a runtime arch flag). Prefer Estimate rates `fargate.per_vcpu_hour_arm64` / `per_gb_mem_hour_arm64` when present.
+   - **EKS**: use `node_type_arm64` from `eks-pod-sizing.json` when present; else `node_type` + `architecture_fallback_x86` warning.
+   - **RDS / ElastiCache**: sizing tables already emit Graviton classes (`db.t4g.*`, `db.m6g.*`, `cache.t4g.*`, etc.) — leave as-is. Do not invent non-table classes.
+3. When `"x86_64"`: use the default x86 columns (`ec2_instance_type`, `node_type`); for Fargate set `aws_config.cpu_architecture` to `"X86_64"` or omit (platform default).
+4. Never invent instance types or rates. Honest fallback + warning only.
 
 ---
 
@@ -67,23 +82,100 @@ Process each resource in `heroku-resource-inventory.json`.resources[] in **input
 
 ---
 
-### 2A: Formation Mapping (Fargate or EKS)
+### 2A: Formation Mapping (Elastic Beanstalk, Fargate, or EKS)
 
 **Trigger**: `resource_type == "formation"`
 
 **Prerequisites**:
 
-- Read `preferences.json → design_constraints.kubernetes.value` (may be absent).
-- If value is `"eks-managed"` or `"eks-or-ecs"`: use the `eks-pod-sizing.json` knowledge and Load `phases/design/design-eks.md`. Follow the EKS branch logic in `design-eks.md` for ALL formations. Skip the Fargate mapping below.
-- Otherwise (value is `"ecs-fargate"` or field is absent): use the `dyno-fargate-sizing.json` knowledge. Follow the Fargate mapping below.
+- Read `preferences.json → design_constraints.compute_target`.
+- Resolve `global_compute_target` as `compute_target.default` when present, else legacy `compute_target.value`, else `"elastic_beanstalk"`.
+- Read `compute_target.overrides[]` when present. For each formation, an override matches when `override.formation` equals the resource's `resource_id`, `{heroku_app}:{process_type}`, or `{process_type}`.
+- Resolve `formation_compute_target` for each formation as the matching override value when present, else `global_compute_target`.
+- If `formation_compute_target` is absent or `"elastic_beanstalk"`: use `dyno-eb-sizing.json` and follow the Elastic Beanstalk mapping below, except persistent non-web formations with `quantity > 1` MUST resolve to Fargate for that formation to preserve horizontal worker capacity.
+- If `formation_compute_target` is `"ecs-fargate"`: use `dyno-fargate-sizing.json` and follow the Fargate mapping below.
+- If `global_compute_target` is `"eks-managed"` or `"eks-or-ecs"`: use `eks-pod-sizing.json` and load `phases/design/design-eks.md`. Follow the EKS branch logic in `design-eks.md` for ALL formations. Skip the EB/Fargate mapping below. Per-formation EKS overrides are not supported in v1; EKS remains a global compute target.
 
 #### EKS Branch
 
-When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`, load and follow `references/phases/design/design-eks.md`. That file contains the complete EKS mapping logic. ALL formations are mapped to EKS. Return here after EKS mapping is complete (skip the Fargate logic below).
+When `global_compute_target` is `"eks-managed"` or `"eks-or-ecs"`, load and follow `references/phases/design/design-eks.md`. That file contains the complete EKS mapping logic. ALL formations are mapped to EKS. Return here after EKS mapping is complete (skip the EB/Fargate logic below).
 
-**Fir intent precedence**: If `preferences.operational.fir_intent` is `"self_managed_eks_ecs"` AND `design_constraints.kubernetes.value` is `"ecs-fargate"` or absent, the Fir intent does NOT automatically enable EKS for all formations. The Fir intent is compute-destination-only for Fir workloads and is handled as a deferred notation (no Terraform generation for Fir in v1). The global `design_constraints.kubernetes.value` preference takes precedence for non-Fir formations.
+**Fir intent precedence**: If `preferences.operational.fir_intent` is `"self_managed_eks_ecs"` AND `global_compute_target` is not an EKS value, the Fir intent does NOT automatically enable EKS for all formations. The Fir intent is compute-destination-only for Fir workloads and is handled as a deferred notation (no Terraform generation for Fir in v1). The resolved compute target plan takes precedence for non-Fir formations.
 
-#### Fargate Branch (default)
+#### Release Process Check
+
+Before mapping any non-EKS formation, extract `config.process_type`. If `process_type == "release"`, do NOT map it to persistent compute. Heroku release-phase commands are run-once deployment hooks (for example database migrations) and must exit. Add a warning:
+
+> "Heroku release process `{heroku_app}:release` is a run-once deployment hook and was not mapped to persistent AWS compute. Implement it as a deployment hook or manual migration step."
+
+Continue to the next resource.
+
+#### Horizontal Non-Web Capacity Guard for EB Default
+
+Before following the Elastic Beanstalk branch, extract `config.quantity` and `config.process_type`. If `formation_compute_target` is absent or `"elastic_beanstalk"`, AND `process_type != "web"`, AND `config.quantity > 1`, do NOT emit an EB SingleInstance environment for that formation. Follow the Fargate branch below for that formation and append warning:
+
+> "Heroku formation `{heroku_app}:{process_type}` has quantity={quantity}. EB SingleInstance environments cannot preserve horizontal capacity for persistent non-web dynos, so this formation was routed to Fargate. Set quantity=1 or choose manual EB handling only if one worker instance is acceptable."
+
+Continue with the next resource after the Fargate entry is appended. This guard is both a safety net and the Design-side enforcement of Q12c `system_forced` Fargate overrides.
+
+#### Elastic Beanstalk Branch (default)
+
+**Mapping logic:**
+
+1. Extract `config.dyno_type`, `config.quantity`, `config.process_type` from the resource.
+
+2. **Empty Procfile check**: If there are NO formation resources in the entire inventory for this app, reject the input. Record in `warnings[]` and skip.
+
+3. **Dyno type lookup**: Match `config.dyno_type` (case-insensitive) against the `dyno-eb-sizing.json` knowledge (`rows.<dyno_type>`).
+
+   - **If NOT found**: Reject this formation entry. Add to `warnings[]`:
+
+     > "Unsupported dyno type: `{dyno_type}`. Cannot map to Elastic Beanstalk. Please contact support or provide manual sizing."
+
+     Do NOT produce an EB mapping for this formation. Continue to next resource.
+
+   - **If found**: Extract the instance type using the CPU architecture
+     resolution above (`ec2_instance_type_arm64` when `cpu_architecture` is
+     `arm64` and the column exists; otherwise `ec2_instance_type`).
+
+4. **Environment type and tier**:
+
+   - If `process_type == "web"` → `tier: "WebServer"`, `environment_type: "LoadBalanced"`, `min_instances: 1`, `max_instances: max(config.quantity, 2)`.
+   - All other persistent non-web process types (worker, clock, custom) → `tier: "WebServer"`, `environment_type: "SingleInstance"`, `min_instances: 1`, `max_instances: 1`.
+
+   **Note:** EB Worker tier (SQS-based polling) is NOT used. Heroku workers are persistent processes (Sidekiq, Celery, background job runners) that maintain their own connections to queues/databases. They are NOT HTTP-triggered. Map them to SingleInstance WebServer environments where they run continuously as Docker containers.
+
+5. **Produce Elastic Beanstalk service entry**:
+
+   ```json
+   {
+     "service_id": "eb:{heroku_app}:{process_type}",
+     "source_resource_id": "{resource_id}",
+     "heroku_app": "{heroku_app}",
+     "aws_service": "Elastic Beanstalk",
+     "confidence": "deterministic",
+     "aws_config": {
+       "region": "{target_region}",
+       "platform": "Docker running on 64bit Amazon Linux 2023",
+       "instance_type": "<from table per CPU architecture resolution>",
+       "cpu_architecture": "<x86_64|arm64 from preferences.workshop>",
+       "environment_type": "<LoadBalanced for web, SingleInstance for non-web>",
+       "tier": "WebServer",
+       "min_instances": 1,
+       "max_instances": <max(config.quantity, 2) for web; 1 for non-web>,
+       "process_type": "{process_type}",
+       "deployment_policy": "Rolling"
+     }
+   }
+   ```
+
+6. **Multi-instance non-web safety check**: The EB branch MUST NOT emit SingleInstance environments for persistent non-web formations with `quantity > 1`; those formations are routed to Fargate by the Horizontal Non-Web Capacity Guard above.
+
+7. **No separate ALB entry**: EB LoadBalanced environments include ALB automatically. SingleInstance environments have no ALB. Do NOT produce separate ALB service entries for any EB environment.
+
+8. Append to `services[]`. Increment `metadata.total_services`.
+
+#### Fargate Branch (override)
 
 **Mapping logic:**
 
@@ -120,6 +212,7 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
        "region": "{target_region}",
        "task_cpu": <fargate_cpu>,
        "task_memory": <fargate_memory>,
+       "cpu_architecture": "<X86_64|ARM64 from preferences.workshop>",
        "desired_count": <desired_count>,
        "container_image": "placeholder:{heroku_app}-{process_type}",
        "process_type": "{process_type}",
@@ -145,7 +238,7 @@ When `design_constraints.kubernetes.value` is `"eks-managed"` or `"eks-or-ecs"`,
    }
    ```
 
-   Non-web process types (worker, release, clock, custom) do NOT get an ALB.
+   Non-web process types (worker, clock, custom) do NOT get an ALB. Release process types are skipped because they are run-once deployment hooks.
 
 7. Append entries to `services[]`. Increment `metadata.total_services`.
 
