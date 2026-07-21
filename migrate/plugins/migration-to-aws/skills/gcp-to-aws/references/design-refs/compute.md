@@ -11,14 +11,14 @@
 
 ## Eliminators (Hard Blockers)
 
-| GCP Service     | AWS               | Blocker                                                                                                                                                        |
-| --------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloud Run       | Lambda            | Execution time >15 min → use Fargate                                                                                                                           |
-| Cloud Run       | Fargate           | GPU workload or >16 vCPU or >120 GB memory → use EC2                                                                                                           |
-| Cloud Functions | Lambda            | Python version not supported (e.g., Python 2.7) → use custom runtime on Fargate                                                                                |
-| GKE             | EKS               | Custom CRI incompatible → manual workaround or ECS                                                                                                             |
-| Any             | App Runner        | **Closed to new customers (April 30 2026).** Do not target App Runner for new migrations. Use Fargate (default), Lambda (event-driven), or EKS (K8s required). |
-| App Engine      | Elastic Beanstalk | `compute_model: "container_orchestration"` or `"serverless"` in preferences → do not use EB, fall through to Fargate or Lambda                                 |
+| GCP Service     | AWS               | Blocker                                                                                                                                                                         |
+| --------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloud Run       | Lambda            | Execution time >15 min → use Fargate                                                                                                                                            |
+| Cloud Run       | Fargate           | GPU workload or >16 vCPU or >120 GB memory → use EC2                                                                                                                            |
+| Cloud Functions | Lambda            | Python version not supported (e.g., Python 2.7) → use custom runtime on Fargate                                                                                                 |
+| GKE             | EKS               | Custom CRI incompatible → manual workaround or ECS                                                                                                                              |
+| Any             | App Runner        | **Closed to new customers (April 30 2026).** Do not target App Runner for new migrations. Use Fargate (default), Lambda (event-driven), or EKS (K8s required).                  |
+| App Engine      | Elastic Beanstalk | `compute_model: "container_orchestration"` or `"serverless"` in preferences → do not use EB, fall through to Fargate or Lambda _(preference override, not a technical blocker)_ |
 
 ## Signals (Decision Criteria)
 
@@ -45,8 +45,7 @@ Note: Cloud Run maps to Fargate via deterministic fast-path ("Always"). The `com
 
 - **Kubernetes orchestration explicitly required** (`kubernetes = "eks-managed"` or `"eks-or-ecs"` in `preferences.json`) → EKS
 - **Default / no explicit K8s preference** (`kubernetes = "ecs-fargate"` or absent):
-  - If `gcp-resource-inventory.json` contains `google_container_cluster` → EKS (IaC signal shows K8s workload)
-  - Otherwise → **Fargate** (no K8s signal; lower-ops default)
+  - → **Fargate** (absent kubernetes preference resolves to Fargate, not EKS — teams that want EKS answer A or B in Clarify)
 
 ### App Engine
 
@@ -133,6 +132,8 @@ Apply in order; first match wins:
 - Confidence: `inferred` (rubric-based override of default PaaS mapping)
 
 ## Output Schema
+
+Deterministic (fast-path) mappings omit `rubric_applied`; inferred (rubric-based) mappings include it.
 
 **Deterministic (fast-path) example:**
 

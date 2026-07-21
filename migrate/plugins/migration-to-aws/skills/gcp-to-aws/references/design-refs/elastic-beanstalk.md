@@ -2,6 +2,17 @@
 
 **Applies to:** Google App Engine (Standard/Flexible)
 
+## Discovery Inputs (what fires this mapping)
+
+App Engine → EB fidelity depends on how the workload was discovered:
+
+- **Terraform** (`google_app_engine_application` + `*_app_version` resources) → full mapping: Q7b fires, and the design fan-out emits one EB environment per service with per-service `runtime`/scaling/sizing. This is the primary path.
+- **Billing export** (no Terraform) → coarse mapping via the billing design path (`design-billing.md`): App Engine still targets EB, but without per-service or runtime detail (`confidence: billing_inferred`).
+- **App code only** (no Terraform, no billing) → no App Engine compute inventory is produced today, so no EB mapping fires.
+- **Live `gcloud` discovery** → App Engine capture is **not yet wired** (tracked as a follow-up to the live-discovery work, PR #149); until then TF-less, billing-less App Engine projects surface App Engine as an unmapped asset rather than an EB target.
+
+This is not a "Terraform required" policy — it reflects which discovery paths currently produce the inventory the fast-path needs. Widening the non-Terraform paths is follow-up work.
+
 ## Key Distinction
 
 - **EB is application management** (AWS manages lifecycle: provisioning, load balancing, scaling, patching) vs **ECS/Fargate as infrastructure management** (user manages task definitions, service configs, scaling policies).
@@ -64,6 +75,8 @@ Detect from app source to select EB platform automatically:
 
 - **Web server** (default): Handles HTTP requests via ALB. Use for APIs, web apps, frontends.
 - **Worker**: Processes background jobs from SQS queue. No public endpoint. Use for async tasks, cron-like jobs, batch processing.
+
+**This skill uses the Web server tier only.** All App Engine services map to WebServer-tier environments (SingleInstance or LoadBalanced per Sizing Defaults) — the Worker tier is not selected. App Engine background work (`cron.yaml`, task queues) maps to EventBridge + SQS alongside the web environment, not to an EB Worker environment.
 
 ## Configuration
 
