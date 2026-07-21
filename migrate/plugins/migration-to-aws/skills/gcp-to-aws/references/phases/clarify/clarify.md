@@ -492,6 +492,7 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 | Growth-stage funding path                | Q3 = higher spend band                                        | Migration funding/support program review based on spend profile                                |
 | Managed platform preference              | Q7b = A (managed platform)                                    | Elastic Beanstalk for App Engine compute targets                                               |
 | Container orchestration pref             | Q7b = B (container orchestration)                             | ECS Fargate for App Engine targets (overrides default EB mapping)                              |
+| Serverless pref                          | Q7b = C (serverless)                                          | Lambda for App Engine targets (overrides default EB mapping)                                   |
 | Must stay portable                       | Q5 = Yes multi-cloud                                          | EKS only, no ECS Fargate                                                                       |
 | Kubernetes-averse                        | Q5 = No + Q8 = Frustrated                                     | ECS Fargate strongly recommended                                                               |
 | WebSocket app                            | Q9 = Yes                                                      | ALB WebSocket config required                                                                  |

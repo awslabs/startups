@@ -127,11 +127,11 @@ Apply in order; first match wins:
 
 ### Example 4a: App Engine (standard Python web app, default preference)
 
-- GCP: `google_app_engine_application` with one service (`default`) whose `google_app_engine_standard_app_version` has runtime=python39, instance_class=F2
-- Note: `runtime`/`instance_class` come from the `*_app_version` resource, not the parent. The App Engine fan-out step (`phases/design/design-infra.md`) emits one EB environment per service; `gcp_type` stays `google_app_engine_application`.
+- GCP: `google_app_engine_application` with one service (`default`) whose `google_app_engine_standard_app_version` has runtime=python39, instance_class=F4, `automatic_scaling`
+- Note: `runtime`/`instance_class`/scaling come from the `*_app_version` resource, not the parent. The App Engine fan-out step (`phases/design/design-infra.md`) emits one EB environment per service; `gcp_type` stays `google_app_engine_application`.
 - Signals: PaaS deployment, `compute_model` absent or `"managed_platform"`
 - Fast-path condition met: `compute_model` not set to `"container_orchestration"` or `"serverless"`
-- → **AWS: Elastic Beanstalk (Python 3.9, LoadBalanced, t3.medium)** — LoadBalanced uses t3.medium+ per `elastic-beanstalk.md` Sizing Defaults
+- → **AWS: Elastic Beanstalk (Python 3.9, LoadBalanced, t4g.medium, arm64)** — LoadBalanced from the version's `automatic_scaling`; t4g.medium from `instance_class` F4; Graviton default (per `elastic-beanstalk.md` Sizing Defaults, which size from the version's own config, not Q6)
 - Confidence: `deterministic` (App Engine → EB direct mapping, condition met)
 
 ### Example 4b: App Engine (user chose container orchestration)
@@ -186,7 +186,7 @@ Deterministic (fast-path) mappings omit `rubric_applied`; inferred (rubric-based
   },
   "aws_service": "EC2",
   "aws_config": {
-    "instance_type": "t3.medium",
+    "instance_type": "t4g.medium",
     "region": "us-east-1"
   },
   "graviton": {
