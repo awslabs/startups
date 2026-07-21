@@ -71,6 +71,22 @@ If `agentic_profile.is_agentic == true`:
 
 ---
 
+## Step 0.7: Apply Compliance Constraints
+
+Read `preferences.json` → `design_constraints.compliance` (from full-flow Q2 or AI-only Q1.5). **Skip this step only when the value is `none` or absent** (absent = pre-Q1.5 preferences; treat as `none` with the report caveat intact). Otherwise, apply BEFORE Part 1 model selection — these are hard filters, not preferences:
+
+| Compliance value | Constraint applied in this design                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hipaa`          | Candidate models restricted to **BAA-eligible Bedrock models** — verify eligibility per model via the AWS Documentation MCP server before shortlisting. Add to the code migration plan (Part 5): Bedrock invocation logging keeps ORIGINAL content in CloudWatch (Guardrails PII masking does not apply to logs) — require KMS encryption + restricted IAM on the log group. Prefer us-east-1/us-west-2. |
+| `fedramp`        | Target region forced to **GovCloud** (us-gov-east-1/us-gov-west-1); re-run Step 0.5 regional validation against GovCloud — the model catalog is materially smaller, and a `regional_warnings[]` entry is REQUIRED for every candidate model not available there.                                                                                                                                         |
+| `gdpr`           | Target region restricted to EU (eu-west-1, eu-central-1); model IDs must use **geographic `eu.` inference profiles** — `global.` profiles route outside the EU boundary and are forbidden. Note the GCP-EU → AWS-EU transfer in the summary.                                                                                                                                                             |
+| `pci`            | Part 5 plan must include: no cardholder data in prompts without tokenization; CloudTrail on Bedrock API calls; scoped IAM (no `bedrock:*`).                                                                                                                                                                                                                                                              |
+| `soc2` / `ccpa`  | Part 5 plan must include CloudTrail audit logging; CCPA additionally: prompt/completion retention policy + deletion workflow for logged content.                                                                                                                                                                                                                                                         |
+
+Record what was applied: every constraint that changed a model choice or region adds a `regional_warnings[]` entry (existing shape) or a Part 5 plan line naming the compliance value that forced it, and the Present Summary section MUST state which compliance regime(s) shaped the design. A design that ignores a declared compliance value is a validation failure (see Validation Checklist).
+
+---
+
 ## Part 1: Bedrock Model Selection
 
 **Multi-workload iteration (when `workloads[]` is present):**
@@ -350,6 +366,7 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 - [ ] `regional_warnings` is present (empty array `[]` if no issues; populated if any service unavailable in target region)
 - [ ] `multi_model_warnings` is present (empty array `[]` if single model or no coordination issues)
 - [ ] If `agentic_profile.is_agentic == true`: `agentic_design` object is present with `migration_approach` matching `preferences.json`
+- [ ] If `design_constraints.compliance` is set and not `none`: every Step 0.7 constraint is reflected in the design (BAA-only models for hipaa, GovCloud region for fedramp, `eu.` profiles for gdpr, Part 5 logging lines for pci/soc2/ccpa) and the Present Summary names the regime(s)
 - [ ] If `agentic_profile.is_agentic == false` or absent: `agentic_design` is null or absent
 
 ## Completion Handoff Gate (Fail Closed)
