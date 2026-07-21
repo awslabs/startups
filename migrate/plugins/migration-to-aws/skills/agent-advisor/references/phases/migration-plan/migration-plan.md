@@ -215,7 +215,7 @@ confirm with one keypress.
 Read `references/phases/migration-plan/migration-plan-gcp-constraints.md` and follow everything in it
 for the duration of this phase. It covers: design principles (dev sizing, no human costs,
 re-platform default, BigQuery gate), context loading budget, conditional file table,
-feedback checkpoint auto-skip, and hybrid stack warning.
+feedback sidebar auto-skip, and hybrid stack warning.
 
 ## Step 3 — Announce the transition
 

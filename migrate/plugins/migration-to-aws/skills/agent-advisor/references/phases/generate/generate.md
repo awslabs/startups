@@ -90,7 +90,7 @@ For Build paths:
   contract: `/invocations` POST + `/ping` GET for AgentCore) + the model id.
   Write scaffolding under `$RUN_DIR/scaffold/`. Keep it minimal — heavy IaC hands off.
 
-## Step 4.5 — Write the mini-brief to `$RUN_DIR/mini-brief.md` (delivered by the Step 5.5 checkpoint)
+## Step 4.5 — Write the mini-brief to `$RUN_DIR/mini-brief.md` (delivered by the Step 5.5 sidebar)
 
 Compose the **mini-brief** — it is the deliverable of the whole advisor flow — and WRITE IT
 TO `$RUN_DIR/mini-brief.md` (a file, not just chat text; Step 5.5 re-reads it):
@@ -119,12 +119,12 @@ non-blocking — NOT the generation itself. So:
 - Never SKIP this step to reach Step 5.5 faster. Step 5.5 checks that the file exists
   (below) — if it is missing, you skipped Step 5 and must come back and do it.
 
-## Step 5.5 — Recommendation review checkpoint (BLOCKING — the user must see and confirm the recommendation before any gate)
+## Step 5.5 — Recommendation review sidebar (BLOCKING — the user must see and confirm the recommendation before any gate)
 
-**Precondition check (do this FIRST, before composing the checkpoint):** confirm
+**Precondition check (do this FIRST, before composing the sidebar):** confirm
 `$RUN_DIR/recommendation-report.html` exists on disk. If it does NOT, Step 5 was skipped —
 go back and run Step 5 now (generate the report + open it) before proceeding. Do not
-present this checkpoint without the report having been generated.
+present this sidebar without the report having been generated.
 
 This is its own turn, separate from every gate. Send ONE message whose body is the **full
 mini-brief pasted from `$RUN_DIR/mini-brief.md`**, followed in the SAME message by an
@@ -137,7 +137,7 @@ AskUserQuestion:
 >
 > - **Looks good — continue** → record the confirmation (below) and proceed to Step 6.
 > - **Explain more first** → answer the user's questions on the recommendation (from
->   recommendation.md / design.json — no new scoring), then re-ask this checkpoint.
+>   recommendation.md / design.json — no new scoring), then re-ask this sidebar.
 > - **Something's off — revisit an answer** → identify which clarify answer changed, update
 >   `answers.json`, re-run scoring, and redo Design → Generate. Do NOT proceed on a
 >   recommendation the user disputes.
@@ -147,12 +147,12 @@ On "Looks good — continue": read-merge-write `.phase-status.json` and set top-
 
 **Mechanical gate rule:** Steps 6 and 7 MUST NOT ask Gate 1 or Gate 2 unless
 `.phase-status.json` has `recommendation_reviewed == true`. If it is absent, you skipped
-this checkpoint — go back and run it. This ordering is not optional and does not collapse
+this sidebar — go back and run it. This ordering is not optional and does not collapse
 into the gate question: the user confirms they have SEEN the recommendation first, and only
 then is asked what to do next. (Resume-safe: if the session breaks after confirmation, the
-flag survives and the checkpoint is not re-asked.)
+flag survives and the sidebar is not re-asked.)
 
-Because the checkpoint delivered the brief, the gates below only need a one-line recap
+Because the sidebar delivered the brief, the gates below only need a one-line recap
 (runtime + deployment model + model), not the full brief.
 
 ## Step 6 — Migration-plan gate (Gate 1)
@@ -210,7 +210,7 @@ Set `phases.generate` = completed (read-merge-write). Then branch:
    >   `references/phases/poc/poc.md` (it asks which POC mode first).
    > - **No** → set `phases.poc = "skipped"`; the advisor flow is complete.
 
-3. **Otherwise** (migrate without a plan): the Step 5.5 checkpoint already delivered the
+3. **Otherwise** (migrate without a plan): the Step 5.5 sidebar already delivered the
    brief; close with a short completion message pointing at `recommendation.md` — the
    advisor flow is complete.
 

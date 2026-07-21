@@ -22,7 +22,7 @@
     },
     "phases": {
       "type": "object",
-      "description": "One entry per phase the skill declares (backbone and checkpoint). Keys are the skill's phase names — this schema does not enumerate them.",
+      "description": "One entry per phase the skill declares (backbone and sidebar). Keys are the skill's phase names — this schema does not enumerate them.",
       "minProperties": 1,
       "additionalProperties": {
         "type": "string",

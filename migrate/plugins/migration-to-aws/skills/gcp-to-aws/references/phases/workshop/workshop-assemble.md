@@ -1,6 +1,6 @@
-# Workshop — Assemble (checkpoint resolve)
+# Workshop — Assemble (sidebar resolve)
 
-> Marks the workshop checkpoint resolved and returns control to the backbone.
+> Marks the workshop sidebar resolved and returns control to the backbone.
 > Does **not** set `current_phase` to `workshop`.
 
 ## When exiting to Generate

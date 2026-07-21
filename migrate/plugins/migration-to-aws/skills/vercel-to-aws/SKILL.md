@@ -16,7 +16,7 @@ description: "Assess and plan migrations from Vercel to AWS for Next.js applicat
 - **Precedence, not judgment.** The Recommendation Engine evaluates a fixed, ordered set of rules and stops at the first that fires (`references/shared/vercel-recommendation-engine.md`). It is not a model deciding case-by-case; every recommendation is traceable to exactly one rule.
 - **Never a dialect mismatch.** SST/OpenNext is used ONLY for the Next.js app surface under Outcome A (and Outcome C's A-shaped backend recursion never triggers it — that recursion always emits Terraform). Outcome B and Outcome C never emit SST. This exception is documented inline wherever it appears, not left implicit.
 - **Report is a rendering, not the deliverable's completion.** A failed report validation does not mean the assessment failed — the underlying findings and recommendation remain valid. The Report phase retries up to 2 additional times on validation failure, then surfaces the incomplete report and stops; it never presents a stub as done.
-- **What-if after Estimate:** After costs are computed, SAs can enter a what-if workshop checkpoint (`references/phases/workshop/workshop.md`) to change traffic shape, outcome (A/B/C/stay), region, Balanced Multi-AZ, or CPU architecture, refresh Recommend when needed + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Workshop arch defaults to **arm64** here (Graviton-first per `graviton.md`); heroku-to-aws defaults workshop arch to **x86_64**.
+- **What-if after Estimate:** After costs are computed, SAs can enter a what-if workshop sidebar (`references/phases/workshop/workshop.md`) to change traffic shape, outcome (A/B/C/stay), region, Balanced Multi-AZ, or CPU architecture, refresh Recommend when needed + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Workshop arch defaults to **arm64** here (Graviton-first per `graviton.md`); heroku-to-aws defaults workshop arch to **x86_64**.
 
 ---
 
@@ -74,14 +74,14 @@ skill's entry phase (the one carrying `_init: true`). The interpreter loads THIS
 phase directly; it does not scan every phase's frontmatter to discover the root.
 All subsequent phases are reached by following each phase's `_advances_to`. On a
 warm start, `current_phase` in `.phase-status.json` is authoritative **except**
-when deferred-advance checkpoint resume applies (`INTERPRETER.md` § The
+when deferred-advance sidebar resume applies (`INTERPRETER.md` § The
 interpreter loop step 2 — Estimate completed + `workshop` pending/in_progress
 must not re-run Estimate).
 
 **Backbone:** `prescan` -> `discover` -> `clarify` -> `recommend` -> `estimate` -> `generate` -> `report` -> `complete`.
 
 > **Breaking change:** Assessments started before this version (with `scaffold`
-> as a checkpoint in `.phase-status.json`) are NOT compatible with the new
+> as a sidebar in `.phase-status.json`) are NOT compatible with the new
 > backbone. Re-run from `prescan` to benefit from the estimate and generate phases.
 
 **Clarify is mandatory.** Do not skip Clarify or jump straight to Recommend even if
@@ -184,11 +184,11 @@ vercel-to-aws/
 │   │   │   ├── estimate-cost-engine.md         # Three-tier AWS cost projection vs. Vercel spend
 │   │   │   └── estimate-assemble.md            # estimation-infra.json
 │   │   ├── workshop/
-│   │   │   ├── workshop.md                     # Checkpoint: optional post-Estimate what-if
+│   │   │   ├── workshop.md                     # Sidebar: optional post-Estimate what-if
 │   │   │   ├── workshop-sheet.md               # Assumption sheet knobs
 │   │   │   ├── workshop-refresh.md             # Patch → Recommend? → Estimate → snapshot
 │   │   │   ├── workshop-compare.md             # Side-by-side scenarios
-│   │   │   └── workshop-assemble.md            # Resolve checkpoint → return to Generate
+│   │   │   └── workshop-assemble.md            # Resolve sidebar → return to Generate
 │   │   ├── generate/
 │   │   │   ├── generate.md                     # Phase 6: Generate orchestrator
 │   │   │   ├── generate-baseline.md            # baseline.tf (GuardDuty, CloudTrail, IMDSv2, budget alerts)
@@ -250,8 +250,8 @@ vercel-to-aws/
 - **Cost currency**: USD, always labeled "estimated monthly cost/savings"
 - **Execution target**: OpenNext v3 (swappable for the verified Adapter-API AWS adapter behind an interface once it reaches GA)
 
-**What-if workshop checkpoint:** After Estimate, offer the optional `workshop`
-checkpoint (`_kind: checkpoint`, never `current_phase`) per
+**What-if workshop sidebar:** After Estimate, offer the optional `workshop`
+sidebar (`_kind: sidebar`, never `current_phase`) per
 `estimate-assemble.md`. Outer Estimate keeps `current_phase: estimate` until
 workshop is resolved (exited via `workshop-assemble.md` or declined).
 

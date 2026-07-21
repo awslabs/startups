@@ -129,7 +129,7 @@ FORBIDDEN — Do NOT include ANY of:
 
 - Report rendering or outcome-based filtering of Pre-Flight Checks (that is
   Phase 5 — Report's job)
-- Scaffold/Terraform/SST generation (that is the Scaffold checkpoint's job)
+- Scaffold/Terraform/SST generation (that is the Scaffold sidebar's job)
 - Recommending EKS or Amplify as an `outcome` value (see the engine's own
   explicit prohibition)
 

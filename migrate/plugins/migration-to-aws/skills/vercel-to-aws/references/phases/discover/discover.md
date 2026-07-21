@@ -253,7 +253,7 @@ FORBIDDEN — Do NOT include ANY of:
 - Filtering or reframing Pre-Flight Check findings by outcome (that is Phase 5 —
   Report's job; this phase computes unconditionally)
 - Clarify questions (that is Phase 3 — Clarify)
-- Terraform/SST generation (that is the Scaffold checkpoint)
+- Terraform/SST generation (that is the Scaffold sidebar)
 
 **Your ONLY job: Discover signals, compute Coupling Score and all 10 Pre-Flight
 Checks unconditionally. Nothing else.**

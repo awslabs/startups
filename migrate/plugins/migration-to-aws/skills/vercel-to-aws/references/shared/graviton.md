@@ -16,7 +16,7 @@ _shared: graviton
 
 ## The Default
 
-Every compute resource this skill's Scaffold checkpoint emits (the SST/OpenNext
+Every compute resource this skill's Scaffold sidebar emits (the SST/OpenNext
 server function, the Terraform-only backend Lambda under Outcome C's A-shaped
 mode, the ECS Fargate task under Outcome B or C's B-shaped mode, and the
 EventBridge-Scheduler-triggered Lambda invoker for a detected Cron peripheral)
@@ -70,9 +70,9 @@ precondition.
   consequence to word carefully today; this constraint exists so a future v2
   Estimate phase inherits the same discipline gcp-to-aws's Graviton feature
   applies, not because v1 currently renders such a figure.
-- **Does not touch the report.** This is a Scaffold-checkpoint-only decision.
+- **Does not touch the report.** This is a Scaffold-sidebar-only decision.
   `report-render.md` never mentions architecture/Graviton — Scaffold is
-  optional and off-backbone; a founder who declines the checkpoint never sees
+  optional and off-backbone; a founder who declines the sidebar never sees
   this default at all.
 
 ## Terraform / SST Mechanics (Verified — Do Not Guess a Different Shape)
