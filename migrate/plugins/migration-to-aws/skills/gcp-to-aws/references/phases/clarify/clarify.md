@@ -108,7 +108,7 @@ ELSE proceed to Step 2 (Assumption-Sheet Wizard)
 
 > "Your stack looks straightforward — [primary_resource_count] resource(s), no database, no AI detected.
 >
-> Want to use smart defaults and answer just 3 questions?
+> Want to use smart defaults and answer just 3 questions (target region, compliance requirements, maintenance window)?
 >
 > **[Yes — 3 questions]** / **[No — ask me everything]**"
 
@@ -353,11 +353,13 @@ Present the sheet in two sections (omit rows for questions that are ESSENTIAL or
 Q27 (AWS Activate credits) is **not** on this sheet — it is asked in Step 4 when AI workloads are detected.
 
 Reply:
-- **"looks good"** — I'll record these and ask only the [N] essential questions.
-- To fix something, name the setting and value, e.g. **"availability: mission-critical"**, **"ai priority: cost"**, **"websockets: yes"**.
-- **"ask me about [setting]"** — I'll ask the full question with all options for that item.
-- **"ask me everything"** — discard all assumptions and run the full question-by-question flow.
+1. **Confirm all** (or "looks good") — I'll record these and ask only the [N] essential questions.
+2. **Change a setting** — name it precisely (**"availability: mission-critical"**, **"ai priority: cost"**, **"websockets: yes"**) or just describe it in plain words (**"our database going down would be really bad"** — I'll map it or ask the full question). You can fix several in one message.
+3. **"ask me about [setting]"** — I'll ask the full question with all options for that item.
+4. **"ask me everything"** — discard all assumptions and run the full question-by-question flow.
 ```
+
+_Present these as selectable options via the structured question tool (e.g. AskUserQuestion) when the IDE provides one; otherwise show the numbered list above verbatim. Free-text corrections are always accepted in either mode — the menu supplements the override grammar, it never replaces it._
 
 **Computing [N]:** Count ESSENTIAL dispositions for all active categories, plus any rows converted to ESSENTIAL via user correction ("ask me about X"), plus conflict rows. Subtract any ESSENTIAL questions that were already answered by a user correction on the sheet (e.g., user said `"availability: mission-critical"` — Q6 no longer needs asking).
 
@@ -438,12 +440,16 @@ Interpret → `right_sizing`: A → `true`, B → `false`. Default: B → `false
 
 > **BigQuery / analytics warehouse:** Your discovery inputs include BigQuery. This skill **does not** select an AWS analytics or data-warehouse target (no Athena, Redshift, Glue, or EMR recommendation from the plugin). **Before** warehouse, data lake, SQL analytics, or BI cutover planning, engage your **AWS account team** and/or a **data analytics migration partner** to assess query patterns, data volumes, ETL/ELT, and downstream consumers. Design will mark these resources as **`Deferred — specialist engagement`**.
 
-### Essentials Batch
+### Essentials Batches
 
-Present ALL essential questions (from the Step 3 disposition, plus any rows converted by "ask me about X") as **one batch**, numbered from 1, with the question text, context, and options from the category files. Typical count: 2–7.
+Present the essential questions (from the Step 3 disposition, plus any rows converted by "ask me about X") in batches of **at most 4 per turn**, numbered from 1, with the question text, context, and options from the category files. Typical total: 2–7.
+
+**Batch composition:** core first (Q1/Q2/Q3/Q3.5/Q7 + conflicts), then AI/agentic (Q15, **Q27**, Q23–Q25, multi-workload confirmations). Write `preferences-draft.json` between batches (same schema as `preferences.json` plus `metadata.wizard_stage`). When more than one batch is needed, open each with a progress line: "Batch [i] of [k]."
+
+Open the first batch with:
 
 ```
-Just [N] questions we can't safely assume — then we're ready to design.
+That leaves [N] decisions only you can make — then we're ready to design.
 You can answer in shorthand ("1A 2C 3 skip"), describe answers in plain words,
 skip individual ones (I'll use the documented default), or say
 "use defaults for the rest."
@@ -453,7 +459,9 @@ Question 2: [Q7 text with context and options]
 ...
 ```
 
-**If the essential count exceeds 7** (e.g., agentic + billing gaps + conflicts), split into two batches — core (Q1/Q2/Q3/Q3.5/Q7 + conflicts) first, then AI/agentic (Q15, **Q27**, Q23–Q25, multi-workload confirmations) — and write `preferences-draft.json` between them (same schema as `preferences.json` plus `metadata.wizard_stage`).
+_Present each question's options via the structured question tool (e.g. AskUserQuestion) when the IDE provides one — one tool call per batch, identical option text. Otherwise use the lettered options in chat as shown. Shorthand and plain-word answers are accepted in either mode._
+
+**This ≤4 cap applies to wizard essentials only.** The Full Flow variant below keeps its documented three-batch structure — the user explicitly opted into the long path and has shorthand answering.
 
 **Wait for the user's response.** Do NOT proceed to Design without a response or an explicit "use defaults for the rest."
 
