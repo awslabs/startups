@@ -6,6 +6,7 @@ Lightweight orchestrator that delegates to domain-specific discoverers. Each sub
 ## Sub-Discovery Files
 
 - **discover-iac.md** → `gcp-resource-inventory.json` + `gcp-resource-clusters.json` (if Terraform found); may also write `ai-workload-profile.json` when **Vertex-strong** (see `discover-iac.md` Step 7d)
+- **discover-live.md** → `gcp-resource-inventory.json` + `gcp-resource-clusters.json` from the user's authenticated `gcloud` CLI (read-only, consent-gated); merges into the IaC inventory with drift when both run
 - **discover-app-code.md** → `ai-workload-profile.json` when AI confidence ≥ 70% (may **merge** with an existing `iac_vertex` profile)
 - **discover-billing.md** → `billing-profile.json` (if billing data found)
 
@@ -111,7 +112,31 @@ When Terraform is present, billing data is supplementary — only service-level 
 
 **Critical:** Do **not** Read the billing file with the Read tool. Do **not** load `discover-billing.md` or `schema-discover-billing.md`.
 
-**If NONE of the three checks found files**: STOP and output: "No GCP sources detected. Provide at least one source type (Terraform files, application code, or billing exports) and try again."
+**1d. Live discovery (gcloud CLI):**
+Runs AFTER 1a–1c sub-discoveries complete, so its IaC merge sees their output.
+
+- If `$MIGRATION_DIR/live-capture/manifest.json` already exists (a prior capture,
+  e.g. a resumed run) → Load `references/phases/discover/discover-live.md` and
+  execute from its Step 3 (parse the existing captures; skip consent/preflight/
+  capture — they already happened).
+- Else if Terraform files were found in 1a → offer ONCE as an optional cross-check:
+  "I found Terraform covering your infrastructure. Want me to cross-check it
+  against your live GCP project via your authenticated gcloud CLI (read-only,
+  with your consent)? This catches resources managed outside Terraform."
+  On yes → Load `references/phases/discover/discover-live.md`. On no → continue
+  (do not re-ask this run).
+- Else if NO Terraform was found (regardless of whether 1b/1c found app code or
+  billing files — those cannot produce an infrastructure inventory) → offer live
+  discovery as the primary infrastructure source: "No Terraform detected — I can
+  discover your project's infrastructure directly via your authenticated gcloud
+  CLI (read-only, with your consent). Proceed?" On yes → Load
+  `references/phases/discover/discover-live.md`. On no → continue with whatever
+  1b/1c produced (billing-only design path remains the fallback).
+- If, after the offer, NO sub-discovery produced or will produce any artifact
+  (nothing found by 1a–1c AND live was declined or unavailable) → STOP and
+  output: "No GCP sources detected. Provide at least one source type (Terraform
+  files, application code, or billing exports), or re-run and accept live
+  discovery."
 
 ## Step 2: Check Outputs
 
@@ -129,6 +154,7 @@ After all loaded sub-discoveries complete, check what artifacts were produced in
      - If its Step 4 exit gate applied (overall AI confidence **below** 70%) **and** no `ai-workload-profile.json` exists -> **allow completion** (app-code route may produce no AI profile).
      - If Step 4 exit applied with confidence below 70% **but** `ai-workload-profile.json` exists with `metadata.profile_source` = `"iac_vertex"` -> **allow completion** (IaC-inferred profile retained).
      - If execution continued to Steps 5–8 (confidence **≥** 70%) -> **require** `ai-workload-profile.json`.
+   - If `discover-live.md` ran AND capture happened (`$MIGRATION_DIR/live-capture/manifest.json` exists) -> require `gcp-resource-inventory.json` and `gcp-resource-clusters.json`, with `live_metadata` present in the inventory. (If the user declined consent or gcloud was unavailable, the sub-file exited cleanly — no artifact required.)
    - If full `discover-billing.md` ran OR lightweight billing extraction ran -> require `billing-profile.json`
    - If any triggered route is missing its required artifact(s): STOP and output: "Discover route [name] did not produce required artifacts. Resolve the sub-discovery failure before completing Phase 1."
 
@@ -167,6 +193,7 @@ Only after `HANDOFF_OK`. In the **same turn** as the output message below, use t
 Output to user — build message from whichever artifacts exist:
 
 - If `gcp-resource-inventory.json` exists: "Discovered X total resources across Y clusters."
+- If live discovery ran: "Live discovery captured N resources from project [id]." Plus, when IaC also ran: "Drift check: A resources live but not in Terraform, B in Terraform but not live, C config conflicts (live values used)." Plus, when `live_metadata.unmapped_asset_types` is non-empty: "Skipped M unmapped asset types (top: X, Y, Z) — full list in live_metadata."
 - If `ai-workload-profile.json` exists: "Detected AI workloads (source: [ai_source])."
 - If `billing-profile.json` exists: "Parsed billing data ($Z/month across N services)."
 
