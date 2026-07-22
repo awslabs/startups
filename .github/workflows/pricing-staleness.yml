@@ -1,0 +1,31 @@
+# Scheduled freshness gate for the migration-to-aws pricing caches.
+#
+# The estimate phases price from vendored caches whose freshness contracts
+# (_meta.last_updated + staleness_days, or a "Last updated" line with a
+# documented 30-day window) were previously unenforced — caches quietly crossed
+# their own thresholds and every estimate silently degraded to fallback
+# accuracy. `mise run build` reports staleness warn-only (a stale cache must
+# not fail unrelated PRs); this weekly job runs the same tool with --strict so
+# staleness becomes a visible failure someone owns, prompting a data-refresh PR
+# (see #131 for the pattern).
+name: Pricing cache staleness
+on:
+  schedule:
+    - cron: "23 14 * * 1" # weekly, Monday
+  workflow_dispatch: {}
+permissions:
+  actions: none
+  contents: none
+jobs:
+  staleness:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      # Zero-dep TS tool (Node 24 native type-stripping) — no install step.
+      - name: Check pricing cache freshness (strict)
+        run: node migrate/plugins/migration-to-aws/tools/pricing-staleness.ts --strict

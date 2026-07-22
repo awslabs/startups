@@ -29,7 +29,11 @@ def main() -> int:
     run_dir = Path(sys.argv[1])
     fixture_dir = Path(__file__).resolve().parent
 
-    inv = json.loads((run_dir / "heroku-resource-inventory.json").read_text())
+    inv_path = run_dir / "heroku-resource-inventory.json"
+    if not inv_path.exists():
+        print("FAIL (1):\n  - missing heroku-resource-inventory.json in run dir")
+        return 1
+    inv = json.loads(inv_path.read_text())
     exp = json.loads((fixture_dir / "expected-drift.json").read_text())
 
     # Metadata
