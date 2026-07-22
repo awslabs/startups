@@ -34,8 +34,13 @@ def main() -> int:
     run_dir = Path(sys.argv[1])
     fixture_dir = Path(__file__).resolve().parent
 
-    inv = json.loads((run_dir / "gcp-resource-inventory.json").read_text())
-    clusters = json.loads((run_dir / "gcp-resource-clusters.json").read_text())
+    inv_path = run_dir / "gcp-resource-inventory.json"
+    clusters_path = run_dir / "gcp-resource-clusters.json"
+    if not inv_path.exists() or not clusters_path.exists():
+        print("FAIL (1):\n  - missing gcp-resource-inventory.json or gcp-resource-clusters.json in run dir")
+        return 1
+    inv = json.loads(inv_path.read_text())
+    clusters = json.loads(clusters_path.read_text())
     exp = json.loads((fixture_dir / "expected-drift.json").read_text())
 
     # Metadata
