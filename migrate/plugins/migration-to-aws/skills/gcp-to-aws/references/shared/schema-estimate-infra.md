@@ -47,10 +47,14 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 
   "current_costs": {
     "source": "billing_data|inventory_estimate|preferences|user_provided|unavailable",
+    "accuracy": "±5% (billing) | ±20-30% (inventory_estimate) — states the SOURCE's confidence; distinct from top-level accuracy_confidence, which covers AWS pricing mode",
     "gcp_monthly": 300,
     "gcp_annual": 3600,
-    "baseline_note": "From billing-profile.json actual spend data",
-    "breakdown": { "compute": 75, "database": 50, "storage": 40, "networking": 20, "other": 15 }
+    "baseline_note": "From billing-profile.json actual spend data — or the mandatory derived-baseline caveat for inventory_estimate",
+    "breakdown": { "compute": 75, "database": 50, "storage": 40, "networking": 20, "other": 15 },
+    "derivation": [],
+    "excluded_resources": [],
+    "warnings": []
   },
 
   "projected_costs": {
@@ -234,7 +238,10 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
       "Confirm database availability requirement — Multi-AZ was assumed, not confirmed (2x cost factor)"
     ],
     "decision_basis": {
-      "measured": ["GCP baseline from billing export ($8,200/mo)", "Cloud SQL disk size from Terraform (10 GB)"],
+      "measured": [
+        "GCP baseline from billing export ($8,200/mo)",
+        "Cloud SQL disk size from Terraform (10 GB)"
+      ],
       "assumed": ["Multi-AZ availability (defaulted)", "24/7 Cloud Run traffic (defaulted)"],
       "unknown": ["Compliance requirements (Q2 unanswered)"]
     },
@@ -264,12 +271,12 @@ The `recommendation` block is the single source of truth for migrate/stay guidan
 
 **Decision outcome (additive — v2 fields):** `outcome` expresses the _decision_, independent of the execution-path vocabulary above. `path` answers "how would we migrate"; `outcome` answers "should we, now". Both are written; consumers that only read `path` keep working.
 
-| `outcome` value        | `outcome_label` (display) | Meaning                                                                                 |
-| ---------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
-| `"go"`                 | `"Go"`                    | Evidence supports migrating now; no unresolved material assumption                       |
-| `"conditional_go"`     | `"Go, with conditions"`   | Migrate, but named conditions (see `conditions[]`) must be confirmed or bounded first    |
+| `outcome` value        | `outcome_label` (display) | Meaning                                                                                                                                                       |
+| ---------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `"go"`                 | `"Go"`                    | Evidence supports migrating now; no unresolved material assumption                                                                                            |
+| `"conditional_go"`     | `"Go, with conditions"`   | Migrate, but named conditions (see `conditions[]`) must be confirmed or bounded first                                                                         |
 | `"defer_for_evidence"` | `"Defer — get evidence"`  | A hard trigger fired (see `estimate-infra.md` trigger table); decision needs one named piece of evidence. **Expected rare** — when in doubt, `conditional_go` |
-| `"stay"`               | `"Stay on GCP"`           | Evidence favors staying — reachable on any decisive factor, not only "cost is sole metric" |
+| `"stay"`               | `"Stay on GCP"`           | Evidence favors staying — reachable on any decisive factor, not only "cost is sole metric"                                                                    |
 
 Validation:
 

@@ -69,7 +69,43 @@ Do NOT call get_pricing_service_codes, get_pricing_service_attributes, or get_pr
 Determine the current GCP monthly infrastructure costs. Use the best available source:
 
 1. **`billing-profile.json` (preferred)** — Use actual billing data as the GCP baseline. Highest confidence (±5%).
-2. **`gcp-resource-inventory.json` (fallback)** — Estimate costs from discovered resource configurations. Wider range (±20-30%).
+2. **`gcp-resource-inventory.json` (fallback)** — Derive costs from discovered
+   resource sizing using `references/shared/gcp-infra-pricing-cache.md` — never
+   from remembered GCP prices. Wider range (±20-30%). Procedure:
+   - For each inventory resource, apply the matching rate-card derivation
+     (Cloud SQL tier decoding × HA multiplier + disk; Memorystore GB × tier
+     band; GCE/GKE-node machine types × 730; GKE cluster fee). Config field
+     names may be capture-shaped (`settings.tier`, `settings.dataDiskSizeGb`,
+     `memorySizeGb`) or Terraform-shaped (`tier`, `disk_size`) — resolve
+     either.
+   - Resources the rate card marks NOT derivable (Cloud Run, Functions,
+     Pub/Sub, buckets, Autopilot, egress) are EXCLUDED from the total with
+     reason `"usage_based"`; name each in `warnings[]` with: "usage-based —
+     not derivable from sizing; provide a billing export for the full
+     baseline." (Exclusion reason enum: `usage_based`, `no_standing_charge`,
+     `unpriced_gcp` — nothing else.)
+   - A sized resource whose rate is missing from the card → `"unpriced_gcp"`,
+     excluded, warned. Never guess a rate. When `settings.dataDiskType` is
+     absent, assume `PD_SSD` (the Cloud SQL default) and say so in the
+     derivation entry. When `settings.backupConfiguration.enabled` is true,
+     add a backup-storage line using the card's backup rate against the
+     provisioned disk size as an upper bound, labeled "(backup upper bound)".
+   - No-standing-charge resources (VPC networks/subnets, service accounts,
+     IAM, secrets at trivial volume) are excluded with reason
+     `"no_standing_charge"` — NOT the usage-based warning.
+   - Set `current_costs.source: "inventory_estimate"` (the value
+     `schema-estimate-infra.md` already enumerates) and
+     `current_costs.accuracy: "±20-30%"`.
+   - Shape: `current_costs.breakdown` stays the schema's category-keyed map
+     (`compute` / `database` / `cache` / `storage` / ...); record the
+     per-resource arithmetic in an additive `current_costs.derivation[]`
+     array (address, resolved config, calculation string, monthly), and the
+     exclusions in `current_costs.excluded_resources[]` +
+     `current_costs.warnings[]`.
+   - `baseline_note` (mandatory): "Derived from discovered resource sizing ×
+     GCP list rates — not a bill. Excludes usage-based services (Cloud Run,
+     bandwidth, storage volume), sustained-use/committed-use discounts, and
+     credits; your invoice may differ materially."
 3. **`preferences.json` → `gcp_monthly_spend`** — User-provided monthly spend from clarification.
 4. **Ask the user** — If none of the above are available, ask: "I need your current GCP monthly spend to produce a meaningful cost comparison. What is your approximate GCP monthly infrastructure cost?" Use the user's answer. If the user declines or is unsure, present AWS costs without a GCP comparison and note: "GCP baseline unavailable — AWS costs shown without comparison."
 
@@ -350,16 +386,34 @@ This section covers **GCP vendor/network charges** for outbound data during migr
 
 Set `billing_data_available: true` in the output `migration_cost_considerations` object.
 
-### IF billing data is NOT available (`billing-profile.json` does not exist):
+### IF billing data is NOT available but the inventory carries database/disk sizes:
 
-**Omit GCP data transfer fee estimates.** Without billing data, there is no grounding for egress projections. Instead, include only this note in the output:
+Provisioned sizes are an UPPER BOUND on one-time migration egress (actual data
+≤ provisioned; #149's sizing caveat applies). Present a bounded estimate, never
+a point figure:
 
 Set `migration_cost_considerations` to:
 
 ```json
 {
+  "categories": [
+    "GCP data transfer egress (upper bound): ≤ <sum of provisioned DB disk + known storage GB> GB × $0.12/GB ≈ ≤ $<N> one-time"
+  ],
+  "billing_data_available": false,
+  "baseline_available": true,
+  "note": "Upper bound from PROVISIONED sizes (actual data is typically smaller). Object-storage volume is unknown without billing data — a billing export tightens this to measured volumes."
+}
+```
+
+### IF neither billing data nor any sized inventory resource exists:
+
+**Omit GCP data transfer fee estimates.** There is no grounding for egress projections. Set `migration_cost_considerations` to:
+
+```json
+{
   "categories": [],
   "billing_data_available": false,
+  "baseline_available": false,
   "note": "Data transfer cost estimates require GCP billing data. Re-run discovery with a GCP billing export to see GCP egress fee projections."
 }
 ```
@@ -535,22 +589,22 @@ The `path` says how a migration would run; `outcome` says whether to run it now.
 
 **Hard triggers — any one forces `outcome: "defer_for_evidence"`:**
 
-| # | Trigger                                                                                                                 | Evidence to name in `defer` next_steps / `would_flip_if`             |
-| - | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| 1 | Deferred services (e.g. BigQuery) that the user must cut over in the **same window** as app infra AND those services are a **material share of spend or workload** — a verdict on the designed slice would misrepresent the migration | Specialist engagement outcome / analytics target architecture         |
-| 2 | GovCloud-class compliance ambiguity: `compliance` contains `"unknown"` AND signals suggest FedRAMP/government requirements (gov data, agency customer, ITAR hints). GovCloud vs commercial changes regions, service catalog, and pricing wholesale — a commercial-region verdict could be flatly wrong, not just incomplete | Compliance confirmation from the user's legal/compliance owner        |
-| 3 | The user's **only** stated motivation is cost savings AND no spend signal exists at all (no billing, Q3 declined/unknown) — a "migrate to save money" verdict would have zero evidence for its premise | Any spend signal: billing export (preferred) or a confirmed Q3 band   |
+| # | Trigger                                                                                                                                                                                                                                                                                                                     | Evidence to name in `defer` next_steps / `would_flip_if`            |
+| - | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 1 | Deferred services (e.g. BigQuery) that the user must cut over in the **same window** as app infra AND those services are a **material share of spend or workload** — a verdict on the designed slice would misrepresent the migration                                                                                       | Specialist engagement outcome / analytics target architecture       |
+| 2 | GovCloud-class compliance ambiguity: `compliance` contains `"unknown"` AND signals suggest FedRAMP/government requirements (gov data, agency customer, ITAR hints). GovCloud vs commercial changes regions, service catalog, and pricing wholesale — a commercial-region verdict could be flatly wrong, not just incomplete | Compliance confirmation from the user's legal/compliance owner      |
+| 3 | The user's **only** stated motivation is cost savings AND no spend signal exists at all (no billing, Q3 declined/unknown) — a "migrate to save money" verdict would have zero evidence for its premise                                                                                                                      | Any spend signal: billing export (preferred) or a confirmed Q3 band |
 
 **Soft triggers — never force defer; add each firing trigger to `conditions[]` (outcome becomes `conditional_go` instead of `go`) and to `would_flip_if[]`:**
 
-| # | Trigger                                                                                     | Condition wording (adapt to stack)                                                      |
-| - | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 4 | No billing baseline on a cost-motivated ask, but a Q3 spend band exists                        | "Validate the savings figure against your actual GCP bill — comparison uses your stated band" |
+| # | Trigger                                                                                                                                                            | Condition wording (adapt to stack)                                                                    |
+| - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| 4 | No billing baseline on a cost-motivated ask, but a Q3 spend band exists                                                                                            | "Validate the savings figure against your actual GCP bill — comparison uses your stated band"         |
 | 5 | Compliance unknown with non-GovCloud regulated signals (e.g. possible HIPAA — AWS supports it; architecture and ~$25/mo of controls change, the decision survives) | "Confirm compliance requirements — controls and region preferences would be added, verdict unchanged" |
-| 6 | Active CUDs without an expiration-aligned plan (`cud_status` is `long_remaining`/`unknown_expiry`) | "Confirm CUD expiration and overlap cost before committing a start date"                |
-| 7 | Unresolved multi-region HA vs cost conflict (Q6=Catastrophic but Q1 not Global, or user wavered) | "Confirm whether global infrastructure is required — it dominates the cost delta"       |
-| 8 | `availability` applied by default, never user-confirmed                                        | "Confirm database availability — Multi-AZ assumption roughly doubles the database line" |
-| 9 | Pricing staleness beyond the ±15–25% band                                                     | "Refresh pricing (cache stale) before treating the dollar delta as decision-grade"      |
+| 6 | Active CUDs without an expiration-aligned plan (`cud_status` is `long_remaining`/`unknown_expiry`)                                                                 | "Confirm CUD expiration and overlap cost before committing a start date"                              |
+| 7 | Unresolved multi-region HA vs cost conflict (Q6=Catastrophic but Q1 not Global, or user wavered)                                                                   | "Confirm whether global infrastructure is required — it dominates the cost delta"                     |
+| 8 | `availability` applied by default, never user-confirmed                                                                                                            | "Confirm database availability — Multi-AZ assumption roughly doubles the database line"               |
+| 9 | Pricing staleness beyond the ±15–25% band                                                                                                                          | "Refresh pricing (cache stale) before treating the dollar delta as decision-grade"                    |
 
 **Outcome derivation:**
 

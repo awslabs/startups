@@ -1,8 +1,9 @@
 // node-shims.d.ts
 //
-// Minimal ambient declarations for the slice of Node's stdlib this validator uses.
-// Runs under Node 24 (native type-stripping); this file exists ONLY so `tsc` can
-// type-check without pulling @types/node — keeping the validator zero-dependency.
+// Minimal ambient declarations for the slice of Node's stdlib the plugin's tools use
+// (this validator, fixtures-check.ts, pricing-staleness.ts). Runs under Node 24
+// (native type-stripping); this file exists ONLY so `tsc` can type-check without
+// pulling @types/node — keeping the tools zero-dependency.
 
 declare module "node:fs" {
   export function readFileSync(path: string, encoding: "utf8"): string;
@@ -19,6 +20,16 @@ declare module "node:path" {
   export function join(...parts: string[]): string;
   export function resolve(...parts: string[]): string;
   export function dirname(p: string): string;
+  export function basename(p: string): string;
+  export function relative(from: string, to: string): string;
+}
+
+declare module "node:child_process" {
+  export function spawnSync(
+    command: string,
+    args: string[],
+    options?: { input?: string; encoding: "utf8" },
+  ): { status: number | null; stdout: string; stderr: string; error?: Error };
 }
 
 declare module "node:os" {
