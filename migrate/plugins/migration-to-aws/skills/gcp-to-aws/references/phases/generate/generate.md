@@ -193,5 +193,7 @@ After the structured block, include:
 
 Output to user:
 
-- If `migration-report.html` exists: "Migration artifact generation complete. All phases of the GCP-to-AWS migration analysis are complete. Your migration report is ready at $MIGRATION_DIR/migration-report.html"
-- If `migration-report.html` is missing: "Migration artifact generation complete. All phases of the GCP-to-AWS migration analysis are complete. Markdown documentation is available at $MIGRATION_DIR/MIGRATION_GUIDE.md and $MIGRATION_DIR/README.md. (HTML report generation is optional and non-blocking.)"
+- If `migration-report.html` exists: "Phase 5 of 6 complete (Generate). All required phases of the GCP-to-AWS migration analysis are complete. Your migration report is ready at $MIGRATION_DIR/migration-report.html. Optional: Phase 6 (Feedback)."
+- If `migration-report.html` is missing: "Phase 5 of 6 complete (Generate). All required phases of the GCP-to-AWS migration analysis are complete. Markdown documentation is available at $MIGRATION_DIR/MIGRATION_GUIDE.md and $MIGRATION_DIR/README.md. (HTML report generation is optional and non-blocking.) Optional: Phase 6 (Feedback)."
+
+_Emit this breadcrumb only after `HANDOFF_OK` — never on `GATE_FAIL`._

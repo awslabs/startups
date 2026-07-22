@@ -90,7 +90,9 @@ output message below:
 - Set `phases.design` to `"completed"`
 - Set `current_phase` to `"estimate"`
 
-Output to user: "AWS Architecture designed. Proceeding to Phase 4: Estimate Costs."
+Output to user: "Phase 3 of 6 complete (Design). AWS architecture designed. Remaining: Estimate → Generate (+ optional Feedback). Next artifact: estimation-infra.json (and estimation-ai.json for AI workloads). Proceeding to Phase 4: Estimate Costs."
+
+_Emit this breadcrumb only after `HANDOFF_OK` — never on `GATE_FAIL`._
 
 ## Reference Files
 

@@ -172,7 +172,7 @@ Output to user — build message from whichever artifacts exist:
 
 Append the preview block from Step 3 to the output message below.
 
-Format: "Discover phase complete. [artifact summaries joined by space] [preview block from discover-preview.md Step 6] Next required step: Phase 2 — Clarify. Load `references/phases/clarify/clarify.md` now. Do not load Design, Estimate, or Generate until Clarify completes and `.phase-status.json` marks `phases.clarify` as `completed`."
+Format: "Phase 1 of 6 complete (Discover). [artifact summaries joined by space] [preview block from discover-preview.md Step 6] Remaining: Clarify → Design → Estimate → Generate (+ optional Feedback). Next required step: Phase 2 — Clarify. Load `references/phases/clarify/clarify.md` now. Do not load Design, Estimate, or Generate until Clarify completes and `.phase-status.json` marks `phases.clarify` as `completed`."
 
 ## Output Files
 

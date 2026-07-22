@@ -156,7 +156,8 @@ When `gcp-resource-inventory.json` + `aws-design.json` + `estimation-infra.json`
 exist, offer:
 
 ```
-Estimate complete. Before Generate, you can run a what-if workshop:
+Phase 4 of 6 complete (Estimate). Remaining: Generate (+ optional Feedback).
+Before Generate, you can run a what-if workshop:
 change region, availability/HA, compute (EKS/ECS), or Graviton preference
 and compare priced scenarios without re-discovering inventory.
 
@@ -170,7 +171,10 @@ and compare priced scenarios without re-discovering inventory.
   `"generate"`. Continue with Feedback/Generate sidebars in `SKILL.md`.
 
 For AI-only / billing-only runs (no infra inventory), skip the workshop offer and
-set `phases.workshop` → `"completed"`, `current_phase` → `"generate"`.
+set `phases.workshop` → `"completed"`, `current_phase` → `"generate"`. Output to user:
+"Phase 4 of 6 complete (Estimate). Remaining: Generate (+ optional Feedback). Next artifact: generation plan + migration artifacts."
+
+_Breadcrumbs are emitted only after outer-run `HANDOFF_OK` — never on `GATE_FAIL`, never from inner workshop reprices._
 
 ## Reference Files
 

@@ -75,7 +75,8 @@ eligible_for_clarify_fast_path = false
 
 **Purpose:** Show the user what their models map to on Bedrock and whether the per-token
 price is higher, lower, or roughly equivalent. Do NOT compute a monthly dollar total —
-usage volume is unknown at Discover time and will be collected in Clarify (Q3, Q7).
+usage volume is unknown at Discover time and will be collected in Clarify (AI-only Q3
+for spend, AI-only Q7 for usage volume).
 
 For each model in `models[]` of `ai-workload-profile.json`, map to the closest Bedrock
 equivalent using the table below, then look up both source and Bedrock per-token prices
@@ -101,9 +102,14 @@ from `references/shared/pricing-cache.md` (Source Provider Pricing + Bedrock Mod
 | `tts-*`, text-to-speech                         | Amazon Polly               | (non-token service — note separately)      |
 | Unknown / other                                 | Amazon Nova Pro            | `amazon.nova-pro-v1:0`                     |
 
-For each mapped model pair, record `source_model` and `bedrock_equivalent` (model name only).
-Do NOT compute or display per-token pricing comparisons at this stage — cost analysis
-belongs in the Estimate phase where full usage volume context is available.
+For each mapped model pair, record `source_model`, `bedrock_equivalent`, both per-token
+prices, and `cost_direction` (`"higher"`, `"lower"`, or `"comparable"` — Bedrock relative
+to source) in the `bedrock_targets[]` entry (Step 5A schema).
+
+**Chat display rule:** In the preview summary shown to the user, present each mapping
+with its **direction only** — e.g. "gpt-4o → Claude Sonnet 4.6 (slightly higher per
+token)" — do NOT show monthly dollar totals or computed spend figures. Full cost
+analysis belongs in the Estimate phase where usage volume context is available.
 
 ---
 
@@ -214,7 +220,7 @@ Output this block as part of `discover.md` Step 3's user message (chat only — 
 | | |
 |---|---|
 | **Models detected** | [model_ids joined by ", "] |
-| **Bedrock targets** | [for each bedrock_target: "source_model → bedrock_equivalent"] |
+| **Bedrock targets** | [for each bedrock_target: "source_model → bedrock_equivalent (per-token: cost_direction)" — direction word only, no dollar figures] |
 | **Routing** | [if has_multi_model_routing: gateway_type + " (multi-model routing)" else "Direct SDK"] |
 | **Monthly estimate** | Available after Estimate phase |
 | **Timeline (rough)** | [timeline_hint] |
