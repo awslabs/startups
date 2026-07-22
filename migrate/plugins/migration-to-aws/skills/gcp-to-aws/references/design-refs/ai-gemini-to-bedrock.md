@@ -41,7 +41,7 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 
 | Model             | Best For                                                            | Complexity | Speed  | Context |
 | ----------------- | ------------------------------------------------------------------- | ---------- | ------ | ------- |
-| Claude Sonnet 5 | Agentic tasks, tool use                                             | High       | High   | 200K    |
+| Claude Sonnet 5 | Agentic tasks, tool use                                             | High       | High   | 1M      |
 | Claude Opus 4.6   | Maximum reasoning                                                   | High       | Medium | 200K    |
 | Claude Haiku 4.5  | Simple + fast                                                       | Medium     | High   | 200K    |
 | Llama 4 Maverick  | Cost-effective + multimodal                                         | Medium     | High   | 1M      |
