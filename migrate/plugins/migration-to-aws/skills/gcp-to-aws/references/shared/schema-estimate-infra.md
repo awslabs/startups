@@ -262,7 +262,7 @@ The `recommendation` block is the single source of truth for migrate/stay guidan
 | `"migrate_phased"`    | `"Phased Migration"`           |
 | `"stay"`              | `"Stay on GCP"`                |
 
-**Decision outcome (additive — v2 fields):** `outcome` expresses the *decision*, independent of the execution-path vocabulary above. `path` answers "how would we migrate"; `outcome` answers "should we, now". Both are written; consumers that only read `path` keep working.
+**Decision outcome (additive — v2 fields):** `outcome` expresses the _decision_, independent of the execution-path vocabulary above. `path` answers "how would we migrate"; `outcome` answers "should we, now". Both are written; consumers that only read `path` keep working.
 
 | `outcome` value        | `outcome_label` (display) | Meaning                                                                                 |
 | ---------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
