@@ -88,6 +88,9 @@ export interface PhaseFrontmatter {
   produces: string[]; // _produces filenames (bare + conditional, filename only)
   producesRefs: ArtifactRef[]; // _produces with conditional metadata ({file, when})
   advancesTo: string | null;
+  /** _gates (sidebar phases only) — the backbone phase that must NOT start while this
+   *  sidebar is unresolved (its status is not "completed"). null when absent. */
+  gates: string | null;
   exec: ExecSpec | null; // _exec execution mode (agent dispatch); null when the phase runs inline
   reEntryGuard: ReEntryGuard | null; // _re_entry_guard (backbone phases with a downstream); null when absent
   preconditions: CheckItem[]; // _preconditions (entry gate); empty when absent

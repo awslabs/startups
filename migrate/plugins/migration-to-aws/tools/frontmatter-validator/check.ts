@@ -57,6 +57,23 @@ export function check(skill: BoundSkill): Finding[] {
       if (phase.advancesTo) {
         add(pf, `sidebar phase '${phase.phase}' must NOT declare _advances_to (it is off-backbone; it returns control, it does not advance)`);
       }
+      // _gates (sidebar-only key, INTERPRETER.md § _gates): the named phase must not
+      // start while this sidebar is unresolved. Structural checks:
+      //   (a) the target must not be a terminal;
+      //   (b) the target phase must EXIST ON DISK (same partial-rollout-tolerant
+      //       resolution as the _advances_to dangling-edge check);
+      //   (c) when the target's frontmatter is present, it must be a backbone phase
+      //       (gating one sidebar on another expresses nothing the trigger doesn't).
+      if (phase.gates) {
+        if (TERMINALS.has(phase.gates)) {
+          add(pf, `_gates '${phase.gates}' names a terminal — a sidebar gates a backbone phase, not the end of the migration`);
+        } else {
+          const targetFile = join(skill.referencesRoot, "phases", phase.gates, `${phase.gates}.md`);
+          if (!existsSync(targetFile)) {
+            add(pf, `_gates '${phase.gates}' names no existing phase (no references/phases/${phase.gates}/${phase.gates}.md) — dangling gate`);
+          }
+        }
+      }
     } else {
       // backbone
       if (!phase.advancesTo) {
@@ -64,6 +81,9 @@ export function check(skill: BoundSkill): Finding[] {
       }
       if (phase.trigger) {
         add(pf, `backbone phase '${phase.phase}' must NOT declare a phase-level _trigger (only sidebar phases are trigger-entered)`);
+      }
+      if (phase.gates) {
+        add(pf, `backbone phase '${phase.phase}' must NOT declare _gates (only a sidebar holds a backbone phase; a backbone phase orders itself with _advances_to/_requires_phase)`);
       }
     }
 
