@@ -531,22 +531,26 @@ Include migrate/stay decision factors:
 
 The `path` says how a migration would run; `outcome` says whether to run it now. Derive `outcome` from the trigger table, then write both.
 
+**`defer_for_evidence` is expected to be RARE.** AWS almost always has the services, and the AWS-side estimate can almost always be produced — so when in doubt, prefer `conditional_go` with named conditions. Defer only when a responsible verdict is genuinely impossible, not merely incomplete.
+
 **Hard triggers — any one forces `outcome: "defer_for_evidence"`:**
 
 | # | Trigger                                                                                                                 | Evidence to name in `defer` next_steps / `would_flip_if`             |
 | - | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| 1 | No billing baseline (`billing-profile.json` absent) AND the user's stated goal is cost-driven (Q3 asked, savings framing) | GCP billing export — 1 month minimum                                  |
-| 2 | Deferred services (e.g. BigQuery) that the user must cut over in the **same window** as app infra                        | Specialist engagement outcome / analytics target architecture         |
-| 3 | Compliance unknown (`compliance` contains `"unknown"`) AND regulated-domain signals present (health/finance/gov data hints in inventory or user statements) | Compliance confirmation from the user's legal/compliance owner        |
+| 1 | Deferred services (e.g. BigQuery) that the user must cut over in the **same window** as app infra AND those services are a **material share of spend or workload** — a verdict on the designed slice would misrepresent the migration | Specialist engagement outcome / analytics target architecture         |
+| 2 | GovCloud-class compliance ambiguity: `compliance` contains `"unknown"` AND signals suggest FedRAMP/government requirements (gov data, agency customer, ITAR hints). GovCloud vs commercial changes regions, service catalog, and pricing wholesale — a commercial-region verdict could be flatly wrong, not just incomplete | Compliance confirmation from the user's legal/compliance owner        |
+| 3 | The user's **only** stated motivation is cost savings AND no spend signal exists at all (no billing, Q3 declined/unknown) — a "migrate to save money" verdict would have zero evidence for its premise | Any spend signal: billing export (preferred) or a confirmed Q3 band   |
 
 **Soft triggers — never force defer; add each firing trigger to `conditions[]` (outcome becomes `conditional_go` instead of `go`) and to `would_flip_if[]`:**
 
 | # | Trigger                                                                                     | Condition wording (adapt to stack)                                                      |
 | - | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 4 | Active CUDs without an expiration-aligned plan (`cud_status` is `long_remaining`/`unknown_expiry`) | "Confirm CUD expiration and overlap cost before committing a start date"                |
-| 5 | Unresolved multi-region HA vs cost conflict (Q6=Catastrophic but Q1 not Global, or user wavered) | "Confirm whether global infrastructure is required — it dominates the cost delta"       |
-| 6 | `availability` applied by default, never user-confirmed                                        | "Confirm database availability — Multi-AZ assumption roughly doubles the database line" |
-| 7 | Pricing staleness beyond the ±15–25% band                                                     | "Refresh pricing (cache stale) before treating the dollar delta as decision-grade"      |
+| 4 | No billing baseline on a cost-motivated ask, but a Q3 spend band exists                        | "Validate the savings figure against your actual GCP bill — comparison uses your stated band" |
+| 5 | Compliance unknown with non-GovCloud regulated signals (e.g. possible HIPAA — AWS supports it; architecture and ~$25/mo of controls change, the decision survives) | "Confirm compliance requirements — controls and region preferences would be added, verdict unchanged" |
+| 6 | Active CUDs without an expiration-aligned plan (`cud_status` is `long_remaining`/`unknown_expiry`) | "Confirm CUD expiration and overlap cost before committing a start date"                |
+| 7 | Unresolved multi-region HA vs cost conflict (Q6=Catastrophic but Q1 not Global, or user wavered) | "Confirm whether global infrastructure is required — it dominates the cost delta"       |
+| 8 | `availability` applied by default, never user-confirmed                                        | "Confirm database availability — Multi-AZ assumption roughly doubles the database line" |
+| 9 | Pricing staleness beyond the ±15–25% band                                                     | "Refresh pricing (cache stale) before treating the dollar delta as decision-grade"      |
 
 **Outcome derivation:**
 
@@ -558,6 +562,8 @@ ELSE                               -> outcome: "go"
 ```
 
 Complexity alone (complex stack, many clusters) selects `path: "migrate_phased"` — it does **not** move `outcome` away from go/conditional_go. Populate `decision_basis` (measured / assumed / unknown) from constraint provenance: `chosen_by: "extracted"` or billing → measured; `"default"` → assumed; `["unknown"]` values and absent evidence → unknown. Populate `would_flip_if[]` with the 1–3 changes most likely to alter the outcome, each with its direction.
+
+**Presenting a defer (lead with what IS established):** a defer verdict must open with what the assessment did determine — "AWS can host this stack; the AWS-side estimate is $X–$Y/mo" (and the designed-slice mapping) — before naming the one piece of missing evidence and how to obtain it. Never present defer as "we can't tell you anything"; it means "everything is known except one named thing, and that thing blocks a responsible verdict."
 
 ### Persist recommendation to estimation-infra.json
 

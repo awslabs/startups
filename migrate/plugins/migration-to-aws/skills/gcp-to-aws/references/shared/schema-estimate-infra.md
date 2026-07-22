@@ -268,7 +268,7 @@ The `recommendation` block is the single source of truth for migrate/stay guidan
 | ---------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
 | `"go"`                 | `"Go"`                    | Evidence supports migrating now; no unresolved material assumption                       |
 | `"conditional_go"`     | `"Go, with conditions"`   | Migrate, but named conditions (see `conditions[]`) must be confirmed or bounded first    |
-| `"defer_for_evidence"` | `"Defer — get evidence"`  | A hard trigger fired (see `estimate-infra.md` trigger table); decision needs named data  |
+| `"defer_for_evidence"` | `"Defer — get evidence"`  | A hard trigger fired (see `estimate-infra.md` trigger table); decision needs one named piece of evidence. **Expected rare** — when in doubt, `conditional_go` |
 | `"stay"`               | `"Stay on GCP"`           | Evidence favors staying — reachable on any decisive factor, not only "cost is sole metric" |
 
 Validation:
