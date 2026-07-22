@@ -36,6 +36,8 @@ ASSERTERS = {
     "vercel-capture/check_expected_generate.py": None,
     "heroku-live-capture/check_expected_drift.py": None,
     "heroku-live-capture/check_expected_estimate.py": None,
+    "gcp-live-capture/check_expected_drift.py": None,
+    "gcp-live-capture/check_expected_baseline.py": None,
 }
 
 

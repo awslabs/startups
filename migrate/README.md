@@ -92,6 +92,7 @@ After installation, just describe what you want to migrate:
 **GCP migrations:**
 
 - "Migrate my GCP infrastructure to AWS"
+- "Discover my GCP project and estimate AWS costs"
 - "Move my Cloud Run services to Fargate"
 - "Migrate my OpenAI app to Amazon Bedrock"
 - "Estimate AWS costs for my GCP workload"
@@ -124,6 +125,10 @@ After installation, just describe what you want to migrate:
 - "I'm already on AWS and want to add AgentCore memory/gateway to my agent"
 
 GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor writes a `.agent-advisor/<session>/` directory. Both land in the current working directory with all artifacts.
+
+**Live Heroku discovery — how it works:** No Terraform or exports needed. If `heroku login` works in your terminal, just ask — the agent requests your consent, then inventories your account using read-only list/info CLI commands. It captures app names, dyno types, add-on plans and prices, domains, pipelines, and config var **key names only**. It never reads config var values, credentials, or your API token, and never runs a command that creates, changes, or deletes anything. If you also have `heroku_*` Terraform, the agent cross-checks it against your live account and reports drift.
+
+**Live GCP discovery — how it works:** No Terraform or exports needed. If `gcloud auth login` works in your terminal, just ask — the agent confirms the target project and requests your consent, then inventories it using read-only list/describe commands. It captures resource names, types, regions, sizing, network topology, and env var **names only** — never env var values, secret values, database contents, or access tokens, and never a command that creates, changes, or deletes anything. If you also have Terraform, the agent cross-checks it against your live project and reports drift. (AI/agentic detection still needs your application code.)
 
 **Live Heroku discovery — how it works:** No Terraform or exports needed. If `heroku login` works in your terminal, just ask — the agent requests your consent, then inventories your account using read-only list/info CLI commands. It captures app names, dyno types, add-on plans and prices, domains, pipelines, and config var **key names only**. It never reads config var values, credentials, or your API token, and never runs a command that creates, changes, or deletes anything. If you also have `heroku_*` Terraform, the agent cross-checks it against your live account and reports drift.
 
@@ -216,8 +221,9 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
-- At least one input source: an authenticated Heroku CLI (Heroku migrations), Terraform files, application code, or billing data
-- **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
+- At least one input source: an authenticated `gcloud` or `heroku` CLI (live discovery), Terraform files, application code, or billing data
+- **For GCP infrastructure migration:** an authenticated `gcloud` CLI (recommended — live, read-only discovery with your consent, with drift detection against any Terraform found) or Terraform files / billing exports
+- **For GCP AI/agentic migration:** Application source code is required (billing/IaC/live discovery alone cannot detect agent architecture)
 - **For Heroku migration:** an authenticated Heroku CLI (recommended — live, read-only discovery with your consent) or Terraform files with `heroku_*` resources (Procfile/app.json supplements but cannot stand alone). When both are available, live data is authoritative for current state and Terraform drift is surfaced.
 - **For Vercel migration:** repo access with a locally-runnable `next build`, plus a Vercel API token, are both required — the assessment does not run on partial Tier 1 inputs. Vercel tokens can't be permission-scoped to read-only, so scope by resource instead (project-scoped when one project is in scope), pick a short expiration, and revoke after the assessment; the skill only ever issues read (GET) requests, enforced by its capture-step endpoint whitelist
 - **For agent-advisor:** `uv` (for deterministic scoring); application source code when deploying/migrating existing agents (an idea-only run needs no code)

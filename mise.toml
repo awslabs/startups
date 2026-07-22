@@ -70,6 +70,14 @@ run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --wri
 description = "Verify each skill's vendored shared files are byte-identical to canonical skills/shared/ (CI)"
 run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts"
 
+[tasks."fixtures:check"]
+description = "Structural integrity of committed replay fixtures (JSON parse, asserter byte-compile, manifest file references, gitignore traps, seed phase-status vs declared phases)"
+run = "node migrate/plugins/migration-to-aws/tools/fixtures-check.ts"
+
+[tasks."pricing:staleness"]
+description = "Report pricing caches past their own declared freshness window (warn-only; use --strict in a scheduled workflow to fail)"
+run = "node migrate/plugins/migration-to-aws/tools/pricing-staleness.ts"
+
 [tasks.lint]
 description = "Run all linters"
 run = [
@@ -78,6 +86,8 @@ run = [
   { task = "lint:frontmatter" },
   { task = "shared:check" },
   { task = "fixtures:assert" },
+  { task = "fixtures:check" },
+  { task = "pricing:staleness" },
   { task = "test" },
 ]
 
