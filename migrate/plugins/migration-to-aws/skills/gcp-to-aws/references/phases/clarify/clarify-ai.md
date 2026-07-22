@@ -162,7 +162,9 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 
 ---
 
-## Q15 — Approximately how much are you spending on OpenAI or Gemini per month?
+## Q15 — Approximately how much are you spending on your AI/LLM providers per month?
+
+**Personalize the wording:** substitute the detected provider names from `ai-workload-profile.json` → `models[].provider` when available (e.g. "on OpenAI" or "on OpenAI and Gemini, per your detected usage"). Do not assume providers the profile did not detect.
 
 > A) < $500/month
 > B) $500–$2,000/month
