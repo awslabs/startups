@@ -11,7 +11,7 @@ Join HubSpot for Startups to get started!
 
 ### 90% off HubSpot
 
-Companies that have raised less than $2M USD in funding are eligible for up to 75% off their first year, 50% off their second year, and 25% off their third.
+Companies that have raised less than $2M USD in funding are eligible for up to 90% off their first year, 50% off their second year, and 25% off their third.
 
 ### 50% off HubSpot
 
