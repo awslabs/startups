@@ -75,6 +75,18 @@ Determine the current GCP monthly infrastructure costs. Use the best available s
 
 Present the GCP baseline as a total and per-service breakdown, noting which source was used.
 
+**Baseline-quality display label (derived from `current_costs.source` — no new field):**
+
+| `current_costs.source`  | Display label                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `"billing_data"`        | "Measured from your GCP billing (±5%)"                                                             |
+| `"inventory_estimate"`  | "Estimated from resource configs (±20–30%) — standing charges only; excludes usage-based costs"    |
+| `"preferences"`         | "Your stated spend band from Clarify (midpoint used)"                                              |
+| `"user_provided"`       | "Your stated figure (unverified)"                                                                  |
+| `"unavailable"`         | "No GCP baseline — AWS costs shown without comparison"                                             |
+
+**Not-comparable rule (hard):** Never present an inventory-only GCP figure side-by-side with a user spend band (or vice versa) as if they measure the same thing — an inventory estimate captures standing charges for discovered resources, not the full bill. When both exist and disagree by more than the accuracy band, show both, labeled, with one line: "These measure different things — the billing figure (or your stated band) is the decision baseline; the inventory figure only covers discovered resources." Every GCP-vs-AWS comparison row states its baseline label.
+
 ### CUD-Aware Baseline (when billing data available)
 
 If `billing-profile.json` contains `commitments.has_active_cuds == true`:
@@ -591,7 +603,7 @@ Before returning control to `estimate.md`, require:
 After writing `estimation-infra.json`, present a concise summary to the user:
 
 1. **Pricing source and accuracy**: State whether prices came from cache or live API, and the accuracy range (±5-10% for infrastructure from cache/live, ±15-25% if cache is stale). Example: "Estimates based on cached AWS pricing (2026-03-07), accuracy ±5-10%."
-2. GCP baseline vs estimated AWS monthly cost (balanced tier) — one-line comparison
+2. GCP baseline vs estimated AWS monthly cost (balanced tier) — one-line comparison, **with the baseline-quality display label from Part 1** (e.g. "GCP baseline $165/mo — measured from your billing (±5%)")
 3. Three-tier table: **Premium**, **Balanced**, **Optimized** with estimated monthly costs. Under or beside each label, use the **short subtitles**: Premium — _Highest resilience / highest monthly estimate in this model_; Balanced — _Default scenario; compare GCP to this first_; Optimized — _Lower monthly estimate; reservations / Spot / storage trade-offs assumed_. Add a one-line **How to read**: three figures are **estimated monthly costs** for the same architecture (high → mid → low); **not** three Terraform stacks. When Terraform is generated later, it aligns with **Balanced**.
 4. Per-service estimated monthly cost breakdown (balanced tier, 1 line per service)
 5. **If billing data available**: Estimated GCP data transfer egress fees. **If billing data NOT available**: "Data transfer cost estimates require GCP billing data."
