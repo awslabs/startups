@@ -367,11 +367,11 @@ For detailed operational guidance, consult:
 
 ### Related Skills
 
-- **`bedrock`** — Bedrock cost modeling and model selection for agent workloads
+- **`amazon-bedrock`** — Bedrock cost modeling and model selection for agent workloads
 - **`strands-agent`** — Strands Agents SDK scaffolding (deploys to AgentCore Runtime)
 - **`security-review`** — IAM, network, and encryption audit for agent infrastructure
 - **`networking`** — VPC design for agents accessing private resources
-- **`observability`** — CloudWatch/X-Ray deep-dive for agent monitoring
+- **`aws-observability`** — CloudWatch/X-Ray deep-dive for agent monitoring
 - **`step-functions`** — Alternative orchestration for deterministic multi-step workflows
 
 ## Output Format
@@ -390,4 +390,4 @@ When recommending an AgentCore architecture, include:
 | Observability | AgentCore native + Langfuse                         | Infra health + LLM behavior analytics |
 | Evaluations   | 5 built-in evaluators + custom tool-use eval        | CI/CD quality gate                    |
 
-Include estimated monthly cost range using the `cost-check` skill or the `awspricing` MCP tools.
+Include estimated monthly cost range using the `aws-billing-and-cost-management` skill or the `awspricing` MCP tools.

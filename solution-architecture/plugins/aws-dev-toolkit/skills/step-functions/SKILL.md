@@ -198,5 +198,5 @@ Data flows through each state as: `InputPath -> Parameters -> Task -> ResultSele
 - `aws-plan` -- Architecture planning that may include Step Functions workflows
 - `lambda` -- Lambda functions used as Task state targets
 - `api-gateway` -- API Gateway to Step Functions direct integrations (StartExecution, StartSyncExecution)
-- `observability` -- CloudWatch Logs, X-Ray tracing, and monitoring for Step Functions
+- `aws-observability` -- CloudWatch Logs, X-Ray tracing, and monitoring for Step Functions
 - `aws-debug` -- Debugging failed Step Functions executions

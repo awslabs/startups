@@ -1,6 +1,6 @@
 # aws-dev-toolkit
 
-A Claude Code plugin for building, migrating, and performing architecture reviews on AWS. Ships 35 skills, 11 sub-agents, and 3 MCP servers.
+A Claude Code plugin for building, migrating, and performing architecture reviews on AWS. Ships 34 skills, 11 sub-agents, and 3 MCP servers. Additional skills (core AWS services, agents, data analytics, DevSecOps) are provided automatically via its plugin dependencies on `aws-core`, `aws-agents`, `aws-data-analytics`, and `aws-agents-for-devsecops`.
 
 ## Installation
 
@@ -63,8 +63,6 @@ Some skills are invoked explicitly via slash commands:
 | **Debugging & Review**               |              |                                                                                      |
 | `aws-debug`                          | Auto         | Debug deployment failures, Lambda errors, permission issues                          |
 | `security-review`                    | Auto         | Audit IaC and AWS configs for security issues                                        |
-| `cost-check`                         | Auto         | Analyze and optimize AWS costs                                                       |
-| `bedrock`                            | Auto         | Bedrock model selection, agents, knowledge bases, guardrails, cost modeling          |
 | `challenger`                         | Auto         | Adversarial reviewer that stress-tests architecture recommendations                  |
 | **AWS Services**                     |              |                                                                                      |
 | `lambda`                             | Auto         | Lambda functions — runtimes, cold starts, concurrency                                |
@@ -77,8 +75,6 @@ Some skills are invoked explicitly via slash commands:
 | `cloudfront`                         | Auto         | CloudFront — caching, origins, Lambda@Edge, Functions                                |
 | `iam`                                | Auto         | IAM — policies, roles, permission boundaries, least-privilege                        |
 | `networking`                         | Auto         | VPC, subnets, security groups, Transit Gateway, VPC endpoints                        |
-| `messaging`                          | Auto         | SQS, SNS, EventBridge — queues, fan-out, event routing                               |
-| `observability`                      | Auto         | CloudWatch, X-Ray, OpenTelemetry — dashboards, alarms, tracing                       |
 | `step-functions`                     | Auto         | Step Functions — state machines, error handling, service integrations                |
 | `rds-aurora`                         | Auto         | RDS and Aurora — engine selection, HA, operations                                    |
 | `iot`                                | Auto         | AWS IoT — device connectivity, Greengrass, fleet management                          |

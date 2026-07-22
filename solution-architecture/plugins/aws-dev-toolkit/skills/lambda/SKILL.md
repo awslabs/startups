@@ -189,6 +189,6 @@ Lambda CPU scales proportionally with memory. At 1,769 MB you get 1 full vCPU.
 - `api-gateway` -- API Gateway configuration, routing, authorization, and Lambda integration patterns.
 - `dynamodb` -- Table design, access patterns, streams, and DynamoDB-Lambda integration.
 - `step-functions` -- Orchestrating Lambda functions with state machines instead of direct invocation chains.
-- `messaging` -- SQS, SNS, and EventBridge patterns for async Lambda triggers.
-- `observability` -- CloudWatch metrics, alarms, dashboards, and X-Ray tracing beyond Powertools.
+- `aws-messaging-and-streaming` -- SQS, SNS, and EventBridge patterns for async Lambda triggers.
+- `aws-observability` -- CloudWatch metrics, alarms, dashboards, and X-Ray tracing beyond Powertools.
 - `iam` -- Least-privilege execution roles, resource policies, and cross-account access for Lambda.

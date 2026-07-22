@@ -77,7 +77,7 @@ After building: what changed (file list), how to deploy, any next steps.
 
 - **`customer-ideation`** — start there when the founder is still choosing services and shaping an architecture, then build here.
 - **`iac-scaffold`** — generate a fresh IaC project skeleton this loop then fills in.
-- **`cost-check`** / **`security-review`** / **`challenger`** — deeper cost analysis, security audit, and adversarial review of the result.
+- **`aws-billing-and-cost-management`** / **`security-review`** / **`challenger`** — deeper cost analysis, security audit, and adversarial review of the result.
 
 ## Output style
 

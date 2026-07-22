@@ -81,7 +81,7 @@ Classify the workload:
 
 - **Build**: New application, no existing infrastructure → focus on service selection
 - **Migrate**: Moving from another cloud or on-prem → use `migration-gcp-to-aws` or `migration-azure-to-aws` skills
-- **Optimize**: Already on AWS, needs improvement → use `cost-check` and `aws-architect` skills
+- **Optimize**: Already on AWS, needs improvement → use `aws-billing-and-cost-management` and `aws-architect` skills
 
 ## Phase 3: Service Selection Decision Trees
 
@@ -225,7 +225,7 @@ Client → API Gateway → Lambda → Bedrock (inference)
                               → DynamoDB (session state)
 ```
 
-**Best for**: AI-powered features, chatbots, document processing. **Cost**: Per Bedrock invocation (token-based). Use `bedrock` skill for detailed estimates.
+**Best for**: AI-powered features, chatbots, document processing. **Cost**: Per Bedrock invocation (token-based). Use `amazon-bedrock` skill for detailed estimates.
 
 ## AWS Reference Resources
 
@@ -246,14 +246,14 @@ Present architecture recommendations as:
 2. **Services**: Table of AWS services with justification for each
 3. **Architecture Flow**: Describe the data/request path through the system
 4. **Risks & Mitigations**: What could go wrong and how to handle it
-5. **Cost Estimate**: Rough monthly range (use `cost-check` skill for precision)
+5. **Cost Estimate**: Rough monthly range (use `aws-billing-and-cost-management` skill for precision)
 6. **Next Steps**: Use `/iac-scaffold` to generate starter code, then iterate
 
 ## Anti-Patterns
 
 1. **Over-architecting for day 1**: Start with the simplest thing that works. You can add complexity later. A Lambda + DynamoDB API is better than an EKS cluster for 100 users.
 2. **Choosing Kubernetes when serverless works**: EKS is complex. If your workload fits Lambda or Fargate, use those. Choose K8s only if the team already knows it or the workload requires it.
-3. **Ignoring cost from the start**: Model costs before building. Use `bedrock` for AI workloads. Set up AWS Budgets immediately.
+3. **Ignoring cost from the start**: Model costs before building. Use `amazon-bedrock` for AI workloads. Set up AWS Budgets immediately.
 4. **Defaulting to the most complex solution**: EC2 is not the default compute. Lambda is. RDS is not the default database. DynamoDB is. Start managed, go custom only when needed.
 5. **Ignoring team skills**: The best architecture is one the team can operate. If they know Python and PostgreSQL, don't recommend Go and DynamoDB.
 6. **No observability from day 1**: Set up CloudWatch dashboards, X-Ray tracing, and alarms before launching. Retrofitting observability is painful.

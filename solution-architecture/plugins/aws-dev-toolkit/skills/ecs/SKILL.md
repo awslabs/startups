@@ -127,7 +127,7 @@ aws ecs describe-services --cluster my-cluster --services my-svc --query "servic
 - `networking` — VPC, subnet, and security group design for ECS tasks
 - `iam` — Task execution roles and task roles for least-privilege access
 - `cloudfront` — CDN in front of ECS-backed services
-- `observability` — CloudWatch Container Insights, alarms, and dashboards
+- `aws-observability` — CloudWatch Container Insights, alarms, and dashboards
 
 ## Anti-Patterns
 

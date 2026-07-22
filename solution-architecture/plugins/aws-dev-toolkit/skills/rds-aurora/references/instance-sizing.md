@@ -116,4 +116,4 @@ MySQL connections are lighter (~1-5 MB each at baseline) but InnoDB buffer pool 
 
 - Calculate: if I/O costs > 25% of total Aurora bill, switch to I/O-Optimized
 - I/O-Optimized eliminates per-I/O charges but increases instance and storage cost by ~30%
-- Check with `cost-check` skill for specific workload analysis
+- Check with `aws-billing-and-cost-management` skill for specific workload analysis

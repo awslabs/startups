@@ -222,5 +222,5 @@ If the App Runner service deploys from source code (not a container image), it m
 - `migration-advisor` (agent) — Multi-cloud migration assessment and wave planning
 - `iam` — IAM role design and least-privilege policies
 - `networking` — VPC, subnet, and security group design
-- `cost-check` — AWS cost estimation and optimization
+- `aws-billing-and-cost-management` (aws-core) — AWS cost estimation and optimization
 - `cloudfront` — CDN configuration for ECS-backed services

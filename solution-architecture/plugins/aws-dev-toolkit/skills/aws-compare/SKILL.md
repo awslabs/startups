@@ -80,6 +80,6 @@ Caveat: [When this recommendation would change]
 ## Rules
 
 - Always tie the recommendation back to the user's specific constraints (budget, team skills, timeline)
-- Use actual numbers for cost estimates, not just "cheaper" — use the `aws-pricing` MCP tools or `cost-check` skill
+- Use actual numbers for cost estimates, not just "cheaper" — use the `aws-pricing` MCP tools or `aws-billing-and-cost-management` skill
 - Be opinionated but honest about trade-offs. "It depends" is not helpful without specifics.
 - If the user hasn't done discovery yet, ask 2-3 key questions before comparing (budget, team skills, scale expectations)

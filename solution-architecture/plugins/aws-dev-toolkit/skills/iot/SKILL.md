@@ -357,8 +357,8 @@ For detailed operational guidance, consult:
 - **`step-functions`** -- Orchestrating multi-step device provisioning and remediation workflows
 - **`dynamodb`** -- Device metadata storage design, partition key strategy, TTL configuration
 - **`s3`** -- Telemetry archival, lifecycle policies, Athena integration for batch queries
-- **`messaging`** -- SQS/SNS integration with IoT rules for decoupled processing and alerting
-- **`observability`** -- CloudWatch metrics, alarms, and dashboards for IoT fleet monitoring
+- **`aws-messaging-and-streaming`** -- SQS/SNS integration with IoT rules for decoupled processing and alerting
+- **`aws-observability`** -- CloudWatch metrics, alarms, and dashboards for IoT fleet monitoring
 - **`iam`** -- IAM roles for IoT rules engine actions, Greengrass token exchange, and fleet provisioning
 - **`networking`** -- VPC endpoints for IoT Core, private connectivity for Greengrass core devices
 - **`security-review`** -- Security audit of IoT policies, certificate management, and Device Defender configuration
@@ -379,4 +379,4 @@ When recommending an IoT architecture, include:
 | Fleet Management    | Jobs (OTA) + Fleet Indexing + Device Defender          | Update, query, and audit the fleet           |
 | Alerting            | IoT Events detector model to SNS                       | Multi-device state correlation               |
 
-Include estimated monthly cost range using the `cost-check` skill.
+Include estimated monthly cost range using the `aws-billing-and-cost-management` skill.
