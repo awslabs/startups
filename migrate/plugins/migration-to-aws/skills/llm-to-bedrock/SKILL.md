@@ -431,7 +431,7 @@ table, not the block location, decides where execution resumes.
   line 'partial_coverage: <completed>/<total> cases (throttled)'`. Then C4 runs normally.
 - **Abort** → stop; the files stay on disk for a later C0 resume.
 
-### C4 — Checkpoint (two gates) + persist decisions
+### C4 — Sidebar (two gates) + persist decisions
 
 **Gate (a) — Quality go/no-go.** Read `$PHASE_DIR/eval.json`. The threshold is
 **pass rate >= 0.9 AND `source_baseline_quality != 'poor'`** (with `no_golden_cases: true`
@@ -504,7 +504,7 @@ mandatory stop between phases:
    one phase's definition into context at once.
 2. Follow it start-to-finish; write and validate the same phase-result file.
 3. STOP. Report the phase outcome (validator CONTROL line + one-line summary) and ask the
-   user to confirm before loading the next phase's definition. This checkpoint is mandatory:
+   user to confirm before loading the next phase's definition. This sidebar is mandatory:
    it is the context-pressure release valve, and the phase-result file means nothing is lost
    if the user continues in a fresh session instead.
 

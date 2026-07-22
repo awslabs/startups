@@ -36,8 +36,26 @@ designed-for behavior:
    merge rule it exercises (config conflicts, plan change, terraform-only,
    live-only, scaled-to-zero gap-fill).
 3. Check the assembled `heroku-resource-inventory.json` against
-   `expected-drift.json` — it lists the assertions (merged sources, conflict
-   fields, drift counts, and `must_not_exist` entries).
+   `expected-drift.json` — machine-checkable via
+   `python3 check_expected_drift.py <run-dir>` (exits non-zero on any failed
+   assertion, including secret-hygiene checks for config-var values).
+
+**Scenario C — Estimate baseline from live prices (no billing data):**
+
+1. Create a scratch directory with `.migration/0715-1820/` containing the three
+   artifacts from `seed-estimate/` (`heroku-resource-inventory.json`,
+   `preferences.json`, `aws-design.json`) plus `seed-estimate/.phase-status.json`
+   (discover/clarify/design completed, estimate in progress).
+2. Invoke the heroku-to-aws skill and resume the run — the Estimate phase starts.
+3. The inventory has NO `billing_profile`, but its live-discovered add-ons carry
+   `config.monthly_price_usd`. Expect a `current_costs.source:
+   "live_prices_plus_cache"` baseline of exactly **$352/month** (add-ons $220
+   exact + $0 scheduler from cache + dynos $132 from cache), the mandatory
+   derived-baseline caveat, and a full `cost_comparison` +
+   `migration_cost_considerations` — the comparison must NOT be gated on billing
+   data.
+4. Check the produced `estimation-infra.json` against `expected-estimate.json` —
+   machine-checkable via `python3 check_expected_estimate.py <run-dir>`.
 
 **What a run must never produce** (from either scenario):
 

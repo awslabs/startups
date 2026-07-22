@@ -8,13 +8,13 @@
     {
       "name": "migration-to-aws",
       "source": "./migrate/plugins/migration-to-aws",
-      "version": "1.5.0",
-      "description": "Migrate from GCP or Heroku to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Heroku Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't. The bundled llm-to-bedrock skill executes AI/LLM migrations automatically (rewrite, evaluate, deliver a branch)."
+      "version": "1.6.0",
+      "description": "Migrate from GCP, Heroku, or Vercel to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Heroku Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. For Vercel: computes a Coupling Score and 10 Pre-Flight Checks, then recommends OpenNext/SST, ECS Fargate, or a Vercel+AWS Hybrid via a fixed, auditable decision order. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't. The bundled llm-to-bedrock skill executes AI/LLM migrations automatically (rewrite, evaluate, deliver a branch)."
     },
     {
       "name": "aws-startup-advisor",
       "source": "./advisor/plugins/aws-startup-advisor",
-      "version": "1.5.2",
+      "version": "1.5.4",
       "description": "Three sibling skills for startups building on AWS: knowledge-base-for-startups (Activate FAQ, credits, programs, partner offers, sample architectures, learn articles), prompt-library-for-startups (copy-paste prompts + downloadable installable agents), and start-building-for-startups (interactive discovery workflow that scaffolds an AWS architecture)"
     },
     {

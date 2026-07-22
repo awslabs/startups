@@ -48,11 +48,11 @@ Conditional files (load ONLY when condition is true):
 
 All paths above are relative to `$GCP_BASE/references/` (defined in migration-plan.md).
 
-## Feedback checkpoint handling
+## Feedback sidebar handling
 
 gcp-to-aws's `discover.md` and `estimate.md` each offer a feedback prompt after their
 `HANDOFF_OK`. Because this execution runs inside agent-advisor's session, automatically
-choose "skip feedback" (option B) at both checkpoints and continue to the next phase. Do
+choose "skip feedback" (option B) at both sidebars and continue to the next phase. Do
 NOT load `$GCP_BASE/references/phases/feedback/feedback.md`.
 
 ## Hybrid stack warning

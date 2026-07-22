@@ -24,7 +24,7 @@ points in the flow, and which path applies depends on WHEN it runs:
 
 ```bash
 uv run --project ${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/scripts python ${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/scripts/build_diagram.py \
-  $RUN_DIR/scoring-result.json $RUN_DIR/confirm.json
+  $RUN_DIR/scoring-result.json $RUN_DIR/confirm.json $RUN_DIR/design.json
 ```
 
 This writes `$RUN_DIR/diagram.md` and prints `RESULT=ok RUNTIME=<id>`. If `confirm.json` is
