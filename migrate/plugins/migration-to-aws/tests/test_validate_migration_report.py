@@ -18,6 +18,7 @@ STUB_FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-stub.html"
 MINIMAL_PASS = """<!DOCTYPE html>
 <html><body>
 <section id="decision-summary"><h2>Decision</h2></section>
+<section id="exec-assumptions"><h2>What This Assessment Rests On</h2><p>All inputs confirmed; cached pricing 2026-03.</p></section>
 <section id="exec-services"><h2>Services</h2><table><tbody><tr><td>a</td></tr></tbody></table></section>
 <section id="exec-costs"><h2>Costs</h2></section>
 <section id="exec-timeline"><h2>Timeline</h2></section>
@@ -33,6 +34,7 @@ MINIMAL_PASS = """<!DOCTYPE html>
 STUB_FAIL = """<!DOCTYPE html>
 <html><body>
 <section id="decision-summary"></section>
+<section id="exec-assumptions"></section>
 <section id="exec-services"></section>
 <section id="exec-costs"></section>
 <section id="exec-timeline"></section>
