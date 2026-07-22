@@ -13,7 +13,7 @@
       "type": "object",
       "required": ["status"],
       "properties": {
-        "status": { "type": "string", "enum": ["cached", "live", "cached_fallback", "unavailable"] },
+        "status": { "type": "string", "enum": ["cached", "cached_stale", "live", "cached_fallback", "unavailable"] },
         "message": { "type": "string" },
         "fallback_staleness": { "type": "object" },
         "services_by_source": {
@@ -63,6 +63,14 @@
         "path": { "type": "string", "enum": ["migrate_optimized", "migrate_phased", "stay"] },
         "migrate_if": { "type": "array" },
         "stay_if": { "type": "array" }
+      }
+    },
+    "workshop": {
+      "type": "object",
+      "description": "Optional what-if workshop metadata. Omitted when workshop unused.",
+      "properties": {
+        "scenario_id": { "type": ["string", "null"] },
+        "region_note": { "type": ["string", "null"] }
       }
     }
   }

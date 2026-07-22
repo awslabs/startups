@@ -4,6 +4,7 @@ _of_phase: generate
 _reads:
   - terraform (fragment contribution)
   - docs (fragment contribution)
+  - report (fragment contribution)
   - eks-generate (fragment contribution, when EKS in design)
 _produces:
   - generation-warnings.json
@@ -12,19 +13,20 @@ _produces:
 # Generate — Validate and Assemble
 
 > **Assembler unit.** Runs after the generation fragments (`generate-terraform.md`,
-> `generate-docs.md`, and `generate-eks.md` when EKS is in the design) have written
-> their artifacts. It runs the cross-artifact validation (every-service-generated-or-warned,
-> reference integrity, no `{{VAR}}` leak), enforces the completion handoff gate,
-> and updates `.phase-status.json`. It owns the phase's final artifact-level contract.
+> `generate-docs.md`, `generate-report.md`, and `generate-eks.md` when EKS is in
+> the design) have written their artifacts. It runs the cross-artifact validation
+> (every-service-generated-or-warned, reference integrity, no `{{VAR}}` leak),
+> enforces the completion handoff gate, and updates `.phase-status.json`. It owns
+> the phase's final artifact-level contract.
 
 ---
 
 ## Step 3: Validate Complete Artifact Set
 
 The full generated artifact set (core terraform files + MIGRATION_GUIDE.md +
-README.md + generation-warnings.json) is gate-checked by this phase's
-`_postconditions` (see the Completion Handoff Gate below). This assembler adds the
-cross-artifact checks that span multiple fragment outputs:
+README.md + migration-report.html + generation-warnings.json) is gate-checked by
+this phase's `_postconditions` (see the Completion Handoff Gate below). This
+assembler adds the cross-artifact checks that span multiple fragment outputs:
 
 **Cross-reference checks:**
 
@@ -41,11 +43,18 @@ cross-artifact checks that span multiple fragment outputs:
 The completion checks are declared in this phase's `_postconditions` frontmatter and
 enforced per `INTERPRETER.md` § Gate protocol: re-read the generated artifacts from
 disk, run the mechanical checks (`_check_file_exists` for the core terraform files +
-MIGRATION_GUIDE.md + README.md) and the `_assert` judgment checks (valid provider /
-aws_region variable, a domain .tf beyond core, guide sections, conditional Postgres/
-Redis migration scripts, conditional EKS terraform + kubernetes manifests, every service
-accounted for, no `{{VARIABLE}}` placeholders), then emit `GATE_FAIL` (STOP) or
-`HANDOFF_OK | phase=generate | artifacts=terraform/,MIGRATION_GUIDE.md,README.md`.
+MIGRATION_GUIDE.md + README.md + migration-report.html) and the `_assert` judgment
+checks (valid provider / aws_region variable, a domain .tf beyond core, guide
+sections, report sections, conditional Postgres/ Redis migration scripts, conditional
+EKS terraform + kubernetes manifests, every service accounted for, no `{{VARIABLE}}`
+placeholders), then emit `GATE_FAIL` (STOP) or
+`HANDOFF_OK | phase=generate | artifacts=terraform/,MIGRATION_GUIDE.md,README.md,migration-report.html`.
+
+Optionally run
+`python3 "$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py" \
+  "$MIGRATION_DIR/migration-report.html" --migration-dir "$MIGRATION_DIR"`
+and treat exit `1` as `GATE_FAIL` for the report (repair HTML; do not delete
+Terraform/docs).
 
 ---
 
@@ -62,10 +71,12 @@ Artifacts produced:
 • terraform/ — [N] Terraform files for AWS infrastructure
 • MIGRATION_GUIDE.md — Step-by-step migration procedure
 • README.md — Artifact listing and quick start
+• migration-report.html — Stakeholder summary (costs + what-if scenarios when present)
 • scripts/ — Database migration scripts
 [• generation-warnings.json — N service(s) require manual setup]   (show this line only when warnings is non-empty; the file is always written)
 
 Migration planning is complete. All artifacts are in $MIGRATION_DIR/.
+Share migration-report.html with stakeholders; use MIGRATION_GUIDE.md for cutover.
 ```
 
 After this output, SKILL.md handles the post-Generate share prompt and feedback finalization.

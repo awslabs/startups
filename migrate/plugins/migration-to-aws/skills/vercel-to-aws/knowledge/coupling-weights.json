@@ -1,0 +1,59 @@
+{
+  "description": "Coupling Score item definitions (Requirement 5.1-5.2). Loaded by discover-coupling.md. Computed unconditionally during Discover, same as preflight-checks.json.",
+  "items": [
+    {
+      "id": "isr",
+      "title": "ISR / on-demand revalidation",
+      "detection": "revalidateTag / revalidatePath / route-segment revalidate calls in source configs and build output",
+      "weight_rationale": "Portable via OpenNext but requires the tag cache and revalidation queue to be provisioned as a unit, not independently - see Pre-Flight Check I1."
+    },
+    {
+      "id": "edge_middleware",
+      "title": "Edge middleware",
+      "detection": "middleware.ts existence (prescan-scan.md) plus matcher scope (discover-configs.md)",
+      "weight_rationale": "Behavioral divergence on every AWS outcome - see Pre-Flight Check M1 (flagship)."
+    },
+    {
+      "id": "edge_runtime_routes",
+      "title": "Edge runtime routes",
+      "detection": "runtime: 'edge' declarations in route segment configs",
+      "weight_rationale": "Edge runtime routes hit Lambda@Edge-style constraints (smaller runtime, limited Node API surface) when migrated."
+    },
+    {
+      "id": "image_optimization",
+      "title": "Image optimization",
+      "detection": "next/image usage plus next.config.js image config",
+      "weight_rationale": "Portable - OpenNext ships its own sharp-based image optimization; see Pre-Flight Check B3 for the duplicate-dependency conflict."
+    },
+    {
+      "id": "streaming_ssr",
+      "title": "Streaming SSR",
+      "detection": "route handler analysis for streaming response patterns",
+      "weight_rationale": "A known Lambda workaround exists for empty-body streams (see Pre-Flight Check S1); next start (Outcome B) streams natively."
+    },
+    {
+      "id": "server_actions_version_skew",
+      "title": "Server Actions / version skew exposure",
+      "detection": "Next.js framework version plus Server Actions usage in source",
+      "weight_rationale": "Vercel handles skew protection (mismatched client/server deploy versions) automatically; the AWS path must address this explicitly regardless of outcome."
+    },
+    {
+      "id": "preview_deployments",
+      "title": "Preview deployments",
+      "detection": "Clarify Q4 (team workflow) - not detectable from code alone",
+      "weight_rationale": "No AWS equivalent exists; drives the Outcome C (Hybrid) precedence rule. The single heaviest 'what you lose' item in every report."
+    },
+    {
+      "id": "vercel_managed_stores",
+      "title": "Vercel KV / Postgres / Blob / Edge Config / Cron",
+      "detection": "Vercel API enumeration (discover-api.md)",
+      "weight_rationale": "Clean peripheral mappings exist for all of these - see knowledge/peripheral-mappings.json."
+    },
+    {
+      "id": "vercel_injected_headers",
+      "title": "Vercel-injected headers (geo, IP)",
+      "detection": "grep for x-vercel-ip-* and similar headers in middleware/server code",
+      "weight_rationale": "Needs a CloudFront-headers rewrite mapping - see Pre-Flight Check M2."
+    }
+  ]
+}

@@ -53,6 +53,11 @@ Step 7, then emit `GATE_FAIL` (STOP; do not patch artifacts) or
 
 ## Step 8: Update Phase Status and Hand Off
 
+> **Inner workshop reprice:** When Design is invoked from
+> `workshop-refresh.md`, stop after writing `aws-design.json` (and soft
+> validation). Skip this Step 8 and do **not** emit `HANDOFF_OK` — see
+> `workshop-refresh.md` § Inner runs.
+
 Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.design` completed and advance per `_advances_to` — in the **same turn** as the output message below.
 
 Output to user — build message from design contents:

@@ -2,7 +2,10 @@
 _assemble: assemble-design
 _of_phase: design
 _reads:
-  - scoring facts + Confirm choices + service cards (combined inline in design.md)
+  - scoring-result.json (per agent_session unit)
+  - confirm.json (platform_decision, user overrides)
+  - workload-classes.md (for non-agent units)
+  - service cards (winning runtime's documentation)
 _produces:
   - design.json
 ---
@@ -18,3 +21,5 @@ _produces:
 > the phase's completion gate. See `design.md` § Step 5 for the design.json shape
 > (verdict, chosen_runtime, deployment_model, agentcore_services,
 > model_recommendation, scores, eliminated, the gate notes, handoff_required).
+
+The assembler produces ONE `units[]` entry per inventory unit: agent units derive their verdict, deployment_model, agentcore_services, and model_recommendation from their scoring result plus confirm overrides; non-agent units derive their verdict from workload-classes rules (with rationale citing the rule id like "W2: batch → AWS Batch"). It then assembles the `platform` block from confirm.json's platform_decision and the units' coupling. Finally, it writes the primary unit's fields at design.json's top level (legacy mirror).

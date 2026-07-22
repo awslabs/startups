@@ -51,7 +51,7 @@ For `resolution_kind: "impl_path"`, omit `option_set_id` (the schema enforces th
 
 ## How rewriter uses this
 
-For each `behavior_deltas` entry where `user_visible == true` AND `resolution_kind == "ux_choice"`, the rewriter does NOT ask the user — the user already chose at the orchestration checkpoint. The orchestration checkpoint presents the **option set** specified by that delta's `option_set_id` to the user; the rewriter receives the chosen resolution in its `Confirmed behavior-delta decisions` context and applies it. Each option set is fixed and ordered — do not reorder, do not invent new options. The option sets below define what the checkpoint offers.
+For each `behavior_deltas` entry where `user_visible == true` AND `resolution_kind == "ux_choice"`, the rewriter does NOT ask the user — the user already chose at the orchestration sidebar. The orchestration sidebar presents the **option set** specified by that delta's `option_set_id` to the user; the rewriter receives the chosen resolution in its `Confirmed behavior-delta decisions` context and applies it. Each option set is fixed and ordered — do not reorder, do not invent new options. The option sets below define what the sidebar offers.
 
 ### Option set: `range_narrowed`
 
@@ -112,12 +112,12 @@ After asking the user (or applying an `impl_path` default, or running the fallba
 
 ## Ambiguous user answers
 
-The orchestration checkpoint (not the rewriter) presents the options to the user and resolves ambiguity. If the user's answer does NOT map to one of the numbered options (they typed something freeform that doesn't match an option label or its semantic), the checkpoint:
+The orchestration sidebar (not the rewriter) presents the options to the user and resolves ambiguity. If the user's answer does NOT map to one of the numbered options (they typed something freeform that doesn't match an option label or its semantic), the sidebar:
 
 1. Asks one clarifying follow-up that restates the options.
 2. If the second answer is still ambiguous, falls back to **option 1 (Recommended)** for that delta.
 
-The rewriter then receives — and records — whatever resolution the checkpoint produced:
+The rewriter then receives — and records — whatever resolution the sidebar produced:
 
 - `resolution_chosen` = the chosen option's enum value (e.g., `"range_narrowed_1"`)
 - `source` = `"ambiguous_user_answer_recommended"` when the (Recommended) fallback fired

@@ -102,6 +102,40 @@ always with your explicit confirmation before taking any action. The output is a
 to your team or include in operational reviews.
 You can download the agent from here: https://github.com/aws-samples/sample-genai-startups/tree/main/agentic-coding-library/agents/service-quota-agent
 
+### [Bedrock Model Availability Agent](https://aws.amazon.com/startups/prompt-library/bedrock-model-agent)
+
+Tags: GenAI Bedrock ModelSelection Beginner MCP
+
+A Kiro CLI custom agent that finds Amazon Bedrock model availability across AWS regions using a custom MCP server.
+
+Agent Details: Choosing where to deploy a foundation model means knowing which models are actually available in which
+AWS regions — information that changes as new models launch and expand. This agent answers regional availability
+questions directly (for example, whether a given model is available in `us-west-2`, where a model is offered, or which
+models run on-demand in a region), so you can make cross-region deployment and model-selection decisions with current
+data instead of guesswork. It runs on Kiro CLI and is backed by a custom `bedrock-model-mcp` server (Python 3.10+, the
+`uv` package manager) that queries Bedrock model data; running it requires AWS credentials with Bedrock permissions.
+You can download the agent from here: https://github.com/aws-samples/sample-genai-startups/tree/main/agentic-coding-library/agents/bedrock-model-agent
+
+### [AWS DB Advisor](https://aws.amazon.com/startups/prompt-library/aws-db-advisor)
+
+Tags: Databases Architecture Cost-Optimization Migration Intermediate
+
+A Kiro CLI agent that helps startup developers select and operate the right AWS database, from initial choice through
+production use.
+
+Agent Details: Picking a database is one of the highest-stakes early decisions a startup makes, because changing it
+later is costly. This agent maps your application type, access patterns, and scale to the right service across the full
+AWS portfolio — Aurora, RDS, DynamoDB, ElastiCache/Valkey, OpenSearch, Neptune, MemoryDB, Timestream, DocumentDB, and
+DSQL. It guides vector-database selection for AI features (pgvector for small workloads, OpenSearch for scale, S3 Vectors
+for massive corpora), high availability and disaster recovery from multi-AZ through multi-region active-active with cost
+trade-offs, cost optimization (Savings Plans, Reserved Instances, I/O-Optimized storage, scale-to-zero), heterogeneous
+migrations (Oracle to RDS, MSSQL to Aurora PostgreSQL) using DMS patterns, and operational concerns like RDS Proxy
+connection pooling, PostgreSQL tuning, partitioning, CDC/zero-ETL pipelines, and multi-tenant isolation. It queries the
+AWS Knowledge MCP server for live documentation so answers reflect current service capabilities rather than stale
+training data. Best results require Claude Sonnet 4.6 or higher. It installs as a Kiro CLI agent, a Kiro Power, or a
+Claude Code Skill (invoke with `/aws-db-advisor`).
+You can download the agent from here: https://github.com/aws-samples/sample-genai-startups/tree/main/agentic-coding-library/agents/aws-db-advisor
+
 ---
 
 ## Frequently Asked Questions

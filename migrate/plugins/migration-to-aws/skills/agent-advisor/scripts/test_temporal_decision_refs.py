@@ -1,7 +1,6 @@
 """Content lock for references/decision-refs/temporal.md.
 
-The temporal_worker branch has no scoring script — its Tier 1 decision table and
-cutover-runbook preconditions live as markdown. These tests pin the
+The temporal rules are consumed by the main flow. These tests pin the
 load-bearing content (eliminations, rule order, precondition wording, status
 labels) so an edit that weakens them fails loudly, in the same spirit as the
 model-pool drift tests in test_scoring.py.
@@ -11,8 +10,8 @@ import re
 
 TEMPORAL_MD = (pathlib.Path(__file__).parent.parent
                / "references" / "decision-refs" / "temporal.md")
-BRANCH_MD = (pathlib.Path(__file__).parent.parent
-             / "references" / "phases" / "temporal-worker" / "temporal-worker.md")
+GENERATE_MD = (pathlib.Path(__file__).parent.parent
+               / "references" / "phases" / "generate" / "generate.md")
 
 
 def _text():
@@ -120,34 +119,58 @@ def test_sfn_comparison_is_chat_only():
     assert "Do not volunteer this unprompted" in text
     for fragment in ["waitForTaskToken", "1-year Standard", "time-skipping"]:
         assert fragment in text, f"SFN chat-fallback fact missing: {fragment!r}"
-    branch = BRANCH_MD.read_text()
-    assert "No Step Functions comparison section" in branch, (
-        "the branch's output spec must say the plan has no SFN section")
+    generate = GENERATE_MD.read_text()
+    assert "No Step Functions comparison section" in generate, (
+        "generate.md must say the plan has no SFN section")
 
 
-def test_branch_points_at_decision_ref():
-    # The branch must load this file rather than restating rules from memory.
-    branch = BRANCH_MD.read_text()
-    assert "decision-refs/temporal.md" in branch
+def test_design_points_at_decision_ref():
+    # The main flow's design phase must load this file rather than restating rules from memory.
+    design_md = (pathlib.Path(__file__).parent.parent
+                 / "references" / "phases" / "design" / "design.md")
+    design = design_md.read_text()
+    assert "decision-refs/temporal.md" in design
+
+
+def test_design_way_seam():
+    # M3: design reads system.temporal_way with Way-table-only-when-undecided rule.
+    design_md = (pathlib.Path(__file__).parent.parent
+                 / "references" / "phases" / "design" / "design.md")
+    design = design_md.read_text()
+    assert "answers.json.system.temporal_way" in design
+    assert "Way table" in design or "Way-table" in design
+    assert "undecided" in design
+    assert "context-signals.json.temporal.server" in design
+
+
+def test_intake_seeds_no_code_temporal():
+    # M1: intake seeds declared temporal units on the no-code path.
+    intake_md = (pathlib.Path(__file__).parent.parent
+                 / "references" / "phases" / "intake" / "intake.md")
+    intake = intake_md.read_text()
+    assert "no-code path" in intake.lower() or "No-code path" in intake
+    assert "SEED declared temporal units" in intake
+    assert "temporal_worker_poll" in intake
+    assert 'source: "declared"' in intake
 
 
 def test_branch_adapter_dimensions_are_legal():
-    # The Tier 2 agent-session adapter table in the branch file must only name
-    # real scoring dimensions with legal values — otherwise scoring.py rejects
-    # or silently defaults the input.
+    # The Tier 2 agent-session adapter table now lives in temporal.md and must
+    # only name real scoring dimensions with legal values — otherwise scoring.py
+    # rejects or silently defaults the input.
     import scoring
-    branch = BRANCH_MD.read_text()
+    temporal = TEMPORAL_MD.read_text()
     # Single-dimension rows only (the catch-all "others → unknown" row lists
     # several dims in one cell and defines no value mapping).
     # `\`dim\` +\|` tolerates the multiple spaces dprint's table alignment
     # inserts after short cell values (single-space match would false-fail).
-    table_rows = re.findall(r"^\s*\| `([a-z_]+)` +\|", branch, re.MULTILINE)
+    table_rows = re.findall(r"^\s*\| `([a-z_]+)` +\|", temporal, re.MULTILINE)
     adapter_dims = [d for d in table_rows if d in scoring.DIMENSIONS]
     assert len(adapter_dims) >= 8, (
         f"adapter table looks broken — only found {adapter_dims}")
     # Backtick-quoted answer values mentioned in adapter rows must be legal.
     for dim in adapter_dims:
-        row = re.search(r"\| `" + dim + r"` +\|([^\n]*)", branch).group(1)
+        row = re.search(r"\| `" + dim + r"` +\|([^\n]*)", temporal).group(1)
         for value in re.findall(r"`([a-z0-9_]+)`", row):
             assert value in scoring.LEGAL_VALUES[dim], (
                 f"adapter maps {dim} to illegal value {value!r} "

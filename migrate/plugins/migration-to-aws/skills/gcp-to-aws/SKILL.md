@@ -81,28 +81,34 @@ If no Terraform is found (even when app code or billing files exist — they can
 
 This is the execution controller. After completing each phase, consult this table to determine the next action.
 
-| Current State | Condition                                                             | Next Action                                                                            |
-| ------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `discover`    | `phases.discover != "completed"`                                      | Load `references/phases/discover/discover.md`                                          |
-| `clarify`     | `phases.discover == "completed"` AND `phases.clarify != "completed"`  | Load `references/phases/clarify/clarify.md`                                            |
-| `design`      | `phases.clarify == "completed"` AND `phases.design != "completed"`    | Load `references/phases/design/design.md`                                              |
-| `estimate`    | `phases.design == "completed"` AND `phases.estimate != "completed"`   | Load `references/phases/estimate/estimate.md`                                          |
-| `generate`    | `phases.estimate == "completed"` AND `phases.generate != "completed"` | Load `references/phases/generate/generate.md`                                          |
-| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "pending"`   | Set `phases.feedback` to `"completed"` (user had two chances), then migration complete |
-| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "completed"` | Migration planning complete                                                            |
+| Current State | Condition                                                                                                                  | Next Action                                                                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discover`    | `phases.discover != "completed"`                                                                                           | Load `references/phases/discover/discover.md`                                                                                                                                                |
+| `clarify`     | `phases.discover == "completed"` AND `phases.clarify != "completed"`                                                       | Load `references/phases/clarify/clarify.md`                                                                                                                                                  |
+| `design`      | `phases.clarify == "completed"` AND `phases.design != "completed"`                                                         | Load `references/phases/design/design.md`                                                                                                                                                    |
+| `estimate`    | `phases.design == "completed"` AND `phases.estimate != "completed"`                                                        | Load `references/phases/estimate/estimate.md`                                                                                                                                                |
+| `workshop`    | `current_phase == "estimate"` AND `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or `"in_progress"` | **Do not recompute Estimate.** If `workshop` is `"pending"`, present the post-Estimate workshop offer from `estimate.md`. If `"in_progress"`, load `references/phases/workshop/workshop.md`. |
+| `generate`    | `phases.estimate == "completed"` AND `phases.workshop == "completed"` AND `phases.generate != "completed"`                 | Load `references/phases/generate/generate.md` (workshop resolved — entered+exited or declined)                                                                                               |
+| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "pending"`                                                        | Set `phases.feedback` to `"completed"` (user had two chances), then migration complete                                                                                                       |
+| `complete`    | `phases.generate == "completed"` AND `phases.feedback == "completed"`                                                      | Migration planning complete                                                                                                                                                                  |
 
 **How to determine current state (deterministic):**
 
 1. Read `$MIGRATION_DIR/.phase-status.json`
-2. If `current_phase` exists, use it (must match one of: discover, clarify, design, estimate, generate, complete)
-3. Otherwise use ordered phase evaluation: `discover` → `clarify` → `design` → `estimate` → `generate`
-4. Pick the **first** phase in that order where `phases.<phase> != "completed"`; if none, state is `complete`
+2. **Workshop resume (mandatory):** If `current_phase == "estimate"` AND
+   `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or
+   `"in_progress"`, follow the `workshop` row above — **never** re-run Estimate
+   on a plain "continue my migration" / resume. Explicit "what if" / "reprice" /
+   "workshop mode" phrases also load `workshop.md` when Estimate artifacts exist.
+3. If `current_phase` exists (and step 2 did not apply), use it (must match one of: discover, clarify, design, estimate, generate, complete)
+4. Otherwise use ordered phase evaluation: `discover` → `clarify` → `design` → `estimate` → `generate`
+5. Pick the **first** phase in that order where `phases.<phase> != "completed"`; if none, state is `complete`. When evaluating `generate`, require `phases.workshop == "completed"` (seed `"pending"` on Discover so a missing key is not treated as resolved).
 
 **Phase gate checks**: If prior phase incomplete, do not advance (e.g., cannot enter estimate without completed design).
 
 **Clarify is mandatory:** Do not load `references/phases/design/design.md`, `references/phases/estimate/estimate.md`, or `references/phases/generate/generate.md` unless `$MIGRATION_DIR/.phase-status.json` exists and `phases.clarify` is exactly `"completed"`. A `preferences.json` file alone is **not** sufficient proof that Clarify ran. If the user asks to skip Clarify or jump straight to Design, cost estimate, or artifact generation, refuse briefly, then load `references/phases/clarify/clarify.md` and run Phase 2. There is no exception for "quick" or "obvious" migrations.
 
-**Feedback checkpoints**: Feedback is not a sequential phase — it is offered at two interleaved checkpoints (after Discover and after Estimate). See the **Feedback Checkpoints** section below for details.
+**Feedback sidebars**: Feedback is not a sequential phase — it is offered at two interleaved sidebars (after Discover and after Estimate). See the **Feedback Sidebars** section below for details.
 
 ### Handoff Gate Orchestration (Fail Closed)
 
@@ -124,11 +130,11 @@ When reading `$MIGRATION_DIR/.phase-status.json`, validate before proceeding:
 
 1. **Multiple sessions**: If multiple directories exist under `.migration/`, list them with their phase status and ask: [A] Resume latest, [B] Start fresh, [C] Cancel.
 2. **Invalid JSON**: If `.phase-status.json` fails to parse, STOP. Output: "State file corrupted (invalid JSON). Delete the file and restart the current phase."
-3. **Unrecognized phase**: If `phases` object contains a phase not in {discover, clarify, design, estimate, generate, feedback}, STOP. Output: "Unrecognized phase: [value]. Valid phases: discover, clarify, design, estimate, generate, feedback."
+3. **Unrecognized phase**: If `phases` object contains a phase not in {discover, clarify, design, estimate, workshop, generate, feedback}, STOP. Output: "Unrecognized phase: [value]. Valid phases: discover, clarify, design, estimate, workshop, generate, feedback."
 4. **Unrecognized status**: If any `phases.*` value is not in {pending, in_progress, completed}, STOP. Output: "Unrecognized status: [value]. Valid values: pending, in_progress, completed."
-5. **Invalid `current_phase`** (if present): If `current_phase` is not in {discover, clarify, design, estimate, generate, complete}, STOP. Output: "Unrecognized current_phase: [value]. Valid values: discover, clarify, design, estimate, generate, complete."
+5. **Invalid `current_phase`** (if present): If `current_phase` is not in {discover, clarify, design, estimate, generate, complete}, STOP. Output: "Unrecognized current_phase: [value]. Valid values: discover, clarify, design, estimate, generate, complete." (`workshop` and `feedback` are sidebars — never `current_phase`.)
 6. **Out-of-order completion**: For ordered phases [discover, clarify, design, estimate, generate], if any later phase is `"completed"` while an earlier phase is not `"completed"`, STOP. Output: "Inconsistent phase ordering detected. Reconcile `.phase-status.json` before resuming."
-7. **Multiple active phases**: Across core phases {discover, clarify, design, estimate, generate}, at most one phase may be `"in_progress"`. If >1, STOP. Output: "Multiple phases are in_progress. Keep only one active phase before resuming."
+7. **Multiple active phases**: Across core phases {discover, clarify, design, estimate, generate}, at most one phase may be `"in_progress"`. If >1, STOP. Output: "Multiple phases are in_progress. Keep only one active phase before resuming." (Sidebar `workshop`/`feedback` may be `in_progress` while estimate is `completed`.)
 
 ---
 
@@ -148,6 +154,7 @@ Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created b
     "clarify": "completed",
     "design": "in_progress",
     "estimate": "pending",
+    "workshop": "pending",
     "generate": "pending",
     "feedback": "pending"
   }
@@ -156,6 +163,7 @@ Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created b
 
 **Status values:** `"pending"` → `"in_progress"` → `"completed"`. Never goes backward.
 For core phases (discover, clarify, design, estimate, generate), at most one phase may be `"in_progress"` at any time.
+`workshop` and `feedback` are optional sidebars (never `current_phase`).
 `current_phase` is optional but recommended; when present it is authoritative.
 
 The `.migration/` directory is automatically protected by a `.gitignore` file created in Phase 1.
@@ -182,6 +190,7 @@ Example — after completing the Clarify phase, write `$MIGRATION_DIR/.phase-sta
     "clarify": "completed",
     "design": "pending",
     "estimate": "pending",
+    "workshop": "pending",
     "generate": "pending",
     "feedback": "pending"
   }
@@ -200,6 +209,7 @@ Replace `MMDD-HHMM` with the actual migration ID, generate the `last_updated` IS
 | **Clarify**  | Discovery artifacts (`gcp-resource-inventory.json`, `gcp-resource-clusters.json`, `ai-workload-profile.json`, `billing-profile.json` — whichever exist)                  | `preferences.json`, `.phase-status.json` updated                                                                                                                                                                                              | `references/phases/clarify/clarify.md`   |
 | **Design**   | `preferences.json` + discovery artifacts                                                                                                                                 | `aws-design.json` (infra), `aws-design-ai.json` (AI), `aws-design-billing.json` (billing-only)                                                                                                                                                | `references/phases/design/design.md`     |
 | **Estimate** | `aws-design.json` or `aws-design-billing.json` or `aws-design-ai.json`, `preferences.json`                                                                               | `estimation-infra.json` or `estimation-ai.json` or `estimation-billing.json`, `.phase-status.json` updated                                                                                                                                    | `references/phases/estimate/estimate.md` |
+| **Workshop** | Post-Estimate infra artifacts (`gcp-resource-inventory.json`, `preferences.json`, `aws-design.json`, `estimation-infra.json`) — optional sidebar                         | `scenarios/`, patched `preferences.json` / design / estimate; `.phase-status.json` (`workshop`)                                                                                                                                               | `references/phases/workshop/workshop.md` |
 | **Generate** | `estimation-infra.json` or `estimation-ai.json` or `estimation-billing.json`, `aws-design.json` or `aws-design-billing.json` or `aws-design-ai.json`, `preferences.json` | `generation-infra.json` or `generation-ai.json` or `generation-billing.json` + `terraform/`, `scripts/`, `ai-migration/`, `validation-report.json` (when infra route active), `MIGRATION_GUIDE.md`, `README.md`, `.phase-status.json` updated | `references/phases/generate/generate.md` |
 | **Feedback** | `.phase-status.json` (discover completed minimum), all existing migration artifacts                                                                                      | `feedback.json`, `trace.json`, `.phase-status.json` updated                                                                                                                                                                                   | `references/phases/feedback/feedback.md` |
 
@@ -246,6 +256,12 @@ gcp-to-aws/
 │   │   │   ├── estimate-infra.md               # Infrastructure cost analysis
 │   │   │   ├── estimate-ai.md                  # AI workload cost analysis
 │   │   │   └── estimate-billing.md             # Billing-only cost analysis
+│   │   ├── workshop/
+│   │   │   ├── workshop.md                     # Sidebar: optional post-Estimate what-if
+│   │   │   ├── workshop-sheet.md               # Assumption sheet knobs
+│   │   │   ├── workshop-refresh.md             # Patch prefs → Design → Estimate → snapshot
+│   │   │   ├── workshop-compare.md             # Side-by-side scenarios
+│   │   │   └── workshop-assemble.md            # Resolve sidebar → return to Generate
 │   │   ├── generate/
 │   │   │   ├── generate.md                     # Phase 5: Generate orchestrator
 │   │   │   ├── generate-infra.md               # Infrastructure migration plan
@@ -278,6 +294,7 @@ gcp-to-aws/
 │   │
 │   └── shared/
 │       ├── schema-phase-status.md              # .phase-status.json schema (canonical reference)
+│       ├── schema-workshop-scenarios.md        # scenarios/ + preferences.workshop contract
 │       ├── schema-discover-iac.md              # gcp-resource-inventory + clusters schemas (loaded by discover-iac.md)
 │       ├── schema-discover-ai.md               # ai-workload-profile schema (loaded by discover-app-code.md and discover-iac.md Step 7d)
 │       ├── schema-discover-billing.md          # billing-profile schema (loaded by discover-billing.md)
@@ -333,7 +350,7 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 7. **Update phase status**: Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
 
-8. **Feedback checkpoint**: After a phase completes, check if feedback is due (see rules below). This runs **before** advancing to the next phase.
+8. **Feedback sidebar**: After a phase completes, check if feedback is due (see rules below). This runs **before** advancing to the next phase.
 
    - **After Discover** (if `phases.feedback` is `"pending"`): Output to user:
      "Would you like to share quick feedback (5 optional questions + anonymized usage data) to help improve this tool? Your data never includes resource names, file paths, or account IDs.
@@ -342,12 +359,18 @@ When invoked, the agent **MUST follow this exact sequence**:
      - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it, then continue to Clarify.
      - If user picks **B** → Continue to Clarify (feedback stays `"pending"`).
 
-   - **After Estimate** (if `phases.feedback` is `"pending"`): Output to user:
+   - **After Estimate**: First offer the what-if workshop per `estimate.md`
+     (Enter workshop / Proceed toward Generate) when the infra route is active.
+     Outer Estimate keeps `current_phase: estimate` until workshop is resolved.
+     Then, if `phases.feedback` is `"pending"`:
      "Would you like to share quick feedback now? (5 optional questions + anonymized usage data)
      [A] Yes, share feedback
      [B] No thanks, continue to Generate"
      - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it, then continue to Generate.
      - If user picks **B** → Use the Phase Status Update Protocol to set `phases.feedback` to `"completed"`. Continue to Generate.
+   - **Warm start / explicit what-if**: If the user says "what if", "reprice",
+     "workshop mode", or "compare scenarios" and infra Estimate artifacts exist,
+     load `references/phases/workshop/workshop.md` (respect Generate re-entry).
 
    - **After Generate**: No feedback offer. If `phases.feedback` is still `"pending"`, use the Phase Status Update Protocol to set it to `"completed"` (user had two chances and chose to defer/skip).
 

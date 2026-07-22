@@ -18,6 +18,8 @@ _produces:
   - recommendation-report.html
 _advances_to: migration-plan
 _preconditions:
+  - _check_phase_completed: estimate
+    _on_failure: _halt_and_inform
   - _check_file_exists: design.json
     _on_failure: _unrecoverable
   - _validate_json: design.json
@@ -25,7 +27,7 @@ _preconditions:
 _postconditions:
   - _check_file_exists: [diagram.md, recommendation.md, mini-brief.md, recommendation-report.html]
     _on_failure: _halt_and_inform
-  - _assert: "recommendation.md fills all 12 sections (business summary first, technical detail after) with the freshness footer; mini-brief.md carries the recommendation, top-3 signals, eliminated, model, and any io_wait/fedramp/region/cris notes set in design.json; recommendation-report.html was generated (Step 5 is not optional)"
+  - _assert: "recommendation.md fills all 12 sections (business summary first, technical detail after) with the freshness footer; mini-brief.md carries the recommendation, top-3 signals, eliminated, model, and any io_wait/fedramp/region/cris notes set in design.json (a non-agent unit in a mixed system may show 'no model' when its model_recommendation is null); recommendation-report.html was generated (Step 5 is not optional); when design.json has >1 unit, recommendation.md contains the System topology section and the report one unit card per unit"
     _on_failure: _halt_and_inform
 ---
 
@@ -33,10 +35,13 @@ _postconditions:
 
 ## Step 1 — Read inputs
 
-Read `$RUN_DIR/design.json`. Read `$RUN_DIR/estimate.json` **if it exists** (Build paths only —
-for `migrate`, Estimate is skipped and there is no estimate.json; that's expected). Load the
+Read `$RUN_DIR/design.json`. Read `$RUN_DIR/estimate.json` **if it exists** (all entry points
+except add_capabilities produce estimate.json; if it is absent — failure, or add_capabilities —
+Generate notes the absence in the report instead of inventing numbers). Load the
 winning runtime's service card and
 `${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/references/decision-refs/model-selection.md`.
+(Same exception as Design Step 2: a `serverless_workers` unit has NO `<verdict>.md` card — do not
+attempt to load one; derive its content from `temporal.md` + `poc-shapes.md`.)
 
 ## Step 2 — Build the architecture diagram
 
@@ -51,8 +56,28 @@ summary first, technical detail after (single layered doc — do not fork by aud
 
 For `migrate`: also fill Section 9 (Bedrock model) with the **coarse family mapping**
 (e.g. "GPT-4o → Claude Sonnet 4.6 family") and a note that detailed pricing/TCO come from the
-migration plugins — no dollar figures. Section 10 (cost magnitude) states "Detailed cost and TCO
-are produced by the migration plugins" instead of a band (Estimate was skipped).
+migration plugins — no dollar figures. Section 10 (cost magnitude) presents the per-unit
+target-state bands from estimate.json and notes that the migration TCO comparison and
+current-spend delta are produced by the migration plugins.
+
+**Section 3c — Temporal migration** (conditional: only if ANY
+`design.json.units[].workload_class == "temporal_worker_poll"` — the `temporal` block has no
+`units` field, so gate on the unit list, matching generate-report.md's TEMPORAL_UNITS_PRESENT):
+orchestrate §3c content from `design.json.temporal` + decision-refs/temporal.md. Load the
+commercials/runbook text from decision-refs/temporal.md (never restate). The Bedrock follow-up gate
+runs HERE conditionally:
+
+- AskUserQuestion: "Move Activity LLM calls to Bedrock as part of this migration?"
+- **Yes** → append "Bedrock migration" section to recommendation.md §3c: (a) point to
+  `/migration-to-aws:llm-to-bedrock` skill as follow-up, (b) REQUIRE replay safety per
+  decision-refs/temporal.md runbook 3 (keep Workflow determinism against recorded history, or
+  isolate via Worker Versioning / new task queue). If deeply-coupled AI integrations flagged,
+  note the rewrite must respect the shim.
+- **No** → append "Later, optional: Bedrock" section with the same replay-safety pointer.
+
+**No Step Functions comparison section** — the scope note at the top of the plan already states
+the orchestration layer stays on Temporal. If the user asks why, answer in chat per
+decision-refs/temporal.md ("If the user asks") — do not add it to the plan.
 
 ## Step 4 — Lightweight scaffolding (Build paths only)
 
@@ -65,7 +90,7 @@ For Build paths:
   contract: `/invocations` POST + `/ping` GET for AgentCore) + the model id.
   Write scaffolding under `$RUN_DIR/scaffold/`. Keep it minimal — heavy IaC hands off.
 
-## Step 4.5 — Write the mini-brief to `$RUN_DIR/mini-brief.md` (delivered by the Step 5.5 checkpoint)
+## Step 4.5 — Write the mini-brief to `$RUN_DIR/mini-brief.md` (delivered by the Step 5.5 sidebar)
 
 Compose the **mini-brief** — it is the deliverable of the whole advisor flow — and WRITE IT
 TO `$RUN_DIR/mini-brief.md` (a file, not just chat text; Step 5.5 re-reads it):
@@ -94,12 +119,12 @@ non-blocking — NOT the generation itself. So:
 - Never SKIP this step to reach Step 5.5 faster. Step 5.5 checks that the file exists
   (below) — if it is missing, you skipped Step 5 and must come back and do it.
 
-## Step 5.5 — Recommendation review checkpoint (BLOCKING — the user must see and confirm the recommendation before any gate)
+## Step 5.5 — Recommendation review sidebar (BLOCKING — the user must see and confirm the recommendation before any gate)
 
-**Precondition check (do this FIRST, before composing the checkpoint):** confirm
+**Precondition check (do this FIRST, before composing the sidebar):** confirm
 `$RUN_DIR/recommendation-report.html` exists on disk. If it does NOT, Step 5 was skipped —
 go back and run Step 5 now (generate the report + open it) before proceeding. Do not
-present this checkpoint without the report having been generated.
+present this sidebar without the report having been generated.
 
 This is its own turn, separate from every gate. Send ONE message whose body is the **full
 mini-brief pasted from `$RUN_DIR/mini-brief.md`**, followed in the SAME message by an
@@ -112,7 +137,7 @@ AskUserQuestion:
 >
 > - **Looks good — continue** → record the confirmation (below) and proceed to Step 6.
 > - **Explain more first** → answer the user's questions on the recommendation (from
->   recommendation.md / design.json — no new scoring), then re-ask this checkpoint.
+>   recommendation.md / design.json — no new scoring), then re-ask this sidebar.
 > - **Something's off — revisit an answer** → identify which clarify answer changed, update
 >   `answers.json`, re-run scoring, and redo Design → Generate. Do NOT proceed on a
 >   recommendation the user disputes.
@@ -122,12 +147,12 @@ On "Looks good — continue": read-merge-write `.phase-status.json` and set top-
 
 **Mechanical gate rule:** Steps 6 and 7 MUST NOT ask Gate 1 or Gate 2 unless
 `.phase-status.json` has `recommendation_reviewed == true`. If it is absent, you skipped
-this checkpoint — go back and run it. This ordering is not optional and does not collapse
+this sidebar — go back and run it. This ordering is not optional and does not collapse
 into the gate question: the user confirms they have SEEN the recommendation first, and only
 then is asked what to do next. (Resume-safe: if the session breaks after confirmation, the
-flag survives and the checkpoint is not re-asked.)
+flag survives and the sidebar is not re-asked.)
 
-Because the checkpoint delivered the brief, the gates below only need a one-line recap
+Because the sidebar delivered the brief, the gates below only need a one-line recap
 (runtime + deployment model + model), not the full brief.
 
 ## Step 6 — Migration-plan gate (Gate 1)
@@ -168,11 +193,13 @@ Set `phases.generate` = completed (read-merge-write). Then branch:
 
 1. **Gate 1 answered Yes** → next phase is `migration_plan`: load
    `references/phases/migration-plan/migration-plan.md`. Gate 2 is offered from that phase's Step 6.
-2. **Otherwise, if** entry_point ∈ {`build_scratch`, `build_deploy`}: ask **Gate 2**
-   for the winning runtime — any of agentcore / ecs / eks / lambda / lambda_microvms
-   (verdict or co_recommend `chosen_runtime`; same precondition:
-   `recommendation_reviewed == true`) — a one-line recap (runtime + deployment model +
-   model), followed by the AskUserQuestion in the same message:
+2. **Otherwise, if** entry_point ∈ {`build_scratch`, `build_deploy`}: ask **Gate 2** for the
+   primary unit's `effective_runtime` — any of agentcore / ecs / eks / lambda / lambda_microvms
+   (the primary is always an agent unit per Clarify's scope gate). In a MULTI-unit system, each
+   non-primary unit still gets its own POC per poc.md Step 3 dispatch (incl. batch / fargate /
+   serverless_workers, and a model-less non-agent unit omits Bedrock wiring). Precondition
+   unchanged (`recommendation_reviewed == true`). Give a one-line recap (runtime + deployment
+   model + model), followed by the AskUserQuestion in the same message:
 
    > Recommended: `<runtime>` + `<deployment model>`, model `<model>` (details: recommendation.md).
    >
@@ -183,7 +210,7 @@ Set `phases.generate` = completed (read-merge-write). Then branch:
    >   `references/phases/poc/poc.md` (it asks which POC mode first).
    > - **No** → set `phases.poc = "skipped"`; the advisor flow is complete.
 
-3. **Otherwise** (migrate without a plan): the Step 5.5 checkpoint already delivered the
+3. **Otherwise** (migrate without a plan): the Step 5.5 sidebar already delivered the
    brief; close with a short completion message pointing at `recommendation.md` — the
    advisor flow is complete.
 

@@ -72,7 +72,20 @@ Load `shared/handoff-gates.md`. **Re-read from disk** each active route artifact
 
 **On PASS:** Emit `HANDOFF_OK | phase=design | artifacts=<comma-separated active design files>`.
 
-After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+### Inner workshop reprice — skip state transition
+
+When Design is invoked from `workshop-refresh.md` (inner reprice): rewrite the
+active design artifact(s) (`aws-design.json` and siblings as applicable), then
+**return to the workshop loop**. Do **not** emit `HANDOFF_OK`, do **not** set
+`phases.design` to `"in_progress"` or re-stamp `"completed"`, do **not** change
+`current_phase`, and do **not** treat Estimate as stale for a Generate reset
+unless the user is already past Generate (see workshop-refresh stale-Generate
+guard). Leave `phases.design` and `phases.estimate` as `"completed"` and
+`current_phase` at `"estimate"` while `phases.workshop` is `"in_progress"`.
+
+After outer-run `HANDOFF_OK`, use the Phase Status Update Protocol
+(read-merge-write) to update `.phase-status.json` — **in the same turn** as the
+output message below:
 
 - Set `phases.design` to `"completed"`
 - Set `current_phase` to `"estimate"`
