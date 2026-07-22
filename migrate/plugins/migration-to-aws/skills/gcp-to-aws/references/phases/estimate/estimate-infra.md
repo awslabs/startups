@@ -69,7 +69,43 @@ Do NOT call get_pricing_service_codes, get_pricing_service_attributes, or get_pr
 Determine the current GCP monthly infrastructure costs. Use the best available source:
 
 1. **`billing-profile.json` (preferred)** — Use actual billing data as the GCP baseline. Highest confidence (±5%).
-2. **`gcp-resource-inventory.json` (fallback)** — Estimate costs from discovered resource configurations. Wider range (±20-30%).
+2. **`gcp-resource-inventory.json` (fallback)** — Derive costs from discovered
+   resource sizing using `references/shared/gcp-infra-pricing-cache.md` — never
+   from remembered GCP prices. Wider range (±20-30%). Procedure:
+   - For each inventory resource, apply the matching rate-card derivation
+     (Cloud SQL tier decoding × HA multiplier + disk; Memorystore GB × tier
+     band; GCE/GKE-node machine types × 730; GKE cluster fee). Config field
+     names may be capture-shaped (`settings.tier`, `settings.dataDiskSizeGb`,
+     `memorySizeGb`) or Terraform-shaped (`tier`, `disk_size`) — resolve
+     either.
+   - Resources the rate card marks NOT derivable (Cloud Run, Functions,
+     Pub/Sub, buckets, Autopilot, egress) are EXCLUDED from the total with
+     reason `"usage_based"`; name each in `warnings[]` with: "usage-based —
+     not derivable from sizing; provide a billing export for the full
+     baseline." (Exclusion reason enum: `usage_based`, `no_standing_charge`,
+     `unpriced_gcp` — nothing else.)
+   - A sized resource whose rate is missing from the card → `"unpriced_gcp"`,
+     excluded, warned. Never guess a rate. When `settings.dataDiskType` is
+     absent, assume `PD_SSD` (the Cloud SQL default) and say so in the
+     derivation entry. When `settings.backupConfiguration.enabled` is true,
+     add a backup-storage line using the card's backup rate against the
+     provisioned disk size as an upper bound, labeled "(backup upper bound)".
+   - No-standing-charge resources (VPC networks/subnets, service accounts,
+     IAM, secrets at trivial volume) are excluded with reason
+     `"no_standing_charge"` — NOT the usage-based warning.
+   - Set `current_costs.source: "inventory_estimate"` (the value
+     `schema-estimate-infra.md` already enumerates) and
+     `current_costs.accuracy: "±20-30%"`.
+   - Shape: `current_costs.breakdown` stays the schema's category-keyed map
+     (`compute` / `database` / `cache` / `storage` / ...); record the
+     per-resource arithmetic in an additive `current_costs.derivation[]`
+     array (address, resolved config, calculation string, monthly), and the
+     exclusions in `current_costs.excluded_resources[]` +
+     `current_costs.warnings[]`.
+   - `baseline_note` (mandatory): "Derived from discovered resource sizing ×
+     GCP list rates — not a bill. Excludes usage-based services (Cloud Run,
+     bandwidth, storage volume), sustained-use/committed-use discounts, and
+     credits; your invoice may differ materially."
 3. **`preferences.json` → `gcp_monthly_spend`** — User-provided monthly spend from clarification.
 4. **Ask the user** — If none of the above are available, ask: "I need your current GCP monthly spend to produce a meaningful cost comparison. What is your approximate GCP monthly infrastructure cost?" Use the user's answer. If the user declines or is unsure, present AWS costs without a GCP comparison and note: "GCP baseline unavailable — AWS costs shown without comparison."
 
@@ -77,13 +113,13 @@ Present the GCP baseline as a total and per-service breakdown, noting which sour
 
 **Baseline-quality display label (derived from `current_costs.source` — no new field):**
 
-| `current_costs.source`  | Display label                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `"billing_data"`        | "Measured from your GCP billing (±5%)"                                                             |
-| `"inventory_estimate"`  | "Estimated from resource configs (±20–30%) — standing charges only; excludes usage-based costs"    |
-| `"preferences"`         | "Your stated spend band from Clarify (midpoint used)"                                              |
-| `"user_provided"`       | "Your stated figure (unverified)"                                                                  |
-| `"unavailable"`         | "No GCP baseline — AWS costs shown without comparison"                                             |
+| `current_costs.source` | Display label                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `"billing_data"`       | "Measured from your GCP billing (±5%)"                                                          |
+| `"inventory_estimate"` | "Estimated from resource configs (±20–30%) — standing charges only; excludes usage-based costs" |
+| `"preferences"`        | "Your stated spend band from Clarify (midpoint used)"                                           |
+| `"user_provided"`      | "Your stated figure (unverified)"                                                               |
+| `"unavailable"`        | "No GCP baseline — AWS costs shown without comparison"                                          |
 
 **Not-comparable rule (hard):** Never present an inventory-only GCP figure side-by-side with a user spend band (or vice versa) as if they measure the same thing — an inventory estimate captures standing charges for discovered resources, not the full bill. When both exist and disagree by more than the accuracy band, show both, labeled, with one line: "These measure different things — the billing figure (or your stated band) is the decision baseline; the inventory figure only covers discovered resources." Every GCP-vs-AWS comparison row states its baseline label.
 
@@ -362,16 +398,34 @@ This section covers **GCP vendor/network charges** for outbound data during migr
 
 Set `billing_data_available: true` in the output `migration_cost_considerations` object.
 
-### IF billing data is NOT available (`billing-profile.json` does not exist):
+### IF billing data is NOT available but the inventory carries database/disk sizes:
 
-**Omit GCP data transfer fee estimates.** Without billing data, there is no grounding for egress projections. Instead, include only this note in the output:
+Provisioned sizes are an UPPER BOUND on one-time migration egress (actual data
+≤ provisioned; #149's sizing caveat applies). Present a bounded estimate, never
+a point figure:
 
 Set `migration_cost_considerations` to:
 
 ```json
 {
+  "categories": [
+    "GCP data transfer egress (upper bound): ≤ <sum of provisioned DB disk + known storage GB> GB × $0.12/GB ≈ ≤ $<N> one-time"
+  ],
+  "billing_data_available": false,
+  "baseline_available": true,
+  "note": "Upper bound from PROVISIONED sizes (actual data is typically smaller). Object-storage volume is unknown without billing data — a billing export tightens this to measured volumes."
+}
+```
+
+### IF neither billing data nor any sized inventory resource exists:
+
+**Omit GCP data transfer fee estimates.** There is no grounding for egress projections. Set `migration_cost_considerations` to:
+
+```json
+{
   "categories": [],
   "billing_data_available": false,
+  "baseline_available": false,
   "note": "Data transfer cost estimates require GCP billing data. Re-run discovery with a GCP billing export to see GCP egress fee projections."
 }
 ```
