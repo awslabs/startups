@@ -59,7 +59,11 @@ def main() -> int:
     run_dir = Path(sys.argv[1])
     fixture_dir = Path(__file__).resolve().parent
 
-    est = json.loads((run_dir / "estimation-infra.json").read_text())
+    est_path = run_dir / "estimation-infra.json"
+    if not est_path.exists():
+        print("FAIL (1):\n  - missing estimation-infra.json in run dir")
+        return 1
+    est = json.loads(est_path.read_text())
     exp = json.loads((fixture_dir / "expected-estimate.json").read_text())
     doc = json.dumps(est)
 

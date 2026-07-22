@@ -58,6 +58,10 @@ run = "cd migrate/plugins/migration-to-aws && tsc --noEmit"
 description = "Run the frontmatter-validator test suite (node --test)"
 run = "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts"
 
+[tasks."fixtures:assert"]
+description = "Run committed fixture asserters: golden run trees must PASS, replay-only asserters must fail cleanly on an empty dir (CI)"
+run = "python3 migrate/plugins/migration-to-aws/tools/run-asserters.py"
+
 [tasks."shared:sync"]
 description = "Sync each skill's references/vendored/ tree from the canonical skills/shared/ source"
 run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --write"
@@ -81,6 +85,7 @@ run = [
   { task = "lint:types" },
   { task = "lint:frontmatter" },
   { task = "shared:check" },
+  { task = "fixtures:assert" },
   { task = "fixtures:check" },
   { task = "pricing:staleness" },
   { task = "test" },
