@@ -452,8 +452,9 @@ Render an HTML table with **five columns**, one row per constraint object (itera
 
 **Critical-default caveats (required when present):** If any of the following constraints have `chosen_by: "default"` AND the corresponding question ID appears in `metadata.questions_defaulted`:
 
-- `compliance` (Q2): render a warning callout: _"⚠️ Compliance was not explicitly confirmed. The security baseline assumes no regulatory requirements. If SOC 2, PCI, HIPAA, or FedRAMP applies, re-run Clarify or manually add controls."_
+- `compliance` (Q2): render a warning callout: _"⚠️ Compliance was not explicitly confirmed. The security baseline assumes no regulatory requirements. If SOC 2, PCI, HIPAA, or FedRAMP applies, re-run Clarify or manually add controls."_ **Also fire this callout whenever `compliance.value` contains `"unknown"`** (regardless of `chosen_by` — covers both "I don't know" answers and defaulted runs). `"unknown"` never triggers the Section 4 compliance-controls note or any compliance-specific architecture.
 - `gcp_monthly_spend` (Q3): render a warning callout: _"⚠️ GCP spend was not confirmed by the user. Cost comparison uses the default band ($1K–$5K). Actual spend may differ — verify against your GCP billing console."_
+- `availability` (Q6): render a warning callout: _"⚠️ Database availability was assumed (Multi-AZ) — the user never confirmed it. This assumption roughly doubles the database line vs single-AZ. Confirm the availability requirement (or compare a single-AZ scenario in the what-if workshop) before treating the database estimate as final."_
 
 Place these callouts at the top of Appendix F, before the table, so they're immediately visible.
 
