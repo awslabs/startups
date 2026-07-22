@@ -1,13 +1,13 @@
 ---
 name: prompt-library-for-startups
-description: "AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent). Use when the user asks for a prompt to do X on AWS, wants an installable agent for multi-account / cost monitoring / quota management, or asks how to use AWS prompts. For migration intent (GCP to AWS, OpenAI/Gemini to Bedrock), route to the migration-to-aws skill. Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
+description: "AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent, Bedrock Model Availability Agent, AWS DB Advisor). Use when the user asks for a prompt to do X on AWS, wants an installable agent for multi-account / cost monitoring / quota management / Bedrock model availability / database selection, or asks how to use AWS prompts. For migration intent (GCP to AWS, OpenAI/Gemini to Bedrock), route to the migration-to-aws skill. Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
 ---
 
 # AWS Startups Prompt & Agent Library
 
 Searchable index of AWS-curated prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.) plus downloadable installable agents. Content is verbatim from [aws.amazon.com/startups/prompt-library](https://aws.amazon.com/startups/prompt-library).
 
-**Last updated:** 2026-05-12
+**Last updated:** 2026-07-22
 
 ---
 
@@ -47,8 +47,10 @@ The **Downloadable agents** section of `references/prompt-library.md` lists **in
 - **AWS Multi-Account Transition Advisor** — guides single-account → multi-account (AWS Organizations + OUs).
 - **AWS Bill Shock Preventer** — proactive cost-spike detection and alerting.
 - **AWS Service Quota Agent** — auditing and requesting quota increases.
+- **Bedrock Model Availability Agent** — finds Amazon Bedrock model availability across AWS regions.
+- **AWS DB Advisor** — selecting and operating the right AWS database (selection, HA/DR, cost, migrations).
 
-When the user's intent matches one of these — _"set up multi-account"_, _"prevent bill shock"_, _"audit service quotas"_ — recommend the matching agent **by title and use-case**, then hand over the GitHub repo / install link from the index file. Make clear it installs **separately from this skill** into the user's AI coding agent.
+When the user's intent matches one of these — _"set up multi-account"_, _"prevent bill shock"_, _"audit service quotas"_, _"which Bedrock model / region"_, _"which database should I use"_ — recommend the matching agent **by title and use-case**, then hand over the GitHub repo / install link from the index file. Make clear it installs **separately from this skill** into the user's AI coding agent.
 
 For migration intent — _"help me migrate to AWS"_, _"GCP to AWS"_, _"move off OpenAI to Bedrock"_ — route to the **`migration-to-aws`** skill in the `aws-startup-advisor` plugin.
 
@@ -74,6 +76,8 @@ For migration intent — _"help me migrate to AWS"_, _"GCP to AWS"_, _"move off 
 | _"Set up multi-account on AWS Organizations"_        | Downloadable: Multi-Account Transition Advisor                                         |
 | _"Stop bill shock / detect cost spikes proactively"_ | Downloadable: AWS Bill Shock Preventer                                                 |
 | _"Manage / request service quotas"_                  | Downloadable: Service Quota Agent                                                      |
+| _"Which Bedrock model is available in which region"_ | Downloadable: Bedrock Model Availability Agent                                         |
+| _"Which AWS database should I use"_                  | Downloadable: AWS DB Advisor                                                           |
 
 For anything else, filter `references/prompt-library.md` by keyword.
 

@@ -229,7 +229,7 @@ aws service-quotas get-requested-service-quota-change \
 
 - Each quota is **per region** - must request separately for each region
 - Some instances (P6) have limited regional availability
-- Always verify instance availability before requesting quotas
+- Always verify instance availability before requesting quotas. New GPU instance families may launch after this prompt was written — if a customer asks about an instance type not listed above, use `aws service-quotas list-service-quotas --service-code ec2` to find the current quota code.
 
 ### SageMaker Specifics
 
