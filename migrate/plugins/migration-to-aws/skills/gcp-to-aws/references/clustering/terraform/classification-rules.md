@@ -100,6 +100,8 @@ Match resource type against secondary classification table. Each match assigns a
 - `google_secret_manager_secret_version` — Secret value
 - `google_dns_record_set` — DNS record
 - `google_monitoring_notification_channel` — Alert notification target
+- `google_app_engine_standard_app_version` — App Engine service/version. Config source for the parent `google_app_engine_application`, carrying `runtime`, `instance_class`, `env_variables`, and scaling — the data the EB mapping needs. Note: these resources do **not** reference the parent by ID (link is the shared `project`), so `serves[]` may be empty and they may cluster separately; the App Engine fan-out step in `phases/design/design-infra.md` locates them by scanning the full inventory. **Not excluded from discovery** (they are classified and clustered here); they are a design-phase Skip Mapping (no standalone AWS target) — see `design-refs/fast-path.md`.
+- `google_app_engine_flexible_app_version` — App Engine Flexible service/version (config source for the parent; same handling as the standard variant)
 
 ### Encryption (`encryption`)
 

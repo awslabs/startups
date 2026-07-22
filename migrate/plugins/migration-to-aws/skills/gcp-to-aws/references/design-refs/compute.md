@@ -5,26 +5,30 @@
 **Table lookup first:** Check `fast-path.md` **Direct Mappings** for this Terraform type.
 
 - `google_cloud_run_service`, `google_cloud_run_v2_service`, `google_cloudfunctions_function`, and `google_cloudfunctions2_function` are currently in Direct Mappings and usually resolve with `confidence: "deterministic"` when row conditions are met.
-- `google_compute_instance`, `google_container_cluster`, and `google_app_engine_application` are not direct-mapped in `fast-path.md`; use the rubric below (typically `confidence: "inferred"`).
+- `google_app_engine_application` is now in Direct Mappings (→ Elastic Beanstalk, confidence: `deterministic`).
+- `google_compute_instance` and `google_container_cluster` are not direct-mapped in `fast-path.md`; use the rubric below (typically `confidence: "inferred"`).
 - If a resource is not eligible for Direct Mappings (or row conditions are not met), use the rubric below.
 
 ## Eliminators (Hard Blockers)
 
-| GCP Service     | AWS        | Blocker                                                                                                                                                        |
-| --------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloud Run       | Lambda     | Execution time >15 min → use Fargate                                                                                                                           |
-| Cloud Run       | Fargate    | GPU workload or >16 vCPU or >120 GB memory → use EC2                                                                                                           |
-| Cloud Functions | Lambda     | Python version not supported (e.g., Python 2.7) → use custom runtime on Fargate                                                                                |
-| GKE             | EKS        | Custom CRI incompatible → manual workaround or ECS                                                                                                             |
-| Any             | App Runner | **Closed to new customers (April 30 2026).** Do not target App Runner for new migrations. Use Fargate (default), Lambda (event-driven), or EKS (K8s required). |
+| GCP Service     | AWS               | Blocker                                                                                                                                                                         |
+| --------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloud Run       | Lambda            | Execution time >15 min → use Fargate                                                                                                                                            |
+| Cloud Run       | Fargate           | GPU workload or >16 vCPU or >120 GB memory → use EC2                                                                                                                            |
+| Cloud Functions | Lambda            | Python version not supported (e.g., Python 2.7) → use custom runtime on Fargate                                                                                                 |
+| GKE             | EKS               | Custom CRI incompatible → manual workaround or ECS                                                                                                                              |
+| Any             | App Runner        | **Closed to new customers (April 30 2026).** Do not target App Runner for new migrations. Use Fargate (default), Lambda (event-driven), or EKS (K8s required).                  |
+| App Engine      | Elastic Beanstalk | `compute_model: "container_orchestration"` or `"serverless"` in preferences → do not use EB, fall through to Fargate or Lambda _(preference override, not a technical blocker)_ |
 
 ## Signals (Decision Criteria)
 
-### Cloud Run / App Engine
+### Cloud Run
 
 - **Always-on** or **cold-start sensitive** → Fargate (not Lambda)
 - **Stateless microservice** + **<15 min execution** → Lambda
 - **HTTP-only** + **container-native** → Fargate preferred (better dev/prod parity)
+
+Note: Cloud Run maps to Fargate via deterministic fast-path ("Always"). The `compute_model` preference does not affect Cloud Run mapping.
 
 ### Cloud Functions
 
@@ -42,6 +46,14 @@
 - **Kubernetes orchestration explicitly required** (`kubernetes = "eks-managed"` or `"eks-or-ecs"` in `preferences.json`) → EKS
 - **Default / no explicit K8s preference** (`kubernetes = "ecs-fargate"` or absent):
   - → **Fargate** (absent kubernetes preference resolves to Fargate, not EKS — teams that want EKS answer A or B in Clarify)
+
+### App Engine
+
+- **Default** → Elastic Beanstalk (PaaS-to-PaaS, preserves managed platform model)
+- **User prefers container control** (`compute_model: "container_orchestration"`) → Fargate
+- **Event-driven / scale-to-zero required** → Lambda
+
+After selecting Elastic Beanstalk, load `elastic-beanstalk.md` to populate `aws_config` (platform, deployment policy, IAM, VPC, sizing).
 
 ## CPU Architecture (Graviton vs x86)
 
@@ -63,6 +75,7 @@ Apply in order; first match wins:
 1. **Eliminators**: Does GCP config violate AWS constraints? If yes: switch to alternative
 2. **Operational Model**: Managed (Lambda, Fargate) vs Self-Hosted (EC2, EKS)?
    - Prefer managed unless: Always-on + high baseline cost → EC2
+   - For App Engine sources: Elastic Beanstalk (PaaS-to-PaaS) when `compute_model` is absent or `"managed_platform"`
 3. **User Preference**: From `preferences.json`: `design_constraints.kubernetes`, `design_constraints.cost_sensitivity`?
    - If `kubernetes = "eks-managed"` → EKS (preserves K8s investment)
    - If `kubernetes = "eks-or-ecs"` → EKS with managed node groups (user is competent with K8s)
@@ -81,29 +94,26 @@ Apply in order; first match wins:
 ### Example 1: Cloud Run (stateless API)
 
 - GCP: `google_cloud_run_service` (memory=512MB, timeout=60s, min_instances=1)
-- Signals: HTTP, stateless, always-on
-- Criterion 1 (Eliminators): PASS (60s < 15min doesn't apply; stateless OK)
-- Criterion 2 (Operational Model): FARGATE preferred
+- Fast-path: `google_cloud_run_service` → Fargate (Always, condition met)
 - → **AWS: Fargate (0.5 CPU, 1 GB memory)**
-- Confidence: `inferred` (rubric-based — Cloud Run is not in fast-path)
+- Confidence: `deterministic` (Direct Mapping, no rubric needed)
 
 ### Example 2a: Cloud Functions (event processor, short-running)
 
 - GCP: `google_cloudfunctions_function` (runtime=python39, timeout=540s)
-- Signals: Event-driven, 540s = 9 minutes (< 15min limit)
-- Criterion 1 (Eliminators): PASS on timeout (540s < 900s)
-- Criterion 2 (Operational Model): Lambda preferred for event-driven + short-running
+- Fast-path: `google_cloudfunctions_function` → Lambda (Always, condition met)
 - → **AWS: Lambda with EventBridge trigger**
-- Confidence: `inferred`
+- Confidence: `deterministic` (Direct Mapping, no rubric needed)
 
-### Example 2b: Cloud Functions (long-running batch processor)
+### Example 2b: Cloud Functions (long-running, timeout exceeds Lambda limit)
 
 - GCP: `google_cloudfunctions_function` (runtime=python39, timeout=1200s)
-- Signals: Event-driven but 1200s = 20 minutes (> 15min limit)
-- Criterion 1 (Eliminators): FAIL on timeout (1200s > 900s) → **cannot use Lambda**
+- Fast-path: `google_cloudfunctions_function` → Lambda (Always)
+- However, Eliminator fires: timeout 1200s > Lambda max 900s → **cannot use Lambda**
+- Eliminator overrides fast-path → falls through to rubric
 - Criterion 2 (Operational Model): Fargate (managed + can handle longer execution)
 - → **AWS: Fargate (0.5 CPU, 1 GB memory) with EventBridge trigger**
-- Confidence: `inferred`
+- Confidence: `inferred` (eliminator forced rubric fallback)
 
 ### Example 3: Compute Engine (background job)
 
@@ -115,7 +125,30 @@ Apply in order; first match wins:
 - → **AWS: EC2 t4g.medium + Auto Scaling Group (min=0 in dev)** (Graviton default; use t3.medium if `cpu_architecture` is `x86` or the workload is incompatible — see CPU Architecture section)
 - Confidence: `inferred`
 
+### Example 4a: App Engine (standard Python web app, default preference)
+
+- GCP: `google_app_engine_application` with one service (`default`) whose `google_app_engine_standard_app_version` has runtime=python39, instance_class=F4, `automatic_scaling`
+- Note: `runtime`/`instance_class`/scaling come from the `*_app_version` resource, not the parent. The App Engine fan-out step (`phases/design/design-infra.md`) emits one EB environment per service; `gcp_type` stays `google_app_engine_application`.
+- Signals: PaaS deployment, `compute_model` absent or `"managed_platform"`
+- Fast-path condition met: `compute_model` not set to `"container_orchestration"` or `"serverless"`
+- → **AWS: Elastic Beanstalk (Python 3.9, LoadBalanced, t4g.medium, arm64)** — LoadBalanced from the version's `automatic_scaling`; t4g.medium from `instance_class` F4; Graviton default (per `elastic-beanstalk.md` Sizing Defaults, which size from the version's own config, not Q6)
+- Confidence: `deterministic` (App Engine → EB direct mapping, condition met)
+
+### Example 4b: App Engine (user chose container orchestration)
+
+- GCP: `google_app_engine_application` with one service (`default`), app_version runtime=python39, instance_class=F2
+- Signals: PaaS deployment, but `compute_model: "container_orchestration"` in preferences
+- Fast-path condition NOT met: falls through to rubric
+- Criterion 1 (Eliminators): EB blocked (user chose container orchestration)
+- Criterion 2 (Operational Model): Fargate (managed containers)
+- → **AWS: Fargate (0.5 CPU, 1 GB memory)**
+- Confidence: `inferred` (rubric-based override of default PaaS mapping)
+
 ## Output Schema
+
+Deterministic (fast-path) mappings omit `rubric_applied`; inferred (rubric-based) mappings include it.
+
+**Deterministic (fast-path) example:**
 
 ```json
 {
@@ -136,15 +169,40 @@ Apply in order; first match wins:
     "target_architecture": "arm64",
     "caveats": []
   },
+  "confidence": "deterministic",
+  "rationale": "Direct Mapping: google_cloud_run_service → Fargate (Always)"
+}
+```
+
+**Inferred (rubric-based) example:**
+
+```json
+{
+  "gcp_type": "google_compute_instance",
+  "gcp_address": "batch-worker",
+  "gcp_config": {
+    "machine_type": "e2-medium",
+    "region": "us-central1"
+  },
+  "aws_service": "EC2",
+  "aws_config": {
+    "instance_type": "t4g.medium",
+    "region": "us-east-1"
+  },
+  "graviton": {
+    "compatibility": "ready",
+    "target_architecture": "arm64",
+    "caveats": []
+  },
   "confidence": "inferred",
-  "rationale": "Rubric: Cloud Run (stateless, <15min) → Fargate (always-on, managed)",
+  "rationale": "Rubric: Compute Engine (always-on batch job) → EC2 with Auto Scaling",
   "rubric_applied": [
     "Eliminators: PASS",
-    "Operational Model: Managed preferred",
-    "User Preference: N/A",
+    "Operational Model: EC2 (explicit compute control)",
+    "User Preference: cost_sensitivity → Auto Scaling",
     "Feature Parity: Full",
-    "Cluster Context: Fargate affinity",
-    "Simplicity: Fargate (1 service)"
+    "Cluster Context: N/A",
+    "Simplicity: EC2 + ASG"
   ]
 }
 ```

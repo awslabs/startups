@@ -46,6 +46,7 @@ Sensitive key patterns to redact (case-insensitive): `password`, `passwd`, `secr
    - `type` (e.g., `google_compute_instance`)
    - `name` (resource name component, e.g., `web`)
    - `config` (object with key attributes: `machine_type`, `name`, `region`, etc.)
+     - **For `google_app_engine_standard_app_version` / `google_app_engine_flexible_app_version`**, the App Engine → Elastic Beanstalk mapping reads these attributes — capture them into `config` when present: `service`, `version_id`, `runtime`, `instance_class`, `serving_status`, `project`, the scaling block that is present (`automatic_scaling` / `basic_scaling` / `manual_scaling`), `env_variables`, and (Flexible only) `resources` and `flexible_runtime_settings`.
    - `raw_hcl` (raw HCL text for this resource, needed for Step 4)
    - `depends_on` (array of addresses this resource depends on)
 4. Also extract provider and backend configuration (for region detection)
