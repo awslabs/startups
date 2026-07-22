@@ -89,12 +89,13 @@ Pull from `estimation-infra.json` → `recommendation` block. Fallback chain if 
 
 Content when `recommendation` block exists:
 
-1. **Verdict badge:** `recommendation.path_label` — render as colored badge (green for `migrate_optimized`, blue for `migrate_phased`, amber for `stay`)
+1. **Verdict badges:** When `recommendation.outcome` exists (v2 artifacts), render it as the **primary** badge — `outcome_label` colored green (`go`), teal (`conditional_go`), amber (`defer_for_evidence`), or gray (`stay`) — with `path_label` as a secondary badge showing the execution shape. When `outcome` is absent (pre-extension artifacts), fall back to the single `path_label` badge (green for `migrate_optimized`, blue for `migrate_phased`, amber for `stay`). When `conditional_go`: render `conditions[]` as a short checklist directly under the badges. When `defer_for_evidence`: state the missing evidence and how to obtain it — do not show a savings headline as if the decision were made.
 2. **Complexity:** from `migration-preview.json` → `complexity_signal` ("Simple", "Moderate", "Complex") — colored badge
 3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
 4. **Timeline:** from `generation-infra.json` → `migration_plan.total_weeks` (preferred), OR `migration-preview.json` → `timeline_hint`. Do NOT use `recommendation.next_steps` as timeline — those are action items, not duration.
 5. **Migrate if / Stay if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists. For BigQuery/deferred analytics: **do not** frame specialist engagement as a reason to stay on GCP unless the user must cut over analytics in the **same window** as app infra. Prefer migrate-if bullets that mention parallel specialist planning.
 6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — **ordered list** (`<ol class="compact">`), not bullets. Each item is one concrete decision the reader must make next.
+6b. **What would flip this (v2 artifacts):** from `recommendation.would_flip_if[]` when present — short unordered list immediately after Migrate if / Stay if. Skip silently when absent.
 7. **Next steps (optional):** from `recommendation.next_steps` — **ordered list** (`<ol class="compact">`) of actionable steps separate from timeline. Numbered sequence implies priority order; keep `Migrate if` / `Stay if` as unordered lists.
 
 **Deferred services flag:** If ANY resource in the design artifact has `aws_service == "Deferred — specialist engagement"`, add a prominent callout:
@@ -121,6 +122,20 @@ After Generate, run `scripts/validate-startup-program-artifacts.py --migration-d
 Source: estimation artifact `recommendation`, `migration-preview.json`, design artifact
 
 - Source: estimation artifact
+
+**Section 0b — What this assessment rests on (`exec-assumptions`, REQUIRED):**
+
+> Rendered heading is a plain title — e.g. `<h2>What This Assessment Rests On</h2>` with `<section id="exec-assumptions">`. Never render a literal "Section 0b" heading (validator readability rule).
+
+Placed immediately after the Migration Decision Summary. Three parts, all read from existing artifacts — invent nothing:
+
+1. **Assumptions applied by default** — table of every constraint in `preferences.json` with `chosen_by: "default"`: Setting (plain name), Assumed value, and the constraint's `design_consequence` verbatim. When no constraint was defaulted, render one line: "All inputs were confirmed by you or extracted from your Terraform/billing — nothing was assumed."
+2. **Confidence** — one line from `recommendation.confidence` with a plain-language gloss: high — "inputs measured or confirmed"; medium — "some material inputs assumed"; low — "key inputs missing or stale". When v2 `decision_basis` exists, render its three lists (measured / assumed / unknown) as compact columns instead of the single line.
+3. **Pricing provenance** — from the estimation artifact: `pricing_source` + cache date + `accuracy_confidence` band, matching the wording the Estimate chat summary already uses (e.g. "Estimates based on cached AWS pricing (2026-03-07), accuracy ±5–10%").
+
+TOC: link `#exec-assumptions` in the executive list. The anti-stub rule applies: this section must render actual settings and consequences, never "see preferences.json".
+
+Source: `preferences.json`, `estimation-infra.json` (falls back to `estimation-ai.json` accuracy fields for AI-only runs)
 
 **Section 1b — Total Cost of Ownership (`exec-tco`, REQUIRED when both `estimation-infra.json` AND `estimation-ai.json` exist):**
 

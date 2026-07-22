@@ -21,6 +21,20 @@
   },
   "recommendation": {
     "path_label": "migrate_phased",
+    "outcome": "conditional_go",
+    "outcome_label": "Go, with conditions",
+    "conditions": [
+      "Confirm database availability — Multi-AZ was assumed, not confirmed (roughly 2x database cost factor)"
+    ],
+    "decision_basis": {
+      "measured": ["GCP billing baseline ($165/mo infra)", "Cloud SQL disk size (10 GB)"],
+      "assumed": ["Database availability (Multi-AZ default)", "Cloud Run traffic (24/7 default)"],
+      "unknown": []
+    },
+    "would_flip_if": [
+      "Single-AZ acceptable: AWS estimate drops further, strengthens go",
+      "BigQuery must cut over in the same window: defer for specialist evidence"
+    ],
     "migrate_if": ["unified AWS operations"],
     "stay_if": ["BigQuery must cut over in the same window as app infra and cannot use a phased analytics track"]
   },

@@ -516,16 +516,48 @@ For dev-tier databases (< $50/month on-demand), emit percent-only guidance witho
 
 ## Part 7: Recommendation
 
-Present 3 paths:
+Present 3 execution paths:
 
 1. **Migrate with Optimizations (Best ROI)** — optimized service choices, monthly cost, projected annual savings
 2. **Phased Migration (Lower Risk)** — cluster-by-cluster per design evaluation order, validate each before proceeding
-3. **Stay on GCP (Lowest Cost)** — only if AWS is more expensive and costs are the sole metric
+3. **Stay on GCP** — when the evidence favors staying: AWS materially more expensive without offsetting operational benefit, deep GCP team investment with no AWS-specific need, or migration cost/risk exceeding the projected benefit on this stack. **Do not gate "stay" on "cost is the sole metric"** — any decisive factor suffices.
 
 Include migrate/stay decision factors:
 
 - **Migrate if:** operational efficiency matters, AWS-specific services needed, batch workloads (Spot savings), long-term AWS strategy, growing infrastructure
-- **Stay if:** cost is the only metric and AWS is more expensive, team deeply experienced with GCP, no need for AWS-specific services
+- **Stay if:** AWS is more expensive without an offsetting benefit for this stack, team deeply experienced with GCP, no need for AWS-specific services
+
+### Decision outcome (write alongside `path`)
+
+The `path` says how a migration would run; `outcome` says whether to run it now. Derive `outcome` from the trigger table, then write both.
+
+**Hard triggers — any one forces `outcome: "defer_for_evidence"`:**
+
+| # | Trigger                                                                                                                 | Evidence to name in `defer` next_steps / `would_flip_if`             |
+| - | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 1 | No billing baseline (`billing-profile.json` absent) AND the user's stated goal is cost-driven (Q3 asked, savings framing) | GCP billing export — 1 month minimum                                  |
+| 2 | Deferred services (e.g. BigQuery) that the user must cut over in the **same window** as app infra                        | Specialist engagement outcome / analytics target architecture         |
+| 3 | Compliance unknown (`compliance` contains `"unknown"`) AND regulated-domain signals present (health/finance/gov data hints in inventory or user statements) | Compliance confirmation from the user's legal/compliance owner        |
+
+**Soft triggers — never force defer; add each firing trigger to `conditions[]` (outcome becomes `conditional_go` instead of `go`) and to `would_flip_if[]`:**
+
+| # | Trigger                                                                                     | Condition wording (adapt to stack)                                                      |
+| - | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 4 | Active CUDs without an expiration-aligned plan (`cud_status` is `long_remaining`/`unknown_expiry`) | "Confirm CUD expiration and overlap cost before committing a start date"                |
+| 5 | Unresolved multi-region HA vs cost conflict (Q6=Catastrophic but Q1 not Global, or user wavered) | "Confirm whether global infrastructure is required — it dominates the cost delta"       |
+| 6 | `availability` applied by default, never user-confirmed                                        | "Confirm database availability — Multi-AZ assumption roughly doubles the database line" |
+| 7 | Pricing staleness beyond the ±15–25% band                                                     | "Refresh pricing (cache stale) before treating the dollar delta as decision-grade"      |
+
+**Outcome derivation:**
+
+```
+IF any hard trigger fired          -> outcome: "defer_for_evidence"
+ELSE IF path == "stay"             -> outcome: "stay"
+ELSE IF any soft trigger fired     -> outcome: "conditional_go" (conditions[] = fired soft triggers)
+ELSE                               -> outcome: "go"
+```
+
+Complexity alone (complex stack, many clusters) selects `path: "migrate_phased"` — it does **not** move `outcome` away from go/conditional_go. Populate `decision_basis` (measured / assumed / unknown) from constraint provenance: `chosen_by: "extracted"` or billing → measured; `"default"` → assumed; `["unknown"]` values and absent evidence → unknown. Populate `would_flip_if[]` with the 1–3 changes most likely to alter the outcome, each with its direction.
 
 ### Persist recommendation to estimation-infra.json
 
@@ -535,6 +567,8 @@ Part 7 MUST write the following `recommendation` block to `estimation-infra.json
 "recommendation": {
   "path": "migrate_optimized|migrate_phased|stay",
   "path_label": "Migrate with Optimizations|Phased Migration|Stay on GCP",
+  "outcome": "go|conditional_go|defer_for_evidence|stay",
+  "outcome_label": "Go|Go, with conditions|Defer — get evidence|Stay on GCP",
   "roi_justification": "string — one-sentence ROI case from Part 5",
   "confidence": "high|medium|low",
   "migrate_if": [
@@ -542,6 +576,17 @@ Part 7 MUST write the following `recommendation` block to `estimation-infra.json
   ],
   "stay_if": [
     "string — each factor that favors staying for THIS stack"
+  ],
+  "conditions": [
+    "string — REQUIRED non-empty when outcome is conditional_go; one entry per fired soft trigger"
+  ],
+  "decision_basis": {
+    "measured": ["string — evidence from billing/Terraform/code"],
+    "assumed": ["string — defaulted constraints feeding this estimate"],
+    "unknown": ["string — unconfirmed inputs (e.g. compliance unknown)"]
+  },
+  "would_flip_if": [
+    "string — 1-3 changes most likely to alter the outcome, with direction"
   ],
   "next_steps": [
     "string — actionable items from Part 7"
@@ -559,7 +604,7 @@ Part 7 MUST write the following `recommendation` block to `estimation-infra.json
 
 Use `path` for machine consumption; `path_label` for display in report and chat.
 
-**Required fields:** `path`, `path_label`, `confidence`, `migrate_if` (non-empty array), `stay_if` (non-empty array), `next_steps` (non-empty array). `roi_justification` is optional (omit when `path` is `"stay"`).
+**Required fields:** `path`, `path_label`, `outcome`, `outcome_label`, `confidence`, `migrate_if` (non-empty array), `stay_if` (non-empty array), `next_steps` (non-empty array). `conditions` is required non-empty when `outcome` is `"conditional_go"`. `decision_basis` and `would_flip_if` are required (arrays may be empty when nothing applies). `roi_justification` is optional (omit when `path` is `"stay"`). Readers of pre-extension artifacts must tolerate absent v2 fields (`outcome`, `conditions`, `decision_basis`, `would_flip_if`) and fall back to `path`.
 
 Tailor `migrate_if` and `stay_if` to THIS stack (deferred services, AI cost delta, CUD lock-in, team GCP depth, etc.) — do not copy the generic Part 7 bullets verbatim unless they apply.
 
@@ -580,6 +625,7 @@ Before returning control to `estimate.md`, require:
 - `estimation-infra.json` exists and passes `shared/schema-estimate-infra.md` validation.
 - `recommendation.path` is one of `migrate_optimized`, `migrate_phased`, or `stay`
 - `recommendation.path_label` is non-empty
+- `recommendation.outcome` is one of `go`, `conditional_go`, `defer_for_evidence`, `stay`; `conditions` non-empty when `conditional_go`; `outcome: "stay"` only with `path: "stay"`
 - `recommendation.migrate_if` and `recommendation.stay_if` are non-empty arrays (Part 7 MUST persist `recommendation`)
 
 **On FAIL:** Emit `GATE_FAIL | phase=estimate | field=<path> | reason=missing`. **Do NOT patch `estimation-infra.json` to pass the gate.** STOP — do not return control to `estimate.md` for phase completion.
@@ -597,7 +643,7 @@ After writing `estimation-infra.json`, present a concise summary to the user:
 5. **If billing data available**: Estimated GCP data transfer egress fees. **If billing data NOT available**: "Data transfer cost estimates require GCP billing data."
 6. Estimated monthly and annual savings (or increase) vs GCP per tier
 7. Top 2-3 optimization opportunities with estimated savings amounts
-8. **Recommendation:** `recommendation.path_label` with one-line ROI justification when present
+8. **Recommendation:** `recommendation.outcome_label` first ("Go, with conditions"), then `path_label` as the execution shape, one-line ROI justification when present. When `conditional_go`: list `conditions[]`. When `defer_for_evidence`: name the missing evidence and how to get it. Close with `would_flip_if[]` (1–3 bullets) so the user knows what to watch.
 
 **Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact. This applies to chat output, report tables, and summary lines.
 

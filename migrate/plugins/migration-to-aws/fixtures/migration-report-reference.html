@@ -23,6 +23,7 @@
     .subtitle { color: #656d76; margin-bottom: 1rem; }
     .badge { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 2rem; font-weight: 600; font-size: 0.8rem; color: #fff; margin-right: 0.35rem; }
     .badge-phased { background: var(--blue); }
+    .badge-outcome-conditional { background: #0d7377; }
     .badge-complex { background: var(--purple); }
     .badge-draft { background: #656d76; }
     .verdict { background: #dafbe1; border: 1px solid #4ac26b; border-left: 4px solid var(--green); border-radius: 6px; padding: 0.85rem 1rem; margin: 1rem 0; font-size: 1rem; }
@@ -90,6 +91,7 @@
       <div class="toc-group">Executive summary</div>
       <ol>
         <li><a href="#decision-summary">Migration Decision Summary</a></li>
+        <li><a href="#exec-assumptions">What This Assessment Rests On</a></li>
         <li><a href="#exec-tco">Total Cost of Ownership</a></li>
         <li><a href="#exec-services">Current Stack Overview</a></li>
         <li><a href="#exec-costs">Infrastructure Cost Comparison</a></li>
@@ -116,9 +118,14 @@
     <section id="decision-summary">
       <h2>Migration Decision Summary</h2>
       <p>
+        <span class="badge badge-outcome-conditional">Go, with conditions</span>
         <span class="badge badge-phased">Phased Migration</span>
         <span class="badge badge-complex">Complex</span>
       </p>
+      <ul class="compact">
+        <li>Condition: confirm database availability — Multi-AZ was assumed, not confirmed (roughly 2x database cost factor)</li>
+        <li>Condition: confirm CUD expiration date before committing a migration start date</li>
+      </ul>
 
       <div class="verdict">
         <strong>Recommendation:</strong> Migrate, phased over 10 weeks — estimated monthly savings of ~$503/month
@@ -197,6 +204,25 @@
         <li>Apply for AWS Activate Founders credits before ramping usage</li>
         <li>Schedule phased cutover per cluster creation order</li>
       </ol>
+    </section>
+
+    <!-- WHAT THIS ASSESSMENT RESTS ON -->
+    <section id="exec-assumptions">
+      <h2>What This Assessment Rests On</h2>
+      <p><strong>Assumptions applied by default</strong> — settings you never confirmed; each one shifts the numbers as described:</p>
+      <table>
+        <caption>Settings resolved by documented default rather than your answer or your Terraform.</caption>
+        <thead>
+          <tr><th scope="col">Setting</th><th scope="col">Assumed value</th><th scope="col">What it decides</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Database availability</td><td>Multi-AZ</td><td>Automatic failover; roughly 2x single-AZ database cost — confirm or compare a single-AZ scenario</td></tr>
+          <tr><td>AI priority</td><td>Balanced</td><td>Sonnet-class default model for the Bedrock mapping</td></tr>
+          <tr><td>Cloud Run traffic</td><td>Constant 24/7</td><td>Conservative (higher) AWS compute estimate</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Confidence:</strong> Medium — some material inputs assumed. Measured: GCP billing baseline ($165/mo infra), Cloud SQL disk size (10 GB). Assumed: database availability, Cloud Run traffic pattern. Unknown: none.</p>
+      <p><strong>Pricing provenance:</strong> Estimates based on cached AWS pricing (2026-03-07), accuracy ±5–10%. Cross-checked against the AWS Pricing Calculator for the Balanced scenario.</p>
     </section>
 
     <!-- TCO -->
