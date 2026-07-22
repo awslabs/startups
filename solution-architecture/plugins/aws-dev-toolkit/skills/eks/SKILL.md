@@ -126,7 +126,7 @@ kubectl logs <pod-name> -n <namespace> --previous
 - `ec2` — Instance types, Spot strategy, and ASG config for self-managed nodes
 - `networking` — VPC design, pod networking (secondary CIDRs), and security groups
 - `iam` — IRSA, Pod Identity, and node role configuration
-- `observability` — CloudWatch Container Insights, Prometheus, and control plane logging
+- `aws-observability` — CloudWatch Container Insights, Prometheus, and control plane logging
 - `lambda` — Serverless alternative for event-driven or low-traffic workloads
 - `service-mesh` — Istio for mTLS, east-west traffic management, and canary/blue-green shifting
 

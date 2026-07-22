@@ -219,7 +219,7 @@ For detailed operational guidance, consult:
 ### Related Skills
 
 - **`migration-advisor`** (agent) — Full migration assessment workflows (DMS, SCT, migration waves)
-- **`cost-check`** — Detailed cost analysis and Reserved Instance recommendations
+- **`aws-billing-and-cost-management`** — Detailed cost analysis and Reserved Instance recommendations
 - **`security-review`** — IAM, network, and encryption audit for database configurations
 - **`networking`** — VPC design, subnet planning, and security group configuration
 
@@ -236,4 +236,4 @@ When recommending a database design, include:
 | Proxy      | RDS Proxy                                  | Lambda consumers                       |
 | Encryption | KMS CMK, force SSL                         | Compliance requirement                 |
 
-Include estimated monthly cost range using the `cost-check` skill.
+Include estimated monthly cost range using the `aws-billing-and-cost-management` skill.

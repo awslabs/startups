@@ -257,14 +257,14 @@ For detailed configurations, CLI commands, and code examples, consult:
 
 ### Related Skills
 
-- **`bedrock`** — Foundation model customization, fine-tuning, and Bedrock-native inference
+- **`amazon-bedrock`** — Foundation model customization, fine-tuning, and Bedrock-native inference
 - **`eks`** — Kubernetes cluster design for Kubeflow or self-hosted MLflow deployments
 - **`lambda`** — Serverless compute for lightweight ML inference or pipeline triggers
 - **`step-functions`** — Workflow orchestration for simple ML pipelines without SageMaker Pipelines
 - **`s3`** — Data lake design, artifact storage, lifecycle policies for training data and model artifacts
 - **`iam`** — Least-privilege roles for SageMaker execution, cross-account model deployment
-- **`observability`** — CloudWatch dashboards, alarms, and logging for ML infrastructure
-- **`cost-check`** — Detailed cost analysis, Savings Plans recommendations, and Spot vs On-Demand comparison
+- **`aws-observability`** (aws-core) — CloudWatch dashboards, alarms, and logging for ML infrastructure
+- **`aws-billing-and-cost-management`** (aws-core) — Detailed cost analysis, Savings Plans recommendations, and Spot vs On-Demand comparison
 - **`ec2`** — Instance type selection for self-managed training clusters or custom inference servers
 
 ## Output Format
@@ -282,4 +282,4 @@ When recommending an MLOps architecture, include:
 | CI/CD               | CodePipeline triggering SageMaker Pipeline   | Automated training on code merge                     |
 | Cost Optimization   | Spot training + Savings Plan on inference    | Minimize both training and serving costs             |
 
-Include estimated monthly cost range using the `cost-check` skill.
+Include estimated monthly cost range using the `aws-billing-and-cost-management` skill (aws-core).

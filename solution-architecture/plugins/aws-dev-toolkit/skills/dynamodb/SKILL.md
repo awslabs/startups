@@ -184,6 +184,6 @@ Include:
 
 - `lambda` — Lambda with DynamoDB Streams event source mapping
 - `api-gateway` — API Gateway direct integration with DynamoDB
-- `messaging` — DynamoDB Streams feeding event-driven architectures
-- `cost-check` — DynamoDB capacity mode cost analysis, reserved capacity
+- `aws-messaging-and-streaming` — DynamoDB Streams feeding event-driven architectures
+- `aws-billing-and-cost-management` — DynamoDB capacity mode cost analysis, reserved capacity
 - `iam` — Fine-grained access control with DynamoDB condition keys

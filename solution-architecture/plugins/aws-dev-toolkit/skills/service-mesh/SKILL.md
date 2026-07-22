@@ -113,7 +113,7 @@ istioctl waypoint apply -n my-app --enroll-namespace
 
 - `eks` — Cluster lifecycle, compute, add-ons, and autoscaling the mesh runs on
 - `networking` — VPC design, VPC CNI, and NetworkPolicy that complements mesh authz
-- `observability` — CloudWatch Container Insights, Amazon Managed Prometheus/Grafana, tracing
+- `aws-observability` — CloudWatch Container Insights, Amazon Managed Prometheus/Grafana, tracing
 - `iam` — Pod Identity / IRSA for mesh components needing AWS permissions
 - `ecs` — For ECS workloads, use ECS Service Connect instead of a Kubernetes mesh
 

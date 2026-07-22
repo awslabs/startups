@@ -140,7 +140,7 @@ aws ssm start-session --target i-xxx
 - `networking` — VPC, subnets, security groups, and NAT strategy for EC2 instances
 - `iam` — Instance profiles, least-privilege policies, and SSM permissions
 - `s3` — Storage integration, instance backups, and bootstrap scripts
-- `observability` — CloudWatch agent, alarms, dashboards, and Compute Optimizer
+- `aws-observability` — CloudWatch agent, alarms, dashboards, and Compute Optimizer
 - `cloudfront` — CDN in front of EC2-backed web applications
 
 ## Anti-Patterns

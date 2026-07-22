@@ -23,5 +23,11 @@
   ],
   "license": "Apache-2.0",
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json"
+  "mcpServers": "./.mcp.json",
+  "dependencies": [
+    "aws-core",
+    "aws-agents",
+    "aws-data-analytics",
+    "aws-agents-for-devsecops"
+  ]
 }

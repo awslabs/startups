@@ -247,6 +247,6 @@ Observed results for a ~4 GB compressed PyTorch image:
 
 - `ecs` — ECS architecture, Fargate configuration, and task definitions
 - `mlops` — ML model deployment patterns on AWS
-- `observability` — CloudWatch metrics and Container Insights for measuring startup times
+- `aws-observability` — CloudWatch metrics and Container Insights for measuring startup times
 - `iam` — Least-privilege task execution and task roles
 - `networking` — VPC endpoints to avoid NAT Gateway costs for ECR/S3 traffic

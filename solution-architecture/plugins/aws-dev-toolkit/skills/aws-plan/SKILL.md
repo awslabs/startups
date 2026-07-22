@@ -60,13 +60,13 @@ Also recommend baseline SCP guardrails:
 
 ### Phase 4: Cost Estimate
 
-Use the `cost-check` skill or `aws-pricing` MCP tools to produce a rough monthly cost range. Include:
+Use the `aws-billing-and-cost-management` skill or `aws-pricing` MCP tools to produce a rough monthly cost range. Include:
 
 - Baseline cost (steady state)
 - Scale cost (at projected peak)
 - Cost optimization opportunities (Savings Plans, Spot, right-sizing)
 
-For AI/ML workloads, also invoke the `bedrock` skill.
+For AI/ML workloads, also invoke the `amazon-bedrock` skill.
 
 ### Phase 5: Deliver
 
@@ -144,5 +144,5 @@ Present the final plan as:
 - `aws-architect` — Well-Architected design evaluation and service selection
 - `customer-ideation` — Discovery questions and requirements gathering
 - `security-review` — Mandatory security validation for proposed architectures
-- `cost-check` — Cost estimation and optimization analysis
+- `aws-billing-and-cost-management` — Cost estimation and optimization analysis
 - `challenger` — Pushback and alternative perspective on proposed designs
