@@ -230,7 +230,7 @@ For each capability in `integration.capabilities_summary` that is `true`, check 
 | Batch Processing  | BatchPredictionJob      | Batch Inference (async)          | Partial |
 | Fine-tuning       | Vertex AI tuning        | Bedrock Custom Model             | Partial |
 | Grounding / RAG   | Vertex AI Search & RAG  | Bedrock Knowledge Bases          | Full    |
-| Agents            | Vertex AI Agent Builder | Bedrock Agents                   | Full    |
+| Agents            | Vertex AI Agent Builder | Bedrock AgentCore (Harness)      | Full    |
 
 Record `capability_gaps[]` for any Partial or None parity.
 
