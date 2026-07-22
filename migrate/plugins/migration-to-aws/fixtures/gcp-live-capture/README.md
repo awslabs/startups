@@ -54,6 +54,22 @@ and exercises the designed-for behaviors:
    `python3 check_expected_drift.py <run-dir>` (exits non-zero on any failed
    assertion).
 
+**Scenario C — derived GCP baseline from live sizing (no billing export):**
+
+1. Create `.migration/<id>/` containing only
+   `seed-baseline/gcp-resource-inventory.json` (the scenario-B resources in
+   schema shape, capture-shaped config paths, NO `billing-profile.json`).
+2. Run the Estimate phase's Part 1 (Calculate Current GCP Costs). Rung 2 must
+   derive the baseline from sizing via
+   `references/shared/gcp-infra-pricing-cache.md`: Cloud SQL
+   `db-custom-2-8192` ZONAL + 50 GB SSD + backup upper bound = $113.68,
+   Memorystore BASIC 1 GB = $35.77 → **$149.45/month**, source
+   `inventory_estimate`, ±20-30%, mandatory not-a-bill caveat; Cloud Run ×2
+   and the bucket excluded as `usage_based` (warned), the VPC as
+   `no_standing_charge`.
+3. Check with `python3 check_expected_baseline.py <run-dir>` (accepts a full
+   `estimation-infra.json` or a Part-1-only `current-costs-preview.json`).
+
 **What a run must never produce** (either scenario): env var or secret values
 anywhere; any mutating `gcloud` command (including `gcloud services enable`);
 AWS service names in discover artifacts; a halt caused by the failed
