@@ -30,6 +30,7 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
 REQUIRED_SECTION_IDS = [
     "decision-summary",
+    "exec-assumptions",
     "exec-services",
     "exec-costs",
     "exec-timeline",
