@@ -11,3 +11,8 @@
 # their purpose. They are never deployed.
 skip-path:
   - migrate/plugins/migration-to-aws/skills/tf-best-practices/fixtures/terraform-policy
+  # Live-discovery replay fixture: deliberately models a startup's EXISTING,
+  # imperfect GCP infrastructure (the migration SOURCE, never deployed). Its
+  # drift vs the canned gcloud captures is the test — sanitizing it to satisfy
+  # Checkov would change the source-provider state the fixture exists to model.
+  - migrate/plugins/migration-to-aws/fixtures/gcp-live-capture/workspace-terraform
