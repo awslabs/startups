@@ -89,12 +89,14 @@ Pull from `estimation-infra.json` → `recommendation` block. Fallback chain if 
 
 Content when `recommendation` block exists:
 
-1. **Verdict badge:** `recommendation.path_label` — render as colored badge (green for `migrate_optimized`, blue for `migrate_phased`, amber for `stay`)
+1. **Verdict (typography-first — the verdict is the thesis of this section):** When `recommendation.outcome` exists (v2 artifacts), render `outcome_label` as the section's **headline statement** in large display type (e.g. `<p class="verdict-headline">Go, with conditions</p>`), followed by one labeled metadata line in body type: "Execution shape: [path_label] · Complexity: [complexity_signal]". The hierarchy encodes the real relationship — the decision is the headline; how and how-hard are attributes of it. Do **not** render the verdict as a row of colored pill badges: structure should carry the information, and meaning must never depend on color alone (a muted color accent on the headline is fine; the words carry the verdict). When `outcome` is absent (pre-extension artifacts), the same treatment applies with `path_label` as the headline. When `conditional_go`: render `conditions[]` as a short checklist directly under the metadata line. When `defer_for_evidence`: lead with what IS established ("AWS can host this stack; AWS-side estimate $X–$Y/mo" + the designed-slice mapping), then the named missing evidence and how to obtain it — do not show a savings headline as if the decision were made, and do not present defer as "no answer."
+   1b. **Confidence pointer:** one line under the verdict block — `Confidence: [confidence] — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.` The full assumptions panel lives at the **end** of the executive summary (see Section 8 below), not here.
 2. **Complexity:** from `migration-preview.json` → `complexity_signal` ("Simple", "Moderate", "Complex") — colored badge
 3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
 4. **Timeline:** from `generation-infra.json` → `migration_plan.total_weeks` (preferred), OR `migration-preview.json` → `timeline_hint`. Do NOT use `recommendation.next_steps` as timeline — those are action items, not duration.
 5. **Migrate if / Stay if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists. For BigQuery/deferred analytics: **do not** frame specialist engagement as a reason to stay on GCP unless the user must cut over analytics in the **same window** as app infra. Prefer migrate-if bullets that mention parallel specialist planning.
 6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — **ordered list** (`<ol class="compact">`), not bullets. Each item is one concrete decision the reader must make next.
+   6b. **What would flip this (v2 artifacts):** from `recommendation.would_flip_if[]` when present — short unordered list immediately after Migrate if / Stay if. Skip silently when absent.
 7. **Next steps (optional):** from `recommendation.next_steps` — **ordered list** (`<ol class="compact">`) of actionable steps separate from timeline. Numbered sequence implies priority order; keep `Migrate if` / `Stay if` as unordered lists.
 
 **Deferred services flag:** If ANY resource in the design artifact has `aws_service == "Deferred — specialist engagement"`, add a prominent callout:
@@ -259,6 +261,20 @@ Source: static template filtered by design artifact service types
 - Up to 3 highest-severity risks
 - Each with: risk name, severity, one-line mitigation
 - Source: generation plan risk_assessment
+
+**Section 8 — What this assessment rests on (`exec-assumptions`, REQUIRED):**
+
+> Rendered heading is a plain title — e.g. `<h2>What This Assessment Rests On</h2>` with `<section id="exec-assumptions">`. Never render a literal "Section 8" heading (validator readability rule).
+
+Placed at the **end of the executive summary** — after Top Risks, immediately before the appendices — where assumption and validation sections conventionally sit in a migration report. The decision summary links here via the confidence pointer (item 1b). Three parts, all read from existing artifacts — invent nothing:
+
+1. **Assumptions applied by default** — table of every constraint in `preferences.json` with `chosen_by: "default"`: Setting (plain name), Assumed value, and the constraint's `design_consequence` verbatim. When no constraint was defaulted, render one line: "All inputs were confirmed by you or extracted from your Terraform/billing — nothing was assumed."
+2. **Confidence** — one line from `recommendation.confidence` with a plain-language gloss: high — "inputs measured or confirmed"; medium — "some material inputs assumed"; low — "key inputs missing or stale". When v2 `decision_basis` exists, render its three lists (measured / assumed / unknown) as compact columns instead of the single line.
+3. **Pricing provenance** — from the estimation artifact: `pricing_source` + cache date + `accuracy_confidence` band, matching the wording the Estimate chat summary already uses (e.g. "Estimates based on cached AWS pricing (2026-03-07), accuracy ±5–10%").
+
+TOC: link `#exec-assumptions` in the executive list. The anti-stub rule applies: this section must render actual settings and consequences, never "see preferences.json".
+
+Source: `preferences.json`, `estimation-infra.json` (falls back to `estimation-ai.json` accuracy fields for AI-only runs)
 
 ## Step 2: Build Detailed Appendix
 
@@ -437,8 +453,9 @@ Render an HTML table with **five columns**, one row per constraint object (itera
 
 **Critical-default caveats (required when present):** If any of the following constraints have `chosen_by: "default"` AND the corresponding question ID appears in `metadata.questions_defaulted`:
 
-- `compliance` (Q2): render a warning callout: _"⚠️ Compliance was not explicitly confirmed. The security baseline assumes no regulatory requirements. If SOC 2, PCI, HIPAA, or FedRAMP applies, re-run Clarify or manually add controls."_
+- `compliance` (Q2): render a warning callout: _"⚠️ Compliance was not explicitly confirmed. The security baseline assumes no regulatory requirements. If SOC 2, PCI, HIPAA, or FedRAMP applies, re-run Clarify or manually add controls."_ **Also fire this callout whenever `compliance.value` contains `"unknown"`** (regardless of `chosen_by` — covers both "I don't know" answers and defaulted runs). `"unknown"` never triggers the Section 4 compliance-controls note or any compliance-specific architecture.
 - `gcp_monthly_spend` (Q3): render a warning callout: _"⚠️ GCP spend was not confirmed by the user. Cost comparison uses the default band ($1K–$5K). Actual spend may differ — verify against your GCP billing console."_
+- `availability` (Q6): render a warning callout: _"⚠️ Database availability was assumed (Multi-AZ) — the user never confirmed it. This assumption roughly doubles the database line vs single-AZ. Confirm the availability requirement (or compare a single-AZ scenario in the what-if workshop) before treating the database estimate as final."_
 
 Place these callouts at the top of Appendix F, before the table, so they're immediately visible.
 
