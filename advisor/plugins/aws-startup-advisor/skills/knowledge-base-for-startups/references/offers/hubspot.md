@@ -1,17 +1,17 @@
 ---
 source_url: https://aws.amazon.com/startups/offers/hubspot
-title: "AWS Startups Save up to 75% on HubSpot"
+title: "AWS Startups Save up to 90% on HubSpot"
 ---
 
-## AWS Startups Save up to 75% on HubSpot
+## AWS Startups Save up to 90% on HubSpot
 
 ### Estimated offer value: $5,000.00
 
 Join HubSpot for Startups to get started!
 
-### 75% off HubSpot
+### 90% off HubSpot
 
-Companies that have raised less than $2M USD in funding are eligible for up to 75% off their first year, 50% off their second year, and 25% off their third.
+Companies that have raised less than $2M USD in funding are eligible for up to 90% off their first year, 50% off their second year, and 25% off their third.
 
 ### 50% off HubSpot
 

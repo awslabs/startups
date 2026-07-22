@@ -15,18 +15,27 @@ _contributes:
 
 A single self-contained HTML file summarizing the POC: what was generated, what changed from
 the original app, how to deploy it, the deployment architecture, and what still needs
-verifying. Inline CSS + SRI-pinned Mermaid — no other external dependencies. Same visual
-language as `recommendation-report.html` (dark header, `#FF9900` accent, card layout).
+verifying. Uses the **v3 document shell** (same visual system as recommendation-report.html):
+inline CSS from `references/report-shell.md` + SRI-pinned Mermaid — no other external
+dependencies. The report sits in `$RUN_DIR/poc/`, so artifact download links are relative to
+that dir.
 
-The report sits in `$RUN_DIR/poc/`, so artifact download links are relative to that dir.
+**Before writing the HTML:** load the shared shell (`references/report-shell.md`) — inline
+its CSS block and its SRI-pinned mermaid@10.9.3 script tag. The v3 shell defines
+`.help-strip`, `.doc-head`, `.timeline`, `.feat-grid`, `.callout`, document tables, and all
+other shared components. The help CTA is GATED on `report-help-banner.md`'s `banner_status`:
+it currently reads `SUPPRESSED` (support page not launched), so render NO help strip. Only when
+it flips to `LIVE` do you substitute `{{ HELP_URL }}` with the single-source destination URL
+from `references/report-help-banner.md` — never hardcode it here.
 
 ## Step P0 — Gather data
 
 | Variable           | Source                                                                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `POC_FILES`        | the files actually written under `$RUN_DIR/poc/` (walk the dir; EXCLUDE `__pycache__/`, `*.pyc`, and the report itself)                                    |
-| `DEPLOYMENT_MODEL` | `confirm.json.deployment_model`                                                                                                                            |
-| `MODEL_DISPLAY`    | resolved Bedrock model (Step 2 of poc.md)                                                                                                                  |
+| `DEPLOYMENT_MODEL` | `confirm.json.deployment_model` (primary unit; per-unit in `UNITS[].deployment_model` for a multi-unit POC)                                                |
+| `UNITS`            | `design.json.units[]` — one POC per unit; each carries `id`, `effective_runtime`, and `model_recommendation` (null for a model-less non-agent unit)        |
+| `MODEL_DISPLAY`    | resolved Bedrock model PER UNIT (Step 2 of poc.md) — `null`/omitted for a unit whose `model_recommendation` is null; never a single global model           |
 | `PLAN_BACKED`      | true if this POC came from a migration plan (3-F / 3-H plan-backed)                                                                                        |
 | `CHANGES`          | when plan-backed: `aws-design-ai.json.ai_architecture.code_migration.files_to_modify[].changes[]` and `before_after_example` — the applied migration edits |
 | `SOURCE_MODEL`     | when plan-backed: the source model replaced (from the plan)                                                                                                |
@@ -39,7 +48,9 @@ The report sits in `$RUN_DIR/poc/`, so artifact download links are relative to t
 
 ## Step P1 — File purpose map
 
-For each file in `POC_FILES`, write a one-line purpose. Infer from the filename/role:
+For each file in `POC_FILES`, write a one-line purpose. Multi-unit layout: when
+`poc/<unit-id>/` directories exist, list files nested per unit. Single-unit layout
+collapses flat (no unit subdirs). Infer from the filename/role:
 
 - `app/app.py` → "Migrated app (original UI/handler; local-dev only after migration)"
 - `app/core.py` → "Shared LLM logic — used by both the UI and the entrypoint server"
@@ -54,60 +65,176 @@ For each file in `POC_FILES`, write a one-line purpose. Infer from the filename/
 ## Step P2 — POC deployment diagram
 
 Compose a `flowchart TD` Mermaid block showing the POC's RUNTIME shape (what actually runs
-after `deploy.sh`), using the same topology discipline as build-diagram.md:
+after `deploy.sh`), using the same topology discipline as build-diagram.md. **Render one node per
+unit in `UNITS`, each on ITS OWN `effective_runtime`, NOT hardcoded to AgentCore and NOT a single
+global runtime/model** — the POC now supports agentcore / ecs / eks / lambda / batch / fargate /
+serverless_workers, and a MIXED or Temporal system has several units on different runtimes. For a
+single-unit POC this collapses to one node.
 
-- Primary flow (solid): User → AgentCore Runtime (hosting the container / `agentcore_app.py`
-  entrypoint) → Bedrock model (`MODEL_DISPLAY`).
+- Per unit, primary flow (solid): the runtime the POC actually deploys for THAT unit
+  (AgentCore Runtime, an ECS/Fargate task, an EKS Deployment, a Lambda function, an AWS Batch
+  job, or a Temporal worker) → Bedrock model (that unit's own `MODEL_DISPLAY`) **only when THAT
+  unit's `model_recommendation` is non-null**. A model-less non-agent unit renders its runtime
+  node with NO Bedrock node or invoke edge — never attach the primary unit's model to a secondary
+  unit's runtime. User → runtime for agent/service units; a Temporal worker's flow is Temporal
+  Server → worker. Every unit's deployment is shown — a secondary unit is never omitted.
 - Session memory (solid to a store node) if the app has it.
-- Enabled AgentCore services as a dotted-attached subgraph (from `confirm.json`).
+- Enabled AgentCore services as a dotted-attached subgraph (from `confirm.json`) — AgentCore
+  units only.
 - For plan-backed framework POCs: annotate the original UI (e.g. "Chainlit UI — local dev
   only") as a dashed node OFF the production path.
   Include an ASCII fallback in a `<details>` block, same as build-diagram.md.
 
 ## Step P3 — Write `$RUN_DIR/poc/poc-report.html`
 
-Structure (hide any section whose data is absent — do not emit empty cards):
+Use the **v3 document shell** (same structure as recommendation-report.html). The report
+follows this structure:
 
-1. **Header** — "Deployable POC" + model + deployment model + Run ID.
-2. **Status banner** — a one-line status: "Generated deliverables (Mode A) — run ./deploy.sh
-   yourself" OR "Assisted build (Mode B) — resources deployed, see teardown". If any TODO is
-   a correctness blocker (e.g. an unverified model id), a `⚠️` warning banner first.
-   2.5. **Help banner (TOP placement)** — load `references/report-help-banner.md`, copy its CSS
-   into the `<style>` block, and emit its HTML block (with `{{ HELP_URL }}` substituted) here,
-   right after the status banner and before the first content section. This is the shared
-   "Need help?" CTA that appears at the top of every report.
-3. **Migration changes (before/after)** — when plan-backed: a two-column before/after per
-   key change from `CHANGES` (e.g. `from langchain_openai import ChatOpenAI` →
-   `from langchain_aws import ChatBedrockConverse`; `gpt-3.5-turbo` → the target model;
-   `api_key=...` removed; `/invocations` entrypoint added; UI → local-dev). Use `<pre>` code
-   blocks, red-ish for "before", green-ish for "after". When NOT plan-backed, skip this
-   section.
-4. **Files** — the `POC_FILES` map from P1 as a list, each file a relative download link
-   (`<a class="dl-link" href="<relative path>" download>`). Directories: link each file
-   individually (browsers can't download a folder).
-5. **Deploy steps** — the `DEPLOY_STEPS` as a numbered vertical list, each with its command
-   (in a `<code>`/`<pre>`) and its verification. Mark real-resource / billable steps.
-6. **Architecture** — the P2 Mermaid diagram (with ASCII fallback in `<details>`).
-7. **Known issues / TODO** — `TODOS` as a checklist. Group by severity if clear (blocker vs
-   nice-to-have). Be honest — this is what the user must confirm before relying on the POC.
-8. **Mode B resources** (Mode B only) — the `LEDGER` as a table (type / name / region /
-   status) + a note pointing at `cleanup.sh`.
-9. **Footer** — "This POC is a disposable deployment-proof — your original repo was not
-   modified. For the authoritative in-repo migration (git branch, tests, eval), run
-   /migration-to-aws:llm-to-bedrock." + generation date.
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deployable POC</title>
+<!-- SRI-pinned mermaid@10.9.3 script tag — inline it VERBATIM from the shared shell
+     (references/report-shell.md), same tag/integrity hash. -->
+{{ SHARED_SHELL_MERMAID_TAG from references/report-shell.md }}
+<style>
+  /* ── Shared chrome ── load references/report-shell.md and inline its CSS block
+     HERE (chart tokens, reset & base, .page layout, .doc-head family, h2/h3 + .no,
+     table/th/td, .lede/.note, .rule-cite/.pre-flag, .callout, .help-strip,
+     .feat-grid, .timeline, .doc-foot). Single-sourced there so poc-report and
+     recommendation-report share identical chrome. ── */
+  {{ SHARED_SHELL_CSS from references/report-shell.md }}
 
-**Styling:** reuse the CSS from `generate-report.md` (copy the same `<style>` block: header,
-cards, `.dl-link`, banners, tables, Mermaid theme). The Mermaid `<script>` tag MUST use the
-same SRI-pinned version as generate-report.md:
-`<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js" integrity="sha384-R63zfMfSwJF4xCR11wXii+QUsbiBIdiDzDbtxia72oGWfkT7WHJfmD/I/eeHPJyT" crossorigin="anonymous"></script>`
-Add a before/after style pair:
+  /* ── POC-specific content CSS ── */
+  .diff-before { background:#fef2f2; border-left:3px solid #ef4444; }
+  .diff-after  { background:#f0fdf4; border-left:3px solid #16a34a; }
+  .diff-block { font-family: ui-monospace, monospace; font-size:12px; padding:12px 14px;
+                border-radius:6px; white-space:pre-wrap; margin:6px 0; }
+</style>
+</head>
+<body>
 
-```css
-.diff-before { background:#fef2f2; border-left:3px solid #ef4444; }
-.diff-after  { background:#f0fdf4; border-left:3px solid #16a34a; }
-.diff-block { font-family: ui-monospace, monospace; font-size:12px; padding:12px 14px;
-              border-radius:6px; white-space:pre-wrap; margin:6px 0; }
+<div class="page">
+
+<!-- ═══ DOCUMENT HEADER ═══ -->
+<div class="doc-head">
+  <div class="doc-kicker">AWS Migration POC · agent-advisor</div>
+  <div class="doc-title">Deployable POC: {{ SYSTEM_NAME or "Agent Platform" }}</div>
+  <div class="doc-meta">
+    <span>Run <b>{{ RUN_ID }}</b></span><span>Date <b>{{ RUN_DATE }}</b></span>
+    <span>Mode <b>{{ MODE_TEXT }}</b></span>
+  </div>
+</div>
+
+<!-- ═══ HELP STRIP — GATED on report-help-banner.md `banner_status`. It currently reads
+     SUPPRESSED (support page not launched): OMIT this whole block — render NOTHING here. When
+     it flips to LIVE, render the strip below and substitute {{ HELP_URL }} with the
+     single-source destination URL from report-help-banner.md (do NOT hardcode the URL here):
+<div class="help-strip">
+  <div class="txt"><b>Need help getting to AWS?</b> &nbsp;Install the AI agent for hands-on
+  guidance, talk with an AWS expert, or work with a certified AWS Partner.</div>
+  <a class="btn" href="{{ HELP_URL }}" target="_blank" rel="noopener">Explore your options</a>
+</div>
+     ═══ -->
+
+<!-- ═══ 1. STATUS ═══ -->
+<h2><span class="no">1.</span>Status</h2>
+{{ IF WARNING_TODOS }}
+<div class="callout warn"><b>Warning.</b> {{ WARNING_TODOS }}</div>
+{{ END IF }}
+<p class="lede">{{ MODE_TEXT }}</p>
+
+<!-- ═══ 2. MIGRATION CHANGES (when plan-backed) ═══ -->
+{{ IF PLAN_BACKED }}
+<h2><span class="no">2.</span>Migration changes</h2>
+<p>Key changes applied from the migration plan:</p>
+{{ FOR EACH change IN CHANGES }}
+<div class="diff-block diff-before">{{ change.before }}</div>
+<div class="diff-block diff-after">{{ change.after }}</div>
+{{ END FOR }}
+{{ END IF }}
+
+<!-- ═══ FILES ═══ -->
+<h2><span class="no">{{ PLAN_BACKED ? "3" : "2" }}.</span>Files</h2>
+<div class="feat-grid">
+  {{ FOR EACH file IN POC_FILES }}
+  <div class="feat">
+    <div class="feat-icon">📄</div>
+    <div>
+      <div class="feat-name"><a class="dl-link" href="{{ file.relative_path }}" download>{{ file.name }}</a></div>
+      <div class="feat-desc">{{ file.purpose }}</div>
+    </div>
+  </div>
+  {{ END FOR }}
+</div>
+
+<!-- ═══ DEPLOY STEPS ═══ -->
+<h2><span class="no">{{ PLAN_BACKED ? "4" : "3" }}.</span>Deploy steps</h2>
+<div class="timeline">
+  {{ FOR EACH (index, step) IN DEPLOY_STEPS }}
+  <div class="tstep">
+    <div class="tnum">{{ index }}</div>
+    <div>
+      <div class="tstep-title">{{ step.title }}</div>
+      <div class="tstep-body">{{ step.body }}</div>
+    </div>
+  </div>
+  {{ END FOR }}
+</div>
+
+<!-- ═══ ARCHITECTURE ═══ -->
+<h2><span class="no">{{ PLAN_BACKED ? "5" : "4" }}.</span>Architecture</h2>
+<div class="figure">
+<pre class="mermaid">{{ DIAGRAM_MERMAID }}</pre>
+<div class="figcap">Figure 1 — {{ DIAGRAM_CAPTION }}</div>
+</div>
+
+<!-- ═══ KNOWN ISSUES / TODO ═══ -->
+<h2><span class="no">{{ PLAN_BACKED ? "6" : "5" }}.</span>Known issues &amp; TODOs</h2>
+<ul class="plain">
+  {{ FOR EACH todo IN TODOS }}
+  <li>{{ todo }}</li>
+  {{ END FOR }}
+</ul>
+
+<!-- ═══ MODE B RESOURCES (Mode B only) ═══ -->
+{{ IF MODE === "B" }}
+<h2><span class="no">{{ PLAN_BACKED ? "7" : "6" }}.</span>Deployed resources</h2>
+<table>
+  <thead><tr><th>Type</th><th>Name</th><th>Region</th><th>Status</th></tr></thead>
+  <tbody>
+    {{ FOR EACH resource IN LEDGER }}
+    <tr><td>{{ resource.type }}</td><td>{{ resource.name }}</td>
+        <td>{{ resource.region }}</td><td>{{ resource.status }}</td></tr>
+    {{ END FOR }}
+  </tbody>
+</table>
+<p class="note">See <code>cleanup.sh</code> for teardown.</p>
+{{ END IF }}
+
+<!-- ═══ DOCUMENT FOOTER ═══ -->
+<div class="doc-foot">
+  This POC is a disposable deployment-proof — your original repo was not modified.
+  For the authoritative in-repo migration (git branch, tests, eval), run
+  <code>/migration-to-aws:llm-to-bedrock</code>. Generated {{ RUN_DATE }}.
+</div>
+
+</div><!-- .page -->
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+</script>
+</body>
+</html>
 ```
+
+The shell provides `.doc-head`, `.help-strip`, numbered `h2`/`h3`, document `table`, `.feat-grid`,
+`.timeline`, `.callout`, and `.doc-foot`. POC-specific styles (`.diff-before`, `.diff-after`) are
+added after the shared block. Dynamic numbering: sections shift by 1 when plan-backed (migration
+changes is §2, pushing files/deploy/architecture/todos/resources down).
 
 ## Step P4 — Open in browser
 

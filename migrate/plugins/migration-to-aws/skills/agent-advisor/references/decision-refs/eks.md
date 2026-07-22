@@ -25,3 +25,7 @@ None that eliminate it for agents (it's the GPU / multi-cloud / full-control win
 
 Highest ops burden; only worth it with existing K8s or GPU/multi-cloud needs.
 Hands off to migration-to-aws for compute-layer config.
+
+## Serving & security notes
+
+Entry: container behind Ingress/Service exposing your HTTP/gRPC endpoint. IAM: IRSA for pod-level permissions with `bedrock:InvokeModel` (model-bearing units only — a model-less unit omits it) + service-specific permissions. Networking: in-VPC by nature; Service/Ingress endpoints over TLS; VPC endpoints for AWS services.

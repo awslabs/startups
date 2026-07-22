@@ -273,7 +273,7 @@ function parseChecks(fm: string, key: string): CheckItem[] {
 export function parsePhase(path: string, fm: string): PhaseFrontmatter {
   const assembleBlock = /_assemble:\s*\n\s*_file:\s*([^\n]+)/.exec(fm);
   const roleRaw = scalar(fm, "_kind");
-  const role = roleRaw === "checkpoint" ? "checkpoint" : "backbone";
+  const role = roleRaw === "sidebar" ? "sidebar" : "backbone";
   // phase-level _trigger: a `_trigger: { ... }` at column 0 (NOT a _fragments[] entry,
   // which is indented under a `- _id:`). Match only a top-of-line _trigger.
   const ptrig = /^_trigger:\s*\{([^}]*)\}/m.exec(fm);

@@ -8,11 +8,21 @@
 
 ## 2. Your profile
 
-`<bulleted summary of the answers that drove the decision.>`
+`<bulleted summary of the answers that drove the decision; each answer carries provenance (wizard defaults vs user-stated).>`
 
 ## 3. Recommendation: `<Runtime>` <+ deployment model if AgentCore>
 
 <rationale + the top scoring signals; business framing then technical specifics.>
+
+## 3b. System topology (multi-unit systems only — omit entirely for one unit)
+
+`<table: unit id | workload class | verdict | trigger | one-line rationale>`
+<the platform decision: consolidated onto X / split, and why; the interconnect
+(queue/gateway/none) in one sentence.>
+
+## 3c. Temporal migration (temporal systems only — omit entirely otherwise)
+
+<Worker deployment plan per task queue: Tier 1 choice + which rule fired + rationale (cite decision-refs/temporal.md). Execution-tier plan per Activity class: Tier 2 targets (Light-IO in-process with hygiene reminders, agent-session scored, short-tool/heavy mapped). Commercials: selected by CURRENT server state — self-hosted → Way 1 gets Marketplace subscribe flow; already-on-Cloud gets billing-unchanged note (never re-pitch); Way 2 gets self-host stack. Cutover runbook: the selected runbook WITH its preconditions (runbook 1's graceful-drain/Activity-retry preconditions are not optional). Bedrock follow-up: if non-Bedrock LLM calls detected AND user said Yes → point to /migration-to-aws:llm-to-bedrock + replay safety per decision-refs/temporal.md runbook 3 + shim caution if deeply-coupled; if user said No → "Later, optional: Bedrock" section with the same replay-safety pointer.>
 
 ## 4. Architecture diagram
 
@@ -40,9 +50,8 @@
 
 ## 10. Cost magnitude
 
-<Build paths (estimate.json exists): the band + assumptions + "order-of-magnitude" disclaimer.
-Migrate (no estimate.json — Estimate is skipped): write "Detailed cost and TCO are produced by
-the migration plugins" plus an optional one-line directional note. Do NOT invent a dollar band.>
+<Build paths (estimate.json exists): the band + assumptions + "order-of-magnitude" disclaimer; note that per-unit breakdown and cost drivers are detailed in estimate.json.
+Migrate (estimate.json exists): present the per-unit target-state bands + breakdown from estimate.json. ALSO note that precise TCO comparison and current-spend delta are produced by the migration plugins. Do NOT invent a dollar band for anything estimate.json lacks (e.g., if Estimate failed, or for add_capabilities which bypasses Estimate).>
 
 ## 11. Next steps
 

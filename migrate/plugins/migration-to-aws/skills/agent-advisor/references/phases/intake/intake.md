@@ -26,23 +26,22 @@ Generate a run id from the current time as `MMDD-HHMM`. Create the run directory
 So: `<cwd>/.agent-advisor/<run_id>/`, plus `<cwd>/.agent-advisor/.gitignore` containing `*` (so
 run state is never committed). All later `$RUN_DIR` references point here.
 
-## Step 1.5 — Temporal signal check (before the two questions)
+## Step 1.5 — Temporal signal recognition
 
 If the opening message carries a Temporal signal (mentions Temporal, Temporal Cloud,
-Temporal workers, `temporalio` / `go.temporal.io` / `@temporalio` / `temporal-sdk`), gate on
-how explicit the INTENT is:
+Temporal workers, `temporalio` / `go.temporal.io` / `@temporalio` / `temporal-sdk`),
+acknowledge it in one line and record the signal in `$RUN_DIR/context-notes.md`. A Temporal
+migration routes into the normal flow with `migrate` as the entry point (pre-select it in
+Q1 when intent is explicit, still confirmable).
 
-- **Intent explicit** — the message already says both "Temporal" AND "move/migrate (workers)
-  to AWS" in substance → do NOT ask a confirmation (the user just told you; re-asking is
-  friction). Set `entry_point = temporal_worker` in `.phase-status.json` (Step 5 write; Q1 is
-  skipped — the entry point is decided), tell the user in one line ("Entering the Temporal
-  Worker path — your workflow orchestration code stays untouched"), still ask Q2 (background)
-  and the Step 4 code-path prompt (the branch scans code when a path is given), then load
-  `references/phases/temporal-worker/temporal-worker.md` and follow it. Do NOT continue into Discover/Clarify.
-- **Intent unclear** — Temporal is mentioned but the ask could be a general runtime
-  recommendation → confirm first (AskUserQuestion): "You run on Temporal — is this about
-  moving the Temporal workers to AWS? (Your workflow code stays untouched.)"
-  On yes → same as above. On no → proceed normally with Step 2; do not re-raise Temporal.
+**No-code path seeding:** when the Temporal signal fires AND the user does not provide a code
+path (no directory offered in Step 4), additionally SEED declared temporal units in
+`$RUN_DIR/context-notes.md`: one `temporal_worker_poll` unit (`source: "declared"`,
+`trigger: "temporal"`) plus a temporal context stub
+`{ "detected": true, "server": "unknown", "source": "declared" }`, and note that Activity
+classes will be established by interview in Clarify.
+
+Continue to Step 2.
 
 ## Step 2 — Ask two questions with AskUserQuestion
 
@@ -72,9 +71,25 @@ directly after intake.)
 
 ## Step 4 — Open context prompt
 
-Ask (plain text): "What can you tell me about your agent? Any files or existing code to
-share? (Optional — say 'skip' to move on.)" Capture any framework/model/infra hints into
-`$RUN_DIR/context-notes.md`.
+Ask (plain text): "What can you tell me about your agent — and is it one workload, or
+several (e.g. an interactive agent plus a batch job)? If several, do they interact? How
+is each one triggered (user request, event/queue, cron/schedule)? Any files or existing
+code to share? (Optional — say 'skip' to move on.)" Capture any framework/model/infra
+hints into `$RUN_DIR/context-notes.md`. If the user names several workloads, record a
+draft `units` list in context-notes.md (one line per unit: proposed kebab-case id,
+`workload_class` guess from the closed vocabulary defined in
+`references/phases/discover/discover.md` — `agent_session` | `batch` | `light_io` |
+`service` — `trigger` guess from the closed vocabulary (`request` | `event` | `schedule` |
+`temporal` | `unknown`), and interaction). Single-workload answers record nothing extra
+(collapse invariant — no new question turn either way; this rides the existing question).
+
+**Exception — a Temporal signal ALWAYS records a draft, even for a single workload.** If the
+answers mention Temporal (workers, task queues, Activities, Workflows, `*.tmprl.cloud`), record a
+draft `units` list regardless of unit count, and it MUST include a `temporal_worker_poll` unit
+plus a line per Activity-execution class the user describes. Do not collapse a Temporal workload
+to "nothing extra" — the polling tier and the Activity classes are what Clarify's Temporal
+interview and scope gate need; losing them silently drops Tier 1 polling and the orchestration
+decision.
 
 For `build_deploy` / `migrate`, **explicitly ask for the code path** ("Where's your agent code?
 A directory path lets me detect your framework/model and skip questions."). Discover runs only

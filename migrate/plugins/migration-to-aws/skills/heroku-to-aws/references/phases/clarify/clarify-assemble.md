@@ -97,6 +97,11 @@ Write `$MIGRATION_DIR/preferences.json`:
 }
 ```
 
+Do **not** write a `workshop` object from Clarify. The what-if workshop
+(`references/phases/workshop/`) creates/patches `preferences.workshop` later
+(`cpu_architecture`, `active`, `active_scenario_id`, `last_sheet_at`). See
+`references/shared/schema-workshop-scenarios.md`.
+
 ### Schema Rules
 
 1. The `sources` object records how each question was answered: `"user"` (explicitly answered), `"default"` (system default applied, including skipped questions and "use defaults for the rest").
@@ -108,6 +113,7 @@ Write `$MIGRATION_DIR/preferences.json`:
 7. `data.database_ha`, `data.redis_ha`, `data.kafka_retention_days` are omitted entirely when those services are not present in the inventory.
 8. `design_constraints.compute_target` uses the structured Q12c shape (`default`, `overrides`, `chosen_by`, `recommendation`). Existing reused preferences with legacy `compute_target.value` may be read by Design for backward compatibility, but newly assembled preferences MUST write the structured shape.
 9. `design_constraints.eb_deploy_method` is required when the resolved compute plan includes at least one Elastic Beanstalk formation; omit it for all-Fargate or all-EKS targets.
+10. Omit `workshop` on Clarify assemble — workshop mode owns that object.
 
 ---
 

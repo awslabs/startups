@@ -21,4 +21,4 @@ _produces:
 > the single creator of `diagram.md`, `recommendation.md`, and `mini-brief.md`,
 > and its postconditions (declared on the phase) are the phase's completion gate.
 > See `generate.md` § Steps 2–5 for the section fill order, the freshness footer,
-> and the Step 5.5 recommendation-review checkpoint that must precede any gate.
+> and the Step 5.5 recommendation-review sidebar that must precede any gate.

@@ -1,0 +1,52 @@
+{
+  "captured_at": "2026-07-21T17:30:00Z",
+  "build": {
+    "method": "manifests",
+    "files": ["build/routes-manifest.json", "build/prerender-manifest.json", "build/app-path-routes-manifest.json"],
+    "prescan_discrepancy": false,
+    "reason": "next_version 15.1.0 < 16.2 — Adapter API unavailable; manifests from existing .next/"
+  },
+  "api": [
+    { "endpoint": "/v2/teams", "file": "api/teams.json", "status": "ok", "note": null },
+    { "endpoint": "/v10/projects?teamId=team_acme01", "file": "api/projects.json", "status": "ok", "note": null },
+    {
+      "endpoint": "/v6/deployments?projectId=prj_acmeshop01&limit=20",
+      "file": "api/deployments-acme-shop.json",
+      "status": "ok",
+      "note": null
+    },
+    {
+      "endpoint": "/v10/projects/prj_acmeshop01/env?teamId=team_acme01&decrypt=false (key-name projection)",
+      "file": "api/env-keys-acme-shop.json",
+      "status": "ok",
+      "note": "reduced to key names via jq before write"
+    },
+    {
+      "endpoint": "/v9/projects/prj_acmeshop01/domains?teamId=team_acme01",
+      "file": "api/domains-acme-shop.json",
+      "status": "ok",
+      "note": null
+    },
+    {
+      "endpoint": "project cron configuration (OpenAPI-discovered row 6)",
+      "file": "api/crons-acme-shop.json",
+      "status": "skipped",
+      "discovered_via": "vercel api list",
+      "note": "no GET endpoint with a crons path segment found via vercel api list — crons from vercel.json only"
+    },
+    {
+      "endpoint": "/v1/storage/stores?teamId=team_abc123",
+      "file": "api/stores.json",
+      "status": "ok",
+      "discovered_via": "vercel api list",
+      "note": "GET endpoint with a storage/stores path segment located via vercel api list; exact resolved path recorded per the rows 6–7 discovery constraints"
+    },
+    {
+      "endpoint": "usage aggregates",
+      "file": "api/usage-acme-shop.json",
+      "status": "skipped",
+      "note": "no usage aggregates exposed on hobby/pro plan without observability"
+    }
+  ],
+  "probe": { "attempted": false, "routes": [] }
+}

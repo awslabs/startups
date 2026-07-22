@@ -5,6 +5,22 @@ A single source of truth for the help/CTA banner embedded in every HTML report
 the migration plan). Keeping it here means the copy and the destination URL are maintained in
 ONE place.
 
+## Status: SUPPRESSED (pre-launch)
+
+```
+banner_status: SUPPRESSED
+```
+
+The destination support page is **not yet launched**, so the banner is SUPPRESSED: every
+consumer MUST check this status FIRST and, while it reads `SUPPRESSED`, OMIT the banner
+entirely — do NOT render or inject the `<style>` rules or the HTML block into ANY report
+(recommendation, POC, or the migration-report post-process). The report simply starts with its
+first content section, no "Need help?" block.
+
+**To re-enable after launch:** flip `banner_status` to `LIVE` here and set the production URL
+in the Destination URL section below — every report picks both up from this one file. This is
+the ONLY switch; the CSS/HTML below is kept intact so re-enabling is a one-line change.
+
 ## Destination URL (single constant)
 
 ```
@@ -75,12 +91,19 @@ support page. No oversized standalone CTA button, no subtitle — the whole bloc
 
 ## Usage note
 
-The banner goes at the **TOP** of every report — right after the header/title bar, before the
-first content section — so the help paths are the first thing the user sees.
+**This whole usage note applies ONLY while `banner_status` is `LIVE`.** It currently reads
+`SUPPRESSED`, so every report OMITS the banner entirely (see the Status section above) — the
+"goes at the TOP of every report" instruction below is what happens once it is re-enabled, not
+now.
 
-- **recommendation-report.html / poc-report.html** (agent-advisor's own reports): add the CSS
-  to the `<style>` block and the HTML at the top of `.page`, immediately after the header,
-  before the first `<p class="section-title">`.
+When LIVE, the banner goes at the **TOP** of every report — right after the header/title bar,
+before the first content section — so the help paths are the first thing the user sees.
+
+- **recommendation-report.html / poc-report.html** (agent-advisor's own reports, v3 shell):
+  the v3 shell defines `.help-strip` (the compact inline variant), which renders the help CTA
+  as a single-row strip (text + inline button) instead of the 3-card form above. The v3
+  template uses `.help-strip` — the full 3-card HTML above is NOT used in the v3 family. The
+  canonical URL and copy are still maintained here; v3 just renders them more compactly.
 - **migration-report.html** (produced by the inline gcp-to-aws Generate, which is read-only):
   do NOT edit gcp-to-aws's report generator. Instead, migration-plan.md post-processes the
   generated `migration-report.html` after Generate completes — inject this banner's `<style>`

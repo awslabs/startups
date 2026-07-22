@@ -1,0 +1,34 @@
+{
+  "_comment": "Expected Generate-phase outcomes for a replay seeded from seed-generate/ (estimate completed; recommendation is the unresolved [A,B] tiebreak, so Generate must ASK the founder to pick — the replay founder picks Outcome A / OpenNext). Checked by check_expected_generate.py.",
+  "mandatory_files": [
+    "terraform/main.tf",
+    "terraform/variables.tf",
+    "terraform/outputs.tf",
+    "terraform/baseline.tf",
+    "terraform/vpc.tf",
+    "terraform/security.tf",
+    "terraform/.gitignore",
+    "terraform/terraform.tfvars.example",
+    "terraform/README.md",
+    "MIGRATION_GUIDE.md",
+    "README.md",
+    "generation-warnings.json"
+  ],
+  "outcome_a_files_must_exist": ["sst.config.ts"],
+  "outcome_b_files_must_not_exist": ["terraform/compute.tf"],
+  "peripheral_files_must_exist": ["terraform/database.tf", "terraform/cache.tf", "terraform/scheduling.tf"],
+  "scripts_dir_min_files": 3,
+  "scripts_must_include_substring": "secrets",
+  "main_tf_must_contain": ["hashicorp/aws", "5.80"],
+  "variables_must_declare": ["aws_region", "project_name", "environment", "migration_id"],
+  "no_placeholder_tokens_outside_backend": true,
+  "terraform_validate_warning": {
+    "at_most_one": true,
+    "reason": "Step 6 is environment-dependent: a pass records NO warning entry (validated in the reference replay, where a local provider cache let terraform init -backend=false + validate succeed offline); a failed or skipped run records exactly ONE entry with a founder-facing action. More than one entry, or an entry without an action, is always wrong."
+  },
+  "compliance_none_means_no_config_recorder": true,
+  "must_not_exist_anywhere": [
+    "any env var VALUE or token material (sk_live, vcp_, Bearer)",
+    "a second compute path's artifacts (mutual exclusion)"
+  ]
+}
