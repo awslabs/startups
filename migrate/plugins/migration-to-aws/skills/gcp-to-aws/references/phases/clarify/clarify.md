@@ -507,8 +507,8 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 | CCPA / CPRA                              | Q2 = G (CCPA / CPRA)                                          | Consumer privacy, logging/retention, data-inventory posture; confirm regions with legal review |
 | Gateway-only AI                          | Q14 = B only (LLM router/gateway)                             | Config change only; skip SDK migration                                                         |
 | LangChain/LangGraph AI                   | Q14 includes C                                                | Provider swap via ChatBedrock; 1–3 days                                                        |
-| OpenAI Agents SDK                        | Q14 includes E                                                | Highest AI effort; Bedrock Agents; 2–4 weeks                                                   |
-| Multi-agent + MCP                        | Q14 = D + F                                                   | Bedrock Agents to unify orchestration + MCP                                                    |
+| OpenAI Agents SDK                        | Q14 includes E                                                | Highest AI effort; AgentCore (Harness/Runtime); 2–4 weeks                                      |
+| Multi-agent + MCP                        | Q14 = D + F                                                   | AgentCore to unify orchestration + MCP (Gateway)                                               |
 | Voice platform AI                        | Q14 includes G                                                | Check native Bedrock support; Nova 2 Sonic if needed                                           |
 | GPT-5.5 migration                        | Q19 = GPT-5.5                                                 | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                 |
 | GPT-5.5 Pro migration                    | Q19 = GPT-5.5 Pro                                             | Nova 2 Pro — 95% cheaper on Bedrock                                                            |
