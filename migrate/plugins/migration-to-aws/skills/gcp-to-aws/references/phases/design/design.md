@@ -83,7 +83,27 @@ unless the user is already past Generate (see workshop-refresh stale-Generate
 guard). Leave `phases.design` and `phases.estimate` as `"completed"` and
 `current_phase` at `"estimate"` while `phases.workshop` is `"in_progress"`.
 
-After outer-run `HANDOFF_OK`, use the Phase Status Update Protocol
+### Design summary card (outer runs only — before the phase-status update)
+
+After outer-run `HANDOFF_OK`, present a compact card built from the design artifact(s) so the user sees what Design decided before costs arrive. Chat only — not a file:
+
+```
+### Your AWS architecture at a glance
+
+| GCP service | AWS target | How we chose this |
+| ----------- | ---------- | ----------------- |
+| [top 3-5 PRIMARY mappings] | [aws_service] | [Standard pairing / Tailored to your setup / Estimated from billing only] |
+
+[If any resource is "Deferred — specialist engagement":]
+Deferred (specialist engagement): [service names] — excluded from automated design and TCO.
+
+What Estimate answers next: your GCP baseline vs estimated AWS monthly cost
+(three scenarios), per-service breakdown, and the migrate/stay recommendation.
+```
+
+Use the user-facing vocabulary from `design-refs/fast-path.md` for "How we chose this" (**Standard pairing** / **Tailored to your setup** / **Estimated from billing only**) — never raw `deterministic`/`inferred` enum values. Cap the table at 5 rows ("+ N more in the design artifact"). Skip this card entirely on inner workshop reprices.
+
+After the card, use the Phase Status Update Protocol
 (read-merge-write) to update `.phase-status.json` — **in the same turn** as the
 output message below:
 
