@@ -107,7 +107,7 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 1. **Discover** — Scan Terraform files, application code, and/or billing data — or, for Heroku, inventory your account live via the authenticated Heroku CLI (read-only, consent-gated). Detects infrastructure resources, AI models, agentic frameworks, tools, and orchestration patterns.
 2. **Clarify** — Ask targeted questions about migration preferences, AI priorities, agentic migration approach, database sizing, and timeline.
 3. **Design** — Map source services to AWS equivalents. For AI workloads: select Bedrock models with honest pricing comparison. For agentic workloads: design AgentCore Harness config or Strands architecture.
-4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current spend.
+4. **Estimate** — Calculate monthly AWS costs using real-time pricing data. Compare to current spend. Writes a decision outcome alongside the execution path: **go / conditional_go / defer_for_evidence / stay** (`recommendation.outcome`), with named conditions, a measured/assumed/unknown decision basis, and "what would flip this" factors. Deferring is rare by design — it fires only when a responsible verdict is genuinely impossible (e.g. specialist-gated services that are a material share of spend and must cut over in the same window).
 5. **Generate** — Create migration artifacts: Terraform, provider adapters, `harness.json`, deployment scripts, incremental migration scripts, `MIGRATION_GUIDE.md`, `README.md`, and **`migration-report.html`** (self-contained HTML assessment).
 6. **Feedback** _(optional)_ — Collect anonymized feedback to improve the tool.
 
@@ -115,9 +115,10 @@ ln -s "$(pwd)" ~/.cursor/plugins/local/migration-to-aws
 
 The Generate phase produces a browser-ready HTML report with:
 
-- Executive summary (verdict, cost tiers, timeline, risks)
+- Executive summary (decision outcome as the verdict headline, execution shape and complexity as metadata, cost tiers, timeline, risks)
 - Combined infra + AI total cost of ownership (when both tracks ran)
 - Security baseline line items (GuardDuty, CloudTrail, budgets, etc.)
+- **What This Assessment Rests On** (end of the executive summary): every defaulted assumption with its design consequence, a confidence gloss with the measured/assumed/unknown decision basis, and pricing provenance — linked from the verdict's confidence line
 - Detailed appendices: service mappings, per-service costs, migration steps, AI migration, artifacts catalog
 
 After the report is written, run the post-write validator:
