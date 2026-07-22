@@ -39,3 +39,7 @@ isolation, minimal ops, cross-session memory, high-volume session launch.
 ## Tradeoffs
 
 2 vCPU / 8 GB ceiling; no process-level suspend (Session Storage persists files only).
+
+## Serving & security notes
+
+Entry: POST /invocations + GET /ping. IAM: execution role with InvokeModel + Gateway/Registry/SessionStorage permissions as needed. Networking: public service endpoints over TLS; VPC endpoints only if policy demands.

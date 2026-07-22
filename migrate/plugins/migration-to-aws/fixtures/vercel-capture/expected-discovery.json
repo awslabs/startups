@@ -1,0 +1,39 @@
+{
+  "_comment": "Assertions for a Discover-phase replay of this fixture (see README.md). Checked against the run dir's discovery.json, coupling-score.json, and preflight-findings.json by check_expected_discovery.py — not a full expected document.",
+  "artifacts_must_exist": ["discovery.json", "coupling-score.json", "preflight-findings.json"],
+  "route_dispositions": {
+    "/": "static",
+    "/blog/[slug]": "isr",
+    "/dashboard": "dynamic",
+    "/api/checkout": "dynamic"
+  },
+  "route_disposition_notes": {
+    "/blog/[slug]": "appears in prerender-manifest dynamicRoutes with ISR entries (launch-post/hiring at 3600s) — must be isr, not dynamic",
+    "/api/checkout": "Route Handler — manifests don't classify it; must be dynamic at LOW confidence with the Adapter-API upgrade_input"
+  },
+  "manifest_metadata": { "adapter_api_used": false },
+  "env_var_names_exact": [
+    "DATABASE_URL",
+    "KV_REST_API_TOKEN",
+    "KV_REST_API_URL",
+    "NEXT_PUBLIC_SITE_URL",
+    "NODE_ENV",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET"
+  ],
+  "storage_integrations_min": 2,
+  "peripheral_types_must_include": ["kv", "postgres"],
+  "domains_must_include": ["www.acme-shop.com"],
+  "sections_unavailable_ok": ["crons (api capture skipped — vercel.json cron remains)", "usage_metrics"],
+  "probe": { "must_not_have_results": true, "reason": "manifest records probe.attempted: false" },
+  "preflight_checks_all_10": ["M1", "M2", "B1", "B2", "B3", "B4", "S1", "I1", "O1", "U1"],
+  "confidence_rules": {
+    "every_finding_has_confidence": ["LOW", "MEDIUM", "HIGH"],
+    "non_high_findings_have_upgrade_input": true
+  },
+  "must_not_exist_anywhere": [
+    "any env var VALUE (fixture env entries are names only)",
+    "any token material (VERCEL_TOKEN, Bearer, vcp_, sk_live)",
+    "AWS service recommendations inside discover artifacts"
+  ]
+}

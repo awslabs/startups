@@ -1,7 +1,7 @@
 ---
 _phase: add-capabilities
 _title: "Add Capabilities (branch)"
-_kind: checkpoint
+_kind: sidebar
 _requires_phase: intake
 _trigger: { _when: "intake is done AND entry_point == add_capabilities" }
 _input: workspace

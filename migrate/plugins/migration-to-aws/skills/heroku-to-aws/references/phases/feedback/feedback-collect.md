@@ -95,7 +95,7 @@ Answer the 5 quick questions, then paste the trace into the
 > generated link would dead-end for the user. Skip directly to Step 4 and leave
 > `share_link_presented: false` in `feedback.json`. The spec below is preserved
 > so the feature can be re-enabled by removing this gate (here and in SKILL.md
-> § Feedback & Sharing Checkpoints) once the page is live and verified.
+> § Feedback & Sharing Sidebars) once the page is live and verified.
 
 Required artifacts: `preferences.json`, `estimation-infra.json`. If missing, output "Cannot generate share link — required artifacts not found." and skip to Step 4.
 
@@ -118,7 +118,7 @@ Required artifacts: `preferences.json`, `estimation-infra.json`. If missing, out
   "resource_names": [{ "type": "<resource_type>", "name": "<heroku_app>" }],
   "workload_types": ["infra"],
   "spend_band": "<under-10k|10k-50k|50k-100k|over-100k|unknown>",
-  "share_checkpoint": "<after_estimate|after_generate>",
+  "share_sidebar": "<after_estimate|after_generate>",
   "phases_completed": ["<completed phases>"]
 }
 ```
@@ -146,12 +146,12 @@ Write `$MIGRATION_DIR/feedback.json`:
   "trace_included": true,
   "share_link_presented": false,
   "share_link_generated_at": null,
-  "share_checkpoint": null
+  "share_sidebar": null
 }
 ```
 
 - If trace failed: `"trace_included": false`
-- If share link generated: `"share_link_presented": true`, populate `share_link_generated_at` and `share_checkpoint`
+- If share link generated: `"share_link_presented": true`, populate `share_link_generated_at` and `share_sidebar`
 
 When `feedback.json` (and `trace.json`, if `trace_included`) are written, control passes to
 the assembler (`feedback-assemble.md`) for the output gate and phase completion.

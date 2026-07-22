@@ -1,7 +1,7 @@
 # Temporal Worker Migration — Decision Reference
 
-Single source of truth for the `temporal_worker` branch
-(`references/phases/temporal-worker/temporal-worker.md`). Content here is locked by
+Single source of truth for Temporal Worker migrations, consumed by the main flow
+(discover / clarify / design / generate — temporal workloads ride the unit pipeline). Content here is locked by
 `scripts/test_temporal_decision_refs.py` — if you change the Tier 1 rules or
 runbook preconditions, update that test in the same commit.
 
@@ -39,9 +39,10 @@ Before concluding Way 2 on compliance grounds, surface External Payload Storage
 (own S3, Preview): payloads staying in the customer's S3 weakens many compliance
 arguments for self-hosting the whole server.
 
-Evidence for the Way 1 default: Serverless Workers, External Payload Storage,
-multi-region replication, and self-serve PrivateLink are all Cloud-only or
-Cloud-first.
+Evidence for the Way 1 default: Serverless Workers, self-serve PrivateLink (GA),
+and multi-region replication are Cloud-only or Cloud-first features. External
+Payload Storage (Preview) is a capability that can weaken compliance arguments
+for self-hosting, though it is preview and not Cloud-exclusive.
 
 ## Tier 1 — Polling tier (where the Worker daemon lives)
 
@@ -88,12 +89,29 @@ chose single ECS service" — NOT as falling through to rule 5. Apply the rules
 
 Classify each Activity (scan + user confirmation), then map:
 
-| Activity class                                             | Signature                                        | Execution target                                                                                                                                                                                              |
-| ---------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Light-IO (single LLM/API call, DB read-write)              | IO-bound, seconds–minutes                        | **in-process** — delegation adds hops for nothing. In-process does NOT waive Temporal hygiene: idempotency, Activity timeout/retry options, cancellation handling, heartbeats for external calls              |
-| Agent-session (LLM loop + tools + memory, tens of minutes) | stateful session, isolation, independent scaling | **run `scoring.py`** via the adapter table in temporal-worker.md; typical winner AgentCore Runtime (≤8h) — DAF pattern; community reference github.com/koukish/async-agent-architecture-sample (not official) |
-| Short-tool (convert, scrape, validate)                     | stateless, seconds, spiky                        | **Lambda** (<15 min)                                                                                                                                                                                          |
-| Heavy (batch, fine-tune, >15 min, high CPU/GPU)            | long, resource-dense                             | **ECS task / AWS Batch**; GPU → EC2                                                                                                                                                                           |
+| Activity class                                             | Signature                                        | Execution target                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Light-IO (single LLM/API call, DB read-write)              | IO-bound, seconds–minutes                        | **in-process** — delegation adds hops for nothing. In-process does NOT waive Temporal hygiene: idempotency, Activity timeout/retry options, cancellation handling, heartbeats for external calls                                                  |
+| Agent-session (LLM loop + tools + memory, tens of minutes) | stateful session, isolation, independent scaling | **run `scoring.py`** via the adapter table below (§ Tier 2 adapter — agent-session Activity classes); typical winner AgentCore Runtime (≤8h) — DAF pattern; community reference github.com/koukish/async-agent-architecture-sample (not official) |
+| Short-tool (convert, scrape, validate)                     | stateless, seconds, spiky                        | **Lambda** (<15 min)                                                                                                                                                                                                                              |
+| Heavy (batch, fine-tune, >15 min, high CPU/GPU)            | long, resource-dense                             | **ECS task / AWS Batch**; GPU → EC2                                                                                                                                                                                                               |
+
+## Tier 2 adapter — agent-session Activity classes
+
+For agent-session Activities, build the scoring.py input via this adapter (unlisted dimensions stay `"unknown"` — the engine's DEFAULTS apply):
+
+| scoring.py dimension                                    | Fill from Temporal context                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session_duration`                                      | max expected runtime of this Activity (`under_15min` / `15min_to_8hr` / `over_8hr`)                                                                                                                                                                                                                                                         |
+| `traffic_pattern`                                       | Activity start pattern from workflow schedule/volume (`bursty` / `steady` / `idle`)                                                                                                                                                                                                                                                         |
+| `launch_concurrency`                                    | expected concurrent Activity starts (`high` / `moderate` / `low`)                                                                                                                                                                                                                                                                           |
+| `session_state`                                         | agent loop holds conversation/tool state → `stateful`; waits for human signal → `hitl`                                                                                                                                                                                                                                                      |
+| `memory_needs`                                          | memory scoped to one Activity run → `session_only`; persists across runs → `cross_session`. A retried/re-dispatched agent Activity (e.g. re-draft after a rejection signal) counts as a NEW run — stay `session_only` unless the business logic needs memory to carry across executions (shared investigation context, cross-ticket recall) |
+| `isolation`                                             | per-session sandbox needed (untrusted code/tools) → `required`                                                                                                                                                                                                                                                                              |
+| `framework`                                             | detected agent framework in the Activity body (`strands` / `langgraph` / `crewai` / `custom` / `none`)                                                                                                                                                                                                                                      |
+| `platform_fit`                                          | caller is an in-VPC Worker, not a user-facing endpoint → team's existing AWS fit if stated (`ecs` / `eks`), else `none`                                                                                                                                                                                                                     |
+| `existing_cluster`                                      | from Tier 1 answer (team's K8s/ECS reality)                                                                                                                                                                                                                                                                                                 |
+| `ops_preference`, `multi_agent`, `compute_tier`, others | ask in Step 2 only if load-bearing; otherwise `unknown`                                                                                                                                                                                                                                                                                     |
 
 ## Cutover runbooks
 

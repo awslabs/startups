@@ -1,0 +1,53 @@
+{
+  "phase": "clarify",
+  "timestamp": "2026-07-21T17:50:00Z",
+  "replay_note": "No live founder in this replay run. Each answer is the skill's documented default when one exists, otherwise the most conservative documented option; the rationale is recorded per entry in answer_rationale.",
+  "Q1_traffic_shape": {
+    "prompt": "Roughly, is your traffic spiky (occasional bursts far above typical) or sustained (fairly steady load)? If you have a rough peak-to-median ratio in mind, share it — otherwise a general sense is fine.",
+    "answer": "declined",
+    "answer_rationale": "No documented default traffic shape exists in the skill. The recommendation engine's documented conservative behavior for an absent/vague Q1 with no log drain is the Step 4 tiebreak ('present both paths rather than guessing'), and clarify.md's error handling documents declined answers explicitly ('record answer: declined, apply the fallback per vercel-recommendation-engine.md § Fallback Behavior'). Declining invokes exactly that documented fallback without fabricating a traffic profile.",
+    "design_consequence": "feeds recommend phase rule 3 (traffic shape decides A vs. B) and rule 4 (tiebreak fires if this answer is vague and no log drain exists)"
+  },
+  "Q2_migration_trigger": {
+    "prompt": "What actually triggered you to consider this migration? (bill size, bill variance/unpredictability, running out of credits, data locality requirements, hitting a platform limit, something else)",
+    "answer": "bill size",
+    "answer_rationale": "SKILL.md's documented default persona is the cost-driven founder ('the default path for a cost-driven founder is migrate now on OpenNext v3'), consistent with the stipulated $200-1000 monthly spend answer for Q6.",
+    "design_consequence": "motivational context for the report's decision traceability appendix; does not directly drive a precedence rule but frames the recommendation's framing (e.g. variance-driven founders lean toward Outcome B's predictability pitch); also feeds report-render.md's what-you-gain section - a credits/funding-pressure answer here surfaces the AWS Activate eligibility callout"
+  },
+  "Q3_devops_bandwidth": {
+    "prompt": "Who owns production when something breaks? Do you have dedicated DevOps capacity, or is this a founder/small-team responsibility?",
+    "answer": "founder/small-team responsibility - no dedicated DevOps capacity; no debuggability preference stated; no existing separate API service mentioned",
+    "answer_rationale": "No documented default exists. The most conservative documented option is not to assume undocumented capabilities (dedicated DevOps) or preferences (debuggability) - the question's own framing offers 'founder/small-team responsibility' as the baseline case, matching the skill's founder-persona framing throughout.",
+    "design_consequence": "feeds recommend phase rule 3 (small team favors Outcome A; a stated debuggability preference favors Outcome B) and rule 2 (an existing separate API service, if mentioned here, feeds the Lambda-hostility check)"
+  },
+  "Q4_preview_dependence": {
+    "prompt": "How load-bearing are PR preview deployments for your team's workflow? (e.g. 'we review every PR live before merge' vs. 'we barely use them')",
+    "answer": "declined",
+    "answer_rationale": "The recommendation engine documents an explicit default for an unanswered/declined Q4: 'Treat as not load-bearing, fall through to Step 2. Note in reasons: preview dependence unanswered - assumed not load-bearing by default.' Declining invokes exactly that documented default without fabricating workflow facts (the deployments API capture shows 2 recent preview deployments, so asserting 'we barely use them' would contradict evidence).",
+    "design_consequence": "feeds recommend phase rule 1 (preview-dependence + separability check) - the FIRST precedence rule evaluated; a load-bearing answer here can short-circuit the entire recommendation to Outcome C or stay-on-Vercel before any other signal is consulted"
+  },
+  "Q5_nextjs_upgrade": {
+    "prompt": "Your app is on Next.js 15.1.0. Upgrading to 16.2+ would unlock the Adapter API's typed build output for higher-confidence discovery, and positions you for the future verified AWS adapter when it reaches GA. This is entirely optional — my default recommendation path (migrate now on OpenNext v3) works regardless of your current version. Interested, or would you rather stick with your current version for now?",
+    "answer": "stick with the current version for now - proceed on the default path (migrate now on OpenNext v3)",
+    "answer_rationale": "SKILL.md documents the default path explicitly: 'The default path for a cost-driven founder is migrate now on OpenNext v3, whatever their current Next.js version.' The upgrade is a confidence-upgrade offer, never a gate (Requirement 3.3-3.5).",
+    "design_consequence": "confidence-upgrade offer only, per Requirement 3.4 - NEVER feeds a precedence rule as a gate; recorded for the report's Next Steps section (Requirement 9.8)"
+  },
+  "Q6_vercel_spend": {
+    "prompt": "What's your approximate monthly Vercel spend? This helps me compare AWS costs against your current bill. (Just a ballpark is fine — $0-50, $50-200, $200-1000, or $1000+)",
+    "answer": "$200-1000",
+    "answer_rationale": "Stipulated founder answer for this replay run (Q6-style Vercel monthly spend question: the founder's answer is the $200-1000 range).",
+    "design_consequence": "feeds estimate phase current_costs.vercel_monthly as the Vercel baseline for cost comparison; when skipped, estimate derives the baseline from Vercel API usage metrics instead"
+  },
+  "Q7_database_size": {
+    "prompt": "Approximately how large is your Vercel Postgres database? This determines which migration tool I'll set up in the scripts. (A) Less than 1 GB (B) 1-10 GB (C) 10-100 GB (D) More than 100 GB",
+    "answer": "B",
+    "answer_rationale": "Consistent with the Vercel API stores capture (acme-orders-db, sizeBytes 3221225472 ≈ 3 GB, squarely in the 1-10 GB bracket) and yields the same conservative tooling/sizing (pg_dump, db.t4g.small) as the documented 'unknown' fallback would.",
+    "design_consequence": "feeds generate phase migration script selection — pg_dump for < 10 GB, AWS DMS for >= 10 GB — and RDS instance sizing in the estimate (db.t4g.micro for < 1 GB, db.t4g.small for 1-10 GB, db.r6g.large for 10-100 GB, db.r6g.xlarge for > 100 GB)"
+  },
+  "Q8_compliance": {
+    "prompt": "Do you have compliance requirements that your AWS environment needs to meet? (Select all that apply, or 'None') (A) SOC 2 (B) PCI DSS (C) HIPAA (D) FedRAMP (E) None",
+    "answer": "none",
+    "answer_rationale": "No documented default exists; 'none' is the documented error-handling option ('baseline.tf emits the always-on resources only, no compliance-conditional section') and asserting compliance obligations with no supporting evidence would fabricate requirements.",
+    "design_consequence": "feeds generate phase baseline.tf — compliance answer drives the conditional section (AWS Config recorder, Security Hub + standards subscriptions) and CloudTrail log retention period (90 days default, up to 2190 for HIPAA)"
+  }
+}

@@ -42,7 +42,8 @@ Complete inventory of discovered Heroku resources. Uses a **flat resource model*
     }
   ],
   "billing_profile": {},
-  "terraform_metadata": {}
+  "terraform_metadata": {},
+  "live_metadata": {}
 }
 ```
 
@@ -54,13 +55,13 @@ Complete inventory of discovered Heroku resources. Uses a **flat resource model*
 
 Report-level information about the discovery run.
 
-| Field                   | Type              | Required | Description                                                                                                                                                      |
-| ----------------------- | ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `discovery_timestamp`   | string (ISO 8601) | ✅       | When discovery was executed                                                                                                                                      |
-| `total_apps_discovered` | integer           | ✅       | Count of Heroku apps found                                                                                                                                       |
-| `discovery_sources`     | string[]          | ✅       | Sources used: `"terraform"`, `"procfile"`, `"billing"`                                                                                                           |
-| `confidence`            | string            | ✅       | `"full"` (Terraform files present and parsed successfully) or `"reduced"` (Partial data, e.g., Terraform parse errors on some files, missing expected resources) |
-| `confidence_note`       | string            | ❌       | Explanation when confidence is `"reduced"`                                                                                                                       |
+| Field                   | Type              | Required | Description                                                                                                                                                                     |
+| ----------------------- | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discovery_timestamp`   | string (ISO 8601) | ✅       | When discovery was executed                                                                                                                                                     |
+| `total_apps_discovered` | integer           | ✅       | Count of Heroku apps found                                                                                                                                                      |
+| `discovery_sources`     | string[]          | ✅       | Sources used: `"terraform"`, `"procfile"`, `"billing"`, `"live"`                                                                                                                |
+| `confidence`            | string            | ✅       | `"full"` (primary source(s) parsed/captured successfully) or `"reduced"` (partial data, e.g., Terraform parse errors, failed/skipped live captures, missing expected resources) |
+| `confidence_note`       | string            | ❌       | Explanation when confidence is `"reduced"`                                                                                                                                      |
 
 ### `apps[]` (REQUIRED)
 
@@ -83,12 +84,15 @@ Per-app metadata entries. One entry per discovered Heroku app.
 
 Flat array of all discovered resources. **No nesting, no clustering.**
 
-| Field           | Type   | Required | Description                                               |
-| --------------- | ------ | -------- | --------------------------------------------------------- |
-| `resource_id`   | string | ✅       | Unique identifier (format below)                          |
-| `resource_type` | string | ✅       | One of: `"formation"`, `"addon"`, `"space"`, `"pipeline"` |
-| `heroku_app`    | string | ✅       | App name this resource belongs to, or `"unassociated"`    |
-| `config`        | object | ✅       | Type-specific configuration (see per-type schemas below)  |
+| Field                    | Type    | Required | Description                                                                                 |
+| ------------------------ | ------- | -------- | ------------------------------------------------------------------------------------------- |
+| `resource_id`            | string  | ✅       | Unique identifier (format below)                                                            |
+| `resource_type`          | string  | ✅       | One of: `"formation"`, `"addon"`, `"space"`, `"pipeline"`, `"domain"`, `"config"`           |
+| `heroku_app`             | string  | ✅       | App name this resource belongs to, or `"unassociated"`                                      |
+| `config`                 | object  | ✅       | Type-specific configuration (see per-type schemas below)                                    |
+| `source`                 | string  | ❌       | Discovery provenance: `"terraform"`, `"live"`, or `"live+terraform"` (merged)               |
+| `unmanaged_by_terraform` | boolean | ❌       | Set `true` when live discovery found the resource but Terraform does not manage it (drift)  |
+| `not_found_live`         | boolean | ❌       | Set `true` when Terraform declares the resource but live discovery did not find it deployed |
 
 ### `billing_profile` (OPTIONAL — present when billing data available)
 
@@ -117,6 +121,19 @@ Flat array of all discovered resources. **No nesting, no clustering.**
 | `resource_types_extracted` | string[] | ✅       | List of extracted resource types (e.g., `"heroku_app"`, `"heroku_addon"`) |
 | `parse_warnings`           | string[] | ✅       | Any parse warnings encountered during extraction                          |
 
+### `live_metadata` (OPTIONAL — present when live CLI discovery ran)
+
+| Field                            | Type     | Required | Description                                                                                                                                                                              |
+| -------------------------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `found`                          | boolean  | ✅       | Whether live capture produced usable data                                                                                                                                                |
+| `captured_at`                    | string   | ✅       | ISO 8601 timestamp of the CLI capture run                                                                                                                                                |
+| `apps_captured`                  | integer  | ✅       | Number of apps successfully captured                                                                                                                                                     |
+| `apps_failed`                    | integer  | ✅       | Number of apps whose captures failed (e.g., 403 on team apps)                                                                                                                            |
+| `capture_warnings`               | string[] | ✅       | Failed/skipped capture notes carried from `live-capture/manifest.json`                                                                                                                   |
+| `limitations`                    | string[] | ✅       | Known live-discovery blind spots (e.g., formations scaled to zero)                                                                                                                       |
+| `default_heroku_domains_skipped` | integer  | ❌       | Count of default `*.herokuapp.com` hostnames skipped (not recorded as domain resources)                                                                                                  |
+| `drift`                          | object   | ❌       | Present only when Terraform AND live both ran: `resources_live_only` (int), `resources_terraform_only` (int), `config_conflicts[]` (`{resource_id, field, terraform_value, live_value}`) |
+
 ---
 
 ## Resource ID Formats
@@ -129,6 +146,8 @@ Deterministic ID format per resource type:
 | `addon`       | `addon:{app_name}:{addon_service}:{plan}` | `addon:my-web-app:heroku-postgresql:standard-0` |
 | `space`       | `space:{space_name}`                      | `space:my-private-space`                        |
 | `pipeline`    | `pipeline:{pipeline_name}`                | `pipeline:my-pipeline`                          |
+| `domain`      | `domain:{app_name}:{hostname}`            | `domain:my-web-app:www.example.com`             |
+| `config`      | `config:{app_name}`                       | `config:my-web-app`                             |
 
 ---
 
@@ -175,6 +194,12 @@ Deterministic ID format per resource type:
 - **heroku-redis**: `ha_enabled` (boolean), `encryption_in_transit` (boolean), `redis_version` (string)
 - **heroku-kafka**: `topic_count` (integer), `partitions_per_topic` (integer), `replication_factor` (integer)
 - **Other add-ons**: No additional required fields
+
+**Optional live-enrichment fields** (present only when live discovery ran):
+
+- Any addon: `monthly_price_usd` (number — from the add-on's plan price)
+- **heroku-postgresql**: `pg_version` (string), `data_size_gb` (number — feeds database migration tool selection), `table_count` (integer)
+- **heroku-redis**: `maxmemory_policy` (string)
 
 ### `space` config
 
@@ -251,10 +276,10 @@ The following fields MUST NOT appear anywhere in `heroku-resource-inventory.json
 
 ## Confidence Levels
 
-| Level     | Meaning                                                                 | When Used                                                                       |
-| --------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `full`    | Terraform files present and parsed successfully                         | Terraform discovery completed without parse errors                              |
-| `reduced` | Partial data — Terraform had parse errors or missing expected resources | Some `.tf` files could not be parsed, or expected resource types were not found |
+| Level     | Meaning                                      | When Used                                                                                                                        |
+| --------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `full`    | Every source that ran produced complete data | Terraform parsed without errors and/or every live capture for the selected apps succeeded                                        |
+| `reduced` | Partial data from at least one source        | Terraform parse errors, failed/skipped live captures (e.g., 403 on team apps, missing CLI plugin), or missing expected resources |
 
 ---
 
@@ -419,3 +444,5 @@ The following fields MUST NOT appear anywhere in `heroku-resource-inventory.json
 9. ✅ If Terraform discovery ran → resources include Terraform-sourced entries
 10. ✅ If Terraform had parse errors → `metadata.confidence` is `"reduced"`
 11. ✅ If billing discovery ran → `billing_profile` section present with `available: true`
+12. ✅ If live discovery ran → resources include live-sourced entries, `live_metadata` present, and `"live"` in `metadata.discovery_sources`
+13. ✅ No config var VALUES anywhere in the document — `config` entries carry key names only

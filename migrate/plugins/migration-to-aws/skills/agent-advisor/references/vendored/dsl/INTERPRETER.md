@@ -24,7 +24,7 @@ defaults. Where a skill declares a binding, the declaration is part of this cont
 | Resolved statuses | `pending` / `in_progress` / `completed`              | additional RESOLVED statuses (e.g. `skipped`, `not_applicable`) for phases its routing marks not-applicable. A resolved status satisfies `_requires_phase` and the backbone walk exactly like `completed`; state validation treats declared statuses as recognized.                                                     |
 | Backbone routing  | every backbone phase runs                            | conditional-routing prose (e.g. "entry-point routing"): rules that resolve a backbone phase WITHOUT running it. When the loop advances into such a phase, mark it per the rule (e.g. `skipped`) and continue along its `_advances_to` in the same step — never leave it `pending` behind a completed successor.         |
 
-Checkpoint PLACEMENT was already the skill's to declare (§ Backbone vs checkpoint);
+Sidebar PLACEMENT was already the skill's to declare (§ Backbone vs sidebar);
 these bindings extend the same principle to naming, state shape, and routing.
 
 ## The interpreter loop
@@ -48,19 +48,33 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
    dispatched sub-agent never bootstraps state; it is handed an initialized
    `$MIGRATION_DIR`).
 2. **Determine the current phase (deterministic):**
-   - If `current_phase` is present in `.phase-status.json`, use it (it is
+   - **Deferred-advance sidebar resume (mandatory):** If `current_phase` is
+     set, `phases.<current_phase>` is already `"completed"`, and a skill-declared
+     sidebar key (e.g. `workshop`) is `"pending"` or `"in_progress"` because
+     that backbone phase defers advancing `current_phase` until the sidebar
+     resolves (see SKILL.md sidebar orchestration — what-if workshop after
+     Estimate is the canonical case), **do not re-run** the completed backbone
+     phase. Follow SKILL.md: re-present the sidebar offer if `"pending"`, or
+     load `references/phases/<sidebar>/<sidebar>.md` if `"in_progress"`.
+     Explicit phrases that match the sidebar `_trigger` also enter it when its
+     `_requires_phase` artifacts exist — still without re-running Estimate (or
+     whichever predecessor completed).
+   - Else if `current_phase` is present in `.phase-status.json`, use it (it is
      authoritative). This is the normal WARM-START path.
    - Otherwise (state exists but has no `current_phase`) walk the backbone in order
-     (see § Backbone vs checkpoint) and pick the FIRST phase whose
+     (see § Backbone vs sidebar) and pick the FIRST phase whose
      `phases.<phase>` is not RESOLVED (`"completed"` or a skill-declared resolved
      status — § Skill bindings). If all backbone phases are resolved, the state is
      the terminal (`complete`). (On a cold start there is no state to read —
-     step 1's declared entry phase is used directly.)
+     step 1's declared entry phase is used directly.) When the skill gates a later
+     backbone phase on a sidebar being `"completed"` (e.g. Generate requires
+     `phases.workshop == "completed"`), honor that gate while walking.
 3. **Validate state before proceeding.** See § State-file validation below. STOP
    on any inconsistency rather than guessing.
 4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
    `references/phases/<phase>/<phase>.md`. Load it in full and read its
-   frontmatter first.
+   frontmatter first. (Sidebar resume from step 2 loads the sidebar
+   orchestrator instead — still never as `current_phase`.)
 5. **Run the phase.** Run its `_preconditions` entry gate (§ Gate protocol) in
    THIS (main) window; if it passes, set the phase `in_progress`, then run the
    phase's WORK — its `_fragments` (each when its `_trigger` fires) then its
@@ -91,7 +105,7 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
    phase not-applicable, resolve it per the routing rule (e.g. set it `skipped`)
    and continue along that phase's `_advances_to` — in the same state write.
 
-Checkpoint phases (§ Backbone vs checkpoint) are OFF this loop — they are entered
+Sidebar phases (§ Backbone vs sidebar) are OFF this loop — they are entered
 by their own `_trigger` at a point the skill's orchestrator (SKILL.md) chooses,
 and return control without changing `current_phase`.
 
@@ -145,19 +159,19 @@ guess) on any of:
 | Key                 | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `_phase` / `_title` | the phase's id and human title                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `_kind`             | `backbone` (default when absent) or `checkpoint`. A **backbone** phase is a step on the linear lifecycle (see below). A **checkpoint** phase is off-backbone — optional, entered by a phase-level `_trigger`, returns control instead of advancing. `feedback` is a checkpoint.                                                                                                                                                                                                                                                                  |
-| `_requires_phase`   | the phase that must be `completed` before this one may start (omitted for the first phase; on a checkpoint, its minimum precondition)                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `_kind`             | `backbone` (default when absent) or `sidebar`. A **backbone** phase is a step on the linear lifecycle (see below). A **sidebar** phase is off-backbone — optional, entered by a phase-level `_trigger`, returns control instead of advancing. `feedback` is a sidebar.                                                                                                                                                                                                                                                                           |
+| `_requires_phase`   | the phase that must be `completed` before this one may start (omitted for the first phase; on a sidebar, its minimum precondition)                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `_init`             | `true` only on the first phase — this phase establishes migration state before its fragments run (see below)                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `_interactive`      | (optional) does the phase's WORK (fragments + assembler) prompt the user? Declare `false` to make the phase a dispatch candidate (required alongside `_exec`); a dispatched worker is file-only and cannot converse. Absent or `true` = the phase runs inline. Interactive phases (clarify, feedback) cannot be dispatched.                                                                                                                                                                                                                      |
 | `_input`            | what the phase reads — prior-phase artifacts, or `workspace` for the initial file scan                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `_knowledge`        | the reference/data files the phase consults (`knowledge/**.json` sizing/mapping/pricing tables). Each entry is `{ file, _when? }`; each `file` must resolve on disk. Load a knowledge file ONLY when its `_when` holds — see § `_knowledge`.                                                                                                                                                                                                                                                                                                     |
-| `_trigger`          | (checkpoint phases only) how the phase is ENTERED — same forms as a fragment `_trigger` (below). `feedback` uses `_when: "user opts in"`. Backbone phases have no phase-level `_trigger` (they are advanced INTO via a predecessor's `_advances_to`).                                                                                                                                                                                                                                                                                            |
+| `_trigger`          | (sidebar phases only) how the phase is ENTERED — same forms as a fragment `_trigger` (below). `feedback` uses `_when: "user opts in"`. Backbone phases have no phase-level `_trigger` (they are advanced INTO via a predecessor's `_advances_to`).                                                                                                                                                                                                                                                                                               |
 | `_fragments`        | the ordered units of work the phase composes. Each is `{ _id, _trigger, _file }`. Load + follow a fragment's `_file` when its `_trigger` fires                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `_assemble`         | the single terminal unit (`{ _file }`) that combines the fragment outputs into the phase's artifact(s)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `_produces`         | the artifact file(s) the phase writes. Each entry is either a bare filename (unconditional) or an inline conditional map `{ file: <path>, _when: <prose> }` — an artifact produced ONLY when the design predicate holds (e.g. `terraform/eks.tf` only when EKS is in the design). Same `{ file, _when }` shape as `_knowledge`; `_when` is opaque prose the interpreter reads at runtime and CI does NOT evaluate. A trailing-slash `file` (e.g. `kubernetes/`) names a produced DIRECTORY when the unit emits a set of dynamically-named files. |
-| `_advances_to`      | (backbone phases only) the phase that runs next on success — or a terminal (`complete`). A checkpoint has NO `_advances_to`.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `_advances_to`      | (backbone phases only) the phase that runs next on success — or a terminal (`complete`). A sidebar has NO `_advances_to`.                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `_exec`             | (optional) the phase's EXECUTION MODE. When present, the phase's WORK (fragments + assembler) is dispatched to a fresh isolated sub-agent window with file-only I/O, at the capability tier named by `_exec._agent`; the interpreter keeps the gates, `_init` setup, and the state transition in the MAIN window (see § `_exec`). Requires `_interactive: false`. Absent = the phase runs inline in the main window.                                                                                                                             |
-| `_re_entry_guard`   | (backbone phases with a downstream only) the stale-downstream guard — STOP re-running this phase if its downstream phase already completed, unless the user confirms (see below). Terminal phases and checkpoints have none.                                                                                                                                                                                                                                                                                                                     |
+| `_re_entry_guard`   | (backbone phases with a downstream only) the stale-downstream guard — STOP re-running this phase if its downstream phase already completed, unless the user confirms (see below). Terminal phases and sidebars have none.                                                                                                                                                                                                                                                                                                                        |
 | `_preconditions`    | the entry gate — an ordered list of checks that MUST pass before the phase does any work (predecessor completed, single active phase, inputs present/valid). See § Gate protocol.                                                                                                                                                                                                                                                                                                                                                                |
 | `_postconditions`   | the completion gate — an ordered list of checks that MUST pass before the phase is marked `completed` and control advances. See § Gate protocol.                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `_forbids_files`    | a glob list of files/dirs this phase MUST NOT create (scope boundary). See § Gate protocol.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -380,13 +394,13 @@ heroku-to-aws's own gate contract — phases do NOT load any shared gate file.
 Each entry is a single check plus an `_on_failure` action (see the `_on_error`
 dictionary below). Closed vocabulary of check kinds:
 
-| Check                        | Arg                       | Passes when                                                    |
-| ---------------------------- | ------------------------- | -------------------------------------------------------------- |
-| `_check_phase_completed`     | a phase name              | `.phase-status.json` `phases.<name> == "completed"`            |
-| `_check_single_active_phase` | `true`                    | at most one core phase is `in_progress`                        |
-| `_check_file_exists`         | filename or `[names]`     | each named file exists in `$MIGRATION_DIR/`                    |
-| `_validate_json`             | filename or `[names]`     | each named file parses as valid JSON                           |
-| `_assert`                    | an opaque prose predicate | you (the interpreter) evaluate the prose against the artifacts |
+| Check                        | Arg                       | Passes when                                                                                                  |
+| ---------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `_check_phase_completed`     | a phase name              | `.phase-status.json` `phases.<name>` is `"completed"` or a skill-declared resolved status (§ Skill bindings) |
+| `_check_single_active_phase` | `true`                    | at most one core phase is `in_progress`                                                                      |
+| `_check_file_exists`         | filename or `[names]`     | each named file exists in `$MIGRATION_DIR/`                                                                  |
+| `_validate_json`             | filename or `[names]`     | each named file parses as valid JSON                                                                         |
+| `_assert`                    | an opaque prose predicate | you (the interpreter) evaluate the prose against the artifacts                                               |
 
 `_assert` is the JUDGMENT escape hatch: arithmetic (e.g. the Property-16 total ==
 sum invariant), enum-membership over an artifact's runtime content (e.g.
@@ -450,7 +464,7 @@ if any path matching a `_forbids_files` glob was written, that is a scope
 violation — treat it as a `_postconditions` failure. This encodes the per-phase
 "do not emit README.md / *.txt / downstream artifacts" boundaries.
 
-### Backbone vs checkpoint phases
+### Backbone vs sidebar phases
 
 A **backbone** phase (the default) is a step on the linear lifecycle: it is
 advanced into by its predecessor's `_advances_to`, and it advances to the next
@@ -463,20 +477,20 @@ the skill's entry phase and carries `_init: true`; the skill names it in SKILL.m
 so a cold start loads it directly rather than scanning to find it (see § The
 interpreter loop, step 1).
 
-A **checkpoint** phase (`_kind: checkpoint`, e.g. `feedback`) is OFF the backbone.
+A **sidebar** phase (`_kind: sidebar`, e.g. `feedback`) is OFF the backbone.
 It is optional, entered only when its phase-level `_trigger` fires (e.g. the user
 opts in), and it returns control to the flow rather than advancing `current_phase`
 — so it has no `_advances_to`, and it never appears as a `current_phase` value.
-WHERE a checkpoint is offered is orchestration prose (see SKILL.md), not part of
+WHERE a sidebar is offered is orchestration prose (see SKILL.md), not part of
 the phase contract.
 
-**Checkpoint status semantics (important):** marking a checkpoint's
-`phases.<checkpoint>` as `"completed"` means the checkpoint was RESOLVED (offered
-and dealt with) — NOT that the user participated. A declined checkpoint is still
+**Sidebar status semantics (important):** marking a sidebar's
+`phases.<sidebar>` as `"completed"` means the sidebar was RESOLVED (offered
+and dealt with) — NOT that the user participated. A declined sidebar is still
 `"completed"` (the lifecycle is resolved, so the migration can terminate cleanly).
 Whether the user actually participated is a SEPARATE signal, carried by the
-presence of the checkpoint's artifact (e.g. `feedback.json` exists only if the
-user engaged). Do not conflate "checkpoint resolved" with "user participated."
+presence of the sidebar's artifact (e.g. `feedback.json` exists only if the
+user engaged). Do not conflate "sidebar resolved" with "user participated."
 
 ## Fragment unit keys
 

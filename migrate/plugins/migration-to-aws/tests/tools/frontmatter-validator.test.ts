@@ -204,7 +204,7 @@ _contributes:
     );
   });
 
-  // ---- backbone / checkpoint + chain-consistency ----
+  // ---- backbone / sidebar + chain-consistency ----
 
   // A fully-declared 2-phase backbone (discover -> clarify -> complete) plus a
   // feedback CHECKPOINT (off-backbone, trigger-entered). Minimal but complete.
@@ -252,32 +252,32 @@ _produces:
       ...phase('clarify', '_requires_phase: discover\n_advances_to: complete'),
       ...phase(
         'feedback',
-        '_kind: checkpoint\n_requires_phase: discover\n_trigger: { _when: "user opts in" }',
+        '_kind: sidebar\n_requires_phase: discover\n_trigger: { _when: "user opts in" }',
       ),
     };
   }
 
-  it('accepts a valid backbone + a checkpoint phase', () => {
+  it('accepts a valid backbone + a sidebar phase', () => {
     const findings = validateFixture(chainSkill());
     assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
   });
 
-  it('rejects a checkpoint phase that declares _advances_to (must be off-backbone)', () => {
+  it('rejects a sidebar phase that declares _advances_to (must be off-backbone)', () => {
     const files = chainSkill();
     files['references/phases/feedback/feedback.md'] = files[
       'references/phases/feedback/feedback.md'
     ].replace('_trigger: { _when: "user opts in" }', '_trigger: { _when: "user opts in" }\n_advances_to: complete');
     const findings = validateFixture(files);
-    assert.match(findings.map((f) => f.message).join('\n'), /checkpoint phase 'feedback' must NOT declare _advances_to/);
+    assert.match(findings.map((f) => f.message).join('\n'), /sidebar phase 'feedback' must NOT declare _advances_to/);
   });
 
-  it('rejects a checkpoint phase with no phase-level _trigger', () => {
+  it('rejects a sidebar phase with no phase-level _trigger', () => {
     const files = chainSkill();
     files['references/phases/feedback/feedback.md'] = files[
       'references/phases/feedback/feedback.md'
     ].replace('\n_trigger: { _when: "user opts in" }', '');
     const findings = validateFixture(files);
-    assert.match(findings.map((f) => f.message).join('\n'), /checkpoint phase 'feedback' must declare a phase-level _trigger/);
+    assert.match(findings.map((f) => f.message).join('\n'), /sidebar phase 'feedback' must declare a phase-level _trigger/);
   });
 
   it('rejects a backbone phase that declares a phase-level _trigger', () => {
@@ -343,19 +343,19 @@ _produces:
     );
   });
 
-  it('rejects a checkpoint phase declaring _init: true (entry must be backbone)', () => {
+  it('rejects a sidebar phase declaring _init: true (entry must be backbone)', () => {
     const files = chainSkill();
-    // Strip _init from discover; put it on the feedback checkpoint.
+    // Strip _init from discover; put it on the feedback sidebar.
     files['references/phases/discover/discover.md'] = files[
       'references/phases/discover/discover.md'
     ].replace('_init: true\n', '');
     files['references/phases/feedback/feedback.md'] = files[
       'references/phases/feedback/feedback.md'
-    ].replace('_kind: checkpoint', '_kind: checkpoint\n_init: true');
+    ].replace('_kind: sidebar', '_kind: sidebar\n_init: true');
     const findings = validateFixture(files);
     assert.match(
       findings.map((f) => f.message).join('\n'),
-      /checkpoint phase 'feedback' declares '_init: true'/,
+      /sidebar phase 'feedback' declares '_init: true'/,
     );
   });
 

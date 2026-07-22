@@ -377,7 +377,11 @@ def test_score_output_matches_schema(tmp_path):
     schema = json.loads(
         (pathlib.Path(scoring.__file__).parent / "schemas"
          / "scoring-result.json").read_text())
-    jsonschema.validate(result, schema)
+    # The schema describes the FILE clarify writes (the wrapper {units:{...}, ...primary mirror}),
+    # not the bare per-unit score() result. Wrap it the way clarify.md Step 5 does before
+    # validating — the scored variant requires a non-empty units map.
+    wrapped = {**result, "units": {"primary-agent": result}}
+    jsonschema.validate(wrapped, schema)
 
 
 def _real_profiles():

@@ -36,7 +36,7 @@ When the compute target preference indicates EKS:
 
 3. **Node group sizing:**
    - Determine the largest dyno type present across all formations.
-   - Select instance type using the **largest-pod-class-wins** rule: use the recommended `node_type` for the largest dyno present, ranked by the JSON's `node_size_rank` (higher = larger). On a rank tie between `m6i.4xlarge` and `r6i.4xlarge`, prefer `m6i.4xlarge` unless a RAM-optimized dyno (`*-l-ram`) is the only dyno at that rank, in which case use `r6i.4xlarge`. All pods from smaller classes fit on those nodes with room to spare.
+   - Select instance type using the **largest-pod-class-wins** rule: use the recommended `node_type` (or `node_type_arm64` when `preferences.workshop.cpu_architecture` is `arm64` and that column exists — see `design-mapping.md` CPU architecture resolution) for the largest dyno present, ranked by the JSON's `node_size_rank` (higher = larger). On a rank tie between `m6i.4xlarge` and `r6i.4xlarge` (or their `m6g`/`r6g` arm counterparts), prefer the general-purpose family unless a RAM-optimized dyno (`*-l-ram`) is the only dyno at that rank. All pods from smaller classes fit on those nodes with room to spare.
    - Calculate node count:
      - `min_size` = 2 (HA)
      - `desired_size` = `max(min_size, ceil(total_pods / 4))` — clamp UP to `min_size`; AWS rejects `desired_size < min_size`, which would otherwise happen for small workloads (`total_pods <= 4`).
