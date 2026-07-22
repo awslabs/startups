@@ -444,7 +444,7 @@ Interpret → `right_sizing`: A → `true`, B → `false`. Default: B → `false
 
 Present the essential questions (from the Step 3 disposition, plus any rows converted by "ask me about X") in batches of **at most 4 per turn**, numbered from 1, with the question text, context, and options from the category files. Typical total: 2–7.
 
-**Batch composition:** core first (Q1/Q2/Q3/Q3.5/Q7 + conflicts), then AI/agentic (Q15, **Q27**, Q23–Q25, multi-workload confirmations). Write `preferences-draft.json` between batches (same schema as `preferences.json` plus `metadata.wizard_stage`). When more than one batch is needed, open each with a progress line: "Batch [i] of [k]."
+**Batch composition:** core first (Q1/Q2/Q3/Q3.5/Q7 + conflicts), then AI/agentic (Q15, Q23–Q25, multi-workload confirmations). **Q27 is not batched** — ask it as its own short follow-up after the last batch, per the presentation rule in `clarify-ai.md` Q27 (it's a funding question, not a technical one). Write `preferences-draft.json` between batches (same schema as `preferences.json` plus `metadata.wizard_stage`). When more than one batch is needed, open each with a progress line: "Batch [i] of [k]."
 
 Open the first batch with:
 

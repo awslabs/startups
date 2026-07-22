@@ -122,6 +122,16 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 
 _Skip when:_ Auto-detection fully resolves the framework(s). Use detected value(s) with `chosen_by: "extracted"`.
 
+**Partial detection — confirm, don't re-ask (preferred over the full taxonomy):** When detection produced signals but not full resolution (e.g. one framework import found alongside unexplained raw HTTP calls), present a confirm card instead of the full option list:
+
+> I detected **[framework, e.g. LangChain]** ([evidence, e.g. `langchain` in requirements.txt]) — plus some direct API calls I couldn't attribute.
+>
+> 1. **That's right** — LangChain plus some direct calls
+> 2. **Edit** — show me all framework options
+> 3. **Just [detected framework]** — the direct calls are part of it
+
+Accept → record detected value(s) with `chosen_by: "user"` (confirmed). Edit → fall through to the full question below. Only present the full taxonomy cold when detection found **no** signals at all.
+
 > How your AI calls reach the model determines migration effort. Gateway users can often migrate by changing a single config line.
 >
 > A) No framework — direct API calls to OpenAI/Gemini
@@ -262,6 +272,16 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 **Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19.
 
 _Skip when:_ Primary model fully resolved from discovery. Use detected value with `chosen_by: "extracted"`.
+
+**Partial detection — confirm, don't re-ask:** When models were detected but below the confidence bar, or several tie, present a confirm card listing only the detected candidates — never the full catalog:
+
+> I found **[model_id 1]** and **[model_id 2]** in your code. Which is your primary production model?
+>
+> 1. [model_id 1]
+> 2. [model_id 2]
+> 3. Something else — show all options
+
+**Cold path — family first, then branch:** When nothing was detected, do NOT present the full option list below in one message. Ask a short family question first — "Which provider family is your primary model? 1. Gemini 2. OpenAI GPT 3. OpenAI o-series (reasoning) 4. Other / not sure" — then present only the matching subset of the options below. The full list remains the reference catalog for interpretation.
 
 Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > Q19 source model (baseline only).
 
@@ -505,6 +525,8 @@ _Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). **Q
 ---
 
 ## Q27 — Have you applied for AWS Activate credits?
+
+**Presentation:** Ask Q27 as its own short follow-up **after** the technical AI essentials are answered — not mixed into the same numbered batch. It is a funding question, not a technical one; separating it keeps the technical batch focused and makes clear that skipping it never affects the architecture (only the credits guidance). One-line lead-in: "Last one, and it's about money rather than tech:".
 
 **Rationale:** AWS Activate credits apply directly to Bedrock usage (including Claude, Llama, Nova, and other third-party models). Surfacing eligibility at the migration decision moment helps startups reduce the cost of the migration itself. This takes 30 seconds to answer and can unlock $5K–$200K in credits.
 
