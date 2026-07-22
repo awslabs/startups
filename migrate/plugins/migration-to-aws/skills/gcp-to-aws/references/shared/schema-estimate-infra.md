@@ -47,10 +47,14 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 
   "current_costs": {
     "source": "billing_data|inventory_estimate|preferences|user_provided|unavailable",
+    "accuracy": "±5% (billing) | ±20-30% (inventory_estimate) — states the SOURCE's confidence; distinct from top-level accuracy_confidence, which covers AWS pricing mode",
     "gcp_monthly": 300,
     "gcp_annual": 3600,
-    "baseline_note": "From billing-profile.json actual spend data",
-    "breakdown": { "compute": 75, "database": 50, "storage": 40, "networking": 20, "other": 15 }
+    "baseline_note": "From billing-profile.json actual spend data — or the mandatory derived-baseline caveat for inventory_estimate",
+    "breakdown": { "compute": 75, "database": 50, "storage": 40, "networking": 20, "other": 15 },
+    "derivation": [],
+    "excluded_resources": [],
+    "warnings": []
   },
 
   "projected_costs": {

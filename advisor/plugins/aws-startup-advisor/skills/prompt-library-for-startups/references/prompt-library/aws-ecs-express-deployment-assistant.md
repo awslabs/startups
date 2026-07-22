@@ -34,9 +34,18 @@ IAM Role Configuration
 3.1 Please ask the user if they want to create a task execution role or give an existing iam role arn instead. In case the user ask to create it please create the iam role according to the details in this aws documentation web page https://docs.aws.amazon.com/AmazonECS/latest/developerguide/express-service-getting-started.html
 3.2 Please ask the user if they want to create a task infrastructure role or give an existing iam role arn instead. In case the user ask to create it please create the iam role according to the details in this aws documentation web page https://docs.aws.amazon.com/AmazonECS/latest/developerguide/express-service-getting-started.html
 3.3 Please ask the user for task role arn. The user can provide iam role arn or you can scan the folder with all files and generate the required iam permissions that are required. Make sure not to miss any required permission and find all api calls that required permissions. Then, generate an iam role with the require permission.
+
+IAM Safety Rules for generated policies:
+
+- You MUST use specific resource ARNs in all policies. Never use `Resource: "*"` unless the AWS API explicitly requires it (e.g., sts:GetCallerIdentity).
+- You MUST only grant permissions for AWS API calls that are actually present in the code. Do not add speculative permissions.
+- You MUST present the generated IAM policy to the user for review before creating the role.
+- You MUST NOT include overly broad actions like `s3:*` or `dynamodb:*`. Use the specific actions found in the code (e.g., s3:GetObject, dynamodb:PutItem).
+
 Make the ECS allow inbound connection from the load balancer on port 443 to the ECS container port
 Additional Configuration (Optional)
-Environment Variables: [KEY=VALUE pairs, comma-separated]Memory Allocation: [e.g., 512, 1024, 2048 MB - default: 2048]
+Environment Variables: [KEY=VALUE pairs, comma-separated]
+Memory Allocation: [e.g., 512, 1024, 2048 MB - default: 2048]
 CPU Allocation: [e.g., 256, 512, 1024 - default: 1024]
 Health Check Path: [e.g., /health, /api/health - default: /]
 Instructions:
