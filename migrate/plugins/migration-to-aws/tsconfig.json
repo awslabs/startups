@@ -12,6 +12,8 @@
   },
   "include": [
     "tools/frontmatter-validator/**/*.ts",
+    "tools/fixtures-check.ts",
+    "tools/pricing-staleness.ts",
     "tests/tools/**/*.ts"
   ]
 }
