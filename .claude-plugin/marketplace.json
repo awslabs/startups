@@ -14,7 +14,7 @@
     {
       "name": "aws-startup-advisor",
       "source": "./advisor/plugins/aws-startup-advisor",
-      "version": "1.5.2",
+      "version": "1.5.4",
       "description": "Three sibling skills for startups building on AWS: knowledge-base-for-startups (Activate FAQ, credits, programs, partner offers, sample architectures, learn articles), prompt-library-for-startups (copy-paste prompts + downloadable installable agents), and start-building-for-startups (interactive discovery workflow that scaffolds an AWS architecture)"
     },
     {

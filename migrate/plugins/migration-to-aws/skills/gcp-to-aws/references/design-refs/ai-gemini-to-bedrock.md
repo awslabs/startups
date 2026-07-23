@@ -26,7 +26,7 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 - Claude Sonnet 5 / Opus 4.x lead on real-world agentic tasks (GDPval evaluation) — the gap between benchmarks and production agent reliability is real
 - Claude prompt caching (90% savings on repeated content) has no Gemini equivalent
 - Claude function calling remains best-in-class for complex multi-turn tool use
-- AWS ecosystem integration (Bedrock Agents, Knowledge Bases, Guardrails) has no Gemini equivalent
+- AWS ecosystem integration (AgentCore, Knowledge Bases, Guardrails) has no Gemini equivalent
 
 **Migration case by tier:**
 

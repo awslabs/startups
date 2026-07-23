@@ -81,7 +81,14 @@ def main() -> int:
             check(bad not in baseline, f"baseline.tf contains {bad} despite Q8 compliance = none")
 
     # --- Cross-reference: every estimated service accounted for ---
-    est = json.loads((run_dir / "estimation-infra.json").read_text())
+    est_path = run_dir / "estimation-infra.json"
+    if not est_path.exists():
+        check(False, "missing estimation-infra.json in run dir")
+        print(f"FAIL ({len(FAILS)}):")
+        for f in FAILS:
+            print(f"  - {f}")
+        return 1
+    est = json.loads(est_path.read_text())
     tf_text = "".join(p.read_text() for p in (run_dir / "terraform").glob("*.tf")) + (
         (run_dir / "sst.config.ts").read_text() if (run_dir / "sst.config.ts").is_file() else ""
     )

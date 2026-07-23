@@ -69,7 +69,11 @@ workshop reprice. Chat note after Estimate:
 5. Label: summarize the subset; if `workshop.graviton_note` is set, append
    `(caveat: <graviton_note>)` to the scenario `label` and copy the note into
    the manifest as `graviton_note`.
-6. Update index + `workshop.active_scenario_id`.
+6. When the inner estimate wrote `recommendation.outcome` (v2 decision
+   fields), copy it into the manifest as
+   `estimation_summary.recommendation_outcome`; omit/null otherwise — this
+   feeds the compare view's Outcome column and flip callout.
+7. Update index + `workshop.active_scenario_id`.
 
 ### 6b. Shareable calculator link (best-effort, never blocks)
 
