@@ -476,9 +476,27 @@ _Present each question's options via the structured question tool (e.g. AskUserQ
 
 **Interpret answers** using the interpret rules in the category files. Apply early-exit rules triggered by answers (e.g., Q5 correction to multi-cloud → `compute: "eks"`, Q8 → N/A).
 
+### Answer Recap (Check Your Answers)
+
+After the last essential batch is answered and interpreted (and after Q27 when it fired), play back what was recorded — the essentials are the only answers in the flow the user states rather than confirms, and shorthand ("1A 2C") plus plain-word answers pass through an interpretation step the user never sees. One compact table, questions asked in Step 4 only (sheet rows were already confirmed at Step 2.5 — do not repeat them):
+
+```
+### What I recorded — last check before design
+
+| Question | Your answer | Recorded as |
+| -------- | ----------- | ----------- |
+| Compliance (Q2) | "2A" | None |
+| Cutover window (Q7) | "monthly is fine" | Monthly maintenance window |
+| AI spend (Q15) | "about a grand" | $500–$2K/month |
+
+Anything wrong? Name it ("cutover: weekly") — otherwise I'll proceed to design.
+```
+
+**When to wait:** If every Step 4 answer was an explicit option letter, the recap is informational — append it to the same turn as the Category E opt-in (or the completion message) and proceed without requiring a reply. If **any** answer was interpreted from plain words, shorthand spanning multiple questions, or a skip, present the recap and **wait for the user's response** before Step 5 — interpretation is exactly where a misread silently becomes a design constraint. Corrections use the Step 2.5 override grammar and set `chosen_by: "user"`.
+
 ### Full Flow variant ("ask me everything")
 
-When the user opted out of the wizard, run the progressive-batch flow: present ALL active questions (no dispositions) in up to three batches — Strategic (Q1–Q7, minus Q4), Infrastructure (Q8–Q13b incl. Q11b Graviton + Category B), AI (Q14–Q27, Q23–Q26 only if agentic) — writing `preferences-draft.json` between batches with `metadata.batches_completed` / `metadata.batches_remaining` (values: `"strategic"`, `"infrastructure"`, `"ai"`). Per-question skip and "use defaults for the rest" behave as documented. Set `metadata.clarify_mode: "full"`.
+When the user opted out of the wizard, run the progressive-batch flow: present ALL active questions (no dispositions) in up to three batches — Strategic (Q1–Q7, minus Q4), Infrastructure (Q8–Q13b incl. Q11b Graviton + Category B), AI (Q14–Q27, Q23–Q26 only if agentic) — writing `preferences-draft.json` between batches with `metadata.batches_completed` / `metadata.batches_remaining` (values: `"strategic"`, `"infrastructure"`, `"ai"`). Per-question skip and "use defaults for the rest" behave as documented. Set `metadata.clarify_mode: "full"`. The **Answer Recap** above runs after the final batch here too (all answered questions; skipped/defaulted ones summarized in one line, not per-row).
 
 ### Category E Opt-In
 
@@ -803,6 +821,7 @@ Before handing off to Design:
 - [ ] In wizard mode, the Step 2.5 Assumption Sheet was shown (detected + assumed sections) and the user responded before any essential question was asked
 - [ ] Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` has a `source` field with the correct prefix (`terraform:`, `billing:`, `inventory:`, `ai-profile:`, or `default:<Qid>`)
 - [ ] Essential questions (Q2, Q7, and conditional Q1/Q3/Q3.5/**Q27**/Q15/Q23–Q25/conflicts) were asked, answered, or explicitly defaulted via "use defaults for the rest"
+- [ ] The Answer Recap was shown after the final Step 4 batch, and — when any answer was interpreted from plain words, multi-question shorthand, or a skip — the user responded to it before `preferences.json` was written
 - [ ] If `bigquery_present` was **true**, the Step 4 BigQuery specialist advisory was shown before questions — **or**, if Step 0 option A (reuse preferences), the same advisory was shown after BigQuery detection
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
 - [ ] `design_constraints.target_region` is populated with `value` and `chosen_by`
