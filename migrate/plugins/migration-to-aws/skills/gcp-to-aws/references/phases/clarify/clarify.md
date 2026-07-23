@@ -159,7 +159,7 @@ Before generating the Assumption Sheet, scan the inventory to extract values tha
 4. **Billing-only mode** — If `billing-profile.json` exists and `gcp-resource-inventory.json` does NOT exist, check `billing-profile.json → services[]` for Category B question matching.
 5. **AI framework detection** — If `ai-workload-profile.json` exists, check `integration.gateway_type` and `integration.frameworks` for auto-detection of Q14 answer.
 6. **BigQuery / analytics warehouse** — Set `bigquery_present` to **true** if **any** of: (a) a resource in `gcp-resource-inventory.json` has `gcp_type` (or equivalent type field) starting with `google_bigquery_`; (b) `billing-profile.json` lists a service/SKU that clearly indicates **BigQuery** (e.g., service name or SKU contains `BigQuery`). Otherwise `bigquery_present` is **false**.
-7. **Database size auto-detect (Q13b)** — For each `google_sql_database_instance`, read `config.disk_size_gb` (canonical per `schema-discover-iac.md`; also accept legacy `config.disk_size` or `gcp_config.disk_size_gb` from older inventories). Map to Q13b band and **resolve Q13b** when unambiguous:
+7. **Database size auto-detect (Q13b)** — For each `google_sql_database_instance`, read `config.disk_size_gb` (canonical per `schema-discover-iac.md`; also accept legacy `config.disk_size` or `gcp_config.disk_size_gb` from older inventories). This is **allocated capacity — an upper bound on actual data size** (Cloud SQL's minimum allocation is 10 GB, so small dev databases still read as 10). The band is safe for tool selection (never underestimates), but present it on the sheet as allocated — "up to [N] GB (allocated)" — and accept a user's downward correction without pushback. Map to Q13b band and **resolve Q13b** when unambiguous:
 
 | Disk size (GB) | `db_size` value | Resolve Q13b?                  |
 | -------------- | --------------- | ------------------------------ |
@@ -335,7 +335,7 @@ Present the sheet in two sections (omit rows for questions that are ESSENTIAL or
 | ------- | ----- | ------ | --------------- |
 | Region | us-west-2 (GCP us-west1) | gcp-resource-inventory.json | All AWS resources deploy here |
 | Database availability | Single-AZ (Cloud SQL `ZONAL`) | Terraform `availability_type` | RDS single-AZ topology |
-| Database size | 10–100 GB (allocated: 10 GB) | Terraform `disk_size` | pgcopydb migration tooling |
+| Database size | up to 10 GB allocated (actual data may be less) | Terraform `disk_size` | Migration tool ceiling; script measures actual size |
 | DB traffic / I/O | Steady / Low (dev-tier `db-f1-micro`) | Terraform tier + ZONAL | gp3 storage, no replicas |
 | Cloud SQL HA | Zonal (1 instance) | billing-profile.json | No Aurora Multi-AZ failover |
 | AI model | gemini-2.5-flash | ai-workload-profile.json | Bedrock mapping baseline |
