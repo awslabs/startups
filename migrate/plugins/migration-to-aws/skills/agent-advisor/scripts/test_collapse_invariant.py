@@ -31,10 +31,10 @@ def test_scoring_identical_via_unit_loop():
 
 def test_diagram_identical_for_single_unit_design():
     result = {"verdict": "agentcore", "agentcore_services": ["memory"],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     design = {"units": [{"id": "only", "workload_class": "agent_session",
                          "verdict": "agentcore",
-                         "model_recommendation": {"model": "claude_sonnet_4_6"}}],
+                         "model_recommendation": {"model": "claude_sonnet_5"}}],
               "platform": {"mode": "split", "runtime": None,
                            "interconnect": "in_process", "shared_services": []}}
     assert build_diagram.build_diagram(result, {}, design=design) == \

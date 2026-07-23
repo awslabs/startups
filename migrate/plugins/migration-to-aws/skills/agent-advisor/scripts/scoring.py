@@ -151,11 +151,11 @@ def _select_agentcore_services(answers):
 
 # Q16 priority baseline. Model choice is independent of runtime scoring.
 _MODEL_PRIORITY = {
-    "quality": ("claude_sonnet_4_6", "Best quality for agentic workloads"),
-    "balanced": ("claude_sonnet_4_6", "Balanced quality, speed, and cost"),
+    "quality": ("claude_sonnet_5", "Best quality for agentic workloads"),
+    "balanced": ("claude_sonnet_5", "Balanced quality, speed, and cost"),
     "speed": ("claude_haiku_4_5", "Fastest response time"),
     "cost": ("claude_haiku_4_5", "Lowest cost per token"),
-    "unknown": ("claude_sonnet_4_6", "Default for agentic workloads"),
+    "unknown": ("claude_sonnet_5", "Default for agentic workloads"),
 }
 
 # Q17 specialized-feature HARD override (beats priority). Coarse family mapping
@@ -163,19 +163,19 @@ _MODEL_PRIORITY = {
 # (the drift test in test_scoring.py locks this against the source lifecycle file).
 # Each value: (model, reasoning, alternates).
 _FEATURE_OVERRIDE = {
-    "tool_use": ("claude_sonnet_4_6", "Best-in-class tool use on Bedrock", []),
+    "tool_use": ("claude_sonnet_5", "Best-in-class tool use on Bedrock", []),
     "long_context": (
         "llama_4_scout",
-        "Ultra-long context (10M native window); Claude Sonnet 4.6 for shorter long-context",
-        ["claude_sonnet_4_6"]),
+        "Ultra-long context (10M native window); Claude Sonnet 5 (1M) for shorter long-context",
+        ["claude_sonnet_5"]),
     "extended_thinking": (
-        "claude_sonnet_4_6_thinking", "Extended thinking for deep reasoning", []),
+        "claude_sonnet_5_thinking", "Extended thinking for deep reasoning", []),
     "rag": (
-        "claude_sonnet_4_6",
+        "claude_sonnet_5",
         "Strong retrieval + reasoning; pair with Bedrock Knowledge Bases + Titan Embeddings",
         ["titan_embed_v2"]),
     "multimodal": (
-        "claude_sonnet_4_6",
+        "claude_sonnet_5",
         "Vision understanding; add a Stability AI model if you also generate images",
         ["stability_image_core"]),
     "image_generation": (
@@ -195,9 +195,9 @@ _FEATURE_OVERRIDE = {
 
 # Coarse source->family mapping for migrate (baseline only; feature override wins).
 _MIGRATE_FAMILY = {
-    "gpt4": "claude_sonnet_4_6", "gpt4o": "claude_sonnet_4_6",
-    "gemini_flash": "nova_lite", "gemini_pro": "claude_sonnet_4_6",
-    "claude": "claude_sonnet_4_6", "other": "claude_sonnet_4_6",
+    "gpt4": "claude_sonnet_5", "gpt4o": "claude_sonnet_5",
+    "gemini_flash": "nova_lite", "gemini_pro": "claude_sonnet_5",
+    "claude": "claude_sonnet_5", "other": "claude_sonnet_5",
 }
 
 _PRICING_NOTE = ("Coarse family mapping only — see migration-to-aws for detailed "

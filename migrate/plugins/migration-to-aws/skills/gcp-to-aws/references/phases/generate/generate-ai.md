@@ -59,7 +59,7 @@ Based on `ai-workload-profile.json` → `integration.pattern` and `integration.l
 | Vertex AI (Go)     | aws-sdk-go-v2 bedrockruntime      | `aiplatform` → `bedrockruntime.Converse()`                                        |
 | Vertex AI (Java)   | AWS SDK BedrockRuntimeClient      | `GenerativeModel` → `BedrockRuntimeClient.converse()`                             |
 | OpenAI SDK         | boto3 Bedrock Converse API        | `client.chat.completions.create()` → `bedrock.converse()` (if Mantle unavailable) |
-| LiteLLM            | LiteLLM config change             | `model="gpt-4o"` → `model="bedrock/anthropic.claude-sonnet-4-6"`                  |
+| LiteLLM            | LiteLLM config change             | `model="gpt-4o"` → `model="bedrock/anthropic.claude-sonnet-5"`                  |
 | LangChain          | langchain_aws                     | `ChatOpenAI`/`ChatVertexAI` → `ChatBedrock`                                       |
 | LlamaIndex         | llama_index.llms.bedrock_converse | `Vertex` → `BedrockConverse`                                                      |
 

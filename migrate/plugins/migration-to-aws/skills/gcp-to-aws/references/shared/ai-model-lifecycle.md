@@ -54,19 +54,19 @@ Check the [model lifecycle page](https://docs.aws.amazon.com/bedrock/latest/user
 
 | Model                | Model ID                                    | EOL Date     | Days to EOL | Status       | Active Replacement          |
 | -------------------- | ------------------------------------------- | ------------ | ----------- | ------------ | --------------------------- |
-| Claude 3 Sonnet      | `anthropic.claude-3-sonnet-20240229-v1:0`   | Jul 30, 2026 | 13          | **excluded** | Claude Sonnet 4.5 / 4.6     |
-| Claude 3.5 Sonnet v1 | `anthropic.claude-3-5-sonnet-20240620-v1:0` | Jul 30, 2026 | 13          | **excluded** | Claude Sonnet 4.5 / 4.6     |
-| Claude 3.5 Sonnet v2 | `anthropic.claude-3-5-sonnet-20241022-v2:0` | Jul 30, 2026 | 13          | **excluded** | Claude Sonnet 4.5 / 4.6     |
+| Claude 3 Sonnet      | `anthropic.claude-3-sonnet-20240229-v1:0`   | Jul 30, 2026 | 13          | **excluded** | Claude Sonnet 5 / 4.6       |
+| Claude 3.5 Sonnet v1 | `anthropic.claude-3-5-sonnet-20240620-v1:0` | Jul 30, 2026 | 13          | **excluded** | Claude Sonnet 5 / 4.6       |
+| Claude 3.5 Sonnet v2 | `anthropic.claude-3-5-sonnet-20241022-v2:0` | Jul 30, 2026 | 13          | **excluded** | Claude Sonnet 5 / 4.6       |
 | Command R / R+       | `cohere.command-r-v1:0` / `plus`            | Aug 19, 2026 | 33          | **excluded** | —                           |
 | Claude 3 Haiku       | `anthropic.claude-3-haiku-20240307-v1:0`    | Sep 10, 2026 | 55          | **excluded** | Claude Haiku 4.5            |
 | Nova Premier v1      | `amazon.nova-premier-v1:0`                  | Sep 14, 2026 | 59          | **excluded** | Nova 2 Pro (Preview)        |
 | Nova Sonic v1        | `amazon.nova-sonic-v1:0`                    | Sep 14, 2026 | 59          | **excluded** | Nova 2 Sonic                |
 | Nova Canvas v1       | `amazon.nova-canvas-v1:0`                   | Sep 30, 2026 | 75          | **excluded** | Stability AI (see note)     |
 | Nova Reel v1         | `amazon.nova-reel-v1:0` / `v1:1`            | Sep 30, 2026 | 75          | **excluded** | —                           |
-| Claude Sonnet 4      | `anthropic.claude-sonnet-4-20250514-v1:0`   | Oct 14, 2026 | 89          | **excluded** | Claude Sonnet 4.5 / 4.6 / 5 |
+| Claude Sonnet 4      | `anthropic.claude-sonnet-4-20250514-v1:0`   | Oct 14, 2026 | 89          | **excluded** | Claude Sonnet 5 / 4.6       |
 | Jamba 1.5 Large      | `ai21.jamba-1-5-large-v1:0`                 | Nov 26, 2026 | 132         | legacy       | —                           |
 | Jamba 1.5 Mini       | `ai21.jamba-1-5-mini-v1:0`                  | Nov 26, 2026 | 132         | legacy       | —                           |
-| Claude Opus 4.1      | `anthropic.claude-opus-4-1-20250805-v1:0`   | Jan 8, 2027  | 175         | legacy       | Claude Opus 4.6 / 4.8       |
+| Claude Opus 4.1      | `anthropic.claude-opus-4-1-20250805-v1:0`   | Jan 8, 2027  | 175         | legacy       | Claude Opus 4.8 / 4.6       |
 
 **Removed (past EOL as of Jul 17, 2026):**
 

@@ -36,14 +36,21 @@ def parse_price_dimensions(price_item: dict) -> dict:
 # Static fallback table: per-1K-token USD rates from public pricing pages.
 # Used when the PriceList API doesn't return data (e.g. new cross-region inference profile IDs).
 # Source: https://aws.amazon.com/bedrock/pricing/ (checked 2026-06)
+# Sonnet 5 intro ($2/$10 per 1M) thru Aug 31, 2026; then $3/$15. Opus rates are $5/$25 per 1M.
 STATIC_FALLBACK = {
     "anthropic.claude-haiku-4-5-20251001-v1:0":     {"input_per_1k_usd": 0.001, "output_per_1k_usd": 0.005},
     "us.anthropic.claude-haiku-4-5-20251001-v1:0":  {"input_per_1k_usd": 0.001, "output_per_1k_usd": 0.005},
+    # Recommend default
+    "anthropic.claude-sonnet-5":                    {"input_per_1k_usd": 0.002, "output_per_1k_usd": 0.010},
+    "us.anthropic.claude-sonnet-5":                 {"input_per_1k_usd": 0.002, "output_per_1k_usd": 0.010},
+    # Still Active — existing workloads / fallbacks
+    "anthropic.claude-sonnet-4-6":                  {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
+    "us.anthropic.claude-sonnet-4-6":               {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
     "anthropic.claude-sonnet-4-6-20250514-v1:0":    {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
     "us.anthropic.claude-sonnet-4-6-20250514-v1:0": {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
-    "us.anthropic.claude-sonnet-4-6":               {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
-    "anthropic.claude-opus-4-8-20250610-v1:0":      {"input_per_1k_usd": 0.015, "output_per_1k_usd": 0.075},
-    "us.anthropic.claude-opus-4-8-20250610-v1:0":   {"input_per_1k_usd": 0.015, "output_per_1k_usd": 0.075},
+    # Opus 4.8 has no dated foundation-model ID on the model card — suffix-less only.
+    "anthropic.claude-opus-4-8":                    {"input_per_1k_usd": 0.005, "output_per_1k_usd": 0.025},
+    "us.anthropic.claude-opus-4-8":                 {"input_per_1k_usd": 0.005, "output_per_1k_usd": 0.025},
     "amazon.nova-micro-v1:0":                       {"input_per_1k_usd": 0.000035, "output_per_1k_usd": 0.00014},
     "amazon.nova-lite-v1:0":                        {"input_per_1k_usd": 0.00006, "output_per_1k_usd": 0.00024},
     "amazon.nova-pro-v1:0":                         {"input_per_1k_usd": 0.0008, "output_per_1k_usd": 0.0032},
@@ -60,7 +67,7 @@ def _static_fallback(model_id: str) -> dict | None:
     entry = STATIC_FALLBACK.get(model_id)
     if entry:
         return {**entry, "available": True, "note": "static fallback (PriceList API had no entry)"}
-    # Try stripping the version suffix for a partial match (e.g. us.anthropic.claude-sonnet-4-6)
+    # Try stripping the version suffix for a partial match (e.g. us.anthropic.claude-sonnet-5)
     base = model_id.rsplit("-v", 1)[0] if "-v" in model_id else model_id
     for key, val in STATIC_FALLBACK.items():
         if key.startswith(base):
@@ -95,7 +102,7 @@ def lookup(region: str, model_id: str) -> dict:
     # by display name and frequently lacks entries for new inference profiles.
     fb = _static_fallback(model_id)
     if fb:
-        fb["note"] = "static pricing table (checked 2026-06 against aws.amazon.com/bedrock/pricing)"
+        fb["note"] = "static pricing table (checked 2026-07 against aws.amazon.com/bedrock/pricing)"
         return fb
     import boto3
     from botocore.exceptions import BotoCoreError, ClientError

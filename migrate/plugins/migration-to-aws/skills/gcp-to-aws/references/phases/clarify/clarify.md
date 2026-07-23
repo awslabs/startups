@@ -518,19 +518,19 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 | OpenAI Agents SDK                        | Q14 includes E                                                | Highest AI effort; AgentCore (Harness/Runtime); 2–4 weeks                                      |
 | Multi-agent + MCP                        | Q14 = D + F                                                   | AgentCore to unify orchestration + MCP (Gateway)                                               |
 | Voice platform AI                        | Q14 includes G                                                | Check native Bedrock support; Nova 2 Sonic if needed                                           |
-| GPT-5.5 migration                        | Q19 = GPT-5.5                                                 | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                 |
+| GPT-5.5 migration                        | Q19 = GPT-5.5                                                 | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 5 for 53% savings                 |
 | GPT-5.5 Pro migration                    | Q19 = GPT-5.5 Pro                                             | Nova 2 Pro — 95% cheaper on Bedrock                                                            |
-| GPT-5.4 migration                        | Q19 = GPT-5.4                                                 | Claude Sonnet 4.6 — near price parity; AWS consolidation                                       |
+| GPT-5.4 migration                        | Q19 = GPT-5.4                                                 | Claude Sonnet 5 — near price parity; AWS consolidation                                       |
 | GPT-5.4 Mini/Nano migration              | Q19 = GPT-5.4 Mini or Nano                                    | Nova Lite/Micro — 87-94% cheaper on Bedrock                                                    |
-| GPT-4 Turbo migration                    | Q19 = GPT-4 Turbo                                             | Claude Sonnet 4.6 — 70% cheaper on input                                                       |
-| o-series migration                       | Q19 = o-series                                                | Claude Sonnet 4.6 with extended thinking                                                       |
+| GPT-4 Turbo migration                    | Q19 = GPT-4 Turbo                                             | Claude Sonnet 5 — 70% cheaper on input                                                       |
+| o-series migration                       | Q19 = o-series                                                | Claude Sonnet 5 with extended thinking                                                       |
 | High-volume cost-critical AI             | Q18 = High + cost critical                                    | Nova Micro or Haiku 4.5 + provisioned throughput                                               |
-| Reasoning/agent workload                 | Q17 = Extended thinking                                       | Claude Sonnet 4.6 extended thinking; Opus 4.6 for hardest                                      |
+| Reasoning/agent workload                 | Q17 = Extended thinking                                       | Claude Sonnet 5 extended thinking; Opus 4.6 for hardest                                      |
 | Speech-to-speech AI                      | Q17 = Real-time speech                                        | Nova 2 Sonic                                                                                   |
 | RAG workload                             | Q17 = RAG optimization                                        | Bedrock Knowledge Bases + Titan Embeddings                                                     |
-| Vision workload                          | Q20 = Vision required                                         | Claude Sonnet 4.6 (multimodal)                                                                 |
+| Vision workload                          | Q20 = Vision required                                         | Claude Sonnet 5 (multimodal)                                                                 |
 | Latency-critical AI                      | Q21 = Critical                                                | Haiku 4.5 or Nova Micro + streaming                                                            |
-| Complex reasoning tasks                  | Q22 = Complex                                                 | Claude Sonnet 4.6; Opus 4.6 for hardest                                                        |
+| Complex reasoning tasks                  | Q22 = Complex                                                 | Claude Sonnet 5; Opus 4.6 for hardest                                                        |
 
 ---
 

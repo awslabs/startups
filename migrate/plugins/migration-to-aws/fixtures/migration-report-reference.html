@@ -334,7 +334,7 @@
           <tr><td>Cloud SQL PostgreSQL</td><td>RDS PostgreSQL db.t4g.micro</td><td><span class="badge-conf badge-tail">Tailored to your setup</span> (single-AZ)</td></tr>
           <tr><td>Cloud Storage</td><td>S3</td><td><span class="badge-conf badge-std">Standard pairing</span></td></tr>
           <tr><td>BigQuery</td><td>Deferred — specialist engagement</td><td><span class="badge-conf badge-defer">Specialist required</span></td></tr>
-          <tr><td>Vertex AI / Gemini</td><td>Bedrock Claude Sonnet 4.6</td><td><span class="badge-conf badge-tail">Tailored to your setup</span> (quality priority)</td></tr>
+          <tr><td>Vertex AI / Gemini</td><td>Bedrock Claude Sonnet 5</td><td><span class="badge-conf badge-tail">Tailored to your setup</span> (quality priority)</td></tr>
           <tr><td>Vertex AI Imagen</td><td>Bedrock Nova Canvas</td><td><span class="badge-conf badge-tail">Tailored to your setup</span></td></tr>
         </tbody>
       </table>
@@ -749,7 +749,7 @@ terraform apply</pre>
         <caption>GCP AI models mapped to Amazon Bedrock targets.</caption>
         <thead><tr><th scope="col">GCP model</th><th scope="col">Bedrock target</th><th scope="col">Workload</th><th scope="col">Complexity</th></tr></thead>
         <tbody>
-          <tr><td>gemini-2.5-flash</td><td>anthropic.claude-sonnet-4-6</td><td>Text generation, structured output</td><td>Medium</td></tr>
+          <tr><td>gemini-2.5-flash</td><td>anthropic.claude-sonnet-5</td><td>Text generation, structured output</td><td>Medium</td></tr>
           <tr><td>imagen-3.0-generate-001</td><td>amazon.nova-canvas-v1:0</td><td>Image generation (~500/mo)</td><td>Medium</td></tr>
         </tbody>
       </table>
@@ -759,13 +759,13 @@ terraform apply</pre>
         <caption>Bedrock model options vs current GCP AI spend ($1,250/mo).</caption>
         <thead><tr><th scope="col">Bedrock model</th><th scope="col">Monthly est.</th><th scope="col">vs GCP ($1,250/mo)</th><th scope="col">Quality</th><th scope="col">Notes</th></tr></thead>
         <tbody>
-          <tr><td><strong>Claude Sonnet 4.6 (recommended)</strong></td><td>$780</td><td class="savings">-38%</td><td>High</td><td>Quality priority (Q16); selected target</td></tr>
+          <tr><td><strong>Claude Sonnet 5 (recommended)</strong></td><td>$780</td><td class="savings">-38%</td><td>High</td><td>Quality priority (Q16); selected target</td></tr>
           <tr><td>Claude Haiku 4.5</td><td>$260</td><td class="savings">-79%</td><td>Medium-High</td><td>Balance of cost and quality</td></tr>
           <tr><td>Nova Lite v1</td><td>$14</td><td class="savings">-99%</td><td>Medium</td><td>Backup if A/B test passes quality bar</td></tr>
         </tbody>
       </table>
 
-      <h3>Recommended model token breakdown (Claude Sonnet 4.6)</h3>
+      <h3>Recommended model token breakdown (Claude Sonnet 5)</h3>
       <table>
         <caption>Monthly token volume and cost for the recommended model.</caption>
         <thead><tr><th scope="col">Component</th><th scope="col">Volume</th><th scope="col">Cost</th></tr></thead>
@@ -791,7 +791,7 @@ terraform apply</pre>
 
       <h3>Production readiness checklist</h3>
       <ul class="compact">
-        <li>Bedrock model access enabled for Claude Sonnet 4.6 and Nova Canvas in us-west-2</li>
+        <li>Bedrock model access enabled for Claude Sonnet 5 and Nova Canvas in us-west-2</li>
         <li>IAM role with <code>bedrock:InvokeModel</code> on ECS task role</li>
         <li>Provider adapter deployed with <code>AI_PROVIDER</code> feature flag</li>
         <li>A/B test with &ge;100 representative prompts; image quality human evaluation</li>
@@ -849,7 +849,7 @@ terraform apply</pre>
             <td>What matters most for your AI workloads?</td>
             <td>Quality</td>
             <td>User answer</td>
-            <td>Claude Sonnet 4.6 recommended over lower-cost models</td>
+            <td>Claude Sonnet 5 recommended over lower-cost models</td>
           </tr>
           <tr>
             <td>Detected: Cloud SQL ZONAL &rarr; single-AZ availability</td>

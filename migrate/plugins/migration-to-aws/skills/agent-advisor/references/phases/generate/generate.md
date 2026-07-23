@@ -55,7 +55,7 @@ summary first, technical detail after (single layered doc — do not fork by aud
 `$RUN_DIR/recommendation.md`. Append the freshness footer.
 
 For `migrate`: also fill Section 9 (Bedrock model) with the **coarse family mapping**
-(e.g. "GPT-4o → Claude Sonnet 4.6 family") and a note that detailed pricing/TCO come from the
+(e.g. "GPT-4o → Claude Sonnet 5 family") and a note that detailed pricing/TCO come from the
 migration plugins — no dollar figures. Section 10 (cost magnitude) presents the per-unit
 target-state bands from estimate.json and notes that the migration TCO comparison and
 current-spend delta are produced by the migration plugins.

@@ -51,7 +51,7 @@ These are real issues startups hit when keeping their existing framework and swa
 
 ### Model configuration format
 
-**Problem:** CrewAI uses LiteLLM under the hood for model routing. The model string format for Bedrock is `bedrock/model-id` (e.g., `bedrock/us.anthropic.claude-sonnet-4-6-20250514-v1:0`). Getting the format wrong produces cryptic LiteLLM errors.
+**Problem:** CrewAI uses LiteLLM under the hood for model routing. The model string format for Bedrock is `bedrock/model-id` (e.g., `bedrock/us.anthropic.claude-sonnet-5`). Getting the format wrong produces cryptic LiteLLM errors.
 
 **Fix:** Use the exact format: `bedrock/{full_model_id}`. Set `AWS_REGION_NAME` environment variable. Verify with a simple LiteLLM test call before running the full crew.
 
@@ -65,7 +65,7 @@ These are real issues startups hit when keeping their existing framework and swa
 
 **Problem:** CrewAI's `Process.hierarchical` requires the manager model to reliably delegate tasks. Some Bedrock models (especially smaller ones like Nova Lite, Llama variants) are less reliable at hierarchical delegation than GPT-4o or Claude Sonnet.
 
-**Fix:** For hierarchical processes, use Claude Sonnet 4.6 as the manager model (best tool-use reliability on Bedrock). Specialist agents can use cheaper models. Don't use Nova Micro or Llama Scout as the manager in hierarchical crews.
+**Fix:** For hierarchical processes, use Claude Sonnet 5 as the manager model (best tool-use reliability on Bedrock). Specialist agents can use cheaper models. Don't use Nova Micro or Llama Scout as the manager in hierarchical crews.
 
 ### Memory and context window
 
@@ -87,7 +87,7 @@ These are real issues startups hit when keeping their existing framework and swa
 
 **Problem:** AutoGen's `GroupChat` uses the model to select the next speaker. This is a meta-task that requires the model to understand the conversation flow and pick the right agent. Claude handles this well; smaller Bedrock models may select speakers inconsistently.
 
-**Fix:** Use Claude Sonnet 4.6 for the GroupChat manager. If using a cheaper model, consider switching to `round_robin` or custom `speaker_selection_method` instead of model-based selection.
+**Fix:** Use Claude Sonnet 5 for the GroupChat manager. If using a cheaper model, consider switching to `round_robin` or custom `speaker_selection_method` instead of model-based selection.
 
 ### Code execution sandbox
 
@@ -129,7 +129,7 @@ These are real issues startups hit when keeping their existing framework and swa
 
 ### Prompt sensitivity
 
-**Problem:** Prompts optimized for GPT-4o may not perform identically on Claude Sonnet 4.6. Claude tends to be more literal and instruction-following; GPT-4o is more "creative" with ambiguous instructions. System prompts that rely on GPT-4o's implicit behaviors may need adjustment.
+**Problem:** Prompts optimized for GPT-4o may not perform identically on Claude Sonnet 5. Claude tends to be more literal and instruction-following; GPT-4o is more "creative" with ambiguous instructions. System prompts that rely on GPT-4o's implicit behaviors may need adjustment.
 
 **Fix:** Test your top 20 most-used prompts on the target Bedrock model. Adjust prompts that produce degraded output. Claude generally responds better to explicit, structured instructions with clear formatting requirements.
 
