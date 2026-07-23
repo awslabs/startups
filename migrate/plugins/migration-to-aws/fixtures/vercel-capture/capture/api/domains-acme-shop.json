@@ -1,6 +1,0 @@
-{
-  "domains": [
-    { "name": "acme-shop.vercel.app", "apexName": "vercel.app", "verified": true },
-    { "name": "www.acme-shop.com", "apexName": "acme-shop.com", "verified": true }
-  ]
-}

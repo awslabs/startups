@@ -10,7 +10,6 @@ Point this plugin at your Heroku account (via your authenticated Heroku CLI, rea
 
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
 - **Heroku → AWS** — Dynos, Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
-- **Vercel → AWS** — a full migration pipeline (assessment, cost estimation, production-ready Terraform, migration scripts) for Next.js apps, with a three-outcome recommendation
 
 **For infrastructure migrations:**
 
@@ -160,22 +159,12 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 | CI/CD      | Pipelines and Review Apps → detect-only (recorded in inventory, no automated migration)                                                                               |
 | Secrets    | Config vars → AWS Secrets Manager or SSM Parameter Store                                                                                                              |
 
-#### Vercel → AWS (full migration: assessment + Terraform generation)
-
-| Category    | Examples                                                                                                                                      |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compute     | OpenNext/SST (Outcome A), ECS Fargate (Outcome B), or a Vercel+AWS Hybrid where only the backend moves (Outcome C)                            |
-| Coupling    | ISR, edge middleware, edge runtime routes, image optimization, streaming SSR, Server Actions/skew, preview deployments, Vercel-managed stores |
-| Pre-Flight  | 10 named checks (M1/M2/B1-B4/S1/I1/O1/U1), computed unconditionally and filtered by the recommended outcome                                   |
-| Peripherals | Blob → S3, Cron → EventBridge Scheduler, KV → ElastiCache, Postgres → RDS/Aurora, Edge Config → Parameter Store/AppConfig                     |
-
 ### Agent Skill Triggers
 
 | Agent Skill       | Triggers                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS"                                                                                                                                                                 |
 | **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                                                                                                                                                    |
-| **vercel-to-aws** | "migrate from Vercel", "Vercel to AWS", "move off Vercel", "migrate Next.js off Vercel", "assess my Vercel migration", "leave Vercel", "Vercel to Fargate", "Vercel to OpenNext", "should I migrate off Vercel"                                                                                                                                                                                                          |
 | **agent-advisor** | "which runtime for my agent", "AgentCore vs ECS vs EKS vs Lambda", "AgentCore vs Lambda MicroVMs", "deploy an AI agent on AWS", "I have an agent idea — what do I build", "move my agents to AWS with a plan", "add AgentCore memory/gateway/identity to my agent", "I'm already on AWS and want to add agent capabilities", "migrate Temporal workers to AWS", "run Temporal on AWS", "build a POC for my agent on AWS" |
 
 ### MCP Servers
@@ -251,31 +240,26 @@ command that creates, changes, or deletes anything. If you also have `heroku_*`
 Terraform, the agent cross-checks it against your live account and reports drift.
 
 - **For AI execution (llm-to-bedrock skill):** Python 3.10+, `uv`, and Bedrock model access enabled
-- **For Vercel migration:** repo access with a locally-runnable `next build`, plus a Vercel API token, are both required Tier 1 inputs — the assessment does not run without them. Vercel tokens can't be permission-scoped to read-only, so scope by resource instead (project-scoped when one project is in scope), pick a short expiration, and revoke after the assessment; the skill only ever issues read (GET) requests, enforced by its capture-step endpoint whitelist
 - **For agent-advisor:** `uv` (deterministic runtime scoring); source code when deploying/migrating existing agents (an idea-only run needs none); the Temporal branch uses the `temporal-docs` MCP (one-time login, or public-web fallback)
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
 ## Architecture & contributing
 
-This plugin ships five skills, built on **different architectures**, and this
+This plugin ships four skills, built on **different architectures**, and this
 matters if you contribute:
 
-- **heroku-to-aws**, **vercel-to-aws**, and **agent-advisor** are built on the **phase DSL** — a declarative
+- **heroku-to-aws** and **agent-advisor** are built on the **phase DSL** — a declarative
   frontmatter grammar an LLM interprets at runtime, with a static validator that checks the
   structure before anything runs. heroku-to-aws is the reference implementation and the
   **direction for all new work**; agent-advisor follows the same pattern (and vendors the DSL
-  interpreter contract). `vercel-to-aws` additionally owns its own resumability ledger
-  (`assessment-state.json`, independent of the vendored `.phase-status.json`) since its
-  assessment supports incremental, effort-for-confidence input collection across multiple
-  sessions — see `skills/vercel-to-aws/references/state/assessment-state.schema.json` if
-  you're building a skill with similar "come back later with more input" needs.
+  interpreter contract).
 - **gcp-to-aws** predates the DSL and uses the **older prose design**. It is maintained,
   but a future effort will port it onto the DSL. (It is also reused as the in-skill migration
   engine by agent-advisor's Migration Plan stage.)
 - **llm-to-bedrock** is the AI-execution skill (SDK rewrite → Bedrock, eval, git branch),
   invoked from the migration skills' AI-execution step.
 
-**New skills and phases follow the DSL pattern** (`heroku-to-aws`, `vercel-to-aws`, `agent-advisor`), not the
+**New skills and phases follow the DSL pattern** (`heroku-to-aws`, `agent-advisor`), not the
 prose pattern. The grammar is documented under [`docs/`](docs/) — start with
 [docs/01-concepts.md](docs/01-concepts.md). For the full contributor workflow —
 architecture, build/validate tasks, the vendored shared-files contract, and how to add
