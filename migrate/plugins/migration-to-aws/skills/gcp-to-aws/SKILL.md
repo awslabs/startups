@@ -10,7 +10,7 @@ description: "Migrate workloads from Google Cloud Platform to AWS — including 
 - **Re-platform by default**: Select AWS services that match GCP workload types (e.g., Cloud Run → Fargate, Cloud SQL → RDS).
 - **Dev sizing unless specified**: Default to development-tier capacity (e.g., db.t4g.micro, single AZ). Upgrade only on user direction.
 - **No human one-time migration costs**: Do not present human labor, professional services, or people-time work as dollar estimates or "one-time migration cost" budget categories. Vendor charges grounded in data (for example GCP data transfer egress in the infra estimate when billing exists) are allowed.
-- **Multi-signal approach**: Design phase adapts based on available inputs — Terraform IaC for infrastructure, billing data for service mapping, and app code for AI workload detection.
+- **Multi-signal approach**: Design phase adapts based on available inputs — live gcloud discovery and/or Terraform IaC for infrastructure, billing data for service mapping, and app code for AI workload detection. When live and IaC both run, live is authoritative for current state and disagreements surface as drift, never silently resolved.
 - **BigQuery / `google_bigquery_*`**: The skill **does not** recommend a specific AWS analytics or warehouse service. During **Clarify**, if discovery shows BigQuery (IaC `google_bigquery_*` and/or billing rows for BigQuery), you **must** surface the specialist advisory **before** Design (see `references/phases/clarify/clarify.md`). Design output uses **`Deferred — specialist engagement`**; keep directing the user to their **AWS account team** and/or a **data analytics migration partner** through Design, Estimate, and docs (see `references/phases/design/design-infra.md` BigQuery specialist gate).
 
 ---
@@ -68,11 +68,12 @@ If the user chooses to continue, proceed with the combined run. Load AI refs **a
 
 User must provide at least one GCP source:
 
+- **Live gcloud CLI** (recommended for infrastructure): an authenticated `gcloud` CLI — read-only, consent-gated live discovery of the project (see `references/phases/discover/discover-live.md`)
 - **Terraform IaC**: `.tf` files (with optional `.tfvars`, `.tfstate`)
 - **Application code**: Source files with GCP SDK or AI framework imports
 - **Billing data**: GCP billing/cost/usage export files (CSV or JSON)
 
-If none of the above are found, stop and ask user to provide at least one source type.
+If no Terraform is found (even when app code or billing files exist — they cannot produce an infrastructure inventory), offer live discovery per `discover.md` Step 1d; stop only when nothing will produce any artifact. Live discovery covers infrastructure only — AI/agentic workload detection still requires application code.
 
 ---
 
@@ -235,6 +236,7 @@ gcp-to-aws/
 │   │   ├── discover/
 │   │   │   ├── discover.md                     # Phase 1: Discover orchestrator
 │   │   │   ├── discover-iac.md                 # Terraform/IaC discovery
+│   │   │   ├── discover-live.md                # Live gcloud CLI discovery (read-only, consent-gated)
 │   │   │   ├── discover-app-code.md            # App code discovery
 │   │   │   └── discover-billing.md             # Billing data discovery
 │   │   ├── clarify/
@@ -307,13 +309,13 @@ gcp-to-aws/
 │       └── bedrock-quotas.md                   # Bedrock TPM/RPM quota awareness, burndown rates, capacity planning
 ```
 
-| Condition                                                     | Action                                                                                                                                                                                                                                    |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No GCP sources found (no `.tf`, no app code, no billing data) | Stop. Output: "No GCP sources detected. Provide at least one source type (Terraform files, application code, or billing exports) and try again."                                                                                          |
-| `.phase-status.json` missing phase gate                       | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                                                                                    |
-| awspricing unavailable after 3 attempts                       | Display user warning about ±5-25% accuracy. Use `pricing-cache.md`. Add `pricing_source: "cached_fallback"` to the applicable `estimation-*.json` file.                                                                                   |
-| User skips questions or says "use defaults for the rest"      | Apply documented defaults for all remaining questions (essential questions and any unconfirmed sheet rows in wizard mode; current and subsequent batches in full mode). Q2/Q3 defaults add a report caveat. Phase 2 completes either way. |
-| `aws-design.json` missing required clusters                   | Stop Phase 4. Output: "Re-run Phase 3 to generate missing cluster designs."                                                                                                                                                               |
+| Condition                                                     | Action                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No GCP sources found (no `.tf`, no app code, no billing data) | Offer live gcloud discovery per `discover.md` Step 1d. Only if declined or unavailable: Stop. Output: "No GCP sources detected. Provide at least one source type (Terraform files, application code, or billing exports), or re-run and accept live discovery." |
+| `.phase-status.json` missing phase gate                       | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                                                                                                          |
+| awspricing unavailable after 3 attempts                       | Display user warning about ±5-25% accuracy. Use `pricing-cache.md`. Add `pricing_source: "cached_fallback"` to the applicable `estimation-*.json` file.                                                                                                         |
+| User skips questions or says "use defaults for the rest"      | Apply documented defaults for all remaining questions (essential questions and any unconfirmed sheet rows in wizard mode; current and subsequent batches in full mode). Q2/Q3 defaults add a report caveat. Phase 2 completes either way.                       |
+| `aws-design.json` missing required clusters                   | Stop Phase 4. Output: "Re-run Phase 3 to generate missing cluster designs."                                                                                                                                                                                     |
 
 ## Defaults
 
@@ -383,6 +385,7 @@ User can invoke the skill again to resume from `current_phase` (or deterministic
 **v1.0 includes:**
 
 - Terraform infrastructure discovery
+- Live infrastructure discovery via authenticated gcloud CLI (read-only, consent-gated, with IaC drift detection)
 - App code scanning (AI workload detection)
 - Billing data import from GCP
 - User requirement clarification (assumption-sheet wizard by default: confirm detected/assumed values, answer only essential questions; full adaptive question flow available on request)

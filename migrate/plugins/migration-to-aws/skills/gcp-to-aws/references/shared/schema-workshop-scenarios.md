@@ -47,7 +47,7 @@ tiers and the SA picked `graviton` or `mixed` (see `workshop-sheet.md`).
 | `design_constraints.kubernetes.value`       | When present                                |
 | `design_constraints.cpu_architecture.value` | `graviton` \| `x86` \| `mixed` when present |
 
-Cross-skill arch defaults: heroku workshop defaults x86; vercel defaults arm64;
+Cross-skill arch defaults: heroku workshop defaults x86;
 GCP uses Clarify's `graviton`/`x86`/`mixed` vocabulary.
 
 ## Fingerprint
@@ -59,7 +59,10 @@ Abort refresh on drift.
 
 Each `scenario-NNN.json` manifest's `estimation_summary` carries the three
 monthly tiers, `complexity_tier`, `pricing_source`, optional
-`graviton_note`/`region_note`, and `calculator_url` — a shareable
+`graviton_note`/`region_note`, optional `recommendation_outcome` (copy
+`recommendation.outcome` from the inner estimate when it wrote v2 decision
+fields, else omit/null — feeds the compare view's Outcome column and flip
+callout), and `calculator_url` — a shareable
 calculator.aws estimate URL produced by `workshop-refresh.md` § 6b via the
 `aws-pricing-calculator` MCP when available, else `null`. AWS computes
 regional prices server-side when the link is opened, which is the honest

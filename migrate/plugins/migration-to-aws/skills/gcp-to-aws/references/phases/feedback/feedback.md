@@ -65,6 +65,20 @@ Then output the single-line minified version for copy-paste:
 --- End ---
 ```
 
+### Step 2.5: Decision check (chat only — optional, before the survey link)
+
+Ask three quick questions in chat. All are skippable — any non-answer means skip; skipping never blocks the phase. **Do NOT write the answers to `trace.json` or `feedback.json`** — the trace contract is unchanged; these exist so the conversation itself can close the loop on the plugin's core purpose:
+
+```
+Before the survey link — three quick questions (all optional):
+
+1. Could you make your migrate/stay decision from this assessment? (yes / partly / no)
+2. If you decided: which way are you leaning? (migrate / stay / defer)
+3. If you couldn't decide: what evidence was missing?
+```
+
+Respond briefly to whatever they share (e.g. point at the relevant artifact or the what-if workshop for missing-evidence answers), then continue to the survey link below.
+
 Then provide the survey link with IDE and version as hidden field query parameters:
 
 ```

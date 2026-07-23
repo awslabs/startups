@@ -4,7 +4,7 @@
 
 ## Account-Wide Security Baseline
 
-The plugin always emits `baseline.tf` with account-wide security controls — GuardDuty, CloudTrail (multi-region, log file validation), IMDSv2 enforcement, EBS encryption by default, S3 public access block, Access Analyzer, and budget alerts. For compliance stacks (soc2/pci/hipaa/fedramp), Config and Security Hub are added conditionally.
+The plugin always emits `baseline.tf` with account-wide security controls — GuardDuty, CloudTrail (multi-region, log file validation), IMDSv2 enforcement, EBS encryption by default, S3 public access block, Access Analyzer, and budget alerts. For compliance stacks (soc2/pci/hipaa/fedramp), Config and Security Hub are added conditionally. `compliance: ["unknown"]` (not confirmed in Clarify) adds **no** conditional controls — treat it as the baseline-only case; the report carries the unconfirmed-compliance caveat.
 
 **Do not duplicate these controls in `security.tf` or other domain files.** See `references/phases/generate/generate-artifacts-infra.md` Step 1.5 for the full baseline specification.
 

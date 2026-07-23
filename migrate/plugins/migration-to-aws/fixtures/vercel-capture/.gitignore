@@ -1,5 +1,0 @@
-# The repo-root .gitignore excludes build/ globally. This fixture's
-# capture/build/ holds CANNED .next build manifests (committed test data
-# mirroring the real capture layout), not build output — re-include them.
-!capture/build/
-!capture/build/**

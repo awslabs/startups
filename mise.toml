@@ -62,6 +62,10 @@ run = "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-vali
 description = "Fail on known-bad Bedrock model IDs (EOL-as-target, fabricated dated forms) outside the catalog files (CI)"
 run = "python3 migrate/plugins/migration-to-aws/tools/model-id-lint.py"
 
+[tasks."fixtures:assert"]
+description = "Run committed fixture asserters: golden run trees must PASS, replay-only asserters must fail cleanly on an empty dir (CI)"
+run = "python3 migrate/plugins/migration-to-aws/tools/run-asserters.py"
+
 [tasks."shared:sync"]
 description = "Sync each skill's references/vendored/ tree from the canonical skills/shared/ source"
 run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --write"
@@ -69,6 +73,14 @@ run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --wri
 [tasks."shared:check"]
 description = "Verify each skill's vendored shared files are byte-identical to canonical skills/shared/ (CI)"
 run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts"
+
+[tasks."fixtures:check"]
+description = "Structural integrity of committed replay fixtures (JSON parse, asserter byte-compile, manifest file references, gitignore traps, seed phase-status vs declared phases)"
+run = "node migrate/plugins/migration-to-aws/tools/fixtures-check.ts"
+
+[tasks."pricing:staleness"]
+description = "Report pricing caches past their own declared freshness window (warn-only; use --strict in a scheduled workflow to fail)"
+run = "node migrate/plugins/migration-to-aws/tools/pricing-staleness.ts"
 
 [tasks.lint]
 description = "Run all linters"
@@ -78,6 +90,9 @@ run = [
   { task = "lint:frontmatter" },
   { task = "lint:model-ids" },
   { task = "shared:check" },
+  { task = "fixtures:assert" },
+  { task = "fixtures:check" },
+  { task = "pricing:staleness" },
   { task = "test" },
 ]
 
