@@ -39,11 +39,11 @@ def parse_price_dimensions(price_item: dict) -> dict:
 STATIC_FALLBACK = {
     "anthropic.claude-haiku-4-5-20251001-v1:0":     {"input_per_1k_usd": 0.001, "output_per_1k_usd": 0.005},
     "us.anthropic.claude-haiku-4-5-20251001-v1:0":  {"input_per_1k_usd": 0.001, "output_per_1k_usd": 0.005},
-    "anthropic.claude-sonnet-4-6-20250514-v1:0":    {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
-    "us.anthropic.claude-sonnet-4-6-20250514-v1:0": {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
+    "anthropic.claude-sonnet-4-6":                  {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
     "us.anthropic.claude-sonnet-4-6":               {"input_per_1k_usd": 0.003, "output_per_1k_usd": 0.015},
-    "anthropic.claude-opus-4-8-20250610-v1:0":      {"input_per_1k_usd": 0.015, "output_per_1k_usd": 0.075},
-    "us.anthropic.claude-opus-4-8-20250610-v1:0":   {"input_per_1k_usd": 0.015, "output_per_1k_usd": 0.075},
+    # Opus 4.8 is $5/$25 per 1M ($0.005/$0.025 per 1K) — see pricing-cache.md § Anthropic.
+    "anthropic.claude-opus-4-8":                    {"input_per_1k_usd": 0.005, "output_per_1k_usd": 0.025},
+    "us.anthropic.claude-opus-4-8":                 {"input_per_1k_usd": 0.005, "output_per_1k_usd": 0.025},
     "amazon.nova-micro-v1:0":                       {"input_per_1k_usd": 0.000035, "output_per_1k_usd": 0.00014},
     "amazon.nova-lite-v1:0":                        {"input_per_1k_usd": 0.00006, "output_per_1k_usd": 0.00024},
     "amazon.nova-pro-v1:0":                         {"input_per_1k_usd": 0.0008, "output_per_1k_usd": 0.0032},
@@ -65,6 +65,13 @@ def _static_fallback(model_id: str) -> dict | None:
     for key, val in STATIC_FALLBACK.items():
         if key.startswith(base):
             return {**val, "available": True, "note": f"static fallback (matched {key})"}
+    # Also strip a trailing date stamp (e.g. ...-sonnet-4-6-20250514 -> ...-sonnet-4-6) so a
+    # dated ID form still matches the undated table keys.
+    dateless = re.sub(r"-\d{8}$", "", base)
+    if dateless != base:
+        for key, val in STATIC_FALLBACK.items():
+            if key.startswith(dateless):
+                return {**val, "available": True, "note": f"static fallback (matched {key})"}
     return None
 
 

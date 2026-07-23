@@ -9,7 +9,9 @@ the user to choose when the match is ambiguous.
 ## Input
 
 - `plan_model_id`: the target_model_id from the migration plan
-  (e.g., `anthropic.claude-sonnet-4-6-20250514-v1:0`)
+  (e.g., `anthropic.claude-sonnet-4-6-20250514-v1:0` — a plausible-looking ID
+  that does NOT exist; broken inputs like this are exactly what this helper
+  repairs, so this example is intentionally invalid)
 - `region`: the AWS region from your context (e.g., `us-east-1`)
 
 ## Procedure
