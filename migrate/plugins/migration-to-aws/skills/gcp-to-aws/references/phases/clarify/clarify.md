@@ -26,13 +26,30 @@ Check `$MIGRATION_DIR/` for existing state:
 
 **Case 1 — Completed preferences exist** (`preferences.json` present):
 
+**Compatibility check (run BEFORE offering reuse):** The existing file may predate the current flow, and the Completion Handoff Gate forbids patching artifacts to pass — so an incompatible file offered for reuse dead-ends at `GATE_FAIL`. Check:
+
+1. **Schema currency** — `metadata.clarify_mode` is present; every constraint has `value`, `chosen_by`, `prompt`, and `design_consequence`; every constraint with `chosen_by: "extracted"` or `"default"` has a `source` field; `design_constraints.cpu_architecture` is present when compute resources exist in the current inventory.
+2. **Discovery match** — the file's `metadata.discovery_artifacts` is consistent with what exists in `$MIGRATION_DIR` now: if `ai-workload-profile.json` exists but the file has no `ai_constraints` (or the reverse), or the inventory has database/compute resources whose required constraints (`availability`, `db_size`) are absent, the file is stale relative to current discovery.
+
+**If both pass**, offer:
+
 > "I found existing migration preferences from a previous run. Would you like to:"
 >
 > A) Re-use these preferences and skip questions
 > B) Start fresh and re-answer all questions
 
 - If A: Run Step 2 item 6 only (BigQuery detection) on current discovery artifacts. If `bigquery_present` is **true**, output the Step 4 **BigQuery / deferred analytics** advisory block once (even though questions are skipped), then skip to Validation Checklist with the existing `preferences.json`.
-- If B: delete `preferences.json`, continue to Step 1.
+- If B: rename `preferences.json` to `preferences-superseded.json` (do not delete — prior answers are unrecoverable otherwise), continue to Step 1.
+
+**If either check fails**, do NOT offer plain reuse — it would fail the gate. Instead:
+
+> "I found preferences from a previous run, but they predate the current flow (missing: [list]). Would you like to:"
+>
+> A) Keep your previous answers where they're still valid — I'll confirm them on the assumption sheet and only ask what's new or missing
+> B) Start fresh and re-answer all questions
+
+- If A: rename the old file to `preferences-superseded.json`, seed the wizard from it — carry each still-valid constraint value forward with its original `chosen_by` (backfilling `prompt`/`design_consequence`/`source` from the current catalog), treat missing constraints as unresolved — and continue to Step 1 (the wizard fills the gaps; carried-forward values appear on the Assumption Sheet for confirmation).
+- If B: rename to `preferences-superseded.json`, continue to Step 1.
 
 **Case 2 — Draft preferences exist** (`preferences-draft.json` present, no `preferences.json`):
 
@@ -747,7 +764,7 @@ Full schema and constraint catalog: `references/shared/schema-preferences.md`.
 15. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"` with `source`.
 16. `metadata.clarify_mode` is one of `"wizard"`, `"full"`, `"fast_path"`, `"simple_hybrid"`.
 
-After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` if it exists.
+After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` and `$MIGRATION_DIR/preferences-superseded.json` if they exist (the superseded backup has served its purpose once a new complete file exists).
 
 ---
 
