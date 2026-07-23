@@ -472,7 +472,7 @@ _Present each question's options via the structured question tool (e.g. AskUserQ
 - Q3 defaults to B ($1K–$5K) with a report caveat that spend was not confirmed.
 - **Q27 must not be silently defaulted in wizard mode** when Category H fired — if the user skips it, record `startup_program_status: "unknown"` with `chosen_by: "default"` and `source: "default:Q27"`; downstream artifacts must use neutral Activate copy (both tiers, no "your status: eligible_*").
 - Q3.5, Q23–Q25, and unresolved multi-instance conflicts fall back to their documented defaults (Q3.5 → E; Q23 → framework-based; Q24 → session; Q25 → medium; conflicts → most conservative posture) with `chosen_by: "default"`.
-  Then skip to Category E opt-in, then Step 5.
+  Then run the **Answer Recap** (below) with the defaulted rows included, then Category E opt-in, then Step 5.
 
 **Interpret answers** using the interpret rules in the category files. Apply early-exit rules triggered by answers (e.g., Q5 correction to multi-cloud → `compute: "eks"`, Q8 → N/A).
 
@@ -489,10 +489,18 @@ After the last essential batch is answered and interpreted (and after Q27 when i
 | Cutover window (Q7) | "monthly is fine" | Monthly maintenance window |
 | AI spend (Q15) | "about a grand" | $500–$2K/month |
 
-Anything wrong? Name it ("cutover: weekly") — otherwise I'll proceed to design.
+Anything wrong? Name it ("cutover: weekly") — or say "looks good" and I'll proceed to design.
 ```
 
-**When to wait:** If every Step 4 answer was an explicit option letter, the recap is informational — append it to the same turn as the Category E opt-in (or the completion message) and proceed without requiring a reply. If **any** answer was interpreted from plain words, shorthand spanning multiple questions, or a skip, present the recap and **wait for the user's response** before Step 5 — interpretation is exactly where a misread silently becomes a design constraint. Corrections use the Step 2.5 override grammar and set `chosen_by: "user"`.
+**Always wait.** Present the recap and **wait for the user's response** ("looks good" or a correction) before continuing — interpretation is exactly where a misread silently becomes a design constraint, and the batch opener invites shorthand and plain-word answers, so nearly every real run involves interpretation. One extra turn at the single highest-stakes commit in the flow is the intended cost. Corrections use the Step 2.5 override grammar and set `chosen_by: "user"`.
+
+**Sequence (fixed — do not reorder or combine):**
+
+1. Answer Recap → wait for the user's response
+2. Category E opt-in (if `billing-profile.json` exists) → wait
+3. Step 5 — write `preferences.json`
+
+**"Use defaults for the rest" still gets a recap:** when the user defaults remaining questions, include those rows with `(default applied)` in the "Your answer" column and the defaulted value in "Recorded as" — bulk-defaulting is the highest-risk interpretation of all, and this is the user's one chance to see what "the rest" actually meant. Then wait as above.
 
 ### Full Flow variant ("ask me everything")
 
@@ -821,7 +829,7 @@ Before handing off to Design:
 - [ ] In wizard mode, the Step 2.5 Assumption Sheet was shown (detected + assumed sections) and the user responded before any essential question was asked
 - [ ] Every constraint with `chosen_by: "extracted"` or `chosen_by: "default"` has a `source` field with the correct prefix (`terraform:`, `billing:`, `inventory:`, `ai-profile:`, or `default:<Qid>`)
 - [ ] Essential questions (Q2, Q7, and conditional Q1/Q3/Q3.5/**Q27**/Q15/Q23–Q25/conflicts) were asked, answered, or explicitly defaulted via "use defaults for the rest"
-- [ ] The Answer Recap was shown after the final Step 4 batch, and — when any answer was interpreted from plain words, multi-question shorthand, or a skip — the user responded to it before `preferences.json` was written
+- [ ] The Answer Recap was shown after the final Step 4 batch (including defaulted rows on "use defaults for the rest") and the user responded to it before Category E / `preferences.json`
 - [ ] If `bigquery_present` was **true**, the Step 4 BigQuery specialist advisory was shown before questions — **or**, if Step 0 option A (reuse preferences), the same advisory was shown after BigQuery detection
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
 - [ ] `design_constraints.target_region` is populated with `value` and `chosen_by`
