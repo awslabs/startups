@@ -8,6 +8,7 @@ description: "Migrate workloads from Google Cloud Platform to AWS — including 
 ## Philosophy
 
 - **Re-platform by default**: Select AWS services that match GCP workload types (e.g., Cloud Run → Fargate, Cloud SQL → RDS).
+- **Extract before ask**: When Terraform, billing, or app code already answers a Clarify question, resolve it with `chosen_by: "extracted"` and present it on the Assumption Sheet for confirmation — never re-ask it as a full question unless the user converts it ("ask me about X") or corrects it.
 - **Dev sizing unless specified**: Default to development-tier capacity (e.g., db.t4g.micro, single AZ). Upgrade only on user direction.
 - **No human one-time migration costs**: Do not present human labor, professional services, or people-time work as dollar estimates or "one-time migration cost" budget categories. Vendor charges grounded in data (for example GCP data transfer egress in the infra estimate when billing exists) are allowed.
 - **Multi-signal approach**: Design phase adapts based on available inputs — live gcloud discovery and/or Terraform IaC for infrastructure, billing data for service mapping, and app code for AI workload detection. When live and IaC both run, live is authoritative for current state and disagreements surface as drift, never silently resolved.

@@ -113,7 +113,7 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 
 **Rationale:** Database size is the primary driver of migration tooling selection. pg_dump/pg_restore is sufficient for small databases but becomes impractically slow above ~10GB within a typical maintenance window. pgcopydb's parallel copy cuts migration time by 3–5x for medium databases. Very large databases (>500GB) require DMS for continuous replication regardless of whether a maintenance window exists.
 
-**Auto-detect signal:** Read disk size from `google_sql_database_instance`: `config.disk_size`, `config.disk_size_gb`, or `gcp_config.disk_size_gb`. Map to Q13b band and **skip Q13b** when unambiguous:
+**Auto-detect signal:** Read disk size from `google_sql_database_instance`: `config.disk_size_gb` (canonical per `schema-discover-iac.md`; also accept legacy `config.disk_size` or `gcp_config.disk_size_gb`). Map to Q13b band and **skip Q13b** when unambiguous:
 
 | Disk size (GB) | `db_size` value | Skip Q13b?                     |
 | -------------- | --------------- | ------------------------------ |

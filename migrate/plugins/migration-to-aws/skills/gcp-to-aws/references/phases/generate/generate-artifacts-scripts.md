@@ -83,6 +83,12 @@ Based on database and storage resources in `aws-design.json`:
 
 Read `preferences.json` → `design_constraints.db_size.value` to select the migration tool:
 
+**Inventory cross-check (before selecting the tool):** If `gcp-resource-inventory.json` has a `google_sql_database_instance` with a disk size (`config.disk_size_gb` or legacy variants), map it to the Q13b band and compare against `db_size.value`. On mismatch, do NOT silently trust either value — warn the user and use the inventory band for tool selection:
+
+> **Database size inconsistency:** Clarify recorded `db_size: [value]` but Terraform shows `disk_size_gb: [N]` ([band]). Using the Terraform value for tool selection — say "use my answer instead" to override.
+
+Record the resolution in the script header comment (`# db_size source: terraform disk_size_gb=[N], overrode preferences value [value]`). This catches a wrong Q13b answer even when Clarify completed with it.
+
 - `"<10GB"` → use **pg_dump/pg_restore**
 - `"10-100GB"` or `"100-500GB"` → use **pgcopydb** (parallel copy; requires `wal_level=logical` on Cloud SQL)
 - `">500GB"` → use **AWS DMS** (continuous replication; generate DMS task config instead of a shell export script)
