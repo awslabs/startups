@@ -156,13 +156,21 @@ When `gcp-resource-inventory.json` + `aws-design.json` + `estimation-infra.json`
 exist, offer:
 
 ```
-Estimate complete. Before Generate, you can run a what-if workshop:
-change region, availability/HA, compute (EKS/ECS), or Graviton preference
-and compare priced scenarios without re-discovering inventory.
+Estimate complete. Before Generate, want to see how the numbers move if you
+change something? I can reprice scenarios side by side in about a minute each,
+without re-running discovery — for example: a different AWS region, cheaper
+single-AZ database for staging, Kubernetes (EKS) instead of Fargate, or
+ARM-based (Graviton) compute.
 
 [A] Enter what-if workshop
 [B] Proceed toward Generate
 ```
+
+**Data-justified scenario hint (add one line when applicable):** if a material
+assumption was defaulted rather than confirmed — most commonly `availability`
+(Multi-AZ, ~2x database cost) — append: "Suggestion: we assumed [assumption];
+comparing a [alternative] scenario would bound that assumption before you
+commit." Suggest at most one.
 
 - **A** → Load `references/phases/workshop/workshop.md`. Keep
   `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.

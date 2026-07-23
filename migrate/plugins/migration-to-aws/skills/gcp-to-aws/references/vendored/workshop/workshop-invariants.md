@@ -59,6 +59,9 @@ reprice:
 - Each manifest's `estimation_summary` carries at minimum:
   `aws_monthly_premium` / `_balanced` / `_optimized`, `complexity_tier`,
   `pricing_source`, `region_note` (nullable), `calculator_url` (nullable).
+  Optional: `recommendation_outcome` (nullable — copy of
+  `recommendation.outcome` when the inner estimate wrote v2 decision fields;
+  compare views may render an Outcome column and flag flips vs baseline).
 - `preferences_subset` records ONLY the knob paths that differ from baseline.
 
 ## 5. Region honesty
