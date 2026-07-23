@@ -1,6 +1,0 @@
-{
-  "/page": "/",
-  "/blog/[slug]/page": "/blog/[slug]",
-  "/dashboard/page": "/dashboard",
-  "/api/checkout/route": "/api/checkout"
-}

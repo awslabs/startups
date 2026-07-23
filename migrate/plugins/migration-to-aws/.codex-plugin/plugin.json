@@ -1,7 +1,7 @@
 {
   "name": "migration-to-aws",
   "version": "1.5.0",
-  "description": "Migrate from GCP, Heroku, or Vercel to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Heroku Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't.",
+  "description": "Migrate from GCP or Heroku to AWS — including your entire AI stack. Moves infrastructure (Cloud Run → Fargate, Heroku Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini workloads to Amazon Bedrock, and agentic systems (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) to AWS-native frameworks. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts. Gives honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't.",
   "author": {
     "name": "Amazon Web Services",
     "url": "https://aws.amazon.com"
@@ -59,12 +59,7 @@
     "temporal-cloud",
     "temporal-workers",
     "temporal-to-aws",
-    "durable-execution",
-    "vercel",
-    "vercel-to-aws",
-    "next-js",
-    "nextjs",
-    "opennext"
+    "durable-execution"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
@@ -84,8 +79,7 @@
       "Migrate my OpenAI app to Amazon Bedrock",
       "Estimate AWS costs for my GCP workload",
       "Generate Terraform for my GCP to AWS migration",
-      "Migrate my LangChain app from OpenAI to Bedrock",
-      "Assess my Vercel migration"
+      "Migrate my LangChain app from OpenAI to Bedrock"
     ]
   }
 }

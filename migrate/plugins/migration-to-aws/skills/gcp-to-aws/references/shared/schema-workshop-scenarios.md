@@ -47,7 +47,7 @@ tiers and the SA picked `graviton` or `mixed` (see `workshop-sheet.md`).
 | `design_constraints.kubernetes.value`       | When present                                |
 | `design_constraints.cpu_architecture.value` | `graviton` \| `x86` \| `mixed` when present |
 
-Cross-skill arch defaults: heroku workshop defaults x86; vercel defaults arm64;
+Cross-skill arch defaults: heroku workshop defaults x86;
 GCP uses Clarify's `graviton`/`x86`/`mixed` vocabulary.
 
 ## Fingerprint
