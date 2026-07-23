@@ -97,15 +97,20 @@ Record any override in the script header comment (`# db_size source: terraform d
 
 ```bash
 # Allocated disk is an upper bound, not a measurement — check actual data size first.
-ACTUAL_GB=$(PGPASSWORD="$SOURCE_DB_PASSWORD" psql -h "$SOURCE_HOST" -U postgres -d "$DATABASE_NAME" -At \
-  -c "SELECT ceil(pg_database_size(current_database()) / 1024.0^3)")
-echo "Actual database size: ${ACTUAL_GB} GB (this script was generated for the [band] band)"
+if [ -n "$SOURCE_HOST" ] && [ -n "${SOURCE_DB_PASSWORD:-}" ]; then
+  ACTUAL_GB=$(PGPASSWORD="$SOURCE_DB_PASSWORD" psql -h "$SOURCE_HOST" -U postgres -d "$DATABASE_NAME" -At \
+    -c "SELECT ceil(pg_database_size(current_database()) / 1024.0^3)")
+  echo "Actual database size: ${ACTUAL_GB} GB (this script was generated for the [band] band)"
+else
+  ACTUAL_GB=""
+  echo "SKIP: actual-size check needs SOURCE_HOST and SOURCE_DB_PASSWORD set."
+fi
 ```
 
 Follow it with ONE tool-appropriate advisory branch:
 
-- pgcopydb script: `if [ "$ACTUAL_GB" -lt 10 ]; then echo "NOTE: actual data is under 10 GB — plain pg_dump/pg_restore would be simpler (no pgcopydb install, no wal_level change). Consider regenerating."; fi`
-- pg_dump script: `if [ "$ACTUAL_GB" -ge 10 ]; then echo "WARNING: actual data is ${ACTUAL_GB} GB — pg_dump may exceed your maintenance window above 10 GB. Regenerate with pgcopydb before proceeding."; exit 1; fi` (hard stop: undersized tooling is the dangerous direction; oversized is merely inconvenient)
+- pgcopydb script: `if [ -n "$ACTUAL_GB" ] && [ "$ACTUAL_GB" -lt 10 ]; then echo "NOTE: actual data is under 10 GB — plain pg_dump/pg_restore would be simpler (no pgcopydb install, no wal_level change). Consider regenerating."; fi`
+- pg_dump script: `if [ -n "$ACTUAL_GB" ] && [ "$ACTUAL_GB" -ge 10 ]; then echo "WARNING: actual data is ${ACTUAL_GB} GB — pg_dump may exceed your maintenance window above 10 GB. Regenerate with pgcopydb before proceeding."; exit 1; fi` (hard stop: undersized tooling is the dangerous direction; oversized is merely inconvenient. The guards run in both dry-run and execute mode; when connection variables are unset — typical first dry run — the check is skipped with a notice, and the operator must fill them in before `--execute` anyway)
 
 - `"<10GB"` → use **pg_dump/pg_restore**
 - `"10-100GB"` or `"100-500GB"` → use **pgcopydb** (parallel copy; requires `wal_level=logical` on Cloud SQL)
