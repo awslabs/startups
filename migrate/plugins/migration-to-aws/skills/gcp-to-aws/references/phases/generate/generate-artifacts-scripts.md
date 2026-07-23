@@ -83,6 +83,35 @@ Based on database and storage resources in `aws-design.json`:
 
 Read `preferences.json` → `design_constraints.db_size.value` to select the migration tool:
 
+**Inventory cross-check (before selecting the tool):** If `gcp-resource-inventory.json` has a `google_sql_database_instance` with a disk size (`config.disk_size_gb` or legacy variants), map it to the Q13b band and compare against `db_size.value`. Terraform disk size is **allocated capacity — an upper bound on actual data**, so the comparison is asymmetric:
+
+- **`db_size.value` band is LARGER than the allocated band** — data cannot exceed its allocation (barring `disk_autoresize` growth since the Terraform was written). Warn and use the allocated band:
+
+  > **Database size inconsistency:** Clarify recorded `db_size: [value]` but Terraform only allocates `disk_size_gb: [N]` ([band]). Using the allocated band for tool selection — say "use my answer instead" if the disk has grown since this Terraform was written.
+
+- **`db_size.value` band is SMALLER than the allocated band** — plausible (actual data below allocation is the normal case). Keep the user's answer; no warning.
+
+Record any override in the script header comment (`# db_size source: terraform disk_size_gb=[N] (allocated), overrode preferences value [value]`).
+
+**Runtime size measurement (always emit, PostgreSQL path):** Because neither the Q13b answer nor the allocated disk measures actual data, the generated script must measure it before migrating. Emit this block in the shared preamble (after connection variables), tailoring the advisory to the tool the script was generated with:
+
+```bash
+# Allocated disk is an upper bound, not a measurement — check actual data size first.
+if [ -n "$SOURCE_HOST" ] && [ -n "${SOURCE_DB_PASSWORD:-}" ]; then
+  ACTUAL_GB=$(PGPASSWORD="$SOURCE_DB_PASSWORD" psql -h "$SOURCE_HOST" -U postgres -d "$DATABASE_NAME" -At \
+    -c "SELECT ceil(pg_database_size(current_database()) / 1024.0^3)")
+  echo "Actual database size: ${ACTUAL_GB} GB (this script was generated for the [band] band)"
+else
+  ACTUAL_GB=""
+  echo "SKIP: actual-size check needs SOURCE_HOST and SOURCE_DB_PASSWORD set."
+fi
+```
+
+Follow it with ONE tool-appropriate advisory branch:
+
+- pgcopydb script: `if [ -n "$ACTUAL_GB" ] && [ "$ACTUAL_GB" -lt 10 ]; then echo "NOTE: actual data is under 10 GB — plain pg_dump/pg_restore would be simpler (no pgcopydb install, no wal_level change). Consider regenerating."; fi`
+- pg_dump script: `if [ -n "$ACTUAL_GB" ] && [ "$ACTUAL_GB" -ge 10 ]; then echo "WARNING: actual data is ${ACTUAL_GB} GB — pg_dump may exceed your maintenance window above 10 GB. Regenerate with pgcopydb before proceeding."; exit 1; fi` (hard stop: undersized tooling is the dangerous direction; oversized is merely inconvenient. The guards run in both dry-run and execute mode; when connection variables are unset — typical first dry run — the check is skipped with a notice, and the operator must fill them in before `--execute` anyway)
+
 - `"<10GB"` → use **pg_dump/pg_restore**
 - `"10-100GB"` or `"100-500GB"` → use **pgcopydb** (parallel copy; requires `wal_level=logical` on Cloud SQL)
 - `">500GB"` → use **AWS DMS** (continuous replication; generate DMS task config instead of a shell export script)
@@ -101,7 +130,8 @@ set -euo pipefail
 # 10-500GB: pgcopydb (parallel copy, 3-5x faster than pg_dump)
 # >500GB: AWS DMS recommended — see README-DMS.md if generated
 # unknown: pgcopydb (safer default at unknown scale)
-# TODO: Verify database size before running — wrong tool choice can exceed your maintenance window.
+# Note: band comes from Q13b / allocated disk (an upper bound) — the preamble below
+# measures ACTUAL data size and warns (or stops) if this tool choice doesn't fit it.
 
 DRY_RUN=true
 [[ "${1:-}" == "--execute" ]] && DRY_RUN=false
