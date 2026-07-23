@@ -30,10 +30,6 @@ FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 ASSERTERS = {
     "heroku-workshop/check_expected_workshop.py": "heroku-workshop/after-arm64-reprice",
     "gcp-workshop/check_expected_workshop.py": "gcp-workshop/after-graviton-reprice",
-    "vercel-workshop/check_expected_workshop.py": "vercel-workshop/after-outcome-b-x86",
-    "vercel-capture/check_expected_discovery.py": None,
-    "vercel-capture/check_expected_estimate.py": None,
-    "vercel-capture/check_expected_generate.py": None,
     "heroku-live-capture/check_expected_drift.py": None,
     "heroku-live-capture/check_expected_estimate.py": None,
     "gcp-live-capture/check_expected_drift.py": None,
