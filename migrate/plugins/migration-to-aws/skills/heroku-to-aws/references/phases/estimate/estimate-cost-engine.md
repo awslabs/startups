@@ -540,12 +540,44 @@ Present 3 paths:
 
 1. **Migrate with Optimizations (Best ROI)** — optimized service choices, projected savings
 2. **Phased Migration (Lower Risk)** — app-by-app per design order, validate each before proceeding
-3. **Stay on Heroku (Lowest Complexity)** — only if AWS is more expensive and costs are the sole metric
+3. **Stay on Heroku** — when the evidence favors staying: AWS materially more expensive without offsetting operational benefit, team leverage from Heroku's managed simplicity with no AWS-specific need, or migration cost/risk exceeding the projected benefit for this stack. **Do not gate "stay" on "cost is the sole metric"** — any decisive factor suffices.
 
 Include migrate/stay decision factors:
 
 - **Migrate if:** infrastructure control matters, AWS-specific services needed, compliance requirements exceed Heroku's offerings, scaling beyond Heroku limits, long-term cost optimization (Savings Plans, Spot)
-- **Stay if:** cost is the only metric and AWS is more expensive, team benefits from Heroku's managed simplicity, no need for AWS-specific services, migration risk exceeds benefit
+- **Stay if:** AWS is more expensive without an offsetting benefit for this stack, team benefits from Heroku's managed simplicity, no need for AWS-specific services, migration risk exceeds benefit
+
+### Decision outcome (write alongside `path`)
+
+`path` says how a migration would run; `outcome` says whether to run it now. **`defer_for_evidence` is expected to be RARE** — AWS almost always has the services and the AWS-side estimate can almost always be produced; when in doubt, prefer `conditional_go` with named conditions.
+
+**Hard triggers — any one forces `outcome: "defer_for_evidence"`:**
+
+| # | Trigger | Evidence to name |
+| - | ------- | ---------------- |
+| 1 | GovCloud-class compliance ambiguity: compliance unknown AND signals suggest FedRAMP/government requirements — GovCloud vs commercial changes regions, service catalog, and pricing wholesale | Compliance confirmation from the user's legal/compliance owner |
+| 2 | The user's **only** stated motivation is cost savings AND no spend signal exists at all (`billing_profile.available == false` AND the user declined to state Heroku spend) | Heroku invoice/billing export, or a stated monthly spend figure |
+
+**Soft triggers — never force defer; add each to `conditions[]` (outcome becomes `conditional_go` instead of `go`) and to `would_flip_if[]`:**
+
+| # | Trigger | Condition wording (adapt to stack) |
+| - | ------- | ----------------------------------- |
+| 3 | `database_ha` or availability posture resolved by default/plan-tier, never user-confirmed | "Confirm the availability requirement — Multi-AZ roughly doubles the database line" |
+| 4 | `migration_approach` defaulted while the stack has Postgres over ~100GB or zero-downtime signals | "Confirm cutover approach — pg_dump default may not fit this database" |
+| 5 | Pricing staleness beyond the vendored rate card's accuracy band | "Refresh pricing before treating the dollar delta as decision-grade" |
+
+**Outcome derivation:**
+
+```
+IF any hard trigger fired          -> outcome: "defer_for_evidence"
+ELSE IF path == "stay"             -> outcome: "stay"
+ELSE IF any soft trigger fired     -> outcome: "conditional_go" (conditions[] = fired soft triggers)
+ELSE                               -> outcome: "go"
+```
+
+Complexity alone selects `path: "migrate_phased"` — it never moves `outcome` away from go/conditional_go. Populate `decision_basis` from provenance: billing/inventory-extracted values → measured; defaulted → assumed; declined/unknown → unknown. Populate `would_flip_if[]` with the 1–3 changes most likely to alter the outcome.
+
+**Presenting a defer (lead with what IS established):** open with what the assessment did determine — "AWS can host this stack; the AWS-side estimate is $X–$Y/mo" — before naming the one missing piece of evidence and how to obtain it. Never present defer as "no answer."
 
 ### Persist recommendation to estimation-infra.json
 
@@ -553,13 +585,24 @@ Include migrate/stay decision factors:
 "recommendation": {
   "path": "migrate_optimized|migrate_phased|stay",
   "path_label": "Migrate with Optimizations|Phased Migration|Stay on Heroku",
+  "outcome": "go|conditional_go|defer_for_evidence|stay",
+  "outcome_label": "Go|Go, with conditions|Defer — get evidence|Stay on Heroku",
   "roi_justification": "<one-sentence ROI case>",
   "confidence": "high|medium|low",
   "migrate_if": ["<factors specific to THIS stack>"],
   "stay_if": ["<factors specific to THIS stack>"],
+  "conditions": ["<REQUIRED non-empty when outcome is conditional_go — one per fired soft trigger>"],
+  "decision_basis": {
+    "measured": ["<evidence from billing/inventory>"],
+    "assumed": ["<defaulted inputs feeding this estimate>"],
+    "unknown": ["<unconfirmed inputs>"]
+  },
+  "would_flip_if": ["<1-3 changes most likely to alter the outcome, with direction>"],
   "next_steps": ["<actionable items>"]
 }
 ```
+
+Readers of pre-extension artifacts must tolerate absent v2 fields (`outcome`, `conditions`, `decision_basis`, `would_flip_if`) and fall back to `path`. `outcome: "stay"` only with `path: "stay"`.
 
 **Path selection logic:**
 
