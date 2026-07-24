@@ -385,8 +385,11 @@ Optional IDs (include when data exists): `exec-tco`, `exec-architecture`, `exec-
 </head>
 <body>
   <div class="report">
+    <h1>GCP to AWS Migration Assessment</h1>
+    <p class="subtitle"><!-- project · run id · date --></p>
     <div class="executive-summary">
-      <section id="decision-summary"><!-- Section 0 --></section>
+      <section id="decision-summary"><!-- verdict + hero metrics FIRST — the thesis before any menu --></section>
+      <nav class="toc" id="toc" aria-label="Table of contents"><!-- AFTER the decision summary, never before --></nav>
       <section id="exec-services"><!-- Primary services --></section>
       <section id="exec-costs"><!-- Cost headline --></section>
       <!-- <section id="what-if-scenarios"> when scenarios/index.json has ≥2 entries -->
@@ -438,6 +441,14 @@ stylesheets, scripts, or images.
   unambiguous.
 
 **Typography:**
+
+The sizes below form a deliberate five-step scale (~1.25 ratio on a `15px`
+base): **2rem** display (verdict headline, hero metric values) → **1.85rem**
+page title → **1.3rem** section headings → **1.05rem** subheadings →
+**0.88rem** table/data text → **0.78rem** captions and labels. When adding a
+new element, pick the nearest step — do not invent in-between sizes; a report
+whose type sits on a scale reads as designed, one with ad-hoc sizes reads as
+assembled.
 
 - `h1`: font-size `1.85rem`; margin-bottom `0.25rem`; border-bottom
   `3px solid #ff9900`; padding-bottom `0.5rem`
@@ -560,6 +571,8 @@ stylesheets, scripts, or images.
 ### Readability Conventions (enforced by `validate-migration-report.py`)
 
 These move from "example in the fixture" to enforced gate. See `references/shared/validate-migration-report.md` and `fixtures/migration-report-reference.html`.
+
+**Governing principle — structure is information, not decoration.** Every structural device in the report (numbering, labels, badges, dividers, ordering) must encode something true about the content: numbers only for real sequences, badges only for real classifications, position only for real priority (the verdict before the menu, heroes before supporting metrics). When adding a new device, ask what fact it encodes; if the answer is "it looks organized," leave it out. The rules below are applications of this principle.
 
 1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Estimated AWS Monthly Run Rate"), never `Section N — …`. The "Section N" labels used elsewhere in _this spec_ are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading. **Genuine sequences keep their numbers.** This ban targets _decorative_ heading labels only. Real sequences — the migration cluster order, phased timeline weeks, migration phases, and rollback steps — MUST stay ordered (`<ol>` or a numbered table column) because the order carries information the reader needs. Do not flatten them to bullets to satisfy this rule.
 2. **No internal scoring trace.** Per-cluster mapping rationale goes in a collapsible `<details class="why">` ("Why this mapping?") block — never a bare `Rubric:` line. The validator fails on a literal `Rubric:` in the body.
