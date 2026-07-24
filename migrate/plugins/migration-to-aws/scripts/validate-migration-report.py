@@ -77,6 +77,11 @@ FORBIDDEN_PATTERNS = [
 # "Section 0/1b" heading fails the report instead of silently shipping.
 READABILITY_PATTERNS = [
     (
+        r"(?<![-_])\bTCO\b|Total\s+Cost\s+of\s+Ownership",
+        'misleading ownership-cost label ("TCO") — use "estimated AWS monthly '
+        'run rate"; the report does not price staffing or operating labor',
+    ),
+    (
         r"Rubric:",
         'internal scoring trace ("Rubric:") — drop it or gate behind a '
         '<details> "Why this mapping?" block',
@@ -491,6 +496,30 @@ def _validate_activate_link(html: str) -> list[str]:
     ]
 
 
+def _validate_glossary_table(html: str) -> list[str]:
+    """Full reports present terms and meanings in a scannable two-column table."""
+    match = re.search(
+        r'<table\b[^>]*class=["\'][^"\']*\bglossary-table\b[^"\']*["\'][^>]*>'
+        r"(.*?)</table>",
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if not match:
+        return [
+            'full report glossary must use <table class="glossary-table"> '
+            "with distinct Term and Meaning cells"
+        ]
+    table = match.group(1)
+    header = re.search(r"<thead\b[^>]*>(.*?)</thead>", table, re.DOTALL | re.I)
+    if not header or not re.search(r">\s*Term\s*<", header.group(1), re.I) or not re.search(
+        r">\s*Meaning\s*<", header.group(1), re.I
+    ):
+        return ['glossary-table must have "Term" and "Meaning" column headers']
+    if _count_table_rows(f"<table>{table}</table>") < 3:
+        return ["glossary-table must contain at least 3 term-definition rows"]
+    return []
+
+
 def _validate_fixture_bleed(html: str, migration_dir: Path | None) -> list[str]:
     """Catch agents that copied the reference fixture verbatim into a real run.
 
@@ -591,13 +620,15 @@ def validate_report(
         if not ok:
             errors.append(msg)
 
-    # Combined TCO required only when BOTH estimate artifacts exist (not AI-only runs)
+    # Combined AWS monthly run-rate section required only when BOTH estimate
+    # artifacts exist (not AI-only runs). exec-tco is a legacy structural ID.
     if estimation_infra is not None and estimation_ai is not None:
         counts = _section_id_counts(html)
         if counts.get("exec-tco", 0) != 1:
             errors.append(
                 "when both estimation-infra.json and estimation-ai.json exist, "
-                'include exactly one <section id="exec-tco"> with combined infra+AI TCO'
+                'include exactly one <section id="exec-tco"> with the combined '
+                "infra+AI estimated AWS monthly run rate"
             )
 
     # Security teaser must exist in the exec flow when a baseline is estimated.
@@ -606,6 +637,8 @@ def validate_report(
     # Decision summary must state a one-sentence verdict when a recommendation exists.
     errors.extend(_validate_verdict(html, estimation_infra))
     errors.extend(_validate_activate_link(html))
+    if mode == "full" and require_toc:
+        errors.extend(_validate_glossary_table(html))
 
     # Ordered action lists and configuration provenance (when sections present).
     errors.extend(_validate_action_lists(html))

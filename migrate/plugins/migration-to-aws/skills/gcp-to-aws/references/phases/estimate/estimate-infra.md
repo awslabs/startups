@@ -680,7 +680,7 @@ Use `path` for machine consumption; `path_label` for display in report and chat.
 
 Tailor `migrate_if` and `stay_if` to THIS stack (deferred services, AI cost delta, CUD lock-in, team GCP depth, etc.) — do not copy the generic Part 7 bullets verbatim unless they apply.
 
-**BigQuery / deferred analytics:** Exclude from TCO totals and mark **`Deferred — specialist engagement`** in design, but **do not** treat BigQuery as a default reason to stay on GCP. Use `migrate_if` bullets such as engaging the AWS account team for analytics **in parallel** with phased infra migration. Use `stay_if` for BigQuery only when the user **must** cut over analytics in the **same window** as app infra and cannot run a phased analytics track with specialist planning.
+**BigQuery / deferred analytics:** Exclude from estimated AWS monthly run-rate totals and mark **`Deferred — specialist engagement`** in design, but **do not** treat BigQuery as a default reason to stay on GCP. Use `migrate_if` bullets such as engaging the AWS account team for analytics **in parallel** with phased infra migration. Use `stay_if` for BigQuery only when the user **must** cut over analytics in the **same window** as app infra and cannot run a phased analytics track with specialist planning.
 
 ---
 

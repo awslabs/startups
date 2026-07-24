@@ -301,15 +301,21 @@ Table from estimation artifacts with: Current GCP Monthly, Projected AWS Monthly
 
 Include a compact three-tier row or table if the executive report does, matching figures from `estimation-infra.json`.
 
-**Combined TCO (required when both `estimation-infra.json` and `estimation-ai.json` exist):**
+**Combined estimated AWS monthly run rate (required when both
+`estimation-infra.json` and `estimation-ai.json` exist):**
+
+Call this a recurring cloud-service run rate, never TCO. State that staffing,
+operations, support, migration labor, and other ownership costs are excluded.
 
 |                | GCP monthly                               | AWS Balanced monthly                             |
 | -------------- | ----------------------------------------- | ------------------------------------------------ |
 | Infrastructure | from `current_costs.gcp_monthly`          | from `projected_costs.aws_monthly_balanced`      |
 | AI / ML        | from `current_costs.gcp_monthly_ai_spend` | from `cost_comparison.projected_bedrock_monthly` |
-| **Total**      | sum                                       | sum                                              |
+| **Combined**   | sum only when every source baseline is comparable | sum                                      |
 
-Note BigQuery/deferred services excluded if applicable.
+Note BigQuery/deferred services excluded if applicable. If any GCP source
+baseline is partial or not comparable, show "Not comparable" rather than a
+combined GCP total or overall savings percentage.
 
 **Security baseline in README:** When `estimation-infra.json` → `projected_costs.breakdown.security_baseline` exists, include a sub-table with component costs (GuardDuty, CloudTrail S3, etc.) from `components` — not only static ranges.
 

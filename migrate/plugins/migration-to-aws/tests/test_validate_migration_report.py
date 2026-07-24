@@ -123,6 +123,32 @@ def test_activate_mention_requires_official_apply_link(tmp_path: Path) -> None:
     assert "clickable official apply link" in out
 
 
+def test_full_report_requires_two_column_glossary_table(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        'class="glossary-table"',
+        'class="glossary-list"',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "glossary-table" in out
+
+
+def test_tco_label_is_rejected_as_incomplete_cost_scope(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "<footer>",
+        "<p>Total Cost of Ownership (TCO)</p><footer>",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "ownership-cost" in out
+
+
 def test_minimal_html_passes_without_toc(tmp_path: Path) -> None:
     path = tmp_path / "report.html"
     path.write_text(MINIMAL_PASS, encoding="utf-8")

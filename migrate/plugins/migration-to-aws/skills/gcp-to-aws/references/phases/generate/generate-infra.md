@@ -364,6 +364,14 @@ START: All clusters deployed?
 
 ## Part 9: Output Format
 
+Before writing `recommendation.estimated_total_effort_hours`, apply
+`shared/migration-complexity.md` **Effort right-sizing**. Derive hands-on work
+from active infrastructure workstreams; do not convert calendar weeks into
+40-hour weeks, count deferred/N/A services, or add AI hours already estimated
+by `generation-ai.json`. Include `estimated_effort_hours_low`,
+`estimated_effort_hours_high`, and a short `effort_basis` alongside the legacy
+midpoint field.
+
 Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
 
 ```json
@@ -470,7 +478,10 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
     "approach": "Phased cluster-by-cluster migration",
     "confidence": "high",
     "key_risks": ["Data migration complexity", "Performance validation"],
-    "estimated_total_effort_hours": 480
+    "estimated_total_effort_hours": 240,
+    "estimated_effort_hours_low": 180,
+    "estimated_effort_hours_high": 300,
+    "effort_basis": "Bottom-up active workstreams; excludes waiting periods and separately estimated AI work"
   }
 }
 ```
@@ -491,6 +502,9 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
 - `rollback_procedures` has trigger conditions and RTO values
 - `go_no_go_criteria` has at least 2 gates (small) or 4 gates (medium/large)
 - `post_migration` specifies monitoring duration and teardown timing
+- `recommendation.estimated_total_effort_hours` is the midpoint of the
+  low/high range and follows the tier/right-sizing rules; AI effort is not
+  double-counted
 - All cluster IDs reference valid clusters from `gcp-resource-clusters.json`
 - Output is valid JSON
 

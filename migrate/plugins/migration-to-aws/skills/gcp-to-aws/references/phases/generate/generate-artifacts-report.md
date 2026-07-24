@@ -58,9 +58,9 @@ Gather data from all available artifacts. Each section below notes which artifac
 | AI capabilities and integration         | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile`                                                                               | —                                                    |
 | Deferred services                       | Design artifact `resources[].aws_service == "Deferred — specialist engagement"`                                                                         | —                                                    |
 | Observability cost callout              | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`) | —                                                    |
-| **Combined TCO (infra + AI)**           | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`)         | —                                                    |
+| **Combined AWS monthly run rate (infra + AI)** | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`) | —                                                    |
 | **Security baseline component costs**   | `estimation-infra.json` → `projected_costs.breakdown.security_baseline.components` (GuardDuty, cloudtrail_s3, etc.)                                     | Static ranges in Appendix G when JSON absent         |
-| **Engineering effort**                  | `generation-infra.json` + `generation-ai.json` → `recommendation.estimated_total_effort_hours`                                                          | —                                                    |
+| **Implementation effort**               | Sum distinct low/high ranges from `generation-infra.json` + `generation-ai.json`; legacy fallback: approximate `recommendation.estimated_total_effort_hours` values without double-counting parallel work             | —                                                    |
 | **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                 | —                                                    |
 | **Pricing confidence / staleness**      | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                       | `estimation-ai.json` accuracy fields                 |
 | **AI optimization opportunities**       | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                             | —                                                    |
@@ -477,7 +477,7 @@ stylesheets, scripts, or images.
 - `.metric span`: muted `0.78rem` uppercase label with slight letter spacing
 - `.metric small`: block, muted supporting context
 - Put the decision's 3–6 most useful numbers in this grid: Balanced estimate,
-  combined TCO when available, timeline, effort, and relevant credits. Do not
+  combined AWS monthly run rate when available, timeline, effort, and relevant credits. Do not
   duplicate the same number merely to fill a card.
 - When a supported comparable baseline produces a savings value, apply the
   green `.savings` class to the numeric value. Use `.increase` for a supported
@@ -536,10 +536,17 @@ stylesheets, scripts, or images.
 
 These move from "example in the fixture" to enforced gate. See `references/shared/validate-migration-report.md` and `fixtures/migration-report-reference.html`.
 
-1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Total Cost of Ownership"), never `Section N — …`. The "Section N" labels used elsewhere in _this spec_ are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading. **Genuine sequences keep their numbers.** This ban targets _decorative_ heading labels only. Real sequences — the migration cluster order, phased timeline weeks, migration phases, and rollback steps — MUST stay ordered (`<ol>` or a numbered table column) because the order carries information the reader needs. Do not flatten them to bullets to satisfy this rule.
+1. **No numbered headings.** Rendered `<h2>`/`<h3>` headings use plain titles ("Estimated AWS Monthly Run Rate"), never `Section N — …`. The "Section N" labels used elsewhere in _this spec_ are authoring references only and must not appear in output. The table of contents carries structure: executive sections in an ordered `<ol>`, appendices in a separate lettered list (avoids "11. Appendix A" double-numbering). The validator fails on a literal `Section 0` or any `<hN>Section N — …` heading. **Genuine sequences keep their numbers.** This ban targets _decorative_ heading labels only. Real sequences — the migration cluster order, phased timeline weeks, migration phases, and rollback steps — MUST stay ordered (`<ol>` or a numbered table column) because the order carries information the reader needs. Do not flatten them to bullets to satisfy this rule.
 2. **No internal scoring trace.** Per-cluster mapping rationale goes in a collapsible `<details class="why">` ("Why this mapping?") block — never a bare `Rubric:` line. The validator fails on a literal `Rubric:` in the body.
 3. **Security teaser up top, full detail in the appendix.** `exec-security-teaser` carries a 2–3 line summary that links down to `appendix-security` (full control table) and `appendix-security-gap`. Do not render the full control table in the executive flow.
-4. **Expand acronyms** on first use and include a glossary (TCO, DMS, OAI, RTO, CUD, SCC, IMDSv2, P95, RAG) in the assumptions section — the audience is startup founders, not AWS specialists.
+4. **Expand acronyms** on first use and include a glossary (monthly run rate,
+   DMS, OAI, RTO, CUD, SCC, IMDSv2, P95, RAG) in the assumptions section —
+   the audience is startup founders, not AWS specialists. Render the glossary
+   as a bordered two-column `<table class="glossary-table">` with `Term` and
+   `Meaning` headers, one distinct cell per term and definition, a caption,
+   and `scope="col"` headers. Do not render it as a `<dl>` or loose paragraphs.
+   Define monthly run rate as recurring modeled cloud-service charges and
+   explicitly distinguish it from total cost of ownership.
 5. **Accessible tables and diagrams.** Every table has a `<caption>` and `scope="col"` on header cells. The architecture diagram is wrapped in `<figure role="img" aria-label="…">` with a `<figcaption>` text alternative.
 6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate, phased over 10 weeks — ~$497/mo savings, BigQuery deferred") in addition to the `path_label` badges.
 7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate", "workshop scenario comparison" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*`, `what-if-scenarios`, or `decision-summary` section.
@@ -556,7 +563,11 @@ After generating the HTML file, verify:
 2. **TOC integrity**: Every `<nav class="toc">` link `href="#id"` resolves to a `<section id="id">`; all required sections are linked.
 3. **Appendix not a stub**: Appendix B contains ≥3 cost line items with dollar amounts; Appendix A contains per-cluster or per-service mappings (not only JSON file links).
 4. **Security baseline surfaced**: When `projected_costs.breakdown.security_baseline` exists, GuardDuty or dollar-formatted component costs appear in `appendix-security` / `appendix-costs`.
-5. **Combined TCO**: When **both** `estimation-infra.json` and `estimation-ai.json` exist, exactly one `exec-tco` section with summed totals.
+5. **Combined AWS monthly run rate**: When **both**
+   `estimation-infra.json` and `estimation-ai.json` exist, exactly one
+   `exec-tco` section (legacy ID) with the summed AWS recurring service
+   estimate. Never label it TCO. Sum the GCP side only when every source
+   baseline is comparable; otherwise show "Not comparable."
 6. **Data accuracy**: Cost figures in HTML match the estimation artifact values exactly — **manual / agent self-check**; the automated validator does not verify numerics (see `validate-migration-report.md` scope).
 7. **Conditional sections**: AI appendix only present if AI artifacts exist; billing caveats shown when billing_data_available is false; Bedrock monitoring row only when `bedrock_monitoring.tf` exists; startup credits callout only when `STARTUP_PROGRAMS.md` or preference indicates eligibility
 8. **Decision summary**: Migration Decision Summary present when estimation or preview artifacts exist; uses `recommendation.path_label` when block present, plus a one-sentence recommendation banner

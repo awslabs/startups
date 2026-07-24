@@ -66,7 +66,7 @@ Content when `recommendation` block exists:
 
 **Deferred services flag:** If ANY resource in the design artifact has `aws_service == "Deferred — specialist engagement"`, add a prominent callout:
 
-> ⚠️ **Specialist engagement required:** [service name] does not have an automated AWS mapping from this plugin. Engage your AWS account team and/or a data analytics migration partner to evaluate the best AWS analytics path. This does **not** block phased migration of other services; exclude [service name] from combined TCO until the target architecture is defined.
+> ⚠️ **Specialist engagement required:** [service name] does not have an automated AWS mapping from this plugin. Engage your AWS account team and/or a data analytics migration partner to evaluate the best AWS analytics path. This does **not** block phased migration of other services; exclude [service name] from the combined estimated AWS monthly run rate until the target architecture is defined.
 
 **Startup credits callout (decision summary / verdict):**
 
@@ -89,17 +89,27 @@ Source: estimation artifact `recommendation`, `migration-preview.json`, design a
 
 - Source: estimation artifact
 
-**Section 1b — Total Cost of Ownership (`exec-tco`, REQUIRED when both `estimation-infra.json` AND `estimation-ai.json` exist):**
+**Section 1b — Estimated AWS Monthly Run Rate (`exec-tco`, REQUIRED when both `estimation-infra.json` AND `estimation-ai.json` exist):**
 
-Combined monthly and annual view **excluding** deferred services (e.g. BigQuery):
+`exec-tco` is a legacy structural ID retained for validator compatibility; the
+customer-facing heading MUST NOT say "TCO" or "Total Cost of Ownership." This
+assessment models recurring cloud-service charges, not staffing, operations,
+support, migration labor, or other ownership costs.
+
+Show the combined estimated AWS monthly cloud-service run rate **excluding**
+deferred services (e.g. BigQuery):
 
 | Row            | GCP                                                      | AWS Balanced                                | Notes                       |
 | -------------- | -------------------------------------------------------- | ------------------------------------------- | --------------------------- |
 | Infrastructure | `current_costs.gcp_monthly`                              | `projected_costs.aws_monthly_balanced`      | From infra estimate         |
 | AI / ML        | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate            |
-| **Total**      | sum                                                      | sum                                         | Show monthly Δ and % change |
+| **Combined**   | sum only when all source baselines are comparable        | sum                                         | No overall Δ/% if any source baseline is partial or not comparable |
 
 If `estimation-ai.json` → `optimized_projection` exists, footnote the optimized AI path separately.
+Add one sentence: "This is an estimated cloud-service run rate, not total cost
+of ownership." When the infrastructure baseline is inventory-derived or
+standing-charges-only, show "Not comparable" in the combined GCP cell and
+never sum it with a user-stated AI midpoint.
 
 Source: `estimation-infra.json`, `estimation-ai.json`
 
@@ -222,7 +232,16 @@ Source: static template filtered by design artifact service types
 
 **Section 6 — Timeline:**
 
-- _Full mode:_ total migration weeks (infra + note parallel AI weeks if applicable); migration approach (phased/fast-track/conservative); **engineering effort:** sum `generation-infra.json` and `generation-ai.json` → `recommendation.estimated_total_effort_hours` when both exist. Source: generation plan.
+- _Full mode:_ total migration weeks (infra + note parallel AI weeks if
+  applicable); migration approach (phased/fast-track/conservative);
+  **implementation effort:** prefer summed low/high planning ranges from the
+  generation plans. If only legacy midpoint fields exist, show them as
+  approximate and state their basis. Sum distinct hands-on infra and AI work,
+  but do not turn calendar weeks into labor or count AI twice merely because it
+  runs alongside infrastructure. When infrastructure was classified Large
+  solely because AI coexists, treat that as an invalid stale classification
+  and re-run complexity sizing before rendering effort. Source: generation
+  plan.
 - _Decision mode:_ the same fallback chain as decision-summary item 4 (`timeline_hint`, else the `shared/migration-complexity.md` tier band, labeled "if you execute"), plus the migration approach from `recommendation.path_label`. **Omit engineering effort hours** — they don't exist before Generate; do not estimate them. Source: `migration-preview.json` / complexity tier / estimation artifact.
 
 **Section 7 — Top Risks:**

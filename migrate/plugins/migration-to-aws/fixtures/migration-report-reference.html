@@ -70,6 +70,8 @@
     details.why { margin: 0.4rem 0; font-size: 0.82rem; color: #656d76; }
     details.why summary { cursor: pointer; color: var(--blue); }
     details.why ul { margin: 0.4rem 0; padding-left: 1.1rem; }
+    .glossary-table th:first-child, .glossary-table td:first-child { width: 27%; background: #f6f8fa; }
+    .glossary-table td:first-child { color: var(--aws); font-weight: 600; }
     .cluster-block { border-left: 3px solid var(--blue); padding-left: 1rem; margin: 1rem 0; }
     footer { text-align: center; color: #656d76; font-size: 0.8rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
     @media (max-width: 700px) {
@@ -101,7 +103,7 @@
       <div class="toc-group">Executive summary</div>
       <ol>
         <li><a href="#decision-summary">Migration Decision Summary</a></li>
-        <li><a href="#exec-tco">Total Cost of Ownership</a></li>
+        <li><a href="#exec-tco">Estimated AWS Monthly Run Rate</a></li>
         <li><a href="#exec-services">Current Stack Overview</a></li>
         <li><a href="#exec-costs">Infrastructure Cost Comparison</a></li>
         <li><a href="#exec-architecture">Architecture Overview</a></li>
@@ -149,7 +151,7 @@
           <small>Est. $112/mo AWS vs $165/mo GCP infra</small>
         </div>
         <div class="metric">
-          <span>Combined TCO (Balanced)</span>
+          <span>Combined AWS run rate (Balanced)</span>
           <strong class="savings">-35%</strong>
           <small>Est. $912/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
         </div>
@@ -176,7 +178,7 @@
       </div>
 
       <div class="callout callout-warn">
-        <strong>Specialist engagement required:</strong> BigQuery (<code>sf_beach_analytics</code>) has no automated AWS mapping from this plugin — engage your AWS account team or a data partner to evaluate the best analytics migration path. Analytics costs are excluded from TCO totals until that path is defined. <strong>This does not block</strong> phased migration of compute, database, storage, and AI; BigQuery planning runs in parallel on the timeline below.
+        <strong>Specialist engagement required:</strong> BigQuery (<code>sf_beach_analytics</code>) has no automated AWS mapping from this plugin — engage your AWS account team or a data partner to evaluate the best analytics migration path. Analytics costs are excluded from the estimated AWS monthly run rate until that path is defined. <strong>This does not block</strong> phased migration of compute, database, storage, and AI; BigQuery planning runs in parallel on the timeline below.
       </div>
 
       <div class="callout callout-info">
@@ -186,7 +188,7 @@
       <h3>Migrate if</h3>
       <ul class="compact">
         <li>You want unified AWS operations for containers, database, and Bedrock AI</li>
-        <li>Estimated combined TCO savings (~$503/month) and AWS Activate credits offset migration effort</li>
+        <li>Estimated combined cloud-service savings (~$503/month) and AWS Activate credits offset migration effort</li>
         <li>You can engage AWS account team for BigQuery analytics in parallel</li>
       </ul>
 
@@ -215,10 +217,10 @@
       </ol>
     </section>
 
-    <!-- TCO -->
+    <!-- Combined monthly cloud-service run rate (legacy exec-tco ID) -->
     <section id="exec-tco">
-      <h2>Total Cost of Ownership</h2>
-      <p>Combined view of your infrastructure and AI estimated monthly costs. BigQuery excluded from both sides.</p>
+      <h2>Estimated AWS Monthly Run Rate</h2>
+      <p>Combined view of recurring infrastructure and AI cloud-service costs. BigQuery is excluded from both sides. This is not a total ownership-cost model: staffing, operations, support, and migration labor are not priced.</p>
 
       <table>
         <caption>Combined estimated monthly costs, GCP vs AWS (BigQuery excluded).</caption>
@@ -483,7 +485,7 @@
 
       <h3>Exclusions</h3>
       <ul class="compact">
-        <li><strong>BigQuery analytics</strong> — AWS target path not yet selected by specialist; costs excluded from TCO totals (does not block other services)</li>
+        <li><strong>BigQuery analytics</strong> — AWS target path not yet selected by specialist; costs excluded from the estimated AWS monthly run rate (does not block other services)</li>
         <li><strong>GCP egress during migration</strong> — billing export not available (<code>billing_data_available: false</code>)</li>
         <li><strong>Professional services / labor</strong> — engineering hours estimated but not priced</li>
         <li><strong>Dual-run period</strong> — temporary cost of running GCP + AWS concurrently not modeled</li>
@@ -497,11 +499,11 @@
       </div>
 
       <h3>Glossary</h3>
-      <table>
-        <caption>Acronyms used in this report.</caption>
+      <table class="glossary-table">
+        <caption>Terms used in this report.</caption>
         <thead><tr><th scope="col">Term</th><th scope="col">Meaning</th></tr></thead>
         <tbody>
-          <tr><td>TCO</td><td>Total Cost of Ownership</td></tr>
+          <tr><td>Monthly run rate</td><td>Estimated recurring cloud-service charges; excludes staffing, support, migration labor, and other ownership costs</td></tr>
           <tr><td>DMS</td><td>AWS Database Migration Service</td></tr>
           <tr><td>OAI</td><td>CloudFront Origin Access Identity</td></tr>
           <tr><td>RTO</td><td>Recovery Time Objective</td></tr>
