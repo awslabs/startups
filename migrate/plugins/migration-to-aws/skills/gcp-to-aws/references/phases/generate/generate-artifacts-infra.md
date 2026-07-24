@@ -174,9 +174,9 @@ Always emitted. The baseline applies account-wide security controls that should 
    ```
 
 5. **Append the always-on resources**, in this order. Each resource carries the plugin's standard four default tags plus `Component = "security-baseline"`:
-   - `aws_account_alternate_contact.operations` (ACCT.01, TODO-email placeholder)
-   - `aws_account_alternate_contact.billing` (ACCT.01, TODO-email placeholder)
-   - `aws_account_alternate_contact.security` (ACCT.01, TODO-email placeholder)
+   - `aws_account_alternate_contact.operations` (ACCT.01, `email_address = var.operations_email` — fill-once variable, see Step 2)
+   - `aws_account_alternate_contact.billing` (ACCT.01, `email_address = var.billing_email`)
+   - `aws_account_alternate_contact.security` (ACCT.01, `email_address = var.security_email`)
    - `aws_iam_account_password_policy.baseline` (ACCT.06; `minimum_password_length = 14`, `password_reuse_prevention = 24`, `max_password_age = 90`, all four character-class requirements `true`, `hard_expiry = false`)
    - `aws_s3_account_public_access_block.baseline` (ACCT.08; all four flags `true`)
    - `aws_ebs_encryption_by_default.baseline` (defense-in-depth; `enabled = true`)
@@ -184,7 +184,7 @@ Always emitted. The baseline applies account-wide security controls that should 
    - `aws_ec2_instance_metadata_defaults.baseline` (defense-in-depth; `http_tokens = "required"`, `http_put_response_hop_limit = 2`)
    - `aws_cloudtrail.baseline` (ACCT.07; multi-region, management events only, `enable_log_file_validation = true`)
    - `aws_s3_bucket.cloudtrail_logs` plus `aws_s3_bucket_public_access_block`, `aws_s3_bucket_server_side_encryption_configuration`, `aws_s3_bucket_versioning`, `aws_s3_bucket_lifecycle_configuration` (transitions driven by `local.cloudtrail_retention_days` per item 7), and `aws_s3_bucket_policy` restricting the CloudTrail service principal by `aws:SourceArn`
-   - `aws_budgets_budget.monthly_spend` (ACCT.10; `limit_amount = "<budget_limit>"` from item 2; three `notification` blocks at 50/80/100% `ACTUAL`; TODO-email placeholders)
+   - `aws_budgets_budget.monthly_spend` (ACCT.10; `limit_amount = "<budget_limit>"` from item 2; three `notification` blocks at 50/80/100% `ACTUAL`; `subscriber_email_addresses = [var.billing_email]` — same fill-once variable as the alternate contact, entered exactly once in tfvars)
    - `aws_guardduty_detector.baseline` (defense-in-depth; `enable = true`, `finding_publishing_frequency = "FIFTEEN_MINUTES"`)
 
 6. **If `compliance` contains any of `soc2`, `pci`, `hipaa`, `fedramp`, append the compliance-conditional section**, wrapped in `########## Compliance-Conditional ##########` / `########## End Compliance-Conditional ##########` dividers:
@@ -202,9 +202,9 @@ Always emitted. The baseline applies account-wide security controls that should 
 7. **Lifecycle rule adjustment.** Omit the `STANDARD_IA` transition block when the resolved retention is less than 90 days. Omit the `GLACIER` transition block when retention is less than 365 days. Both rules apply to both the CloudTrail log bucket and (when emitted) the Config log bucket.
 
 8. **Attach inline HCL comments**:
-   - On each `aws_account_alternate_contact.*`: a TODO-email warning.
+   - On each `aws_account_alternate_contact.*`: a comment pointing at the tfvars fill-once variable (`# set var.operations_email in terraform.tfvars — plan fails until you do`).
    - On `aws_cloudtrail.baseline`: a collision warning for users who already have a trail in the region.
-   - On `aws_budgets_budget.monthly_spend`: a TODO-email warning plus the limit-rationale comment (`max(50, ceil(total_mid * 1.2))`; $50 floor prevents alert noise; users may edit `limit_amount` directly post-apply).
+   - On `aws_budgets_budget.monthly_spend`: the limit-rationale comment (`max(50, ceil(total_mid * 1.2))`; $50 floor prevents alert noise; users may edit `limit_amount` directly post-apply).
    - On `aws_guardduty_detector.baseline`: a cost disclosure noting the 30-day free trial and ~$2–25/mo post-trial.
    - On `aws_config_configuration_recorder.baseline`: a cost disclosure ($0.003/CI continuous; $0.012/daily-CI as an opt-in for cost-sensitive users).
    - On `aws_securityhub_account.baseline`: a cost disclosure noting the 30-day free trial and ~$1–15/mo post-trial.
@@ -230,7 +230,22 @@ Always emitted. The baseline applies account-wide security controls that should 
 
 ## Step 2: Generate variables.tf
 
-**Global variables (always include):** `aws_region` (from `preferences.json` target_region), `project_name`, `environment` (from `preferences.json`), `migration_id`.
+**Global variables (always include):** `aws_region` (from `preferences.json` target_region), `project_name`, `environment` (from `preferences.json`), `migration_id`, and the fill-once contact variables `operations_email`, `billing_email`, `security_email` (type `string`, **no default** — plan fails until set).
+
+**Placeholder guards (REQUIRED):** `terraform validate` passes on syntactically valid placeholders — a user can `apply` with `TODO-ops@example.com` as their account security contact and never know. Every variable whose value cannot be inferred (the contact emails, ECR image URIs, and any other user-supplied value that ships with a placeholder in `terraform.tfvars.example`) MUST carry a `validation` block that rejects placeholder tokens, so the failure happens loudly at `terraform plan` with an actionable message:
+
+```hcl
+variable "billing_email" {
+  description = "Billing contact + budget alert recipient (fill-in checklist #2)"
+  type        = string
+  validation {
+    condition     = !strcontains(var.billing_email, "TODO") && !strcontains(var.billing_email, "example.com") && strcontains(var.billing_email, "@")
+    error_message = "Set billing_email in terraform.tfvars to a real inbox (see MIGRATION_GUIDE.md fill-in checklist)."
+  }
+}
+```
+
+For non-email placeholders, reject the specific placeholder tokens the example ships with (`TODO`, `ACCOUNT_ID`, `<`). Error messages MUST name the tfvars key and point at the fill-in checklist. The backend block cannot use variables (Terraform limitation) — its `ACCOUNT_ID` placeholder is covered by the fill-in checklist row instead.
 
 **Per-cluster variables:** Extract configurable values from `aws_config` in `aws-design.json`. Infer types (`string`, `number`, `bool`, `list(string)`, `map(string)`). Use `aws_config` values as defaults. Deduplicate shared variables. Add GCP source as comment (e.g., `# GCP source: db-custom-2-7680`).
 
