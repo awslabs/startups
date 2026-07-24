@@ -28,9 +28,11 @@
 - The workshop is a sidebar: it NEVER becomes `current_phase`. Entry sets
   `phases.workshop: "in_progress"`; `current_phase` stays at `"estimate"`
   until exit/decline.
-- Exit to Generate (assembler): `phases.workshop: "completed"`,
-  `current_phase: "generate"`. Decline at the Estimate offer: same, without
-  requiring `scenarios/`.
+- Exit (assembler): `phases.workshop: "completed"`; `current_phase` advances
+  per the skill's post-Estimate flow — `"generate"` by default, or back to the
+  skill's post-Estimate decision gate when the skill defines one (the gate
+  then sets the next state from the user's choice). Decline at the offer:
+  same, without requiring `scenarios/`.
 - Warm-start rule: `current_phase == "estimate"` AND
   `phases.estimate == "completed"` AND `phases.workshop == "pending"` →
   present the workshop offer; NEVER recompute Estimate.

@@ -138,32 +138,44 @@ estimate artifact(s), present a brief summary, then **return to the workshop
 loop**. Do **not** emit `HANDOFF_OK`, do **not** update `.phase-status.json`, do
 **not** offer the what-if workshop below.
 
-### Outer Estimate — deferred Generate advance
+### Outer Estimate — Decision gate (replaces auto-advance to Generate)
 
 After outer-run `HANDOFF_OK`, use the Phase Status Update Protocol
 (read-merge-write) — **in the same turn** as the summary:
 
 1. Set `phases.estimate` to `"completed"`
 2. Ensure `phases.workshop` exists (seed `"pending"` if missing)
-3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
-   `"estimate"` until the workshop sidebar is resolved (entered then exited,
-   or declined)
-4. Offer the what-if workshop below (infra route only)
+3. **Do not** set `current_phase` to `"generate"` — Generate is opt-in from
+   here on. Leave `current_phase` at `"estimate"` and present the Decision
+   gate below.
 
-### Post-Estimate: What-If Workshop Offer
+### Post-Estimate: Decision Gate
 
-When `gcp-resource-inventory.json` + `aws-design.json` + `estimation-infra.json`
-exist, offer:
+**The decision is the product; execution artifacts are opt-in.** The verdict
+(`recommendation.outcome` / `path`) already exists in the estimate artifacts —
+present it and let the user choose what happens next. Never advance to
+Generate without an explicit choice of option C (or an explicit later request
+for Terraform/scripts).
+
+Present (values from the active estimate artifacts; one line each):
 
 ```
-Estimate complete. Before Generate, want to see how the numbers move if you
-change something? I can reprice scenarios side by side in about a minute each,
-without re-running discovery — for example: a different AWS region, cheaper
-single-AZ database for staging, Kubernetes (EKS) instead of Fargate, or
-ARM-based (Graviton) compute.
+Estimate complete.
 
-[A] Enter what-if workshop
-[B] Proceed toward Generate
+### Decision pack ready
+
+- Verdict: [outcome_label when recommendation.outcome exists; else path_label]
+- AWS estimate (Balanced): $[X]/mo · Your GCP baseline: [figure with its
+  baseline-quality label from estimate-infra.md Part 1 — apply the
+  not-comparable rule when the sources measure different things]
+- Timeline if you execute: ~[N–M] weeks ([complexity tier], from
+  shared/migration-complexity.md — omit this line when no tier signal exists)
+- Deferred to specialists: [BigQuery / other deferred rows, or omit line]
+
+[A] Done for now — I have what I need to decide
+[B] Explore what-ifs — reprice scenarios side by side (~1 min each): region,
+    single-AZ database, EKS vs Fargate, Graviton
+[C] Generate Terraform and migration scripts
 ```
 
 **Data-justified scenario hint (add one line when applicable):** if a material
@@ -172,13 +184,27 @@ assumption was defaulted rather than confirmed — most commonly `availability`
 comparing a [alternative] scenario would bound that assumption before you
 commit." Suggest at most one.
 
-- **A** → Load `references/phases/workshop/workshop.md`. Keep
-  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
-- **B** → Mark `phases.workshop` → `"completed"`. Set `current_phase` →
-  `"generate"`. Continue with Feedback/Generate sidebars in `SKILL.md`.
+**Choice handling:**
 
-For AI-only / billing-only runs (no infra inventory), skip the workshop offer and
-set `phases.workshop` → `"completed"`, `current_phase` → `"generate"`.
+- **A** → Mark `phases.workshop` → `"completed"` (declined). Set
+  `run_mode: "decide"` and `current_phase: "complete"` in `.phase-status.json`
+  (`phases.generate` **stays** `"pending"` — this combination means "decision
+  complete, execution available on request"; see `schema-phase-status.md`).
+  Then run the post-gate feedback checkpoint per `SKILL.md`. Close with:
+  "Your decision pack is complete. If you decide to migrate, say 'generate the
+  Terraform and migration scripts' — everything is saved and I'll pick up from
+  here."
+- **B** → Load `references/phases/workshop/workshop.md`. Keep
+  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`. On
+  workshop exit, **return to this gate** (options A and C; the workshop's
+  active scenario carries into either) — do not advance to Generate directly.
+- **C** → Mark `phases.workshop` → `"completed"` (declined). Set
+  `run_mode: "decide_and_execute"` and `current_phase` → `"generate"`. Then
+  run the post-gate feedback checkpoint per `SKILL.md` and continue to
+  Generate.
+
+For AI-only / billing-only runs (no infra inventory), present the gate without
+option B and set `phases.workshop` → `"completed"`.
 
 ## Reference Files
 
