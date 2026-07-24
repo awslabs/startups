@@ -28,8 +28,13 @@ ANY of the following:
 - Service count >= 9
 - Monthly spend > $10,000
 - Multi-region deployment (services span 2+ AWS regions)
-- AI workloads coexist with infrastructure (`estimation-ai.json` exists AND (`estimation-infra.json` OR `estimation-billing.json`) also exists)
 - Compliance requirements present (`compliance` is not empty/none)
+
+**AI isolation rule:** AI coexistence alone NEVER raises the infrastructure
+tier. `generate-ai.md` independently sizes AI integration/evaluation effort,
+and that work commonly runs in parallel with infrastructure. Count only
+infrastructure complexity here; otherwise a one-service app with one model is
+incorrectly classified Large and its effort is double-counted.
 
 ### Medium
 
@@ -47,7 +52,6 @@ NOT Large, NOT Medium. Equivalently, ALL of:
 - Service count <= 3
 - Monthly spend < $1,000
 - No databases or stateful storage with replication
-- No AI workloads alongside infrastructure
 - Availability is `single-az` or unspecified
 - No compliance requirements
 
@@ -66,8 +70,25 @@ NOT Large, NOT Medium. Equivalently, ALL of:
 | Tier   | Weeks | Effort Hours | Approach                   |
 | ------ | ----- | ------------ | -------------------------- |
 | Small  | 3-6   | 80-160       | `compressed`               |
-| Medium | 8-12  | 240-480      | `phased_cluster_migration` |
-| Large  | 12-16 | 400-640      | `phased_cluster_migration` |
+| Medium | 8-12  | 160-320      | `phased_cluster_migration` |
+| Large  | 12-16 | 320-560      | `phased_cluster_migration` |
+
+### Effort right-sizing
+
+Tier ranges are guardrails, not point estimates. Build effort from active
+workstreams and exclude calendar-only waiting, observation windows, and
+parallel AI work already counted by `generate-ai.md`.
+
+- Use the **lower half** of the tier range when all are true: development-tier
+  sizing, single region, single-AZ, at most one database under 100 GB, no
+  compliance framework, and no more than 8 active (non-deferred) services.
+- Use the upper half for multiple stateful clusters, Multi-AZ cutovers,
+  compliance evidence, or complex cross-service dependencies.
+- Exclude `N/A — API enablement` and `Deferred — specialist engagement` rows
+  from `service_count`; they do not represent implementation work in this plan.
+- Report a low/high planning range when possible. If the output schema requires
+  one integer, store the range midpoint and preserve the low/high values in the
+  recommendation rationale.
 
 ## Stage Templates
 

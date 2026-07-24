@@ -14,6 +14,13 @@ FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-reference.html"
 FIXTURE_EST_INFRA = PLUGIN_ROOT / "fixtures" / "estimation-infra-reference.json"
 FIXTURE_EST_AI = PLUGIN_ROOT / "fixtures" / "estimation-ai-reference.json"
 STUB_FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-stub.html"
+DECISION_FIXTURE = (
+    PLUGIN_ROOT
+    / "fixtures"
+    / "gcp-decision-gate"
+    / "after-decide-complete"
+    / "decision-report.html"
+)
 
 MINIMAL_PASS = """<!DOCTYPE html>
 <html><body>
@@ -80,6 +87,66 @@ def test_reference_fixture_passes() -> None:
     assert code == 0, out
     assert "REPORT_OK" in out
     assert "structure=complete" in out
+
+
+def test_reference_fixture_enforces_visual_readability_contract(tmp_path: Path) -> None:
+    """A report cannot silently regress from grid cards to flat prose."""
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        ".metrics { display: grid;",
+        ".metrics { display: block;",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "responsive CSS grid" in out
+
+
+def test_decision_fixture_uses_shared_visual_shell() -> None:
+    code, out = run_validator_mode_with_toc(DECISION_FIXTURE, "decision")
+    assert code == 0, out
+    assert "REPORT_OK" in out
+
+
+def test_activate_mention_requires_official_apply_link(tmp_path: Path) -> None:
+    html = DECISION_FIXTURE.read_text(encoding="utf-8").replace(
+        '<a href="https://aws.amazon.com/startups/credits/">'
+        "Apply for AWS Activate credits</a>",
+        "AWS Activate credits",
+        1,
+    )
+    path = tmp_path / "decision-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator_mode_with_toc(path, "decision")
+    assert code == 1, out
+    assert "clickable official apply link" in out
+
+
+def test_full_report_requires_two_column_glossary_table(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        'class="glossary-table"',
+        'class="glossary-list"',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "glossary-table" in out
+
+
+def test_tco_label_is_rejected_as_incomplete_cost_scope(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "<footer>",
+        "<p>Total Cost of Ownership (TCO)</p><footer>",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "ownership-cost" in out
 
 
 def test_minimal_html_passes_without_toc(tmp_path: Path) -> None:
@@ -369,6 +436,21 @@ def test_verdict_class_satisfies(tmp_path: Path) -> None:
     assert code == 0, out
 
 
+def test_plain_recommendation_sentence_does_not_replace_verdict_callout(
+    tmp_path: Path,
+) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="decision-summary"><h2>Decision</h2>',
+        '<section id="decision-summary"><h2>Decision</h2>'
+        "<p>Recommendation: migrate phased</p>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, _infra_with_recommendation(tmp_path), require_toc=False)
+    assert code == 1, out
+    assert 'class="verdict"' in out
+
+
 # --- #4 fixture-bleed canary + self-exemption ---
 
 
@@ -536,3 +618,73 @@ def test_appendix_config_passes_with_full_table(tmp_path: Path) -> None:
     path.write_text(html, encoding="utf-8")
     code, out = run_validator(path, require_toc=False)
     assert code == 0, out
+
+
+# ---------------------------------------------------------------------------
+# Decision mode (--mode decision): decision-report.html written at the
+# post-Estimate Decision gate — exec sections + CTA, no appendices.
+# ---------------------------------------------------------------------------
+
+DECISION_PASS = """<!DOCTYPE html>
+<html><body>
+<section id="decision-summary"><h2>Decision</h2><p class="verdict-headline">Go, with conditions</p></section>
+<section id="exec-assumptions"><h2>What This Assessment Rests On</h2><p>All inputs confirmed; cached pricing 2026-03.</p></section>
+<section id="exec-services"><h2>Services</h2><table><tbody><tr><td>a</td></tr></tbody></table></section>
+<section id="exec-costs"><h2>Costs</h2><p>Est. $150/mo (Balanced)</p></section>
+<section id="exec-timeline"><h2>Timeline</h2><p>~6-12 weeks if you execute</p></section>
+<section id="exec-risks"><h2>Risks</h2></section>
+<section id="decision-cta"><h2>Ready to execute?</h2><p>Say "generate the Terraform and migration scripts".</p></section>
+<footer>draft for review</footer>
+</body></html>
+"""
+
+
+def run_validator_mode(html_path: Path, mode: str) -> tuple[int, str]:
+    cmd = [sys.executable, str(SCRIPT), str(html_path), "--mode", mode, "--no-require-toc"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result.returncode, result.stdout + result.stderr
+
+
+def run_validator_mode_with_toc(html_path: Path, mode: str) -> tuple[int, str]:
+    cmd = [sys.executable, str(SCRIPT), str(html_path), "--mode", mode]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result.returncode, result.stdout + result.stderr
+
+
+def test_decision_mode_passes_without_appendices(tmp_path: Path) -> None:
+    p = tmp_path / "decision-report.html"
+    p.write_text(DECISION_PASS)
+    code, out = run_validator_mode(p, "decision")
+    assert code == 0, out
+    assert "mode=decision" in out
+
+
+def test_decision_mode_requires_cta(tmp_path: Path) -> None:
+    p = tmp_path / "decision-report.html"
+    p.write_text(DECISION_PASS.replace('<section id="decision-cta">', '<section id="not-cta">'))
+    code, out = run_validator_mode(p, "decision")
+    assert code == 1
+    assert "decision-cta" in out
+
+
+def test_decision_mode_forbids_appendix_sections(tmp_path: Path) -> None:
+    p = tmp_path / "decision-report.html"
+    p.write_text(
+        DECISION_PASS.replace(
+            "<footer>",
+            '<section id="appendix-services"><h2>A</h2></section><footer>',
+        )
+    )
+    code, out = run_validator_mode(p, "decision")
+    assert code == 1
+    assert "forbids" in out and "appendix-services" in out
+
+
+def test_full_mode_unaffected_by_decision_additions(tmp_path: Path) -> None:
+    # The full-mode contract (required sections, REPORT_OK format) is unchanged.
+    p = tmp_path / "migration-report.html"
+    p.write_text(MINIMAL_PASS)
+    code, out = run_validator(p, require_toc=False)
+    assert code == 0, out
+    assert "REPORT_OK | structure=complete" in out
+    assert "mode=" not in out
