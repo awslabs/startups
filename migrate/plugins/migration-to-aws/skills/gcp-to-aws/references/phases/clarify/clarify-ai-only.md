@@ -53,7 +53,7 @@ If `migration-preview.json` exists and `ai_complexity_signal == "likely_simple"`
 
 > "Your AI migration looks straightforward — one model swapping to Bedrock. I only need 5 quick answers to complete your migration plan."
 
-Present **only Q1.5, Q2, Q3, Q4, Q11** (Q1 framework is extracted; Q5 model is extracted; Q6 capabilities are extracted; Q7–Q10 use defaults). **Q1.5 (compliance) and Q11 (Activate status) are never dropped from the fast path** — "never dropped" means always PRESENTED: the fast-path question set must include them; they are never silently omitted or auto-answered. An explicit user "use defaults for the rest" still applies their documented defaults (compliance → `none` + report caveat, Activate → `unknown` + neutral copy) — that is the sanctioned default path, same as full-flow Q27. After answering, skip directly to Step 3.
+Present **only Q1.5, Q2, Q3, Q4, Q11** (Q1 framework is extracted; Q5 model is extracted; Q6 capabilities are extracted; Q7–Q10 use defaults). **Q1.5 (compliance) and Q11 (Activate status) are never dropped from the fast path** — "never dropped" means always PRESENTED: the fast-path question set must include them; they are never silently omitted or auto-answered. An explicit user "use defaults for the rest" still applies their documented defaults (compliance → `["unknown"]` + report caveat — never a silent "none", matching full-flow Q2 semantics; Activate → `unknown` + neutral copy) — that is the sanctioned default path, same as full-flow Q27. After answering, skip directly to Step 3.
 
 If `ai_complexity_signal` is `"standard"` or `"complex"`, or `migration-preview.json` is absent, continue to Step 1.75 (mini assumption sheet), then Step 2.
 
@@ -138,7 +138,7 @@ Compliance gates Bedrock regions, models, and logging **even though your infrast
 | GDPR              | EU Bedrock regions (eu-west-1, eu-central-1); **geographic (`eu.`) inference profiles only — `global.` profiles route outside the EU boundary**; document cross-border transfer from GCP EU                                     |
 | CCPA / CPRA       | Prompt/completion retention policy; deletion workflow for logged content; CloudTrail audit logging                                                                                                                              |
 
-Interpret → `design_constraints.compliance` array (same format as the full flow). Default: A → `["none"]` (array form — the field is always an array, matching the multi-select) with `chosen_by: "default"` — and append the caveat "Compliance requirements were not confirmed by the user" to `metadata.report_caveats[]` (create the array if absent) so downstream reports surface it. Cross-check with Q4: a GDPR answer constrains the target region jointly with cross-cloud latency.
+Interpret → `design_constraints.compliance` array (same format as the full flow). An explicit user answer of A records `["none"]` with `chosen_by: "user"`. **Skip/default records `["unknown"]`** (never a silent "none" — full-flow Q2 semantics: behaves like "none" for service selection) with `chosen_by: "default"`, `source: "default:Q1.5"` — and append the caveat "Compliance requirements were not confirmed by the user" to `metadata.report_caveats[]` (create the array if absent) so downstream reports surface it. Cross-check with Q4: a GDPR answer constrains the target region jointly with cross-cloud latency.
 
 ## Q2 — What matters most for your AI application?
 

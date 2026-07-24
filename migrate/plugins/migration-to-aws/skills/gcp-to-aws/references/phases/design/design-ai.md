@@ -73,7 +73,7 @@ If `agentic_profile.is_agentic == true`:
 
 ## Step 0.7: Apply Compliance Constraints
 
-Read `preferences.json` → `design_constraints.compliance` (from full-flow Q2 or AI-only Q1.5). **Skip this step only when the value is `none` or absent** (absent = pre-Q1.5 preferences; treat as `none` with the report caveat intact). Otherwise, apply BEFORE Part 1 model selection — these are hard filters, not preferences:
+Read `preferences.json` → `design_constraints.compliance` (from full-flow Q2 or AI-only Q1.5). **Skip this step only when the value is `none`, `unknown`, or absent** (`unknown` = defaulted, never user-confirmed — behaves like `none` for model/region selection but the report caveat is REQUIRED; absent = pre-Q1.5 preferences; treat as `none` with the report caveat intact). Otherwise, apply BEFORE Part 1 model selection — these are hard filters, not preferences:
 
 | Compliance value | Constraint applied in this design                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -366,7 +366,7 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 - [ ] `regional_warnings` is present (empty array `[]` if no issues; populated if any service unavailable in target region)
 - [ ] `multi_model_warnings` is present (empty array `[]` if single model or no coordination issues)
 - [ ] If `agentic_profile.is_agentic == true`: `agentic_design` object is present with `migration_approach` matching `preferences.json`
-- [ ] If `design_constraints.compliance` is set and not `none`: every Step 0.7 constraint is reflected in the design (BAA-only models for hipaa, GovCloud region for fedramp, `eu.` profiles for gdpr, Part 5 logging lines for pci/soc2/ccpa) and the Present Summary names the regime(s)
+- [ ] If `design_constraints.compliance` is set and not `none`/`unknown`: every Step 0.7 constraint is reflected in the design (BAA-only models for hipaa, GovCloud region for fedramp, `eu.` profiles for gdpr, Part 5 logging lines for pci/soc2/ccpa) and the Present Summary names the regime(s); if `unknown`, the compliance-not-confirmed caveat appears in the summary
 - [ ] If `agentic_profile.is_agentic == false` or absent: `agentic_design` is null or absent
 
 ## Completion Handoff Gate (Fail Closed)
