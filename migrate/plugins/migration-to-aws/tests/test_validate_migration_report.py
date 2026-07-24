@@ -109,6 +109,20 @@ def test_decision_fixture_uses_shared_visual_shell() -> None:
     assert "REPORT_OK" in out
 
 
+def test_activate_mention_requires_official_apply_link(tmp_path: Path) -> None:
+    html = DECISION_FIXTURE.read_text(encoding="utf-8").replace(
+        '<a href="https://aws.amazon.com/startups/credits/">'
+        "Apply for AWS Activate credits</a>",
+        "AWS Activate credits",
+        1,
+    )
+    path = tmp_path / "decision-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator_mode_with_toc(path, "decision")
+    assert code == 1, out
+    assert "clickable official apply link" in out
+
+
 def test_minimal_html_passes_without_toc(tmp_path: Path) -> None:
     path = tmp_path / "report.html"
     path.write_text(MINIMAL_PASS, encoding="utf-8")
@@ -394,6 +408,21 @@ def test_verdict_class_satisfies(tmp_path: Path) -> None:
     path.write_text(html, encoding="utf-8")
     code, out = run_validator(path, _infra_with_recommendation(tmp_path), require_toc=False)
     assert code == 0, out
+
+
+def test_plain_recommendation_sentence_does_not_replace_verdict_callout(
+    tmp_path: Path,
+) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="decision-summary"><h2>Decision</h2>',
+        '<section id="decision-summary"><h2>Decision</h2>'
+        "<p>Recommendation: migrate phased</p>",
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, _infra_with_recommendation(tmp_path), require_toc=False)
+    assert code == 1, out
+    assert 'class="verdict"' in out
 
 
 # --- #4 fixture-bleed canary + self-exemption ---

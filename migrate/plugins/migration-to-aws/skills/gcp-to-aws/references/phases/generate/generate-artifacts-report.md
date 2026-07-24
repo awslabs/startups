@@ -449,6 +449,9 @@ stylesheets, scripts, or images.
 - `.subtitle` and secondary labels: muted color, smaller type
 - `.verdict-headline`: large (`2rem`) typography-first statement with a
   visible accent; meaning must still be carried by its words, not color
+- `.verdict`: positive recommendation callout with pale green background,
+  green border, and stronger left border. Use it only for go/migrate outcomes;
+  stay/defer recommendations use the warning/neutral callout treatment.
 - links: visible blue with underline on hover and a high-contrast
   `:focus-visible` outline for keyboard readers
 
@@ -476,11 +479,16 @@ stylesheets, scripts, or images.
 - Put the decision's 3–6 most useful numbers in this grid: Balanced estimate,
   combined TCO when available, timeline, effort, and relevant credits. Do not
   duplicate the same number merely to fill a card.
+- When a supported comparable baseline produces a savings value, apply the
+  green `.savings` class to the numeric value. Use `.increase` for a supported
+  increase. Never color absolute costs or non-comparable deltas as savings.
+- If an Activate card is present, its supporting text MUST contain a clickable
+  official apply link (`https://aws.amazon.com/startups/credits/`).
 
 **Cost comparison highlight:**
 
-- `.cost-savings`: color #067d68 (green for savings)
-- `.cost-increase`: color #d13212 (red for increase)
+- `.savings`, `.cost-savings`: green and semibold/bold for supported savings
+- `.increase`, `.cost-increase`: red and semibold/bold for supported increases
 
 **Warning callout (for human_expertise_required):**
 

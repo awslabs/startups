@@ -47,6 +47,14 @@ Pull from `estimation-infra.json` → `recommendation` block. Fallback chain if 
 Content when `recommendation` block exists:
 
 1. **Verdict (typography-first — the verdict is the thesis of this section):** When `recommendation.outcome` exists (v2 artifacts), render `outcome_label` as the section's **headline statement** in large display type (e.g. `<p class="verdict-headline">Go, with conditions</p>`), followed by one labeled metadata line in body type: "Execution shape: [path_label] · Complexity: [complexity_signal]". The hierarchy encodes the real relationship — the decision is the headline; how and how-hard are attributes of it. Do **not** render the verdict as a row of colored pill badges: structure should carry the information, and meaning must never depend on color alone (a muted color accent on the headline is fine; the words carry the verdict). When `outcome` is absent (pre-extension artifacts), the same treatment applies with `path_label` as the headline. When `conditional_go`: render `conditions[]` as a short checklist directly under the metadata line. When `defer_for_evidence`: lead with what IS established ("AWS can host this stack; AWS-side estimate $X–$Y/mo" + the designed-slice mapping), then the named missing evidence and how to obtain it — do not show a savings headline as if the decision were made, and do not present defer as "no answer."
+   1a. **Recommendation callout (required):** Render the one-sentence
+   recommendation narrative directly below the headline/meta as
+   `<div class="verdict">…</div>`. For `go`, `conditional_go`, and
+   migrate-path legacy outcomes, use the green positive callout treatment
+   defined by the shared CSS. For `stay` or `defer_for_evidence`, use the
+   warning/neutral variant instead — never use green to imply approval. The
+   explicit recommendation words remain required; color is only a scanning
+   aid.
    1b. **Confidence pointer:** one line under the verdict block — `Confidence: [confidence] — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.` The full assumptions panel lives at the **end** of the executive summary (see Section 8 below), not here.
 2. **Complexity:** from `migration-preview.json` → `complexity_signal` ("Simple", "Moderate", "Complex") — colored badge
 3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
@@ -73,7 +81,7 @@ Content when `recommendation` block exists:
 
 Do **not** infer Activate tier from `gcp_monthly_spend` or `ai_monthly_spend` in the report or `estimation-*.json` ROI bullets.
 
-**Apply link (required):** Whenever the report or `STARTUP_PROGRAMS.md` mentions AWS Activate credits, include at least one clickable link to the official apply page: `<a href="https://aws.amazon.com/startups/credits/">AWS Activate credits</a>` (HTML report) or `[AWS Activate credits](https://aws.amazon.com/startups/credits/)` (Markdown). Place it in the decision-summary verdict, a callout, and/or the Next steps ordered list — not only in the appendix artifact catalog.
+**Apply link (required):** Whenever the report or `STARTUP_PROGRAMS.md` mentions AWS Activate credits, include at least one clickable link to the official apply page: `<a href="https://aws.amazon.com/startups/credits/">AWS Activate credits</a>` (HTML report) or `[AWS Activate credits](https://aws.amazon.com/startups/credits/)` (Markdown). Place it in the decision-summary verdict, a callout, and/or the Next steps ordered list — not only in the appendix artifact catalog. When an Activate metric card is rendered, put the clickable apply link **inside that card** so the action remains attached to the benefit.
 
 _Full mode only:_ after Generate, run `scripts/validate-startup-program-artifacts.py --migration-dir $MIGRATION_DIR`. (Decision mode: the Activate wording rules above still apply to the rendered content; the script runs when the Generate artifacts it checks exist.)
 
@@ -122,6 +130,10 @@ _Decision mode:_ render the diagram from `aws-design.json` clusters only — **o
 - Side-by-side display: Current GCP Monthly vs Estimated AWS Monthly (**Balanced** tier — the default scenario for comparing to GCP)
 - **Baseline-quality badge (required):** label the GCP figure using `current_costs.source` and the display-label table in `estimate-infra.md` Part 1 — "Measured from your GCP billing (±5%)" / "Estimated from resource configs (±20–30%, standing charges only)" / "Your stated spend band from Clarify" / "Your stated figure (unverified)". **Never** place an inventory-only GCP figure beside a user spend band without the explicit not-comparable line from `estimate-infra.md` Part 1 — they measure different things.
 - Percent change (savings or increase)
+- Render supported savings values with the green `.savings` class and supported
+  increases with `.increase`. Never color a percentage as savings when the GCP
+  and AWS baselines are not comparable; use an absolute estimated-cost card
+  plus the not-comparable note instead.
 - **Cost labeling rule:** All dollar figures in cost tables and metrics MUST be labeled as estimated monthly costs. Use column headers like "Est. Monthly AWS" or "Estimated Monthly" — never present figures as exact amounts.
 - **How to read cost tiers (callout box — required when infra estimation with three tiers exists):** The three AWS monthly figures are **estimated monthly costs** for the **same** mapped architecture (same services in `aws-design.json`), not three different generated Terraform stacks. **Order = highest → middle → lowest** monthly estimate in this model. Use **Balanced** as the **primary** row vs GCP; **Premium** and **Optimized** are **bounds** (higher HA / newer skew vs cost-optimization skew). When `terraform/` is present, it implements **one** infrastructure baseline aligned with the **Balanced** cost scenario (see `terraform/README.md` and `migration_summary` output).
 - If 3 tiers available: show **Premium**, **Balanced**, and **Optimized** with **short subtitles** (second line or subtext under each label):

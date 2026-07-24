@@ -30,6 +30,8 @@
     letter-spacing: -0.02em;
   }
   .verdict-meta { color: var(--muted); font-size: 0.92rem; margin: 0.2rem 0 0.6rem; }
+  .verdict { background: #dafbe1; border: 1px solid #4ac26b; border-left: 4px solid var(--green); border-radius: 6px; padding: 0.85rem 1rem; margin: 0.85rem 0; }
+  .savings { color: var(--green); font-weight: 700; }
   .metrics {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 0.75rem; margin: 0.85rem 0;
@@ -92,9 +94,10 @@
   <div class="metric"><span>Balanced estimate</span><strong>Est. $155/mo</strong><small>Primary AWS comparison scenario</small></div>
   <div class="metric"><span>Timeline if executed</span><strong>~6–12 weeks</strong><small>Medium-complexity planning band</small></div>
   <div class="metric"><span>Decision status</span><strong>Conditional go</strong><small>Confirm availability before cutover</small></div>
+  <div class="metric"><span>Activate Founders</span><strong>Up to $5,000</strong><small><a href="https://aws.amazon.com/startups/credits/">Apply for AWS Activate credits</a></small></div>
 </div>
 <p>Confidence: Medium — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.</p>
-<p>Recommendation: Proceed with a phased migration on the Balanced cost scenario once the availability assumption is confirmed.</p>
+<div class="verdict"><strong>Recommendation:</strong> Proceed with a phased migration on the Balanced cost scenario once the availability assumption is confirmed.</div>
 <h3>Migrate if</h3>
 <ul><li>You want managed compute without Kubernetes operations</li><li>Consolidating AI usage onto Bedrock matters this year</li></ul>
 <h3>Stay if</h3>

@@ -120,6 +120,14 @@ VISUAL_CONTRACT_CHECKS = [
         "metric cards must have a bordered card treatment",
     ),
     (
+        r"\.verdict\s*\{[^}]*background\s*:[^;}]+;?[^}]*border\s*:",
+        "recommendation must have a visually distinct callout treatment",
+    ),
+    (
+        r"\.savings\s*\{[^}]*color\s*:",
+        "supported savings values must have a reusable visual treatment",
+    ),
+    (
         r"\.appendix-header\s*\{",
         "full/decision shared shell must define an appendix divider",
     ),
@@ -454,17 +462,32 @@ def _validate_appendix_config(html: str) -> list[str]:
 
 def _validate_verdict(html: str, estimation_infra: dict | None) -> list[str]:
     """When a recommendation block exists, the decision summary must state a
-    one-sentence verdict (class="verdict" or 'Recommendation:' text), not only badges."""
+    one-sentence verdict in a visually distinct class="verdict" callout."""
     if not estimation_infra or not estimation_infra.get("recommendation"):
         return []
     summary = _section_html(html, "decision-summary") or ""
     if re.search(r'class="[^"]*\bverdict\b[^"]*"', summary, re.IGNORECASE):
         return []
-    if re.search(r"Recommendation:", summary):
-        return []
     return [
         "recommendation block exists but decision-summary has no verdict banner "
-        '(add an element with class="verdict" or a "Recommendation:" sentence)'
+        '(wrap the one-sentence recommendation in class="verdict")'
+    ]
+
+
+def _validate_activate_link(html: str) -> list[str]:
+    """Keep the Activate action attached to its executive-summary benefit."""
+    summary = _section_html(html, "decision-summary") or ""
+    if not re.search(r"AWS\s+Activate|Activate\s+(?:Founders|Portfolio|credits)", summary, re.I):
+        return []
+    if re.search(
+        r'href=["\']https://aws\.amazon\.com/startups/credits/?["\']',
+        summary,
+        re.IGNORECASE,
+    ):
+        return []
+    return [
+        "decision-summary mentions AWS Activate but has no clickable official "
+        "apply link (https://aws.amazon.com/startups/credits/)"
     ]
 
 
@@ -582,6 +605,7 @@ def validate_report(
 
     # Decision summary must state a one-sentence verdict when a recommendation exists.
     errors.extend(_validate_verdict(html, estimation_infra))
+    errors.extend(_validate_activate_link(html))
 
     # Ordered action lists and configuration provenance (when sections present).
     errors.extend(_validate_action_lists(html))
