@@ -553,18 +553,18 @@ Include migrate/stay decision factors:
 
 **Hard triggers — any one forces `outcome: "defer_for_evidence"`:**
 
-| # | Trigger | Evidence to name |
-| - | ------- | ---------------- |
-| 1 | GovCloud-class compliance ambiguity: compliance unknown AND signals suggest FedRAMP/government requirements — GovCloud vs commercial changes regions, service catalog, and pricing wholesale | Compliance confirmation from the user's legal/compliance owner |
-| 2 | The user's **only** stated motivation is cost savings AND no spend signal exists at all (`billing_profile.available == false` AND the user declined to state Heroku spend) | Heroku invoice/billing export, or a stated monthly spend figure |
+| # | Trigger                                                                                                                                                                                      | Evidence to name                                                |
+| - | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1 | GovCloud-class compliance ambiguity: compliance unknown AND signals suggest FedRAMP/government requirements — GovCloud vs commercial changes regions, service catalog, and pricing wholesale | Compliance confirmation from the user's legal/compliance owner  |
+| 2 | The user's **only** stated motivation is cost savings AND no spend signal exists at all (`billing_profile.available == false` AND the user declined to state Heroku spend)                   | Heroku invoice/billing export, or a stated monthly spend figure |
 
 **Soft triggers — never force defer; add each to `conditions[]` (outcome becomes `conditional_go` instead of `go`) and to `would_flip_if[]`:**
 
-| # | Trigger | Condition wording (adapt to stack) |
-| - | ------- | ----------------------------------- |
-| 3 | `database_ha` or availability posture resolved by default/plan-tier, never user-confirmed | "Confirm the availability requirement — Multi-AZ roughly doubles the database line" |
-| 4 | `migration_approach` defaulted while the stack has Postgres over ~100GB or zero-downtime signals | "Confirm cutover approach — pg_dump default may not fit this database" |
-| 5 | Pricing staleness beyond the vendored rate card's accuracy band | "Refresh pricing before treating the dollar delta as decision-grade" |
+| # | Trigger                                                                                          | Condition wording (adapt to stack)                                                  |
+| - | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| 3 | `database_ha` or availability posture resolved by default/plan-tier, never user-confirmed        | "Confirm the availability requirement — Multi-AZ roughly doubles the database line" |
+| 4 | `migration_approach` defaulted while the stack has Postgres over ~100GB or zero-downtime signals | "Confirm cutover approach — pg_dump default may not fit this database"              |
+| 5 | Pricing staleness beyond the vendored rate card's accuracy band                                  | "Refresh pricing before treating the dollar delta as decision-grade"                |
 
 **Outcome derivation:**
 
