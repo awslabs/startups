@@ -47,6 +47,17 @@
   th, td { border: 1px solid var(--border); padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
   th { background: #f6f8fa; font-weight: 600; }
   tbody tr:nth-child(even) td { background: #fafbfc; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .metric-hero { background: #fff; border: 2px solid #0d7377; }
+  .metric-hero strong { font-size: 1.9rem; }
+  .chip-warn { display: inline-block; background: #fff8c5; border: 1px solid #d4a72c; border-radius: 2rem; padding: 0.05rem 0.55rem; font-size: 0.72rem; font-weight: 600; }
+  .badge { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 2rem; font-size: 0.78rem; font-weight: 600; }
+  .badge-impact-critical { background: #fce8e6; color: #c5221f; }
+  .badge-impact-high { background: #fef7e0; color: #b05a00; }
+  .badge-like-low { background: #f1f3f4; color: #545b64; }
+  .badge-like-medium { background: #fef7e0; color: #b05a00; }
+  h2 .toplink { float: right; font-size: 0.75rem; font-weight: 400; color: #656d76; text-decoration: none; }
+  @media print { h2 .toplink { display: none; } }
   .toc {
     background: #fff; border: 1px solid var(--border); border-radius: 8px;
     padding: 1rem 1.5rem; margin-bottom: 1rem;
@@ -77,7 +88,7 @@
 </head>
 <body>
 <div class="report"><div class="executive-summary">
-<nav class="toc">
+<nav class="toc" id="toc">
 <a href="#decision-summary">Migration Decision Summary</a>
 <a href="#exec-services">Current Stack</a>
 <a href="#exec-costs">Cost Comparison</a>
@@ -87,15 +98,15 @@
 <a href="#decision-cta">Ready to Execute?</a>
 </nav>
 <section id="decision-summary">
-<h2>Migration Decision Summary</h2>
+<h2>Migration Decision Summary <a class="toplink" href="#toc">↑ contents</a></h2>
 <p class="verdict-headline">Go, with conditions</p>
 <p class="verdict-meta">Execution shape: Phased migration · Complexity: Moderate</p>
 <div class="metrics" aria-label="Decision highlights">
-  <div class="metric"><span>Balanced estimate</span><strong>Est. $155/mo</strong><small>Primary AWS comparison scenario</small></div>
-  <div class="metric"><span>Timeline if executed</span><strong>~6–12 weeks</strong><small>Medium-complexity planning band</small></div>
+  <div class="metric metric-hero"><span>Balanced estimate</span><strong>Est. $155/mo</strong><small>Primary AWS comparison scenario</small></div>
+  <div class="metric metric-hero"><span>Timeline if executed</span><strong>~6–12 weeks</strong><small>Medium-complexity planning band</small></div>
   <div class="metric"><span>Decision status</span><strong>Conditional go</strong><small>Confirm availability before cutover</small></div>
-  <div class="metric"><span>Activate Founders</span><strong>Up to $5,000</strong><small><a href="https://aws.amazon.com/startups/credits/">Apply for AWS Activate credits</a></small></div>
 </div>
+<div class="callout-info">💡 <strong>AWS Activate Founders:</strong> up to $5,000 in credits — <a href="https://aws.amazon.com/startups/credits/">Apply for AWS Activate credits</a> before incurring eligible charges.</div>
 <p>Confidence: Medium — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.</p>
 <div class="verdict"><strong>Recommendation:</strong> Proceed with a phased migration on the Balanced cost scenario once the availability assumption is confirmed.</div>
 <h3>Migrate if</h3>
@@ -104,30 +115,35 @@
 <ul><li>Your GCP committed-use discounts run through 2027</li></ul>
 </section>
 <section id="exec-services">
-<h2>Current Stack</h2>
+<h2>Current Stack <a class="toplink" href="#toc">↑ contents</a></h2>
 <table><caption>Primary GCP services detected</caption><thead><tr><th scope="col">Service</th><th scope="col">Type</th></tr></thead>
 <tbody><tr><td>Cloud Run</td><td>compute</td></tr><tr><td>Cloud SQL (PostgreSQL 15)</td><td>database</td></tr><tr><td>Cloud Storage</td><td>storage</td></tr></tbody></table>
 </section>
 <section id="exec-costs">
-<h2>Cost Comparison</h2>
-<table><caption>Estimated monthly costs</caption><thead><tr><th scope="col">Tier</th><th scope="col">Est. Monthly AWS</th></tr></thead>
-<tbody><tr><td>Premium</td><td>Est. $212/mo</td></tr><tr><td>Balanced (compare GCP to this row first)</td><td>Est. $155/mo</td></tr><tr><td>Optimized</td><td>Est. $118/mo</td></tr></tbody></table>
-<p>Your GCP baseline: estimated from resource configs (±20–30%, standing charges only). Your stated spend band ($1K–$5K/mo) measures your whole bill and is not directly comparable to the AWS figure above.</p>
+<h2>Cost Comparison <a class="toplink" href="#toc">↑ contents</a></h2>
+<table><caption>Estimated monthly costs</caption><thead><tr><th scope="col">Tier</th><th scope="col" class="num">Est. Monthly AWS</th></tr></thead>
+<tbody><tr><td>Premium</td><td class="num">Est. $212/mo</td></tr><tr><td><strong>Balanced</strong> (compare GCP to this row first)</td><td class="num"><strong>Est. $155/mo</strong></td></tr><tr><td>Optimized</td><td class="num">Est. $118/mo</td></tr></tbody></table>
+<p><span class="chip-warn">⚠ not comparable</span> Your GCP baseline: estimated from resource configs (±20–30%, standing charges only). Your stated spend band ($1K–$5K/mo) measures your whole bill and is not directly comparable to the AWS figure above.</p>
 </section>
 <section id="exec-timeline">
-<h2>Timeline</h2>
+<h2>Timeline <a class="toplink" href="#toc">↑ contents</a></h2>
 <p>~6–12 weeks if you execute (medium complexity band).</p>
 </section>
 <section id="exec-risks">
-<h2>Top Risks</h2>
-<ul><li>Availability posture assumed single-AZ — confirm before cutover sizing</li><li>BigQuery deferred to specialist engagement; excluded from combined totals</li></ul>
+<h2>Top Risks <a class="toplink" href="#toc">↑ contents</a></h2>
+<table><caption>Highest-severity migration risks</caption>
+<thead><tr><th scope="col">Risk</th><th scope="col">Impact</th><th scope="col">Likelihood</th><th scope="col">Mitigation</th></tr></thead>
+<tbody>
+<tr><td>Availability posture assumed single-AZ</td><td><span class="badge badge-impact-high">High</span></td><td><span class="badge badge-like-medium">Medium</span></td><td>Confirm the availability requirement before cutover sizing</td></tr>
+<tr><td>BigQuery excluded from combined totals</td><td><span class="badge badge-impact-high">High</span></td><td><span class="badge badge-like-low">Low</span></td><td>Deferred to specialist engagement; plan the analytics track in parallel</td></tr>
+</tbody></table>
 </section>
 <section id="exec-assumptions">
-<h2>What This Assessment Rests On</h2>
+<h2>What This Assessment Rests On <a class="toplink" href="#toc">↑ contents</a></h2>
 <p>Region, database size, and model detection extracted from your Terraform and code; availability defaulted to single-AZ per dev-tier signals. Cached pricing dated 2026-07 (±5–10% infra).</p>
 </section>
 <section id="decision-cta">
-<h2>Ready to execute?</h2>
+<h2>Ready to execute? <a class="toplink" href="#toc">↑ contents</a></h2>
 <p>Say "generate the Terraform and migration scripts" and I'll produce the full execution pack (Terraform, migration scripts, rollback runbook, fill-in checklist) from this same analysis.</p>
 <p>This decision report was generated without execution artifacts; the full migration report replaces it if you proceed.</p>
 </section>

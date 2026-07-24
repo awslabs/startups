@@ -36,35 +36,35 @@ If **none** exist: skip report generation. Output: "Skipping HTML report — no 
 
 Gather data from all available artifacts. Each section below notes which artifact provides the data.
 
-| Data Point                              | Primary Source                                                                                                                                          | Fallback                                             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| GCP services detected                   | `aws-design.json` clusters[].resources[]                                                                                                                | `aws-design-billing.json` services[]                 |
-| AWS service mappings                    | `aws-design.json` resources[].aws_service                                                                                                               | `aws-design-billing.json` services[].aws_service     |
-| Rationale per service                   | `aws-design.json` resources[].rationale                                                                                                                 | `aws-design-billing.json` services[].rationale       |
-| Current GCP monthly cost                | `estimation-infra.json` current_costs.gcp_monthly                                                                                                       | `estimation-billing.json`                            |
-| Projected AWS monthly cost              | `estimation-infra.json` projected_costs.aws_monthly_balanced                                                                                            | `estimation-billing.json`                            |
-| Cost breakdown per service              | `estimation-infra.json` projected_costs.breakdown                                                                                                       | `estimation-billing.json`                            |
-| Cost tiers (premium/balanced/optimized) | `estimation-infra.json` cost_comparison                                                                                                                 | —                                                    |
-| Optimization opportunities              | `estimation-infra.json` optimization_opportunities                                                                                                      | —                                                    |
-| Migration timeline                      | `generation-infra.json` migration_plan.total_weeks                                                                                                      | `generation-billing.json`                            |
-| Top risks                               | `generation-infra.json` risk_assessment                                                                                                                 | `generation-billing.json`                            |
-| Human expertise flags                   | Design artifact resources[].human_expertise_required                                                                                                    | —                                                    |
-| AI model mappings                       | `aws-design-ai.json`                                                                                                                                    | —                                                    |
-| AI cost estimates                       | `estimation-ai.json`                                                                                                                                    | —                                                    |
-| Migration decision / recommendation     | `estimation-infra.json` → `recommendation`                                                                                                              | `financial_summary.recommendation` (string fallback) |
-| Complexity and timeline hint            | `migration-preview.json` → `complexity_signal`, `timeline_hint`                                                                                         | —                                                    |
-| Key decisions ahead                     | `migration-preview.json` → `key_decisions_ahead`                                                                                                        | —                                                    |
-| User configuration choices              | `preferences.json` (read `.value` from wrapped fields)                                                                                                  | —                                                    |
-| AI capabilities and integration         | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile`                                                                               | —                                                    |
-| Deferred services                       | Design artifact `resources[].aws_service == "Deferred — specialist engagement"`                                                                         | —                                                    |
-| Observability cost callout              | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`) | —                                                    |
-| **Combined AWS monthly run rate (infra + AI)** | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`) | —                                                    |
-| **Security baseline component costs**   | `estimation-infra.json` → `projected_costs.breakdown.security_baseline.components` (GuardDuty, cloudtrail_s3, etc.)                                     | Static ranges in Appendix G when JSON absent         |
-| **Implementation effort**               | Sum distinct low/high ranges from `generation-infra.json` + `generation-ai.json`; legacy fallback: approximate `recommendation.estimated_total_effort_hours` values without double-counting parallel work             | —                                                    |
-| **Terraform validation status**         | `validation-report.json` → `status`, `provider_version`                                                                                                 | —                                                    |
-| **Pricing confidence / staleness**      | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                       | `estimation-ai.json` accuracy fields                 |
-| **AI optimization opportunities**       | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                             | —                                                    |
-| **What-if workshop scenarios**          | `scenarios/index.json` + each `scenarios/scenario-NNN.json` manifest (`estimation_summary`, `preferences_subset`, optional `graviton_note`)             | — (omit section when workshop unused)                |
+| Data Point                                     | Primary Source                                                                                                                                                                                            | Fallback                                             |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| GCP services detected                          | `aws-design.json` clusters[].resources[]                                                                                                                                                                  | `aws-design-billing.json` services[]                 |
+| AWS service mappings                           | `aws-design.json` resources[].aws_service                                                                                                                                                                 | `aws-design-billing.json` services[].aws_service     |
+| Rationale per service                          | `aws-design.json` resources[].rationale                                                                                                                                                                   | `aws-design-billing.json` services[].rationale       |
+| Current GCP monthly cost                       | `estimation-infra.json` current_costs.gcp_monthly                                                                                                                                                         | `estimation-billing.json`                            |
+| Projected AWS monthly cost                     | `estimation-infra.json` projected_costs.aws_monthly_balanced                                                                                                                                              | `estimation-billing.json`                            |
+| Cost breakdown per service                     | `estimation-infra.json` projected_costs.breakdown                                                                                                                                                         | `estimation-billing.json`                            |
+| Cost tiers (premium/balanced/optimized)        | `estimation-infra.json` cost_comparison                                                                                                                                                                   | —                                                    |
+| Optimization opportunities                     | `estimation-infra.json` optimization_opportunities                                                                                                                                                        | —                                                    |
+| Migration timeline                             | `generation-infra.json` migration_plan.total_weeks                                                                                                                                                        | `generation-billing.json`                            |
+| Top risks                                      | `generation-infra.json` risk_assessment                                                                                                                                                                   | `generation-billing.json`                            |
+| Human expertise flags                          | Design artifact resources[].human_expertise_required                                                                                                                                                      | —                                                    |
+| AI model mappings                              | `aws-design-ai.json`                                                                                                                                                                                      | —                                                    |
+| AI cost estimates                              | `estimation-ai.json`                                                                                                                                                                                      | —                                                    |
+| Migration decision / recommendation            | `estimation-infra.json` → `recommendation`                                                                                                                                                                | `financial_summary.recommendation` (string fallback) |
+| Complexity and timeline hint                   | `migration-preview.json` → `complexity_signal`, `timeline_hint`                                                                                                                                           | —                                                    |
+| Key decisions ahead                            | `migration-preview.json` → `key_decisions_ahead`                                                                                                                                                          | —                                                    |
+| User configuration choices                     | `preferences.json` (read `.value` from wrapped fields)                                                                                                                                                    | —                                                    |
+| AI capabilities and integration                | `ai-workload-profile.json` → `models[]`, `integration`, `agentic_profile`                                                                                                                                 | —                                                    |
+| Deferred services                              | Design artifact `resources[].aws_service == "Deferred — specialist engagement"`                                                                                                                           | —                                                    |
+| Observability cost callout                     | `estimation-infra.json` → `projected_costs.breakdown` (array: `service` contains "Observability"; object: key contains `observability` or `cloudwatch`)                                                   | —                                                    |
+| **Combined AWS monthly run rate (infra + AI)** | Sum `estimation-infra.json` Balanced + `estimation-ai.json` → `cost_comparison.projected_bedrock_monthly` (or `recommended_model.monthly_cost`)                                                           | —                                                    |
+| **Security baseline component costs**          | `estimation-infra.json` → `projected_costs.breakdown.security_baseline.components` (GuardDuty, cloudtrail_s3, etc.)                                                                                       | Static ranges in Appendix G when JSON absent         |
+| **Implementation effort**                      | Sum distinct low/high ranges from `generation-infra.json` + `generation-ai.json`; legacy fallback: approximate `recommendation.estimated_total_effort_hours` values without double-counting parallel work | —                                                    |
+| **Terraform validation status**                | `validation-report.json` → `status`, `provider_version`                                                                                                                                                   | —                                                    |
+| **Pricing confidence / staleness**             | `estimation-infra.json` → `pricing_source`, `accuracy_confidence`                                                                                                                                         | `estimation-ai.json` accuracy fields                 |
+| **AI optimization opportunities**              | `estimation-ai.json` → `optimization_opportunities`, `optimized_projection`                                                                                                                               | —                                                    |
+| **What-if workshop scenarios**                 | `scenarios/index.json` + each `scenarios/scenario-NNN.json` manifest (`estimation_summary`, `preferences_subset`, optional `graviton_note`)                                                               | — (omit section when workshop unused)                |
 
 ## Step 1: Build Executive Summary Section
 
@@ -459,9 +459,11 @@ stylesheets, scripts, or images.
 
 - `table`: width `100%`; border-collapse collapse; margin
   `0.75rem 0 1rem`; background white; font-size `0.88rem`
-- `th`, `td`: `1px` border, `0.45rem 0.65rem` padding, left/top alignment
+- `th`, `td`: **horizontal rules only** — `border: 0; border-bottom: 1px solid` the border color; `0.45rem 0.65rem` padding, left/top alignment. Never add vertical cell borders: grid + zebra + hover is three redundant separation cues (data-ink)
+- `thead th`: heavier bottom border (`2px`) to anchor the header row
 - `th`: subtle gray background and semibold text (do not use a large dark
   header block for every table)
+- `td.num, th.num`: `text-align: right; font-variant-numeric: tabular-nums` — apply `class="num"` to **every numeric column** (currency, hours, weeks, percentages) and its header so magnitudes align for scanning; label/prose columns stay left-aligned
 - alternating body rows use a subtle background; hover must not be the only
   way to distinguish rows
 - on viewports below `700px`, tables become horizontally scrollable rather
@@ -476,14 +478,24 @@ stylesheets, scripts, or images.
 - `.metric strong`: block, `1.45rem`, compact line-height
 - `.metric span`: muted `0.78rem` uppercase label with slight letter spacing
 - `.metric small`: block, muted supporting context
-- Put the decision's 3–6 most useful numbers in this grid: Balanced estimate,
-  combined AWS monthly run rate when available, timeline, effort, and relevant credits. Do not
-  duplicate the same number merely to fill a card.
+- Put the decision's 3–5 most useful numbers in this grid: combined AWS
+  monthly run rate (or the single-track estimate), timeline, per-track costs,
+  effort. Do not duplicate the same number merely to fill a card.
+- `.metric-hero`: white background, `2px` accent border (e.g. `#0d7377`),
+  value ~`1.9rem` — the one or two **primary** decision metrics (run rate,
+  timeline) render first with this treatment; the reader should not have to
+  rank the numbers themselves.
+- **Activate credits are never a metric card** — a credit offer is a
+  call-to-action with a link, not a measurement; rendering it in the grid
+  gives it false equivalence with the run rate. It renders as the 💡 callout
+  (see the Activate callout rules in `report-decision-core.md`), with the
+  clickable apply link (`https://aws.amazon.com/startups/credits/`) inside.
+- `.chip-warn`: inline pill (pale yellow background, amber border, small bold
+  text) for per-metric caveats — e.g. "⚠ not comparable" on the GCP baseline
+  card (see the not-comparable rendering rule in `report-decision-core.md`).
 - When a supported comparable baseline produces a savings value, apply the
   green `.savings` class to the numeric value. Use `.increase` for a supported
   increase. Never color absolute costs or non-comparable deltas as savings.
-- If an Activate card is present, its supporting text MUST contain a clickable
-  official apply link (`https://aws.amazon.com/startups/credits/`).
 
 **Cost comparison highlight:**
 
@@ -502,6 +514,19 @@ stylesheets, scripts, or images.
 - `.badge-deterministic`: background #e6f4ea; color #137333 — label **Standard pairing**
 - `.badge-inferred`: background #fef7e0; color #b05a00 — label **Tailored to your setup**
 - `.badge-billing`: background #fce8e6; color #c5221f — label **Estimated from billing only**
+
+**Risk badges (Top Risks table):**
+
+- `.badge-impact-critical`: background #fce8e6; color #c5221f
+- `.badge-impact-high`: background #fef7e0; color #b05a00
+- `.badge-like-low`: background #f1f3f4; color #545b64
+- `.badge-like-medium`: background #fef7e0; color #b05a00
+
+**Navigation aids:**
+
+- `nav.toc` carries `id="toc"`
+- `h2 .toplink`: float right; small, muted, no underline — every section `<h2>` ends with `<a class="toplink" href="#toc">↑ contents</a>`; hidden in `@media print`
+- `details.reading-guide`: muted collapsible for how-to-read explanations that would otherwise sit between the reader and the data (see Content Rules)
 
 **Verdict badges (Section 0):**
 
@@ -552,6 +577,9 @@ These move from "example in the fixture" to enforced gate. See `references/share
 7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate", "workshop scenario comparison" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*`, `what-if-scenarios`, or `decision-summary` section.
 8. **One name per concept.** Use a single consistent label for each recommended choice across the whole report. The recommended Bedrock model and the chosen cost tier keep the same name in the verdict, tables, and appendices (always "Claude Sonnet 4.6 (recommended)", always "Balanced"). Do not alternate "recommended / selected target / design target / projected" for the same item — one label is how the reader keeps their bearings.
 9. **Ordered action lists.** In `decision-summary`, `Key decisions ahead` and `Next steps` MUST use `<ol class="compact">`, not `<ul>`. The validator fails when either heading is followed by a bullet list. `Migrate if` / `Stay if` remain unordered lists.
+10. **Data first, explanation adjacent.** Never make the reader wade through a how-to-read paragraph or callout to reach the table it explains. Render the data first; put reading guidance in a `<details class="reading-guide">` immediately **after** the table (e.g. "How to read the three cost tiers"). Mandatory caveats that must not be collapsible (the not-comparable rule, baseline-quality labels) attach to the figure they qualify — a `.chip-warn` pill on the metric card plus one line in its `<small>` — rather than a standalone paragraph above the section's data.
+11. **Numeric columns aligned.** Every table column whose cells are currency, hours, weeks, or percentages carries `class="num"` on its `<td>`s and header (right-aligned, tabular figures). Mixed cells (a number plus a qualifying `<small>`) still count as numeric.
+12. **Corrections and derivations go in disclosures.** When a figure was corrected or derived (e.g. a tier-rule effort estimate replaced by a bottom-up range), the report states the **corrected value plus one clause** in the visible flow and puts the how-we-got-here narrative in a `<details class="why">` ("Why this is lower than the automatic estimate"). Internal classification history is machinery, not decision input — same principle as rule 2.
 
 > **Section IDs are stable anchors, not placement hints.** Some `appendix-*` IDs render in the executive flow on purpose (notably `appendix-assumptions`). Do not rename IDs to match position — the validator and TOC key on them.
 

@@ -17,7 +17,7 @@ output lives in the JSON artifacts.
 ## Decision-mode specifics
 
 - **Artifacts available:** discovery + `preferences.json` + `aws-design*.json` + `estimation-*.json` (+ `migration-preview.json`, `scenarios/` when present). `generation-*.json` and `terraform/` do NOT exist. Sections that prefer Generate artifacts carry an inline **_Decision mode:_** override next to the full-mode rule (decision-summary item 4, Sections 2b, 3 footnote, 4, 6, 7) — **those inline overrides are the authoritative decision-mode law**; when a section has no override, its rule applies unchanged in both modes.
-- **HTML shell:** same `<head>` (charset, viewport, inline CSS) and CSS specification as the full report (see `generate-artifacts-report.md` Step 3), title "GCP to AWS Migration Assessment — Decision Report". Body contains ONLY the `executive-summary` div with the exec sections and TOC (TOC links only to sections present). Required section IDs in decision mode: `decision-summary`, `exec-assumptions`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks` (+ conditional `exec-tco`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios` per their triggers).
+- **HTML shell:** same `<head>` (charset, viewport, inline CSS) and CSS specification as the full report (see `generate-artifacts-report.md` Step 3), title "GCP to AWS Migration Assessment — Decision Report". Body contains ONLY the `executive-summary` div with the exec sections and TOC (TOC links only to sections present; `nav.toc` carries `id="toc"` and every section `<h2>` ends with the `↑ contents` toplink per the nav-aids CSS spec). Required section IDs in decision mode: `decision-summary`, `exec-assumptions`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks` (+ conditional `exec-tco`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios` per their triggers).
 - **CTA footer (required, after the last section):** `<section id="decision-cta">` — "**Ready to execute?** Say \"generate the Terraform and migration scripts\" and I'll produce the full execution pack (Terraform, migration scripts, rollback runbook, fill-in checklist) from this same analysis." Plus one line: "This decision report was generated without execution artifacts; the full migration report replaces it if you proceed."
 - **`DECISION.md` (required twin):** same content as the HTML, as plain Markdown (Slack/GitHub-friendly): verdict headline, cost table, migrate-if/stay-if lists, timeline band, top risks, assumptions, CTA line. No HTML tags.
 - **Validation:** run `scripts/validate-migration-report.py $MIGRATION_DIR/decision-report.html --mode decision [--estimation-infra ...] [--estimation-ai ...]` and fix failures before presenting.
@@ -77,7 +77,9 @@ Content when `recommendation` block exists:
 | `has_credits`                  | Note existing credits; no "apply for" language                                                                                                                                                                                                       |
 | `unknown`                      | **Neutral only:** e.g. "Review AWS Activate tiers in `STARTUP_PROGRAMS.md` — funding stage not confirmed in Clarify." **Do not** write "Eligible Founders tier", "your status: eligible_*", or dollar amounts tied to a specific tier in the verdict |
 
-**Sidebar callout box:** Show the 💡 Activate callout when `startup_program_status.value` is **not** `unknown`, **or** when `unknown` but you use the neutral wording above (optional). When `unknown`, do **not** imply a confirmed tier.
+**Sidebar callout box:** Show the 💡 Activate callout when `startup_program_status.value` is **not** `unknown`, **or** when `unknown` but you use the neutral wording above (optional). When `unknown`, do **not** imply a confirmed tier. **The Activate item is ALWAYS this callout, never a metric card** — it is a call-to-action with a link, not a measurement, and rendering it in the metric grid gives it false equivalence with the run-rate and timeline figures. The clickable apply link goes inside the callout.
+
+**Metric hierarchy (when the decision summary renders a metric grid):** the reader should not have to rank the numbers themselves. The one or two **primary** decision metrics — the combined (or single-track) AWS run rate, and the timeline — render first with `.metric-hero` treatment (larger value, accent border). Supporting metrics (per-track costs, savings percentages, effort range) follow as standard cards, max ~5 total.
 
 Do **not** infer Activate tier from `gcp_monthly_spend` or `ai_monthly_spend` in the report or `estimation-*.json` ROI bullets.
 
@@ -99,10 +101,10 @@ support, migration labor, or other ownership costs.
 Show the combined estimated AWS monthly cloud-service run rate **excluding**
 deferred services (e.g. BigQuery):
 
-| Row            | GCP                                                      | AWS Balanced                                | Notes                       |
-| -------------- | -------------------------------------------------------- | ------------------------------------------- | --------------------------- |
-| Infrastructure | `current_costs.gcp_monthly`                              | `projected_costs.aws_monthly_balanced`      | From infra estimate         |
-| AI / ML        | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate            |
+| Row            | GCP                                                      | AWS Balanced                                | Notes                                                              |
+| -------------- | -------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------ |
+| Infrastructure | `current_costs.gcp_monthly`                              | `projected_costs.aws_monthly_balanced`      | From infra estimate                                                |
+| AI / ML        | `current_costs.gcp_monthly_ai_spend` or AI band midpoint | `cost_comparison.projected_bedrock_monthly` | From AI estimate                                                   |
 | **Combined**   | sum only when all source baselines are comparable        | sum                                         | No overall Δ/% if any source baseline is partial or not comparable |
 
 If `estimation-ai.json` → `optimized_projection` exists, footnote the optimized AI path separately.
@@ -145,7 +147,8 @@ _Decision mode:_ render the diagram from `aws-design.json` clusters only — **o
   and AWS baselines are not comparable; use an absolute estimated-cost card
   plus the not-comparable note instead.
 - **Cost labeling rule:** All dollar figures in cost tables and metrics MUST be labeled as estimated monthly costs. Use column headers like "Est. Monthly AWS" or "Estimated Monthly" — never present figures as exact amounts.
-- **How to read cost tiers (callout box — required when infra estimation with three tiers exists):** The three AWS monthly figures are **estimated monthly costs** for the **same** mapped architecture (same services in `aws-design.json`), not three different generated Terraform stacks. **Order = highest → middle → lowest** monthly estimate in this model. Use **Balanced** as the **primary** row vs GCP; **Premium** and **Optimized** are **bounds** (higher HA / newer skew vs cost-optimization skew). When `terraform/` is present, it implements **one** infrastructure baseline aligned with the **Balanced** cost scenario (see `terraform/README.md` and `migration_summary` output).
+- **Not-comparable rendering:** the mandatory not-comparable warning is NOT collapsible and does not sit as a paragraph between the heading and the numbers — attach it to the GCP figure itself: a `.chip-warn` pill ("⚠ not comparable") on the metric card plus the one-line explanation in its `<small>` (what the figure measures, what the stated band measures, "do not read a savings %").
+- **How to read cost tiers (required when infra estimation with three tiers exists; rendered as a `<details class="reading-guide">` immediately AFTER the tier table — data first, explanation adjacent):** The three AWS monthly figures are **estimated monthly costs** for the **same** mapped architecture (same services in `aws-design.json`), not three different generated Terraform stacks. **Order = highest → middle → lowest** monthly estimate in this model. Use **Balanced** as the **primary** row vs GCP; **Premium** and **Optimized** are **bounds** (higher HA / newer skew vs cost-optimization skew). When `terraform/` is present, it implements **one** infrastructure baseline aligned with the **Balanced** cost scenario (see `terraform/README.md` and `migration_summary` output).
 - If 3 tiers available: show **Premium**, **Balanced**, and **Optimized** with **short subtitles** (second line or subtext under each label):
   - **Premium** — _Highest resilience / highest monthly estimate in this model_
   - **Balanced** — _Default scenario; compare GCP to this row first_
@@ -247,7 +250,7 @@ Source: static template filtered by design artifact service types
 **Section 7 — Top Risks:**
 
 - Up to 3 highest-severity risks
-- Each with: risk name, severity, one-line mitigation
+- Table columns: Risk · **Impact** · **Likelihood** · Mitigation — impact and likelihood are separate badge columns (`.badge-impact-critical` / `.badge-impact-high`, `.badge-like-low` / `.badge-like-medium`), never combined into one prose string like "Critical impact (low probability)" — a risk matrix is scanned, not read
 - _Full mode source:_ generation plan `risk_assessment` (preferred).
 - _Decision mode source_ (in order; **never leave `exec-risks` empty** when any of these exist): (1) risk/condition items in `estimation-infra.json` → `recommendation` (`conditions[]`, `would_flip_if[]`); (2) deferred-specialist rows from the design artifact (e.g. BigQuery excluded from totals); (3) material `chosen_by: "default"` assumptions with cost or HA impact from `preferences.json` (e.g. availability defaulted — "~2x database cost swing; confirm before cutover sizing"). Invent nothing beyond these artifacts.
 
