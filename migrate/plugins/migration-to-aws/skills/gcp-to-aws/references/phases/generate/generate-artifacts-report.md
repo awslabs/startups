@@ -412,31 +412,70 @@ Optional IDs (include when data exists): `exec-tco`, `exec-architecture`, `exec-
 
 ### CSS Specification
 
-The inline CSS must include:
+The inline CSS is a **readability contract**, not a loose example. Full and
+decision reports MUST use the same shell and selectors so visual quality does
+not drift between phases. The validator checks the required selectors and
+layout properties. Keep the report self-contained: no external fonts,
+stylesheets, scripts, or images.
 
 **Layout:**
 
-- `body`: font-family system-ui, -apple-system, sans-serif; max-width 900px; margin 0 auto; padding 40px 20px; color #1a1a2e; background #ffffff; line-height 1.6
-- `.report`: single container
+- `:root`: define reusable semantic colors for page background, surface,
+  text, muted text, border, AWS navy, link blue, success, warning, and danger.
+- `*`: `box-sizing: border-box`
+- `body`: system font stack; margin `0`; color `#1f2328`; background
+  `#f6f8fa`; line-height `1.55`; font-size `15px`
+- `.report`: max-width `1040px`; margin `0 auto`; padding
+  `2rem 1.5rem 4rem`
+- `section`: white surface, `1px` border, `8px` radius, padding
+  `1.25rem 1.5rem`, margin-bottom `1rem`, and `scroll-margin-top: 1rem`.
+  Every executive and appendix section is therefore a distinct card instead
+  of prose floating on a white page.
+- `.executive-summary` and `.appendix`: use normal document flow; never nest
+  `<section>` elements.
+- `.appendix-header`: dark AWS-navy visual divider before the detailed
+  appendix. It is a `<div>`, not a `<section>`, so section validation remains
+  unambiguous.
 
 **Typography:**
 
-- `h1`: font-size 1.8rem; color #1a1a2e; border-bottom 3px solid #ff9900; padding-bottom 8px
-- `h2`: font-size 1.4rem; color #232f3e; margin-top 2rem
-- `h3`: font-size 1.1rem; color #545b64
+- `h1`: font-size `1.85rem`; margin-bottom `0.25rem`; border-bottom
+  `3px solid #ff9900`; padding-bottom `0.5rem`
+- `h2`: font-size `1.3rem`; margin-top `0`; border-bottom `1px solid` the
+  border color; padding-bottom `0.45rem`
+- `h3`: font-size `1.05rem`; margin-top `1.1rem`; color `#424a53`
+- `p`, `ul`, and `ol` inside cards: compact vertical rhythm; default bottom
+  margin no larger than `0.8rem`
+- `.subtitle` and secondary labels: muted color, smaller type
+- `.verdict-headline`: large (`2rem`) typography-first statement with a
+  visible accent; meaning must still be carried by its words, not color
+- links: visible blue with underline on hover and a high-contrast
+  `:focus-visible` outline for keyboard readers
 
 **Tables:**
 
-- `table`: width 100%; border-collapse collapse; margin 1rem 0
-- `th`: background #232f3e; color white; padding 10px 12px; text-align left; font-size 0.85rem
-- `td`: padding 8px 12px; border-bottom 1px solid #e8e8e8; font-size 0.85rem
-- `tr:hover`: background #f5f5f5
+- `table`: width `100%`; border-collapse collapse; margin
+  `0.75rem 0 1rem`; background white; font-size `0.88rem`
+- `th`, `td`: `1px` border, `0.45rem 0.65rem` padding, left/top alignment
+- `th`: subtle gray background and semibold text (do not use a large dark
+  header block for every table)
+- alternating body rows use a subtle background; hover must not be the only
+  way to distinguish rows
+- on viewports below `700px`, tables become horizontally scrollable rather
+  than shrinking text to an unreadable size
 
 **Cards (for executive summary metrics):**
 
-- `.metric-card`: display inline-block; background #f8f9fa; border 1px solid #e8e8e8; border-radius 8px; padding 16px 24px; margin 8px; text-align center; min-width 160px
-- `.metric-value`: font-size 1.6rem; font-weight bold; color #232f3e
-- `.metric-label`: font-size 0.8rem; color #687078; text-transform uppercase
+- `.metrics`: CSS grid using
+  `repeat(auto-fit, minmax(180px, 1fr))`, gap `0.75rem`, margin `0.85rem 0`
+- `.metric`: white or subtly tinted surface, `1px` border, `8px` radius,
+  padding `0.85rem 1rem`; never use inline-block cards with uneven wrapping
+- `.metric strong`: block, `1.45rem`, compact line-height
+- `.metric span`: muted `0.78rem` uppercase label with slight letter spacing
+- `.metric small`: block, muted supporting context
+- Put the decision's 3–6 most useful numbers in this grid: Balanced estimate,
+  combined TCO when available, timeline, effort, and relevant credits. Do not
+  duplicate the same number merely to fill a card.
 
 **Cost comparison highlight:**
 
@@ -445,7 +484,9 @@ The inline CSS must include:
 
 **Warning callout (for human_expertise_required):**
 
-- `.callout-warning`: background #fff8e1; border-left 4px solid #ff9900; padding 12px 16px; margin 1rem 0; border-radius 0 4px 4px 0
+- `.callout`: shared padding, radius, margin, and readable font size
+- `.callout-warning`, `.callout-info`, `.callout-ok`: distinct pale
+  backgrounds plus borders. Use an icon or explicit label as well as color.
 
 **Confidence badges (visible text = user-facing vocabulary, not JSON):**
 
@@ -463,7 +504,13 @@ The inline CSS must include:
 
 **Print styles:**
 
-- `@media print`: hide nothing, adjust margins, ensure page breaks before `.appendix`
+- `@media (max-width: 700px)`: reduce report/card padding, force the metric
+  grid to one column, make the TOC one column, and allow tables/diagrams to
+  scroll horizontally
+- `@media print`: white page background, compact report padding, preserve card
+  borders, avoid breaks inside metric cards/callouts/table rows, and start the
+  appendix on a new page. Do not apply `break-inside: avoid` to entire long
+  sections because that creates large blank areas in printed reports.
 
 **Footer:**
 

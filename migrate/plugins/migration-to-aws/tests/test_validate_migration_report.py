@@ -14,6 +14,13 @@ FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-reference.html"
 FIXTURE_EST_INFRA = PLUGIN_ROOT / "fixtures" / "estimation-infra-reference.json"
 FIXTURE_EST_AI = PLUGIN_ROOT / "fixtures" / "estimation-ai-reference.json"
 STUB_FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-stub.html"
+DECISION_FIXTURE = (
+    PLUGIN_ROOT
+    / "fixtures"
+    / "gcp-decision-gate"
+    / "after-decide-complete"
+    / "decision-report.html"
+)
 
 MINIMAL_PASS = """<!DOCTYPE html>
 <html><body>
@@ -80,6 +87,26 @@ def test_reference_fixture_passes() -> None:
     assert code == 0, out
     assert "REPORT_OK" in out
     assert "structure=complete" in out
+
+
+def test_reference_fixture_enforces_visual_readability_contract(tmp_path: Path) -> None:
+    """A report cannot silently regress from grid cards to flat prose."""
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        ".metrics { display: grid;",
+        ".metrics { display: block;",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "responsive CSS grid" in out
+
+
+def test_decision_fixture_uses_shared_visual_shell() -> None:
+    code, out = run_validator_mode_with_toc(DECISION_FIXTURE, "decision")
+    assert code == 0, out
+    assert "REPORT_OK" in out
 
 
 def test_minimal_html_passes_without_toc(tmp_path: Path) -> None:
@@ -559,6 +586,12 @@ DECISION_PASS = """<!DOCTYPE html>
 
 def run_validator_mode(html_path: Path, mode: str) -> tuple[int, str]:
     cmd = [sys.executable, str(SCRIPT), str(html_path), "--mode", mode, "--no-require-toc"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result.returncode, result.stdout + result.stderr
+
+
+def run_validator_mode_with_toc(html_path: Path, mode: str) -> tuple[int, str]:
+    cmd = [sys.executable, str(SCRIPT), str(html_path), "--mode", mode]
     result = subprocess.run(cmd, capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
 

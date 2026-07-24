@@ -43,7 +43,22 @@ Handle exactly three outcomes:
 
 ## Scope
 
-This validator is a **structural + readability completeness gate**. It does **not** verify that every dollar figure in the HTML matches estimation JSON. Self-check item for numeric accuracy in `generate-artifacts-report.md` remains a manual step. `REPORT_OK | structure=complete` means the report is ready for human review, not financially audited.
+This validator is a **structural + content + visual-readability completeness
+gate**. The visual contract is intentionally capability-based rather than
+pixel-perfect: reports must preserve the shared contrasting page shell,
+bordered section cards, responsive metric grid, mobile breakpoint, keyboard
+focus state, and print rules from `generate-artifacts-report.md`. Colors and
+small spacing refinements may evolve without changing the validator.
+
+The validator does **not** verify that every dollar figure in the HTML matches
+estimation JSON. Self-check item for numeric accuracy in
+`generate-artifacts-report.md` remains a manual step.
+`REPORT_OK | structure=complete` means the report is ready for human review,
+not financially audited.
+
+`--no-require-toc` also bypasses the visual-shell contract for deliberately
+minimal unit fixtures. It is not an escape hatch for normal generated full or
+decision reports.
 
 ---
 
@@ -58,18 +73,19 @@ This validator is a **structural + readability completeness gate**. It does **no
 | 5  | Security costs                     | If `security_baseline` in estimate: **GuardDuty** or dollar-formatted component costs appear in `appendix-security` / `appendix-costs` (bare `15` in CSS does not count)                                                                                                                      |
 | 6  | Footer                             | Contains "draft for review"                                                                                                                                                                                                                                                                   |
 | 7  | No placeholders                    | No `[placeholder]` or `TODO` in report body                                                                                                                                                                                                                                                   |
-| 8  | Combined TCO                       | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">`                                                                                                                                                                                |
-| 9  | Readability — no scoring trace     | No literal `Rubric:` in the body. Render per-cluster rationale in a `<details>` "Why this mapping?" block instead                                                                                                                                                                             |
-| 10 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure. **Genuine sequences keep their numbering** — cluster order, phased weeks, migration phases, and rollback steps stay ordered; only _decorative_ section labels are banned |
-| 11 | Security teaser present            | If `security_baseline` is in the estimate: exactly the compact `exec-security-teaser` carries it in the exec flow (full table stays in `appendix-security`)                                                                                                                                   |
-| 12 | Verdict banner                     | If `estimation-infra.json` has a `recommendation` block: `decision-summary` contains a `class="verdict"` element or a "Recommendation:" sentence — not only badges                                                                                                                            |
-| 13 | No fixture bleed                   | With `--migration-dir`: the reference canary migration ID does not appear in a real run, and the report's migration ID matches the run folder                                                                                                                                                 |
-| 14 | Readability — reader vocabulary    | No artifact filename (`*.json`) or Terraform resource ID (`aws_<resource>.<name>`) inside any `exec-*` / `decision-summary` section. The executive flow names what the reader controls; those identifiers live only in the appendices                                                         |
-| 15 | Ordered action lists               | When `Key decisions ahead` or `Next steps` headings exist in `decision-summary`, the following list is `<ol>`, not `<ul>`                                                                                                                                                                     |
-| 16 | Configuration provenance           | When `<section id="appendix-config">` exists: table includes Question/Assumption and Design consequence columns; ≥2 data rows                                                                                                                                                                 |
-| 17 | What-if scenarios                  | With `--migration-dir`: if `scenarios/index.json` lists ≥2 scenarios, exactly one `<section id="what-if-scenarios">` (workshop compare table)                                                                                                                                                 |
+| 8  | Visual readability shell           | Inline CSS includes contrasting page background, constrained report width, bordered section cards, CSS-grid metrics, appendix divider, keyboard focus, mobile, and print rules                                                                                                              |
+| 9  | Combined TCO                       | If **both** `estimation-infra.json` and `estimation-ai.json` are passed: exactly one `<section id="exec-tco">`                                                                                                                                                                                |
+| 10 | Readability — no scoring trace     | No literal `Rubric:` in the body. Render per-cluster rationale in a `<details>` "Why this mapping?" block instead                                                                                                                                                                             |
+| 11 | Readability — no numbered headings | No literal `Section 0`, and no `<hN>Section N — …` numbered headings. Use plain titles; let the TOC carry structure. **Genuine sequences keep their numbering** — cluster order, phased weeks, migration phases, and rollback steps stay ordered; only _decorative_ section labels are banned |
+| 12 | Security teaser present            | If `security_baseline` is in the estimate: exactly the compact `exec-security-teaser` carries it in the exec flow (full table stays in `appendix-security`)                                                                                                                                   |
+| 13 | Verdict banner                     | If `estimation-infra.json` has a `recommendation` block: `decision-summary` contains a `class="verdict"` element or a "Recommendation:" sentence — not only badges                                                                                                                            |
+| 14 | No fixture bleed                   | With `--migration-dir`: the reference canary migration ID does not appear in a real run, and the report's migration ID matches the run folder                                                                                                                                                 |
+| 15 | Readability — reader vocabulary    | No artifact filename (`*.json`) or Terraform resource ID (`aws_<resource>.<name>`) inside any `exec-*` / `decision-summary` section. The executive flow names what the reader controls; those identifiers live only in the appendices                                                         |
+| 16 | Ordered action lists               | When `Key decisions ahead` or `Next steps` headings exist in `decision-summary`, the following list is `<ol>`, not `<ul>`                                                                                                                                                                     |
+| 17 | Configuration provenance           | When `<section id="appendix-config">` exists: table includes Question/Assumption and Design consequence columns; ≥2 data rows                                                                                                                                                                 |
+| 18 | What-if scenarios                  | With `--migration-dir`: if `scenarios/index.json` lists ≥2 scenarios, exactly one `<section id="what-if-scenarios">` (workshop compare table)                                                                                                                                                 |
 
-Checks 9, 10, and 14 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Check 14 scopes to executive-flow sections only — appendices may carry artifact filenames and resource IDs by design. Disable checks 9, 10, and 14 with `--no-readability` only for non-customer fixtures. Check 13 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips. Checks 15–16 apply whenever the corresponding sections/headings exist.
+Checks 10, 11, and 15 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. Check 15 scopes to executive-flow sections only — appendices may carry artifact filenames and resource IDs by design. Disable checks 10, 11, and 15 with `--no-readability` only for non-customer fixtures. Check 14 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips. Checks 16–17 apply whenever the corresponding sections/headings exist.
 
 ---
 

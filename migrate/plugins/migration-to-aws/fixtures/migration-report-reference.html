@@ -56,6 +56,7 @@
     .toc li { margin: 0.2rem 0; font-size: 0.9rem; }
     .toc a { color: var(--blue); text-decoration: none; }
     .toc a:hover { text-decoration: underline; }
+    a:focus-visible, summary:focus-visible { outline: 3px solid #54aeff; outline-offset: 2px; border-radius: 2px; }
     .toc .toc-group { font-weight: 600; margin-top: 0.75rem; font-size: 0.85rem; color: #656d76; text-transform: uppercase; letter-spacing: 0.02em; }
     .tier-sub { font-size: 0.78rem; color: #656d76; font-style: italic; display: block; margin-top: 0.15rem; }
     .badge-conf { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; }
@@ -71,9 +72,17 @@
     details.why ul { margin: 0.4rem 0; padding-left: 1.1rem; }
     .cluster-block { border-left: 3px solid var(--blue); padding-left: 1rem; margin: 1rem 0; }
     footer { text-align: center; color: #656d76; font-size: 0.8rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    @media (max-width: 700px) {
+      .container { padding: 1rem 0.75rem 2rem; }
+      section { padding: 1rem; }
+      .metrics { grid-template-columns: 1fr; }
+      .toc ol, .toc ul.toc-appendix { columns: 1; }
+      table, .diagram { display: block; overflow-x: auto; }
+    }
     @media print {
       body { background: #fff; }
-      section { break-inside: avoid; }
+      .container { max-width: none; padding: 0; }
+      .metric, .callout, tr { break-inside: avoid; }
       .appendix-header { break-before: page; }
     }
   </style>

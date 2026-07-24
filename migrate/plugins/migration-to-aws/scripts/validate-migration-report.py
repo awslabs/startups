@@ -93,6 +93,50 @@ READABILITY_PATTERNS = [
     ),
 ]
 
+# Visual readability contract for generated reports. This intentionally checks
+# structural CSS capabilities rather than pixel-perfect declarations: agents
+# may refine colors and spacing, but they must not regress to unboxed prose on
+# a plain white page or uneven inline-block metric cards.
+VISUAL_CONTRACT_CHECKS = [
+    (
+        r"body\s*\{[^}]*background\s*:\s*(?:var\([^)]*\)|#f6f8fa)",
+        "body must use a contrasting page background",
+    ),
+    (
+        r"\.(?:report|container)\s*\{[^}]*max-width\s*:",
+        "report shell must constrain line length with max-width",
+    ),
+    (
+        r"section\s*\{[^}]*background\s*:[^;}]+;?[^}]*border\s*:[^;}]+;?"
+        r"[^}]*border-radius\s*:",
+        "sections must render as bordered surface cards",
+    ),
+    (
+        r"\.metrics\s*\{[^}]*display\s*:\s*grid[^}]*grid-template-columns\s*:",
+        "executive metrics must use a responsive CSS grid",
+    ),
+    (
+        r"\.metric\s*\{[^}]*border\s*:[^;}]+;?[^}]*border-radius\s*:",
+        "metric cards must have a bordered card treatment",
+    ),
+    (
+        r"\.appendix-header\s*\{",
+        "full/decision shared shell must define an appendix divider",
+    ),
+    (
+        r":focus-visible\s*\{",
+        "keyboard focus must be visibly styled",
+    ),
+    (
+        r"@media\s*\([^)]*max-width\s*:\s*700px[^)]*\)",
+        "mobile readability breakpoint (700px) is required",
+    ),
+    (
+        r"@media\s+print\s*\{",
+        "print-specific styling is required",
+    ),
+]
+
 # Executive-flow sections must speak the reader's language, not the system's.
 # Artifact filenames and Terraform resource IDs are internal build vocabulary —
 # they belong in the technical appendices, not the executive summary. (Enforced
@@ -297,6 +341,23 @@ def _validate_readability(html: str) -> list[str]:
     return errors
 
 
+def _validate_visual_contract(html: str) -> list[str]:
+    """Validate the shared report shell's minimum visual readability contract."""
+    style_blocks = re.findall(
+        r"<style\b[^>]*>(.*?)</style>",
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if not style_blocks:
+        return ["visual readability: missing inline <style> report shell"]
+    css = "\n".join(style_blocks)
+    errors: list[str] = []
+    for pattern, label in VISUAL_CONTRACT_CHECKS:
+        if not re.search(pattern, css, re.DOTALL | re.IGNORECASE):
+            errors.append(f"visual readability: {label}")
+    return errors
+
+
 def _validate_exec_vocabulary(html: str) -> list[str]:
     """Executive-flow sections must name what the reader controls, not how the
     system is built. Artifact filenames (*.json) and Terraform resource IDs
@@ -473,6 +534,11 @@ def validate_report(
     if check_readability:
         errors.extend(_validate_readability(html))
         errors.extend(_validate_exec_vocabulary(html))
+        # Normal generated reports require a TOC. Use the same signal to
+        # enforce the visual shell while preserving --no-require-toc as the
+        # lightweight escape hatch for deliberately minimal unit fixtures.
+        if require_toc:
+            errors.extend(_validate_visual_contract(html))
 
     for section_id, min_depth in MIN_CONTENT_DEPTH.items():
         section = _section_html(html, section_id)

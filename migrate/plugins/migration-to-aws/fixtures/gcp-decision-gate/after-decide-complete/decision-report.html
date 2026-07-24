@@ -4,7 +4,74 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GCP to AWS Migration Assessment — Decision Report</title>
-<style>body{font-family:system-ui,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem}.verdict-headline{font-size:2rem;font-weight:700}</style>
+<style>
+  :root {
+    --green: #1a7f37; --blue: #0969da; --amber: #bf8700; --red: #cf222e;
+    --purple: #8250df; --bg: #f6f8fa; --surface: #fff; --text: #1f2328;
+    --muted: #656d76; --border: #d0d7de; --aws: #232f3e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); line-height: 1.55;
+    font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .report { max-width: 1040px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  h1 { font-size: 1.85rem; margin-bottom: 0.25rem; border-bottom: 3px solid #ff9900; padding-bottom: 0.5rem; }
+  h2 { font-size: 1.3rem; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 0.45rem; }
+  h3 { font-size: 1.05rem; margin: 1.1rem 0 0.4rem; color: #424a53; }
+  p, ul, ol { margin-top: 0.45rem; margin-bottom: 0.8rem; }
+  section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 1.25rem 1.5rem; margin-bottom: 1rem; scroll-margin-top: 1rem;
+  }
+  .verdict-headline {
+    display: inline-block; margin: 0.35rem 0 0.1rem; padding-bottom: 0.15rem;
+    border-bottom: 3px solid #0d7377; font-size: 2rem; font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .verdict-meta { color: var(--muted); font-size: 0.92rem; margin: 0.2rem 0 0.6rem; }
+  .metrics {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem; margin: 0.85rem 0;
+  }
+  .metric {
+    background: #f8f9fa; border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.85rem 1rem;
+  }
+  .metric strong { display: block; font-size: 1.45rem; line-height: 1.2; }
+  .metric span { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  .metric small { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; background: #fff; font-size: 0.88rem; }
+  th, td { border: 1px solid var(--border); padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+  th { background: #f6f8fa; font-weight: 600; }
+  tbody tr:nth-child(even) td { background: #fafbfc; }
+  .toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem 1.5rem; margin-bottom: 1rem;
+  }
+  .toc a { display: inline-block; margin: 0.2rem 0.65rem 0.2rem 0; color: var(--blue); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  a:focus-visible, summary:focus-visible { outline: 3px solid #54aeff; outline-offset: 2px; border-radius: 2px; }
+  .callout { padding: 0.85rem 1rem; border-radius: 6px; margin: 0.85rem 0; font-size: 0.92rem; }
+  .callout-warning { background: #fff8c5; border: 1px solid #d4a72c; }
+  .callout-info { background: #ddf4ff; border: 1px solid #54aeff; }
+  .callout-ok { background: #dafbe1; border: 1px solid #4ac26b; }
+  .appendix-header { background: var(--aws); color: #fff; border-radius: 8px; padding: 1rem 1.5rem; margin: 2rem 0 1rem; }
+  footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  @media (max-width: 700px) {
+    .report { padding: 1rem 0.75rem 2rem; }
+    section { padding: 1rem; }
+    .metrics { grid-template-columns: 1fr; }
+    .toc a { display: block; }
+    table { display: block; overflow-x: auto; }
+  }
+  @media print {
+    body { background: #fff; }
+    .report { max-width: none; padding: 0; }
+    .metric, .callout, tr { break-inside: avoid; }
+    .appendix { break-before: page; }
+  }
+</style>
 </head>
 <body>
 <div class="report"><div class="executive-summary">
@@ -20,7 +87,12 @@
 <section id="decision-summary">
 <h2>Migration Decision Summary</h2>
 <p class="verdict-headline">Go, with conditions</p>
-<p>Execution shape: Phased migration · Complexity: Moderate</p>
+<p class="verdict-meta">Execution shape: Phased migration · Complexity: Moderate</p>
+<div class="metrics" aria-label="Decision highlights">
+  <div class="metric"><span>Balanced estimate</span><strong>Est. $155/mo</strong><small>Primary AWS comparison scenario</small></div>
+  <div class="metric"><span>Timeline if executed</span><strong>~6–12 weeks</strong><small>Medium-complexity planning band</small></div>
+  <div class="metric"><span>Decision status</span><strong>Conditional go</strong><small>Confirm availability before cutover</small></div>
+</div>
 <p>Confidence: Medium — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.</p>
 <p>Recommendation: Proceed with a phased migration on the Balanced cost scenario once the availability assumption is confirmed.</p>
 <h3>Migrate if</h3>
