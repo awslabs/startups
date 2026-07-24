@@ -52,6 +52,10 @@ Patching artifacts to satisfy a gate defeats fail-closed validation and produces
 
 ---
 
+## Decide-complete is terminal, not a failure
+
+`current_phase: "complete"` + `run_mode: "decide"` + `phases.generate: "pending"` is a **valid terminal state** (the user stopped at the decision — see `schema-phase-status.md`). It is Estimate's `HANDOFF_OK` outcome, not a `GATE_FAIL`, not an inconsistent ordering, and not an incomplete run to repair. Do not "fix" it by advancing to Generate; the only valid transition out is the decide-complete resume offer (SKILL.md state machine).
+
 ## Phase re-entry (idempotent runs)
 
 | Situation                                            | Rule                                                                                                                                                                  |
