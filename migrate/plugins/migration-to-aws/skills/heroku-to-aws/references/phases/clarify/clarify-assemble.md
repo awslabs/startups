@@ -33,7 +33,9 @@ Write `$MIGRATION_DIR/preferences.json`:
     "clarify_mode": "full|fast_path",
     "questions_asked": ["Q1", "Q2", ...],
     "questions_defaulted": ["Q7", "Q8", ...],
-    "questions_skipped_not_applicable": ["Q6", "Q8", ...]
+    "questions_skipped_extracted": ["Q6", "Q12b", ...],
+    "questions_skipped_not_applicable": ["Q6", "Q8", ...],
+    "inventory_clarifications": {}
   },
   "global": {
     "target_region": "<Q1 value>",
@@ -104,9 +106,9 @@ Do **not** write a `workshop` object from Clarify. The what-if workshop
 
 ### Schema Rules
 
-1. The `sources` object records how each question was answered: `"user"` (explicitly answered), `"default"` (system default applied, including skipped questions and "use defaults for the rest").
+1. The `sources` object records how each question was answered: `"user"` (explicitly answered, or corrected on the Assumption Sheet), `"extracted"` (resolved from the inventory — Detected sheet row), `"default"` (system default applied, including skipped questions, sheet-confirmed defaults, and "use defaults for the rest").
 2. `defaults_applied` is the array of question IDs that received default values.
-3. `metadata.questions_skipped_not_applicable` records questions skipped because their triggering condition was not met (e.g., Q6 skipped because no Postgres).
+3. `metadata.questions_skipped_not_applicable` records questions skipped because their triggering condition was not met (e.g., Q6 skipped because no Postgres). `metadata.questions_skipped_extracted` records questions resolved from the inventory (interview Step 2.5 Extraction Rules); the raw signal goes in `metadata.inventory_clarifications` (e.g. `{"database_ha": "plan:premium-0"}`).
 4. Only write keys with non-null values. Omit sections/keys that are entirely null.
 5. `global.fir_intent` is `null` when no Fir apps detected (Q11 not fired).
 6. `network.existing_vpc_id` and `network.subnet_ids` are `null`/empty when no Private Space peering exists.
@@ -165,4 +167,6 @@ private-space conditionals), then emit `GATE_FAIL` (STOP; do not patch artifacts
 
 Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.clarify` completed and advance per `_advances_to` — in the **same turn** as the output message below.
 
-Output to user: "Clarification complete. Proceeding to Phase 3: Design AWS Architecture."
+Output to user: "Phase 2 of 6 complete (Clarify). Remaining: Design → Estimate → Generate (+ optional Feedback). Next artifact: aws-design.json. Proceeding to Phase 3: Design AWS Architecture."
+
+_Emit this breadcrumb only after `HANDOFF_OK` — never on a failed gate._

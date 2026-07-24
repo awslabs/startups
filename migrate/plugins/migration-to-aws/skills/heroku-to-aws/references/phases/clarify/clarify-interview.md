@@ -130,7 +130,56 @@ Before generating questions, scan the inventory to determine which questions app
 | Q14 — Alerting preference            | Always                                                           | Never                                     |
 | Q15 — Cost optimization              | Always                                                           | Never                                     |
 
-### Batch Planning
+### Extraction Rules (answer from the inventory before asking)
+
+Before planning batches, resolve what `heroku-resource-inventory.json` already answers. Extracted questions are NOT asked — they appear as **Detected** rows on the Assumption Sheet (Step 2.5) and are recorded in `metadata.questions_skipped_extracted`, with the raw signal in `metadata.inventory_clarifications`.
+
+| Q                       | Extraction signal                                                                                                                                                                                                 | Resolves to                                                                                                                                    | When NOT to extract                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Q1 — Region             | Private Space `region` (e.g. `virginia` → `us-east-1`, `oregon` → `us-west-2`, `dublin` → `eu-west-1`, `frankfurt` → `eu-central-1`); Common Runtime apps: `us` → suggest `us-east-1`, `eu` → suggest `eu-west-1` | `global.target_region` — **Detected** for Private Spaces (explicit region); **Proposed default** for Common Runtime (a suggestion, not a fact) | Mixed regions across apps/spaces — ask Q1                                       |
+| Q6 — Database HA        | Heroku Postgres plan tier: `standard-*` → no HA follower (`database_ha: false` proposed); `premium-*` / `private-*` / `shield-*` → HA included (`database_ha: true` detected)                                     | `data.database_ha`                                                                                                                             | Multiple Postgres add-ons with mixed tiers — ask Q6 with a per-add-on breakdown |
+| Q7 — Redis HA           | Redis plan tier: `premium-*` and above → HA (`redis_ha: true` detected); `mini`/hobby tiers → no HA (proposed `false`)                                                                                            | `data.redis_ha`                                                                                                                                | Mixed tiers — ask Q7                                                            |
+| Q12b — Containerization | App stack field: `container` stack → `containerization_status: "dockerfile"` detected; buildpack stacks (`heroku-22`, `heroku-24`) → `buildpack_only` detected                                                    | `compute.containerization_status`                                                                                                              | Mixed stacks across apps — ask Q12b                                             |
+
+**Tier-derived HA is a strong signal, not a requirement statement:** the plan tier says what the customer HAS, not what they NEED. Present tier-derived rows on the sheet with the source shown ("your `standard-0` plan has no HA follower") so the user can correct if their target posture differs from their current one — this mirrors Q3 (availability posture), which is always asked and never extracted.
+
+### Step 2.5: Assumption Sheet (Mandatory Gate)
+
+**HARD GATE — do NOT ask any batch question until the user responds to this sheet.** Skip the sheet only when nothing was extracted AND no documented default applies (rare).
+
+Present detected values and to-be-assumed defaults as one confirm-or-edit sheet:
+
+```
+### Migration assumptions — confirm or correct
+
+**Detected from your Heroku inventory:**
+
+| Setting | Value | Source | What it decides |
+| ------- | ----- | ------ | --------------- |
+| Region | us-east-1 (Private Space: virginia) | space config | All AWS resources deploy here |
+| Database HA | Included (premium-0 plan) | Postgres plan tier | RDS Multi-AZ topology |
+| Containerization | Buildpacks only (heroku-24) | app stack | Fargate via buildpack-to-image path |
+
+**Assumed (documented defaults — correct anything that's wrong):**
+
+| Setting | Assumed value | Consequence if left as-is |
+| ------- | ------------- | ------------------------- |
+| Migration approach | Full cutover | Single cutover event; say "interim/data-first" for phased |
+| DB migration method | pg_dump/restore | Fine under ~100GB; larger needs replication tooling |
+| Cost optimization | Balanced | No aggressive Spot/reservation assumptions |
+
+Reply:
+1. **Confirm all** (or "looks good") — I'll ask only the [N] remaining questions.
+2. **Change a setting** — name it ("database ha: no") or describe it in plain words ("we can't take downtime") — I'll map it or ask the full question. Several fixes in one message is fine.
+3. **"ask me about [setting]"** — I'll ask the full question with all options.
+4. **"ask me everything"** — discard assumptions, run the full batch flow.
+```
+
+_Present these as selectable options via the structured question tool (e.g. AskUserQuestion) when the IDE provides one; otherwise the numbered list verbatim. Free-text corrections are always accepted — the menu never replaces them._
+
+Questions resolved on the sheet (confirmed or corrected) are excluded from the batches. User corrections move the question ID from `questions_skipped_extracted`/`questions_defaulted` to `questions_asked`.
+
+---
 
 After determining active questions, organize them into **three progressive batches**:
 
@@ -144,7 +193,7 @@ After determining active questions, organize them into **three progressive batch
 
 **Batch 3 is always active** (Q12–Q15 always fire; Q11 fires only if Fir detected).
 
-Record the ordered list of active batches and count questions per batch after filtering.
+Record the ordered list of active batches and count questions per batch after filtering. **Exclude questions resolved on the Assumption Sheet** (extracted, defaulted-and-confirmed, or corrected) — batches contain only the questions the user must actually answer.
 
 ---
 
@@ -156,7 +205,7 @@ For each active batch, execute steps 3a–3c:
 
 #### 3a. Present Batch
 
-Use a conversational tone with brief context explaining why each question matters. Number questions within each batch starting from 1.
+Use a conversational tone with brief context explaining why each question matters. Number questions within each batch starting from 1. **Cap each turn at 4 questions** — when a batch has more, split it and open each part with "Batch [i] of [k]". Open the first batch with: "That leaves [N] decisions only you can make — then we're ready to design." _Use the structured question tool (e.g. AskUserQuestion) when available, identical option text otherwise; shorthand answers ("1A 2C 3 skip") are accepted in either mode._
 
 **Batch 1 — Global / Strategic (always first):**
 

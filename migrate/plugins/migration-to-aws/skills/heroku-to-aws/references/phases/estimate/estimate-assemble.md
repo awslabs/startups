@@ -129,13 +129,18 @@ After outer-run `HANDOFF_OK`, the summary above, and the deferred phase-status
 update — offer:
 
 ```
-Estimate complete. Before Generate, you can run a what-if workshop:
-change region, HA, compute target, or CPU architecture (x86 vs Graviton)
-and compare priced scenarios without re-discovering inventory.
+Phase 4 of 6 complete (Estimate). Remaining: Generate (+ optional Feedback).
+Before Generate, want to see how the numbers move if you change something?
+I can reprice scenarios side by side in about a minute each, without
+re-running discovery — for example: a different AWS region, single-AZ
+database for staging, a different compute target, or ARM-based (Graviton)
+instances.
 
 [A] Enter what-if workshop
 [B] Proceed toward Generate
 ```
+
+**Data-justified scenario hint (add one line when applicable):** if a material assumption was defaulted or tier-derived rather than confirmed — most commonly `database_ha` — append: "Suggestion: we assumed [assumption]; comparing a [alternative] scenario would bound it before you commit." Suggest at most one.
 
 - **A** → Load `references/phases/workshop/workshop.md` (sidebar) and follow it
   (baseline capture if `scenarios/` missing, then the sheet). Keep
