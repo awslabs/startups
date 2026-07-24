@@ -192,8 +192,9 @@ commit." Suggest at most one.
      `$MIGRATION_DIR/decision-report.html` and `$MIGRATION_DIR/DECISION.md`
      per that file's decision-mode rules (no appendices, no Terraform, CTA
      footer). Validate with
-     `scripts/validate-migration-report.py decision-report.html --mode decision`
-     and fix failures before presenting.
+     `python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" "$MIGRATION_DIR/decision-report.html" --mode decision`
+     (absolute paths — cwd must not be load-bearing) and fix failures before
+     presenting.
   2. Set `run_mode: "decide"` and `current_phase: "complete"` in
      `.phase-status.json` (`phases.generate` **stays** `"pending"` — this
      combination means "decision complete, execution available on request";

@@ -16,7 +16,7 @@ output lives in the JSON artifacts.
 
 ## Decision-mode specifics
 
-- **Artifacts available:** discovery + `preferences.json` + `aws-design*.json` + `estimation-*.json` (+ `migration-preview.json`, `scenarios/` when present). `generation-*.json` and `terraform/` do NOT exist — use each section's documented pre-Generate fallback (e.g., Timeline uses `migration-preview.json` → `timeline_hint` or the `shared/migration-complexity.md` band; omit cluster order in the architecture diagram).
+- **Artifacts available:** discovery + `preferences.json` + `aws-design*.json` + `estimation-*.json` (+ `migration-preview.json`, `scenarios/` when present). `generation-*.json` and `terraform/` do NOT exist. Sections that prefer Generate artifacts carry an inline **_Decision mode:_** override next to the full-mode rule (decision-summary item 4, Sections 2b, 3 footnote, 4, 6, 7) — **those inline overrides are the authoritative decision-mode law**; when a section has no override, its rule applies unchanged in both modes.
 - **HTML shell:** same `<head>` (charset, viewport, inline CSS) and CSS specification as the full report (see `generate-artifacts-report.md` Step 3), title "GCP to AWS Migration Assessment — Decision Report". Body contains ONLY the `executive-summary` div with the exec sections and TOC (TOC links only to sections present). Required section IDs in decision mode: `decision-summary`, `exec-assumptions`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks` (+ conditional `exec-tco`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios` per their triggers).
 - **CTA footer (required, after the last section):** `<section id="decision-cta">` — "**Ready to execute?** Say \"generate the Terraform and migration scripts\" and I'll produce the full execution pack (Terraform, migration scripts, rollback runbook, fill-in checklist) from this same analysis." Plus one line: "This decision report was generated without execution artifacts; the full migration report replaces it if you proceed."
 - **`DECISION.md` (required twin):** same content as the HTML, as plain Markdown (Slack/GitHub-friendly): verdict headline, cost table, migrate-if/stay-if lists, timeline band, top risks, assumptions, CTA line. No HTML tags.
@@ -33,9 +33,9 @@ The executive summary is the first thing visible when opening the report. Design
 
 **Table of contents (required):** Linked `<nav class="toc">` listing all executive sections and appendix sections present in this report. **Every `href="#section-id"` MUST match a `<section id="section-id">` on the page exactly** (same string, including hyphens). Omit TOC links only for sections not rendered.
 
-**Target length:** approximately 2–4 printed pages for executive summary. **Do NOT truncate appendices** to fit page count — appendices may be long.
+**Target length:** approximately 2–4 printed pages for executive summary. _Full mode only:_ **Do NOT truncate appendices** to fit page count — appendices may be long.
 
-**Anti-stub rule (mandatory):** The appendix MUST render artifact data as HTML tables and prose. **Forbidden:** appendix sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html`.
+**Anti-stub rule (mandatory; the appendix clauses apply in full mode only):** every rendered section MUST carry real artifact data as HTML tables and prose. **Forbidden:** sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html`.
 
 **Section 0 — Migration Decision Summary (REQUIRED):**
 
@@ -50,7 +50,7 @@ Content when `recommendation` block exists:
    1b. **Confidence pointer:** one line under the verdict block — `Confidence: [confidence] — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.` The full assumptions panel lives at the **end** of the executive summary (see Section 8 below), not here.
 2. **Complexity:** from `migration-preview.json` → `complexity_signal` ("Simple", "Moderate", "Complex") — colored badge
 3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
-4. **Timeline:** from `generation-infra.json` → `migration_plan.total_weeks` (preferred), OR `migration-preview.json` → `timeline_hint`. Do NOT use `recommendation.next_steps` as timeline — those are action items, not duration.
+4. **Timeline:** _Full mode:_ from `generation-infra.json` → `migration_plan.total_weeks` (preferred), OR `migration-preview.json` → `timeline_hint`. _Decision mode:_ do **not** invent a week count — use, in order: (1) `migration-preview.json` → `timeline_hint` when present; else (2) the complexity-tier band from `shared/migration-complexity.md` (e.g. "~6–12 weeks"); else omit the line. Always label it "**if you execute**" so it reads as a band, not a committed schedule. In neither mode use `recommendation.next_steps` as timeline — those are action items, not duration.
 5. **Migrate if / Stay if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists. For BigQuery/deferred analytics: **do not** frame specialist engagement as a reason to stay on GCP unless the user must cut over analytics in the **same window** as app infra. Prefer migrate-if bullets that mention parallel specialist planning.
 6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — **ordered list** (`<ol class="compact">`), not bullets. Each item is one concrete decision the reader must make next.
    6b. **What would flip this (v2 artifacts):** from `recommendation.would_flip_if[]` when present — short unordered list immediately after Migrate if / Stay if. Skip silently when absent.
@@ -75,7 +75,7 @@ Do **not** infer Activate tier from `gcp_monthly_spend` or `ai_monthly_spend` in
 
 **Apply link (required):** Whenever the report or `STARTUP_PROGRAMS.md` mentions AWS Activate credits, include at least one clickable link to the official apply page: `<a href="https://aws.amazon.com/startups/credits/">AWS Activate credits</a>` (HTML report) or `[AWS Activate credits](https://aws.amazon.com/startups/credits/)` (Markdown). Place it in the decision-summary verdict, a callout, and/or the Next steps ordered list — not only in the appendix artifact catalog.
 
-After Generate, run `scripts/validate-startup-program-artifacts.py --migration-dir $MIGRATION_DIR`.
+_Full mode only:_ after Generate, run `scripts/validate-startup-program-artifacts.py --migration-dir $MIGRATION_DIR`. (Decision mode: the Activate wording rules above still apply to the rendered content; the script runs when the Generate artifacts it checks exist.)
 
 Source: estimation artifact `recommendation`, `migration-preview.json`, design artifact
 
@@ -113,9 +113,9 @@ Source: `estimation-infra.json`, `estimation-ai.json`
 
 ASCII or structured diagram showing: users → ALB → compute → database/storage/AI; security baseline box; deferred services called out.
 
-Include **migration cluster order** from `generation-infra.json` → `migration_plan.cluster_order`.
+_Full mode:_ include **migration cluster order** from `generation-infra.json` → `migration_plan.cluster_order`. Source: `aws-design.json`, `generation-infra.json`.
 
-Source: `aws-design.json`, `generation-infra.json`
+_Decision mode:_ render the diagram from `aws-design.json` clusters only — **omit cluster order** (`generation-infra.json` does not exist yet). Source: `aws-design.json`.
 
 **Section 3 — Cost Comparison:**
 
@@ -128,7 +128,7 @@ Source: `aws-design.json`, `generation-infra.json`
   - **Premium** — _Highest resilience / highest monthly estimate in this model_
   - **Balanced** — _Default scenario; compare GCP to this row first_
   - **Optimized** — _Lower monthly estimate; reservations, Spot, or storage trade-offs assumed_
-- **Footnote (required):** _All figures are estimated monthly costs based on AWS pricing data at time of analysis. Only one Terraform configuration is generated (Balanced-aligned baseline). Premium and Optimized are what-if cost models in `estimation-infra.json` — adjust IaC yourself if you want those postures in production._
+- **Footnote (required):** _All figures are estimated monthly costs based on AWS pricing data at time of analysis._ Then, _full mode:_ _Only one Terraform configuration is generated (Balanced-aligned baseline). Premium and Optimized are what-if cost models in `estimation-infra.json` — adjust IaC yourself if you want those postures in production._ _Decision mode:_ _If you generate the execution pack, its Terraform will align with the Balanced scenario; Premium and Optimized are what-if cost models._
 - **Only include "GCP data transfer egress (est.)" when the infra estimation artifact has `migration_cost_considerations.billing_data_available === true`.** Never present human one-time migration costs. If `false` or only non-infra estimates exist, footnote: "GCP data transfer egress estimates require billing data and the infra estimate path."
 - If observability entry exists in `projected_costs.breakdown` (tolerant lookup: array where `service` contains "Observability" OR object where key contains `observability` or `cloudwatch`) AND the entry's `note` field mentions GCP free tiers:
 
@@ -181,11 +181,13 @@ Show top controls as a compact teaser:
 
 The fourth row is **conditional** — only render when `$MIGRATION_DIR/ai-migration/bedrock_monitoring.tf` exists on disk. Do NOT render based on `generation-ai.json` alone.
 
-> See Appendix G for full security and cost guardrails table with GCP equivalents.
+_Full mode:_ > See Appendix G for full security and cost guardrails table with GCP equivalents.
+
+_Decision mode:_ > The full control-by-control table is included if you generate the execution pack.
 
 If `preferences.json` contains compliance values (`soc2`, `pci`, `hipaa`, `fedramp`):
 
-> **Compliance note:** Your declared compliance requirement ([standard]) triggers additional controls (AWS Config + Security Hub) at ~$3–25/mo. See Appendix G.
+> **Compliance note:** Your declared compliance requirement ([standard]) triggers additional controls (AWS Config + Security Hub) at ~$3–25/mo. _(Full mode: append "See Appendix G.")_
 
 **Do NOT include step-by-step enablement** — that belongs in `terraform/README.md` and `MIGRATION_GUIDE.md`.
 
@@ -208,16 +210,15 @@ Source: static template filtered by design artifact service types
 
 **Section 6 — Timeline:**
 
-- Total migration weeks (infra + note parallel AI weeks if applicable)
-- Migration approach (phased/fast-track/conservative)
-- **Engineering effort:** sum `generation-infra.json` and `generation-ai.json` → `recommendation.estimated_total_effort_hours` when both exist
-- Source: generation plan
+- _Full mode:_ total migration weeks (infra + note parallel AI weeks if applicable); migration approach (phased/fast-track/conservative); **engineering effort:** sum `generation-infra.json` and `generation-ai.json` → `recommendation.estimated_total_effort_hours` when both exist. Source: generation plan.
+- _Decision mode:_ the same fallback chain as decision-summary item 4 (`timeline_hint`, else the `shared/migration-complexity.md` tier band, labeled "if you execute"), plus the migration approach from `recommendation.path_label`. **Omit engineering effort hours** — they don't exist before Generate; do not estimate them. Source: `migration-preview.json` / complexity tier / estimation artifact.
 
 **Section 7 — Top Risks:**
 
 - Up to 3 highest-severity risks
 - Each with: risk name, severity, one-line mitigation
-- Source: generation plan risk_assessment
+- _Full mode source:_ generation plan `risk_assessment` (preferred).
+- _Decision mode source_ (in order; **never leave `exec-risks` empty** when any of these exist): (1) risk/condition items in `estimation-infra.json` → `recommendation` (`conditions[]`, `would_flip_if[]`); (2) deferred-specialist rows from the design artifact (e.g. BigQuery excluded from totals); (3) material `chosen_by: "default"` assumptions with cost or HA impact from `preferences.json` (e.g. availability defaulted — "~2x database cost swing; confirm before cutover sizing"). Invent nothing beyond these artifacts.
 
 **Section 8 — What this assessment rests on (`exec-assumptions`, REQUIRED):**
 

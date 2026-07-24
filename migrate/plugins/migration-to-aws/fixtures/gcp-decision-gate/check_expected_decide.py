@@ -67,6 +67,13 @@ def main() -> int:
             result.returncode == 0,
             f"decision-report.html fails --mode decision:\n{result.stdout}{result.stderr}",
         )
+        # Content locks (beyond structure): verdict typography (#173) and the
+        # not-comparable baseline rule (#175) must survive refactors, and the
+        # timeline must read as a band, not a committed schedule.
+        html = report.read_text()
+        check('class="verdict-headline"' in html, "missing verdict-headline element (#173 typography)")
+        check("not directly comparable" in html, "missing not-comparable baseline sentence (#175)")
+        check("if you execute" in html, 'timeline must be labeled "if you execute" (band, not schedule)')
 
     if FAILS:
         print("FAIL")
