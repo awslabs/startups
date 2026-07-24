@@ -41,6 +41,19 @@ REQUIRED_SECTION_IDS = [
     "appendix-artifacts",
 ]
 
+# Decision mode (decision-report.html rendered at the post-Estimate Decision
+# gate, choice A): executive sections + CTA only — appendices are forbidden
+# because no Generate artifacts exist yet.
+DECISION_REQUIRED_SECTION_IDS = [
+    "decision-summary",
+    "exec-assumptions",
+    "exec-services",
+    "exec-costs",
+    "exec-timeline",
+    "exec-risks",
+    "decision-cta",
+]
+
 OPTIONAL_SECTION_IDS = [
     "exec-tco",
     "exec-architecture",
@@ -152,10 +165,12 @@ def _section_id_counts(html: str) -> dict[str, int]:
     return counts
 
 
-def _validate_required_sections(html: str) -> list[str]:
+def _validate_required_sections(
+    html: str, required_ids: list[str] | None = None
+) -> list[str]:
     errors: list[str] = []
     counts = _section_id_counts(html)
-    for section_id in REQUIRED_SECTION_IDS:
+    for section_id in required_ids if required_ids is not None else REQUIRED_SECTION_IDS:
         n = counts.get(section_id, 0)
         if n == 0:
             errors.append(f'missing required <section id="{section_id}">')
@@ -175,7 +190,9 @@ def _toc_hrefs(html: str) -> list[str]:
     return re.findall(r'href="#([^"]+)"', nav_match.group(1), re.IGNORECASE)
 
 
-def _validate_toc(html: str) -> list[str]:
+def _validate_toc(html: str, required_ids: list[str] | None = None) -> list[str]:
+    if required_ids is None:
+        required_ids = REQUIRED_SECTION_IDS
     errors: list[str] = []
     hrefs = _toc_hrefs(html)
     if not hrefs:
@@ -187,7 +204,7 @@ def _validate_toc(html: str) -> list[str]:
             errors.append(f'TOC broken link href="#{href}" — no matching <section id="{href}">')
 
     # Every required section must be linked from the TOC.
-    for section_id in REQUIRED_SECTION_IDS:
+    for section_id in required_ids:
         if section_id in section_ids and section_id not in hrefs and hrefs:
             errors.append(
                 f'TOC missing link to required section id="{section_id}" '
@@ -427,15 +444,27 @@ def validate_report(
     require_toc: bool = True,
     check_readability: bool = True,
     migration_dir: Path | None = None,
+    mode: str = "full",
 ) -> list[str]:
     errors: list[str] = []
 
-    errors.extend(_validate_required_sections(html))
+    required_ids = DECISION_REQUIRED_SECTION_IDS if mode == "decision" else REQUIRED_SECTION_IDS
+    errors.extend(_validate_required_sections(html, required_ids))
+
+    if mode == "decision":
+        # No Generate artifacts exist at decision time: appendices are forbidden.
+        counts = _section_id_counts(html)
+        for sid in counts:
+            if sid.startswith("appendix-"):
+                errors.append(
+                    f'decision mode forbids <section id="{sid}"> — the decision report '
+                    "has no appendices; the full migration report (Generate) carries them"
+                )
 
     if require_toc:
         if not _toc_hrefs(html):
             errors.append('missing <nav class="toc"> with href="#section-id" links')
-        errors.extend(_validate_toc(html))
+        errors.extend(_validate_toc(html, required_ids))
 
     for pattern, label in FORBIDDEN_PATTERNS:
         if re.search(pattern, html, re.IGNORECASE):
@@ -538,6 +567,13 @@ def main() -> int:
         action="store_true",
         help="Skip customer-facing readability checks (Rubric:/Section N)",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["full", "decision"],
+        default="full",
+        help="full = migration-report.html (default); decision = decision-report.html "
+        "written at the post-Estimate Decision gate (exec sections + CTA, no appendices)",
+    )
     args = parser.parse_args()
 
     if not args.report_path.is_file():
@@ -561,6 +597,7 @@ def main() -> int:
         require_toc=not args.no_require_toc,
         check_readability=not args.no_readability,
         migration_dir=args.migration_dir,
+        mode=args.mode,
     )
     if errors:
         print("REPORT_FAIL | migration-report.html", file=sys.stderr)
@@ -570,10 +607,14 @@ def main() -> int:
 
     counts = _section_id_counts(html)
     optional_present = [sid for sid in OPTIONAL_SECTION_IDS if counts.get(sid, 0) >= 1]
+    required_count = len(
+        DECISION_REQUIRED_SECTION_IDS if args.mode == "decision" else REQUIRED_SECTION_IDS
+    )
+    mode_tag = "" if args.mode == "full" else f"mode={args.mode} | "
     print(
-        "REPORT_OK | structure=complete | sections="
-        + str(len(REQUIRED_SECTION_IDS))
-        + f"/{len(REQUIRED_SECTION_IDS)}"
+        f"REPORT_OK | {mode_tag}structure=complete | sections="
+        + str(required_count)
+        + f"/{required_count}"
         + (f" | optional={','.join(optional_present)}" if optional_present else "")
         + " | note=verify dollar figures against estimation JSON before sign-off"
     )

@@ -186,14 +186,23 @@ commit." Suggest at most one.
 
 **Choice handling:**
 
-- **A** → Mark `phases.workshop` → `"completed"` (declined). Set
-  `run_mode: "decide"` and `current_phase: "complete"` in `.phase-status.json`
-  (`phases.generate` **stays** `"pending"` — this combination means "decision
-  complete, execution available on request"; see `schema-phase-status.md`).
-  Then run the post-gate feedback checkpoint per `SKILL.md`. Close with:
-  "Your decision pack is complete. If you decide to migrate, say 'generate the
-  Terraform and migration scripts' — everything is saved and I'll pick up from
-  here."
+- **A** → Mark `phases.workshop` → `"completed"` (declined). Then:
+  1. **Render the decision pack:** load `references/shared/report-decision-core.md`
+     and render it in **decision** mode — write
+     `$MIGRATION_DIR/decision-report.html` and `$MIGRATION_DIR/DECISION.md`
+     per that file's decision-mode rules (no appendices, no Terraform, CTA
+     footer). Validate with
+     `scripts/validate-migration-report.py decision-report.html --mode decision`
+     and fix failures before presenting.
+  2. Set `run_mode: "decide"` and `current_phase: "complete"` in
+     `.phase-status.json` (`phases.generate` **stays** `"pending"` — this
+     combination means "decision complete, execution available on request";
+     see `schema-phase-status.md`).
+  3. Run the post-gate feedback checkpoint per `SKILL.md`. Close with:
+     "Your decision report is saved at `decision-report.html` (plus a
+     Slack-friendly `DECISION.md`). If you decide to migrate, say 'generate
+     the Terraform and migration scripts' — everything is saved and I'll pick
+     up from here."
 - **B** → Load `references/phases/workshop/workshop.md`. Keep
   `current_phase: estimate`; set `phases.workshop` → `"in_progress"`. On
   workshop exit, **return to this gate** (options A and C; the workshop's

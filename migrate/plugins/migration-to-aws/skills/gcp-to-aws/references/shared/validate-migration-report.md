@@ -2,6 +2,8 @@
 
 > **Read-only validation.** Run immediately after writing `migration-report.html` in `generate-artifacts-report.md` Step 4. Do NOT modify JSON artifacts.
 
+**Decision mode:** the same script validates `decision-report.html` (written at the post-Estimate Decision gate, choice A — see `report-decision-core.md`) with `--mode decision`: required sections become the exec set + `decision-cta`, and any `appendix-*` section fails (no Generate artifacts exist at decision time). All other checks (TOC integrity, readability, verdict, baseline rules) apply unchanged. Full mode's contract and `REPORT_OK` output format are unaffected.
+
 If validation fails: **rename** the incomplete HTML to `migration-report.incomplete.html` (default — preserves output for inspection), emit failures to the user, and retry report generation. Do **not** delete unless the user asks. The Generate phase still completes (report is optional), but the user MUST see `REPORT_FAIL` — never silently accept a stub report.
 
 ---
