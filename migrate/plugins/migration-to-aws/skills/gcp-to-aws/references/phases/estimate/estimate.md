@@ -219,7 +219,7 @@ option B and set `phases.workshop` → `"completed"`.
 FORBIDDEN — Do NOT include ANY of:
 
 - Changes to architecture mappings from the Design phase
-- Execution timelines or migration schedules
+- Execution timelines or migration schedules — **exception:** the Decision gate's one-line timeline band (`~N–M weeks`, tier from `shared/migration-complexity.md`) is allowed; full schedules, week-by-week plans, and runbooks remain Generate-only
 - Terraform or IaC code generation
 - Detailed migration procedures or runbooks
 - Team staffing or resource allocation
