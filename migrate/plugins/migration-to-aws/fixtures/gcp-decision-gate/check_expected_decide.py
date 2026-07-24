@@ -10,7 +10,7 @@ Usage: check_expected_decide.py <run_dir>
 from __future__ import annotations
 
 import json
-import subprocess
+import subprocess  # nosec B404 — fixture asserter; runs only the committed validator via sys.executable
 import sys
 from pathlib import Path
 
@@ -57,7 +57,7 @@ def main() -> int:
 
     # The decision report passes the validator in decision mode.
     if report.exists():
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 — list args, no shell, committed script path only
             [sys.executable, str(VALIDATOR), str(report), "--mode", "decision",
              "--no-require-toc"],
             capture_output=True,
