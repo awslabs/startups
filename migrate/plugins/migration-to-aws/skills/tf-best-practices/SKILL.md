@@ -153,12 +153,13 @@ for the caller, so a false positive would block a real migration).
 **Security group ingress:**
 
 - **`db_sg_no_public_ingress`** — an inline `aws_security_group` ingress covering `5432`/`3306`
-  must not allow `0.0.0.0/0`.
+  must not allow `0.0.0.0/0` or `::/0`.
 - **`sg_no_public_admin_ingress`** — an inline ingress must not open a curated never-public
   admin/datastore port (`22`, `3389`, `6379`, `11211`, `27017`, `9200`/`9300`, `5601`) to
-  `0.0.0.0/0`. Web (`80`/`443`) and app/game ports are not flagged; DB ports are handled by the
-  rule above. Both: separate `aws_security_group_rule` / `aws_vpc_security_group_ingress_rule`
-  resources fail open (not correlated).
+  `0.0.0.0/0` or `::/0`. Web (`80`/`443`) and app/game ports are not flagged; DB ports are
+  handled by the rule above. Both check `cidr_blocks` and `ipv6_cidr_blocks` independently, so a
+  benign IPv4 list does not mask an open IPv6 one. Both: separate `aws_security_group_rule` /
+  `aws_vpc_security_group_ingress_rule` resources fail open (not correlated).
 
 **IAM least-privilege** (`aws_iam_policy`, `aws_iam_role_policy`, `aws_iam_group_policy`,
 `aws_iam_user_policy`):

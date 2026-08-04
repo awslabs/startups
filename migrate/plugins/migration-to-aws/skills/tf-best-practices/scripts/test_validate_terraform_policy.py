@@ -25,6 +25,8 @@ GOOD_IAM_SCOPED_LIST = FIXTURES / "good-iam-scoped-list"
 GOOD_INTERNET_NLB = FIXTURES / "good-internet-nlb"
 BAD_SG_PUBLIC_SSH = FIXTURES / "bad-sg-public-ssh"
 GOOD_SG_PUBLIC_WEBAPP = FIXTURES / "good-sg-public-webapp"
+BAD_SG_PUBLIC_IPV6 = FIXTURES / "bad-sg-public-ipv6"
+GOOD_SG_IPV6_SCOPED = FIXTURES / "good-sg-ipv6-scoped"
 BAD_ELASTICACHE_UNENCRYPTED = FIXTURES / "bad-elasticache-unencrypted"
 GOOD_ELASTICACHE_ENCRYPTED = FIXTURES / "good-elasticache-encrypted"
 
@@ -182,6 +184,73 @@ def test_sg_public_webapp_passes() -> None:
     # Public web ports (80/443), a high game-port range, and a privately-scoped
     # SSH rule must all pass — no false positive from the sensitive-port rule.
     code, out = run_policy_validator(GOOD_SG_PUBLIC_WEBAPP)
+    assert code == 0, out
+    assert "POLICY_OK" in out
+
+
+def test_sg_public_ipv6_ingress_fails() -> None:
+    """Regression: ipv6_cidr_blocks = ["::/0"] is public exposure and must fail.
+
+    The old checker searched r'cidr_blocks\\s*=\\s*\\[' which also matches the tail
+    of `ipv6_cidr_blocks`, and never looked for ::/0 at all — so an SG opening
+    SSH/Postgres to the entire IPv6 internet was reported POLICY_OK.
+    """
+    code, out = run_policy_validator(BAD_SG_PUBLIC_IPV6)
+    assert code == 1, out
+    assert "sg_no_public_admin_ingress" in out
+    assert "db_sg_no_public_ingress" in out
+
+
+def test_sg_public_ipv6_ingress_names_the_ipv6_cidr() -> None:
+    # The report must say ::/0, not 0.0.0.0/0 — the IPv4 list here is benign.
+    with tempfile.TemporaryDirectory() as tmp:
+        out_path = Path(tmp) / "verdict.json"
+        run_policy_validator(BAD_SG_PUBLIC_IPV6, json_out=out_path)
+        summaries = " ".join(
+            v["summary"] for v in json.loads(out_path.read_text())["violations"]
+        )
+        assert "::/0" in summaries
+        assert "22 (SSH)" in summaries
+        assert "0.0.0.0/0" not in summaries
+
+
+def test_ipv4_public_ingress_caught_when_ipv6_list_declared_first() -> None:
+    """Regression: the pre-fix regex made the IPv4 check ORDER-DEPENDENT.
+
+    r'cidr_blocks\\s*=\\s*\\[' matched the tail of `ipv6_cidr_blocks`, so when the
+    IPv6 attribute came first the checker read the IPv6 list and never looked at
+    cidr_blocks at all. A plain `0.0.0.0/0` on port 22 — the exact case this rule
+    exists to catch, with no IPv6 exposure involved — silently returned
+    POLICY_OK. Flipping the two lines was enough to make it fail correctly.
+    """
+    sg = """
+resource "aws_security_group" "ipv4_ssh_open" {
+  name   = "test-sg"
+  vpc_id = "vpc-123"
+
+  ingress {
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    %s
+  }
+}
+"""
+    ipv6_first = 'ipv6_cidr_blocks = ["2001:db8:1234::/48"]\n    cidr_blocks      = ["0.0.0.0/0"]'
+    ipv4_first = 'cidr_blocks      = ["0.0.0.0/0"]\n    ipv6_cidr_blocks = ["2001:db8:1234::/48"]'
+    for label, attrs in (("ipv6-first", ipv6_first), ("ipv4-first", ipv4_first)):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "vpc.tf").write_text(sg % attrs, encoding="utf-8")
+            code, out = run_policy_validator(Path(tmp))
+            assert code == 1, f"{label}: 0.0.0.0/0 on SSH must fail, got: {out}"
+            assert "22 (SSH)" in out, f"{label}: {out}"
+            assert "0.0.0.0/0" in out, f"{label}: must name the IPv4 range, got: {out}"
+
+
+def test_sg_ipv6_scoped_passes() -> None:
+    # Public web over ::/0 is fine; SSH/Postgres over a scoped IPv6 prefix must
+    # not fire. Guards against over-matching any ipv6_cidr_blocks value.
+    code, out = run_policy_validator(GOOD_SG_IPV6_SCOPED)
     assert code == 0, out
     assert "POLICY_OK" in out
 
