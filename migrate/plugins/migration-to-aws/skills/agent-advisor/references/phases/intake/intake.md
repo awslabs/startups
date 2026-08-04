@@ -99,5 +99,5 @@ if a path is given; if the user declines a path, note it and set `discover = ski
 
 Write `$RUN_DIR/.phase-status.json` with `entry_point`, `audience` (from Q2), `intake` =
 completed. Set `discover` = pending if entry point is build_deploy/migrate AND the user
-offered a code path, else `skipped`. Set all later phases (`clarify`, `confirm`, `design`,
-`estimate`, `generate`) to pending.
+offered a code path, else `skipped`. Set all later phases (`clarify`, `model-recommend`,
+`confirm`, `design`, `estimate`, `generate`) to pending.

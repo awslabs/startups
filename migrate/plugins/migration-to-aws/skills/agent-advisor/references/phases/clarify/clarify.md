@@ -15,7 +15,7 @@ _assemble:
 _produces:
   - answers.json
   - scoring-result.json
-_advances_to: confirm
+_advances_to: model-recommend
 _preconditions:
   - _check_phase_completed: discover
     _on_failure: _halt_and_inform
@@ -29,6 +29,8 @@ _postconditions:
   - _validate_json: scoring-result.json
     _on_failure: _halt_and_inform
   - _assert: "answers.json has the nested shape {entry_point, answers:{...}} carrying the legacy mirror (top-level entry_point and answers = primary unit's fully-merged dims), AND system/primary_unit/units with every unit's dimensions fully resolved (inheritance applied) and every unit carrying its workload_class; the scope gate passed — at least one agent_session unit exists (a purely non-agent system halted with _halt_and_inform BEFORE primary selection); primary_unit is an agent_session unit; every collected key uses a legal value from clarify.md Step 3; scoring-result.json was written by scoring.py (not hand-scored) with one result per agent_session unit under units{} AND a top-level verdict mirrored from the primary; every unit carries a provenance map naming each dimension's source"
+    _on_failure: _halt_and_inform
+  - _assert: "provenance is honest and reproducible: every value is one of seed|detected|asked|inherited|adapter|interview|assumed; when a seed was found at either lookup location (Step 2.5: $RUN_DIR/seed.json, else .agent-advisor/seed.json), every dimension it supplies is marked `seed` and carries the seed's value verbatim — byte-equal JSON, same shape, so an object-valued dimension such as `region` stays the same object and is never flattened, renamed, or split into sibling keys (a seeded dimension re-derived from prose or code, or rewritten into another shape, is a failure); no dimension is marked `asked` unless a human answered it in this session or run prose answered it; every `assumed` dimension has a matching entry in $RUN_DIR/UNANSWERED.md naming the question, the assumed value, and the reason"
     _on_failure: _halt_and_inform
 ---
 
@@ -155,6 +157,54 @@ single workload), treat it as `agent_session` and proceed.
     (Activities that classify as `agent_session`) is never falsely halted for having only a
     `temporal_worker_poll` seed.**
 
+## Step 2.5 — Load the run seed, then resolve every dimension by precedence
+
+**Find the seed, in this order:** `$RUN_DIR/seed.json` (staged for this specific run), then
+`.agent-advisor/seed.json` at the run root (the usual case — a repository that ships a seed cannot
+know the run id in advance). The first one found wins; ignore the other. Schema:
+`scripts/schemas/seed.json`. A seed supplies
+machine-readable answers for the dimensions Step 3 would otherwise ask a human for. It exists so a
+non-interactive run — a benchmark seed, a CI regression, an ATX transformation — feeds the
+deterministic engine byte-identical input every time. Prose describes context; the seed supplies
+enum values.
+
+**Validate it before trusting it.** An illegal enum value or unknown key is a hard error: say which
+key is wrong and halt (`_halt_and_inform`). Never silently drop a malformed seed and fall through —
+that would make a run look reproducible while quietly re-deriving values.
+
+**Resolve every dimension in Step 3's list by this precedence, highest first:**
+
+| Source                                           | `provenance` value | When                                                         |
+| ------------------------------------------------ | ------------------ | ------------------------------------------------------------ |
+| `seed.json`                                      | `seed`             | the key is present in the seed                               |
+| Discover / `context-signals.json`                | `detected`         | code evidence pins the value                                 |
+| `CLAUDE.md` / `AGENTS.md` prose at the repo root | `asked`            | the prose answers it unambiguously and no human is available |
+| The user, via AskUserQuestion (Step 3)           | `asked`            | a human is available                                         |
+| Temporal Tier-2 adapter table                    | `adapter`          | the unit came from the adapter                               |
+| Primary unit (delta questions)                   | `inherited`        | the unit did not mention the dimension                       |
+| No source at all                                 | `assumed`          | see below                                                    |
+
+**Copy a seeded value, do not re-express it.** A `seed` dimension is written into `answers.json`
+byte-equal to the seed, keeping the seed's JSON shape. `region` is the one that invites rewriting:
+the seed carries `"region": {"scope": ..., "regions": [...]}` and that whole object is what lands in
+`system` and in each unit — never flattened to `"region": "single"` plus a sibling `"regions"`, and
+never renamed. Reshaping a seeded value defeats the point of the seed: two runs then disagree on the
+input even though both "used the seed".
+
+**`assumed` carries an obligation.** When a dimension has no source, you may pick the value a
+careful reader of the repository would pick — but you MUST append the question, the value you
+assumed, and the reason to `$RUN_DIR/UNANSWERED.md`, and mark that dimension `assumed` in
+provenance. An `assumed` dimension with no `UNANSWERED.md` entry is a phase failure. Never invent a
+value that contradicts the seed or the prose, and prefer the explicit `unknown` enum over a guess
+when the dimension has one and the evidence is genuinely absent.
+
+**`asked` means a question was actually answered** — by a human in chat, or by prose written for
+this run. It is never correct to mark a dimension `asked` in a run where nothing was asked and no
+prose covered it; that is what `assumed` is for.
+
+Dimensions resolved here are settled: Step 3 asks ONLY about what is still missing, and skips
+entirely when the seed (plus detection and prose) covers everything.
+
 ## Step 3 — Ask the core questions (AskUserQuestion, batched)
 
 **First batch (ask these up front — they set the tone for the whole recommendation):**
@@ -214,9 +264,9 @@ Write `$RUN_DIR/answers.json` as:
 {
   "entry_point": "<from .phase-status.json (Intake wrote it there); passthrough unchanged>",
   "answers": {<primary unit's fully-merged dims (system + unit)>},
-  "system": {<system dims>, "provenance": {"<dim>": "detected|asked|inherited|adapter|interview"}},
+  "system": {<system dims>, "provenance": {"<dim>": "seed|detected|asked|inherited|adapter|interview|assumed"}},
   "primary_unit": "<id>",
-  "units": { "<id>": {"workload_class": "<class>", <per-unit dims>, "provenance": {"<dim>": "detected|asked|inherited|adapter|interview"}} }
+  "units": { "<id>": {"workload_class": "<class>", <per-unit dims>, "provenance": {"<dim>": "seed|detected|asked|inherited|adapter|interview|assumed"}} }
 }
 ```
 
@@ -239,11 +289,21 @@ COMPLETE (inheritance already applied — a reader never chases the primary to r
 
 **Provenance (additive):** dimension values stay flat; each unit's entry AND the `system`
 block carry a sibling `provenance` map naming where each dimension's value came from —
-`detected` (Discover/context-signals), `asked` (user answered in chat), `inherited`
-(unmentioned in a delta question, inherited from the primary unit), `adapter` (seeded from
-the Temporal Tier-2 adapter table), `interview` (no-code interview answer). Consumers that
-ignore `provenance` keep working unchanged. Single-unit collapse: provenance is all
-`detected`/`asked` — a harmless additive key.
+`seed` (from `seed.json`, per Step 2.5), `detected` (Discover/context-signals), `asked` (a
+human answered in chat, or run prose answered it), `inherited` (unmentioned in a delta
+question, inherited from the primary unit), `adapter` (seeded from the Temporal Tier-2 adapter
+table), `interview` (no-code interview answer), `assumed` (no source — REQUIRES a matching
+entry in `$RUN_DIR/UNANSWERED.md`). Consumers that ignore `provenance` keep working unchanged.
+
+Provenance is the run's honesty record, not decoration: a `seed` value is reproducible, an
+`assumed` value is not, and the difference is what makes a repeated run's score comparable.
+
+A system-level dimension mirrored down into a unit (the "inheritance already applied" rule above)
+keeps the provenance it had in `system`: a `region` the seed supplied under `system` reads `seed` in
+the unit too, because the seed is still where the value came from. `inherited` means something
+narrower — the value came from the _primary unit_ because this unit's delta answers did not mention
+the dimension. Note in `provenance_notes` which system dimensions were mirrored, so a reader can
+tell the two apart without diffing against the seed.
 
 ## Step 5 — Run the scoring engine
 
@@ -286,9 +346,9 @@ from answers.json — no dependency on context-signals.json, which may not exist
 Non-agent units are NOT scored — Design resolves them from
 `references/decision-refs/workload-classes.md`.
 
-## Step 6 — Write state and continue to Confirm
+## Step 6 — Write state and continue to Model Recommend
 
-Set `phases.clarify` = completed (leave `phases.confirm` = pending). Do NOT jump to Design.
-The state machine now routes to **Confirm** (`references/phases/confirm/confirm.md`), which
-confirms the deployment model / services / co_recommend pick and writes `confirm.json` — Design and
-the diagram require it.
+Set `phases.clarify` = completed (leave `phases["model-recommend"]` and `phases.confirm` =
+pending). Do NOT jump to Confirm or Design. The state machine now routes to **Model Recommend**
+(`references/phases/model-recommend/model-recommend.md`), which creates the per-workload
+Bedrock model/path contract before Confirm asks the user to accept runtime and model together.

@@ -84,7 +84,9 @@ exactly:
 - **§3 Workload recommendations** (one `.unit-sec` per unit: **scored form** = score bars
   titled "Runtime comparison for this agent" + eliminated note + "Why X" bullets + item table
   [model/services/runner-up/key change]; **rule-based form** = decision table with rule-cite
-  - considered-and-rejected)
+  - considered-and-rejected; each unit with a non-null `model_recommendation` additionally
+    gets the **"Why this model" card** — rationale visible, full model/migration detail in a
+    collapsed `<details>`, all values from `unit.model_recommendation`)
 - **§4 Target architecture** (figure w/ per-unit entry points from `trigger` + figcap; **4.1
   component detail** table [Entry point from trigger / Compute / Model access / Supporting
   services]; **4.2 Security & networking** table [from the runtime cards' Serving & security
@@ -137,6 +139,19 @@ that element entirely (use `display:none` or omit the HTML block).
   /* Unit card scored-form subsection scores — inherited from the shell's .scores */
   .elim-label { font-size: 11px; color: #ef4444; font-style: italic; margin-top: -6px;
                 margin-bottom: 6px; }
+
+  /* "Why this model" card (per model-bearing unit; detail collapsed by default) */
+  .model-why { border: 1px solid var(--rule); margin-top: 14px; }
+  .model-why-head { padding: 9px 14px; background: var(--soft); border-bottom: 1px solid var(--rule);
+                    font-size: 12px; font-weight: 600; text-transform: uppercase;
+                    letter-spacing: 0.4px; color: var(--muted); }
+  .model-why-body { padding: 11px 14px 12px; font-size: 13.5px; }
+  .model-why-body > p { margin: 0 0 8px; }
+  .model-why details > summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: #1a56db; }
+  .model-why details p.em { margin: 12px 0 4px; font-weight: 600; }
+  .model-why .mark { font-size: 11px; font-weight: 600; text-transform: uppercase;
+                     letter-spacing: 0.4px; color: var(--muted); white-space: nowrap; }
+  .model-why .mark-block { color: #b42318; }
 
   /* Alternatives grid */
   .alt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -296,7 +311,10 @@ that element entirely (use `display:none` or omit the HTML block).
     <table>
       <thead><tr><th>Item</th><th>Recommendation</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td>Bedrock model</td><td class="em">{{ unit.model_recommendation.model }}</td><td>{{ unit.model_recommendation.reasoning }}</td></tr>
+        <tr><td>Bedrock model</td><td class="em">{{ unit.model_recommendation.model_identity.display_name }}</td><td>{{ unit.model_recommendation.reasoning }}</td></tr>
+        <tr><td>API path</td><td>{{ unit.model_recommendation.api_path }}</td><td>Path ID: {{ unit.model_recommendation.model }}</td></tr>
+        <tr><td>Account verification</td><td>{{ unit.model_recommendation.live_verification.status OR "not_run" }}</td><td>{{ IF unit.model_recommendation.live_verification.status === "passed" }}Invocation ID verified{{ ELSE }}Runnable access not yet established{{ END IF }}</td></tr>
+        <tr><td>Migration gates</td><td>{{ COMMA_JOIN(CODES(unit.model_recommendation.blocks)) OR "None" }}</td><td>{{ unit.model_recommendation.evaluation.mode }} evaluation; {{ unit.model_recommendation.rollout.strategy }} rollout</td></tr>
         {{ IF unit.agentcore_services }}
         <tr><td>AgentCore services</td><td>{{ COMMA_JOIN(unit.agentcore_services) }}</td><td>{{ service notes }}</td></tr>
         {{ END IF }}
@@ -316,6 +334,53 @@ that element entirely (use `display:none` or omit the HTML block).
       </tbody>
     </table>
     <p class="note">Key change: {{ unit.key_change }}</p>
+    {{ END IF }}
+    {{ IF unit.model_recommendation }}
+    <!-- "WHY THIS MODEL" CARD — every value below renders from unit.model_recommendation
+         (design.json's verbatim copy of the Model Recommend engine output). Never invent or
+         summarize these values from memory; if a field is null/empty, omit that element.
+         The detail block is collapsed by default so model detail never dominates the card.
+         {{ LET mr = unit.model_recommendation }} -->
+    <div class="model-why">
+      <div class="model-why-head">Why this model</div>
+      <div class="model-why-body">
+        <p>{{ mr.reasoning }}</p>
+        <details>
+          <summary>Full model &amp; migration detail</summary>
+          <p class="note" style="margin-top:8px"><strong>Identities:</strong> logical <code>{{ mr.model_identity.model_key }}</code> · path ID <code>{{ mr.model_identity.path_model_id }}</code> · invocation <code>{{ mr.invocation_model_id OR "unresolved" }}</code> · catalog verified {{ mr.verification.catalog_verified_at }} · limits: {{ mr.model_identity.context_window }} — probe in target account.<br>
+            <strong>Compatibility:</strong> native {{ COMMA_JOIN(mr.compatibility.native, each wrapped in <code>) OR "—" }} · portable {{ COMMA_JOIN(mr.compatibility.portable, each wrapped in <code>) OR "—" }} · rearchitecture {{ COMMA_JOIN(mr.compatibility.rearchitecture, each wrapped in <code>) OR "—" }}</p>
+          {{ IF NOT EMPTY(mr.migration_deltas) }}
+          <p class="em">Migration changes</p>
+          <table><tbody>
+            {{ FOR EACH delta IN mr.migration_deltas }}
+            <tr><td><span class="mark">{{ delta.category }}</span></td><td>{{ delta.description }}</td></tr>
+            {{ END FOR }}
+          </tbody></table>
+          {{ END IF }}
+          {{ IF NOT EMPTY(mr.blocks) OR NOT EMPTY(mr.tuning) }}
+          <p class="em">Findings</p>
+          <table><tbody>
+            {{ FOR EACH b IN mr.blocks }}
+            <tr><td><span class="mark mark-block">blocks</span></td><td>{{ b.message }} <em>Fix: {{ b.remediation }}</em></td></tr>
+            {{ END FOR }}
+            {{ FOR EACH t IN mr.tuning }}
+            <tr><td><span class="mark">tune</span></td><td>{{ t.message }} <em>{{ t.remediation }}</em></td></tr>
+            {{ END FOR }}
+          </tbody></table>
+          {{ END IF }}
+          {{ IF NOT EMPTY(mr.additional_targets) }}
+          <p class="em">Separate-modality targets</p>
+          <table><tbody>
+            {{ FOR EACH t IN mr.additional_targets }}
+            <tr><td><code>{{ t.capability }}</code></td><td><span class="mark">{{ t.status }}</span></td><td>{{ t.service }}</td></tr>
+            {{ END FOR }}
+          </tbody></table>
+          {{ END IF }}
+          <p class="note"><strong>Evaluation:</strong> {{ mr.evaluation.mode }} — {{ mr.evaluation.gates.length }} gates, e.g. &ldquo;{{ ONE representative gate quoted VERBATIM from mr.evaluation.gates }}&rdquo; ·
+            <strong>Rollout:</strong> {{ mr.rollout.strategy }} ({{ mr.rollout.gate }}) · <strong>Verification:</strong> {{ mr.verification.probe_status }}/{{ mr.verification.availability_claim }} — probe the exact (model, path) before implementation.</p>
+        </details>
+      </div>
+    </div>
     {{ END IF }}
   </div>
 </div>

@@ -23,7 +23,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "the inline engine's Generate phase reached HANDOFF_OK (aws-design-ai.json exists with a non-empty ai_architecture in the recorded migration_dir), and migration_plan_ctx {repo, migration_dir} was recorded in .phase-status.json"
     _on_failure: _halt_and_inform
-  - _assert: "model reconciliation (Step 3.5) is settled — for every unit whose plan-chosen Bedrock model differs from its design.json model, design.json.units[<id>].model_recommendation.model now equals the plan's model, the unit carries model_refined_by_plan: true, and recommendation.md AND recommendation-report.html name that unit's new model at every occurrence (table row, Mermaid node, ASCII overview, prose, and all-units roll-up/summary sentences) with no stale model left as that unit's chosen model; when no unit's model differs, this is a no-op"
+  - _assert: "model contract validation (Step 3.5) is settled — every model-bearing unit's plan output matches the advisor-confirmed model and api_path, or the phase halted with a mismatch that must be resolved by changing Model Recommend inputs and rerunning its deterministic engine; migration-plan never rewrote design.json model decisions"
     _on_failure: _halt_and_inform
 ---
 
@@ -36,6 +36,38 @@ boundary. Everything runs inside the current agent-advisor session, so Steps 5�
 (record artifacts, offer Gate 2) execute in the same turn without interruption.
 
 gcp-to-aws files are **read-only**: this phase never edits them.
+
+## Step -1 — Engine presence check (ATX capability gate)
+
+This phase is the ONLY place in this skill that reads a **sibling** skill, so it is the only
+place that can fail when the skill is deployed on its own. In the full plugin the engine is
+always installed. In a standalone bundle — the ATX Custom transformation built by
+`tools/atx-bundle/build.ts`, which ships this skill and nothing else — it is absent.
+
+Before resolving any path below, check whether `$GCP_BASE/references/phases/design/design.md`
+exists (`$GCP_BASE` is defined in the next section). **If it does not:**
+
+1. Read-merge-write `$RUN_DIR/.phase-status.json`: set `phases.migration_plan =
+   "not_applicable"` AND `migration_plan_unavailable = "engine_absent"`, then advance
+   `current_phase` through `_advances_to` (`poc`) in the SAME state write
+   (`INTERPRETER.md` § Skill bindings — resolved statuses). The `migration_plan_unavailable`
+   marker is what distinguishes "this deployment cannot produce a plan" from "the user declined
+   one" — Gate 2 and poc.md both key on it.
+2. Tell the user plainly, without blaming them: the full migration plan is produced by the
+   `gcp-to-aws` engine, which this deployment does not bundle. Everything through the
+   recommendation (runtime verdict, deployment model, service set, model + API path, cost
+   magnitude, and the generated documents) is unaffected — only the migration plan stage is
+   unavailable here. If they need the plan, point them at the full `migration-to-aws` plugin.
+3. **Still offer Gate 2** — a missing plan does not remove the POC. Ask it exactly as Step 6
+   below does (same wording, same `phases.poc = "in_progress"` persistence before poc.md loads),
+   but say the POC will be **design-backed** (built from `design.json`, labelled "not
+   plan-backed") rather than plan-backed. In a non-interactive run take the answer from
+   `$RUN_DIR/seed.json`'s `gates.poc` (clarify.md Step 2.5); a seed that omits it declines.
+4. **Stop executing this phase.** Do not read any gcp-to-aws file, do not create
+   `migration-plan-injection.json`, and do not run any step below. The `_postconditions` above
+   are satisfied by the `not_applicable` resolution exactly as they are for an idea-only migrate.
+
+Only continue past this point when the engine is present.
 
 ## Path definitions (resolve first, before any other step)
 
@@ -191,7 +223,9 @@ Write the injection context to `$RUN_DIR/migration-plan-injection.json`:
       "raw_verdict": "<from unit.verdict — the split-mode verdict, for report trade-off display>",
       "deployment_model": "<unit.deployment_model when target_runtime==agentcore, else 'framework_on_runtime'>",
       "endpoint_contract": "<the POST /invocations + GET /ping note when target_runtime==agentcore, else null — PER UNIT, so a secondary AgentCore unit in a split system still carries it>",
-      "model": "<from unit.model_recommendation>",
+      "model": "<from unit.model_recommendation.model>",
+      "api_path": "<from unit.model_recommendation.api_path>",
+      "source": "<from unit.model_recommendation.source>",
       "services": "<from unit.agentcore_services[]>",
       "evidence": "<from context-signals.json.units[].evidence, matched by unit.id>"
     }
@@ -298,72 +332,27 @@ are not modified and gcp never sees this step:
 
 **Additive-only rule:** These annotations are purely ADDITIVE — never modify or remove any gcp-written fields. gcp's own validation checklists must keep passing.
 
-### Step 3.5 — Reconcile the model choice (plan wins, but the recommendation must not lie)
+### Step 3.5 — Validate the advisor model/path contract (advisor wins)
 
-The advisor injected each unit's `model_recommendation` (Step 2) as the gcp engine's model
-constraint, but the engine's AI-design phase may **refine** it — the plan sees the _source_
-model per unit (e.g. `gpt-4o-mini` vs `gpt-4o`) and the per-workload task, so it may pick a
-different, better-fitting Bedrock model than the advisor's family-level baseline (e.g. a
-`gpt-4o-mini` binary-moderation unit → Nova Lite, not the balanced-baseline Sonnet). **The
-plan's per-unit model wins** — it is finer-grained and region-validated. But the advisor's
-own `design.json` and `recommendation.md`/`recommendation-report.html` were written _before_
-the plan ran, so a stale model there would contradict the POC (which reads the plan-backed
-model in `poc.md` Step 2). Reconcile so the deliverables agree:
+For every matched, model-bearing unit, compare the plan's model and migration path with
+`design.json.units[<id>].model_recommendation.{model,api_path}`.
 
-For each design_block matched to a unit (Step 3) **whose `model_recommendation` is non-null**,
-compare the block's chosen target Bedrock model (`target_bedrock_model`, or the block's first
-`bedrock_models[].aws_model_id`) against that unit's injected `model` (from
-`design.json.units[<id>].model_recommendation.model`). **Skip model-less units** — a non-agent
-unit (batch/service/light_io) can have `model_recommendation: null`; it has no model to reconcile,
-so leave it null and do NOT dereference `.model`:
-
-1. **If they name the same model** — nothing to do.
-2. **If they differ** — the plan wins. You MUST do BOTH of the following:
-
-   **(a) Update `design.json`** for that unit:
-   - Set `units[<id>].model_recommendation.model` to the plan's model id.
-   - Append to `units[<id>].model_recommendation.reasoning`:
-     `" — refined by the migration plan (was <old model>): <the plan's block rationale>"`.
-   - Set `units[<id>].model_refined_by_plan` to `true` (a top-level key ON THE UNIT, a
-     sibling of `model_recommendation` — NOT inside it) so the change is auditable. This key
-     is mandatory whenever you changed the model; a reconciled unit with no
-     `model_refined_by_plan: true` is a bug.
-
-   **(b) Back-write the recommendation in BOTH `recommendation.md` AND
-   `recommendation-report.html`.** The stale model id can appear in MORE THAN ONE place per
-   file — you must replace EVERY occurrence for that unit, not just the first. Grep each file
-   for the old model id/key and check at least these locations before you finish:
-   - the per-unit verdict/summary table row (e.g. `| content-review | … | <model> | …`);
-   - the **Mermaid architecture diagram** node labels (e.g.
-     `content_review_node["AWS Lambda<br/><model>"]` in the `mermaid` block);
-   - any **ASCII/plain-text overview or unit list** (e.g. `[ content-review: … (<model>) ]`);
-   - any prose sentence naming that unit's model;
-   - **roll-up / summary statements that collapse ALL units into one model** — these are the
-     easily-missed ones. The executive summary, a section header, or a lede often say
-     something like "all three agents migrate from OpenAI to Claude Sonnet 4.6." Once one
-     unit is refined to a different model, that blanket claim is FALSE and must be corrected
-     (e.g. "support-chat and insights-writer → Claude Sonnet 4.6; content-review → Nova Lite").
-     Check the exec summary, every section header, and any opening/closing sentence.
-   - in the HTML, ALL of the above surfaces (table cell, SVG/Mermaid label, inline text,
-     AND the lede/summary sentences).
-     Replace the stale model everywhere it names or implies THIS unit, then add a one-line note
-     in that unit's section:
-     `"Model refined by the migration plan: <old model> → <new model> (<rationale>)."`
-     After editing, re-grep both files for the OLD model id/name scoped to this unit — it must
-     return zero hits AS THIS UNIT'S MODEL. Pay special attention to blanket phrases like
-     "across all three", "all agents", "every unit" sitting next to the old model name: if such
-     a phrase still implies this unit uses the old model, it is a miss. The old id may still
-     legitimately appear elsewhere (another unit's model, or a "backup: Haiku 4.5" note), but
-     never as THIS unit's chosen model and never inside an all-units roll-up.
-     Keep every other section untouched; this is a targeted find-and-replace on this unit's
-     model only, NOT a re-render of the report.
-3. Never invent a model here — only carry across the id the plan already chose and
-   region-validated.
+1. If both match, annotate the design block with
+   `"advisor_model_contract": "validated"` and continue.
+2. If either differs, do not rewrite `design.json`, the recommendation, or the report.
+   Record the proposed value and rationale in the design block as
+   `plan_model_mismatch`, then STOP with `_halt_and_inform`. Tell the user which requirement or
+   account/region probe caused the mismatch. Resolution MUST return to Model Recommend, update
+   `model-recommendation-input.json`, rerun `model_recommendation.py`, and reconfirm the new
+   result. A migration engine is a consumer of the advisor contract, not a second selector.
+3. A live probe may invalidate availability, but it still does not authorize silent
+   substitution. Probe failure blocks runnable implementation claims. Resolve credentials,
+   IAM, profile ID, region, or model access first; return to Model Recommend only when the
+   accepted requirement, model, path, or profile must change.
 
 **Single-unit runs:** SKIP the unit-correlation overlay above (steps 1–5) — the collapse
-invariant means zero annotation behavior change when there's only one unit. Step 3.5 model
-reconciliation still applies: reconcile the one unit's model (the same stale-recommendation
-risk exists), but there is no per-unit ambiguity.
+invariant means zero annotation behavior change when there's only one unit. Step 3.5 contract
+validation still applies to that one unit.
 
 On `HANDOFF_OK`: `aws-design-ai.json` (and/or other design artifacts) present, with unit annotations when multi-unit.
 

@@ -46,7 +46,11 @@
 
 ## 9. Bedrock model
 
-<model default + reasoning; for migrate, coarse family mapping + "see migration-to-aws for pricing".>
+<per model-bearing unit: model display name, path-specific model ID, API path, resolved
+invocation/CRIS ID or TODO, joint-decision reasoning, compatibility groups, architecture impacts,
+[BLOCKS]/[TUNE], evaluation mode, rollout gate, catalog date, and live verification status.
+State that runnable account access is established only when the live probe passed. For migrate,
+include "see migration-to-aws for pricing".>
 
 ## 10. Cost magnitude
 

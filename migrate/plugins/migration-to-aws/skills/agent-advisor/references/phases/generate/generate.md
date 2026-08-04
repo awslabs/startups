@@ -27,7 +27,9 @@ _preconditions:
 _postconditions:
   - _check_file_exists: [diagram.md, recommendation.md, mini-brief.md, recommendation-report.html]
     _on_failure: _halt_and_inform
-  - _assert: "recommendation.md fills all 12 sections (business summary first, technical detail after) with the freshness footer; mini-brief.md carries the recommendation, top-3 signals, eliminated, model, and any io_wait/fedramp/region/cris notes set in design.json (a non-agent unit in a mixed system may show 'no model' when its model_recommendation is null); recommendation-report.html was generated (Step 5 is not optional); when design.json has >1 unit, recommendation.md contains the System topology section and the report one unit card per unit"
+  - _assert: "recommendation.md fills all 12 sections (business summary first, technical detail after) with the freshness footer; mini-brief.md carries the recommendation, top-3 signals, eliminated, model, and any io_wait/fedramp/region/cris notes set in design.json (a non-agent unit in a mixed system may show 'no model' when its model_recommendation is null); recommendation-report.html was generated (Step 5 is not optional); when design.json has >1 unit, recommendation.md contains the System topology section and the report one unit card per unit; every unit card whose design.json unit has a non-null model_recommendation contains the 'Why this model' card (rationale paragraph + collapsed 'Full model & migration detail' details block) rendered from unit.model_recommendation values, not invented"
+    _on_failure: _halt_and_inform
+  - _assert: "recommendation-report.html follows the v3 section spec from generate-report.md Step R1 — its numbered top-level sections are, in order: Summary, Assessment inputs, Recommendation(s), Target architecture, then (Temporal migration only when temporal units exist), Cost summary, Next steps, Generated artifacts, with the dynamic numbering R1 defines; an html whose top-level section structure was invented instead of taken from the template (a known failure mode after a mid-phase context compaction) fails this phase — re-read generate-report.md and regenerate"
     _on_failure: _halt_and_inform
 ---
 
@@ -84,10 +86,12 @@ decision-refs/temporal.md ("If the user asks") — do not add it to the plan.
 **Skip this step entirely for `migrate`** (execution artifacts belong to the downstream plugins).
 For Build paths:
 
-- AgentCore + Harness → write a minimal `harness.json` skeleton with the model id from
-  model_recommendation and the selected services.
+- AgentCore + Harness → write a minimal `harness.json` skeleton with the selected services.
+  Include the exact `invocation_model_id` only when `live_verification.status == "passed"`;
+  otherwise use `TODO: verify model id` and state that account access is unverified.
 - AgentCore + Framework / other runtimes → write a minimal framework starter note (entrypoint
-  contract: `/invocations` POST + `/ping` GET for AgentCore) + the model id.
+  contract: `/invocations` POST + `/ping` GET for AgentCore) + the same verified invocation ID
+  or explicit TODO placeholder.
   Write scaffolding under `$RUN_DIR/scaffold/`. Keep it minimal — heavy IaC hands off.
 
 ## Step 4.5 — Write the mini-brief to `$RUN_DIR/mini-brief.md` (delivered by the Step 5.5 sidebar)
@@ -97,6 +101,9 @@ TO `$RUN_DIR/mini-brief.md` (a file, not just chat text; Step 5.5 re-reads it):
 
 - Recommendation (runtime + deployment model), Why (top 3 signals), Eliminated, Model, and a
   pointer to `$RUN_DIR/recommendation.md`.
+- For each model-bearing unit, include API path, path-specific model ID, CRIS/invocation status,
+  `[BLOCKS]`, evaluation mode, and live verification status. Never describe model access as
+  runnable unless `live_verification.status == "passed"`.
 - Any `warnings` from the scoring result (e.g. 5 TPS).
 - If `design.json` has `io_wait_tco_note == true`: the I/O-wait TCO point (AgentCore bills $0
   during model/human waits — a cost edge for spiky/HITL traffic; no dollar figures).
@@ -213,6 +220,15 @@ Set `phases.generate` = completed (read-merge-write). Then branch:
 3. **Otherwise** (migrate without a plan): the Step 5.5 sidebar already delivered the
    brief; close with a short completion message pointing at `recommendation.md` — the
    advisor flow is complete.
+
+**Non-interactive runs (seeded).** When `$RUN_DIR/seed.json` exists (clarify.md Step 2.5), its
+`gates` block answers these gates instead of AskUserQuestion: `gates.migration_plan` and
+`gates.poc`, each `accept` or `decline`. **A gate the seed does not mention is DECLINED** —
+never accept a gate on the user's behalf, because both gates spend real time and money. Persist
+the resolved status exactly as the interactive path does (`phases.poc = "in_progress"` before
+poc.md loads on accept, `"skipped"` on decline) so a resumed run does not re-ask. Record in
+`$RUN_DIR/UNANSWERED.md` that the gate was resolved from the seed default rather than by a human
+whenever the seed was silent.
 
 Note: for `migrate` WITH a completed migration plan, Gate 2 is asked at the end of
 migration-plan.md (its Step 6), using the same wording as point 2 above.
