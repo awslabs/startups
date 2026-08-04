@@ -78,6 +78,14 @@ run = "node migrate/plugins/migration-to-aws/tools/fixtures-check.ts"
 description = "Report pricing caches past their own declared freshness window (warn-only; use --strict in a scheduled workflow to fail)"
 run = "node migrate/plugins/migration-to-aws/tools/pricing-staleness.ts"
 
+[tasks."atx:build"]
+description = "Build the standalone ATX Custom bundle for agent-advisor into .tmp/atx-bundle/ (then verify)"
+run = "node migrate/plugins/migration-to-aws/tools/atx-bundle/build.ts --write"
+
+[tasks."atx:check"]
+description = "Verify the ATX bundle stays a self-contained strict subset of the canonical skill (CI)"
+run = "node migrate/plugins/migration-to-aws/tools/atx-bundle/build.ts"
+
 [tasks.lint]
 description = "Run all linters"
 run = [
@@ -85,6 +93,7 @@ run = [
   { task = "lint:types" },
   { task = "lint:frontmatter" },
   { task = "shared:check" },
+  { task = "atx:check" },
   { task = "fixtures:assert" },
   { task = "fixtures:check" },
   { task = "pricing:staleness" },

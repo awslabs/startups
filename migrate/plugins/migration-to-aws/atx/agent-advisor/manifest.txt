@@ -1,0 +1,77 @@
+# ATX bundle manifest — agent-advisor
+#
+# Paths are relative to skills/agent-advisor/. Every file listed here is copied
+# BYTE-IDENTICAL into the ATX bundle; the bundle is a strict subset of the
+# canonical skill plus one generated entry file (transformation_definition.md).
+#
+# A canonical file that is neither listed here nor matched by an exclusion rule
+# in tools/atx-bundle/build.ts fails atx:check — new files must be classified.
+
+references/decision-refs/agentcore.md
+references/decision-refs/batch.md
+references/decision-refs/cost-levers.md
+references/decision-refs/ecs.md
+references/decision-refs/eks.md
+references/decision-refs/freshness.md
+references/decision-refs/lambda-microvms.md
+references/decision-refs/lambda.md
+references/decision-refs/managed-alternatives.md
+references/decision-refs/model-selection.md
+references/decision-refs/poc-shapes.md
+references/decision-refs/temporal.md
+references/decision-refs/workload-classes.md
+references/diagram/build-diagram.md
+references/handoff/handoff-migration.md
+references/models/anthropic-bedrock-2026-07-21.json
+references/models/openai-bedrock-2026-07-21.json
+references/output-templates/recommendation-doc.md
+references/phases/add-capabilities/add-capabilities-assemble.md
+references/phases/add-capabilities/add-capabilities.md
+references/phases/clarify/clarify-assemble.md
+references/phases/clarify/clarify-business.md
+references/phases/clarify/clarify-technical.md
+references/phases/clarify/clarify.md
+references/phases/confirm/confirm-assemble.md
+references/phases/confirm/confirm.md
+references/phases/design/design-assemble.md
+references/phases/design/design.md
+references/phases/discover/discover-assemble.md
+references/phases/discover/discover.md
+references/phases/estimate/estimate-assemble.md
+references/phases/estimate/estimate.md
+references/phases/generate/generate-assemble.md
+references/phases/generate/generate-report.md
+references/phases/generate/generate.md
+references/phases/intake/intake-assemble.md
+references/phases/intake/intake.md
+references/phases/migration-plan/migration-plan-assemble.md
+references/phases/migration-plan/migration-plan-gcp-constraints.md
+references/phases/migration-plan/migration-plan.md
+references/phases/model-recommend/model-recommend-assemble.md
+references/phases/model-recommend/model-recommend.md
+references/phases/poc/poc-assemble.md
+references/phases/poc/poc-report.md
+references/phases/poc/poc.md
+references/report-help-banner.md
+references/report-shell.md
+references/runtimes/agentcore.json
+references/runtimes/ecs.json
+references/runtimes/eks.json
+references/runtimes/lambda_microvms.json
+references/runtimes/lambda.json
+references/vendored/dsl/INTERPRETER.md
+references/vendored/README.md
+scripts/anthropic_model_recommendation.py
+scripts/build_diagram.py
+scripts/model_recommendation.py
+scripts/openai_model_recommendation.py
+scripts/pyproject.toml
+scripts/schemas/model-recommendation-input.json
+scripts/schemas/model-recommendation.json
+scripts/schemas/model-verification.json
+scripts/schemas/scoring-result.json
+scripts/scoring.py
+scripts/uv.lock
+scripts/verify_model_path.py
+SKILL.md
+scripts/schemas/seed.json

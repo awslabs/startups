@@ -1,0 +1,15 @@
+{
+  "agent": "customer-support",
+  "features": {
+    "mcp_connectors": [
+      "crm",
+      "order-management"
+    ],
+    "server_tools": [
+      "web_search"
+    ],
+    "files_api": true,
+    "message_batches": true,
+    "prompt_caching": true
+  }
+}

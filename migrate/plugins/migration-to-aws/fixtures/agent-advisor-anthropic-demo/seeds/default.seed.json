@@ -1,0 +1,33 @@
+{
+  "entry_point": "migrate",
+  "audience": "technical",
+  "system": {
+    "multi_cloud": "no",
+    "compliance": [],
+    "region": { "scope": "single", "regions": ["us-east-1"] },
+    "existing_cluster": "none",
+    "platform_fit": "none",
+    "ops_preference": "minimal"
+  },
+  "units": {
+    "support-agent": {
+      "workload_class": "agent_session",
+      "session_duration": "15min_to_8hr",
+      "traffic_pattern": "bursty",
+      "session_state": "stateless",
+      "isolation": "not_needed",
+      "memory_needs": "session_only",
+      "ops_preference": "minimal",
+      "compute_tier": "light",
+      "idle_resume": "none",
+      "launch_concurrency": "low",
+      "multi_agent": "no",
+      "deployment_preference": "either",
+      "framework": "custom",
+      "existing_cluster": "none",
+      "platform_fit": "none"
+    }
+  },
+  "gates": { "migration_plan": "decline", "poc": "decline" },
+  "probe": "decline"
+}

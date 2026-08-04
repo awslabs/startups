@@ -1,0 +1,17 @@
+[project]
+name = "agent-advisor-anthropic-demo"
+version = "0.1.0"
+description = "Static Anthropic agent fixture for agent-advisor testing"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.80",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
