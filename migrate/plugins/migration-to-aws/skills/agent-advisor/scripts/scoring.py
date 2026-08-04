@@ -40,9 +40,6 @@ LEGAL_VALUES = {
 DEFAULTS = {
     **{dim: "unknown" for dim in DIMENSIONS},
     "compliance": ["none"],
-    "model_priority": "unknown",
-    "model_features": "unknown",
-    "current_model": "unknown",
     "region": "unknown",
 }
 
@@ -149,95 +146,6 @@ def _select_agentcore_services(answers):
     return services
 
 
-# Q16 priority baseline. Model choice is independent of runtime scoring.
-_MODEL_PRIORITY = {
-    "quality": ("claude_sonnet_4_6", "Best quality for agentic workloads"),
-    "balanced": ("claude_sonnet_4_6", "Balanced quality, speed, and cost"),
-    "speed": ("claude_haiku_4_5", "Fastest response time"),
-    "cost": ("claude_haiku_4_5", "Lowest cost per token"),
-    "unknown": ("claude_sonnet_4_6", "Default for agentic workloads"),
-}
-
-# Q17 specialized-feature HARD override (beats priority). Coarse family mapping
-# only — no pricing. Active models only, per migration-to-aws ai-model-lifecycle.md
-# (the drift test in test_scoring.py locks this against the source lifecycle file).
-# Each value: (model, reasoning, alternates).
-_FEATURE_OVERRIDE = {
-    "tool_use": ("claude_sonnet_4_6", "Best-in-class tool use on Bedrock", []),
-    "long_context": (
-        "llama_4_scout",
-        "Ultra-long context (10M native window); Claude Sonnet 4.6 for shorter long-context",
-        ["claude_sonnet_4_6"]),
-    "extended_thinking": (
-        "claude_sonnet_4_6_thinking", "Extended thinking for deep reasoning", []),
-    "rag": (
-        "claude_sonnet_4_6",
-        "Strong retrieval + reasoning; pair with Bedrock Knowledge Bases + Titan Embeddings",
-        ["titan_embed_v2"]),
-    "multimodal": (
-        "claude_sonnet_4_6",
-        "Vision understanding; add a Stability AI model if you also generate images",
-        ["stability_image_core"]),
-    "image_generation": (
-        "stability_image_core",
-        "Image generation (Stable Image Core for cost, Ultra for quality) — a separate "
-        "capability, not a text-model swap; see the llm-to-bedrock skill for integration",
-        ["stability_image_ultra"]),
-    "speech": (
-        "nova_2_sonic",
-        "Speech-to-speech (Transcribe/Polly for one-directional STT/TTS) — a separate "
-        "capability, not a text-model swap; see the llm-to-bedrock skill for integration",
-        []),
-    "embedding": (
-        "titan_embed_v2",
-        "Text embeddings (Titan Embeddings v2)", []),
-}
-
-# Coarse source->family mapping for migrate (baseline only; feature override wins).
-_MIGRATE_FAMILY = {
-    "gpt4": "claude_sonnet_4_6", "gpt4o": "claude_sonnet_4_6",
-    "gemini_flash": "nova_lite", "gemini_pro": "claude_sonnet_4_6",
-    "claude": "claude_sonnet_4_6", "other": "claude_sonnet_4_6",
-}
-
-_PRICING_NOTE = ("Coarse family mapping only — see migration-to-aws for detailed "
-                 "model pricing and TCO comparison.")
-
-
-def _select_model(answers):
-    priority = answers.get("model_priority", "unknown")
-    feature = answers.get("model_features", "unknown")
-
-    # Priority baseline.
-    model, reasoning = _MODEL_PRIORITY.get(priority, _MODEL_PRIORITY["unknown"])
-    rec = {"model": model, "reasoning": reasoning, "alternates": []}
-
-    # Q17 feature HARD override (beats priority and, later, migrate family).
-    override = _FEATURE_OVERRIDE.get(feature) if feature not in ("none", "unknown") else None
-    if override:
-        rec["model"], rec["reasoning"], alternates = override
-        rec["alternates"] = list(alternates)
-        # Cost/speed conflict advisory: the specialized model may not be cheapest/fastest.
-        if priority in ("cost", "speed"):
-            rec["reasoning"] += (
-                f" (Feature override applied over your '{priority}' priority — this "
-                "specialized model may not be the lowest-cost/fastest option; see pricing "
-                "downstream.)")
-
-    # Migrate: record source, and only fall to family mapping when no feature override.
-    if answers.get("_entry_point") == "migrate":
-        current = answers.get("current_model", "unknown")
-        if current in _MIGRATE_FAMILY:
-            rec["migration_from"] = current
-            if not override:
-                rec["model"] = _MIGRATE_FAMILY[current]
-            rec["pricing_note"] = _PRICING_NOTE
-
-    if not rec["alternates"]:
-        del rec["alternates"]
-    return rec
-
-
 def _collect_assumptions(raw_answers):
     out = []
     for dim in DIMENSIONS:
@@ -291,7 +199,6 @@ def score(input_data, profiles=None):
         "eliminated": eliminated,
         "deployment_model": deployment_model,
         "agentcore_services": _select_agentcore_services(answers),
-        "model_recommendation": _select_model(answers),
         "assumptions_used": _collect_assumptions(raw_answers),
         "warnings": _collect_warnings(answers, verdict, co_recommend),
     }

@@ -121,65 +121,24 @@ def test_migration_plan_unit_correlation_overlay():
         "collapse invariant: single-unit runs skip the overlay"
 
 
-def test_migration_plan_reconciles_model_and_backwrites_recommendation():
-    # Live-test 0715 finding: the plan's per-unit model (e.g. gpt-4o-mini -> Nova Lite)
-    # can differ from the advisor's design.json model, and the POC (plan-backed) used the
-    # plan's model while recommendation.md still said the old one -> report/POC contradiction.
-    # Fix: migration-plan Step 3.5 reconciles (plan wins) AND back-writes the recommendation.
+def test_migration_plan_validates_advisor_model_contract_without_reselection():
     plan = _norm(pathlib.Path(__file__).parent.parent
                  / "references" / "phases" / "migration-plan" / "migration-plan.md")
-    # A dedicated reconciliation step exists.
-    assert re.search(r"Reconcile the model", plan) or "model_refined_by_plan" in plan, \
-        "migration-plan must have a model reconciliation step"
-    # Plan wins over the advisor's baseline model.
-    assert re.search(r"plan(?:'s)?.{0,40}(wins|model wins)", plan, re.IGNORECASE), \
-        "reconciliation must state the plan's per-unit model wins"
-    # design.json is updated with the plan's model.
-    assert re.search(r"[Uu]pdate `?design\.json`?", plan) and "model_recommendation" in plan, \
-        "reconciliation must update design.json.units[].model_recommendation"
-    assert "model_refined_by_plan" in plan, \
-        "reconciliation must mark the refined unit auditable"
-    # The recommendation report/doc is back-written so it does not contradict the POC.
-    assert re.search(r"[Bb]ack-write", plan) and \
-        "recommendation.md" in plan and "recommendation-report.html" in plan, \
-        "reconciliation must back-write recommendation.md AND recommendation-report.html"
-    # It is a targeted edit, not a full re-render, and other sections stay untouched.
-    assert re.search(r"NOT a re-render|not a re-render|targeted", plan), \
-        "back-write must be a targeted edit, not a full report re-render"
-    # Re-run 0715 finding: the model can appear in MORE THAN ONE place per file
-    # (table row, Mermaid diagram node, ASCII overview). The first fix only replaced the
-    # table row, leaving the diagram + ASCII list stale. Enforce every-occurrence replacement.
-    assert re.search(r"EVERY occurrence|every occurrence|more than one place|MORE THAN ONE",
-                     plan), \
-        "back-write must replace every occurrence, not just the first"
-    # The load-bearing surfaces must be named so the model doesn't leave a stale copy behind.
-    assert "Mermaid" in plan or "mermaid" in plan, \
-        "back-write must call out the Mermaid diagram node labels as a surface to update"
-    assert re.search(r"ASCII|plain-text|unit list", plan), \
-        "back-write must call out the ASCII/plain-text overview as a surface to update"
-    # A grep-after-editing check catches leftover stale ids.
-    assert re.search(r"re-grep|grep .{0,40}(old|OLD)|zero hits", plan), \
-        "back-write must re-grep for the old model id and expect zero hits for the unit"
-    # 3rd-pass 0715 finding: roll-up/summary sentences ("all three agents -> Sonnet") were
-    # missed because they collapse every unit into one model. Enforce covering them.
-    assert re.search(r"roll-up|summary statement|collapse ALL units|blanket", plan,
-                     re.IGNORECASE), \
-        "back-write must call out roll-up/summary statements that collapse all units into one model"
-    assert re.search(r"executive summary|exec summary", plan, re.IGNORECASE) and \
-        re.search(r"across all three|all agents|every unit|all units", plan, re.IGNORECASE), \
-        "back-write must name the exec-summary + blanket phrases as easily-missed surfaces"
-    # model_refined_by_plan must be a unit-level key (sibling of model_recommendation),
-    # not nested inside it (the first fix left it unset because placement was ambiguous).
-    assert re.search(r"model_refined_by_plan.{0,120}(sibling|top-level|ON THE UNIT|NOT inside)",
-                     plan, re.IGNORECASE | re.DOTALL), \
-        "model_refined_by_plan must be specified as a unit-level sibling key, not nested"
-    # The reconciliation is a cross-phase write (migration-plan edits design.json +
-    # recommendation, which it declares as _input, not _produces). Make it visible in the
-    # frontmatter contract as a _postcondition so the DSL records the side effect.
+
+    assert re.search(r"Validate the advisor model/path contract", plan), \
+        "migration-plan must validate the advisor's per-workload model/path contract"
+    assert "advisor wins" in plan.lower(), \
+        "the advisor must remain the model-selection authority"
+    assert "plan_model_mismatch" in plan and "_halt_and_inform" in plan, \
+        "a plan mismatch must be visible and blocking"
+    assert re.search(r"do not rewrite `design\.json`", plan, re.IGNORECASE), \
+        "migration-plan must not silently replace the confirmed advisor decision"
+    assert "model-recommendation-input.json" in plan and \
+        "model_recommendation.py" in plan, \
+        "mismatch resolution must return to the deterministic Model Recommend phase"
     frontmatter = plan.split("---", 2)[1] if plan.count("---") >= 2 else ""
-    assert "model_refined_by_plan" in frontmatter and \
-        re.search(r"reconciliation|reconcil", frontmatter, re.IGNORECASE), \
-        "migration-plan _postconditions must assert the Step 3.5 model reconciliation is settled"
+    assert re.search(r"model contract validation", frontmatter, re.IGNORECASE), \
+        "migration-plan postconditions must enforce contract validation"
 
 
 def test_unit_trigger_vocabulary():

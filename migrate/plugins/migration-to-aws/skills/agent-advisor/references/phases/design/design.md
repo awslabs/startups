@@ -5,6 +5,7 @@ _requires_phase: confirm
 _input:
   - scoring-result.json
   - confirm.json
+  - model-recommendation.json
 _knowledge:
   - { file: references/decision-refs/workload-classes.md, _when: "any unit has workload_class != agent_session" }
   - { file: references/decision-refs/temporal.md, _when: "any unit has workload_class == temporal_worker_poll or the temporal context is detected" }
@@ -16,16 +17,16 @@ _advances_to: estimate
 _preconditions:
   - _check_phase_completed: confirm
     _on_failure: _halt_and_inform
-  - _check_file_exists: [scoring-result.json, confirm.json]
+  - _check_file_exists: [scoring-result.json, confirm.json, model-recommendation.json]
     _on_failure: _unrecoverable
-  - _validate_json: [scoring-result.json, confirm.json]
+  - _validate_json: [scoring-result.json, confirm.json, model-recommendation.json]
     _on_failure: _unrecoverable
 _postconditions:
   - _check_file_exists: design.json
     _on_failure: _halt_and_inform
   - _validate_json: design.json
     _on_failure: _halt_and_inform
-  - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled PRE-RELEASE regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
+  - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; every model-bearing unit's model_recommendation is derived from the matching model-recommendation.json workload entry and accepted confirm.model_decision, including model_identity, model, api_path, invocation_model_id, source, source_analysis, feature_assessment, compatibility, architecture_impacts, additional_targets (separate-modality target contracts, carried verbatim when present), blocks, tuning, migration_deltas, evaluation, rollout, provisional verification, and live_verification when model-verification.json exists; no model was independently selected from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled PRE-RELEASE regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
     _on_failure: _halt_and_inform
 ---
 
@@ -35,11 +36,16 @@ Assembles the recommendation from the scoring result + Confirm choices + service
 
 ## Step 1 — Read inputs
 
-Read `$RUN_DIR/scoring-result.json` and `$RUN_DIR/confirm.json`. The winning runtime is
+Read `$RUN_DIR/scoring-result.json`, `$RUN_DIR/model-recommendation.json`, and
+`$RUN_DIR/confirm.json`. The winning runtime is
 `confirm.chosen_runtime` if present (co_recommend pick), else `scoring-result.verdict`. Prefer
 `confirm.deployment_model` and `confirm.agentcore_services` over the scoring-result defaults (Confirm
 is the user-confirmed set). (Clarify's scope gate guarantees at least one agent_session unit, so a
 scored top-level verdict always exists — there is no zero-agent branch.)
+
+If `$RUN_DIR/model-verification.json` exists, read it and attach each workload's matching
+record as `live_verification`. Do not infer `passed` from `confirm.model_decision.accepted`;
+acceptance and target-account invocability are separate.
 
 ## Step 2 — Load the winning runtime's service card
 
@@ -165,11 +171,25 @@ observed this run.
 
 Assemble per unit:
 
-- `agent_session` units: verdict/deployment_model/services/model from that unit's
-  scoring result + that unit's confirm overrides — read `confirm.json.units[<unit_id>]`
+- `agent_session` units: verdict/deployment_model/services from that unit's scoring result +
+  that unit's confirm overrides; model/path from
+  `model-recommendation.json.workloads[<unit_id>]` + the accepted
+  `confirm.json.units[<unit_id>].model_decision` — read `confirm.json.units[<unit_id>]`
   (deployment_model, agentcore_services, chosen_runtime, tool_choices) for THIS unit, not a
   global top-level value. For a single-unit run, fall back to confirm.json's top-level fields.
   Each agent unit's confirmed runtime/services are independent — never copy the primary unit's.
+  Write the compatibility `model_recommendation` object as
+  `{"model": primary_model, "model_identity": ..., "reasoning": rationale joined for display,
+  "api_path": api_path, "invocation_model_id": ..., "source": ..., "source_analysis": ...,
+  "feature_assessment": ..., "alternatives": ..., "compatibility": ...,
+  "architecture_impacts": ..., "additional_targets": ... (copy verbatim when the recommendation
+  has them; a separate-modality target with status unresolved must NOT be turned into a runnable
+  model id), "blocks": ..., "tuning": ..., "migration_deltas": ...,
+  "evaluation": ..., "rollout": ..., "verification": ..., "live_verification": ... | null}`.
+  This preserves current report consumers while carrying the complete advisor contract.
+  `verification` is the catalog/probe requirement from the recommendation;
+  `live_verification` is only populated from the separate probe artifact. Never read the
+  scoring result's deprecated coarse model mirror for this field.
   **Every non-agent unit's runtime comes from `confirm.json.resolved_runtimes[<id>]` VERBATIM** —
   Confirm already resolved and (for Temporal rules 1/4) user-confirmed each one, so Design must NOT
   re-run temporal.md Tier 1 or workload-classes.md and risk a different pick than the one behind

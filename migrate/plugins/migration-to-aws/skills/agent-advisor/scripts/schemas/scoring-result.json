@@ -4,7 +4,7 @@
   "$defs": {
     "scoredUnit": {
       "type": "object",
-      "required": ["verdict", "scores", "eliminated", "model_recommendation"],
+      "required": ["verdict", "scores", "eliminated"],
       "properties": {
         "verdict": {
           "enum": ["agentcore", "lambda_microvms", "ecs", "eks", "lambda", "co_recommend", "no_viable_runtime"]
@@ -13,16 +13,6 @@
         "eliminated": { "type": "object", "additionalProperties": { "type": "string" } },
         "deployment_model": { "type": ["string", "null"], "enum": ["harness", "framework_on_runtime", null] },
         "agentcore_services": { "type": "array", "items": { "type": "string" } },
-        "model_recommendation": {
-          "type": "object",
-          "required": ["model", "reasoning"],
-          "properties": {
-            "model": { "type": "string" },
-            "reasoning": { "type": "string" },
-            "migration_from": { "type": "string" },
-            "pricing_note": { "type": "string" }
-          }
-        },
         "assumptions_used": { "type": "array", "items": { "type": "string" } },
         "warnings": { "type": "array", "items": { "type": "string" } },
         "co_recommend": { "type": "array", "items": { "type": "string" } },
@@ -37,7 +27,6 @@
     "eliminated",
     "deployment_model",
     "agentcore_services",
-    "model_recommendation",
     "assumptions_used",
     "warnings",
     "units"
@@ -50,16 +39,6 @@
     "eliminated": { "type": "object", "additionalProperties": { "type": "string" } },
     "deployment_model": { "type": ["string", "null"], "enum": ["harness", "framework_on_runtime", null] },
     "agentcore_services": { "type": "array", "items": { "type": "string" } },
-    "model_recommendation": {
-      "type": "object",
-      "required": ["model", "reasoning"],
-      "properties": {
-        "model": { "type": "string" },
-        "reasoning": { "type": "string" },
-        "migration_from": { "type": "string" },
-        "pricing_note": { "type": "string" }
-      }
-    },
     "assumptions_used": { "type": "array", "items": { "type": "string" } },
     "warnings": { "type": "array", "items": { "type": "string" } },
     "co_recommend": { "type": "array", "items": { "type": "string" } },

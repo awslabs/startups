@@ -22,7 +22,7 @@ _preconditions:
 _postconditions:
   - _check_file_exists: plan.md
     _on_failure: _halt_and_inform
-  - _assert: "a deployment plan (plan.md) and a runtime-appropriate POC under poc/ were written (Step 3 dispatch on each unit's effective_runtime — the consolidated superset when platform.mode is consolidated, else the unit's resolved runtime — NOT the raw split verdict), with the resolved Bedrock model id (or a TODO: verify placeholder — never a fabricated id) and deploy.sh guardrails; Mode B additionally left a created-resources ledger + cleanup.sh"
+  - _assert: "a deployment plan (plan.md) and a runtime-appropriate POC under poc/ were written (Step 3 dispatch on each unit's effective_runtime — the consolidated superset when platform.mode is consolidated, else the unit's resolved runtime — NOT the raw split verdict), with the exact invocation_model_id only when that workload's model-verification status is passed (otherwise a TODO: verify placeholder — never a fabricated or merely catalog-derived id) and deploy.sh guardrails; Mode B additionally left a created-resources ledger + cleanup.sh"
     _on_failure: _halt_and_inform
 ---
 
@@ -47,9 +47,14 @@ the generated deploy steps in the user's account under the Step 4 safety contrac
   including non-agent `batch`/`fargate`/`serverless_workers` units (their shapes are in
   `poc-shapes.md`, and a model-less non-agent unit omits Bedrock wiring); the gate keys on the
   primary agent unit, but the POC generation covers all units.
-- For `migrate`: POC runs ONLY if `phases.migration_plan == "completed"` (the POC implements
-  the produced plan). Without a plan, migrate has nothing to implement — the flow completes
-  after Generate/handoff.
+- For `migrate`: POC runs when `phases.migration_plan == "completed"` (the POC implements the
+  produced plan), OR when the plan stage resolved `not_applicable` with
+  `migration_plan_unavailable == "engine_absent"` in `.phase-status.json` — a standalone
+  deployment that does not bundle the migration engine (migration-plan.md Step -1). In that
+  second case the POC is **design-backed**: build from `design.json` alone and label it
+  "not plan-backed" exactly as Step 1 already prescribes for a skipped Stage 2. Otherwise —
+  the user declined the plan, or it is missing for any other reason — migrate has nothing to
+  implement and the flow completes after Generate/handoff.
 - This phase is only loaded after the user confirmed **Gate 2** (asked in generate.md Step 7
   or migration-plan.md Step 6).
 
@@ -74,12 +79,15 @@ Step 4 runs ONLY for Mode B; Steps 5–6 run for both.
 Read `$RUN_DIR/design.json` (verdict, deployment_model, agentcore_services,
 model_recommendation) and `$RUN_DIR/confirm.json` (confirmed deployment model + services). The
 recommendation doc + diagram already exist from Generate; POC builds on those decisions.
+If `$RUN_DIR/model-verification.json` exists, read it as the only live account-invocability
+evidence.
 
 **Plan-backed POC (Stage 2 ran):** if `.phase-status.json` has `migration_plan_ctx` and
 `phases.migration_plan == "completed"`, ALSO read
 `<migration_plan_ctx.migration_dir>/aws-design-ai.json` — via the recorded path ONLY, never
-by re-globbing `.migration/` (a glob can pick up a stale run). When present, it wins over
-`design.json` where they overlap (Steps 2, 2.5 and 3 each state where). If Stage 2 did not
+by re-globbing `.migration/` (a glob can pick up a stale run). When present, it supplies
+implementation detail but MUST NOT replace the advisor-confirmed model/path in `design.json`.
+If Stage 2 did not
 run (skipped / not applicable / failed), proceed from `design.json` alone — the pre-existing
 behavior — and label the POC "not plan-backed" in plan.md.
 
@@ -112,27 +120,39 @@ trigger), never a Bedrock-calling agent. This applies to a model-less SECONDARY 
 system (the primary is always an agent unit per Clarify's scope gate). Only dereference
 `model_recommendation.model` when it is non-null.
 
-**`design.json` is the single source of truth for the model, and it is already reconciled.**
-When a migration plan ran, its Phase C Step 3.5 (`migration-plan.md`) already reconciled every
-unit's `model_recommendation` in `design.json` with the plan's per-unit choice (plan wins) and
-back-wrote `recommendation.md`/`recommendation-report.html` to match. So by the time the POC
-runs, `design.json.units[<id>].model_recommendation.model` is authoritative for every unit —
-plan-backed or not. Resolve each unit's model from ITS OWN entry; never take one unit's model
-for another.
+**`design.json` is the single source of truth for model and API path.** Its per-unit
+`model_recommendation` is the accepted output of Model Recommend. Migration Plan validates that
+contract but never replaces it. Resolve each unit's model and `api_path` from ITS OWN entry;
+never take one unit's decision from another or from a run-wide plan scalar.
 
-For each unit, `design.json.units[<id>].model_recommendation.model` carries an internal model
-key (e.g. `claude_sonnet_4_6`, `nova_lite`). The POC needs the **real Bedrock
-model/inference-profile id** for THAT unit. Verify it via the awsknowledge MCP per
-`references/decision-refs/freshness.md` (same anti-fabrication rule). If the MCP is not called,
-write the id as a clearly-marked `TODO: verify model id` placeholder in the generated files and
-say so in the README — never fabricate an id as if verified.
+For each unit, `design.json.units[<id>].model_recommendation.model` carries the selected
+path-specific model ID (for example, `anthropic.claude-sonnet-4-6`).
+`model_recommendation.invocation_model_id` is the exact account-callable ID only after CRIS
+resolution. These identities must remain separate.
+
+Use an invocation ID in runnable code only when that unit's `model-verification.json` record
+has `status: passed` and exactly matches the recommendation's `api_path` and
+`invocation_model_id`. A catalog date, an awsknowledge lookup, user acceptance, or a non-null
+CRIS-shaped string is not proof of account access. If the probe was not run, failed, or needs
+resolution, write a clearly marked `TODO: verify model id` placeholder in generated files and
+state that the POC has not established runnable model access.
+
+Separate-modality entries under `additional_targets` (embeddings, images, audio) with
+`status: unresolved` have no chosen model id. Never invent one: emit a `TODO: select and verify
+<capability> model/service` placeholder naming the recommendation's `service`, and keep the
+capability out of the runnable text-model path.
+
+Mode A does not access AWS credentials, so it never runs a new probe. In Mode B, if live
+verification is missing, ask before the billable model call and run
+`scripts/verify_model_path.py` against the recommendation. Never substitute another model when
+the probe fails. To change a model/path/profile, update the Model Recommend input, rerun the
+engine, and reconfirm.
 
 **Plan-backed cross-check (optional):** when `aws-design-ai.json` is loaded you may confirm a
 unit's id against its OWN matching design block — match the block whose `source_paths[]`
 overlap that unit's `evidence` (NOT `design_blocks[0]`, which is only the first unit's block).
-The block's `target_bedrock_model` should already equal the reconciled `model_recommendation`
-(Step 3.5 made them agree); if they somehow differ, `design.json` wins because reconciliation
-is authoritative. The MCP check then only confirms the id is still current.
+The block's `target_bedrock_model` and path should equal `model_recommendation` because Step 3.5
+validated them. If they differ, stop and return to Model Recommend; do not choose one silently.
 
 **Strip environment annotations from the model id.** The running assistant's model name may
 carry a context-window annotation like `[1m]` (e.g. `us.anthropic.claude-sonnet-4-6[1m]`).
@@ -438,16 +458,20 @@ calls the recommended Bedrock model and answers the AgentCore entrypoint contrac
 - Uses `boto3` bedrock-runtime. Region from an env var (`AWS_REGION`), no hardcoded creds.
 - Include a one-line system prompt and echo the model's reply — enough to prove the loop works.
 
-**Code-path branch (plan-backed only):** if `aws-design-ai.json` has
-`ai_architecture.code_migration.migration_path == "mantle"`, do NOT use the boto3 template —
-generate the agent with an OpenAI-compatible client pointed at the Bedrock Mantle endpoint
-instead (same `/invocations` + `/ping` contract; base URL and model id from the plan; mark
-the endpoint URL `TODO: verify` if not MCP-checked this run). For `"converse"`, absent, or
-not plan-backed: use the boto3 template below.
+**Code-path branch (per unit):** read
+`design.json.units[<unit-id>].model_recommendation.api_path`. For `mantle_messages`, generate an
+`AnthropicBedrockMantle` Messages client. For `runtime_converse`, use the boto3 Converse
+template. For `runtime_invoke`, use boto3 InvokeModel with the provider-native body. Future
+`mantle_openai_chat` and `mantle_openai_responses` paths use their matching OpenAI-compatible
+clients. Never branch on one run-wide `migration_path` string.
 
-Use this template verbatim, substituting `<MODEL_ID>` with the Step 2 value **for this unit**
-(or the `TODO: verify model id` placeholder if the MCP was not called). In a multi-unit POC,
-each unit's agent.py uses THAT unit's model id from `design.json.units[<unit-id>].model_recommendation`:
+The template below applies only to `runtime_converse`. Use it verbatim for that path,
+substituting `<MODEL_ID>` with the Step 2 invocation ID **for this unit** (or the
+`TODO: verify model id` placeholder if the MCP was not called). For the other API paths, keep
+the same `/invocations` and `/ping` HTTP wrapper but replace the imports, client construction,
+and `run_prompt` implementation with the selected path's client. Do not paste a Converse call
+into a Mantle or InvokeModel POC. In a multi-unit POC, each unit's agent.py uses THAT unit's
+model decision from `design.json.units[<unit-id>].model_recommendation`:
 
 ```python
 """Minimal AgentCore POC agent — proves the Bedrock loop works end to end.

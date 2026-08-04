@@ -31,7 +31,17 @@ In the provided path, look for:
 
 - **Framework** (imports / requirements.txt / package.json): `strands`, `langgraph` /
   `langchain`, `crewai` / `autogen`, `openai` (Agents SDK), else `custom` / `none`.
-- **Model provider**: openai / anthropic / google-genai / bedrock mentions.
+- **Model call inventory**: for every model-bearing unit, record exact provider, raw model-ID
+  strings, SDK/package, API surface, and source paths. Provider vocabulary:
+  `anthropic | openai | azure_openai | google_genai | bedrock | none | unknown`. API surfaces
+  include Anthropic `messages`, OpenAI `chat_completions` / `responses`, and Bedrock
+  `converse` / `invoke_model`. Do not collapse exact IDs such as
+  `claude-3-7-sonnet-latest` into a coarse `claude` family.
+- **Anthropic migration-sensitive features**: `budget_tokens`; `temperature` / `top_p` /
+  `top_k`; assistant-prefill messages; refusal handling; explicit or framework-default
+  `max_tokens`; structured output; prompt caching; server tools; Files API / URL sources;
+  Message Batches; fallbacks; conversation-state IDs; Skills/MCP connector/managed-agent
+  dependencies. Record observed feature codes and source paths for Model Recommend.
 - **Session/timeout hints**: timeout configs, long-running loops, queue/HITL patterns.
 - **Multi-tenant hints**: per-user/tenant scoping, separate contexts.
 - **Compute hints**: GPU instance types, heavy compute (compilation, ML inference).
@@ -109,6 +119,14 @@ Write `$RUN_DIR/context-signals.json` mapping detected signals onto scoring keys
       "trigger": "request",
       "source": "detected",
       "framework": "langgraph",
+      "model_source": {
+        "provider": "anthropic",
+        "model_ids": ["claude-3-7-sonnet-latest"],
+        "sdk": "anthropic",
+        "api_surface": "messages",
+        "source_paths": ["src/agent.py"],
+        "detected_features": ["budget_tokens", "assistant_prefill"]
+      },
       "coupling": {
         "interacts_with": ["summarizer"],
         "mode": "queue"
@@ -132,9 +150,9 @@ Write `$RUN_DIR/context-signals.json` mapping detected signals onto scoring keys
 
 Only include keys you can detect with reasonable confidence. Everything else stays for Clarify.
 
-`model_provider` (openai | anthropic | google-genai | bedrock | none) is not a scoring key —
-it records which AI provider the code calls, and gates the migration-plan offer in Generate
-Step 6. Include it whenever provider detection succeeded.
+Keep the top-level `model_provider` compatibility field, but derive it from the primary unit's
+`model_source.provider`. `model_provider` is not a scoring key. The structured per-unit
+`model_source` object is authoritative for Model Recommend and the downstream handoff.
 
 ## Step 3 — Tell the user what was detected
 

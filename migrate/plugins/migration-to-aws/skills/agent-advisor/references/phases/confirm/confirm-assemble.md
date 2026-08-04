@@ -2,7 +2,7 @@
 _assemble: assemble-confirm
 _of_phase: confirm
 _reads:
-  - winner-specific follow-up answers (collected inline in confirm.md)
+  - winner-specific runtime and model/path confirmations (collected inline in confirm.md)
 _produces:
   - confirm.json
 ---
@@ -16,4 +16,6 @@ _produces:
 > the phase: it is the single creator of `confirm.json`, and its postconditions
 > (declared on the phase) are the phase's completion gate. See `confirm.md`
 > § Step 5 for the confirm.json shape (`deployment_model`, `agentcore_services`,
-> `chosen_runtime` when co_recommend, `tool_choices`).
+> `chosen_runtime` when co_recommend, `tool_choices`, and accepted `model_decision`).
+> `model_decision.accepted` records strategy acceptance; `verification_status`
+> independently records whether the exact model/path was invocable in the target account.

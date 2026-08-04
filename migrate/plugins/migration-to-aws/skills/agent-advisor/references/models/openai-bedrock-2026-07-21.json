@@ -1,0 +1,257 @@
+{
+  "schema_version": 2,
+  "provider": "openai",
+  "verified_at": "2026-07-21",
+  "verified_region": "us-east-2",
+  "source": "AWS Bedrock userguide OpenAI model cards + models-api-compatibility (retrieved 2026-07-21); internal migration reference, OpenAI path (feature-level probes, 2026-06-20)",
+  "disclaimer": "This is the OpenAI-to-Bedrock MIGRATION target catalog, not a list of OpenAI models: it holds the verified landing candidates for BOTH paths. Mantle (generation 'reasoning') carries the OpenAI GPT-5.x models, which per the AWS model cards are Responses-only and Mantle-only. runtime_converse (generation 'bedrock_native') carries the Claude candidates used when runtime governance (Guardrails/invocation logging) is required: the source OpenAI tier maps to the matching Claude tier — GPT-5.6 Sol -> Claude Opus 4.8, GPT-5.6 Terra / GPT-5.5 / GPT-5.4 -> Claude Sonnet 5, GPT-5.6 Luna -> Claude Haiku 4.5 — with capability-evidence fallback between tiers. Factual note: the gpt-oss open-weight models (openai.gpt-oss-120b-1:0 / -20b) DO support Converse/Invoke/Chat Completions on bedrock-runtime (AWS API-compatibility matrix 2026-07-21); they are not listed as recommendation candidates because they sit a capability class below the GPT-5.x/Claude frontier tier — add them with dated evidence if a family-continuity governance path is wanted. Only models with dated evidence are listed; entries name their evidence. Only the reference-probed entry (gpt-5.4) has feature-level Mantle behavior probes — verify feature behavior per model before relying on it. Numeric limits stay 'unknown' unless sourced. Re-probe every selected model and API path in the target account and region before implementation.",
+  "paths": {
+    "mantle_openai_responses": {
+      "sdk": "openai",
+      "client": "OpenAI(base_url=bedrock-mantle)",
+      "endpoint": "https://bedrock-mantle.{region}.api.aws/openai/v1",
+      "api": "responses",
+      "iam_auth": "bedrock_bearer_token_or_sigv4",
+      "model_id_strategy": "clean_openai_model_id",
+      "supports_cris": false,
+      "strengths": [
+        "Preserves the OpenAI SDK and minimizes client rewrite",
+        "GPT-5.x on Bedrock Mantle is served through the Responses API"
+      ],
+      "constraints": [
+        "GPT-5.x on Mantle rejects Chat Completions; a Chat Completions source must reshape to Responses (reference-verified on gpt-5.4; the gpt-5.6-sol model card also lists Chat Completions unsupported)",
+        "Geo/Global cross-region inference is not supported for OpenAI models per the AWS model cards (in-region only)",
+        "Availability must be probed in the target account and region"
+      ]
+    },
+    "mantle_openai_chat": {
+      "sdk": "openai",
+      "client": "OpenAI(base_url=bedrock-mantle)",
+      "endpoint": "https://bedrock-mantle.{region}.api.aws/openai/v1",
+      "api": "chat_completions",
+      "iam_auth": "bedrock_bearer_token_or_sigv4",
+      "model_id_strategy": "clean_openai_model_id",
+      "supports_cris": false,
+      "strengths": [
+        "OpenAI-compatible Chat Completions surface for models that accept it"
+      ],
+      "constraints": [
+        "Not available for the GPT-5.x models listed here: rejected on gpt-5.4 (internal reference probe) and unsupported on the gpt-5.6-sol model card",
+        "Availability and model support must be probed in the target account and region"
+      ]
+    },
+    "runtime_converse": {
+      "sdk": "boto3",
+      "client": "bedrock-runtime.Converse",
+      "endpoint": "https://bedrock-runtime.{region}.amazonaws.com",
+      "api": "converse",
+      "iam_action": "bedrock:InvokeModel",
+      "model_id_strategy": "cris_inference_profile",
+      "supports_cris": true,
+      "strengths": [
+        "Bedrock-native multi-model request surface",
+        "Supports Bedrock Guardrails, invocation logging, and CloudWatch"
+      ],
+      "constraints": [
+        "Uses a Bedrock-native model, not a GPT-5.x model (the GPT-5.x models on Bedrock are Mantle/Responses-only per their model cards; only the gpt-oss open-weight models support Converse and they are not frontier-tier); the OpenAI SDK integration must be rewritten to boto3 Converse",
+        "Bedrock-native models generally require a Global or geography-scoped CRIS inference profile",
+        "Availability must be probed in the target account and region"
+      ]
+    }
+  },
+  "models": {
+    "openai_gpt_5_6_sol": {
+      "display_name": "OpenAI GPT-5.6 Sol (on Bedrock)",
+      "family": "openai_gpt_5",
+      "generation": "reasoning",
+      "version": "5.6",
+      "class": "reasoning",
+      "context_window": 272000,
+      "output_token_ceiling": "unknown",
+      "capabilities": [
+        "reasoning",
+        "tool_or_function_calling",
+        "image_input_vision"
+      ],
+      "capability_source": "AWS model card 2026-07-21 (launch 2026-07-13, Active): frontier reasoning/agentic, image+text input checked; tool calling via the Responses API's built-in tool use (models-api-compatibility). Structured output/streaming behavior not feature-probed on Mantle — verify before relying.",
+      "paths": {
+        "mantle_openai_responses": {
+          "available": true,
+          "model_id": "openai.gpt-5.6-sol",
+          "requires_cris": false,
+          "evidence": "AWS model card model-card-openai-gpt-56-sol (2026-07-21): bedrock-mantle + Responses checked; Chat Completions/Invoke/Converse unchecked; Geo/Global inference not supported"
+        },
+        "mantle_openai_chat": {
+          "available": false,
+          "model_id": "openai.gpt-5.6-sol",
+          "requires_cris": false,
+          "evidence": "AWS model card: Chat Completions unchecked for this model"
+        }
+      }
+    },
+    "openai_gpt_5_5": {
+      "display_name": "OpenAI GPT-5.5 (on Bedrock)",
+      "family": "openai_gpt_5",
+      "generation": "reasoning",
+      "version": "5.5",
+      "class": "reasoning",
+      "context_window": 272000,
+      "output_token_ceiling": "unknown",
+      "capabilities": [
+        "reasoning",
+        "tool_or_function_calling"
+      ],
+      "capability_source": "AWS model card 2026-07-21 (launch 2026-06-01, Active): advanced coding/agentic tasks; tool calling via the Responses API's built-in tool use. Feature-level Mantle behavior not probed — verify before relying.",
+      "paths": {
+        "mantle_openai_responses": {
+          "available": true,
+          "model_id": "openai.gpt-5.5",
+          "requires_cris": false,
+          "evidence": "AWS model card model-card-openai-gpt-55 (2026-07-21): bedrock-mantle Programmatic Access with Responses sample code; Geo/Global inference not supported"
+        }
+      }
+    },
+    "openai_gpt_5_6_terra": {
+      "display_name": "OpenAI GPT-5.6 Terra (on Bedrock)",
+      "family": "openai_gpt_5",
+      "generation": "reasoning",
+      "version": "5.6",
+      "class": "reasoning",
+      "context_window": "unknown",
+      "output_token_ceiling": "unknown",
+      "capabilities": [
+        "reasoning",
+        "tool_or_function_calling"
+      ],
+      "capability_source": "AWS model card 2026-07-21: balanced performance at half GPT-5.5 cost; tool calling via the Responses API's built-in tool use. Context window not captured from the card — treat as unknown.",
+      "paths": {
+        "mantle_openai_responses": {
+          "available": true,
+          "model_id": "openai.gpt-5.6-terra",
+          "requires_cris": false,
+          "evidence": "AWS model card model-card-openai-gpt-56-terra (2026-07-21): bedrock-mantle Programmatic Access with Responses sample code; Geo/Global inference not supported"
+        }
+      }
+    },
+    "openai_gpt_5_6_luna": {
+      "display_name": "OpenAI GPT-5.6 Luna (on Bedrock)",
+      "family": "openai_gpt_5",
+      "generation": "reasoning",
+      "version": "5.6",
+      "class": "reasoning",
+      "context_window": "unknown",
+      "output_token_ceiling": "unknown",
+      "capabilities": [
+        "reasoning",
+        "tool_or_function_calling"
+      ],
+      "capability_source": "AWS model card 2026-07-21: fastest/lowest-cost OpenAI tier for high-volume tasks; tool calling via the Responses API's built-in tool use. Context window not captured from the card — treat as unknown.",
+      "paths": {
+        "mantle_openai_responses": {
+          "available": true,
+          "model_id": "openai.gpt-5.6-luna",
+          "requires_cris": false,
+          "evidence": "AWS model card model-card-openai-gpt-56-luna (2026-07-21): bedrock-mantle Programmatic Access with Responses sample code; Geo/Global inference not supported"
+        }
+      }
+    },
+    "openai_gpt_5_4": {
+      "display_name": "OpenAI GPT-5.4 (on Bedrock)",
+      "family": "openai_gpt_5",
+      "generation": "reasoning",
+      "version": "5.4",
+      "class": "reasoning",
+      "context_window": "unknown",
+      "output_token_ceiling": "unknown",
+      "capabilities": [
+        "tool_or_function_calling",
+        "structured_output_json",
+        "reasoning",
+        "streaming"
+      ],
+      "capability_source": "internal reference smoke tests and its reasoning-API migration notebook (Responses path, 2026-06 probes) — the only entry with feature-level Mantle behavior probes (tools, structured output, sampling); limits not stated",
+      "paths": {
+        "mantle_openai_responses": {
+          "available": true,
+          "model_id": "openai.gpt-5.4",
+          "requires_cris": false,
+          "evidence": "internal reference smoke-test default Mantle model id; client.responses.create verified live"
+        },
+        "mantle_openai_chat": {
+          "available": false,
+          "model_id": "openai.gpt-5.4",
+          "requires_cris": false,
+          "evidence": "internal reference verified gotcha: GPT-5.x on Mantle is Responses-only; Chat Completions rejected"
+        }
+      }
+    },
+    "anthropic_claude_sonnet_5": {
+      "display_name": "Claude Sonnet 5 (Converse tier match for GPT-5.6 Terra / 5.5 / 5.4)",
+      "family": "anthropic_claude",
+      "generation": "bedrock_native",
+      "version": "5",
+      "class": "runtime_native",
+      "context_window": 1000000,
+      "output_token_ceiling": 128000,
+      "capabilities": [
+        "tool_or_function_calling",
+        "reasoning",
+        "image_input_vision"
+      ],
+      "capability_source": "AWS model card model-card-anthropic-claude-sonnet-5 (2026-07-21): Converse checked, 1M context / 128K output, adaptive thinking always on, image input checked (tool_use/thinking/vision mapped to this provider's feature vocabulary). Balanced Claude tier — the Converse target for GPT-5.6 Terra, GPT-5.5, GPT-5.4, and unmatched/legacy sources.",
+      "paths": {
+        "runtime_converse": {
+          "available": true,
+          "model_id": "anthropic.claude-sonnet-5",
+          "requires_cris": true,
+          "evidence": "AWS model card (2026-07-21): Converse on bedrock-runtime checked; Geo (us/eu/au) and Global CRIS supported"
+        }
+      }
+    },
+    "anthropic_claude_opus_4_8": {
+      "display_name": "Claude Opus 4.8 (Converse tier match for GPT-5.6 Sol)",
+      "family": "anthropic_claude",
+      "generation": "bedrock_native",
+      "version": "4.8",
+      "class": "runtime_native",
+      "context_window": 1000000,
+      "output_token_ceiling": 128000,
+      "capabilities": [
+        "tool_or_function_calling",
+        "reasoning",
+        "image_input_vision"
+      ],
+      "capability_source": "anthropic-bedrock-2026-07-21 catalog (runtime_converse available; tool_use/extended_thinking/vision mapped to this provider's feature vocabulary). Frontier Claude tier — the Converse target for GPT-5.6 Sol.",
+      "paths": {
+        "runtime_converse": {
+          "available": true,
+          "model_id": "anthropic.claude-opus-4-8",
+          "requires_cris": true,
+          "evidence": "anthropic-bedrock-2026-07-21 catalog runtime_converse entry (requires CRIS profile)"
+        }
+      }
+    },
+    "anthropic_claude_haiku_4_5": {
+      "display_name": "Claude Haiku 4.5 (Converse tier match for GPT-5.6 Luna)",
+      "family": "anthropic_claude",
+      "generation": "bedrock_native",
+      "version": "4.5",
+      "class": "runtime_native",
+      "context_window": 200000,
+      "output_token_ceiling": 64000,
+      "capabilities": [
+        "tool_or_function_calling",
+        "image_input_vision"
+      ],
+      "capability_source": "anthropic-bedrock-2026-07-21 catalog (runtime_converse available; tool_use/vision mapped to this provider's feature vocabulary; no extended-thinking evidence, so reasoning-requiring workloads fall back to a higher Claude tier). Fast/low-cost Claude tier — the Converse target for GPT-5.6 Luna.",
+      "paths": {
+        "runtime_converse": {
+          "available": true,
+          "model_id": "anthropic.claude-haiku-4-5-20251001-v1:0",
+          "requires_cris": true,
+          "evidence": "anthropic-bedrock-2026-07-21 catalog runtime_converse entry (requires CRIS profile)"
+        }
+      }
+    }
+  }
+}

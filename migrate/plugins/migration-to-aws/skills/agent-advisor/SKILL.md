@@ -57,8 +57,17 @@ phase (the one carrying `_init: true`). On a warm start, `current_phase` in
 - **Run root**: `.agent-advisor/` — `$RUN_DIR` is this skill's name for the run directory
   (`.agent-advisor/[MMDD-HHMM]/`). Intake's own prose performs the `_init` bootstrap.
 - **State shape**: § State file below (advisor-specific keys such as `entry_point`,
-  `audience`, `recommendation_reviewed`, `migration_plan_ctx`); the shared state schema is
-  not vendored.
+  `audience`, `recommendation_reviewed`, `migration_plan_ctx`, `migration_plan_unavailable`);
+  the shared state schema is not vendored.
+- **Run seed (optional)**: `$RUN_DIR/seed.json`, else `.agent-advisor/seed.json` at the run root
+  (schema `scripts/schemas/seed.json`) supplies
+  machine-readable answers for a non-interactive run — the Clarify dimensions, the two gate
+  answers, the POC mode, the live-probe answer, and a `co_recommend` tie-break. It is the
+  HIGHEST-precedence source for every value it carries (clarify.md Step 2.5), which is what makes
+  a repeated run's score comparable: the deterministic engine gets byte-identical input. A gate
+  the seed omits is declined; a dimension the seed omits falls through to detection, then prose,
+  then an `assumed` value that MUST be recorded in `$RUN_DIR/UNANSWERED.md`. With no seed, the
+  interactive flow is unchanged.
 - **Resolved statuses**: `skipped` (routing resolved the phase without running it), plus
   `not_applicable` for `migration_plan` only.
 - **Conditional backbone routing**: the entry-point routing below. When a routing rule
@@ -95,8 +104,11 @@ this file (`INTERPRETER.md` § Skill bindings, § Backbone vs sidebar).
   `references/decision-refs/poc-shapes.md`). Gate 2 is only offered when `migration_plan`
   ∈ {completed, skipped, not_applicable} — or `in_progress` on build_deploy only (Stage 2
   failed/aborted; fallback POC from design.json per migration-plan.md failure handling);
-  for entry point `migrate`, only when `migration_plan == "completed"` (a migrate-POC
-  without a plan has nothing to implement).
+  for entry point `migrate`, only when `migration_plan == "completed"` (the POC implements the
+  plan) OR when the stage resolved `not_applicable` with `migration_plan_unavailable ==
+  "engine_absent"` — a standalone deployment that does not bundle the migration engine, where
+  Gate 2 is offered by migration-plan.md Step -1 and the POC is design-backed. A migrate-POC
+  with no plan for any OTHER reason (the user declined) has nothing to implement.
 - Persisting Gate 2 as `phases.poc = "in_progress"` BEFORE poc.md loads makes the
   confirmation resumable: if the session breaks between the "yes" and the load, the
   interpreter re-enters `poc` without re-asking. (A declared deviation from
