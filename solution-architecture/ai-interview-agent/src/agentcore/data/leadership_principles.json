@@ -1,0 +1,67 @@
+[
+  {
+    "id": "customer_obsession",
+    "name": "Customer Obsession",
+    "description": "Leaders start with the customer and work backwards. They work vigorously to earn and keep customer trust. Although leaders pay attention to competitors, they obsess over customers.",
+    "questions": [
+      "Describe a difficult interaction you had with a customer. How did you deal with it? What was the outcome? How would you handle it differently?",
+      "Tell me about a time when you went above and beyond for a customer. Why did you do it? How did the customer respond? What was the outcome?",
+      "Give me an example of when you were able to anticipate a customer need with a solution or product they did not know they needed or wanted yet. How did you know they needed this? How did they respond?",
+      "Give me an example of a time when you asked for customer feedback. How did you use that feedback to drive innovation or improvement? How did the customer respond?",
+      "Tell me about a time when you evaluated the customer experience of your product or service. What did you do? What was the result?",
+      "Tell me about a time when a customer came to you for something that would not actually address their need. How did you approach the situation? What was the result?",
+      "Sometimes customers make unreasonable requests. Tell me about a time when you have had to push back or say no to a customer request. What did you say or do in response to that request?",
+      "Tell me about a time when you had to balance the needs of the customer with the needs of the business. What did you do? What was the result?",
+      "Give me an example of a time when you had to think about the unique backgrounds of a customer base (either internal or external) that you hadn't yet served. How did you know what products or services they needed?",
+      "Give me an example of a change you implemented in your current team or organization to meet the needs of your customers. What has been the result? (Manager)"
+    ],
+    "difficulty_level": "mid"
+  },
+  {
+    "id": "ownership",
+    "name": "Ownership",
+    "description": "Leaders are owners. They think long term and don't sacrifice long-term value for short-term results. They act on behalf of the entire company, beyond just their team. They never say 'that's not my job.'",
+    "questions": [
+      "Tell me about a time when you took on something significant outside your area of responsibility. Why was it important? What was the outcome?",
+      "Describe a time when you didn't think you were going to meet a commitment you promised. How did you identify the risk and communicate it to stakeholders? Is there anything you would do differently?",
+      "Give me an example of an initiative you undertook because you saw that it could benefit the whole company or your customers, but wasn't within any group's individual responsibility so nothing was being done.",
+      "Tell me about a time when you made a hard decision to sacrifice short term gain for something that would create long term value for the business. What was the outcome? Knowing what you know now, would you have done anything differently?",
+      "Describe a time when you had to transition a project you owned to a new owner. What steps did you take to make sure the transition went smoothly? Tell me about a time that you chose to get involved in a project that you had already transitioned to somebody else. What was the situation? Why was it important to get involved?",
+      "Tell me about a time when you saw a peer struggling and decided to step in and help. What was the situation? Why did you decide to step in? What actions did you take?"
+    ],
+    "difficulty_level": "mid"
+  },
+  {
+    "id": "bias_for_action",
+    "name": "Bias for Action",
+    "description": "Speed matters in business. Many decisions and actions are reversible and do not need extensive study. We value calculated risk taking.",
+    "questions": [
+      "Give me an example of a calculated risk that you have taken where speed was critical. What was the situation and how did you handle it? What steps did you take to mitigate the risk? What was the outcome? Knowing what you know now, would you have done anything differently?",
+      "Tell me about a time when you worked against tight deadlines and didn't have time to consider all options before making a decision. How much time did you have? What approach did you take? What did you learn from the situation?",
+      "Describe a situation where you made an important business decision without consulting your manager. What was the situation and how did it turn out? Would you have done anything differently?",
+      "Tell me about a time when you had to gather information and respond immediately to a situation. What was the outcome? Would you have done anything differently?",
+      "Give me an example of when you had to make an important decision and had to decide between moving forward or gathering more information. What did you do? What was the outcome? What information is necessary for you to have before acting?",
+      "Tell me about a time when you saw an issue that would impact your team and took a proactive approach to solve it. What was the issue? What did you do and what was the outcome? What did you learn from this situation?",
+      "Tell me about a time when you had to make a decision quickly but needed to gather diverse perspectives from those on your team?",
+      "Tell me about a time when you felt your team was not moving to action quickly enough. What was the situation? What did you do? What was the outcome? Would you have done anything differently? (Manager)",
+      "Tell me about a time when you were able to remove a serious roadblock/barrier preventing your team from making progress. What was the barrier? How were you able to remove it? What was the outcome? Knowing what you know now, would you have done anything differently? (Manager)"
+    ],
+    "difficulty_level": "mid"
+  },
+  {
+    "id": "deliver_results",
+    "name": "Deliver Results",
+    "description": "Leaders focus on the key inputs for their business and deliver them with the right quality and in a timely fashion. Despite setbacks, they rise to the occasion and never settle.",
+    "questions": [
+      "Give me an example of a time when you were able to deliver an important project under a tight deadline. What sacrifices did you have to make to meet the deadline? How did they impact the final deliverable? What was the final outcome?",
+      "Tell me about a time when you had significant, unanticipated obstacles to overcome in achieving a key goal. What was the obstacle? Were you eventually successful? Knowing what you know now, is there anything you would have done differently?",
+      "Tell me about a time when you not only met a goal but considerably exceeded expectations. How were you able to do it? What challenges did you have to overcome?",
+      "Tell me about a time when you or your team were more than half way to meeting a goal when you realized it may not be the right goal or may have unintended consequences. What was the situation? What did you do? What was the outcome? Looking back, would you have done anything differently?",
+      "Give me an example of a mission or goal you didn't think was achievable. What was it and how did you help your team try to achieve it? Were you successful in the end? Looking back, would you have done anything differently?",
+      "Tell me about a time when you did not effectively manage your projects and something did not get completed on time. What was the impact? What approaches do you use to make sure you are focusing on the right deliverables when you have several competing priorities?",
+      "How have you delivered quality service for customers with diverse needs? What obstacles did you encounter and how did you overcome them? How did you audit customer experience?",
+      "It can be difficult to set goals for a team that are challenging, yet achievable. Tell me about a time when you hit the right balance. How did you approach setting the goals? What was the outcome? (Manager)"
+    ],
+    "difficulty_level": "mid"
+  }
+]
