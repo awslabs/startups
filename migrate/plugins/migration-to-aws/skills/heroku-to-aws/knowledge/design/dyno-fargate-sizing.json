@@ -10,6 +10,20 @@
   },
   "_load_balancer": "true iff process_type == 'web' (also emits a separate ALB service entry); false otherwise",
   "rows": {
+    "eco": {
+      "heroku_cpu_share": "1x",
+      "heroku_memory_mb": 512,
+      "fargate_cpu": 256,
+      "fargate_memory": 512,
+      "_note": "Smallest legal Fargate task size (256 CPU units permits 512/1024/2048 MiB only). Heroku Eco is a shared $5/month 1000 dyno-hour pool and Eco dynos sleep when idle; the Fargate task is always-on and billed per second, so the cost SHAPE changes even though the size matches. See the Eco dyno rule in references/shared/heroku-pricing-cache.md."
+    },
+    "basic": {
+      "heroku_cpu_share": "1x",
+      "heroku_memory_mb": 512,
+      "fargate_cpu": 256,
+      "fargate_memory": 512,
+      "_note": "Smallest legal Fargate task size (256 CPU units permits 512/1024/2048 MiB only). Basic dynos never sleep, so this is a like-for-like always-on mapping."
+    },
     "standard-1x": { "heroku_cpu_share": "1x", "heroku_memory_mb": 512, "fargate_cpu": 256, "fargate_memory": 512 },
     "standard-2x": { "heroku_cpu_share": "2x", "heroku_memory_mb": 1024, "fargate_cpu": 512, "fargate_memory": 1024 },
     "performance-m": {

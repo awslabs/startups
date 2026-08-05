@@ -159,17 +159,17 @@ Deterministic ID format per resource type:
 {
   "process_type": "web|worker|release|clock|<custom>",
   "command": "npm start",
-  "dyno_type": "standard-1x|standard-2x|performance-m|performance-l|private-s|private-m|private-l",
+  "dyno_type": "eco|basic|standard-1x|standard-2x|performance-m|performance-l|performance-l-ram|performance-xl|performance-2xl|private-s|private-m|private-l|private-l-ram|private-xl|private-2xl|shield-s|shield-m|shield-l|shield-l-ram|shield-xl|shield-2xl",
   "quantity": 2
 }
 ```
 
-| Field          | Type            | Required | Description                     |
-| -------------- | --------------- | -------- | ------------------------------- |
-| `process_type` | string          | ✅       | Process type name from Procfile |
-| `command`      | string          | ✅       | Start command from Procfile     |
-| `dyno_type`    | string          | ✅       | Heroku dyno size                |
-| `quantity`     | integer (0–100) | ✅       | Number of dynos running         |
+| Field          | Type            | Required | Description                                                                               |
+| -------------- | --------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `process_type` | string          | ✅       | Process type name from Procfile                                                           |
+| `command`      | string          | ✅       | Start command from Procfile                                                               |
+| `dyno_type`    | string          | ✅       | Heroku dyno size, lowercased (authoritative tier list: `knowledge/design/` sizing tables) |
+| `quantity`     | integer (0–100) | ✅       | Number of dynos running                                                                   |
 
 ### `addon` config
 
