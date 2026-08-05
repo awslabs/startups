@@ -91,7 +91,7 @@ exactly:
   notes]; **4.3 Scaling & limits** [volatile_facts + service cards, "verify current"];
   pipelines note)
 - **[§5 Temporal migration]** — CONDITIONAL (only when `TEMPORAL_UNITS_PRESENT`): scope
-  callout, layer table w/ PRE-RELEASE flag, runbook w/ preconditions callout + ordered steps,
+  callout, layer table w/ Public Preview flag, runbook w/ preconditions callout + ordered steps,
   Bedrock follow-up note. Per the temporal reference (report-v3-reference-temporal.html).
 - **§Cost** (5.1 breakdown table from `estimate.json.units[].breakdown`; 5.2 assumptions
   list; 5.3 "What moves the number" from `drivers[]`) — section number is 5 if temporal
@@ -376,7 +376,7 @@ moves the Workers and the work they execute; there is no Step Functions translat
   <thead><tr><th>Layer</th><th>Decision</th><th>Basis</th></tr></thead>
   <tbody>
     <tr><td>Server</td><td>{{ TEMPORAL_SERVER_DECISION }}</td><td>{{ TEMPORAL_SERVER_BASIS }}</td></tr>
-    <tr><td>Polling tier</td><td>{{ TEMPORAL_POLLING_DECISION }}{{ IF SERVERLESS_WORKERS_IN_TIER1 }} <span class="pre-flag">PRE-RELEASE</span>{{ END IF }}</td>
+    <tr><td>Polling tier</td><td>{{ TEMPORAL_POLLING_DECISION }}{{ IF SERVERLESS_WORKERS_IN_TIER1 }} <span class="pre-flag">Public Preview</span>{{ END IF }}</td>
         <td>{{ TEMPORAL_POLLING_BASIS }}</td></tr>
     <tr><td>Execution tier</td><td>{{ TEMPORAL_EXECUTION_SUMMARY }}</td>
         <td>{{ TEMPORAL_EXECUTION_BASIS }}</td></tr>

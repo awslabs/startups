@@ -191,7 +191,7 @@ layout. See poc.md Step 3 UNIT DISPATCH as the authority.
 
 **Base shape follows the unit's `effective_runtime`, NOT always ECS:**
 
-- `effective_runtime == "ecs"` (or `serverless_workers`, which is PRE-RELEASE and smoke-deploys
+- `effective_runtime == "ecs"` (or `serverless_workers`, which is Public Preview and smoke-deploys
   on ecs) → reuse the **ecs** shape's Terraform whitelist/never-list and guardrails, with the
   Temporal deltas below.
 - `effective_runtime == "eks"` → reuse the **eks** shape's cluster model (kubectl + existing
