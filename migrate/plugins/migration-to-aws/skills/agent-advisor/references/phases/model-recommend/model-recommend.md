@@ -241,6 +241,13 @@ uv run --with boto3 --with anthropic python "$SCRIPTS/verify_model_path.py" \
   --output "$RUN_DIR/model-verification.json"
 ```
 
+**Each API path needs its own client library.** The line above covers the Anthropic and runtime
+paths. A workload on `mantle_openai_responses` additionally needs `--with openai --with
+aws-bedrock-token-generator`; without them that workload comes back `failed` with a
+`RuntimeError` naming the missing package, while every other workload still probes normally. So a
+`failed` status here can mean "the dependency was absent", not "the model is unavailable" — read
+the error type before treating it as a capability finding.
+
 The verifier must call only the recorded `invocation_model_id`; it never substitutes another
 model. Runtime recommendations with an unresolved CRIS profile produce `needs_resolution`.
 Keep `model-verification.json` when generated and show its per-workload status. A failed probe

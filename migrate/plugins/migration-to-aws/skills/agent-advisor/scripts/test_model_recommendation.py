@@ -4,6 +4,7 @@ import pathlib
 import jsonschema
 import pytest
 
+import anthropic_model_recommendation
 import model_recommendation
 
 
@@ -299,6 +300,57 @@ def test_runtime_cris_resolution(requirements, expected):
     assert rec["api_path"] == "runtime_converse"
     assert rec["invocation_model_id"] == expected
     assert rec["verification"]["invocation_model_id"] == expected
+
+
+# The intended treatment of every provider the input schema allows, written here rather than derived
+# from the code — a test that reads its expectation out of the constant it is checking cannot catch a
+# drift in that constant. "anthropic" means a real recommendation from a module that understands the
+# source; "generic" means a recommendation that carries `provider_module_pending` and stays
+# provisional; "openai" has its own module and its own test suite.
+PROVIDER_TREATMENT = {
+    "anthropic": "anthropic",
+    "none": "anthropic",  # no detected provider -> Bedrock-native pool
+    "unknown": "anthropic",
+    "openai": "openai",
+    "azure_openai": "generic",
+    "google_genai": "generic",
+    "bedrock": "generic",
+}
+
+
+def test_every_schema_provider_routes_and_is_labelled_honestly():
+    """Every provider the schema allows must route to a real module and be labelled honestly.
+
+    The orchestrator sends everything non-OpenAI to the Anthropic module, which then classifies the
+    source against its own ANTHROPIC_POOL. Two places, one rule — so this pins the rule itself, and
+    fails if either side moves or if a provider is added to the schema without deciding its
+    treatment."""
+    scripts = pathlib.Path(model_recommendation.__file__).parent
+    schema = json.loads(
+        (scripts / "schemas" / "model-recommendation-input.json").read_text()
+    )
+    # `source` is a $ref into $defs, so the enum is read from there rather than inline.
+    assert schema["properties"]["workloads"]["items"]["properties"]["source"] == {
+        "$ref": "#/$defs/source"
+    }
+    providers = schema["$defs"]["source"]["properties"]["provider"]["enum"]
+    assert set(providers) == set(PROVIDER_TREATMENT), (
+        "a provider was added to the schema without deciding how it is treated"
+    )
+    assert anthropic_model_recommendation.ANTHROPIC_POOL == {
+        p for p, t in PROVIDER_TREATMENT.items() if t == "anthropic"
+    }
+
+    for provider, treatment in PROVIDER_TREATMENT.items():
+        module = "openai" if treatment == "openai" else "anthropic"
+        assert model_recommendation._provider_module(provider) == module, provider
+        if module == "openai":
+            continue
+        rec = _recommend(_workload(source={"provider": provider}))
+        assert rec["provider_module"] == treatment, provider
+        assert ("provider_module_pending" in _codes(rec["blocks"])) == (
+            treatment == "generic"
+        ), provider
 
 
 def test_future_provider_is_explicitly_provisional():

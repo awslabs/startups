@@ -20,14 +20,16 @@ MODELS_DIR = SKILL_DIR / "references" / "models"
 DEFAULT_CATALOG = MODELS_DIR / "anthropic-bedrock-2026-07-21.json"
 OPENAI_CATALOG = MODELS_DIR / "openai-bedrock-2026-07-21.json"
 
-# Source providers handled by a real, dedicated recommendation module.
-# Everything else falls through to the provisional generic Anthropic path.
-PROVIDER_MODULES = {
-    "anthropic": "anthropic",
-    "none": "anthropic",
-    "unknown": "anthropic",
-    "openai": "openai",
-}
+# Which provider module owns a source. This is a TWO-way decision, not a per-provider table: OpenAI
+# has its own module, and everything else goes to the Anthropic one — including `none`/`unknown` (no
+# detected provider means the Bedrock-native pool) and the providers with no module yet
+# (azure_openai, google_genai, bedrock). Routing those to the Anthropic module is deliberate rather
+# than a silent default: that module classifies the source against its own ANTHROPIC_POOL and attaches
+# a `provider_module_pending` [BLOCKS] finding to anything outside it, so the recommendation is
+# produced but stays provisional. Enumerating the fall-through providers here would duplicate that
+# classification in a second place and let the two drift.
+def _provider_module(provider):
+    return "openai" if provider == "openai" else "anthropic"
 
 
 
@@ -137,7 +139,7 @@ def recommend(input_data, catalog=None, openai_catalog=None):
         if workload_id in workloads:
             raise ValueError(f"duplicate workload_id: {workload_id}")
         provider = workload["source"]["provider"]
-        module = PROVIDER_MODULES.get(provider, "generic")
+        module = _provider_module(provider)
         if module == "openai":
             if openai_catalog is None:
                 openai_catalog = load_openai_catalog()

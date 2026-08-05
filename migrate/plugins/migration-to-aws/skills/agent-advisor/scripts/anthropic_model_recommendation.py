@@ -21,6 +21,12 @@ ANTHROPIC_PATHS = (
     "runtime_converse",
     "runtime_invoke",
 )
+# Sources this module can genuinely reason about. `none` and `unknown` belong here: a source with no
+# detected provider is treated as Bedrock-native and gets the Anthropic pool. Any OTHER provider
+# routed here (azure_openai, google_genai, bedrock) still gets a recommendation, but carries a
+# `provider_module_pending` [BLOCKS] finding so it stays provisional until that provider's own module
+# exists. The orchestrator sends everything non-OpenAI here, so this set is the real classification.
+ANTHROPIC_POOL = frozenset({"anthropic", "none", "unknown"})
 
 _PRIORITY_ORDER = {
     "quality": ["claude_opus_4_8", "claude_sonnet_5", "claude_haiku_4_5"],
@@ -694,9 +700,7 @@ def recommend_anthropic_workload(workload, region, catalog):
     )
     blocks, tuning = _base_findings(feature_status, source_analysis)
     provider = workload["source"]["provider"]
-    provider_module = (
-        "anthropic" if provider in {"anthropic", "none", "unknown"} else "generic"
-    )
+    provider_module = "anthropic" if provider in ANTHROPIC_POOL else "generic"
     if provider_module == "generic":
         blocks.append(
             _finding(
