@@ -45,6 +45,8 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "recommendation.migrate_if and recommendation.stay_if are non-empty arrays"
     _on_failure: _halt_and_inform
+  - _assert: "recommendation.outcome is one of {go, conditional_go, defer_for_evidence, stay}; conditions is a non-empty array when outcome is conditional_go; outcome may be stay only when path is stay"
+    _on_failure: _halt_and_inform
   - _assert: "projected_costs.aws_monthly_balanced is a positive number"
     _on_failure: _halt_and_inform
   - _assert: "every service in aws-design.json services[] appears in the cost breakdown, or is listed as 'unpriced' in warnings"

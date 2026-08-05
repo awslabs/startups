@@ -68,7 +68,7 @@ Output to user — build message from design contents:
 - If pipeline warnings: "N pipeline(s) detected (CI/CD requires manual config)."
 - VPC mode: "VPC design: [existing VPC referenced | new VPC generated with N subnets]."
 
-Format: "Design phase complete. [artifact summaries] Next required step: Phase 4 — Estimate. Load `references/phases/estimate/estimate.md` now."
+Format: "Phase 3 of 6 complete (Design). [artifact summaries] Remaining: Estimate → Generate (+ optional Feedback). Next required step: Phase 4 — Estimate. Load `references/phases/estimate/estimate.md` now."
 
 ---
 

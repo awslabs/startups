@@ -65,7 +65,7 @@ Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md
 Output to user:
 
 ```
-Generate phase complete.
+Phase 5 of 6 complete (Generate). Optional remaining: Feedback.
 
 Artifacts produced:
 • terraform/ — [N] Terraform files for AWS infrastructure
