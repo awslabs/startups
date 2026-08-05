@@ -20,7 +20,7 @@ ACCOUNT = "123456789012"
 
 class TestIsInferenceProfile:
     def test_geo_prefix_us(self):
-        assert is_inference_profile("us.anthropic.claude-sonnet-4-20250514-v1:0")
+        assert is_inference_profile("us.anthropic.claude-sonnet-4-6")
 
     def test_geo_prefix_eu(self):
         assert is_inference_profile("eu.anthropic.claude-haiku-4-5-20251001-v1:0")
@@ -38,8 +38,8 @@ class TestArnGeneration:
         assert arn == "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
 
     def test_inference_profile_arn(self):
-        arn = inference_profile_arn("us.anthropic.claude-sonnet-4-20250514-v1:0", REGION, ACCOUNT)
-        assert arn == f"arn:aws:bedrock:{REGION}:{ACCOUNT}:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0"
+        arn = inference_profile_arn("us.anthropic.claude-sonnet-4-6", REGION, ACCOUNT)
+        assert arn == f"arn:aws:bedrock:{REGION}:{ACCOUNT}:inference-profile/us.anthropic.claude-sonnet-4-6"
 
 
 class TestGeneratePolicy:
@@ -54,7 +54,7 @@ class TestGeneratePolicy:
         assert "foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0" in stmt["Resource"][0]
 
     def test_inference_profile_generates_dual_arns(self):
-        policy = generate_policy(["us.anthropic.claude-sonnet-4-20250514-v1:0"], REGION, ACCOUNT)
+        policy = generate_policy(["us.anthropic.claude-sonnet-4-6"], REGION, ACCOUNT)
         resources = policy["Statement"][0]["Resource"]
         assert len(resources) == 2
         has_foundation = any("foundation-model/" in r for r in resources)
@@ -64,7 +64,7 @@ class TestGeneratePolicy:
 
     def test_mixed_models(self):
         models = [
-            "us.anthropic.claude-sonnet-4-20250514-v1:0",
+            "us.anthropic.claude-sonnet-4-6",
             "amazon.nova-lite-v1:0",
         ]
         policy = generate_policy(models, REGION, ACCOUNT)
@@ -103,7 +103,7 @@ class TestCLI:
         result = subprocess.run(  # nosec B603
             [
                 sys.executable, str(Path(__file__).parent / "iam_policy.py"),
-                "--models", "us.anthropic.claude-sonnet-4-20250514-v1:0,amazon.nova-lite-v1:0",
+                "--models", "us.anthropic.claude-sonnet-4-6,amazon.nova-lite-v1:0",
                 "--region", REGION,
                 "--account-id", ACCOUNT,
                 "--output", str(out),

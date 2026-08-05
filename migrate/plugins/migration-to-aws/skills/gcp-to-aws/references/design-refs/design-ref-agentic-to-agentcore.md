@@ -108,7 +108,7 @@ from strands import Agent
 from strands.models import BedrockModel
 
 agent = Agent(
-    model=BedrockModel(model_id="us.anthropic.claude-sonnet-4-6-20250514-v1:0"),
+    model=BedrockModel(model_id="us.anthropic.claude-sonnet-4-6"),
     tools=[web_search, calculator, file_read],  # your existing tool functions with @tool decorator
     system_prompt="Your existing system prompt here"
 )

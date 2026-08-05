@@ -132,7 +132,7 @@ When Harness path is selected, write this to `aws-design-ai.json`:
 **Field rules:**
 
 - `harness_config.name` — Derived from first agent's `agent_id`. Use kebab-case.
-- `harness_config.model_id` — The Bedrock model ID selected in Part 1 (e.g., `us.anthropic.claude-sonnet-4-6-20250514-v1:0`)
+- `harness_config.model_id` — The Bedrock model ID selected in Part 1 (e.g., `us.anthropic.claude-sonnet-4-6`)
 - `harness_config.system_prompt` — Extracted from agent code if available; otherwise `"[TODO: Add system prompt from your agent definition]"`
 - `harness_config.tools` — Mapped from `tool_manifest[]` using the tool mapping decision tree above
 - `harness_config.source_model_provider` — `"open_ai"` or `"google"` based on `summary.ai_source`

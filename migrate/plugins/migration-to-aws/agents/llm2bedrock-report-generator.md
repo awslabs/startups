@@ -101,7 +101,7 @@ uv run --project <scriptsDir> python <scriptsDir>/bedrock_pricing.py --region <R
 ```
 
 - `<REGION>` is the `AWS region:` line in your context.
-- `<comma-separated target model ids>` is the right-hand side of each `target_models` pair, e.g. `us.anthropic.claude-sonnet-4-20250514-v1:0,amazon.nova-lite-v1:0`.
+- `<comma-separated target model ids>` is the right-hand side of each `target_models` pair, e.g. `us.anthropic.claude-sonnet-4-6,amazon.nova-lite-v1:0`.
 
 The script prints JSON keyed by model id with `{input_per_1k_usd, output_per_1k_usd, available, note}`. Parse that JSON and record each model's rates — you'll reference them in the cost comparison table. Note the rates are **per 1K tokens** (multiply by 1000 to get per-1M figures for the report table).
 
@@ -148,7 +148,7 @@ from collections import defaultdict
 # Fill in pricing from §6.1 (Bedrock, per-1M = per-1k * 1000) and §6.2 (source).
 MODEL_PAIRS = [
     # (source_model_id, bedrock_model_id, source_input, source_output, bedrock_input, bedrock_output)
-    # ("gpt-4o",      "anthropic.claude-sonnet-4-20250514-v1:0", 2.50, 10.00, 3.00, 15.00),
+    # ("gpt-4o",      "anthropic.claude-sonnet-4-6", 2.50, 10.00, 3.00, 15.00),
     # ("gpt-4o-mini", "amazon.nova-lite-v1:0",                    0.15,  0.60, 0.06,  0.24),
 ]
 
@@ -209,7 +209,7 @@ uv run --project <scriptsDir> python <scriptsDir>/iam_policy.py \
   --output <repo>/.saws-migrate/iam-policy.json
 ```
 
-The script handles the dual-ARN pattern: foundation-model ARNs for plain model IDs and inference-profile ARNs for geo-prefixed IDs (e.g. `us.anthropic.claude-sonnet-4-20250514-v1:0`). The output is a ready-to-use IAM policy JSON file.
+The script handles the dual-ARN pattern: foundation-model ARNs for plain model IDs and inference-profile ARNs for geo-prefixed IDs (e.g. `us.anthropic.claude-sonnet-4-6`). The output is a ready-to-use IAM policy JSON file.
 
 If the account ID is unavailable (run-context `aws_account` is empty), skip this step and note it in the Risk Assessment section as "IAM policy not generated — AWS account ID unavailable".
 
