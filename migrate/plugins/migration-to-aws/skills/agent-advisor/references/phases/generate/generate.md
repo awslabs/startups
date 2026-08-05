@@ -29,6 +29,10 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "recommendation.md fills all 12 sections (business summary first, technical detail after) with the freshness footer; mini-brief.md carries the recommendation, top-3 signals, eliminated, model, and any io_wait/fedramp/region/cris notes set in design.json (a non-agent unit in a mixed system may show 'no model' when its model_recommendation is null); recommendation-report.html was generated (Step 5 is not optional); when design.json has >1 unit, recommendation.md contains the System topology section and the report one unit card per unit; every unit card whose design.json unit has a non-null model_recommendation contains the 'Why this model' card (rationale paragraph + collapsed 'Full model & migration detail' details block) rendered from unit.model_recommendation values, not invented"
     _on_failure: _halt_and_inform
+  - _assert: "recommendation.md's architecture-diagram section carries diagram.md's content INLINE — the Mermaid fenced block itself (and the ASCII fallback when build_diagram.py produced one), copied verbatim. A pointer such as 'see diagram.md' does not satisfy it: the recommendation doc is read on its own, often as the only artifact a reader opens, and the diagram is the section's whole content"
+    _on_failure: _halt_and_inform
+  - _assert: "every score reported in recommendation.md, mini-brief.md, and the report is the engine's own number, exactly as scoring-result.json states it — no derived total, percentage, or invented denominator (scoring-result.json carries no maximum, so a form like '40/56' is a number the engine never produced)"
+    _on_failure: _halt_and_inform
   - _assert: "recommendation-report.html follows the v3 section spec from generate-report.md Step R1 — its numbered top-level sections are, in order: Summary, Assessment inputs, Recommendation(s), Target architecture, then (Temporal migration only when temporal units exist), Cost summary, Next steps, Generated artifacts, with the dynamic numbering R1 defines; an html whose top-level section structure was invented instead of taken from the template (a known failure mode after a mid-phase context compaction) fails this phase — re-read generate-report.md and regenerate"
     _on_failure: _halt_and_inform
 ---
@@ -49,6 +53,11 @@ attempt to load one; derive its content from `temporal.md` + `poc-shapes.md`.)
 
 Load `references/diagram/build-diagram.md` and follow it to produce `$RUN_DIR/diagram.md`
 (Mermaid + ASCII), then embed it into Section 4 of the recommendation doc.
+
+**Embed means paste the content, not link to it.** Copy `diagram.md`'s fenced Mermaid block (and its
+ASCII fallback) into Section 4 verbatim. "See `diagram.md`" leaves the section empty for anyone
+reading `recommendation.md` on its own, which is how it is usually read — it is the artifact that
+gets forwarded, and the diagram is that section's entire content.
 
 ## Step 3 — Fill the recommendation document
 

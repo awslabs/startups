@@ -12,7 +12,9 @@
 
 ## 3. Recommendation: `<Runtime>` <+ deployment model if AgentCore>
 
-<rationale + the top scoring signals; business framing then technical specifics.>
+<rationale + the top scoring signals; business framing then technical specifics. Quote each score the
+way scoring-result.json states it — a bare number. The engine publishes no maximum, so a fraction or
+a percentage ("40/56", "71%") asserts something it never computed.>
 
 ## 3b. System topology (multi-unit systems only — omit entirely for one unit)
 
@@ -26,7 +28,8 @@
 
 ## 4. Architecture diagram
 
-<INSERT the Mermaid block + ASCII fallback produced by the Generate diagram step (Plan 3).>
+<INSERT the Mermaid block + ASCII fallback produced by the Generate diagram step (Plan 3) — the
+blocks themselves, pasted in. Not "see diagram.md": this doc is read on its own.>
 
 ## 5. Alternatives considered
 
