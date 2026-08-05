@@ -243,9 +243,9 @@ if (write) {
   }
   if (existsSync(PREAMBLE) && existsSync(join(SKILL, "SKILL.md"))) {
     // Strip SKILL.md's YAML frontmatter: `name`/`description` are Claude Code plugin metadata
-    // (they drive skill discovery there). ATX takes the transformation name and description as
-    // `atx custom def publish` flags, so carrying the block would leave a stray YAML island in
-    // the middle of the definition.
+    // (they drive skill discovery there). A transformation registry takes the name and description
+    // as its own publish arguments, so carrying the block would leave a stray YAML island in the
+    // middle of the definition.
     const skillText = readFileSync(join(SKILL, "SKILL.md"), "utf8");
     const body = skillText.startsWith("---\n")
       ? skillText.slice(skillText.indexOf("\n---", 4) + 4).replace(/^\n+/, "")
@@ -255,7 +255,7 @@ if (write) {
   }
   console.log(`built ${OUT}: ${copied} copied + transformation_definition.md`);
   console.log(
-    `publish with:\n  atx custom def publish --transformation-name agent-advisor --source-directory ${OUT}`,
+    `entry point: ${OUT}/transformation_definition.md (relative paths resolve against ${OUT}/)`,
   );
 }
 
