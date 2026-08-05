@@ -95,7 +95,7 @@ After outer-run `HANDOFF_OK`, present a compact card built from the design artif
 | [top 3-5 PRIMARY mappings] | [aws_service] | [Standard pairing / Tailored to your setup / Estimated from billing only] |
 
 [If any resource is "Deferred — specialist engagement":]
-Deferred (specialist engagement): [service names] — excluded from automated design and TCO.
+Deferred (specialist engagement): [service names] — excluded from automated design and estimated AWS monthly run rate.
 
 What Estimate answers next: your GCP baseline vs estimated AWS monthly cost
 (three scenarios), per-service breakdown, and the migrate/stay recommendation.

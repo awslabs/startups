@@ -55,7 +55,7 @@ Actions (exactly one):
 
 - **[A] Apply & reprice**
 - **[B] Compare scenarios**
-- **[C] Exit to Generate**
+- **[C] Done — back to the decision gate** (choose "done for now" or "generate scripts" there)
 - **[D] Exit to full Clarify** (danger — confirm first)
 
 ## Step 3: Validate (Apply only)

@@ -17,9 +17,9 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 
 ## Part 1: Fast-Track Timeline
 
-Check `preferences.json` → `ai_constraints.ai_framework` to determine timeline:
+Check `preferences.json` → `ai_constraints.ai_framework` to determine the migration path. Describe effort by MECHANISM (what changes, how many files/lines) and duration by PHASE SEQUENCE — never calendar week/hour estimates (uncalibrated; see `shared/migration-complexity.md` § Provenance):
 
-**Gateway users (1-3 days)** — `ai_framework` includes `llm_router`, `api_gateway`, `voice_platform`, or `framework`:
+**Gateway users (config-only path — shortest)** — `ai_framework` includes `llm_router`, `api_gateway`, `voice_platform`, or `framework`:
 
 | Gateway Type                      | Migration Action                                              | Effort            |
 | --------------------------------- | ------------------------------------------------------------- | ----------------- |
@@ -28,20 +28,20 @@ Check `preferences.json` → `ai_constraints.ai_framework` to determine timeline
 | Voice Platform (Vapi, Bland.ai)   | Check native Bedrock support, update dashboard                | Dashboard config  |
 | Framework (LangChain, LlamaIndex) | Swap provider import (e.g., `ChatBedrock` for `ChatVertexAI`) | 1-5 lines of code |
 
-**OpenAI SDK users via Mantle (hours to 1 day)** — `ai_framework` = `direct` AND `ai_source` = `openai` AND `migration_path` = `mantle`:
+**OpenAI SDK users via Mantle (env-var path — no code changes)** — `ai_framework` = `direct` AND `ai_source` = `openai` AND `migration_path` = `mantle`:
 
 - Set `OPENAI_BASE_URL` and `OPENAI_API_KEY` environment variables
 - Update model string to Bedrock model ID
 - Test in staging, validate responses
 - No SDK changes, no new dependencies, no provider adapter needed
 
-**Direct SDK users (1-3 weeks)** — `ai_framework` = `direct` AND (`ai_source` != `openai` OR `migration_path` = `converse`):
+**Direct SDK users (adapter path — the long pole)** — `ai_framework` = `direct` AND (`ai_source` != `openai` OR `migration_path` = `converse`):
 
-- **Week 1:** Enable Bedrock access, create IAM role, develop provider adapter with feature flag, unit test
-- **Week 2:** Deploy to staging, run A/B comparison, measure latency/quality/cost, tune prompts
-- **Week 3:** Gradual rollout (10% → 50% → 100%), monitor, disable source provider after 48h stable
+- **Phase 1:** Enable Bedrock access, create IAM role, develop provider adapter with feature flag, unit test
+- **Phase 2:** Deploy to staging, run A/B comparison, measure latency/quality/cost, tune prompts
+- **Phase 3:** Gradual rollout (10% → 50% → 100%), monitor, disable source provider after 48h stable
 
-**Timeline adjustments:** Single model = shorter; multiple models = +1 week; framework integration = 1-2 weeks; custom inference pipeline = 3 weeks; if alongside infra migration, align with Weeks 3-8.
+**Duration drivers:** multiple models (adapter + evaluation per model), framework integration, custom inference pipeline (the longest driver), and — when alongside infra migration — alignment with the infra deployment stage.
 
 ---
 
@@ -135,18 +135,18 @@ Write `generation-ai.json` to `$MIGRATION_DIR/`.
 
 **Schema — top-level fields:**
 
-| Field                            | Type   | Description                                                                           |
-| -------------------------------- | ------ | ------------------------------------------------------------------------------------- |
-| `phase`                          | string | `"generate"`                                                                          |
-| `generation_source`              | string | `"ai"`                                                                                |
-| `timestamp`                      | string | ISO 8601                                                                              |
-| `migration_plan`                 | object | `total_weeks`, `approach`, `phases[]` (name, week, activities), `models_to_migrate[]` |
-| `step_by_step_guide`             | object | `languages[]`, `primary_pattern`, `files_to_modify[]`, `dependency_changes`           |
-| `rollback_plan`                  | object | `mechanism`, `flag_name`, `default_value`, `rollback_time`, `triggers[]`              |
-| `monitoring`                     | object | `dashboards[]`, `alerting_rules[]` (severity, condition, action)                      |
-| `production_readiness_checklist` | array  | String checklist items (at least 5)                                                   |
-| `success_criteria`               | object | `quality`, `latency`, `cost` sub-objects with targets                                 |
-| `recommendation`                 | object | `approach`, `confidence`, `key_risks[]`, `estimated_total_effort_hours`               |
+| Field                            | Type   | Description                                                                                      |
+| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
+| `phase`                          | string | `"generate"`                                                                                     |
+| `generation_source`              | string | `"ai"`                                                                                           |
+| `timestamp`                      | string | ISO 8601                                                                                         |
+| `migration_plan`                 | object | `duration_drivers[]`, `approach`, `phases[]` (name, sequence, activities), `models_to_migrate[]` |
+| `step_by_step_guide`             | object | `languages[]`, `primary_pattern`, `files_to_modify[]`, `dependency_changes`                      |
+| `rollback_plan`                  | object | `mechanism`, `flag_name`, `default_value`, `rollback_time`, `triggers[]`                         |
+| `monitoring`                     | object | `dashboards[]`, `alerting_rules[]` (severity, condition, action)                                 |
+| `production_readiness_checklist` | array  | String checklist items (at least 5)                                                              |
+| `success_criteria`               | object | `quality`, `latency`, `cost` sub-objects with targets                                            |
+| `recommendation`                 | object | `approach`, `confidence`, `key_risks[]`                                                          |
 
 ## Validation Checklist
 

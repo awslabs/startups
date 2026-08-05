@@ -143,7 +143,7 @@ For each `generation-*.json` file that exists in `$MIGRATION_DIR/`, add:
 {
   "generation_<type>": {
     "generation_source": "<generation_source>",
-    "total_weeks": "<migration_plan.total_weeks>",
+    "total_weeks": "<migration_plan.total_weeks when present (legacy artifacts), else null — field retained for trace-contract stability; owner note: replace with duration-driver signal in a future trace rev>",
     "risk_count": "<risks array length>"
   }
 }

@@ -222,7 +222,7 @@ Apply the column matching the determined complexity tier.
 
 Generate `generation-billing.json` in `$MIGRATION_DIR/` with the following schema.
 
-The example below shows a **small** tier migration. Adjust `complexity_tier`, `complexity_inputs`, `total_weeks`, `approach`, phases, risk probabilities, success metric thresholds, and `estimated_total_effort_hours` according to the determined tier (see Part 2, Part 3, Part 5, and `references/shared/migration-complexity.md`).
+The example below shows a **small** tier migration. Adjust `complexity_tier`, `complexity_inputs`, `duration_drivers`, `tier_bound_by`, `approach`, phases, risk probabilities, and success metric thresholds according to the determined tier (see Part 2, Part 3, Part 5, and `references/shared/migration-complexity.md`).
 
 ```json
 {
@@ -242,12 +242,16 @@ The example below shows a **small** tier migration. Adjust `complexity_tier`, `c
   },
   "timestamp": "2026-02-26T14:30:00Z",
   "migration_plan": {
-    "total_weeks": 4,
+    "duration_drivers": [
+      "Few services, no databases (binding: service_count <= 3)",
+      "Billing-only discovery gap - configs audited during Stage 1"
+    ],
+    "tier_bound_by": "service_count <= 3",
     "approach": "compressed",
     "phases": [
       {
         "name": "Discovery + Provisioning",
-        "weeks": "1",
+        "sequence_note": "ordinal - see stage order",
         "key_activities": [
           "Quick infrastructure audit",
           "AWS provisioning",
@@ -256,7 +260,7 @@ The example below shows a **small** tier migration. Adjust `complexity_tier`, `c
       },
       {
         "name": "Deploy + Test",
-        "weeks": "2",
+        "sequence_note": "ordinal - see stage order",
         "key_activities": [
           "Application deployment",
           "Functional and integration testing",
@@ -265,7 +269,7 @@ The example below shows a **small** tier migration. Adjust `complexity_tier`, `c
       },
       {
         "name": "Cutover + Validation",
-        "weeks": "3-4",
+        "sequence_note": "ordinal - see stage order",
         "key_activities": [
           "DNS switch during maintenance window",
           "24-hour intensive monitoring",
@@ -311,8 +315,7 @@ The example below shows a **small** tier migration. Adjust `complexity_tier`, `c
       "Configuration uncertainty",
       "Missing dependency information",
       "Cost variance due to unknown sizing"
-    ],
-    "estimated_total_effort_hours": 60
+    ]
   }
 }
 ```
@@ -324,7 +327,7 @@ The example below shows a **small** tier migration. Adjust `complexity_tier`, `c
 - `confidence` is `"low"`
 - `complexity_tier` is one of `"small"`, `"medium"`, `"large"`
 - `complexity_inputs` object is present with all required fields (service_count, monthly_spend, has_databases, has_stateful_storage, has_ai_workloads, availability, compliance, multi_region)
-- `migration_plan.total_weeks` is within the tier's allowed range: small 2-4, medium 6-10, large 12-18
+- `migration_plan.duration_drivers` is a non-empty string array consistent with the tier's driver table; `tier_bound_by` present; **no `total_weeks` or hour fields**
 - `migration_plan.approach` matches tier: small = `"compressed"`, medium = `"standard_with_discovery"`, large = `"conservative_with_discovery"`
 - `migration_plan.phases` stage names match the tier template from Part 2
 - `migration_plan.services` covers every service from `aws-design-billing.json`
@@ -333,7 +336,7 @@ The example below shows a **small** tier migration. Adjust `complexity_tier`, `c
 - `success_metrics` thresholds match the tier column from Part 5
 - `recommendation.iac_discovery_offered` is `true`
 - `recommendation.confidence` is `"low"`
-- `recommendation.estimated_total_effort_hours` is within the tier's range from `migration-complexity.md`
+- `recommendation` contains no effort-hour fields
 - Output is valid JSON
 
 ## Completion Handoff Gate (Fail Closed)

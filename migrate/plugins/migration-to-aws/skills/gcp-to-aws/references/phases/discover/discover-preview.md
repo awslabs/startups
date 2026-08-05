@@ -123,15 +123,17 @@ Cap at 4 bullets.
 
 ---
 
-### Step 4A: Build timeline_hint string
+### Step 4A: Build duration_hint string
 
-| ai_complexity_signal | timeline_hint                                                        |
-| -------------------- | -------------------------------------------------------------------- |
-| `likely_simple`      | "1-3 weeks (single model swap; confirm after Clarify)"               |
-| `standard`           | "2-6 weeks (multi-model migration; confirm after Clarify)"           |
-| `complex`            | "4-8 weeks (agentic or multi-provider stack; confirm after Clarify)" |
+No week counts — durations are uncalibrated at Discover time (and stay heuristic after; see `shared/migration-complexity.md` § Provenance). Describe the shape of the path instead:
 
-Always append "(confirm after Clarify)" — full classification requires preferences.
+| ai_complexity_signal | duration_hint                                                                            |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `likely_simple`      | "shortest path — single model swap; confirm after Clarify"                               |
+| `standard`           | "standard path — multi-model migration with per-model evaluation; confirm after Clarify" |
+| `complex`            | "long path — agentic or multi-provider stack; drivers named after Design"                |
+
+Always append "confirm after Clarify" — full classification requires preferences.
 
 ---
 
@@ -183,7 +185,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
     "monthly_estimate_note": "Monthly estimate available after Clarify (usage volume collected in Q3, Q7)",
     "disclaimer": "Per-token prices from pricing-cache.md; full cost analysis in Estimate phase"
   },
-  "timeline_hint": "2-6 weeks (multi-model migration; confirm after Clarify)",
+  "duration_hint": "standard path — multi-model migration with per-model evaluation; confirm after Clarify",
   "ai_detected": true,
   "key_decisions_ahead": [
     "Bedrock model selection for gpt-4o, text-embedding-3-small",
@@ -217,7 +219,7 @@ Output this block as part of `discover.md` Step 3's user message (chat only — 
 | **Bedrock targets** | [for each bedrock_target: "source_model → bedrock_equivalent"] |
 | **Routing** | [if has_multi_model_routing: gateway_type + " (multi-model routing)" else "Direct SDK"] |
 | **Monthly estimate** | Available after Estimate phase |
-| **Timeline (rough)** | [timeline_hint] |
+| **Path shape** | [duration_hint] |
 | **Decisions ahead** | [key_decisions_ahead joined by "; "] |
 
 *Full cost breakdown in Estimate; runnable adapter code in Generate.*
@@ -347,15 +349,17 @@ Always include "Target region" if any compute is present. Cap at 4 bullets.
 
 ---
 
-## Step 4: Build timeline_hint string
+## Step 4: Build duration_hint string
 
-| complexity_signal | timeline_hint                                            |
-| ----------------- | -------------------------------------------------------- |
-| `likely_simple`   | "3-6 weeks (likely simple infra; confirm after Clarify)" |
-| `standard`        | "8-12 weeks (standard migration; confirm after Clarify)" |
-| `complex`         | "12-16+ weeks (complex stack; confirm after Clarify)"    |
+No week counts — durations are uncalibrated at Discover time (and stay heuristic after; see `shared/migration-complexity.md` § Provenance). Describe the shape of the path instead:
 
-Always append "(confirm after Clarify)" -- full tier classification requires preferences.
+| complexity_signal | duration_hint                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `likely_simple`   | "shortest path — few services, shallow dependencies; confirm after Clarify"                 |
+| `standard`        | "standard phased path — clusters in dependency order; confirm after Clarify"                |
+| `complex`         | "long path — databases/AI/compliance extend the stage sequence; drivers named after Design" |
+
+Always append "confirm after Clarify" -- full tier classification requires preferences.
 
 ---
 
@@ -381,7 +385,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
     "aws_monthly_range_usd": { "low": 120, "high": 180 },
     "disclaimer": "Dev-tier rough estimate (+-30%); full analysis in Estimate phase"
   },
-  "timeline_hint": "3-6 weeks (likely simple infra; confirm after Clarify)",
+  "duration_hint": "shortest path — few services, shallow dependencies; confirm after Clarify",
   "ai_detected": false,
   "key_decisions_ahead": [
     "Target region and deployment model (Fargate vs EKS)",
@@ -413,7 +417,7 @@ Output this block as part of `discover.md` Step 3's user message (chat only -- n
 |---|---|
 | **Services** | [primary_resource_count] resources -> [services_summary as "Fargate, S3"] *(standard pairings)* |
 | **AWS cost (rough)** | ~$[low]-$[high]/mo [vs GCP ~$[gcp]/mo if billing present] *(dev-tier estimate, +-30%)* |
-| **Timeline (rough)** | [timeline_hint] |
+| **Path shape** | [duration_hint] |
 | **AI** | [if ai_detected: "[model IDs] detected -- AI migration path will run" else "None detected"] |
 | **Decisions ahead** | [key_decisions_ahead joined by "; "] |
 

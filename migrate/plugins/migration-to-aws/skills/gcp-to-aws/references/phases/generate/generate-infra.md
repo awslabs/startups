@@ -26,16 +26,16 @@ Build a timeline using the **Infrastructure Path** ranges for the determined tie
 - **Service complexity** from `aws-design.json` — databases and stateful services take longer
 - **Cutover strategy** from `preferences.json` — maintenance window vs. blue-green affects timeline
 
-### Small Tier (3-6 weeks)
+### Small Tier
 
 Compressed setup. PoC is a 2-day smoke test integrated into deployment. No data migration stage (small tier excludes databases by definition).
 
-#### Stage 1: Setup (Week 1)
+#### Stage 1: Setup
 
 - Provision VPC, subnets, routing, IAM, monitoring baseline
 - Set up CI/CD pipeline for Terraform deployments
 
-#### Stage 2: Deploy + Smoke Test (Week 2)
+#### Stage 2: Deploy + Smoke Test
 
 - Deploy all clusters (few services, shallow dependency graph)
 - Validate application connectivity and performance
@@ -43,23 +43,23 @@ Compressed setup. PoC is a 2-day smoke test integrated into deployment. No data 
 - Confirm cost tracking matches `estimation-infra.json` projections
 - **Go/No-Go checkpoint**: If smoke test fails acceptance criteria, stop and reassess
 
-#### Stage 3: Cutover (Weeks 3-4)
+#### Stage 3: Cutover
 
 - Execute cutover per `preferences.json` cutover_strategy
 - Monitor for 24-48 hours post-cutover
 - Keep GCP resources running as hot standby
 
-#### Stage 4: Validation + Cleanup (Weeks 5-6)
+#### Stage 4: Validation + Cleanup
 
 - Monitor AWS performance for 1 week
 - Compare actual costs against projections
 - Begin GCP teardown planning (execute teardown after 2-week stability period)
 
-### Medium Tier (8-12 weeks)
+### Medium Tier
 
 Standard phased plan. Apply the data-migration skip rule below.
 
-#### Stage 1: Setup (Weeks 1-2)
+#### Stage 1: Setup
 
 - Finalize AWS account structure and billing alerts
 - Provision foundational infrastructure: VPC, subnets, routing, NAT gateways
@@ -68,7 +68,7 @@ Standard phased plan. Apply the data-migration skip rule below.
 - Set up CI/CD pipeline for Terraform deployments
 - Configure monitoring baseline (CloudWatch, alarms)
 
-#### Stage 2: Proof of Concept (Weeks 3-4)
+#### Stage 2: Proof of Concept
 
 - Deploy the **shallowest-depth cluster** (lowest `creation_order_depth`) to AWS
 - Validate application connectivity and performance
@@ -77,7 +77,7 @@ Standard phased plan. Apply the data-migration skip rule below.
 - Confirm cost tracking matches `estimation-infra.json` projections
 - **Go/No-Go checkpoint**: If PoC fails acceptance criteria, stop and reassess
 
-#### Stage 3: Infrastructure Deployment (Weeks 5-7)
+#### Stage 3: Infrastructure Deployment
 
 - Deploy remaining clusters in `creation_order` sequence (depth-first)
 - For each cluster:
@@ -88,12 +88,12 @@ Standard phased plan. Apply the data-migration skip rule below.
 - Implement monitoring and logging per cluster
 - Establish backup and restore procedures
 
-#### Stage 4: Data Migration (Weeks 8-9)
+#### Stage 4: Data Migration
 
 **Include this phase ONLY if `aws-design.json` contains database or storage resources
 (see resource detection rules in generate-artifacts-scripts.md Step 1).**
-**If no data migration is needed, compress the timeline: move Cutover to Weeks 8-9
-and Validation to Week 10. Reduce `total_weeks` accordingly.**
+**If no data migration is needed, drop that stage: Cutover
+and Validation move up in sequence. Note the dropped stage as a duration driver.**
 
 - **Databases**: Set up continuous replication (Cloud SQL to RDS/Aurora)
   - Initial full snapshot transfer
@@ -105,7 +105,7 @@ and Validation to Week 10. Reduce `total_weeks` accordingly.**
 - **Secrets**: Migrate secrets from Secret Manager to AWS Secrets Manager
 - Establish dual-write pattern for production data
 
-#### Stage 5: Cutover (Weeks 10-11, or Weeks 8-9 if Stage 4 skipped)
+#### Stage 5: Cutover
 
 - Pre-cutover validation:
   - All clusters deployed and healthy on AWS
@@ -118,7 +118,7 @@ and Validation to Week 10. Reduce `total_weeks` accordingly.**
 - Monitor for 24-48 hours post-cutover
 - Keep GCP resources running as hot standby
 
-#### Stage 6: Validation and Cleanup (Week 12)
+#### Stage 6: Validation and Cleanup
 
 - Monitor AWS performance for 1 full week
 - Compare actual costs against `estimation-infra.json` projections
@@ -126,21 +126,21 @@ and Validation to Week 10. Reduce `total_weeks` accordingly.**
 - Document any drift or issues
 - Begin GCP teardown planning (execute teardown after 2-week stability period)
 
-### Large Tier (12-16 weeks)
+### Large Tier
 
 Extended timeline for complex migrations. Extra time for multi-cluster orchestration, large data volumes, and extended validation. Apply the data-migration skip rule from Stage 4.
 
-#### Stage 1: Setup (Weeks 1-2)
+#### Stage 1: Setup
 
 Same as Medium.
 
-#### Stage 2: Proof of Concept (Weeks 3-4)
+#### Stage 2: Proof of Concept
 
 Same as Medium.
 
-#### Stage 3: Infrastructure Deployment (Weeks 5-8)
+#### Stage 3: Infrastructure Deployment
 
-Extended by 1 week for additional clusters and complex cross-cluster networking.
+Extended scope: additional clusters and complex cross-cluster networking.
 
 - Deploy remaining clusters in `creation_order` sequence (depth-first)
 - For each cluster:
@@ -151,11 +151,11 @@ Extended by 1 week for additional clusters and complex cross-cluster networking.
 - Implement monitoring and logging per cluster
 - Establish backup and restore procedures
 
-#### Stage 4: Data Migration (Weeks 9-11)
+#### Stage 4: Data Migration
 
 **Include this phase ONLY if `aws-design.json` contains database or storage resources.**
-**If no data migration is needed, compress the timeline: move Cutover to Weeks 9-10
-and Validation to Weeks 11-12. Reduce `total_weeks` accordingly.**
+**If no data migration is needed, drop that stage: Cutover
+and Validation move up in sequence. Note the dropped stage as a duration driver.**
 
 Extended for large data volumes and complex replication topologies.
 
@@ -169,11 +169,11 @@ Extended for large data volumes and complex replication topologies.
 - **Secrets**: Migrate secrets from Secret Manager to AWS Secrets Manager
 - Establish dual-write pattern for production data
 
-#### Stage 5: Cutover (Weeks 12-13)
+#### Stage 5: Cutover
 
-Same structure as Medium, adjusted week numbers.
+Same structure as Medium.
 
-#### Stage 6: Validation and Cleanup (Weeks 14-16)
+#### Stage 6: Validation and Cleanup
 
 Extended monitoring before GCP teardown.
 
@@ -200,7 +200,7 @@ For each risk, assess:
 | Risk                             | Probability | Impact   | Mitigation                                                                                      |
 | -------------------------------- | ----------- | -------- | ----------------------------------------------------------------------------------------------- |
 | Data loss during migration       | low         | critical | Dual-write for 2 weeks before cutover; full backup before migration; checksums on all transfers |
-| Performance regression on AWS    | medium      | high     | PoC testing (Weeks 3-4); load testing (Week 5); performance baseline comparison                 |
+| Performance regression on AWS    | medium      | high     | PoC testing before deployment; load testing before cutover; performance baseline comparison     |
 | Extended downtime during cutover | medium      | high     | Practice cutover in staging; automate DNS switch; rollback procedure on standby                 |
 | Cost overrun vs estimates        | medium      | medium   | Set billing alerts at 80% and 100% of projected; weekly cost review                             |
 | Cross-region latency             | low         | medium   | Validate latency in PoC phase; consider same-region deployment for latency-sensitive services   |
@@ -231,12 +231,12 @@ For each service in `aws-design.json`, define:
 
 ### Overall Migration Metrics
 
-| Metric             | Target                                       |
-| ------------------ | -------------------------------------------- |
-| Data integrity     | 100% — zero data loss confirmed by checksums |
-| Migration timeline | Within 2 weeks of planned schedule           |
-| Rollback success   | Tested and confirmed < 1 hour RTO            |
-| Team confidence    | Go/No-Go passed at each phase gate           |
+| Metric             | Target                                                                      |
+| ------------------ | --------------------------------------------------------------------------- |
+| Data integrity     | 100% — zero data loss confirmed by checksums                                |
+| Migration sequence | Stages complete in planned order; no stage entered before its go/no-go gate |
+| Rollback success   | Tested and confirmed < 1 hour RTO                                           |
+| Team confidence    | Go/No-Go passed at each phase gate                                          |
 
 ## Part 4: Rollback Procedures
 
@@ -322,14 +322,14 @@ Each phase gate requires explicit approval before proceeding.
 - Review AWS costs daily vs projections
 - Maintain GCP hot standby
 
-**Week 2 (Days 8-14)**: Stabilization
+**Days 8-14**: Stabilization
 
 - Reduce monitoring frequency to twice daily
 - Begin decommissioning GCP hot standby (read-only mode)
 - Address any performance tuning items
 - Validate backup/restore procedures on AWS
 
-**Weeks 3-4 (Days 15-30)**: Optimization
+**Days 15-30**: Optimization
 
 - Implement cost optimization opportunities from `estimation-infra.json`
 - Right-size instances based on actual usage data
@@ -359,10 +359,19 @@ START: All clusters deployed?
               NO → EXECUTE ROLLBACK
               YES → CUTOVER SUCCESSFUL
                 → Begin 30-day monitoring
-                → Plan GCP teardown (Week 14)
+                → Plan GCP teardown (after the 30-day observation window)
 ```
 
 ## Part 9: Output Format
+
+Do NOT write engineering-hour estimates anywhere in this artifact — the plugin
+has no calibrated effort data, and hour figures get pasted into budgets (see
+`shared/migration-complexity.md` § Provenance). Time is expressed as the
+ordered stage sequence plus `duration_drivers[]` (from the tier's driver table,
+adapted to this stack, binding driver first) and `tier_bound_by` (the input
+that bound the tier). Do not count deferred/N/A services as drivers of
+implementation work, and do not restate AI-track drivers already named by
+`generation-ai.json`.
 
 Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
 
@@ -383,11 +392,15 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
   },
   "timestamp": "2026-02-26T14:30:00Z",
   "migration_plan": {
-    "total_weeks": 12,
+    "duration_drivers": [
+      "Cluster-by-cluster deployment in dependency order (binding: has_databases)",
+      "Data migration with parallel-run validation"
+    ],
+    "tier_bound_by": "has_databases",
     "phases": [
       {
         "name": "Setup",
-        "weeks": "1-2",
+        "sequence": 1,
         "clusters_targeted": [],
         "key_activities": ["AWS account setup", "VPC provisioning", "IAM configuration"],
         "dependencies": [],
@@ -398,18 +411,16 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
       {
         "gcp_service": "Cloud Run",
         "aws_service": "Fargate",
-        "migration_week": 5,
         "cluster_id": "compute_cloudrun_us-central1_001",
-        "estimated_effort_hours": 40,
         "data_migration_required": false, // derive from resource detection flags (has_databases, has_storage)
         "human_expertise_required": false // propagate from aws-design.json; true for BigQuery mappings
       }
     ],
     "critical_path": [
-      "VPC setup (Week 1)",
-      "PoC deployment (Week 3-4)",
-      "Database replication (Week 8-9)",
-      "DNS cutover (Week 10-11)"
+      "VPC setup",
+      "PoC deployment",
+      "Database replication",
+      "DNS cutover"
     ],
     "dependencies": [
       {
@@ -439,7 +450,7 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
     ],
     "overall": {
       "data_integrity": "100%",
-      "timeline_variance": "within 2 weeks",
+      "sequence_adherence": "stages in planned order, gated",
       "rollback_rto": "< 1 hour"
     }
   },
@@ -463,14 +474,12 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
   ],
   "post_migration": {
     "monitoring_duration_days": 30,
-    "gcp_teardown_week": 14,
-    "optimization_start_week": 15
+    "gcp_teardown": "after the 30-day observation window"
   },
   "recommendation": {
     "approach": "Phased cluster-by-cluster migration",
     "confidence": "high",
-    "key_risks": ["Data migration complexity", "Performance validation"],
-    "estimated_total_effort_hours": 480
+    "key_risks": ["Data migration complexity", "Performance validation"]
   }
 }
 ```
@@ -481,7 +490,7 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
 - `generation_source` is `"infrastructure"`
 - `complexity_tier` is one of `"small"`, `"medium"`, `"large"`
 - `complexity_inputs` object is present with all required fields (service_count, monthly_spend, has_databases, has_stateful_storage, has_ai_workloads, availability, compliance, multi_region)
-- `migration_plan.total_weeks` is within the tier's allowed range: small 3-6, medium 8-12, large 12-16
+- `migration_plan.duration_drivers` is a non-empty string array consistent with the tier's driver table; `migration_plan.tier_bound_by` names the binding classification input; **no `total_weeks` or hour fields anywhere in the artifact**
 - `migration_plan.phases` array has at least 4 entries; stage names match the tier template from Part 1
 - `migration_plan.services` covers every service from `aws-design.json`
 - `migration_plan.critical_path` is non-empty
@@ -491,6 +500,7 @@ Generate `generation-infra.json` in `$MIGRATION_DIR/` with the following schema:
 - `rollback_procedures` has trigger conditions and RTO values
 - `go_no_go_criteria` has at least 2 gates (small) or 4 gates (medium/large)
 - `post_migration` specifies monitoring duration and teardown timing
+- `recommendation` contains no effort-hour fields; duration is communicated only via stage sequence + `duration_drivers`
 - All cluster IDs reference valid clusters from `gcp-resource-clusters.json`
 - Output is valid JSON
 

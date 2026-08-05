@@ -75,6 +75,9 @@ Before the survey link — three quick questions (all optional):
 1. Could you make your migrate/stay decision from this assessment? (yes / partly / no)
 2. If you decided: which way are you leaning? (migrate / stay / defer)
 3. If you couldn't decide: what evidence was missing?
+4. If you've completed a cloud migration before: how long did it actually take,
+   start to cutover? (helps us calibrate — the plugin deliberately avoids
+   quoting week/hour estimates because it has no real-world duration data yet)
 ```
 
 Respond briefly to whatever they share (e.g. point at the relevant artifact or the what-if workshop for missing-evidence answers), then continue to the survey link below.

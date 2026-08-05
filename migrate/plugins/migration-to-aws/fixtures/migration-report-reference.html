@@ -56,6 +56,7 @@
     .toc li { margin: 0.2rem 0; font-size: 0.9rem; }
     .toc a { color: var(--blue); text-decoration: none; }
     .toc a:hover { text-decoration: underline; }
+    a:focus-visible, summary:focus-visible { outline: 3px solid #54aeff; outline-offset: 2px; border-radius: 2px; }
     .toc .toc-group { font-weight: 600; margin-top: 0.75rem; font-size: 0.85rem; color: #656d76; text-transform: uppercase; letter-spacing: 0.02em; }
     .tier-sub { font-size: 0.78rem; color: #656d76; font-style: italic; display: block; margin-top: 0.15rem; }
     .badge-conf { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; }
@@ -69,11 +70,21 @@
     details.why { margin: 0.4rem 0; font-size: 0.82rem; color: #656d76; }
     details.why summary { cursor: pointer; color: var(--blue); }
     details.why ul { margin: 0.4rem 0; padding-left: 1.1rem; }
+    .glossary-table th:first-child, .glossary-table td:first-child { width: 27%; background: #f6f8fa; }
+    .glossary-table td:first-child { color: var(--aws); font-weight: 600; }
     .cluster-block { border-left: 3px solid var(--blue); padding-left: 1rem; margin: 1rem 0; }
     footer { text-align: center; color: #656d76; font-size: 0.8rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    @media (max-width: 700px) {
+      .container { padding: 1rem 0.75rem 2rem; }
+      section { padding: 1rem; }
+      .metrics { grid-template-columns: 1fr; }
+      .toc ol, .toc ul.toc-appendix { columns: 1; }
+      table, .diagram { display: block; overflow-x: auto; }
+    }
     @media print {
       body { background: #fff; }
-      section { break-inside: avoid; }
+      .container { max-width: none; padding: 0; }
+      .metric, .callout, tr { break-inside: avoid; }
       .appendix-header { break-before: page; }
     }
   </style>
@@ -92,12 +103,12 @@
       <div class="toc-group">Executive summary</div>
       <ol>
         <li><a href="#decision-summary">Migration Decision Summary</a></li>
-        <li><a href="#exec-tco">Total Cost of Ownership</a></li>
+        <li><a href="#exec-tco">Estimated AWS Monthly Run Rate</a></li>
         <li><a href="#exec-services">Current Stack Overview</a></li>
         <li><a href="#exec-costs">Infrastructure Cost Comparison</a></li>
         <li><a href="#exec-architecture">Architecture Overview</a></li>
         <li><a href="#exec-security-teaser">Security Posture</a></li>
-        <li><a href="#exec-timeline">Timeline &amp; Effort</a></li>
+        <li><a href="#exec-timeline">Migration Shape</a></li>
         <li><a href="#exec-risks">Top Risks</a></li>
         <li><a href="#exec-assumptions">What This Assessment Rests On</a></li>
         <li><a href="#appendix-assumptions">Assumptions, Exclusions &amp; Validation</a></li>
@@ -120,6 +131,7 @@
       <h2>Migration Decision Summary</h2>
       <p class="verdict-headline">Go, with conditions</p>
       <p class="verdict-meta">Execution shape: Phased Migration &middot; Complexity: Complex</p>
+      <p class="verdict-meta">By track: Compute + database: <strong>go</strong>. AI text: <strong>go</strong>. AI image: <strong>conditional</strong> — keeps the current provider via the adapter until the quality eval passes; does not gate the rest. Analytics: <strong>deferred</strong> — specialist track, parallel.</p>
       <ul class="compact">
         <li>Condition: confirm database availability — Multi-AZ was assumed, not confirmed (roughly 2x database cost factor)</li>
         <li>Condition: confirm CUD expiration date before committing a migration start date</li>
@@ -127,9 +139,10 @@
       <p class="verdict-meta">Confidence: Medium — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.</p>
 
       <div class="verdict">
-        <strong>Recommendation:</strong> Migrate, phased over 10 weeks — estimated monthly savings of ~$503/month
+        <strong>Recommendation:</strong> Migrate, phased in dependency order — long pole is the database cutover, with a parallel AI track; estimated monthly savings of ~$503/month
         (-35%) combined infrastructure + AI, with BigQuery analytics deferred to a
-        specialist engagement. Eligible for up to $5K AWS Activate credits.
+        specialist engagement. Eligible for up to $5K
+        <a href="https://aws.amazon.com/startups/credits/">AWS Activate credits</a>.
       </div>
 
       <div class="metrics">
@@ -139,19 +152,14 @@
           <small>Est. $112/mo AWS vs $165/mo GCP infra</small>
         </div>
         <div class="metric">
-          <span>Combined TCO (Balanced)</span>
+          <span>Combined AWS run rate (Balanced)</span>
           <strong class="savings">-35%</strong>
           <small>Est. $912/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
         </div>
         <div class="metric">
-          <span>Timeline</span>
-          <strong>10 weeks</strong>
-          <small>Infra phased + 3-week AI track (parallel)</small>
-        </div>
-        <div class="metric">
-          <span>Effort estimate</span>
-          <strong>~200 hrs</strong>
-          <small>120 infra + 80 AI engineering</small>
+          <span>Migration shape</span>
+          <strong>Phased</strong>
+          <small>Long pole: database cutover; AI track runs parallel</small>
         </div>
         <div class="metric">
           <span>AI projection</span>
@@ -161,12 +169,12 @@
         <div class="metric">
           <span>Activate credits</span>
           <strong>Up to $5K</strong>
-          <small>Eligible Founders tier</small>
+          <small>Eligible Founders tier · <a href="https://aws.amazon.com/startups/credits/">Apply for credits</a></small>
         </div>
       </div>
 
       <div class="callout callout-warn">
-        <strong>Specialist engagement required:</strong> BigQuery (<code>sf_beach_analytics</code>) has no automated AWS mapping from this plugin — engage your AWS account team or a data partner to evaluate the best analytics migration path. Analytics costs are excluded from TCO totals until that path is defined. <strong>This does not block</strong> phased migration of compute, database, storage, and AI; BigQuery planning runs in parallel on the timeline below.
+        <strong>Specialist engagement required:</strong> BigQuery (<code>sf_beach_analytics</code>) has no automated AWS mapping from this plugin — engage your AWS account team or a data partner to evaluate the best analytics migration path. Analytics costs are excluded from the estimated AWS monthly run rate until that path is defined. <strong>This does not block</strong> phased migration of compute, database, storage, and AI; BigQuery planning runs in parallel on the timeline below.
       </div>
 
       <div class="callout callout-info">
@@ -176,7 +184,7 @@
       <h3>Migrate if</h3>
       <ul class="compact">
         <li>You want unified AWS operations for containers, database, and Bedrock AI</li>
-        <li>Estimated combined TCO savings (~$503/month) and AWS Activate credits offset migration effort</li>
+        <li>Estimated combined cloud-service savings (~$503/month) and AWS Activate credits offset the cost of migrating</li>
         <li>You can engage AWS account team for BigQuery analytics in parallel</li>
       </ul>
 
@@ -205,10 +213,10 @@
       </ol>
     </section>
 
-    <!-- TCO -->
+    <!-- Combined monthly cloud-service run rate (legacy exec-tco ID) -->
     <section id="exec-tco">
-      <h2>Total Cost of Ownership</h2>
-      <p>Combined view of your infrastructure and AI estimated monthly costs. BigQuery excluded from both sides.</p>
+      <h2>Estimated AWS Monthly Run Rate</h2>
+      <p>Combined view of recurring infrastructure and AI cloud-service costs. BigQuery is excluded from both sides. This is not a total ownership-cost model: staffing, operations, support, and migration labor are not priced.</p>
 
       <table>
         <caption>Combined estimated monthly costs, GCP vs AWS (BigQuery excluded).</caption>
@@ -296,6 +304,7 @@
             <th scope="col">Est. Monthly AWS</th>
             <th scope="col">vs GCP ($165/mo)</th>
             <th scope="col">Annual difference</th>
+            <th scope="col">vs Balanced, for this stack</th>
           </tr>
         </thead>
         <tbody>
@@ -304,18 +313,21 @@
             <td>$198</td>
             <td class="increase">+20% (+$33)</td>
             <td class="increase">+$396</td>
+            <td>RDS Multi-AZ instead of single-AZ (+$21/mo) — removes the single-AZ assumption; Fargate provisioned headroom (+$12/mo)</td>
           </tr>
           <tr>
             <td><strong>Balanced</strong><br><span class="tier-sub">Default scenario; Terraform implements this tier</span></td>
             <td><strong>$112</strong></td>
             <td class="savings"><strong>-32% (-$53)</strong></td>
             <td class="savings"><strong>-$636</strong></td>
+            <td>— anchor; matches generated Terraform</td>
           </tr>
           <tr>
             <td>Optimized<br><span class="tier-sub">Spot, reservations, storage trade-offs assumed</span></td>
             <td>$82</td>
             <td class="savings">-50% (-$83)</td>
             <td class="savings">-$996</td>
+            <td>Drops NAT Gateway (-$18/mo) — tasks move to public subnets or VPC endpoints, a posture change, not just savings; assumes a 1-year Compute Savings Plan (-$12/mo)</td>
           </tr>
         </tbody>
       </table>
@@ -388,34 +400,34 @@
 
     <!-- TIMELINE -->
     <section id="exec-timeline">
-      <h2>Timeline &amp; Effort</h2>
+      <h2>Migration Shape</h2>
 
-      <h3>Infrastructure migration (10 weeks, phased)</h3>
+      <h3>Infrastructure migration (phased, in dependency order)</h3>
       <table>
         <caption>Phased infrastructure migration schedule.</caption>
-        <thead><tr><th scope="col">Phase</th><th scope="col">Weeks</th><th scope="col">Activities</th></tr></thead>
+        <thead><tr><th scope="col">Order</th><th scope="col">Phase</th><th scope="col">Activities</th></tr></thead>
         <tbody>
-          <tr><td>Setup</td><td>1–2</td><td>VPC, IAM, security baseline, CI/CD for Terraform, Bedrock model access</td></tr>
-          <tr><td>PoC</td><td>3–4</td><td>Deploy networking + storage clusters; smoke test connectivity</td></tr>
-          <tr><td>Infrastructure Deployment</td><td>5–7</td><td>RDS, Fargate, ALB; cross-cluster security groups</td></tr>
-          <tr><td>Data Migration</td><td>8</td><td>Cloud SQL &rarr; RDS replication via Database Migration Service (DMS); GCS &rarr; S3 sync</td></tr>
-          <tr><td>Cutover</td><td>9</td><td>Weekly maintenance window; DNS/traffic switch</td></tr>
-          <tr><td>Validation</td><td>10</td><td>Cost validation; GCP teardown planning</td></tr>
+          <tr><td>1</td><td>Setup</td><td>VPC, IAM, security baseline, CI/CD for Terraform, Bedrock model access</td></tr>
+          <tr><td>2</td><td>PoC</td><td>Deploy networking + storage clusters; smoke test connectivity</td></tr>
+          <tr><td>3</td><td>Infrastructure Deployment</td><td>RDS, Fargate, ALB; cross-cluster security groups</td></tr>
+          <tr><td>4</td><td>Data Migration</td><td>Cloud SQL &rarr; RDS replication via Database Migration Service (DMS); GCS &rarr; S3 sync</td></tr>
+          <tr><td>5</td><td>Cutover</td><td>Weekly maintenance window; DNS/traffic switch</td></tr>
+          <tr><td>6</td><td>Validation</td><td>Cost validation; GCP teardown planning</td></tr>
         </tbody>
       </table>
 
-      <h3>AI migration (3 weeks, parallel track)</h3>
+      <h3>AI migration (parallel track)</h3>
       <table>
         <caption>Parallel AI migration schedule.</caption>
-        <thead><tr><th scope="col">Phase</th><th scope="col">Week</th><th scope="col">Activities</th></tr></thead>
+        <thead><tr><th scope="col">Order</th><th scope="col">Phase</th><th scope="col">Activities</th></tr></thead>
         <tbody>
-          <tr><td>Bedrock setup</td><td>1</td><td>Enable model access, IAM role, provider adapter with feature flag</td></tr>
-          <tr><td>Staging validation</td><td>2</td><td>A/B comparison, prompt tuning, image quality review</td></tr>
-          <tr><td>Production rollout</td><td>3</td><td>10% &rarr; 50% &rarr; 100% traffic; monitor cost and latency</td></tr>
+          <tr><td>1</td><td>Bedrock setup</td><td>Enable model access, IAM role, provider adapter with feature flag</td></tr>
+          <tr><td>2</td><td>Staging validation</td><td>A/B comparison, prompt tuning, image quality review</td></tr>
+          <tr><td>3</td><td>Production rollout</td><td>10% &rarr; 50% &rarr; 100% traffic; monitor cost and latency</td></tr>
         </tbody>
       </table>
 
-      <p><strong>Estimated effort:</strong> 120 hours (infra) + 80 hours (AI) = <strong>~200 engineering hours</strong></p>
+      <p><strong>Duration drivers:</strong> database replication and cutover (binding), cross-cluster security groups, parallel AI evaluation per model. Stage order and go/no-go gates carry the schedule; the plugin quotes no week or hour estimates (uncalibrated).</p>
       <p><strong>Cutover strategy:</strong> maintenance-window-weekly &nbsp;|&nbsp;
          <strong>Rollback:</strong> revert DNS to GCP Cloud Run; keep RDS read replica 48h</p>
     </section>
@@ -473,9 +485,9 @@
 
       <h3>Exclusions</h3>
       <ul class="compact">
-        <li><strong>BigQuery analytics</strong> — AWS target path not yet selected by specialist; costs excluded from TCO totals (does not block other services)</li>
+        <li><strong>BigQuery analytics</strong> — AWS target path not yet selected by specialist; costs excluded from the estimated AWS monthly run rate (does not block other services)</li>
         <li><strong>GCP egress during migration</strong> — billing export not available (<code>billing_data_available: false</code>)</li>
-        <li><strong>Professional services / labor</strong> — engineering hours estimated but not priced</li>
+        <li><strong>Professional services / labor</strong> — neither estimated nor priced (no calibrated effort data)</li>
         <li><strong>Dual-run period</strong> — temporary cost of running GCP + AWS concurrently not modeled</li>
         <li><strong>Dev-tier sizing</strong> — db.t4g.micro, single-AZ, on-demand Fargate unless upgraded</li>
       </ul>
@@ -487,11 +499,11 @@
       </div>
 
       <h3>Glossary</h3>
-      <table>
-        <caption>Acronyms used in this report.</caption>
+      <table class="glossary-table">
+        <caption>Terms used in this report.</caption>
         <thead><tr><th scope="col">Term</th><th scope="col">Meaning</th></tr></thead>
         <tbody>
-          <tr><td>TCO</td><td>Total Cost of Ownership</td></tr>
+          <tr><td>Monthly run rate</td><td>Estimated recurring cloud-service charges; excludes staffing, support, migration labor, and other ownership costs</td></tr>
           <tr><td>DMS</td><td>AWS Database Migration Service</td></tr>
           <tr><td>OAI</td><td>CloudFront Origin Access Identity</td></tr>
           <tr><td>RTO</td><td>Recovery Time Objective</td></tr>
