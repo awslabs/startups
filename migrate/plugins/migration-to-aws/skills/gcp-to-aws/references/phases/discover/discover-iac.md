@@ -32,7 +32,7 @@ Record file paths and types for all files found.
 When `.tfstate` or `.tfvars` files are found:
 
 1. **Warn the user immediately:** "Found [N] Terraform state/variable file(s). These may contain secrets. They will be read for resource discovery only — raw values will NOT be copied into any migration artifact."
-2. **Redact sensitive attributes** before writing to `gcp-resource-inventory.json`. For any `gcp_config` field whose key matches a sensitive pattern (password, secret, key, token, credential, private_key, client_secret, access_key, api_key), replace the value with `"[REDACTED]"`.
+2. **Redact sensitive attributes** before writing to `gcp-resource-inventory.json`. For any `config` field whose key matches a sensitive pattern (password, secret, key, token, credential, private_key, client_secret, access_key, api_key), replace the value with `"[REDACTED]"`.
 3. **Never write raw secret values** into `gcp-resource-inventory.json`, `gcp-resource-clusters.json`, or any other output artifact.
 
 Sensitive key patterns to redact (case-insensitive): `password`, `passwd`, `secret`, `api_key`, `apikey`, `access_key`, `private_key`, `client_secret`, `token`, `credential`, `auth`.
@@ -48,6 +48,13 @@ Sensitive key patterns to redact (case-insensitive): `password`, `passwd`, `secr
    - `config` (object with key attributes: `machine_type`, `name`, `region`, etc.)
    - `raw_hcl` (raw HCL text for this resource, needed for Step 4)
    - `depends_on` (array of addresses this resource depends on)
+
+   **Cloud SQL normalization (`google_sql_database_instance`)** — Clarify auto-resolves Q6/Q12/Q13/Q13b from these fields, so write them with canonical names at the top level of `config`:
+   - `config.disk_size_gb` — from Terraform `settings.disk_size` (attribute name in HCL is `disk_size`; normalize to `disk_size_gb`). Omit when not set in Terraform — do not guess.
+   - `config.availability_type` — from Terraform `settings.availability_type` (`ZONAL` or `REGIONAL`). Omit when not set.
+   - `config.tier` — from Terraform `settings.tier` (e.g. `db-f1-micro`).
+   - `config.database_version` — from Terraform `database_version` (e.g. `POSTGRES_15`).
+
 4. Also extract provider and backend configuration (for region detection)
 5. Report total resources found to user (e.g., "Parsed 50 GCP resources from 12 Terraform files")
 
