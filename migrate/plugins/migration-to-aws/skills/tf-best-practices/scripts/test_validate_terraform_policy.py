@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess  # nosec B404 — test-only, inputs are hardcoded literals
 import sys
@@ -27,6 +28,23 @@ BAD_SG_PUBLIC_SSH = FIXTURES / "bad-sg-public-ssh"
 GOOD_SG_PUBLIC_WEBAPP = FIXTURES / "good-sg-public-webapp"
 BAD_ELASTICACHE_UNENCRYPTED = FIXTURES / "bad-elasticache-unencrypted"
 GOOD_ELASTICACHE_ENCRYPTED = FIXTURES / "good-elasticache-encrypted"
+GOOD_QUOTED_PORT_HTTPS = FIXTURES / "good-quoted-port-https"
+BAD_DB_SG_PUBLIC_QUOTED_PORT = FIXTURES / "bad-db-sg-public-quoted-port"
+
+
+def _load_validator_module():
+    """Import the validator for unit-level tests (its filename is hyphenated, so
+    it is not importable as a normal module name)."""
+    spec = importlib.util.spec_from_file_location("validate_terraform_policy", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    # Register before exec: @dataclass resolves annotations via sys.modules.
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+VALIDATOR = _load_validator_module()
 
 
 def run_policy_validator(terraform_dir: Path, json_out: Path | None = None) -> tuple[int, str]:
@@ -254,3 +272,259 @@ resource "aws_lb_listener" "http_redirect" {
         code, out = run_policy_validator(Path(tmp))
         assert code == 0, f"block-form forward should pass, got: {out}"
         assert "POLICY_OK" in out
+
+
+def test_quoted_port_https_listener_passes() -> None:
+    """Regression: Terraform accepts a quoted integer for number arguments, so a
+    correct HTTPS listener written as port = "443" must NOT be falsely flagged.
+
+    Reading only bare integers left port=None, so https_ok was empty and a valid
+    stack failed with rule=alb_https_listener.
+    """
+    code, out = run_policy_validator(GOOD_QUOTED_PORT_HTTPS)
+    assert code == 0, out
+    assert "POLICY_OK" in out
+
+
+def test_quoted_port_db_sg_public_ingress_fails() -> None:
+    """Regression: from_port / to_port = "5432" with cidr_blocks = ["0.0.0.0/0"]
+    is a world-open database and must fire, not silently pass."""
+    code, out = run_policy_validator(BAD_DB_SG_PUBLIC_QUOTED_PORT)
+    assert code == 1, out
+    assert "db_sg_no_public_ingress" in out
+
+
+def test_quoted_port_sg_public_admin_ingress_fails() -> None:
+    """Same quoted-port regression for the sensitive-port rule (SSH on 22)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "vpc.tf").write_text(
+            """
+resource "aws_security_group" "bad" {
+  name = "bad-ssh-sg"
+
+  ingress {
+    from_port   = "22"
+    to_port     = "22"
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+""",
+            encoding="utf-8",
+        )
+        code, out = run_policy_validator(Path(tmp))
+        assert code == 1, out
+        assert "sg_no_public_admin_ingress" in out
+        assert "22 (SSH)" in out
+
+
+def test_attr_int_reads_bare_and_quoted_integers() -> None:
+    assert VALIDATOR._attr_int("  port = 443\n", "port") == 443
+    assert VALIDATOR._attr_int('  port = "443"\n', "port") == 443
+    assert VALIDATOR._attr_int('  from_port = "0"\n', "from_port") == 0
+
+
+def test_attr_int_rejects_non_literal_quoted_values() -> None:
+    """Precision guard: a quoted value must be ENTIRELY digits. Anything else is
+    non-literal and must return None so the rules keep failing open."""
+    for body in (
+        '  port = "443x"\n',
+        '  port = "x443"\n',
+        '  port = "443-444"\n',
+        '  port = "${var.port}"\n',
+        '  port = " 443"\n',
+        '  port = ""\n',
+        "  port = var.port\n",
+        "  port = local.ports[0]\n",
+    ):
+        assert VALIDATOR._attr_int(body, "port") is None, body
+
+
+def test_attr_int_absent_attribute_is_none() -> None:
+    assert VALIDATOR._attr_int('  protocol = "HTTPS"\n', "port") is None
+
+
+# A listener whose own `port`/`protocol` are written AFTER its default_action.
+# Valid HCL — `terraform fmt` does not reorder attributes relative to blocks — and
+# the nested redirect carries both a `port` and a `protocol`, so a whole-body read
+# returns the redirect's 443/HTTPS instead of the listener's own 80/HTTP.
+_LISTENER_ATTRS_AFTER_NESTED_BLOCK = """{
+  load_balancer_arn = aws_lb.app.arn
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port     = "443"
+      protocol = "HTTPS"
+    }
+  }
+
+  port     = 80
+  protocol = "HTTP"
+}"""
+
+
+def test_attrs_read_from_own_block_not_nested_block() -> None:
+    """Accepting quoted integers makes a nested `port = "443"` a match candidate
+    where a bare-only pattern could never match one, so reads are scoped to the
+    block's own attributes. Pinned for both readers: _attr_string had the same
+    whole-body weakness before this change and shares the scoping now."""
+    assert VALIDATOR._attr_int(_LISTENER_ATTRS_AFTER_NESTED_BLOCK, "port") == 80
+    assert (
+        VALIDATOR._attr_string(_LISTENER_ATTRS_AFTER_NESTED_BLOCK, "protocol") == "HTTP"
+    )
+
+
+def test_attr_nested_only_value_is_not_promoted() -> None:
+    """An attribute that exists ONLY inside a nested block is absent from the
+    enclosing block — returning the nested value would invent an attribute.
+
+    Written as `terraform fmt` emits it (one attribute per line), which is the form
+    that actually reaches the line-anchored pattern; a collapsed one-line
+    `redirect { port = "443" }` never matches and so would not exercise scoping."""
+    body = '{\n  default_action {\n    redirect {\n      port = "443"\n    }\n  }\n}'
+    assert VALIDATOR._attr_int(body, "port") is None
+
+
+def test_attr_interpolation_does_not_hide_later_attributes() -> None:
+    """`${...}` braces are balanced, so an interpolated value earlier in the body
+    must not make a following top-level attribute unreadable."""
+    body = '{\n  identifier        = "${var.project}-db"\n  storage_encrypted = true\n}'
+    assert VALIDATOR._attr_string(body, "storage_encrypted") == "true"
+
+
+def test_quote_nested_in_interpolation_does_not_end_the_string() -> None:
+    """A `"` inside `${...}` opens a NESTED string; it must not end the outer one.
+
+    Regression guard: the first lexer set `state = "code"` on any `"` seen in a
+    string, so an inner string's closing quote ended the outer string and the rest
+    of the line was scanned as code — putting textual braces back into the depth
+    count. That is the exact failure class the lexer was added to close, reached by
+    a different route, and it is reachable from ordinary HCL (`replace(v, "{", "")`,
+    `templatefile("t.tpl", {"a"="{"})`).
+
+    Both directions matter: an opening brace skews depth (the attribute is judged
+    nested and skipped), a closing brace truncates the body outright.
+    """
+    for label, body in (
+        ("open brace in nested quote", '{\n  identifier = "${lookup(var.m, "a{b")}"\n  port = 80\n}'),
+        ("close brace in nested quote", '{\n  n = "${replace(v, "}", "")}"\n  port = 80\n}'),
+        ("both braces in nested quote", '{\n  n = "${replace(v, "{}", "")}"\n  port = 80\n}'),
+        ("nested quote, no brace", '{\n  a = "${lookup(var.tags, "Name")}"\n  port = 80\n}'),
+        ("two interpolations", '{\n  a = "${f("x{")}-${g("y}")}"\n  port = 80\n}'),
+    ):
+        assert VALIDATOR._attr_int(body, "port") == 80, label
+
+
+def test_lexically_irrelevant_braces_do_not_hide_attributes() -> None:
+    """A brace in a comment, string, or heredoc is not a block delimiter, so it must
+    not shift a real top-level attribute out of scope.
+
+    Regression guard: an earlier revision counted raw `{`/`}` and DID hide the
+    attribute here. For these rules a hidden attribute means a MISSED violation
+    (`publicly_accessible = true` read as absent, hence compliant), so "fail open"
+    is the wrong default — the value is a plain top-level literal, not ambiguous."""
+    for label, body in (
+        ("hash comment", '{\n  # primary { instance\n  port = 80\n}'),
+        ("slash comment", '{\n  // primary { instance\n  port = 80\n}'),
+        ("block comment", '{\n  /* primary { instance */\n  port = 80\n}'),
+        ("string", '{\n  identifier = "primary { db"\n  port = 80\n}'),
+        ("unbalanced string", '{\n  name = "a { b"\n  port = 80\n}'),
+        ("heredoc", '{\n  policy = <<EOT\n  { not code }\nEOT\n  port = 80\n}'),
+    ):
+        assert VALIDATOR._attr_int(body, "port") == 80, label
+
+
+def test_extraction_not_truncated_by_lexically_irrelevant_closing_brace() -> None:
+    """A `}` in a comment, string, or heredoc body is not a delimiter, so it must
+    not end the resource body early.
+
+    Regression guard: raw brace counting in `_extract_braced_block` truncated the
+    body before `publicly_accessible = true`, so the resource reached the rules
+    with the offending attribute already discarded — zero violations."""
+    for label, filler in (
+        ("hash comment", "  # capacity review } pending"),
+        ("slash comment", "  // capacity review } pending"),
+        ("block comment", "  /* capacity review } pending */"),
+        ("string", '  identifier = "primary } db"'),
+        ("heredoc", "  description = <<EOT\n  a closing } brace\nEOT"),
+        ("closing brace in a quote nested in an interpolation", '  n = "${replace(v, "}", "")}"'),
+    ):
+        content = (
+            'resource "aws_db_instance" "pg" {\n'
+            f"{filler}\n"
+            "  publicly_accessible = true\n"
+            "}\n"
+        )
+        blocks = VALIDATOR._extract_blocks(content, "aws_db_instance")
+        assert len(blocks) == 1, label
+        assert (
+            VALIDATOR._attr_string(blocks[0][1], "publicly_accessible") == "true"
+        ), label
+
+
+def test_regular_heredoc_terminator_must_be_unindented() -> None:
+    """`<<TAG` requires the terminator at column 0; only `<<-TAG` tolerates
+    indentation. Treating both as tolerant exits a regular heredoc early, so its
+    body text is read as real code — here an in-heredoc `port = 443` was returned
+    instead of the listener's own `port = 80`."""
+    regular = '{\n  policy = <<EOT\n  EOT\n  port = 443\nEOT\n  port = 80\n}'
+    assert VALIDATOR._attr_int(regular, "port") == 80
+    indented = '{\n  policy = <<-EOT\n  { not code }\n  EOT\n  port = 80\n}'
+    assert VALIDATOR._attr_int(indented, "port") == 80
+
+
+def test_attribute_presence_probe_matches_value_scoping() -> None:
+    """`_has_own_attr` must agree with `_attr_string` about what counts as set.
+
+    The encryption rules read "attribute present but unreadable" as
+    variable-driven and skip. If presence counted a commented-out assignment the
+    reader ignores, a resource whose attribute is genuinely ABSENT — hence
+    unencrypted by default — would be skipped instead of flagged."""
+    only_commented = '{\n  identifier = "pg"\n  /*\n  storage_encrypted = false\n  */\n}'
+    assert VALIDATOR._has_own_attr(only_commented, "storage_encrypted") is False
+    assert VALIDATOR._attr_string(only_commented, "storage_encrypted") is None
+    real = '{\n  storage_encrypted = var.encrypt\n}'
+    assert VALIDATOR._has_own_attr(real, "storage_encrypted") is True
+    assert VALIDATOR._attr_string(real, "storage_encrypted") is None
+
+
+def test_commented_out_resource_is_not_extracted() -> None:
+    """A commented-out resource declaration is not a resource."""
+    content = (
+        '# resource "aws_db_instance" "ghost" {\n'
+        "#   publicly_accessible = true\n"
+        "# }\n"
+    )
+    assert VALIDATOR._extract_blocks(content, "aws_db_instance") == []
+
+
+def test_commented_out_attribute_is_not_read() -> None:
+    """An attribute that only appears inside a comment is not set."""
+    assert VALIDATOR._attr_int("{\n  # port = 443\n}", "port") is None
+    assert VALIDATOR._attr_int("{\n  // port = 443\n}", "port") is None
+    assert VALIDATOR._attr_int("{\n  /*\n  port = 443\n  */\n}", "port") is None
+    assert (
+        VALIDATOR._attr_string('{\n  /*\n  protocol = "HTTPS"\n  */\n}', "protocol")
+        is None
+    )
+
+
+def test_every_fixture_matches_its_good_bad_prefix() -> None:
+    """Enforce the naming invariant the fixture set relies on: `good-*` (and the
+    internal-ALB case) must be POLICY_OK, `bad-*` must be POLICY_FAIL. Without
+    this, each fixture is wired up by hand and a new one added without its own
+    test would silently get no coverage."""
+    fixture_dirs = sorted(d for d in FIXTURES.iterdir() if d.is_dir())
+    # Exact, not `>=`: a floor cannot detect fixtures being deleted down to it,
+    # which is the removal this assertion exists to catch. Update deliberately
+    # when adding or removing a fixture.
+    assert len(fixture_dirs) == 21, f"fixture count changed: {[d.name for d in fixture_dirs]}"
+    for fixture in fixture_dirs:
+        code, out = run_policy_validator(fixture)
+        if fixture.name.startswith("bad-"):
+            assert code == 1, f"{fixture.name} must FAIL: {out}"
+            assert "POLICY_FAIL" in out, f"{fixture.name}: {out}"
+        else:
+            assert code == 0, f"{fixture.name} must pass: {out}"
+            assert "POLICY_OK" in out, f"{fixture.name}: {out}"

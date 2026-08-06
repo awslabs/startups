@@ -83,49 +83,275 @@ def _read_tf_files(terraform_dir: Path) -> list[tuple[str, str]]:
     return files
 
 
-def _extract_braced_block(content: str, open_brace: int) -> tuple[str, int]:
-    """Return (block_text_including_braces, index_after_close). Brace-depth aware."""
+_HEREDOC_OPEN = re.compile(r"<<(-?)\s*([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _lex_hcl(block: str) -> tuple[list[int], list[bool]]:
+    """Scan HCL once, returning per-index (brace depth, is-real-code) arrays.
+
+    Only braces that are actual block delimiters count toward depth. HCL permits
+    `{` and `}` inside `#` / `//` line comments, `/* */` block comments, quoted
+    strings, and heredoc bodies, and those are NOT delimiters — counting them
+    would let unrelated text shift the apparent nesting of a real attribute.
+    `is_code` additionally lets callers ignore an attribute that only appears
+    commented out.
+
+    Interpolations are treated as opaque string content: `{` and `}` inside a
+    string are both ignored, so the running depth is unaffected either way. This
+    requires tracking interpolation nesting, because `${...}` may contain its own
+    quoted strings (`"${lookup(var.m, "a{b")}"`). Without that, the inner string's
+    closing quote would end the OUTER string and everything after it would be
+    scanned as code — putting textual braces back into the depth count, which is
+    the failure mode this lexer exists to prevent.
+    """
+    n = len(block)
+    depths = [0] * n
+    codes = [False] * n
     depth = 0
-    for idx in range(open_brace, len(content)):
-        char = content[idx]
-        if char == "{":
-            depth += 1
-        elif char == "}":
-            depth -= 1
-            if depth == 0:
-                return content[open_brace : idx + 1], idx + 1
+    state = "code"
+    tag = ""
+    tag_indent_ok = False
+    interp = 0          # open `${` levels inside the current string
+    inner_str = False   # inside a quoted string nested in an interpolation
+    i = 0
+    while i < n:
+        ch = block[i]
+        nxt = block[i + 1] if i + 1 < n else ""
+        if state == "code":
+            if ch == "#" or (ch == "/" and nxt == "/"):
+                depths[i], codes[i] = depth, False
+                state = "line_comment"
+                i += 1
+                continue
+            if ch == "/" and nxt == "*":
+                depths[i], depths[i + 1] = depth, depth
+                state = "block_comment"
+                i += 2
+                continue
+            if ch == '"':
+                depths[i], codes[i] = depth, False
+                state = "string"
+                interp = 0
+                inner_str = False
+                i += 1
+                continue
+            if ch == "<" and nxt == "<":
+                heredoc = _HEREDOC_OPEN.match(block, i)
+                if heredoc:
+                    for j in range(i, heredoc.end()):
+                        depths[j] = depth
+                    tag = heredoc.group(2)
+                    # Only `<<-TAG` permits an indented terminator; plain `<<TAG`
+                    # requires it at column 0, so an indented tag-looking line is
+                    # ordinary body text.
+                    tag_indent_ok = heredoc.group(1) == "-"
+                    state = "heredoc"
+                    i = heredoc.end()
+                    continue
+            depths[i], codes[i] = depth, True
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+            i += 1
+            continue
+
+        depths[i] = depth
+        if state == "line_comment":
+            if ch == "\n":
+                state = "code"
+            i += 1
+        elif state == "block_comment":
+            if ch == "*" and nxt == "/":
+                depths[i + 1] = depth
+                state = "code"
+                i += 2
+            else:
+                i += 1
+        elif state == "string":
+            if ch == "\\" and i + 1 < n:
+                depths[i + 1] = depth
+                i += 2
+            elif ch == "$" and nxt == "{" and not inner_str:
+                depths[i + 1] = depth
+                interp += 1
+                i += 2
+            elif interp > 0 and ch == '"':
+                # A quote inside `${...}` opens/closes a NESTED string; it must not
+                # be mistaken for the end of the interpolated string itself.
+                inner_str = not inner_str
+                i += 1
+            elif interp > 0 and ch == "}" and not inner_str:
+                interp -= 1
+                i += 1
+            else:
+                if ch == '"' and interp == 0:
+                    state = "code"
+                i += 1
+        else:  # heredoc — body is literal until a line holding only the tag
+            end = block.find("\n", i)
+            line_end = n if end == -1 else end + 1
+            for j in range(i, line_end):
+                depths[j] = depth
+            line = block[i:line_end]
+            terminator = line.strip() if tag_indent_ok else line.rstrip()
+            if terminator == tag:
+                state = "code"
+            i = line_end
+    return depths, codes
+
+
+def _extract_braced_block(
+    content: str, open_brace: int, lexed: tuple[list[int], list[bool]] | None = None
+) -> tuple[str, int]:
+    """Return (block_text_including_braces, index_after_close).
+
+    Uses _lex_hcl, not raw brace counting: a `}` inside a comment, string, or
+    heredoc body is not a delimiter, and treating it as one truncates the block
+    early. That silently drops every attribute after the stray brace — a resource
+    body cut before `publicly_accessible = true` reports no violation at all. Pass
+    `lexed` to reuse a scan already done for this exact `content`.
+    """
+    depths, codes = lexed if lexed is not None else _lex_hcl(content)
+    if open_brace >= len(codes) or not codes[open_brace]:
+        return content[open_brace:], len(content)
+    target = depths[open_brace] + 1
+    for idx in range(open_brace + 1, len(content)):
+        if codes[idx] and content[idx] == "}" and depths[idx] == target:
+            return content[open_brace : idx + 1], idx + 1
     return content[open_brace:], len(content)
 
 
 def _extract_blocks(content: str, resource_type: str) -> list[tuple[str, str, int]]:
-    """Return (name, body, 1-based line) for each resource of resource_type."""
+    """Return (name, body, 1-based line) for each resource of resource_type.
+
+    The file is lexed once and the scan is shared with every extraction, so
+    extraction, attribute presence, and attribute values all agree on what counts
+    as code. A resource declaration that is itself commented out is skipped.
+    """
+    lexed = _lex_hcl(content)
+    _, codes = lexed
     blocks: list[tuple[str, str, int]] = []
     for match in RESOURCE_OPEN.finditer(content):
         if match.group("type") != resource_type:
             continue
+        if not codes[match.start()]:
+            continue
         name = match.group("name")
         brace_start = match.end() - 1
-        body, _ = _extract_braced_block(content, brace_start)
+        body, _ = _extract_braced_block(content, brace_start, lexed)
         line = content.count("\n", 0, match.start()) + 1
         blocks.append((name, body, line))
     return blocks
 
 
+def _own_blocks(body: str, block_type: str) -> list[str]:
+    """Bodies of `block_type { ... }` blocks declared directly in `body`.
+
+    Shares the lexer so a commented-out `ingress {` is not treated as a real rule.
+    """
+    lexed = _lex_hcl(body)
+    _, codes = lexed
+    found: list[str] = []
+    for match in re.finditer(rf"{re.escape(block_type)}\s*\{{", body):
+        if not codes[match.start()]:
+            continue
+        inner, _ = _extract_braced_block(body, match.end() - 1, lexed)
+        found.append(inner)
+    return found
+
+
+def _has_own_attr(block: str, attr: str) -> bool:
+    """True if `attr` is assigned among the block's OWN attributes.
+
+    Presence must use the same lexical rules as value reading. A probe that counts
+    a commented-out assignment while the reader correctly ignores it makes the two
+    disagree, and the rules that branch on "attribute present but unreadable →
+    variable-driven → fail open" then skip a resource whose attribute is genuinely
+    absent.
+    """
+    return (
+        _first_own_attr(block, rf"^\s*{re.escape(attr)}\s*=", re.MULTILINE) is not None
+    )
+
+
+def _first_own_attr(block: str, pattern: str, flags: int = 0) -> re.Match[str] | None:
+    """First match of `pattern` that sits among the block's OWN attributes.
+
+    `_extract_blocks` / `_extract_braced_block` return a resource body INCLUDING
+    its nested blocks, and a plain `re.search` takes the first match anywhere —
+    so an attribute of a nested block can be read as if it belonged to the
+    resource. `aws_lb_listener` is the live example: `default_action { redirect {
+    port = "443", protocol = "HTTPS" } }` carries both a `port` and a `protocol`,
+    and HCL does not require the listener's own `port` to precede its
+    `default_action` (`terraform fmt` will not reorder attributes relative to
+    blocks). Read whole-body, such a listener reports port 443 / protocol HTTPS
+    instead of 80 / HTTP.
+
+    Candidates are therefore filtered by brace depth — only those at the body's
+    own depth are eligible (1 for a braced body as returned by
+    _extract_braced_block, 0 for a bare attribute fragment) — and a candidate that
+    is merely commented out is skipped.
+
+    Depth comes from _lex_hcl, NOT from raw `{`/`}` counting. Raw counting is
+    unsafe here: a brace in an unrelated comment or string literal would shift the
+    depth of a real top-level attribute and hide it, and for these rules a hidden
+    attribute means a MISSED violation — `publicly_accessible = true` reported as
+    compliant. That is the failure class this reader exists to prevent, so
+    lexically-irrelevant braces must not participate.
+    """
+    base = 1 if block.lstrip().startswith("{") else 0
+    depths, codes = _lex_hcl(block)
+    for match in re.finditer(pattern, block, flags):
+        start = match.start()
+        if start < len(codes) and codes[start] and depths[start] == base:
+            return match
+    return None
+
+
 def _attr_string(block: str, attr: str) -> str | None:
-    match = re.search(rf'^\s*{re.escape(attr)}\s*=\s*"([^"]*)"', block, re.MULTILINE)
+    match = _first_own_attr(
+        block, rf'^\s*{re.escape(attr)}\s*=\s*"([^"]*)"', re.MULTILINE
+    )
     if match:
         return match.group(1)
-    bool_match = re.search(
-        rf"^\s*{re.escape(attr)}\s*=\s*(true|false)\b",
+    bool_match = _first_own_attr(
         block,
+        rf"^\s*{re.escape(attr)}\s*=\s*(true|false)\b",
         re.MULTILINE | re.IGNORECASE,
     )
     return bool_match.group(1).lower() if bool_match else None
 
 
 def _attr_int(block: str, attr: str) -> int | None:
-    match = re.search(rf"^\s*{re.escape(attr)}\s*=\s*(\d+)", block, re.MULTILINE)
-    return int(match.group(1)) if match else None
+    """Read an integer attribute, accepting BARE (443) and QUOTED ("443") forms.
+
+    Terraform accepts a quoted integer for number-typed arguments (`port = "443"`
+    is valid, idiomatic, `terraform fmt`-clean HCL and converts to 443), so a
+    bare-only reader silently degrades every port-based rule: a correct HTTPS
+    listener written as port = "443" was reported as a missing HTTPS listener
+    (false positive), and — worse — an ingress with from_port = "5432" /
+    cidr_blocks = ["0.0.0.0/0"] produced no covered ports, so the public-ingress
+    rules never fired on a genuinely world-open database (fail-CLOSED miss).
+
+    The quoted arm requires the value to be ENTIRELY digits (the closing quote is
+    anchored against the digits), so "443x", "443-444" and "${var.port}" do NOT
+    read as 443 — they return None and keep the existing fail-open behaviour for
+    non-literal / non-integer values.
+
+    Accepting the quoted form also makes a nested block's `port` a candidate where
+    a bare-only pattern could never match one, so the search is scoped to the
+    block's own attributes via _first_own_attr — see its docstring.
+    """
+    match = _first_own_attr(
+        block,
+        rf'^\s*{re.escape(attr)}\s*=\s*(?:(\d+)|"(\d+)")',
+        re.MULTILINE,
+    )
+    if not match:
+        return None
+    bare, quoted = match.group(1), match.group(2)
+    return int(bare if bare is not None else quoted)
 
 
 def _default_action_type(block: str) -> str | None:
@@ -350,8 +576,7 @@ def check_db_sg_no_public_ingress(tf_files: list[tuple[str, str]]) -> list[Viola
     for rel_path, content in tf_files:
         for name, body, line in _extract_blocks(content, "aws_security_group"):
             # Walk each inline ingress block via brace matching.
-            for m in re.finditer(r"ingress\s*\{", body):
-                ingress_body, _ = _extract_braced_block(body, m.end() - 1)
+            for ingress_body in _own_blocks(body, "ingress"):
                 if _ingress_covers_db_port(ingress_body) and _ingress_allows_public(ingress_body):
                     violations.append(
                         Violation(
@@ -396,8 +621,7 @@ def check_sg_no_public_admin_ingress(tf_files: list[tuple[str, str]]) -> list[Vi
     violations: list[Violation] = []
     for rel_path, content in tf_files:
         for name, body, line in _extract_blocks(content, "aws_security_group"):
-            for m in re.finditer(r"ingress\s*\{", body):
-                ingress_body, _ = _extract_braced_block(body, m.end() - 1)
+            for ingress_body in _own_blocks(body, "ingress"):
                 if not _ingress_allows_public(ingress_body):
                     continue
                 hit = _ingress_covered_ports(ingress_body, _SENSITIVE_NONDB_PORTS)
@@ -502,7 +726,7 @@ def check_rds_encryption_at_rest(tf_files: list[tuple[str, str]]) -> list[Violat
             for name, body, line in _extract_blocks(content, res_type):
                 val = _attr_string(body, "storage_encrypted")
                 # Variable-driven / non-literal → attribute present but not "true"/"false".
-                has_attr = re.search(r"^\s*storage_encrypted\s*=", body, re.MULTILINE)
+                has_attr = _has_own_attr(body, "storage_encrypted")
                 if has_attr and val is None:
                     continue  # variable-driven — fail open
                 if val == "true":
@@ -537,9 +761,7 @@ def check_elasticache_encryption_at_rest(tf_files: list[tuple[str, str]]) -> lis
     for rel_path, content in tf_files:
         for name, body, line in _extract_blocks(content, "aws_elasticache_replication_group"):
             val = _attr_string(body, "at_rest_encryption_enabled")
-            has_attr = re.search(
-                r"^\s*at_rest_encryption_enabled\s*=", body, re.MULTILINE
-            )
+            has_attr = _has_own_attr(body, "at_rest_encryption_enabled")
             if has_attr and val is None:
                 continue  # variable-driven — fail open
             if val == "true":
