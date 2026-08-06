@@ -273,7 +273,8 @@ def check_alb_https_policy(terraform_dir: Path) -> list[Violation]:
 
 _DB_PORTS = (5432, 3306)
 
-# Well-known admin / datastore ports that should never be open to 0.0.0.0/0.
+# Well-known admin / datastore ports that should never be open to the whole
+# internet in either address family (0.0.0.0/0 or ::/0).
 # Deliberately EXCLUDES 5432/3306 (covered by db_sg_no_public_ingress, so no
 # double-reporting) and web ports 80/443 (legitimately public). Kept tight to
 # unambiguous "never public" ports so valid designs (e.g. game servers on high
