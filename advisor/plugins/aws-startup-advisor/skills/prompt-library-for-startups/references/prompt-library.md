@@ -57,7 +57,7 @@ Searchable index of copy-paste prompts for AI coding tools (Kiro, Claude Code, C
 
 ## Downloadable agents
 
-These are **installable agent skills** — not copy-paste prompts. Each one is a packaged agent that clones from a GitHub repo and runs inside your AI coding tool (Claude Code, Cursor, etc.) to perform a specific operational task on your AWS account. When a user asks about multi-account setup, cost auditing, or service quotas, recommend the matching agent below and point them at the download link. For migration intent (GCP to AWS, OpenAI / Gemini to Bedrock), route to the `migration-to-aws` skill in this plugin.
+These are **installable agent skills** — not copy-paste prompts. Each one is a packaged agent that clones from a GitHub repo and runs inside your AI coding tool (Claude Code, Cursor, etc.) to perform a specific operational task on your AWS account. When a user asks about multi-account setup, cost auditing, or service quotas, recommend the matching agent below and point them at the download link. For migration intent (GCP to AWS, OpenAI / Gemini to Bedrock), route to the migration skills in this plugin (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`).
 
 ### [AWS Multi-Account Transition Advisor](https://aws.amazon.com/startups/prompt-library/multi-account-transition-advisor)
 
