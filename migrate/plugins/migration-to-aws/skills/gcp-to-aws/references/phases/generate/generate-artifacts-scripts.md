@@ -31,7 +31,7 @@ Set boolean flags for downstream script generation:
   "ElastiCache", "Redshift" OR `gcp_type` starting with `google_sql_`, `google_firestore_`,
   `google_bigtable_`, `google_bigquery_`, `google_redis_`
 - **has_storage**: true if ANY resource has `aws_service` = "S3" OR `gcp_type` = `google_storage_bucket`
-- **has_containers**: true if ANY resource has `aws_service` containing "Fargate", "ECS", "EKS"
+- **has_containers**: true if ANY resource has `aws_service` containing "Fargate", "ECS", "EKS", or "Elastic Beanstalk"
   OR `gcp_type` starting with `google_cloud_run_`, `google_container_cluster`
 - **has_secrets**: true if ANY resource has `aws_service` containing "Secrets Manager"
   OR `gcp_type` starting with `google_secret_manager_`
@@ -221,13 +221,19 @@ echo "TODO: Compare row counts between source and target"
 
 **Skip this script entirely if `has_containers` is false.**
 
-Migrate container images from GCR/Artifact Registry to ECR:
+This script has two independent sections; emit each only if its services are present in `aws-design.json`:
+
+- **Shared preamble** — **always emit** (shebang, `DRY_RUN`, account/region). Both sections depend on it, so it must not live inside either one.
+- **ECR image migration** — emit if any resource maps to Fargate/ECS/EKS (container images move GCR/Artifact Registry → ECR).
+- **Elastic Beanstalk source deploy** — emit if any resource maps to Elastic Beanstalk. **EB does not take a pre-built image from a registry:** for the Docker platform you ship a **source bundle containing the `Dockerfile`** (plus a `Dockerrun.aws.json` only for the pre-built-image case, which this skill does not use) and EB builds the image during deployment; for the language platforms (Python/Node/etc.) you ship the app source. So there is **no ECR push for EB** — do not create an ECR repo for an EB service. The EB section bundles the app source, uploads it to the EB-managed S3 bucket, creates an application version, and deploys it to the environment Terraform provisioned.
+
+Shared preamble (always emitted):
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Container image migration: GCR → ECR
+# App migration: container images (→ ECR) and/or Elastic Beanstalk source deploy
 # Usage: ./03-migrate-containers.sh [--execute]
 
 DRY_RUN=true
@@ -235,6 +241,11 @@ DRY_RUN=true
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 AWS_REGION="us-east-1"  # From preferences.json target_region
+```
+
+ECR image migration — GCR/Artifact Registry → ECR (**include ONLY if Fargate/ECS/EKS present**):
+
+```bash
 ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
 # TODO: List container images from aws-design.json compute resources
@@ -264,11 +275,49 @@ for IMAGE in "${IMAGES[@]}"; do
     docker push "$ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
   fi
 done
+```
 
-# Verification
+Elastic Beanstalk source deploy (**include ONLY if an EB environment is in `aws-design.json`**):
+
+```bash
+# EB builds the image from your Dockerfile at deploy time (Docker platform) or runs the app
+# source directly (language platforms). No ECR push. One deploy per App Engine service → EB env.
+# TODO: one entry per EB environment from aws-design.json (eb_application, eb_environment, source_service)
+EB_APP="gcp-migration"            # aws_config.eb_application
+EB_ENVS=(
+  "default"                        # aws_config.eb_environment (one per source_service)
+  # "worker"
+)
+EB_BUCKET="elasticbeanstalk-${AWS_REGION}-${AWS_ACCOUNT_ID}"
+
+for EB_ENV in "${EB_ENVS[@]}"; do
+  VERSION_LABEL="${EB_ENV}-$(date -u +%Y%m%d%H%M%S)"   # stamp at run time
+  BUNDLE="/tmp/${EB_APP}-${EB_ENV}.zip"
+  if [ "$DRY_RUN" = true ]; then
+    echo "[DRY RUN] Would bundle ./${EB_ENV} (incl. Dockerfile), upload to s3://${EB_BUCKET}, and deploy version ${VERSION_LABEL} to ${EB_APP}/${EB_ENV}"
+  else
+    echo "Bundling source for ${EB_ENV} (must include Dockerfile for the Docker platform)..."
+    ( cd "./${EB_ENV}" && zip -r "$BUNDLE" . -x '*.git*' )
+    aws s3 cp "$BUNDLE" "s3://${EB_BUCKET}/${VERSION_LABEL}.zip" --region "$AWS_REGION"
+    aws elasticbeanstalk create-application-version --application-name "$EB_APP" \
+      --version-label "$VERSION_LABEL" \
+      --source-bundle "S3Bucket=${EB_BUCKET},S3Key=${VERSION_LABEL}.zip" --region "$AWS_REGION"
+    aws elasticbeanstalk update-environment --application-name "$EB_APP" \
+      --environment-name "$EB_ENV" --version-label "$VERSION_LABEL" --region "$AWS_REGION"
+  fi
+done
+```
+
+Verification (always emitted; each line only reports on the sections you included):
+
+```bash
 echo "=== Verification ==="
-echo "Listing ECR repositories..."
-aws ecr describe-repositories --region "$AWS_REGION" --query 'repositories[].repositoryName' --output table
+# Include the next two lines only if the ECR section was emitted:
+echo "Listing ECR repositories (Fargate/ECS/EKS)..."
+aws ecr describe-repositories --region "$AWS_REGION" --query 'repositories[].repositoryName' --output table 2>/dev/null || echo "No ECR repositories (expected if EB-only)"
+# Include the next two lines only if the EB section was emitted:
+echo "Listing Elastic Beanstalk environments..."
+aws elasticbeanstalk describe-environments --region "$AWS_REGION" --query 'Environments[].{Env:EnvironmentName,Status:Status,Health:Health}' --output table 2>/dev/null || echo "No EB environments"
 ```
 
 ### 04-migrate-secrets.sh — IF has_secrets
@@ -346,10 +395,14 @@ cd terraform/
 terraform state list | wc -l
 echo "resources in Terraform state"
 
-# --- Include ONLY if has_containers ---
+# --- Include ONLY if Fargate/ECS/EKS present ---
 # Check ECS services
 echo "--- ECS Services ---"
 aws ecs list-services --cluster "${PROJECT_NAME:-gcp-migration}" --query 'serviceArns' --output table 2>/dev/null || echo "No ECS cluster found"
+
+# --- Include ONLY if Elastic Beanstalk present ---
+echo "--- Elastic Beanstalk Environments ---"
+aws elasticbeanstalk describe-environments --query 'Environments[].{Env:EnvironmentName,Status:Status,Health:Health}' --output table 2>/dev/null || echo "No EB environments found"
 
 # --- Include ONLY if has_databases ---
 # Check RDS instances

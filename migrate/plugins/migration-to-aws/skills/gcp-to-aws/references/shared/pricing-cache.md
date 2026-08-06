@@ -36,6 +36,23 @@ Linux, on-demand. ARM64 (Graviton) is ~20% below x86 per AWS Fargate pricing. De
 
 arm64 (Graviton) is ~20% below x86 per GB-second; per-request price is the same for both architectures.
 
+### Elastic Beanstalk
+
+| Metric      | Rate                                              |
+| ----------- | ------------------------------------------------- |
+| Service fee | $0.00 (free — no additional charge for EB itself) |
+
+Costs are the underlying resources (EC2, ALB, EBS, CloudWatch). Typical estimates:
+
+Profiles below use the Graviton (`t4g.*`) default that the design phase now emits for EB; for x86 environments use the `t3.*` equivalents (~15–20% higher).
+
+| Profile                                        | Underlying Resources             | Estimated Monthly |
+| ---------------------------------------------- | -------------------------------- | ----------------- |
+| Dev (single instance, t4g.small, no ALB)       | EC2 t4g.small                    | ~$12              |
+| Dev + RDS (t4g.small + db.t4g.micro)           | EC2 + RDS db.t4g.micro           | ~$28–48           |
+| Prod (load-balanced, 2× t4g.medium, ALB)       | 2× EC2 + ALB + EBS               | ~$85–110          |
+| Prod + RDS (2× t4g.medium, ALB, db.t4g.medium) | 2× EC2 + ALB + RDS db.t4g.medium | ~$165–210         |
+
 ### EKS
 
 | Metric                | Rate   |

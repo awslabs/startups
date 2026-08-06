@@ -56,6 +56,29 @@ Complete inventory of discovered GCP resources with classification, dependencies
       "cluster_id": "compute_cloudrun_us-central1_001"
     },
     {
+      "address": "google_app_engine_standard_app_version.default_v1",
+      "type": "google_app_engine_standard_app_version",
+      "name": "default_v1",
+      "classification": "SECONDARY",
+      "tier": "compute",
+      "confidence": 0.99,
+      "secondary_role": "configuration",
+      "serves": [],
+      "config": {
+        "service": "default",
+        "version_id": "v1",
+        "runtime": "python312",
+        "instance_class": "F2",
+        "serving_status": "SERVING",
+        "project": "my-gcp-project",
+        "automatic_scaling": {
+          "standard_scheduler_settings": { "min_instances": 2, "max_instances": 10 }
+        }
+      },
+      "depth": 1,
+      "cluster_id": "compute_appengine_us-central1_001"
+    },
+    {
       "address": "google_compute_network.main",
       "type": "google_compute_network",
       "name": "main",

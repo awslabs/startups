@@ -13,7 +13,7 @@ The question catalog spans **six named categories (A–F)** plus agentic (G) and
 | File                  | Category                                  | Questions | Loaded When                                     |
 | --------------------- | ----------------------------------------- | --------- | ----------------------------------------------- |
 | `clarify-global.md`   | A — Global/Strategic                      | Q1–Q7     | Always                                          |
-| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q8–Q11b   | Compute or billing-source resources present     |
+| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q7b–Q11b  | Compute or billing-source resources present     |
 | `clarify-database.md` | D — Database                              | Q12–Q13b  | Database resources present                      |
 | `clarify-ai.md`       | F — AI/Bedrock, G — Agentic, H — Programs | Q14–Q27   | `ai-workload-profile.json` exists               |
 | `clarify-ai-only.md`  | _(standalone)_                            | Q1–Q10    | AI-only migration (no infrastructure artifacts) |
@@ -229,18 +229,18 @@ Record all extracted values in `metadata.inventory_clarifications` where applica
 
 ## Step 3: Question Disposition Catalog
 
-### Category Firing Rules (unchanged)
+### Category Firing Rules
 
-| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                                                                                       |
-| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q3.5 (CUDs), Q4 (skipped), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance)                                                      |
-| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                                                                                |
-| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE)               | `clarify-compute.md`  | Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
-| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                                                                          |
-| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                                                                       |
-| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                                                                                         |
-| **G**    | Agentic            | `agentic_profile.is_agentic == true`                                           | `clarify-ai.md`       | Q23–Q26                                                                                                                                                                         |
-| **H**    | Startup Programs   | Fires with Category F                                                          | `clarify-ai.md`       | Q27                                                                                                                                                                             |
+| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                                                                                                            |
+| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q3.5 (CUDs), Q4 (skipped), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance)                                                                           |
+| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                                                                                                     |
+| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE, App Engine)   | `clarify-compute.md`  | Q7b (compute model), Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
+| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                                                                                               |
+| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                                                                                            |
+| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                                                                                                              |
+| **G**    | Agentic            | `agentic_profile.is_agentic == true`                                           | `clarify-ai.md`       | Q23–Q26                                                                                                                                                                                              |
+| **H**    | Startup Programs   | Fires with Category F                                                          | `clarify-ai.md`       | Q27                                                                                                                                                                                                  |
 
 **If no IaC, billing data, or code is available** (empty discovery): only Category A is active. All service-specific categories are skipped.
 
@@ -278,6 +278,7 @@ Every question in an **active** category gets exactly one disposition:
 | Q5    | PROPOSED                                                                                                                         | B — AWS-only                         | Assuming AWS-only → ECS Fargate eligible; if multi-cloud portability is required, all containers go to EKS instead                                                                                                                              |
 | Q6    | DETECTED when all Cloud SQL instances agree; **ESSENTIAL** on conflict/missing; PROPOSED when no Cloud SQL signal but DB present | B — `multi-az`                       | Assuming Multi-AZ RDS → automatic failover, roughly 2x single-AZ database cost; say "single-az" for dev-grade, "mission-critical" for Aurora (**unconfirmed default — roughly halves or doubles the database estimate; flagged in the report**) |
 | Q7    | **ESSENTIAL — always**                                                                                                           | —                                    | — (cutover strategy selects DMS vs pg_dump/pgcopydb and the entire migration runbook shape; never assumed)                                                                                                                                      |
+| Q7b   | PROPOSED when App Engine present and Q5 ≠ multi-cloud; N/A otherwise                                                             | A — `managed_platform`               | Assuming managed platform → App Engine maps to Elastic Beanstalk; say "container orchestration" for ECS Fargate or "serverless" for Lambda                                                                                                      |
 | Cat B | PROPOSED (each prompt, billing-only mode)                                                                                        | Zonal / 1 service / estimate / Gen 1 | Fills config gaps billing can't answer; corrections here change sizing inputs                                                                                                                                                                   |
 | Q8    | PROPOSED (only when GKE present and Q5 ≠ multi-cloud)                                                                            | C — `ecs-fargate`                    | Assuming Fargate → no Kubernetes to operate; answer "EKS" to preserve your K8s investment                                                                                                                                                       |
 | Q9    | DETECTED when code scan found none; ESSENTIAL when scan found matches (confirm); PROPOSED when no code was analyzed              | B — no WebSockets                    | Assuming no WebSockets → standard ALB config; correct this if you have realtime/persistent-connection features (**unverified — no code scan**)                                                                                                  |
@@ -308,7 +309,8 @@ Every question in an **active** category gets exactly one disposition:
 
 Apply before finalizing dispositions:
 
-- **Q5 answered/overridden to "multi-cloud"** — Immediately record `compute: "eks"`. Q8 becomes N/A (early-exit).
+- **Q5 answered/overridden to "multi-cloud"** — Immediately record `compute: "eks"`. Q8 **and Q7b** become N/A (early-exit); App Engine follows the container path to **EKS**, overriding the default EB mapping.
+- **Q7b N/A** — App Engine (`google_app_engine_application`) not present in inventory, or Q5 resolved to multi-cloud (App Engine → EKS, same override as Q8).
 - **Q10/Q11 N/A** — Cloud Run not present.
 - **Q12/Q13/Q13b N/A** — Cloud SQL (PostgreSQL or MySQL) not present in inventory.
 - **Q8 N/A** — No GKE in inventory, or Q5 resolved to multi-cloud.
@@ -377,20 +379,20 @@ A) Most conservative (highest HA) | B) Use [instance name] as primary | C) Ask m
 
 **Override handling** — when the user corrects a value (detected or assumed):
 
-| User correction (examples)                       | Update constraint                                  | Re-ask?                   |
-| ------------------------------------------------ | -------------------------------------------------- | ------------------------- |
-| `availability: mission-critical` / `multi-az-ha` | `availability: "multi-az-ha"`, `chosen_by: "user"` | No — value is explicit    |
-| `availability: significant` / `multi-az`         | `availability: "multi-az"`, `chosen_by: "user"`    | No                        |
-| `availability: dev` / `single-az`                | `availability: "single-az"`, `chosen_by: "user"`   | No                        |
-| `db size: <10GB` / `10-100GB` / etc.             | Set `db_size` to stated band, `chosen_by: "user"`  | No if band is explicit    |
-| `region: [AWS region]`                           | Set `target_region`, `chosen_by: "user"`           | No                        |
-| `model: [model name]`                            | Set `ai_model_baseline`, `chosen_by: "user"`       | No if maps cleanly to Q19 |
-| `websockets: yes`                                | Set `websocket: "required"`, `chosen_by: "user"`   | No                        |
-| `spend: $5K-$20K`                                | Set `gcp_monthly_spend`, `chosen_by: "user"`       | No if band is explicit    |
-| `ai priority: cost` / `speed` / `quality`        | Set `ai_priority`, `chosen_by: "user"`             | No                        |
-| `multi-cloud: yes`                               | `compute: "eks"`, `chosen_by: "user"`; Q8 → N/A    | No                        |
-| "ask me about [setting]"                         | Convert that row to ESSENTIAL                      | Yes — full question       |
-| Vague correction ("that's wrong")                | Convert that row to ESSENTIAL                      | Yes — full question       |
+| User correction (examples)                       | Update constraint                                                             | Re-ask?                   |
+| ------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------- |
+| `availability: mission-critical` / `multi-az-ha` | `availability: "multi-az-ha"`, `chosen_by: "user"`                            | No — value is explicit    |
+| `availability: significant` / `multi-az`         | `availability: "multi-az"`, `chosen_by: "user"`                               | No                        |
+| `availability: dev` / `single-az`                | `availability: "single-az"`, `chosen_by: "user"`                              | No                        |
+| `db size: <10GB` / `10-100GB` / etc.             | Set `db_size` to stated band, `chosen_by: "user"`                             | No if band is explicit    |
+| `region: [AWS region]`                           | Set `target_region`, `chosen_by: "user"`                                      | No                        |
+| `model: [model name]`                            | Set `ai_model_baseline`, `chosen_by: "user"`                                  | No if maps cleanly to Q19 |
+| `websockets: yes`                                | Set `websocket: "required"`, `chosen_by: "user"`                              | No                        |
+| `spend: $5K-$20K`                                | Set `gcp_monthly_spend`, `chosen_by: "user"`                                  | No if band is explicit    |
+| `ai priority: cost` / `speed` / `quality`        | Set `ai_priority`, `chosen_by: "user"`                                        | No                        |
+| `multi-cloud: yes`                               | `compute: "eks"`, `chosen_by: "user"`; Q8 → N/A; Q7b → N/A (App Engine → EKS) | No                        |
+| "ask me about [setting]"                         | Convert that row to ESSENTIAL                                                 | Yes — full question       |
+| Vague correction ("that's wrong")                | Convert that row to ESSENTIAL                                                 | Yes — full question       |
 
 For each override: set `chosen_by: "user"` on the constraint (this removes the `source` field since it's no longer extracted/default). For extracted rows, also remove the question ID from `metadata.questions_skipped_extracted`; for assumed rows, remove it from `metadata.questions_defaulted`.
 
@@ -492,45 +494,48 @@ If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Post
 
 ## Answer Combination Triggers
 
-| Scenario                                 | Key Answers                                                   | Recommendation                                                                                 |
-| ---------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Early-stage funding path                 | Q3 = lower spend band                                         | Entry-tier migration funding program review                                                    |
-| Growth-stage funding path                | Q3 = higher spend band                                        | Migration funding/support program review based on spend profile                                |
-| Must stay portable                       | Q5 = Yes multi-cloud                                          | EKS only, no ECS Fargate                                                                       |
-| Kubernetes-averse                        | Q5 = No + Q8 = Frustrated                                     | ECS Fargate strongly recommended                                                               |
-| WebSocket app                            | Q9 = Yes                                                      | ALB WebSocket config required                                                                  |
-| Low-traffic Cloud Run                    | Q10 = Business hours + Q11 < $100                             | Recommend staying on Cloud Run                                                                 |
-| Cloud SQL Postgres — dev/low HA          | Q6 = Inconvenient + Cloud SQL in inventory                    | **RDS PostgreSQL** single-AZ                                                                   |
-| Cloud SQL Postgres — prod HA (RDS)       | Q6 = Significant Issue + Cloud SQL in inventory               | **RDS PostgreSQL** Multi-AZ                                                                    |
-| Cloud SQL Postgres — mission-critical    | Q6 = Mission-Critical + Cloud SQL in inventory                | **Aurora PostgreSQL** Multi-AZ; apply Q12/Q13                                                  |
-| Cloud SQL Postgres — global catastrophic | Q6 = Catastrophic + Q1 = Global + Cloud SQL in inventory      | **Aurora PostgreSQL Global Database**                                                          |
-| High I/O database (RDS path)             | Q6 = Inconvenient/Significant + Q13 = High                    | **RDS** io2 or Provisioned IOPS                                                                |
-| High I/O database (Aurora path)          | Q6 = Mission-Critical/Catastrophic + Q13 = High               | Aurora I/O-Optimized                                                                           |
-| Write-heavy global DB                    | Q6 = Mission-Critical/Catastrophic + Q12 = Write-heavy/global | Aurora DSQL architecture review (RDS path only: size writer; flag review)                      |
-| Rapidly growing DB (RDS path)            | Q6 = Inconvenient/Significant + Q12 = Rapidly growing         | RDS with headroom on instance class                                                            |
-| Rapidly growing DB (Aurora path)         | Q6 = Mission-Critical/Catastrophic + Q12 = Rapidly growing    | Aurora Serverless v2                                                                           |
-| Zero downtime required                   | Q7 = No downtime                                              | Blue/green + AWS DMS required (RDS or Aurora blue/green per Q6)                                |
-| HIPAA compliance                         | Q2 = HIPAA                                                    | BAA services only, specific regions                                                            |
-| FedRAMP required                         | Q2 = FedRAMP                                                  | GovCloud regions only                                                                          |
-| CCPA / CPRA                              | Q2 = G (CCPA / CPRA)                                          | Consumer privacy, logging/retention, data-inventory posture; confirm regions with legal review |
-| Gateway-only AI                          | Q14 = B only (LLM router/gateway)                             | Config change only; skip SDK migration                                                         |
-| LangChain/LangGraph AI                   | Q14 includes C                                                | Provider swap via ChatBedrock; 1–3 days                                                        |
-| OpenAI Agents SDK                        | Q14 includes E                                                | Highest AI effort; AgentCore (Harness/Runtime); 2–4 weeks                                      |
-| Multi-agent + MCP                        | Q14 = D + F                                                   | AgentCore to unify orchestration + MCP (Gateway)                                               |
-| Voice platform AI                        | Q14 includes G                                                | Check native Bedrock support; Nova 2 Sonic if needed                                           |
-| GPT-5.5 migration                        | Q19 = GPT-5.5                                                 | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                 |
-| GPT-5.5 Pro migration                    | Q19 = GPT-5.5 Pro                                             | Nova 2 Pro — 95% cheaper on Bedrock                                                            |
-| GPT-5.4 migration                        | Q19 = GPT-5.4                                                 | Claude Sonnet 4.6 — near price parity; AWS consolidation                                       |
-| GPT-5.4 Mini/Nano migration              | Q19 = GPT-5.4 Mini or Nano                                    | Nova Lite/Micro — 87-94% cheaper on Bedrock                                                    |
-| GPT-4 Turbo migration                    | Q19 = GPT-4 Turbo                                             | Claude Sonnet 4.6 — 70% cheaper on input                                                       |
-| o-series migration                       | Q19 = o-series                                                | Claude Sonnet 4.6 with extended thinking                                                       |
-| High-volume cost-critical AI             | Q18 = High + cost critical                                    | Nova Micro or Haiku 4.5 + provisioned throughput                                               |
-| Reasoning/agent workload                 | Q17 = Extended thinking                                       | Claude Sonnet 4.6 extended thinking; Opus 4.6 for hardest                                      |
-| Speech-to-speech AI                      | Q17 = Real-time speech                                        | Nova 2 Sonic                                                                                   |
-| RAG workload                             | Q17 = RAG optimization                                        | Bedrock Knowledge Bases + Titan Embeddings                                                     |
-| Vision workload                          | Q20 = Vision required                                         | Claude Sonnet 4.6 (multimodal)                                                                 |
-| Latency-critical AI                      | Q21 = Critical                                                | Haiku 4.5 or Nova Micro + streaming                                                            |
-| Complex reasoning tasks                  | Q22 = Complex                                                 | Claude Sonnet 4.6; Opus 4.6 for hardest                                                        |
+| Scenario                                 | Key Answers                                                   | Recommendation                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Early-stage funding path                 | Q3 = lower spend band                                         | Entry-tier migration funding program review                                                     |
+| Growth-stage funding path                | Q3 = higher spend band                                        | Migration funding/support program review based on spend profile                                 |
+| Managed platform preference              | Q7b = A (managed platform)                                    | Elastic Beanstalk for App Engine compute targets                                                |
+| Container orchestration pref             | Q7b = B (container orchestration)                             | ECS Fargate for App Engine targets (overrides default EB mapping)                               |
+| Serverless pref                          | Q7b = C (serverless)                                          | Lambda for App Engine targets (overrides default EB mapping)                                    |
+| Must stay portable                       | Q5 = Yes multi-cloud                                          | EKS only, no ECS Fargate; App Engine also routes to EKS (Q7b N/A, overrides default EB mapping) |
+| Kubernetes-averse                        | Q5 = No + Q8 = Frustrated                                     | ECS Fargate strongly recommended                                                                |
+| WebSocket app                            | Q9 = Yes                                                      | ALB WebSocket config required                                                                   |
+| Low-traffic Cloud Run                    | Q10 = Business hours + Q11 < $100                             | Recommend staying on Cloud Run                                                                  |
+| Cloud SQL Postgres — dev/low HA          | Q6 = Inconvenient + Cloud SQL in inventory                    | **RDS PostgreSQL** single-AZ                                                                    |
+| Cloud SQL Postgres — prod HA (RDS)       | Q6 = Significant Issue + Cloud SQL in inventory               | **RDS PostgreSQL** Multi-AZ                                                                     |
+| Cloud SQL Postgres — mission-critical    | Q6 = Mission-Critical + Cloud SQL in inventory                | **Aurora PostgreSQL** Multi-AZ; apply Q12/Q13                                                   |
+| Cloud SQL Postgres — global catastrophic | Q6 = Catastrophic + Q1 = Global + Cloud SQL in inventory      | **Aurora PostgreSQL Global Database**                                                           |
+| High I/O database (RDS path)             | Q6 = Inconvenient/Significant + Q13 = High                    | **RDS** io2 or Provisioned IOPS                                                                 |
+| High I/O database (Aurora path)          | Q6 = Mission-Critical/Catastrophic + Q13 = High               | Aurora I/O-Optimized                                                                            |
+| Write-heavy global DB                    | Q6 = Mission-Critical/Catastrophic + Q12 = Write-heavy/global | Aurora DSQL architecture review (RDS path only: size writer; flag review)                       |
+| Rapidly growing DB (RDS path)            | Q6 = Inconvenient/Significant + Q12 = Rapidly growing         | RDS with headroom on instance class                                                             |
+| Rapidly growing DB (Aurora path)         | Q6 = Mission-Critical/Catastrophic + Q12 = Rapidly growing    | Aurora Serverless v2                                                                            |
+| Zero downtime required                   | Q7 = No downtime                                              | Blue/green + AWS DMS required (RDS or Aurora blue/green per Q6)                                 |
+| HIPAA compliance                         | Q2 = HIPAA                                                    | BAA services only, specific regions                                                             |
+| FedRAMP required                         | Q2 = FedRAMP                                                  | GovCloud regions only                                                                           |
+| CCPA / CPRA                              | Q2 = G (CCPA / CPRA)                                          | Consumer privacy, logging/retention, data-inventory posture; confirm regions with legal review  |
+| Gateway-only AI                          | Q14 = B only (LLM router/gateway)                             | Config change only; skip SDK migration                                                          |
+| LangChain/LangGraph AI                   | Q14 includes C                                                | Provider swap via ChatBedrock; 1–3 days                                                         |
+| OpenAI Agents SDK                        | Q14 includes E                                                | Highest AI effort; AgentCore (Harness/Runtime); 2–4 weeks                                       |
+| Multi-agent + MCP                        | Q14 = D + F                                                   | AgentCore to unify orchestration + MCP (Gateway)                                                |
+| Voice platform AI                        | Q14 includes G                                                | Check native Bedrock support; Nova 2 Sonic if needed                                            |
+| GPT-5.5 migration                        | Q19 = GPT-5.5                                                 | Claude Opus 4.6 — Bedrock 17% cheaper on output; or Sonnet 4.6 for 53% savings                  |
+| GPT-5.5 Pro migration                    | Q19 = GPT-5.5 Pro                                             | Nova 2 Pro — 95% cheaper on Bedrock                                                             |
+| GPT-5.4 migration                        | Q19 = GPT-5.4                                                 | Claude Sonnet 4.6 — near price parity; AWS consolidation                                        |
+| GPT-5.4 Mini/Nano migration              | Q19 = GPT-5.4 Mini or Nano                                    | Nova Lite/Micro — 87-94% cheaper on Bedrock                                                     |
+| GPT-4 Turbo migration                    | Q19 = GPT-4 Turbo                                             | Claude Sonnet 4.6 — 70% cheaper on input                                                        |
+| o-series migration                       | Q19 = o-series                                                | Claude Sonnet 4.6 with extended thinking                                                        |
+| High-volume cost-critical AI             | Q18 = High + cost critical                                    | Nova Micro or Haiku 4.5 + provisioned throughput                                                |
+| Reasoning/agent workload                 | Q17 = Extended thinking                                       | Claude Sonnet 4.6 extended thinking; Opus 4.6 for hardest                                       |
+| Speech-to-speech AI                      | Q17 = Real-time speech                                        | Nova 2 Sonic                                                                                    |
+| RAG workload                             | Q17 = RAG optimization                                        | Bedrock Knowledge Bases + Titan Embeddings                                                      |
+| Vision workload                          | Q20 = Vision required                                         | Claude Sonnet 4.6 (multimodal)                                                                  |
+| Latency-critical AI                      | Q21 = Critical                                                | Haiku 4.5 or Nova Micro + streaming                                                             |
+| Complex reasoning tasks                  | Q22 = Complex                                                 | Claude Sonnet 4.6; Opus 4.6 for hardest                                                         |
 
 ---
 
@@ -593,6 +598,14 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
       "prompt": "When can you accept downtime for cutover?",
       "design_consequence": "Weekly maintenance window sets phased cutover timing in the migration plan",
       "question_id": "Q7"
+    },
+    "compute_model": {
+      "value": "managed_platform",
+      "chosen_by": "default",
+      "source": "default:Q7b",
+      "prompt": "What compute operational model do you prefer for your App Engine workloads? (default applied)",
+      "design_consequence": "Assuming managed platform → App Engine maps to Elastic Beanstalk",
+      "question_id": "Q7b"
     },
     "kubernetes": {
       "value": "ecs-fargate",
@@ -765,6 +778,7 @@ Documented defaults for every question. Used by: PROPOSED sheet rows (wizard), p
 | Q5 — Multi-cloud           | B (AWS-only)                                                                                                      | no constraint                                                                                                                                                                                        |
 | Q6 — Uptime                | B (significant)                                                                                                   | `availability: "multi-az"`                                                                                                                                                                           |
 | Q7 — Maintenance           | D (flexible)                                                                                                      | `cutover_strategy: "flexible"`                                                                                                                                                                       |
+| Q7b — Compute model        | A (managed platform)                                                                                              | `compute_model: "managed_platform"` (App Engine only; N/A if no App Engine, or if Q5 = multi-cloud → App Engine routes to EKS)                                                                       |
 | Cat B — Cloud SQL HA       | Zonal                                                                                                             | `metadata.inventory_clarifications`                                                                                                                                                                  |
 | Cat B — Cloud Run count    | 1 service                                                                                                         | `metadata.inventory_clarifications`                                                                                                                                                                  |
 | Cat B — Memorystore memory | estimate from usage                                                                                               | `metadata.inventory_clarifications`                                                                                                                                                                  |
