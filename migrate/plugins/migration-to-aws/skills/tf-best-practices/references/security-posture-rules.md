@@ -157,7 +157,14 @@ inline-only fail-open scope as that rule.
 Both security-group gates read `cidr_blocks` and `ipv6_cidr_blocks` as separate attributes and
 check each family's "entire internet" range. On dual-stack and IPv6-only VPCs, `::/0` on an
 admin or database port is exactly as exposed as `0.0.0.0/0`, so a benign IPv4 list does not
-excuse an open IPv6 list. The violation message names the family that actually fired.
+excuse an open IPv6 list. The violation message names the range that actually fired.
+
+Ranges are compared **after canonicalisation**, not as text: `::/0`, `::0/0` and
+`0:0:0:0:0:0:0:0/0` are the same range and all fire. `terraform fmt` treats a CIDR as an opaque
+string, so nothing else normalises these — and IPv6 has many more legal spellings of the zero
+address than IPv4. Only quoted literals inside the list count, and comments are stripped first,
+so a range named only in a comment (`# TODO: was 0.0.0.0/0`) is not an allowed range and does
+not fire. Non-literal values (`var.x`, `${...}`) remain fail-open as documented above.
 
 ## IAM — no wildcard permissions
 

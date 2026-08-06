@@ -44,6 +44,7 @@ Exit 0 on POLICY_OK, 1 on POLICY_FAIL, 2 on usage/IO error.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
 import sys
@@ -334,34 +335,65 @@ def _ingress_covers_db_port(ingress_body: str) -> bool:
     return bool(_ingress_covered_ports(ingress_body, _DB_PORTS))
 
 
+# HCL comments: `#` / `//` to end of line, and `/* ... */` spans. Removed before
+# reading CIDR lists so that a range named only in a comment is never treated as
+# an allowed range (and a commented-out attribute is never read as set).
+_HCL_COMMENT = re.compile(r"(?:#|//)[^\n]*|/\*.*?\*/", re.DOTALL)
+
+
 def _attr_list_inner(block: str, attr: str) -> str | None:
     """Return the raw text inside a literal `attr = [ ... ]`, else None.
 
-    Anchored at line start (like _attr_string / _attr_int) so that `cidr_blocks`
-    does NOT also match the tail of `ipv6_cidr_blocks` — reading one list while
-    believing it is the other silently inverts the verdict.
+    The name must start a line OR directly follow a `{`. The line-start arm keeps
+    `cidr_blocks` from matching the tail of `ipv6_cidr_blocks` (reading one list
+    while believing it is the other silently inverts the verdict); the brace arm
+    keeps an attribute that shares its block's opening line visible, e.g.
+    `ingress { cidr_blocks = [...]`, which is valid HCL that a line-anchored
+    pattern alone would miss.
     """
     m = re.search(
-        rf"^\s*{re.escape(attr)}\s*=\s*\[(.*?)\]",
+        rf"(?:^|\{{)\s*{re.escape(attr)}\s*=\s*\[(.*?)\]",
         block,
         re.DOTALL | re.MULTILINE,
     )
     return m.group(1) if m else None
 
 
+def _is_entire_internet(cidr: str) -> bool:
+    """True if `cidr` is a literal range covering the whole address space.
+
+    Canonicalises through `ipaddress` instead of comparing text, because IPv6 has
+    many legal spellings of the zero address (`::/0`, `::0/0`, `0:0:0:0:0:0:0:0/0`)
+    and nothing in Terraform normalises them — `terraform fmt` treats a CIDR as an
+    opaque string. Anything that is not a parseable literal (`var.x`, `${...}`,
+    malformed text) returns False, preserving the module's fail-open posture.
+    """
+    try:
+        return ipaddress.ip_network(cidr, strict=False).prefixlen == 0
+    except ValueError:
+        return False
+
+
 def _ingress_public_cidrs(ingress_body: str) -> list[str]:
     """Return the "entire internet" CIDRs this ingress rule allows, both families.
 
-    IPv4 `0.0.0.0/0` in cidr_blocks and IPv6 `::/0` in ipv6_cidr_blocks are
-    equally public: on a dual-stack or IPv6-only VPC, ::/0 on an admin port is a
-    live exposure. Each list is read under its own anchored attribute name so the
-    two are never confused. Empty list => no unambiguous public exposure.
+    IPv4 `0.0.0.0/0` and IPv6 `::/0` are equally public: on a dual-stack or
+    IPv6-only VPC, `::/0` on an admin port is a live exposure. Each family is read
+    under its own attribute name so the two are never confused, comments are
+    stripped first, and only quoted string literals count as list entries — so a
+    range mentioned in a comment inside the list is not an allowed range. Values
+    are returned as spelled in the file, so the violation names what is written.
+    Empty list => no unambiguous public exposure.
     """
+    body = _HCL_COMMENT.sub("", ingress_body)
     found: list[str] = []
-    for attr, public in (("cidr_blocks", "0.0.0.0/0"), ("ipv6_cidr_blocks", "::/0")):
-        inner = _attr_list_inner(ingress_body, attr)
-        if inner is not None and public in inner:
-            found.append(public)
+    for attr in ("cidr_blocks", "ipv6_cidr_blocks"):
+        inner = _attr_list_inner(body, attr)
+        if inner is None:
+            continue
+        for cidr in re.findall(r'"([^"]*)"', inner):
+            if _is_entire_internet(cidr) and cidr not in found:
+                found.append(cidr)
     return found
 
 

@@ -255,6 +255,110 @@ def test_sg_ipv6_scoped_passes() -> None:
     assert "POLICY_OK" in out
 
 
+def _sg_fixture(attrs: str, port: int = 22) -> str:
+    return f"""
+resource "aws_security_group" "under_test" {{
+  name   = "sg"
+  vpc_id = "vpc-123"
+
+  ingress {{
+    from_port = {port}
+    to_port   = {port}
+    protocol  = "tcp"
+    {attrs}
+  }}
+}}
+"""
+
+
+def _verdict(tf_body: str) -> tuple[int, str]:
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "vpc.tf").write_text(tf_body, encoding="utf-8")
+        return run_policy_validator(Path(tmp))
+
+
+def test_cidr_attribute_sharing_line_with_opening_brace_is_read() -> None:
+    """Regression: a line-anchored pattern alone hides an attribute that shares
+    its block's opening line, which is valid HCL:
+
+        ingress { cidr_blocks = ["0.0.0.0/0"]
+
+    An earlier revision of this fix used a bare `^\\s*` anchor and traded the
+    ipv6 tail-match bug for this false negative (main: POLICY_FAIL -> POLICY_OK).
+    The `(?:^|\\{)` alternation keeps both properties.
+    """
+    body = """
+resource "aws_security_group" "brace_same_line" {
+  name   = "sg"
+  vpc_id = "vpc-123"
+
+  ingress { cidr_blocks = ["0.0.0.0/0"]
+    from_port = 22
+    to_port   = 22
+    protocol  = "tcp"
+  }
+}
+"""
+    code, out = _verdict(body)
+    assert code == 1, f"0.0.0.0/0 on the brace line must fail, got: {out}"
+    assert "22 (SSH)" in out, out
+
+
+def test_noncanonical_ipv6_zero_prefix_spellings_fire() -> None:
+    """`::/0` has many legal spellings and Terraform normalises none of them, so
+    the check canonicalises via ipaddress rather than substring-matching text."""
+    for spelling in ("::/0", "::0/0", "0:0:0:0:0:0:0:0/0", "0000:0000:0000:0000:0000:0000:0000:0000/0"):
+        code, out = _verdict(_sg_fixture(f'ipv6_cidr_blocks = ["{spelling}"]'))
+        assert code == 1, f"{spelling} is the whole IPv6 internet, must fail: {out}"
+        assert "sg_no_public_admin_ingress" in out, f"{spelling}: {out}"
+
+
+def test_scoped_and_nonliteral_cidrs_still_fail_open() -> None:
+    """The canonicalising check must not widen what counts as public: scoped
+    prefixes and non-literal values stay unflagged (documented fail-open)."""
+    for spelling in ("10.0.0.0/8", "2001:db8:1234::/48", "0.0.0.0/1", "128.0.0.0/1"):
+        attr = "ipv6_cidr_blocks" if ":" in spelling else "cidr_blocks"
+        code, out = _verdict(_sg_fixture(f'{attr} = ["{spelling}"]'))
+        assert code == 0, f"{spelling} is not the whole internet, must pass: {out}"
+    for nonliteral in ("var.admin_cidrs", "[var.cidr]", "local.allowed"):
+        inner = nonliteral if nonliteral.startswith("[") else f"[{nonliteral}]"
+        code, out = _verdict(_sg_fixture(f"cidr_blocks = {inner}"))
+        assert code == 0, f"non-literal {nonliteral} must fail open: {out}"
+
+
+def test_cidr_named_only_in_a_comment_is_not_an_allowed_range() -> None:
+    """False positive: a correctly-scoped SG that merely MENTIONS 0.0.0.0/0 in a
+    comment inside the list was reported POLICY_FAIL, blocking a valid migration.
+
+    Also pins the opposite direction — stripping comments must not swallow a real
+    entry that follows one, which a naive split-on-comma would have done.
+    """
+    scoped_with_comment = """
+    cidr_blocks = [
+      # TODO: was 0.0.0.0/0
+      "10.0.0.0/8",
+    ]"""
+    code, out = _verdict(_sg_fixture(scoped_with_comment, port=3389))
+    assert code == 0, f"a commented CIDR is not an allowed range: {out}"
+
+    comment_then_real = """
+    cidr_blocks = [
+      # temporary, remove before prod
+      "0.0.0.0/0",
+    ]"""
+    code, out = _verdict(_sg_fixture(comment_then_real, port=3389))
+    assert code == 1, f"a real 0.0.0.0/0 after a comment must still fire: {out}"
+    assert "3389 (RDP)" in out, out
+
+
+def test_commented_out_cidr_attribute_is_not_read() -> None:
+    # A commented-out attribute must not be read as set; the live value here is
+    # an SG reference, so this SG is correctly scoped and must pass.
+    body = _sg_fixture('# cidr_blocks = ["0.0.0.0/0"]\n    security_groups = ["sg-abc123"]')
+    code, out = _verdict(body)
+    assert code == 0, f"commented-out cidr_blocks must not fire: {out}"
+
+
 def test_elasticache_unencrypted_fails() -> None:
     code, out = run_policy_validator(BAD_ELASTICACHE_UNENCRYPTED)
     assert code == 1, out
