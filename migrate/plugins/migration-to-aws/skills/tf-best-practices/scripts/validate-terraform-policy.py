@@ -14,13 +14,17 @@ in-block literal evidence, so a valid stack is never falsely blocked):
   - rds_not_public: aws_db_instance / aws_rds_cluster must not set
     publicly_accessible = true (fail-open when variable-driven or absent).
   - db_sg_no_public_ingress: an inline aws_security_group ingress covering a
-    database port (5432 / 3306) must not allow 0.0.0.0/0 (fail-open on
-    separate aws_security_group_rule / aws_vpc_security_group_ingress_rule
-    resources, which this static reader cannot correlate).
+    database port (5432 / 3306) must not allow 0.0.0.0/0 (IPv4) or ::/0 (IPv6)
+    (fail-open on separate aws_security_group_rule /
+    aws_vpc_security_group_ingress_rule resources, which this static reader
+    cannot correlate).
   - sg_no_public_admin_ingress: an inline ingress must not open a well-known
     admin/datastore port (SSH, RDP, Redis, Memcached, Mongo, Elasticsearch,
-    Kibana) to 0.0.0.0/0. Scoped to a fixed never-public port list — web ports
-    and app/game ports are not flagged. Same inline-only fail-open scope.
+    Kibana) to 0.0.0.0/0 or ::/0. Scoped to a fixed never-public port list — web
+    ports and app/game ports are not flagged. Same inline-only fail-open scope.
+    Both SG rules read cidr_blocks and ipv6_cidr_blocks independently: an
+    IPv6-only or dual-stack VPC is exposed by ::/0 exactly as IPv4 is by
+    0.0.0.0/0.
   - no_wildcard_iam: a literal IAM policy document with Effect "Allow" must not
     use Action "*" or Resource "*" (fail-open on aws_iam_policy_document data
     sources, whose statements are not visible as literal JSON here).
@@ -40,6 +44,7 @@ Exit 0 on POLICY_OK, 1 on POLICY_FAIL, 2 on usage/IO error.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
 import sys
@@ -268,7 +273,8 @@ def check_alb_https_policy(terraform_dir: Path) -> list[Violation]:
 
 _DB_PORTS = (5432, 3306)
 
-# Well-known admin / datastore ports that should never be open to 0.0.0.0/0.
+# Well-known admin / datastore ports that should never be open to the whole
+# internet in either address family (0.0.0.0/0 or ::/0).
 # Deliberately EXCLUDES 5432/3306 (covered by db_sg_no_public_ingress, so no
 # double-reporting) and web ports 80/443 (legitimately public). Kept tight to
 # unambiguous "never public" ports so valid designs (e.g. game servers on high
@@ -330,16 +336,70 @@ def _ingress_covers_db_port(ingress_body: str) -> bool:
     return bool(_ingress_covered_ports(ingress_body, _DB_PORTS))
 
 
-def _ingress_allows_public(ingress_body: str) -> bool:
-    # Match a cidr_blocks list literal and look for 0.0.0.0/0 inside it.
-    m = re.search(r"cidr_blocks\s*=\s*\[(.*?)\]", ingress_body, re.DOTALL)
-    if not m:
+# HCL comments: `#` / `//` to end of line, and `/* ... */` spans. Removed before
+# reading CIDR lists so that a range named only in a comment is never treated as
+# an allowed range (and a commented-out attribute is never read as set).
+_HCL_COMMENT = re.compile(r"(?:#|//)[^\n]*|/\*.*?\*/", re.DOTALL)
+
+
+def _attr_list_inner(block: str, attr: str) -> str | None:
+    """Return the raw text inside a literal `attr = [ ... ]`, else None.
+
+    The name must start a line OR directly follow a `{`. The line-start arm keeps
+    `cidr_blocks` from matching the tail of `ipv6_cidr_blocks` (reading one list
+    while believing it is the other silently inverts the verdict); the brace arm
+    keeps an attribute that shares its block's opening line visible, e.g.
+    `ingress { cidr_blocks = [...]`, which is valid HCL that a line-anchored
+    pattern alone would miss.
+    """
+    m = re.search(
+        rf"(?:^|\{{)\s*{re.escape(attr)}\s*=\s*\[(.*?)\]",
+        block,
+        re.DOTALL | re.MULTILINE,
+    )
+    return m.group(1) if m else None
+
+
+def _is_entire_internet(cidr: str) -> bool:
+    """True if `cidr` is a literal range covering the whole address space.
+
+    Canonicalises through `ipaddress` instead of comparing text, because IPv6 has
+    many legal spellings of the zero address (`::/0`, `::0/0`, `0:0:0:0:0:0:0:0/0`)
+    and nothing in Terraform normalises them — `terraform fmt` treats a CIDR as an
+    opaque string. Anything that is not a parseable literal (`var.x`, `${...}`,
+    malformed text) returns False, preserving the module's fail-open posture.
+    """
+    try:
+        return ipaddress.ip_network(cidr, strict=False).prefixlen == 0
+    except ValueError:
         return False
-    return "0.0.0.0/0" in m.group(1)
+
+
+def _ingress_public_cidrs(ingress_body: str) -> list[str]:
+    """Return the "entire internet" CIDRs this ingress rule allows, both families.
+
+    IPv4 `0.0.0.0/0` and IPv6 `::/0` are equally public: on a dual-stack or
+    IPv6-only VPC, `::/0` on an admin port is a live exposure. Each family is read
+    under its own attribute name so the two are never confused, comments are
+    stripped first, and only quoted string literals count as list entries — so a
+    range mentioned in a comment inside the list is not an allowed range. Values
+    are returned as spelled in the file, so the violation names what is written.
+    Empty list => no unambiguous public exposure.
+    """
+    body = _HCL_COMMENT.sub("", ingress_body)
+    found: list[str] = []
+    for attr in ("cidr_blocks", "ipv6_cidr_blocks"):
+        inner = _attr_list_inner(body, attr)
+        if inner is None:
+            continue
+        for cidr in re.findall(r'"([^"]*)"', inner):
+            if _is_entire_internet(cidr) and cidr not in found:
+                found.append(cidr)
+    return found
 
 
 def check_db_sg_no_public_ingress(tf_files: list[tuple[str, str]]) -> list[Violation]:
-    """Flag inline security-group ingress that opens a DB port to 0.0.0.0/0.
+    """Flag inline security-group ingress that opens a DB port to 0.0.0.0/0 or ::/0.
 
     Fail-open: only INLINE `ingress { ... }` blocks inside aws_security_group are
     inspected. Separate aws_security_group_rule / aws_vpc_security_group_ingress_rule
@@ -352,7 +412,8 @@ def check_db_sg_no_public_ingress(tf_files: list[tuple[str, str]]) -> list[Viola
             # Walk each inline ingress block via brace matching.
             for m in re.finditer(r"ingress\s*\{", body):
                 ingress_body, _ = _extract_braced_block(body, m.end() - 1)
-                if _ingress_covers_db_port(ingress_body) and _ingress_allows_public(ingress_body):
+                public = _ingress_public_cidrs(ingress_body)
+                if _ingress_covers_db_port(ingress_body) and public:
                     violations.append(
                         Violation(
                             check="policy",
@@ -362,12 +423,12 @@ def check_db_sg_no_public_ingress(tf_files: list[tuple[str, str]]) -> list[Viola
                             severity="error",
                             summary=(
                                 f"aws_security_group '{name}' has an ingress rule that opens a "
-                                "database port (5432/3306) to 0.0.0.0/0"
+                                f"database port (5432/3306) to {' and '.join(public)}"
                             ),
                             fix_hint=(
                                 "Restrict the ingress to the application security group "
                                 "(security_groups = [aws_security_group.app.id]) or a private "
-                                "CIDR — never 0.0.0.0/0 for a database port"
+                                "CIDR — never 0.0.0.0/0 or ::/0 for a database port"
                             ),
                         )
                     )
@@ -376,7 +437,8 @@ def check_db_sg_no_public_ingress(tf_files: list[tuple[str, str]]) -> list[Viola
 
 def check_sg_no_public_admin_ingress(tf_files: list[tuple[str, str]]) -> list[Violation]:
     """Flag inline security-group ingress that opens a well-known admin/datastore
-    port (SSH, RDP, Redis, Memcached, Mongo, Elasticsearch, Kibana) to 0.0.0.0/0.
+    port (SSH, RDP, Redis, Memcached, Mongo, Elasticsearch, Kibana) to 0.0.0.0/0
+    or ::/0.
 
     Deliberately scoped to a fixed list of ports that are ~never legitimately
     public — NOT "any public ingress" — so valid public workloads (web on
@@ -398,7 +460,8 @@ def check_sg_no_public_admin_ingress(tf_files: list[tuple[str, str]]) -> list[Vi
         for name, body, line in _extract_blocks(content, "aws_security_group"):
             for m in re.finditer(r"ingress\s*\{", body):
                 ingress_body, _ = _extract_braced_block(body, m.end() - 1)
-                if not _ingress_allows_public(ingress_body):
+                public = _ingress_public_cidrs(ingress_body)
+                if not public:
                     continue
                 hit = _ingress_covered_ports(ingress_body, _SENSITIVE_NONDB_PORTS)
                 if not hit:
@@ -413,7 +476,7 @@ def check_sg_no_public_admin_ingress(tf_files: list[tuple[str, str]]) -> list[Vi
                         severity="error",
                         summary=(
                             f"aws_security_group '{name}' opens sensitive port(s) {labels} "
-                            "to 0.0.0.0/0"
+                            f"to {' and '.join(public)}"
                         ),
                         fix_hint=(
                             "Restrict this ingress to a bastion/app security group or a private "
