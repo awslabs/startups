@@ -1,28 +1,33 @@
 ---
 _phase: confirm
 _title: "Confirm — Winner-specific follow-ups"
-_requires_phase: clarify
+_requires_phase: model-recommend
 _input:
   - scoring-result.json
   - answers.json
+  - model-recommendation.json
 _assemble:
   _file: phases/confirm/confirm-assemble.md
 _produces:
   - confirm.json
 _advances_to: design
 _preconditions:
-  - _check_phase_completed: clarify
+  - _check_phase_completed: model-recommend
     _on_failure: _halt_and_inform
   - _check_file_exists: scoring-result.json
     _on_failure: _unrecoverable
   - _validate_json: scoring-result.json
+    _on_failure: _unrecoverable
+  - _check_file_exists: model-recommendation.json
+    _on_failure: _unrecoverable
+  - _validate_json: model-recommendation.json
     _on_failure: _unrecoverable
 _postconditions:
   - _check_file_exists: confirm.json
     _on_failure: _halt_and_inform
   - _validate_json: confirm.json
     _on_failure: _halt_and_inform
-  - _assert: "confirm.json has one units[<unit_id>] entry per agent_session unit (each with its own confirmed deployment_model, agentcore_services, tool_choices, and chosen_runtime when that unit's verdict was co_recommend), plus top-level fields mirroring the primary unit; a single-unit run may use the flat top-level shape alone; confirm.json carries resolved_runtimes{<unit_id>: <runtime>} for every unit (the per-unit rule/Tier-1 picks used by the platform gate); confirm.json records platform_decision {mode, platform} — asked only when the resolved runtimes diverge, silent split otherwise; when the gate was asked, platform_decision.offer records the superset and per-unit sacrifices; every temporal_worker_poll unit's Tier-1 pick (including any user AskUserQuestion choice for Tier-1 rules 1/4) is persisted in resolved_runtimes so Design consumes it verbatim and never re-asks"
+  - _assert: "confirm.json has one units[<unit_id>] entry per agent_session unit (each with its own confirmed deployment_model, agentcore_services, tool_choices, model_decision, and chosen_runtime when that unit's verdict was co_recommend), plus top-level fields mirroring the primary unit; every model-bearing unit's model_decision copies primary_model, api_path, invocation_model_id, and the independent verification_status from model-recommendation.json plus model-verification.json when present unless the user requested changed requirements and the deterministic engine was rerun; accepted means the recommendation strategy was accepted and never implies verification_status == passed; a single-unit run may use the flat top-level shape alone; confirm.json carries resolved_runtimes{<unit_id>: <runtime>} for every unit (the per-unit rule/Tier-1 picks used by the platform gate); confirm.json records platform_decision {mode, platform} — asked only when the resolved runtimes diverge, silent split otherwise; when the gate was asked, platform_decision.offer records the superset and per-unit sacrifices; every temporal_worker_poll unit's Tier-1 pick (including any user AskUserQuestion choice for Tier-1 rules 1/4) is persisted in resolved_runtimes so Design consumes it verbatim and never re-asks"
     _on_failure: _halt_and_inform
 ---
 
@@ -32,7 +37,9 @@ Runs after scoring, before Design. Only asks what the winning runtime needs.
 
 ## Step 1 — Read the scoring result
 
-Read `$RUN_DIR/scoring-result.json`.
+Read `$RUN_DIR/scoring-result.json` and `$RUN_DIR/model-recommendation.json`. If
+`$RUN_DIR/model-verification.json` exists, read it too; it is the live account-invocability
+result, not a replacement recommendation.
 
 **Per-unit confirm (multi-unit systems).** `scoring-result.json.units` carries one scored
 result per `agent_session` unit — each has its OWN `verdict`, `deployment_model`, and
@@ -90,6 +97,10 @@ co_recommend tie in Step 4 — so no runtime pick skips its services/tool_choice
   user to pick one FOR THIS UNIT. Record the pick as this unit's `chosen_runtime` (Step 5). Then
   run Step 2/3 for the pick. Each co_recommend unit is broken independently — two agent units can
   land on different runtimes.
+  **Non-interactive runs:** when `$RUN_DIR/seed.json` supplies `chosen_runtime` (clarify.md
+  Step 2.5), take the tie-break from it verbatim and say so instead of asking. With no seed and
+  nobody to ask, break the tie toward the highest-scoring runtime, and record the tie, the pick,
+  and the reason in `$RUN_DIR/UNANSWERED.md` — a silently broken tie hides a real decision.
 - no_viable_runtime: show `blocking_constraints`; ask which constraint can relax; if one
   changes, rewrite `$RUN_DIR/answers.json` with the changed value and re-run scoring by executing
   **clarify.md Step 5's exact bash block** (the PYTHONPATH multi-unit loop that reads
@@ -105,6 +116,25 @@ co_recommend tie in Step 4 — so no runtime pick skips its services/tool_choice
   result. Re-read it and return to Step 1.
 
 ## Step 5 — Write confirm.json and state
+
+Before writing, confirm each model-bearing unit's model and API path alongside its runtime.
+Show that unit's path-specific model ID, invocation ID or CRIS TODO, compatibility,
+architecture impacts, `[BLOCKS]`, `[TUNE]`, evaluation/rollout gates, and probe status. If any
+entry is still `decision_required`, return to Model Recommend and resolve it; do not confirm a
+null model/path. The user may:
+
+- accept the recommendation, including the work needed to clear listed blocks; or
+- change a requirement. In that case update `model-recommendation-input.json`, rerun
+  `model_recommendation.py`, and present the new result.
+
+Do not directly edit `primary_model`, `api_path`, or `invocation_model_id`, and do not let
+runtime scoring or a downstream migration engine replace them. Accepting the strategy and
+proving target-account access are independent. Record each accepted result as
+`model_decision: {"primary_model": "...", "api_path": "...", "invocation_model_id": "... |
+null", "accepted": true, "verification_status": "not_run | passed | failed |
+needs_resolution"}` in the matching unit. Use `model-verification.json` when present;
+otherwise use the recommendation's `verification.probe_status`. Model-less units omit
+`model_decision`.
 
 Write `$RUN_DIR/confirm.json` with a `units` object — one entry per `agent_session` unit
 confirmed in Steps 2–4, keyed by unit id — plus top-level fields mirroring the PRIMARY unit
@@ -129,7 +159,14 @@ mirror the primary unit's entry.
     "support-chat": {
       "deployment_model": "framework_on_runtime",
       "agentcore_services": ["identity", "memory"],
-      "tool_choices": { "memory": "native" }
+      "tool_choices": { "memory": "native" },
+      "model_decision": {
+        "primary_model": "anthropic.claude-sonnet-4-6",
+        "api_path": "runtime_converse",
+        "invocation_model_id": "global.anthropic.claude-sonnet-4-6",
+        "verification_status": "passed",
+        "accepted": true
+      }
     },
     "triage-agent": {
       "deployment_model": "harness",

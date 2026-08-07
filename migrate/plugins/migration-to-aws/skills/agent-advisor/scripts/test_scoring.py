@@ -195,90 +195,6 @@ def test_services_no_duplicate_memory():
     assert services.count("memory") == 1
 
 
-def test_model_default_balanced():
-    rec = scoring._select_model({"model_priority": "balanced"})
-    assert rec["model"] == "claude_sonnet_4_6"
-    assert "pricing_note" not in rec
-
-
-def test_model_speed_picks_haiku():
-    rec = scoring._select_model({"model_priority": "speed"})
-    assert rec["model"] == "claude_haiku_4_5"
-
-
-def test_model_extended_thinking_override():
-    rec = scoring._select_model(
-        {"model_priority": "quality", "model_features": "extended_thinking"})
-    assert rec["model"] == "claude_sonnet_4_6_thinking"
-
-
-def test_model_migrate_adds_family_note_without_pricing():
-    rec = scoring._select_model(
-        {"_entry_point": "migrate", "current_model": "gpt4o",
-         "model_priority": "unknown"})
-    assert rec["migration_from"] == "gpt4o"
-    assert "migration-to-aws" in rec["pricing_note"]
-    assert "$" not in rec["pricing_note"]
-
-
-def test_model_migrate_with_extended_thinking_keeps_override():
-    rec = scoring._select_model({
-        "_entry_point": "migrate", "current_model": "gpt4o",
-        "model_features": "extended_thinking"})
-    assert rec["model"] == "claude_sonnet_4_6_thinking"  # extended-thinking override wins
-    assert rec["migration_from"] == "gpt4o"
-
-
-# --- Model-selection refactor (feature override + widened pool) ---
-
-def test_model_feature_speech_picks_nova_2_sonic():
-    rec = scoring._select_model({"model_priority": "balanced", "model_features": "speech"})
-    assert rec["model"] == "nova_2_sonic"  # NOT sonnet, NOT nova_sonic v1
-
-
-def test_model_feature_image_generation_picks_stability():
-    rec = scoring._select_model(
-        {"model_priority": "balanced", "model_features": "image_generation"})
-    assert rec["model"].startswith("stability_image")  # NOT nova_canvas
-
-
-def test_model_feature_long_context_uses_llama_scout():
-    rec = scoring._select_model(
-        {"model_priority": "balanced", "model_features": "long_context"})
-    # Llama 4 Scout is the ultra-long-context primary (Nova 2 Pro gated on GA)
-    assert rec["model"] == "llama_4_scout" or "llama_4_scout" in rec.get("alternates", [])
-
-
-def test_model_feature_embedding_picks_titan():
-    rec = scoring._select_model(
-        {"model_priority": "cost", "model_features": "embedding"})
-    assert rec["model"] == "titan_embed_v2"
-
-
-def test_model_feature_override_beats_cost_priority_with_advisory():
-    # priority=cost would pick haiku, but speech feature hard-overrides to nova_2_sonic,
-    # and the reasoning must carry a cost-conflict advisory.
-    rec = scoring._select_model({"model_priority": "cost", "model_features": "speech"})
-    assert rec["model"] == "nova_2_sonic"
-    assert "cost" in rec["reasoning"].lower()  # advisory present
-
-
-def test_model_multimodal_primary_vision_stability_alternate():
-    rec = scoring._select_model(
-        {"model_priority": "balanced", "model_features": "multimodal"})
-    assert rec["model"] == "claude_sonnet_4_6"  # vision understanding primary
-    assert any("stability" in a for a in rec.get("alternates", []))
-
-
-def test_model_migrate_feature_override_beats_family():
-    # migrate source gpt4o would map to sonnet family, but long_context feature wins.
-    rec = scoring._select_model({
-        "_entry_point": "migrate", "current_model": "gpt4o",
-        "model_features": "long_context"})
-    assert rec["model"] == "llama_4_scout"
-    assert rec["migration_from"] == "gpt4o"  # still recorded
-
-
 def test_model_selection_never_changes_verdict():
     # Independence invariant: model_* answers must not affect the runtime verdict/scores.
     base = {"session_duration": "15min_to_8hr", "traffic_pattern": "bursty",
@@ -480,26 +396,29 @@ _LIFECYCLE_FILE = (
 
 # Map each internal model id in our selection pool to a substring that identifies it
 # in the lifecycle file's Legacy/EOL table (by model name or model-id fragment).
+# The pool is the Model Recommend engine's selectable set: the priority ordering
+# plus every model in the dated per-provider catalogs.
 _POOL_LIFECYCLE_KEYS = {
-    "claude_sonnet_4_6": "claude-sonnet-4-6",
-    "claude_sonnet_4_6_thinking": "claude-sonnet-4-6",
-    "claude_opus_4_7": "claude-opus-4-7",
+    "claude_opus_4_8": "claude-opus-4-8",
+    "claude_sonnet_5": "claude-sonnet-5",
     "claude_haiku_4_5": "claude-haiku-4-5",
-    "nova_micro": "nova-micro",
-    "nova_lite": "nova-lite",
-    "nova_2_sonic": "nova-2-sonic",
-    "stability_image_core": "stable-image-core",
-    "stability_image_ultra": "stable-image-ultra",
-    "llama_4_scout": "llama4-scout",
-    "titan_embed_v2": "titan-embed",
+    "openai_gpt_5_6_sol": "gpt-5.6-sol",
+    "openai_gpt_5_6_terra": "gpt-5.6-terra",
+    "openai_gpt_5_6_luna": "gpt-5.6-luna",
+    "openai_gpt_5_5": "gpt-5.5",
+    "openai_gpt_5_4": "gpt-5.4",
+    "anthropic_claude_sonnet_5": "claude-sonnet-5",
+    "anthropic_claude_opus_4_8": "claude-opus-4-8",
+    "anthropic_claude_haiku_4_5": "claude-haiku-4-5",
 }
 
 
 def _pool_models():
-    pool = {m for m, _ in scoring._MODEL_PRIORITY.values()}
-    for model, _reason, alts in scoring._FEATURE_OVERRIDE.values():
-        pool.add(model)
-        pool.update(alts)
+    import anthropic_model_recommendation as amr
+    import model_recommendation as mr
+    pool = {m for order in amr._PRIORITY_ORDER.values() for m in order}
+    pool.update(mr.load_catalog()["models"])
+    pool.update(mr.load_openai_catalog()["models"])
     return pool
 
 

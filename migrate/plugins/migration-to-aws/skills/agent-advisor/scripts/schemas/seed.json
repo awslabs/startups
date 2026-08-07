@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "agent-advisor run seed",
+  "description": "Machine-readable answers for a non-interactive run. Supplies the dimensions Clarify would otherwise ask a human for, so the deterministic scoring engine receives identical input on every run. Prose (CLAUDE.md) describes context; this file supplies enum values. Every key is optional — a dimension absent here falls through to prose, then to code detection, then to an `assumed` value that MUST be recorded in UNANSWERED.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "entry_point": { "enum": ["build_scratch", "build_deploy", "migrate", "add_capabilities"] },
+    "audience": { "enum": ["technical", "business"] },
+    "system": { "$ref": "#/definitions/systemDims" },
+    "units": {
+      "type": "object",
+      "description": "Per-unit dimensions keyed by unit id. Unit ids must match the ids Discover/Clarify assign.",
+      "additionalProperties": { "$ref": "#/definitions/unitDims" }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Answers for the optional gated stages. A gate absent here is DECLINED — never accepted by default.",
+      "properties": {
+        "migration_plan": { "enum": ["accept", "decline"] },
+        "poc": { "enum": ["accept", "decline"] }
+      }
+    },
+    "poc_mode": {
+      "enum": ["deliverables", "assisted_build"],
+      "description": "Gate 2b. Absent means `deliverables` — an assisted build in a real account requires an explicit opt-in here."
+    },
+    "probe": {
+      "enum": ["accept", "decline"],
+      "description": "Live Bedrock model probe in the target account. Absent means decline; verification.probe_status stays not_run."
+    },
+    "chosen_runtime": {
+      "enum": ["agentcore", "ecs", "eks", "lambda", "lambda_microvms"],
+      "description": "Tie-break for a co_recommend verdict, normally asked in Confirm. Ignored when the verdict is not a tie."
+    }
+  },
+  "definitions": {
+    "systemDims": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "multi_cloud": { "enum": ["yes", "no", "unknown"] },
+        "compliance": {
+          "type": "array",
+          "items": { "enum": ["none", "soc2", "hipaa", "pci", "fedramp", "gdpr", "ccpa"] }
+        },
+        "region": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "scope": { "enum": ["single", "multi", "global", "unknown"] },
+            "regions": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "existing_cluster": { "enum": ["eks", "ecs", "none", "unknown"] },
+        "platform_fit": { "enum": ["ecs", "eks", "lambda", "none", "unknown"] },
+        "ops_preference": { "enum": ["minimal", "moderate", "full_control", "unknown"] }
+      }
+    },
+    "unitDims": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "workload_class": { "type": "string" },
+        "session_duration": { "enum": ["under_15min", "15min_to_8hr", "over_8hr", "unknown"] },
+        "traffic_pattern": { "enum": ["bursty", "steady", "idle", "unknown"] },
+        "session_state": { "enum": ["stateless", "stateful", "hitl", "unknown"] },
+        "isolation": { "enum": ["required", "nice_to_have", "not_needed", "unknown"] },
+        "memory_needs": { "enum": ["cross_session", "session_only", "none", "unknown"] },
+        "ops_preference": { "enum": ["minimal", "moderate", "full_control", "unknown"] },
+        "compute_tier": { "enum": ["light", "heavy_non_gpu", "gpu", "unknown"] },
+        "idle_resume": { "enum": ["process_level", "filesystem", "none", "unknown"] },
+        "launch_concurrency": { "enum": ["high", "moderate", "low", "unknown"] },
+        "multi_agent": { "enum": ["yes", "no", "unknown"] },
+        "deployment_preference": { "enum": ["harness", "framework", "either", "unknown"] },
+        "framework": { "enum": ["strands", "langgraph", "crewai", "custom", "none", "unknown"] },
+        "existing_cluster": { "enum": ["eks", "ecs", "none", "unknown"] },
+        "multi_cloud": { "enum": ["yes", "no", "unknown"] },
+        "platform_fit": { "enum": ["ecs", "eks", "lambda", "none", "unknown"] }
+      }
+    }
+  }
+}

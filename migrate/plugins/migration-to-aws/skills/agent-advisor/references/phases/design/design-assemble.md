@@ -22,4 +22,12 @@ _produces:
 > (verdict, chosen_runtime, deployment_model, agentcore_services,
 > model_recommendation, scores, eliminated, the gate notes, handoff_required).
 
-The assembler produces ONE `units[]` entry per inventory unit: agent units derive their verdict, deployment_model, agentcore_services, and model_recommendation from their scoring result plus confirm overrides; non-agent units derive their verdict from workload-classes rules (with rationale citing the rule id like "W2: batch → AWS Batch"). It then assembles the `platform` block from confirm.json's platform_decision and the units' coupling. Finally, it writes the primary unit's fields at design.json's top level (legacy mirror).
+The assembler produces ONE `units[]` entry per inventory unit: agent units derive their verdict,
+deployment_model, and agentcore_services from scoring plus confirm, while model_recommendation
+comes only from the matching model-recommendation.json entry plus the accepted model_decision;
+the complete model contract includes parity/compatibility, architecture impacts,
+evaluation/rollout gates, and the separate live verification result when present;
+non-agent units derive their verdict from workload-classes rules (with rationale citing the rule
+id like "W2: batch → AWS Batch"). It then assembles the `platform` block from confirm.json's
+platform_decision and the units' coupling. Finally, it writes the primary unit's fields at
+design.json's top level (legacy mirror).

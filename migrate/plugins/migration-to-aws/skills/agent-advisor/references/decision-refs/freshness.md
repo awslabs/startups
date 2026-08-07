@@ -98,3 +98,7 @@ Choose the wording that matches what actually happened:
 - If the MCP was not called / unavailable:
   > _Generated `<DATE>`. AWS Knowledge MCP not called this run; all facts are cached values —
   > verify against AWS docs before committing._
+
+The footer is a summary, not the only place a date belongs. A cached number quoted in the body —
+a service limit, a scaling ceiling, a price anchor — carries its own snapshot date at the point of
+use, so a reader who reads one section is not relying on a footer they may never reach.

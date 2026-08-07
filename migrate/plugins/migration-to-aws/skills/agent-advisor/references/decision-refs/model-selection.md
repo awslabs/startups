@@ -5,51 +5,63 @@ Distilled from the migration-to-aws plugin's Q16/Q17 tables and `ai-model-lifecy
 
 - `.../shared/ai-model-lifecycle.md`. Last aligned: 2026-06-30.
 
-This is a **coarse, family-level** mapping. Exact model IDs, pricing, TCO, EOL dates, and
-regional availability come from **migration-to-aws (the llm-to-bedrock skill)** — never quote dollar figures
-here. The deterministic implementation lives in `skills/agent-advisor/scripts/scoring.py::_select_model`; the drift
-test in `skills/agent-advisor/scripts/test_scoring.py` locks this list against the source lifecycle file (a source
-model going Legacy/EOL fails CI).
+The tables below remain a **coarse compatibility hint** for old scoring-result consumers.
+The authoritative deterministic implementation is the
+`skills/agent-advisor/scripts/model_recommendation.py` orchestrator dispatching to per-provider
+modules; each module consumes a dated capability catalog,
+selects model and API path per workload, and emits compatibility deltas plus verification
+status. Runtime scoring does not own model selection.
 
 Model choice is **independent of runtime choice** — it never changes which runtime is selected.
 
+## Joint model/path decision (per workload, per provider)
+
+The per-workload `(model, api_path)` decision is deterministic and lives in code, not in this
+file — it is dispatched by source provider so the path vocabulary and rules differ per provider:
+
+- **Anthropic** → `scripts/anthropic_model_recommendation.py` + `references/models/anthropic-bedrock-2026-07-21.json`
+  (paths: `mantle_messages`, `runtime_converse`, `runtime_invoke`).
+- **OpenAI** → `scripts/openai_model_recommendation.py` + `references/models/openai-bedrock-2026-07-21.json`
+  (paths: `mantle_openai_responses`, `runtime_converse`; Chat Completions reshapes to Responses).
+- **Azure OpenAI / other** → generic `provider_module_pending` until a dedicated module exists.
+
+Do not restate the per-provider path rules here — the dated catalogs and the engine are
+authoritative (a table here would drift). The engine applies these provider-neutral principles:
+
+- **Conflicts are not precedence.** When two hard requirements cannot share one path (e.g. API
+  continuity plus runtime-only governance), emit `decision_required` with both tradeoff options
+  and rerun after the user resolves the requirement — never silently let one side win.
+- **A dated snapshot is not a permanent claim.** Catalog data is point-in-time — e.g. Sonnet 4.6
+  was runtime-only in the `2026-06-24` snapshot, and six days later Sonnet 5 launched with full
+  Mantle Messages support, changing the default recommendation. Every recommendation
+  carries `region`, `catalog_verified_at`, and a required live `(model, path)` probe;
+  recommendation acceptance does not prove account invocability.
+- **Keep model identities separate.** Logical model identity, path-specific model ID, and the
+  resolved invocation/CRIS ID are distinct fields. Paths differ in SDK, model-ID form, IAM
+  action, structured-output mechanism, errors, and quotas.
+
 ## Priority baseline (Q16)
 
-| priority           | model                                                         |
-| ------------------ | ------------------------------------------------------------- |
-| quality            | Claude Sonnet 4.6 (Opus 4.7 for the most demanding reasoning) |
-| balanced / unknown | Claude Sonnet 4.6                                             |
-| speed              | Claude Haiku 4.5 (Nova Micro/Lite for cost-optimized speed)   |
-| cost               | Claude Haiku 4.5 or Nova Micro                                |
+The `priority` answer (quality / balanced / speed / cost / unknown) sets the candidate
+**ordering**, not a single model — the engine then applies hard capability and path filters.
+The authoritative order is `anthropic_model_recommendation.py::_PRIORITY_ORDER` (per-provider catalogs
+supply the actual models); it is not restated here to avoid drift.
 
-## Specialized-feature override (Q17 — HARD override, beats priority)
+## Specialized features (Q17)
 
-Ask for the ONE most critical feature. It overrides the priority baseline (and, on the migrate
-path, the source-model family mapping).
+The `model_features` answer collected in Clarify (legal values:
+`tool_use | long_context | extended_thinking | rag | multimodal | image_generation | speech |
+embedding | none | unknown`) feeds Model Recommend as a **hard capability filter**, not an
+override — a candidate that lacks catalog evidence for a required feature fails closed
+(`decision_required`), and a common feature such as tool use does not force a bigger model
+when a cheaper candidate satisfies it.
 
-| feature           | primary model                                             | notes / alternates                                                                          |
-| ----------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| tool_use          | Claude Sonnet 4.6                                         | best-in-class tool use                                                                      |
-| long_context      | Llama 4 Scout (10M native)                                | Claude Sonnet 4.6 for shorter long-context; Nova 2 Pro (1M) only if GA                      |
-| extended_thinking | Claude Sonnet 4.6 (extended thinking)                     | Opus 4.7 for hardest                                                                        |
-| rag               | Claude Sonnet 4.6 + Bedrock Knowledge Bases               | Titan Embeddings v2                                                                         |
-| multimodal        | Claude Sonnet 4.6 (vision)                                | add Stability AI if also _generating_ images                                                |
-| image_generation  | Stability AI — Stable Image Core (cost) / Ultra (quality) | separate capability, not a text-model swap; see llm-to-bedrock                              |
-| speech            | Amazon Nova 2 Sonic (speech-to-speech)                    | Transcribe (STT) / Polly (TTS) for one-directional; separate capability, see llm-to-bedrock |
-| embedding         | Amazon Titan Embeddings v2                                |                                                                                             |
-| none / unknown    | (no override — priority baseline stands)                  |                                                                                             |
+Three of these are **separate capabilities, not text-model swaps** — they become their own
+target contracts (`additional_targets` / a separate workload) instead of changing the text
+model: `image_generation` (image model/service), `speech` (STT/TTS services), `embedding`
+(a Bedrock embedding model). Detailed pricing/TCO → migration-to-aws (llm-to-bedrock skill).
 
-**Active models only** (per the source lifecycle file). Do NOT recommend Nova Sonic v1 (→ Nova 2
-Sonic) or Nova Canvas v1 (→ Stability AI) — both are Legacy/excluded.
-
-## Cost/speed conflict
-
-If a feature override selects a specialized model that contradicts a `cost`/`speed` priority
-(e.g. cost + speech → Nova 2 Sonic), note in the recommendation that the specialized model may
-not be the cheapest/fastest option, and that detailed pricing is downstream. Informational only.
-
-## Migrate path
-
-Record the source model (`migration_from`). The feature override wins; only fall back to the
-coarse source→family mapping (gpt4o → Claude Sonnet 4.6 family, gemini_flash → Nova Lite, etc.)
-when there is no feature override. Detailed pricing/TCO → migration-to-aws (llm-to-bedrock skill).
+The selectable model pool is drift-guarded against the sibling skill's lifecycle registry at
+`skills/gcp-to-aws/references/shared/ai-model-lifecycle.md` (a Legacy/EOL model entering the
+pool fails CI; the check lives in `test_scoring.py` and skips gracefully when the sibling
+skill is not present).

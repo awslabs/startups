@@ -12,7 +12,9 @@
 
 ## 3. Recommendation: `<Runtime>` <+ deployment model if AgentCore>
 
-<rationale + the top scoring signals; business framing then technical specifics.>
+<rationale + the top scoring signals; business framing then technical specifics. Quote each score the
+way scoring-result.json states it — a bare number. The engine publishes no maximum, so a fraction or
+a percentage ("40/56", "71%") asserts something it never computed.>
 
 ## 3b. System topology (multi-unit systems only — omit entirely for one unit)
 
@@ -26,7 +28,8 @@
 
 ## 4. Architecture diagram
 
-<INSERT the Mermaid block + ASCII fallback produced by the Generate diagram step (Plan 3).>
+<INSERT the Mermaid block + ASCII fallback produced by the Generate diagram step (Plan 3) — the
+blocks themselves, pasted in. Not "see diagram.md": this doc is read on its own.>
 
 ## 5. Alternatives considered
 
@@ -46,7 +49,11 @@
 
 ## 9. Bedrock model
 
-<model default + reasoning; for migrate, coarse family mapping + "see migration-to-aws for pricing".>
+<per model-bearing unit: model display name, path-specific model ID, API path, resolved
+invocation/CRIS ID or TODO, joint-decision reasoning, compatibility groups, architecture impacts,
+[BLOCKS]/[TUNE], evaluation mode, rollout gate, catalog date, and live verification status.
+State that runnable account access is established only when the live probe passed. For migrate,
+include "see migration-to-aws for pricing".>
 
 ## 10. Cost magnitude
 
