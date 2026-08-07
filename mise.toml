@@ -44,39 +44,62 @@ description = "Lint Markdown files with auto-fix"
 run = "markdownlint-cli2 '**/*.md' '#node_modules' --fix"
 
 [tasks."lint:frontmatter"]
-description = "Validate phase/fragment/assembler frontmatter (typed, zero-dep; skill-agnostic)"
+description = "Validate phase/fragment/assembler frontmatter (typed, zero-dep; skill-agnostic) for both plugins"
 run = [
   "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/heroku-to-aws",
   "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/agent-advisor",
+  "node advisor/plugins/aws-startup-advisor/tools/frontmatter-validator/validate.ts advisor/plugins/aws-startup-advisor/skills/heroku-to-aws",
+  "node advisor/plugins/aws-startup-advisor/tools/frontmatter-validator/validate.ts advisor/plugins/aws-startup-advisor/skills/agent-advisor",
 ]
 
 [tasks."lint:types"]
-description = "Type-check the frontmatter validator + its test (tsc --noEmit, strict)"
-run = "cd migrate/plugins/migration-to-aws && tsc --noEmit"
+description = "Type-check the frontmatter validator + its test (tsc --noEmit, strict) for both plugins"
+run = [
+  "cd migrate/plugins/migration-to-aws && tsc --noEmit",
+  "cd advisor/plugins/aws-startup-advisor && tsc --noEmit",
+]
 
 [tasks.test]
-description = "Run the frontmatter-validator test suite (node --test)"
-run = "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts"
+description = "Run the frontmatter-validator test suite (node --test) for both plugins"
+run = [
+  "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts",
+  "node --test advisor/plugins/aws-startup-advisor/tests/tools/frontmatter-validator.test.ts",
+]
 
 [tasks."fixtures:assert"]
-description = "Run committed fixture asserters: golden run trees must PASS, replay-only asserters must fail cleanly on an empty dir (CI)"
-run = "python3 migrate/plugins/migration-to-aws/tools/run-asserters.py"
+description = "Run committed fixture asserters: golden run trees must PASS, replay-only asserters must fail cleanly on an empty dir (CI) for both plugins"
+run = [
+  "python3 migrate/plugins/migration-to-aws/tools/run-asserters.py",
+  "python3 advisor/plugins/aws-startup-advisor/tools/run-asserters.py",
+]
 
 [tasks."shared:sync"]
-description = "Sync each skill's references/vendored/ tree from the canonical skills/shared/ source"
-run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --write"
+description = "Sync each skill's references/vendored/ tree from the canonical skills/shared/ source (both plugins)"
+run = [
+  "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts --write",
+  "node advisor/plugins/aws-startup-advisor/tools/sync-vendored-shared.ts advisor/plugins/aws-startup-advisor --write",
+]
 
 [tasks."shared:check"]
-description = "Verify each skill's vendored shared files are byte-identical to canonical skills/shared/ (CI)"
-run = "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts"
+description = "Verify each skill's vendored shared files are byte-identical to canonical skills/shared/ (CI) for both plugins"
+run = [
+  "node migrate/plugins/migration-to-aws/tools/sync-vendored-shared.ts",
+  "node advisor/plugins/aws-startup-advisor/tools/sync-vendored-shared.ts advisor/plugins/aws-startup-advisor",
+]
 
 [tasks."fixtures:check"]
-description = "Structural integrity of committed replay fixtures (JSON parse, asserter byte-compile, manifest file references, gitignore traps, seed phase-status vs declared phases)"
-run = "node migrate/plugins/migration-to-aws/tools/fixtures-check.ts"
+description = "Structural integrity of committed replay fixtures (JSON parse, asserter byte-compile, manifest file references, gitignore traps, seed phase-status vs declared phases) for both plugins"
+run = [
+  "node migrate/plugins/migration-to-aws/tools/fixtures-check.ts",
+  "node advisor/plugins/aws-startup-advisor/tools/fixtures-check.ts . advisor/plugins/aws-startup-advisor",
+]
 
 [tasks."pricing:staleness"]
-description = "Report pricing caches past their own declared freshness window (warn-only; use --strict in a scheduled workflow to fail)"
-run = "node migrate/plugins/migration-to-aws/tools/pricing-staleness.ts"
+description = "Report pricing caches past their own declared freshness window (warn-only; use --strict in a scheduled workflow to fail) for both plugins"
+run = [
+  "node migrate/plugins/migration-to-aws/tools/pricing-staleness.ts",
+  "node advisor/plugins/aws-startup-advisor/tools/pricing-staleness.ts advisor/plugins/aws-startup-advisor",
+]
 
 [tasks.lint]
 description = "Run all linters"
@@ -96,10 +119,11 @@ run = [
 # =========
 
 [tasks."security:bandit"]
-description = "Run Bandit (two-pass: migration-to-aws plugin with its own skip config; rest of repo with full strictness — mirrors the CI bandit job in .github/workflows/security-scanners.yml)"
+description = "Run Bandit (per-plugin skip configs for migration-to-aws and aws-startup-advisor; rest of repo with full strictness — mirrors the CI bandit job in .github/workflows/security-scanners.yml)"
 run = [
   "bandit -r migrate/plugins/migration-to-aws -c migrate/plugins/migration-to-aws/bandit.yml -x migrate/plugins/migration-to-aws/skills/agent-advisor/scripts/.venv,migrate/plugins/migration-to-aws/skills/llm-to-bedrock/scripts/.venv,migrate/plugins/migration-to-aws/tests",
-  "bandit -r . --exclude ./.tmp,./node_modules,./migrate/plugins/migration-to-aws",
+  "bandit -r advisor/plugins/aws-startup-advisor -c advisor/plugins/aws-startup-advisor/bandit.yml -x advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/.venv,advisor/plugins/aws-startup-advisor/skills/llm-to-bedrock/scripts/.venv,advisor/plugins/aws-startup-advisor/tests",
+  "bandit -r . --exclude ./.tmp,./node_modules,./migrate/plugins/migration-to-aws,./advisor/plugins/aws-startup-advisor",
 ]
 
 [tasks."security:semgrep"]
