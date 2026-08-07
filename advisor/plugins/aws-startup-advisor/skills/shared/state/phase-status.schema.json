@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:awslabs:startups:migration-to-aws:state:phase-status",
+  "$comment": "The $id URN uses 'migration-to-aws' as a stable schema namespace identity — it is NOT a plugin name or skill invocation prefix. Do not rename it when the schema moves between plugins.",
   "title": ".phase-status.json",
   "description": "Canonical schema for the shared migration state file (.phase-status.json) that DSL-driven migration skills read and advance. The valid phase NAMES are NOT enumerated here — they are whatever phases the skill declares (its phase files). This schema is skill-agnostic: adding a phase to a skill requires no change to this file.",
   "type": "object",

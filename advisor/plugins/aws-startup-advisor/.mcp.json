@@ -30,7 +30,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "sample-aws-pricing-calculator-mcp@latest"
+        "sample-aws-pricing-calculator-mcp@1.2.8"
       ],
       "timeout": 120000,
       "type": "stdio",

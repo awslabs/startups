@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:awslabs:startups:migration-to-aws:estimate:estimation-infra",
+  "$comment": "The $id URN uses 'migration-to-aws' as a stable schema namespace identity — it is NOT a plugin name or skill invocation prefix. Do not rename it when the schema moves between plugins.",
   "title": "estimation-infra.json",
   "description": "Schema for the infrastructure cost-estimate artifact produced by a migration skill's estimate phase. projected_costs carries three pricing SCENARIOS (premium/balanced/optimized) for the same design — not three Terraform roots. Source-cloud baseline fields live under current_costs and are source-agnostic here (a skill records its own source monthly/annual). Cost FORMULAS and tier semantics are the estimate phase's prose, not this schema.",
   "type": "object",
