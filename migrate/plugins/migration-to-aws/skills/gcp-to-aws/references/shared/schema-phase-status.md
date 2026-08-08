@@ -26,6 +26,16 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
 | `last_updated`  | ISO 8601 | After each phase update                                          |
 | `phases.<name>` | string   | Phase transitions: `"pending"` → `"in_progress"` → `"completed"` |
 
+**Optional field — `run_mode`:**
+
+| Value                  | Meaning                                                                         | Set by                                                      |
+| ---------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `"decide"`             | User stopped at the decision — Generate available on request, never auto-loaded | Decision gate choice A (`estimate.md`)                      |
+| `"decide_and_execute"` | User opted into execution artifacts — Generate may load                         | Decision gate choice C, or the decide-complete resume offer |
+| _(absent)_             | Gate not yet reached — no Generate consent exists                               | —                                                           |
+
+**Decide-complete state:** `current_phase: "complete"` + `run_mode: "decide"` + `phases.generate: "pending"` means the decision pack is done and execution was not requested. This is a **terminal-unless-asked** state, not a failure and not an incomplete run: resume offers Generate but never auto-runs it, and never re-runs Estimate. No `"skipped"` status exists — `generate` simply stays `"pending"`.
+
 **Rules:**
 
 - Phase status progresses: `"pending"` → `"in_progress"` → `"completed"`. Never goes backward.
@@ -33,3 +43,4 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
 - `workshop` is an optional **sidebar** (like feedback): never appears as
   `current_phase`; `"completed"` means resolved (entered or declined).
 - `migration_id` matches the `$MIGRATION_DIR` folder name (e.g., `0226-1430`).
+- `run_mode` is optional; when present it must be `"decide"` or `"decide_and_execute"`. It is flow state (Generate consent), not a design constraint — it never appears in `preferences.json`.

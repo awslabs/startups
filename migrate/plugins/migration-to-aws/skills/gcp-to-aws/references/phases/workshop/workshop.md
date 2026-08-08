@@ -33,7 +33,7 @@
 3. Branch:
    - **Apply & reprice** → `workshop-refresh.md` → `workshop-compare.md`
    - **Compare scenarios** → `workshop-compare.md`
-   - **Exit to Generate** → `workshop-assemble.md` → return
+   - **Done / exit** → `workshop-assemble.md` → returns to the Decision gate in `estimate.md`
    - **Exit to full Clarify** → danger; Clarify re-entry only on explicit confirm
 
 ## Hard rules
@@ -55,6 +55,7 @@ file wins — fix this table.
 
 ## Decline without entering
 
-When Estimate offer **[B] Proceed toward Generate** is chosen, mark
-`phases.workshop` `"completed"` (resolved/declined), set `current_phase` to
-`"generate"`, then continue Feedback/Generate sidebars in `SKILL.md`.
+When the user chooses Decision-gate option **A** (done for now) or **C**
+(generate) without entering the workshop, mark `phases.workshop` `"completed"`
+(resolved/declined); the gate's choice handling in `estimate.md` sets
+`run_mode` and `current_phase`.

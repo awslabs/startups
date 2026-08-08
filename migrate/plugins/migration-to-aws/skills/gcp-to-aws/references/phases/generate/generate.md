@@ -1,5 +1,13 @@
 # Phase 5: Generate Migration Artifacts (Orchestrator)
 
+> **CONSENT GUARD (check before Step 1):** This phase runs only by explicit
+> opt-in. If `.phase-status.json` → `run_mode` is not `"decide_and_execute"`:
+> when this turn's user message is an explicit Execute request ("generate the
+> Terraform", "create the migration scripts", gate choice C), set
+> `run_mode: "decide_and_execute"` (read-merge-write) and proceed; otherwise
+> STOP — do not generate anything — and re-present the Decision gate (or the
+> decide-complete resume offer) from `estimate.md` / `SKILL.md`.
+
 **Execute ALL steps in order. Do not skip or optimize.**
 
 ## Overview
