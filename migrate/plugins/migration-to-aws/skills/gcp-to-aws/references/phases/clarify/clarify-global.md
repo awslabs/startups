@@ -269,7 +269,7 @@ Default: B — `availability: "multi-az"`.
 
 **Database migration tooling notes:**
 
-- Read `preferences.json` → `design_constraints.db_size.value` (set by Q13b in `clarify-database.md`) to select the right tool. If absent, fall back to the size thresholds below.
+- Use the **in-flight resolved Q13b value** (`db_size` from Step 2 extraction, the confirmed Assumption Sheet, or `preferences-draft.json` — Q13b is defined in `clarify-database.md`) to select the right tool. Do NOT read `preferences.json` here: mid-Clarify it does not exist yet (it is written at Step 5), and on a re-run any file present is a prior run's stale answers. If Q13b is not yet resolved, fall back to the size thresholds below.
 - For PostgreSQL databases `db_size: "<10GB"` or unknown-small: **pg_dump/pg_restore** is sufficient.
 - For PostgreSQL databases `db_size: "10-100GB"` or `"100-500GB"`: **pgcopydb** offers parallel table copying and index rebuilding, significantly reducing migration time within the same maintenance window.
 - For PostgreSQL databases `db_size: ">500GB"`: **AWS DMS strongly recommended** regardless of maintenance window — single-pass export/import at this scale is high-risk.

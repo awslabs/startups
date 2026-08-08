@@ -129,7 +129,11 @@ Generate phase additionally loads `references/shared/validate-artifacts.md` befo
 When reading `$MIGRATION_DIR/.phase-status.json`, validate before proceeding:
 
 1. **Multiple sessions**: If multiple directories exist under `.migration/`, list them with their phase status and ask: [A] Resume latest, [B] Start fresh, [C] Cancel.
-2. **Invalid JSON**: If `.phase-status.json` fails to parse, STOP. Output: "State file corrupted (invalid JSON). Delete the file and restart the current phase."
+2. **Invalid JSON**: If `.phase-status.json` fails to parse, do NOT delete it and do NOT restart from Discover — the phase artifacts on disk are the durable record of progress. Reconstruct instead:
+   1. Enumerate `$MIGRATION_DIR` and infer completed phases from artifacts: any of `gcp-resource-inventory.json` / `billing-profile.json` / `ai-workload-profile.json` → discover completed; `preferences.json` → clarify completed; `aws-design.json` / `aws-design-ai.json` / `aws-design-billing.json` → design completed; `estimation-*.json` → estimate completed; `generation-*.json` or `MIGRATION_GUIDE.md` → generate completed.
+   2. Present the inferred status to the user: "Your state file was corrupted, but I can see [phases] completed from the artifacts on disk. Resume at [next phase]? (Y/N)"
+   3. On Y: rewrite `.phase-status.json` with the inferred phases marked `"completed"`, the next phase `"pending"`, `current_phase` set to it, and a fresh `last_updated`. Continue normally. On N: ask which phase to resume from and write that instead.
+      This is reconstruction of ground truth from artifacts, not artifact-patching to pass a gate — the handoff-gate prohibition does not apply to `.phase-status.json` recovery.
 3. **Unrecognized phase**: If `phases` object contains a phase not in {discover, clarify, design, estimate, workshop, generate, feedback}, STOP. Output: "Unrecognized phase: [value]. Valid phases: discover, clarify, design, estimate, workshop, generate, feedback."
 4. **Unrecognized status**: If any `phases.*` value is not in {pending, in_progress, completed}, STOP. Output: "Unrecognized status: [value]. Valid values: pending, in_progress, completed."
 5. **Invalid `current_phase`** (if present): If `current_phase` is not in {discover, clarify, design, estimate, generate, complete}, STOP. Output: "Unrecognized current_phase: [value]. Valid values: discover, clarify, design, estimate, generate, complete." (`workshop` and `feedback` are sidebars — never `current_phase`.)
