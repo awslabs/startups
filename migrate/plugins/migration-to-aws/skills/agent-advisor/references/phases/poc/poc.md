@@ -280,7 +280,7 @@ the raw verdict):
   `references/decision-refs/poc-shapes.md`, whose BASE shape follows the unit's
   **effective_runtime**: `ecs` → ecs base; `eks` → eks base (kubectl + existing cluster,
   Kubernetes Secret for the connection material, NO Terraform); `serverless_workers` is
-  PRE-RELEASE and smoke-deploys on the ecs base. The Temporal deltas (smoke worker,
+  Public Preview and smoke-deploys on the ecs base. The Temporal deltas (smoke worker,
   `poc-smoke-<run_id>` queue, connection env contract) apply on whichever base the
   effective_runtime selected — an EKS-selected worker gets a Kubernetes POC, not ECS Fargate.
 - **agentcore** → the AgentCore branches below (3-H / 3-F / 3a–3e), unchanged.

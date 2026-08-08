@@ -61,11 +61,12 @@ def test_tier1_user_choice_gates_are_marked():
     assert "NOT as falling through to rule 5" in text
 
 
-def test_serverless_workers_labeled_prerelease():
+def test_serverless_workers_labeled_public_preview():
     text = _text()
-    assert "PRE-RELEASE" in text
-    # The trap this guards: docs.temporal.io shows "Available" — outputs must
-    # not launder that into GA.
+    assert "Public Preview" in text
+    # The trap this guards: docs.temporal.io has moved its label before
+    # (once "Available") without a GA announcement — outputs must not
+    # launder any docs label into GA.
     assert "do not trust the docs label" in text.lower() or \
         "Do not trust the docs label" in text
 

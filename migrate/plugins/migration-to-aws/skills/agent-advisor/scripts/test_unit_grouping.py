@@ -274,9 +274,9 @@ def test_estimate_eks_not_hardcoded_fargate():
         "temporal polling tier must apply the node-aware EKS rule, not a flat 'tens of $/mo'"
     # Codex round-11 #1: serverless_workers is a legal temporal verdict but had no polling-tier
     # cost path — must define one (pre-release → MCP rate or qualitative fallback, not fabricated).
-    assert re.search(r"serverless_workers.{0,300}(qualitative|PRE-RELEASE|awspricing|unverified)",
+    assert re.search(r"serverless_workers.{0,300}(qualitative|Public Preview|awspricing|unverified)",
                      tw, re.IGNORECASE | re.DOTALL), \
-        "temporal polling tier must define a serverless_workers path (pre-release/qualitative fallback)"
+        "temporal polling tier must define a serverless_workers path (Public Preview/qualitative fallback)"
     # Codex round-11 #2: must NOT assert execution-tier dominance unconditionally — compare the
     # two computed bands (a GPU/high-node polling fleet or low Activity volume can flip it).
     assert not re.search(r"execution tier\s+dominates(?![^.]*compar)", tw, re.IGNORECASE), \

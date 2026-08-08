@@ -117,13 +117,14 @@ this rule governs it, NOT the class default below.
     (this class is subject to it like any other): EKS-on-Fargate → the Fargate anchor, but EC2
     managed nodes / Karpenter / Spot / GPU fleets → EC2 instance pricing, and a GPU worker fleet
     can run into hundreds–thousands of $/month, not "tens". State the node-capacity assumption.
-  - `effective_runtime == "serverless_workers"` → Temporal Serverless Workers is **PRE-RELEASE**
-    (labeled so regardless of any docs claim). Do NOT invent a cached anchor: try the awspricing
-    MCP for its published rate; if unavailable or unverified, give a **qualitative fallback**
-    (state "Serverless Workers pricing is pre-release / unverified — treated as a scale-to-zero
-    execution-billed tier; confirm the published rate before committing") rather than a fabricated
-    dollar band. Every other cost line for the unit still gets its band; only the SW polling line
-    may be qualitative when the rate is unverified.
+  - `effective_runtime == "serverless_workers"` → Temporal Serverless Workers is **Public
+    Preview, not GA** (labeled so regardless of any docs claim — the label has moved before
+    without a GA announcement). Do NOT invent a cached anchor: try the awspricing MCP for its
+    published rate; if unavailable or unverified, give a **qualitative fallback** (state
+    "Serverless Workers pricing is Public Preview / unverified — treated as a scale-to-zero
+    execution-billed tier; confirm the published rate before committing") rather than a
+    fabricated dollar band. Every other cost line for the unit still gets its band; only the SW
+    polling line may be qualitative when the rate is unverified.
 
   **Charge ONLY the worker-fleet polling compute to the `temporal_worker_poll` unit's
   `monthly_magnitude_usd`.** The execution tier (LLM tokens, AgentCore sessions, batch compute) is
@@ -141,12 +142,12 @@ this rule governs it, NOT the class default below.
 
   The temporal cost table below:
 
-  | Cost line                                                                          | Magnitude                                                                                                                                                   | Note                                                                                                                  |
-  | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-  | Polling tier (worker fleet: ECS / EKS / Serverless Workers)                        | tens of $/mo on ECS-Fargate; EKS priced by node capacity (EC2/Spot/GPU can be hundreds+); Serverless Workers PRE-RELEASE → MCP rate or qualitative fallback | small only on Fargate — size per the EKS pricing rule when effective_runtime==eks; SW rate unverified until confirmed |
-  | Execution tier = the ACTIVITY units' own costs (already their own units{} entries) | usually dominant — but compare, do NOT re-add                                                                                                               | same tokens as today; counted ONCE via the Activity units — never folded into the worker unit; compare vs polling     |
-  | Temporal Cloud actions (system-level orchestration)                                | derive from the user's volume × $0.01/action                                                                                                                | new line vs self-hosted; or unchanged if already on Cloud                                                             |
-  | What it replaces                                                                   | qualitative only                                                                                                                                            | self-hosted cluster ops burden — no dollar figure                                                                     |
+  | Cost line                                                                          | Magnitude                                                                                                                                                      | Note                                                                                                                  |
+  | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+  | Polling tier (worker fleet: ECS / EKS / Serverless Workers)                        | tens of $/mo on ECS-Fargate; EKS priced by node capacity (EC2/Spot/GPU can be hundreds+); Serverless Workers Public Preview → MCP rate or qualitative fallback | small only on Fargate — size per the EKS pricing rule when effective_runtime==eks; SW rate unverified until confirmed |
+  | Execution tier = the ACTIVITY units' own costs (already their own units{} entries) | usually dominant — but compare, do NOT re-add                                                                                                                  | same tokens as today; counted ONCE via the Activity units — never folded into the worker unit; compare vs polling     |
+  | Temporal Cloud actions (system-level orchestration)                                | derive from the user's volume × $0.01/action                                                                                                                   | new line vs self-hosted; or unchanged if already on Cloud                                                             |
+  | What it replaces                                                                   | qualitative only                                                                                                                                               | self-hosted cluster ops burden — no dollar figure                                                                     |
 
   One takeaway sentence: on ECS-Fargate the execution tier dominates and the polling tier is
   noise — but on EKS with EC2/GPU nodes (or under low Activity volume) the polling fleet can be
@@ -168,8 +169,8 @@ For each unit, also structure the components you just computed into a `breakdown
 them into the total: `compute` (runtime/request pricing: AgentCore or Lambda MicroVMs vCPU/GB,
 Fargate, Lambda requests), `model_tokens` (Bedrock token costs — `null` for units that call no
 models), and `other` (everything else: ALB, storage). Every component is a band, never precise —
-EXCEPT when a component's rate is genuinely unverifiable (a Serverless Workers PRE-RELEASE polling
-tier whose rate the awspricing MCP could not confirm): set that component to the string
+EXCEPT when a component's rate is genuinely unverifiable (a Serverless Workers Public Preview
+polling tier whose rate the awspricing MCP could not confirm): set that component to the string
 `"unverified"` instead of a fabricated band, and reflect it in `monthly_magnitude_usd` — if the
 unverified component is the only compute line, the unit's `monthly_magnitude_usd` is the band of
 its remaining priced components plus a `"+ unverified SW polling"` suffix (e.g. `"40-120 +
@@ -297,7 +298,7 @@ Also emit `total_compute`, `total_model`, `total_other` — the per-column sums 
 `breakdown.compute` / `model_tokens` / `other` bands (Generate renders these as the cost table's
 Total row). **Unverified handling (uniform across all three column totals AND
 `total_monthly_magnitude_usd`):** when a component is the string `"unverified"` (a Serverless
-Workers PRE-RELEASE rate the MCP could not confirm) or `null`, EXCLUDE it from the numeric sum
+Workers Public Preview rate the MCP could not confirm) or `null`, EXCLUDE it from the numeric sum
 and append a `"+ unverified"` suffix to that total's band (e.g. `total_compute` = `"20-55 +
 unverified"`, and `total_monthly_magnitude_usd` likewise carries `"+ unverified SW polling"`).
 Never coerce an unverified component to $0 — an excluded-and-flagged band, never a silent drop.

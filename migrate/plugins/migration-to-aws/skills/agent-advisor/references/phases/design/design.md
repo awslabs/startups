@@ -25,7 +25,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: design.json
     _on_failure: _halt_and_inform
-  - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled PRE-RELEASE regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
+  - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled Public Preview regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
     _on_failure: _halt_and_inform
 ---
 
@@ -130,13 +130,14 @@ Write the `temporal` block when temporal units exist:
   "way": "cloud | self_hosted",
   "server_current": "...",
   "per_queue_rules": { "<queue>": "<rule id>" },
-  "serverless_workers_status": "PRE-RELEASE"
+  "serverless_workers_status": "Public Preview"
 }
 ```
 
 `temporal.server_current` is read from `context-signals.json.temporal.server` (discover's
-output; "unknown" on the declared no-code path). `serverless_workers_status` is ALWAYS
-`"PRE-RELEASE"` regardless of any docs label.
+output; "unknown" on the declared no-code path). `serverless_workers_status` is set from
+this run's freshness check (see freshness.md) — currently `"Public Preview"` — and MUST
+NOT be auto-upgraded to GA from a docs label or MCP echo alone.
 
 ### Freshness (temporal units only)
 
@@ -154,10 +155,11 @@ the docs.temporal.io page. Ask at most once per run. Pausing here is safe: this 
 is a read-only freshness check that resumes cleanly. (The Marketplace listing fact
 stays WebFetch-only; the KB MCP does not cover it.)
 
-Non-negotiable regardless of channel: **Serverless Workers is PRE-RELEASE** — docs
-(or an MCP answer echoing the docs label) may say "Available"; do not trust the
-label, re-verify this run and label the output pre-release regardless. Workflow
-Streams and External Payload Storage are Preview. The anti-fabrication rule applies:
+Non-negotiable regardless of channel: **Serverless Workers is Public Preview, not GA**
+— the docs label has moved before without a GA announcement (it read "Available" in
+2026-07); do not trust it at face value, re-verify this run and label the output
+Public Preview until GA evidence appears. Workflow Streams and External Payload
+Storage are Preview. The anti-fabrication rule applies:
 only claim verified (whether via MCP or WebFetch) for calls actually made and results
 observed this run.
 
@@ -210,7 +212,7 @@ scored runtime). Do NOT try to load `serverless_workers.md` in Step 2, and do NO
 missing card. For a `serverless_workers` unit, derive `key_change` from
 `references/decision-refs/temporal.md` (the Serverless Workers Tier-1 entry) + the Temporal
 worker POC section of `poc-shapes.md` — one line on the worker's connection/env contract — and
-label it PRE-RELEASE. (Same as the other temporal_worker_poll verdicts, whose cards are the
+label it Public Preview. (Same as the other temporal_worker_poll verdicts, whose cards are the
 resolved compute card — ecs/eks — while serverless_workers is Temporal-managed with no AWS
 compute card.)
 
@@ -237,9 +239,9 @@ here so every downstream phase reads ONE value instead of re-deriving it:**
   for a single-unit run); otherwise the unit's `verdict`. `effective_runtime` is ALWAYS a
   concrete runtime enum (agentcore | lambda_microvms | ecs | eks | lambda | batch | fargate |
   serverless_workers) — never the literal `co_recommend`. (`serverless_workers` is a legal
-  temporal_worker_poll Tier 1 outcome — PRE-RELEASE — and Estimate/POC dispatch on it; it MUST be
-  in this enum or a user who accepts pre-release Serverless Workers gets normalized to a wrong
-  runtime.) Also set `units[].verdict` to that resolved runtime for a
+  temporal_worker_poll Tier 1 outcome — Public Preview — and Estimate/POC dispatch on it; it
+  MUST be in this enum or a user who accepts Public Preview Serverless Workers gets normalized
+  to a wrong runtime.) Also set `units[].verdict` to that resolved runtime for a
   co_recommend unit (record the tie + the pick in `rationale`), so no downstream reader ever
   sees `verdict: "co_recommend"`.
 

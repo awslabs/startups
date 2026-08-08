@@ -9,7 +9,7 @@ In the evolving landscape of digital lending, [Landbay](https://landbay.co.uk/),
 
 ## The GitOps Advantage
 
-As microservices architectures gain prominence, [GitOps](https://www.gitops.tech/#what-is-gitops) has emerged as a new standard for this deployment mechanism. Two noteworthy products have emerged within the Cloud Native Computing Foundation (CNCF): [Flux](https://fluxcd.io/) & [ArgoCD](https://argoproj.github.io/cd/). Landbay selected Flux for its native integration with Kubernetes by exposing custom resource definitions (CRDs) to define deployments, helm releases, Kustomizations, and more. This, in turn, empowered software engineers to master Kubernetes, thereby more seamlessly understanding how Flux fits within the ecosystem.
+As microservices architectures gain prominence, [GitOps](https://www.gitops.tech/#what-is-gitops) has emerged as a new standard for this deployment mechanism. Two noteworthy products have emerged within the Cloud Native Computing Foundation (CNCF): [Flux](https://fluxcd.io/) & [ArgoCD](https://github.com/argoproj/argo-cd). Landbay selected Flux for its native integration with Kubernetes by exposing custom resource definitions (CRDs) to define deployments, helm releases, Kustomizations, and more. This, in turn, empowered software engineers to master Kubernetes, thereby more seamlessly understanding how Flux fits within the ecosystem.
 
 ## Solution Overview
 
@@ -51,7 +51,7 @@ To avoid a proliferation of roles, Kubernetes provides a mechanism to roll up pe
 
 To enhance the integration between services, Landbay has leveraged [AWS Load Balancer Controller](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html) (LBC) and External DNS Controller.
 
-[AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/) enables the provisioning of Load Balancers directly from Ingresses as well as the ability to re-use [externally managed Load Balancers](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.1/guide/targetgroupbinding/targetgroupbinding/) and assign target pods. By separating the provisioning of Load Balancers into a separate project, DevOps teams can have greater privileges on one source code repository while still giving tools for the job to engineers managing the targets.
+[AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller) enables the provisioning of Load Balancers directly from Ingresses as well as the ability to re-use [externally managed Load Balancers](https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/docs/guide/targetgroupbinding/targetgroupbinding.md) and assign target pods. By separating the provisioning of Load Balancers into a separate project, DevOps teams can have greater privileges on one source code repository while still giving tools for the job to engineers managing the targets.
 
 The controller also manages security groups as necessary on the backend between the Load Balancer and its targets. Additionally, by using the _group.name_ annotation, the same Load Balancer can be shared with multiple target groups behind the scenes.
 

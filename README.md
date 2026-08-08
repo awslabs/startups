@@ -6,6 +6,7 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 
 | Plugin                                        | Description                                                                                                                                                                                                                                                                                                                    | Status    |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **[aws-startup-advisor](advisor/)**           | Personalized AWS guidance built on patterns from 350,000+ startups — architecture, cost, security, and migration, from day-one account setup to production-ready infrastructure                                                                                                                                                | Available |
 | **[migration-to-aws](migrate/)**              | Assess, plan & execute: migrate GCP/Heroku infrastructure and AI workloads to AWS (discovery, architecture mapping, cost analysis, Terraform), rewrite LLM SDK calls to Amazon Bedrock, and select an AWS runtime + build a POC for AI agents. Bundles the gcp-to-aws, heroku-to-aws, llm-to-bedrock, and agent-advisor skills | Available |
 | **[aws-dev-toolkit](solution-architecture/)** | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS                                                                                                                                                                                                     | Available |
 
@@ -17,15 +18,18 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 # Add the marketplace
 /plugin marketplace add awslabs/startups
 
-# Install the plugin
-/plugin install migration-to-aws@startups-for-aws
+# Install plugins
+/plugin install migration-to-aws@claude-plugins-official
+/plugin install aws-startup-advisor@claude-plugins-official
 ```
 
 ### Codex
 
 ```bash
 codex plugin marketplace add awslabs/startups
-codex plugin install migration-to-aws
+
+codex plugin install migration-to-aws@claude-plugins-official
+codex plugin install aws-startup-advisor@claude-plugins-official
 ```
 
 ### Cursor
@@ -59,11 +63,19 @@ Each top-level folder is owned by a team and contains their plugins, tools, or r
 ```
 awslabs/startups/
 ├── .claude-plugin/marketplace.json   # Plugin marketplace (lists all plugins)
+├── advisor/                           # AWS Startup Advisor plugin
+│   └── plugins/
+│       └── aws-startup-advisor/       # Architecture, cost, security & migration
+│                                      #   skills: architect-for-startups,
+│                                      #           knowledge-base-for-startups,
+│                                      #           start-building-for-startups,
+│                                      #           prompt-library-for-startups,
+│                                      #           migration-to-aws
 ├── migrate/                          # Migration tools and plugins
 │   └── plugins/
 │       └── migration-to-aws/         # Assess, plan, execute + agent runtime advisor
-│                                     #   skills: gcp-to-aws, heroku-to-aws,
-│                                     #           llm-to-bedrock, agent-advisor
+│                                      #   skills: gcp-to-aws, heroku-to-aws,
+│                                      #           llm-to-bedrock, agent-advisor
 ├── solution-architecture/            # Solution Architecture plugins (aws-dev-toolkit)
 └── ...                               # Future team folders
 ```

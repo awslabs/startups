@@ -66,8 +66,8 @@ scoring script.
                                                      (AskUserQuestion), don't auto-pick
 2. team already operates K8s                      → EKS
 3. low/spiky traffic AND all Activities < 15 min
-   AND Way 1 AND accepts PRE-RELEASE              → Lambda Serverless Workers
-                                                     (label pre-release, always)
+   AND Way 1 AND accepts Public Preview status    → Lambda Serverless Workers
+                                                     (label Public Preview, always)
 4. mixed durations                                → OFFER a split (AskUserQuestion):
                                                      split task queues (short →
                                                      Serverless Workers, long → small
@@ -185,11 +185,13 @@ subscribe flow; they already have a namespace and pay for it. Instead:
 **Way 2** (self-hosted on AWS) — no Cloud commercials at all; the plan carries
 the self-host stack (EKS + Aurora/RDS) and its ops cost framing instead.
 
-## Serverless Workers (⚠️ PRE-RELEASE — label it, always)
+## Serverless Workers (⚠️ Public Preview — label it, always)
 
-Status: **pre-release/preview** even though docs.temporal.io may show
-"AWS Lambda — Available". Do not trust the docs label; re-verify at generation time
-and label the output pre-release regardless (see freshness.md, Temporal section).
+Status: **Public Preview** (docs.temporal.io currently reads "AWS Lambda — Public
+Preview", verified 2026-08). Do not trust the docs label at face value — it has
+shifted before without a GA announcement (it read "Available" in 2026-07 while the
+feature was still pre-release); re-verify at generation time and label the output
+Public Preview until GA evidence appears (see freshness.md, Temporal section).
 
 - Mechanism: Temporal Cloud invokes Lambda on task arrival (no persistent poll);
   fresh connection per invocation; Workflows span invocations via replay — a

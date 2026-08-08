@@ -29,3 +29,5 @@
 - [ ] I have run `mise run build` locally and it passes
 - [ ] I have updated documentation if needed
 - [ ] My changes are scoped to my team's folder only
+
+By submitting this pull request, I confirm that you can use, modify, copy, and redistribute this contribution, under the terms of your choice.
