@@ -685,7 +685,7 @@ The eval schema fields (validated, extras rejected):
   - `no_golden_cases: true` — when `total_cases == 0` (T2-2 abort / paste / vision-no-images / embeddings paths). Tells T2-6 to render "no quality data" instead of "0% pass rate".
   - Free-form addenda — manual-review notes, per-layer status hints. Keep total `notes` under ~500 chars to fit dashboards.
 - **`live_source_baseline`** — MANDATORY. `true` ONLY when §9 produced live side-by-side responses for at least one prompt. `false` when §9 was skipped (no source key) or every live call failed. The report banner depends on this flag.
-- **`judge_model`** — MANDATORY. Identifier of the LLM running THIS agent (e.g. `claude-opus-4-7`, `claude-haiku-4-5-20251001-v1:0`). The report discloses it so readers can assess same-family bias risk against the target Bedrock model. If you cannot identify the exact ID, pass `"unknown"` — never drop the field.
+- **`judge_model`** — MANDATORY. Identifier of the LLM running THIS agent (e.g. `claude-opus-4-8`, `claude-haiku-4-5-20251001-v1:0`). The report discloses it so readers can assess same-family bias risk against the target Bedrock model. If you cannot identify the exact ID, pass `"unknown"` — never drop the field.
 - **`source_baseline_quality`** — `'good'` (live baseline ran and looked fine), `'poor'` (live baseline ran but the source model's own output looked degraded — empty responses, error bodies, or obvious wrong-version behavior; per §9 step 3), or `'unknown'` (no live baseline ran). The orchestrator surfaces `'poor'` at the quality gate.
 
 `live_source_baseline` and `judge_model` are MANDATORY — always include both, every time, even if uncertain. Never omit them.
@@ -704,7 +704,7 @@ When §7 routed past §10–§13 with `total_cases == 0` (no golden dataset to e
   "failures": 1,
   "notes": "live_source_baseline_used_model: \n1 prompt needs manual review — see notes for details.",
   "live_source_baseline": true,
-  "judge_model": "claude-opus-4-7",
+  "judge_model": "claude-opus-4-8",
   "source_baseline_quality": "good"
 }
 ```
@@ -723,7 +723,7 @@ When `total_cases == 0` (T2-2 abort / paste / vision-no-images / embeddings path
   "failures": 0,
   "notes": "no_golden_cases: true\nreason: T2-2 reported total_golden_cases=0; layers 1/2 passed but no quality data to score.",
   "live_source_baseline": false,
-  "judge_model": "claude-opus-4-7",
+  "judge_model": "claude-opus-4-8",
   "source_baseline_quality": "unknown"
 }
 ```

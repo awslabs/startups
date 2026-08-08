@@ -34,7 +34,7 @@ def test_service_labels_include_payments_and_registry():
 
 def test_payments_registry_render_in_diagram():
     out = build_diagram.render_mermaid(
-        "agentcore", ["identity", "payments", "registry"], "claude_sonnet_4_6", "harness")
+        "agentcore", ["identity", "payments", "registry"], "claude_sonnet_5", "harness")
     assert "Payments" in out and "Registry" in out
 
 
@@ -58,11 +58,11 @@ def test_resolve_services_filters_unknown_and_dedupes():
 
 def test_mermaid_has_runtime_model_and_services():
     out = build_diagram.render_mermaid(
-        "agentcore", ["identity", "memory"], "claude_sonnet_4_6", "harness")
+        "agentcore", ["identity", "memory"], "claude_sonnet_5", "harness")
     assert out.startswith("flowchart TD")
     assert "AgentCore Runtime" in out
     assert "harness" in out.lower()
-    assert "claude_sonnet_4_6" in out
+    assert "claude_sonnet_5" in out
     assert "Identity" in out and "Memory" in out
     assert "migration-to-aws" not in out  # no handoff for agentcore
 
@@ -71,7 +71,7 @@ def test_mermaid_model_is_solid_edge_services_are_dotted():
     # Topology: the model is a downstream call (solid invoke edge); services are
     # cross-cutting capabilities attached with a dotted edge into a subgraph.
     out = build_diagram.render_mermaid(
-        "agentcore", ["identity", "memory"], "claude_sonnet_4_6", "harness")
+        "agentcore", ["identity", "memory"], "claude_sonnet_5", "harness")
     assert "rt -->|invoke| model" in out       # model = solid data-flow edge
     assert 'subgraph svcs["AgentCore services"]' in out
     assert "rt -.-> svcs" in out               # services = dotted attachment
@@ -81,31 +81,31 @@ def test_mermaid_model_is_solid_edge_services_are_dotted():
 
 def test_mermaid_no_services_no_subgraph():
     out = build_diagram.render_mermaid(
-        "agentcore", [], "claude_sonnet_4_6", "harness")
+        "agentcore", [], "claude_sonnet_5", "harness")
     assert "subgraph" not in out
     assert "rt -->|invoke| model" in out
 
 
 def test_mermaid_adds_handoff_note_for_ecs():
-    out = build_diagram.render_mermaid("ecs", [], "claude_sonnet_4_6", None)
+    out = build_diagram.render_mermaid("ecs", [], "claude_sonnet_5", None)
     assert "Amazon ECS (Fargate)" in out
     assert "migration-to-aws" in out
 
 
 def test_mermaid_deterministic():
     a = build_diagram.render_mermaid("agentcore", ["identity", "memory"],
-                                     "claude_sonnet_4_6", "harness")
+                                     "claude_sonnet_5", "harness")
     b = build_diagram.render_mermaid("agentcore", ["identity", "memory"],
-                                     "claude_sonnet_4_6", "harness")
+                                     "claude_sonnet_5", "harness")
     assert a == b
 
 
 def test_ascii_contains_runtime_model_services():
     out = build_diagram.render_ascii(
-        "agentcore", ["identity", "memory"], "claude_sonnet_4_6", "harness")
+        "agentcore", ["identity", "memory"], "claude_sonnet_5", "harness")
     assert "AgentCore Runtime" in out
     assert "harness" in out.lower()
-    assert "claude_sonnet_4_6" in out
+    assert "claude_sonnet_5" in out
     assert "- Identity" in out and "- Memory" in out
     assert "migration-to-aws" not in out
     # Model is on the primary flow; services are attached, not call targets.
@@ -114,7 +114,7 @@ def test_ascii_contains_runtime_model_services():
 
 
 def test_ascii_handoff_for_ecs():
-    out = build_diagram.render_ascii("ecs", [], "claude_sonnet_4_6", None)
+    out = build_diagram.render_ascii("ecs", [], "claude_sonnet_5", None)
     assert "Amazon ECS" in out
     assert "migration-to-aws" in out
 
@@ -122,21 +122,21 @@ def test_ascii_handoff_for_ecs():
 def test_ascii_no_handoff_for_standard_lambda():
     # Standard Lambda is a self-contained Build target (function skeleton), not a
     # heavy-infrastructure handoff — no migration-to-aws note.
-    out = build_diagram.render_ascii("lambda", [], "claude_sonnet_4_6", None)
+    out = build_diagram.render_ascii("lambda", [], "claude_sonnet_5", None)
     assert "AWS Lambda" in out
     assert "migration-to-aws" not in out
 
 
 def test_ascii_deterministic():
-    a = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_4_6", None)
-    b = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_4_6", None)
+    a = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_5", None)
+    b = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_5", None)
     assert a == b
 
 
 def test_build_diagram_end_to_end():
     result = {"verdict": "agentcore", "deployment_model": "harness",
               "agentcore_services": ["identity"],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     out = build_diagram.build_diagram(result, {})
     assert "flowchart TD" in out["mermaid"]
     assert "AgentCore Runtime" in out["ascii"]
@@ -151,7 +151,7 @@ def test_build_diagram_no_viable():
 def test_golden_agentcore_full():
     result = {"verdict": "agentcore", "deployment_model": "framework_on_runtime",
               "agentcore_services": ["identity", "observability", "memory", "gateway"],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     out = build_diagram.build_diagram(result, {})
     # runtime + deployment model + all four services + model, no handoff
     assert "framework_on_runtime" in out["mermaid"]
@@ -163,7 +163,7 @@ def test_golden_agentcore_full():
 def test_golden_lambda_microvms_no_services_no_handoff():
     result = {"verdict": "lambda_microvms", "deployment_model": None,
               "agentcore_services": [],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     out = build_diagram.build_diagram(result, {})
     assert "Lambda MicroVMs" in out["mermaid"]
     assert "migration-to-aws" not in out["mermaid"]  # MicroVMs is not a handoff runtime
@@ -172,7 +172,7 @@ def test_golden_lambda_microvms_no_services_no_handoff():
 def test_golden_ecs_has_handoff():
     result = {"verdict": "ecs", "deployment_model": None,
               "agentcore_services": ["identity"],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     out = build_diagram.build_diagram(result, {})
     assert "migration-to-aws" in out["mermaid"]
     assert "migration-to-aws" in out["ascii"]
@@ -181,7 +181,7 @@ def test_golden_ecs_has_handoff():
 def test_golden_co_recommend_renders_chosen():
     result = {"verdict": "co_recommend", "co_recommend": ["ecs", "eks"],
               "deployment_model": None, "agentcore_services": [],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     out = build_diagram.build_diagram(result, {"chosen_runtime": "eks"})
     assert "Amazon EKS" in out["mermaid"]
     assert "migration-to-aws" in out["mermaid"]  # eks is a handoff runtime
@@ -192,7 +192,7 @@ def _two_unit_design():
         "units": [
             {"id": "chat-agent", "workload_class": "agent_session",
              "verdict": "agentcore",
-             "model_recommendation": {"model": "claude_sonnet_4_6"}},
+             "model_recommendation": {"model": "claude_sonnet_5"}},
             {"id": "summarizer", "workload_class": "batch", "verdict": "batch",
              "model_recommendation": None},
         ],
@@ -219,7 +219,7 @@ def _consolidated_design():
         "units": [
             {"id": "chat-agent", "workload_class": "agent_session",
              "verdict": "agentcore", "effective_runtime": "ecs",
-             "model_recommendation": {"model": "claude_sonnet_4_6"}},
+             "model_recommendation": {"model": "claude_sonnet_5"}},
             {"id": "summarizer", "workload_class": "batch",
              "verdict": "batch", "effective_runtime": "ecs",
              "model_recommendation": None},
@@ -279,10 +279,10 @@ def _mixed_gateway_design():
         "units": [
             {"id": "orchestrator", "workload_class": "agent_session", "verdict": "agentcore",
              "coupling": {"mode": "a2a", "interacts_with": ["tool-agent"]},
-             "model_recommendation": {"model": "claude_sonnet_4_6"}},
+             "model_recommendation": {"model": "claude_sonnet_5"}},
             {"id": "tool-agent", "workload_class": "agent_session", "verdict": "agentcore",
              "coupling": {"mode": "none", "interacts_with": []},
-             "model_recommendation": {"model": "claude_sonnet_4_6"}},
+             "model_recommendation": {"model": "claude_sonnet_5"}},
             {"id": "loner", "workload_class": "batch", "verdict": "batch",
              "coupling": {"mode": "none", "interacts_with": []},
              "model_recommendation": None},
@@ -312,7 +312,7 @@ def _mixed_queue_and_gateway_design():
         "units": [
             {"id": "api-a", "workload_class": "agent_session", "verdict": "agentcore",
              "coupling": {"mode": "api", "interacts_with": ["api-b"]},
-             "model_recommendation": {"model": "claude_sonnet_4_6"}},
+             "model_recommendation": {"model": "claude_sonnet_5"}},
             {"id": "api-b", "workload_class": "service", "verdict": "fargate",
              "coupling": {"mode": "none", "interacts_with": []},
              "model_recommendation": None},
@@ -349,11 +349,11 @@ def test_single_unit_design_falls_back_to_legacy_render():
     legacy = build_diagram.build_diagram(
         {"verdict": "agentcore",
          "agentcore_services": [],
-         "model_recommendation": {"model": "claude_sonnet_4_6"}}, {})
+         "model_recommendation": {"model": "claude_sonnet_5"}}, {})
     unitized = build_diagram.build_diagram(
         {"verdict": "agentcore",
          "agentcore_services": [],
-         "model_recommendation": {"model": "claude_sonnet_4_6"}}, {}, design=d)
+         "model_recommendation": {"model": "claude_sonnet_5"}}, {}, design=d)
     assert unitized["mermaid"] == legacy["mermaid"], \
         "collapse invariant: one unit renders exactly the legacy diagram"
 
@@ -366,7 +366,7 @@ def _temporal_design():
              "model_recommendation": None},
             {"id": "doc-chat", "workload_class": "agent_session",
              "verdict": "agentcore",
-             "model_recommendation": {"model": "claude_sonnet_4_6"},
+             "model_recommendation": {"model": "claude_sonnet_5"},
              "task_queue": "agent-tasks"},
             {"id": "ocr", "workload_class": "batch", "verdict": "batch",
              "model_recommendation": None,
@@ -389,7 +389,7 @@ def _temporal_design_multi_fleet():
             {"id": "fleet-b", "workload_class": "temporal_worker_poll",
              "verdict": "ecs", "queues": ["batch-tasks"], "model_recommendation": None},
             {"id": "chat", "workload_class": "agent_session", "verdict": "agentcore",
-             "model_recommendation": {"model": "claude_sonnet_4_6"},
+             "model_recommendation": {"model": "claude_sonnet_5"},
              "task_queue": "agent-tasks"},
             {"id": "ocr", "workload_class": "batch", "verdict": "batch",
              "model_recommendation": None, "task_queue": "batch-tasks"},

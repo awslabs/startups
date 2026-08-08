@@ -10,13 +10,16 @@
 
 | Anthropic SDK model | Bedrock model ID                           | Tier     | Input/Output per 1M |
 | ------------------- | ------------------------------------------ | -------- | ------------------- |
-| `claude-opus-4-*`   | `anthropic.claude-opus-4-6-v1`             | Premium  | $5 / $25            |
-| `claude-sonnet-4-*` | `anthropic.claude-sonnet-4-6`              | Flagship | $3 / $15            |
+| `claude-opus-4-*`   | `anthropic.claude-opus-4-8`                | Premium  | $5 / $25            |
+| `claude-sonnet-5-*` | `anthropic.claude-sonnet-5`                | Flagship | $2 / $10 intro†     |
+| `claude-sonnet-4-*` | `anthropic.claude-sonnet-5`                | Flagship | $2 / $10 intro†     |
 | `claude-haiku-4-*`  | `anthropic.claude-haiku-4-5-20251001-v1:0` | Fast     | $1 / $5             |
+
+† Claude Sonnet 5 intro pricing through Aug 31, 2026; then $3 / $15 (same as Sonnet 4.6). Prefer the `us.` inference-profile prefix for on-demand invoke. Sonnet 4.6 (`anthropic.claude-sonnet-4-6`) remains Active if the customer must stay on the 4.6 SKU.
 
 Older Claude models — Claude 3.5 Haiku, Claude 3 Sonnet, Claude 3.5 Sonnet (v1/v2), Claude 3 Haiku, and Claude 3.7 Sonnet — are past EOL or within the 90-day exclusion window. Do **not** recommend them as migration targets. See `shared/ai-model-lifecycle.md` for authoritative status (recomputed each run).
 
-**Recommendation:** Migrate to Claude 4.x directly. Converse API call shape is identical across generations.
+**Recommendation:** Default new Bedrock targets to **Claude Sonnet 5** (flagship) / **Claude Opus 4.8** (hardest reasoning) / **Claude Haiku 4.5** (cost/speed). Converse API call shape is identical across generations. Do **not** default to Claude Fable 5 (frontier / Mythos-class pricing — opt-in only).
 
 ---
 
@@ -33,7 +36,7 @@ Remove ANTHROPIC_API_KEY. Use IAM role with bedrock:InvokeModel.
 
 Before: `client.messages.create(model=..., max_tokens=1024, messages=[{"role": "user", "content": "Hello"}])`
 
-After: `client.converse(modelId="anthropic.claude-sonnet-4-6", messages=[{"role": "user", "content": [{"text": "Hello"}]}], inferenceConfig={"maxTokens": 1024})`
+After: `client.converse(modelId="anthropic.claude-sonnet-5", messages=[{"role": "user", "content": [{"text": "Hello"}]}], inferenceConfig={"maxTokens": 1024})`
 
 Key differences:
 

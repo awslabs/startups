@@ -61,7 +61,7 @@ the same topology discipline as Path 1:
 - **Primary request flow (solid edges):** User → the app's entry surface (the runtime hosting
   the migrated app + its `/invocations` entrypoint) → the app's orchestration layer (e.g.
   LangChain) → the Bedrock target model. Show the provider swap explicitly — label the model
-  node with the migrated target (e.g. "Bedrock: Claude Sonnet 4.6") and note the source it
+  node with the migrated target (e.g. "Bedrock: Claude Sonnet 5") and note the source it
   replaced where useful (e.g. "was: OpenAI gpt-3.5-turbo").
 - **State / memory (solid edge to a store):** if the app has conversation memory, show it as
   its own node mapped to its AWS target (e.g. in-process `ConversationBufferWindowMemory` →

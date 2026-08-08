@@ -64,7 +64,7 @@ GOLDEN_EVAL = {
     "eval_report_path": "/repo/.saws-migrate/eval-results/",
     "pass_rate": 0.89, "total_cases": 9, "failures": 1,
     "notes": "live_source_baseline_used_model: \n1 prompt needs manual review.",
-    "live_source_baseline": True, "judge_model": "claude-opus-4-7",
+    "live_source_baseline": True, "judge_model": "claude-opus-4-8",
     "source_baseline_quality": "good",
 }
 

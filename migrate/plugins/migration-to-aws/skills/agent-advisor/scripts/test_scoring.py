@@ -197,7 +197,7 @@ def test_services_no_duplicate_memory():
 
 def test_model_default_balanced():
     rec = scoring._select_model({"model_priority": "balanced"})
-    assert rec["model"] == "claude_sonnet_4_6"
+    assert rec["model"] == "claude_sonnet_5"
     assert "pricing_note" not in rec
 
 
@@ -209,7 +209,7 @@ def test_model_speed_picks_haiku():
 def test_model_extended_thinking_override():
     rec = scoring._select_model(
         {"model_priority": "quality", "model_features": "extended_thinking"})
-    assert rec["model"] == "claude_sonnet_4_6_thinking"
+    assert rec["model"] == "claude_sonnet_5_thinking"
 
 
 def test_model_migrate_adds_family_note_without_pricing():
@@ -225,7 +225,7 @@ def test_model_migrate_with_extended_thinking_keeps_override():
     rec = scoring._select_model({
         "_entry_point": "migrate", "current_model": "gpt4o",
         "model_features": "extended_thinking"})
-    assert rec["model"] == "claude_sonnet_4_6_thinking"  # extended-thinking override wins
+    assert rec["model"] == "claude_sonnet_5_thinking"  # extended-thinking override wins
     assert rec["migration_from"] == "gpt4o"
 
 
@@ -266,7 +266,7 @@ def test_model_feature_override_beats_cost_priority_with_advisory():
 def test_model_multimodal_primary_vision_stability_alternate():
     rec = scoring._select_model(
         {"model_priority": "balanced", "model_features": "multimodal"})
-    assert rec["model"] == "claude_sonnet_4_6"  # vision understanding primary
+    assert rec["model"] == "claude_sonnet_5"  # vision understanding primary
     assert any("stability" in a for a in rec.get("alternates", []))
 
 
@@ -481,9 +481,9 @@ _LIFECYCLE_FILE = (
 # Map each internal model id in our selection pool to a substring that identifies it
 # in the lifecycle file's Legacy/EOL table (by model name or model-id fragment).
 _POOL_LIFECYCLE_KEYS = {
-    "claude_sonnet_4_6": "claude-sonnet-4-6",
-    "claude_sonnet_4_6_thinking": "claude-sonnet-4-6",
-    "claude_opus_4_7": "claude-opus-4-7",
+    "claude_sonnet_5": "claude-sonnet-5",
+    "claude_sonnet_5_thinking": "claude-sonnet-5",
+    "claude_opus_4_8": "claude-opus-4-8",
     "claude_haiku_4_5": "claude-haiku-4-5",
     "nova_micro": "nova-micro",
     "nova_lite": "nova-lite",

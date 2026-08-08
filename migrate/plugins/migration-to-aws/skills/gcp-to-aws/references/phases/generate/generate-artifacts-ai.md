@@ -702,7 +702,7 @@ resource "aws_ce_anomaly_subscription" "bedrock_alert" {
 # Tags on these profiles appear in Cost Explorer; tags on API calls do not.
 # copy_from must be a full foundation-model ARN or cross-region inference profile ARN.
 # For Claude models, use the cross-region inference profile ARN format:
-#   arn:aws:bedrock:{region}:{account_id}:inference-profile/us.anthropic.claude-sonnet-4-6
+#   arn:aws:bedrock:{region}:{account_id}:inference-profile/us.anthropic.claude-sonnet-5
 # For Amazon Nova models, use:
 #   arn:aws:bedrock:{region}:{account_id}:inference-profile/us.amazon.nova-pro-v1:0
 # [AGENT: generate one block per model in aws-design-ai.json → ai_architecture.bedrock_models[]]
@@ -714,7 +714,7 @@ resource "aws_bedrock_inference_profile" "primary" {
     copy_from = "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:inference-profile/{cross_region_inference_profile_id}"
     # AGENT: replace {cross_region_inference_profile_id} with the correct ID from
     # aws-design-ai.json bedrock_models[].aws_model_id, prefixed with "us." for US regions
-    # e.g., us.anthropic.claude-sonnet-4-6 or us.amazon.nova-pro-v1:0
+    # e.g., us.anthropic.claude-sonnet-5 or us.amazon.nova-pro-v1:0
   }
 
   tags = {

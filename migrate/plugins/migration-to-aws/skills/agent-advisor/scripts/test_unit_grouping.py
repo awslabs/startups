@@ -692,7 +692,7 @@ def test_build_diagram_single_unit_design_renders_from_unit():
             "id": "solo", "workload_class": "agent_session",
             "verdict": "agentcore", "effective_runtime": "agentcore",
             "deployment_model": "harness",
-            "model_recommendation": {"model": "claude_sonnet_4_6"},
+            "model_recommendation": {"model": "claude_sonnet_5"},
             "agentcore_services": ["memory"],
         }],
         "platform": {"mode": "split", "runtime": None, "interconnect": "in_process"},
@@ -701,7 +701,7 @@ def test_build_diagram_single_unit_design_renders_from_unit():
     out = build_diagram.build_diagram({"units": {"solo": {}}}, {}, design=design)
     assert "AgentCore Runtime" in out["mermaid"], \
         "single-unit design must render the unit's effective_runtime, not None"
-    assert "claude_sonnet_4_6" in out["mermaid"], \
+    assert "claude_sonnet_5" in out["mermaid"], \
         "single-unit design must render the unit's model, not 'unknown'"
 
 
@@ -945,14 +945,14 @@ def test_build_diagram_preserves_authoritative_empty_services():
         "units": [{
             "id": "solo", "workload_class": "agent_session",
             "verdict": "ecs", "effective_runtime": "ecs",
-            "model_recommendation": {"model": "claude_sonnet_4_6"},
+            "model_recommendation": {"model": "claude_sonnet_5"},
             "agentcore_services": [],  # authoritative: user declined all
         }],
         "platform": {"mode": "split", "runtime": None, "interconnect": "in_process"},
     }
     # result carries scoring defaults that must NOT leak in when the unit says [].
     result = {"verdict": "ecs", "agentcore_services": ["identity", "observability"],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     out = build_diagram.build_diagram(result, {}, design=design)
     assert "Identity" not in out["mermaid"] and "Observability" not in out["mermaid"], \
         "an authoritative empty agentcore_services must not fall back to scoring defaults"

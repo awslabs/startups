@@ -340,9 +340,9 @@ so leave it null and do NOT dereference `.model`:
    - any prose sentence naming that unit's model;
    - **roll-up / summary statements that collapse ALL units into one model** — these are the
      easily-missed ones. The executive summary, a section header, or a lede often say
-     something like "all three agents migrate from OpenAI to Claude Sonnet 4.6." Once one
+     something like "all three agents migrate from OpenAI to Claude Sonnet 5." Once one
      unit is refined to a different model, that blanket claim is FALSE and must be corrected
-     (e.g. "support-chat and insights-writer → Claude Sonnet 4.6; content-review → Nova Lite").
+     (e.g. "support-chat and insights-writer → Claude Sonnet 5; content-review → Nova Lite").
      Check the exec summary, every section header, and any opening/closing sentence.
    - in the HTML, ALL of the above surfaces (table cell, SVG/Mermaid label, inline text,
      AND the lede/summary sentences).

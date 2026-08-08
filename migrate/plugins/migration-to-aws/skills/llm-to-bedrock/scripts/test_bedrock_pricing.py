@@ -27,10 +27,16 @@ def test_static_fallback_returns_known_model():
     assert out["output_per_1k_usd"] == 0.005
 
 def test_static_fallback_partial_match():
-    # us.anthropic.claude-sonnet-4-6 (no version suffix) should match
-    out = bp._static_fallback("us.anthropic.claude-sonnet-4-6")
+    # us.anthropic.claude-sonnet-5 (no version suffix) should match intro rates
+    out = bp._static_fallback("us.anthropic.claude-sonnet-5")
     assert out is not None
     assert out["available"] is True
+    assert out["input_per_1k_usd"] == 0.002
+    assert out["output_per_1k_usd"] == 0.010
+
+def test_static_fallback_keeps_sonnet_4_6():
+    out = bp._static_fallback("us.anthropic.claude-sonnet-4-6")
+    assert out is not None
     assert out["input_per_1k_usd"] == 0.003
 
 def test_static_fallback_unknown_returns_none():
@@ -42,7 +48,7 @@ def test_display_name_guess_derives_pricing_api_display_names():
     # The Pricing API's 'model' attribute holds display names, not model ids.
     assert bp.display_name_guess("us.anthropic.claude-haiku-4-5-20251001-v1:0") == "Claude Haiku 4.5"
     assert bp.display_name_guess("amazon.nova-lite-v1:0") == "Nova Lite"
-    assert bp.display_name_guess("anthropic.claude-sonnet-4-6-20250514-v1:0") == "Claude Sonnet 4.6"
+    assert bp.display_name_guess("anthropic.claude-sonnet-5") == "Claude Sonnet 5"
 
 
 def test_parse_price_dimensions_ignores_cache_dimensions():

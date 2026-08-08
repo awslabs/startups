@@ -121,7 +121,7 @@ plan-backed or not. Resolve each unit's model from ITS OWN entry; never take one
 for another.
 
 For each unit, `design.json.units[<id>].model_recommendation.model` carries an internal model
-key (e.g. `claude_sonnet_4_6`, `nova_lite`). The POC needs the **real Bedrock
+key (e.g. `claude_sonnet_5`, `nova_lite`). The POC needs the **real Bedrock
 model/inference-profile id** for THAT unit. Verify it via the awsknowledge MCP per
 `references/decision-refs/freshness.md` (same anti-fabrication rule). If the MCP is not called,
 write the id as a clearly-marked `TODO: verify model id` placeholder in the generated files and
@@ -135,11 +135,11 @@ The block's `target_bedrock_model` should already equal the reconciled `model_re
 is authoritative. The MCP check then only confirms the id is still current.
 
 **Strip environment annotations from the model id.** The running assistant's model name may
-carry a context-window annotation like `[1m]` (e.g. `us.anthropic.claude-sonnet-4-6[1m]`).
+carry a context-window annotation like `[1m]` (e.g. `us.anthropic.claude-sonnet-5[1m]`).
 That suffix is a harness label, NOT a valid Bedrock model/inference-profile id — a Bedrock
 call with it 404s. Before writing the id into any generated file, strip any trailing
 `[...]` bracket annotation. The id you emit must be exactly what Bedrock accepts (e.g.
-`us.anthropic.claude-sonnet-4-6`). If unsure of the exact id, use the `TODO: verify model id`
+`us.anthropic.claude-sonnet-5`). If unsure of the exact id, use the `TODO: verify model id`
 placeholder rather than a bracket-tagged string.
 
 **Single-unit path:** when `units[]` length is 1, the above logic applies to the one unit —
