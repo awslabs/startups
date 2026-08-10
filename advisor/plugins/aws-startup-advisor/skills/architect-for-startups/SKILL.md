@@ -1,11 +1,7 @@
 ---
 name: architect-for-startups
 description: >-
-  AWS architecture advisor tailored specifically for startups.
-  Alters AWS architecture recommendations based on startup stage (pre-revenue through Series B+), team size, runway,
-  and credits.
-  ALWAYS use when asked about building on AWS, choosing services, planning infrastructure, managing costs with credits,
-  or preparing architecture for fundraising.
+  Startup-tailored AWS architecture advice that adjusts recommendations to the company's stage (pre-revenue through Series B+), team size, runway, and available credits. Use when a founder wants guidance or a recommendation rather than code changes: which services to choose, how to plan or review an architecture, how to stretch credits and control cost, or how to prepare architecture for a fundraise or technical diligence. For an interactive discovery flow that scaffolds and writes the architecture into the codebase, use start-building-for-startups. Do not use for: writing or scaffolding code, factual AWS Activate / programs / credits lookups (see knowledge-base-for-startups), a single copy-paste prompt (see prompt-library-for-startups), or migration intent such as GCP-to-AWS (see migration-to-aws).
 ---
 
 # Architect for Startups
