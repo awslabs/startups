@@ -3,6 +3,24 @@
   "_match": "exact, case-insensitive, on formation config.dyno_type",
   "_on_not_found": "reject the formation; produce NO entry; warn 'Unsupported dyno type: {dyno_type}. Cannot map to EKS.'; continue (same as the Fargate path)",
   "rows": {
+    "eco": {
+      "req_cpu": "250m",
+      "req_mem": "512Mi",
+      "lim_cpu": "500m",
+      "lim_mem": "512Mi",
+      "node_type": "m6i.large",
+      "node_type_arm64": "m6g.large",
+      "_note": "Heroku Eco is a shared $5/month 1000 dyno-hour pool and Eco dynos sleep when idle; EKS pods run always-on, so the cost SHAPE changes even though the size matches. See the Eco dyno rule in references/shared/heroku-pricing-cache.md."
+    },
+    "basic": {
+      "req_cpu": "250m",
+      "req_mem": "512Mi",
+      "lim_cpu": "500m",
+      "lim_mem": "512Mi",
+      "node_type": "m6i.large",
+      "node_type_arm64": "m6g.large",
+      "_note": "Basic dynos never sleep, so this is a like-for-like always-on mapping."
+    },
     "standard-1x": {
       "req_cpu": "250m",
       "req_mem": "512Mi",
@@ -199,6 +217,8 @@
       "allocatable_cpu": "1500m",
       "allocatable_memory": "7680Mi",
       "fits_ge_4_pods_of": [
+        "eco",
+        "basic",
         "standard-1x",
         "standard-2x",
         "private-s",

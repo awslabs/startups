@@ -21,7 +21,13 @@ When the compute target preference indicates EKS:
 
 1. **For EACH formation resource** in the inventory:
    - If `config.process_type == "release"`, skip it and add the same run-once deployment-hook warning used by the EB/Fargate mapping. Do NOT create an EKS Deployment for release commands.
-   - Look up dyno type in the `eks-pod-sizing.json` knowledge (`rows.<dyno_type>`)
+   - Look up dyno type in the `eks-pod-sizing.json` knowledge (`rows.<dyno_type>`), matching `config.dyno_type` case-insensitively.
+     - **If NOT found**: Reject this formation entry. Add to `warnings[]`:
+
+       > "Unsupported dyno type: `{dyno_type}`. Cannot map to EKS. Please contact support or provide manual sizing."
+
+       Do NOT produce an EKS mapping for this formation, and do NOT count it toward `total_pods` for node-group sizing. Continue to the next resource.
+     - **If found**: Extract `req_cpu`, `req_mem`, `lim_cpu`, `lim_mem`, and the node type per the CPU architecture resolution.
    - Produce an EKS Deployment entry with pod resource requests and limits
    - Set `aws_service: "EKS"`
    - Preserve dyno quantity as `replicas` (0–100)
@@ -108,6 +114,6 @@ When EKS is selected, ALL formation-type resources map to EKS. No mixing of Farg
 
 ## Error Handling
 
-- **Unrecognized dyno type**: Same rejection as Fargate path — halt with error message naming the unsupported type
+- **Unrecognized dyno type**: Same rejection as the Fargate path — reject that formation, warn naming the unsupported type, and continue (see EKS Branch Logic step 1)
 - **Empty Procfile**: Same rejection as Fargate path — at least one process type required
 - **Node sizing overflow**: If no single instance type fits the aggregate, use the largest recommended type and increase node count
