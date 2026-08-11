@@ -368,7 +368,7 @@ Re-prompt Q9b until valid input is provided.
 > A) Full cutover — migrate database and application together in one maintenance window (simpler, single downtime event)
 > B) Database first — migrate the database to AWS now, keep the app on Heroku temporarily while you prepare the compute migration (requires a target exit date)
 >
-> ⚠️ Option B requires your AWS database to be publicly accessible during the transition period (with SSL/TLS encryption). Public access is removed once the app migrates off Heroku.
+> ⚠️ Option B requires network access from Heroku to your AWS database during the transition period, granted to a bounded allowlist of addresses (never the open internet) with TLS enforced first. If your app runs in a Private Space, that means VPC peering or the space's stable outbound IPs; on the Common Runtime it means a static-egress proxy add-on. Access is revoked once the app migrates off Heroku.
 
 **Interpret:**
 
@@ -385,7 +385,7 @@ Re-prompt Q9b until valid input is provided.
 4. Set `interim_cutover: true`
 5. Set `ktlo_warning: "Heroku is in sustaining engineering. Hybrid operation should be bounded to weeks, not quarters."`
 
-**Design impact:** Option B → MIGRATION_GUIDE.md includes "Interim Database Exposure" section with public RDS + TLS configuration and "Platform Risk" callout.
+**Design impact:** Option B → MIGRATION_GUIDE.md includes the "Interim Database Exposure" section (TLS prerequisite gate, then a scoped CIDR allowlist applied via Terraform) and a "Platform Risk" callout.
 
 ---
 
@@ -501,7 +501,7 @@ Re-prompt Q9b until valid input is provided.
 > A) Full cutover — migrate database and application together in one maintenance window
 > B) Data-first (interim cutover) — migrate database to AWS first, keep application on Heroku temporarily while you containerize and prepare compute migration
 >
-> ⚠️ Note: Option B requires your RDS instance to be publicly accessible during the interim period (with SSL/TLS enforced). Heroku is in sustaining engineering — hybrid operation should be bounded to weeks, not quarters.
+> ⚠️ Note: Option B requires interim network access from Heroku to your RDS instance, granted to a bounded allowlist of addresses (never the open internet) with TLS enforced first — via Private Space VPC peering or stable outbound IPs, or a static-egress proxy add-on on the Common Runtime. Heroku is in sustaining engineering — hybrid operation should be bounded to weeks, not quarters.
 
 **Interpret:**
 
@@ -519,7 +519,7 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 **Default:** A → `migration_approach: "full_cutover"`
 
-**Design impact:** Option B triggers interim database exposure section in MIGRATION_GUIDE.md (public RDS + TLS), Platform Risk callout, and post-migration lockdown emphasis.
+**Design impact:** Option B triggers the interim database exposure section in MIGRATION_GUIDE.md (TLS prerequisite gate, then a scoped CIDR allowlist applied via Terraform), a Platform Risk callout, and post-migration lockdown emphasis.
 
 ---
 

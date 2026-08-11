@@ -247,30 +247,131 @@ Compare row counts between source and target to confirm data integrity.
 
 {{IF migration_approach == "interim_cutover_data_first"}}
 
-#### Interim Database Exposure (Public RDS + TLS)
+#### Interim Database Exposure (TLS Prerequisite, Then a Scoped Allowlist)
 
-During the interim period where your Heroku app connects to the AWS database:
+During the interim period your Heroku app connects to the AWS database. Work through the steps below **in the order given** — Step 1 is a prerequisite gate that must pass before any network path is opened in Step 2. The database stays private by default; Step 2 is about picking the narrowest path that works for your Heroku runtime.
 
-1. **RDS is publicly accessible** — this is required for Heroku dynos to reach the database. All data is protected by password + TLS.
+> **⚠️ Never open port 5432 to `0.0.0.0/0`.** TLS protects the traffic, not the listener — a world-reachable database port is still exposed to internet-wide port scanning, credential stuffing, and protocol-level exploitation, and Heroku's "dynamic dyno IPs" are not a reason to accept it. Every path below ends in a **bounded, enumerated allowlist**.
 
-2. **Configure SSL/TLS enforcement:**
-   - Download the RDS CA certificate: https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-   - Set the RDS parameter `rds.force_ssl = 1` to require all connections use TLS
-   - Update your Heroku `DATABASE_URL` to include SSL parameters:
+##### Step 1 (prerequisite) — Enforce TLS and prove it is in effect
+
+Complete every part of Step 1 and pass its verification gate before touching Step 2.
+
+1. **Require TLS on the database.** The generated Terraform already sets `rds.force_ssl = 1` for this database, so `terraform apply` puts it in place — there is no console step and no way to skip it. Where the parameter lives, and whether it needs a reboot, depends on the engine:
+
+   - **RDS for PostgreSQL** — set in the instance-level `aws_db_parameter_group`. The parameter is **static**, so reboot the instance once so it takes effect:
 
      ```bash
-     heroku config:set DATABASE_URL="postgres://{{TARGET_DB_USER}}:{{TARGET_DB_PASSWORD}}@{{TARGET_DB_HOST}}:{{TARGET_DB_PORT}}/{{TARGET_DB_NAME}}?sslmode=verify-full&sslrootcert=config/rds-ca-bundle.pem" -a {{app_name}}
+     aws rds reboot-db-instance --db-instance-identifier <db_identifier>
      ```
 
-   - Add the RDS CA cert to your application repository (e.g., `config/rds-ca-bundle.pem`) and deploy
+   - **Aurora PostgreSQL** — set in the cluster-level `aws_rds_cluster_parameter_group` (a cluster parameter, so an instance-level group cannot carry it). The parameter is **dynamic** here, so no reboot is needed and `reboot-db-instance` does not apply to a cluster. `terraform apply` is sufficient.
 
-3. **Security group:** Allow inbound on port 5432 from `0.0.0.0/0` (required for Heroku's dynamic IPs). This is temporary.
+   > Defaults differ by engine, which is why the generated Terraform always sets this explicitly rather than relying on them. **RDS for PostgreSQL:** `rds.force_ssl` defaults to `1` (on) on major version 15 and later; on 14 and earlier the default is `0` (off). **Aurora PostgreSQL:** the default is `0` (**off**) on version 16 and older, and `1` (on) only from version 17 — so on the Aurora version this guide pins, TLS is _not_ enforced by default.
 
-4. **⚠️ CRITICAL — Remove public access after app migration:** Once your application has migrated off Heroku to Fargate, immediately:
-   - Set RDS instance to "Not publicly accessible"
-   - Remove the `0.0.0.0/0` inbound rule from the security group
-   - Verify the application connects via private VPC networking
-     {{ENDIF}}
+   Either way, do not treat this as done because the code exists — step 4 below is the gate that proves it.
+
+2. **Ship the RDS CA bundle with your Heroku app** so the client can verify the server certificate:
+
+   ```bash
+   curl -o config/rds-ca-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+   git add config/rds-ca-bundle.pem && git commit -m "Add RDS CA bundle" && git push heroku main
+   ```
+
+3. **Point `DATABASE_URL` at AWS with full certificate verification** (`verify-full`, not `require` — `require` encrypts but does not authenticate the server):
+
+   ```bash
+   heroku config:set DATABASE_URL="postgres://{{TARGET_DB_USER}}:{{TARGET_DB_PASSWORD}}@{{TARGET_DB_HOST}}:{{TARGET_DB_PORT}}/{{TARGET_DB_NAME}}?sslmode=verify-full&sslrootcert=config/rds-ca-bundle.pem" -a {{app_name}}
+   ```
+
+4. **Verification gate.** From a host that can already reach the database (for example the workstation or bastion you ran `pg_restore` from), confirm enforcement is real rather than assumed:
+
+   ```bash
+   # (a) pg_hba rules must be hostssl, not host
+   psql "$ADMIN_DATABASE_URL" -c "SELECT type, database, auth_method FROM pg_hba_file_rules;"
+
+   # (b) a plaintext connection must be REJECTED
+   psql "postgres://{{TARGET_DB_USER}}@{{TARGET_DB_HOST}}:{{TARGET_DB_PORT}}/{{TARGET_DB_NAME}}?sslmode=disable"
+   # Expected: FATAL: no pg_hba.conf entry for host "...", user "...", database "...", SSL off
+   ```
+
+   If (a) shows `host` instead of `hostssl`, or (b) succeeds, **stop here** — `rds.force_ssl` is not in effect (most often a missed reboot or a parameter group that was never attached). Do not open any network path until both checks pass.
+
+##### Step 2 — Choose the narrowest connectivity path
+
+Determine your runtime first: `heroku spaces:info --space <space_name>` succeeds only if the app runs in a Private Space; otherwise the app is on the Common Runtime. Then take the **first** path that applies.
+
+**Path A — Private Space peered to your AWS VPC (preferred: no public exposure at all).**
+Available on **Cedar**-generation Private Spaces. Private Space Peering establishes a private network connection between your dynos and an AWS VPC you control that does not traverse the public internet, so the database stays `Not publicly accessible` in private subnets.
+
+```bash
+heroku spaces:peering:info <space_name>          # Heroku-side account/VPC/CIDRs
+# then request peering FROM your AWS account, and accept it on the Heroku side:
+aws ec2 create-vpc-peering-connection --vpc-id <your_vpc_id> \
+  --peer-vpc-id <heroku_vpc_id> --peer-owner-id <heroku_account_id>
+heroku spaces:peerings:accept <pcx_id> --space <space_name>
+```
+
+Requirements and consequences:
+
+- Your VPC must use an RFC 1918 CIDR that does not overlap the Private Space CIDRs (default `10.0.0.0/16`, `10.1.0.0/16`, `172.17.0.0/16`); check with `heroku spaces:peering:info` before requesting.
+- Add a route for the Space CIDR to the route tables of the subnets holding the database.
+- **Allowlist:** the Space's dyno CIDRs from `heroku spaces:peering:info` (e.g. `10.0.128.0/20`, `10.0.144.0/20`) — private ranges, a handful of entries.
+- VPC peering is **not** available for **Fir**-generation Private Spaces. If your space is Fir, use Path B.
+
+**Path B — Private Space stable outbound IPs (no peering available).**
+Every Private Space, Cedar or Fir, egresses through a NAT gateway from "a small, stable list of IP addresses dedicated to the space." List them and allowlist those `/32`s:
+
+```bash
+heroku spaces:info --space <space_name>   # read the "Outbound IPs" line
+```
+
+**Allowlist:** each outbound IP as a `/32` (typically 4 addresses).
+
+**Path C — Common Runtime plus a static-egress add-on.**
+Common Runtime dynos have no controllable egress address — Heroku states you cannot control the originating IP address of outbound dyno requests, so there is no set of dyno IPs to allowlist. Do **not** compensate by widening the allowlist. Instead route the database connection through a SOCKS5 proxy add-on that owns static IPs, then allowlist the proxy:
+
+- **QuotaGuard Static** — `heroku addons:create quotaguardstatic`. Provides a load-balanced pair of static IPs and a SOCKS5 tunnel (QGTunnel) that carries arbitrary TCP, PostgreSQL included, without application code changes.
+- **Fixie Socks** — `heroku addons:create fixie-socks`. A standard SOCKS V5 proxy giving static outbound IPs for database and other TCP traffic; `fixie-wrench` forwards a local port for runtimes with no native SOCKS5 support.
+
+Read the add-on's own dashboard for its current IP list — the addresses are per-plan and can change when you change plans.
+
+**Allowlist:** the proxy's static IPs as `/32`s (typically 2).
+
+Paths B and C send traffic over the public internet, so they additionally require the database to be publicly accessible **and** its DB subnet group to sit in subnets with an internet gateway route. The generated Terraform places the database in private subnets, so a Path B/C interim period means moving the DB subnet group as well — one more reason to prefer Path A and to keep the interim period short.
+
+**There is no fourth path.** If you cannot enumerate a bounded allowlist by any of the routes above, the data-first interim approach is not viable for your setup: switch to `full_cutover` and migrate the database and application in one window instead.
+
+##### Step 3 — Apply the allowlist in Terraform, never by hand in the console
+
+Make every interim change in the generated Terraform and commit it, not through the RDS or EC2 console:
+
+- A console edit is invisible to code review, so nobody sees that a database port was opened.
+- A console edit is silently reverted by the next `terraform apply`, so the exposure exists only in the running account and never in Git — you cannot audit when it opened or whether it closed.
+
+In `terraform/terraform.tfvars`, set the interim variables the generator emits, then plan and apply:
+
+```hcl
+interim_heroku_ingress_cidrs = ["203.0.113.10/32", "203.0.113.11/32"] # from Step 2
+interim_db_public_access     = false                                  # true only on Path B or C
+```
+
+```bash
+terraform plan -out=tfplan   # review the single added ingress rule before applying
+terraform apply tfplan
+```
+
+Both variables default to closed (`[]` and `false`). `interim_heroku_ingress_cidrs = []` emits no ingress rule at all, and the variable rejects `0.0.0.0/0`.
+
+##### Step 4 — Close the interim path at cutover
+
+Once the application runs on AWS and no longer connects from Heroku:
+
+1. Reset both variables to their defaults (`interim_heroku_ingress_cidrs = []`, `interim_db_public_access = false`), then `terraform apply`. Confirm the plan removes the ingress rule.
+2. Delete the interim variables and the gated ingress block from the Terraform, and remove the static-egress add-on if you provisioned one for Path C.
+3. Tear down the peering connection if you used Path A: `heroku spaces:peerings:destroy <pcx_id> --space <space_name>`.
+4. Confirm the application reaches the database over private VPC networking only, and that the database reports `Not publicly accessible`.
+   {{ENDIF}}
 
 {{IF migration_method == "dms"}}
 
@@ -657,10 +758,16 @@ After successful verification (recommend 48–72 hours of parallel running):
 
 Once your application is fully running on AWS (no longer connecting from Heroku):
 
-- [ ] **Disable public access on RDS/Aurora:** Set the database instance to "Not publicly accessible"
-- [ ] **Restrict security groups:** Remove any `0.0.0.0/0` inbound rules; allow only VPC-internal traffic on database ports
+- [ ] **Disable public access on RDS/Aurora:** Confirm the database reports "Not publicly accessible"
+- [ ] **Restrict security groups:** Ensure no `0.0.0.0/0` inbound rules remain; allow only VPC-internal traffic on database ports
 - [ ] **Verify backups:** Confirm automated backups are enabled with appropriate retention
 - [ ] **Confirm private connectivity:** Application connects to the database via private VPC networking (not public endpoint)
+
+{{IF migration_approach == "interim_cutover_data_first"}}
+
+- [ ] **Close the interim access path in Terraform:** reset `interim_heroku_ingress_cidrs = []` and `interim_db_public_access = false`, `terraform apply`, then delete the interim ingress block — full procedure in "Interim Database Exposure" Step 4 above
+
+{{ENDIF}}
 
 ### Decommission Heroku Resources
 
@@ -1266,8 +1373,9 @@ Verify all generated files:
    - If NOT `has_kafka`: Does NOT contain "Kafka Migration" subsection
    - If `has_postgres`: Contains "Heroku CLI Cutover Sequence" subsection
    - If `migration_method == "dms"`: Contains DMS limitation warning about CDC/continuous replication
-   - If `migration_approach == "interim_cutover_data_first"`: Contains "Interim Database Exposure" section with TLS instructions
+   - If `migration_approach == "interim_cutover_data_first"`: Contains "Interim Database Exposure" section whose Step 1 is the TLS prerequisite gate and whose Step 2 offers only bounded-allowlist connectivity paths
    - If `migration_approach == "interim_cutover_data_first"`: Contains "Platform Risk Advisory" section
+   - Does NOT instruct opening a database port (5432) to `0.0.0.0/0` anywhere — interim access must be a scoped CIDR allowlist applied through Terraform
    - If `containerization_status != "containerized"`: Contains "Containerization Prerequisites" section
    - Contains "Post-Migration Lockdown" section
    - Contains "Config Var Migration" section
