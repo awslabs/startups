@@ -1,47 +1,21 @@
 # Solution Architecture
 
-Plugins and tools from the AWS Startups Solution Architecture team for building, migrating, and reviewing architectures on AWS.
+Startup-specific plugins and tools from the AWS Startups Solution Architecture team.
 
-## Plugins
+No plugins are currently published from this folder.
 
-- **[`aws-dev-toolkit`](plugins/aws-dev-toolkit/)** — A toolkit for building, migrating, and performing architecture reviews on AWS. Ships **35 skills**, **11 sub-agents**, and **3 MCP servers**. Most skills activate automatically from context: review an architecture against the Well-Architected Framework, debug a failing CloudFormation stack, compare ECS vs EKS, scaffold CDK/Terraform/SAM/CloudFormation projects, or optimize an AWS bill. Deep service skills cover Lambda, EC2, ECS, EKS, S3, DynamoDB, API Gateway, CloudFront, IAM, networking, messaging, observability, Step Functions, RDS/Aurora, IoT, MLOps, Bedrock, and AgentCore, plus GCP/Azure and App Runner migration paths.
+## Where aws-dev-toolkit went
 
-See the [plugin README](plugins/aws-dev-toolkit/README.md) for the full skill, agent, and MCP server catalog.
+`aws-dev-toolkit` was removed. Its skills and agents were overwhelmingly general-purpose AWS engineering guidance, which Agent Toolkit for AWS now owns, and that overlap is why it was deprecated. Nothing was ported.
 
-## MCP servers
+- **Startup-specific guidance:** install AWS Startup Advisor with `/plugin install aws-startup-advisor@claude-plugins-official`, or see [`advisor/`](../advisor/).
+- **General-purpose AWS guidance:** use Agent Toolkit for AWS with `aws configure agent-toolkit` (requires AWS CLI 2.35+).
 
-`aws-dev-toolkit` bundles three MCP servers, declared in [`plugins/aws-dev-toolkit/.mcp.json`](plugins/aws-dev-toolkit/.mcp.json) and provisioned automatically when the plugin is installed:
+Existing `aws-dev-toolkit` installs continue to function but receive no updates.
 
-- **AWS IaC** (`awsiac`, stdio via `uvx awslabs.aws-iac-mcp-server`) — CloudFormation/CDK/Terraform validation and security scanning.
-- **AWS Knowledge** (`awsknowledge`, HTTP) — AWS documentation search, recommendations, and regional availability.
-- **AWS Pricing** (`awspricing`, stdio via `uvx awslabs.aws-pricing-mcp-server`) — service pricing data, cost reports, and IaC cost analysis.
+## Contributing
 
-The stdio servers require [`uv`/`uvx`](https://docs.astral.sh/uv/) on the user's machine.
-
-## Install
-
-### Claude Code
-
-```bash
-# Add the marketplace
-/plugin marketplace add awslabs/startups
-
-# Install the plugin
-/plugin install aws-dev-toolkit@startups-for-aws
-```
-
-Or load locally during development:
-
-```bash
-claude --plugin-dir ./solution-architecture/plugins/aws-dev-toolkit
-```
-
-## Prerequisites
-
-- [Claude Code](https://code.claude.com)
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) (for MCP servers via `uvx`)
-- AWS CLI configured with appropriate credentials
-- (Optional) `checkov`, `cfn-nag`, `tfsec` for security scanning
+See the [root CONTRIBUTING guide](../CONTRIBUTING.md). Contributions to this folder must be startup-specific rather than general-purpose AWS guidance, so they do not re-create the overlap with Agent Toolkit for AWS that led to the previous plugin's removal.
 
 ## License
 

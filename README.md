@@ -4,11 +4,10 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 
 ## Plugins
 
-| Plugin                                        | Description                                                                                                                                                                                                                                                                                                                                                                          | Status    |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| **[aws-startup-advisor](advisor/)**           | Startup-focused build + migrate guidance built on patterns from 350,000+ startups: AWS Activate credits & offers, a knowledge base (sample architectures, learn articles), a copy-paste prompt library, stage-aware architecture advice, and interactive scaffolding — plus the full migration toolkit (gcp-to-aws, heroku-to-aws, llm-to-bedrock, agent-advisor, tf-best-practices) | Available |
-| **[migration-to-aws](migrate/)**              | Assess, plan & execute: migrate GCP/Heroku infrastructure and AI workloads to AWS (discovery, architecture mapping, cost analysis, Terraform), rewrite LLM SDK calls to Amazon Bedrock, and select an AWS runtime + build a POC for AI agents. Bundles the gcp-to-aws, heroku-to-aws, llm-to-bedrock, and agent-advisor skills                                                       | Available |
-| **[aws-dev-toolkit](solution-architecture/)** | AWS development toolkit — 35 skills, 11 agents, and 3 MCP servers for building, migrating, and architecture reviews on AWS                                                                                                                                                                                                                                                           | Available |
+| Plugin                              | Description                                                                                                                                                                                                                                                                                                                                                                          | Status    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **[aws-startup-advisor](advisor/)** | Startup-focused build + migrate guidance built on patterns from 350,000+ startups: AWS Activate credits & offers, a knowledge base (sample architectures, learn articles), a copy-paste prompt library, stage-aware architecture advice, and interactive scaffolding — plus the full migration toolkit (gcp-to-aws, heroku-to-aws, llm-to-bedrock, agent-advisor, tf-best-practices) | Available |
+| **[migration-to-aws](migrate/)**    | Assess, plan & execute: migrate GCP/Heroku infrastructure and AI workloads to AWS (discovery, architecture mapping, cost analysis, Terraform), rewrite LLM SDK calls to Amazon Bedrock, and select an AWS runtime + build a POC for AI agents. Bundles the gcp-to-aws, heroku-to-aws, llm-to-bedrock, and agent-advisor skills                                                       | Available |
 
 ## Installation
 
@@ -76,7 +75,7 @@ awslabs/startups/
 │       └── migration-to-aws/         # Assess, plan, execute + agent runtime advisor
 │                                      #   skills: gcp-to-aws, heroku-to-aws,
 │                                      #           llm-to-bedrock, agent-advisor
-├── solution-architecture/            # Solution Architecture plugins (aws-dev-toolkit)
+├── solution-architecture/            # Solution Architecture plugins (none published)
 └── ...                               # Future team folders
 ```
 

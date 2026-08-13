@@ -16,12 +16,6 @@
       "source": "./advisor/plugins/aws-startup-advisor",
       "version": "2.0.0",
       "description": "Personalized AWS guidance built on patterns from 350,000+ startups—architecture, cost, security, and migration, now including the full migration toolkit. Build on AWS (day-one setup, security baselines, production architecture, cost optimization) and migrate to AWS from GCP, Heroku, or other providers: infrastructure (Cloud Run/Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini workloads to Amazon Bedrock, agentic systems (LangChain, CrewAI, AutoGen), and Temporal workers. Plus knowledge-base-for-startups (Activate FAQ, credits, offers, sample architectures, learn articles), prompt-library-for-startups (copy-paste prompts + installable agents), start-building-for-startups (interactive scaffolding), and agent-advisor (agent runtime selection). Includes AWS Activate credits eligibility and 60+ exclusive startup offers. Built by AWS Startup Solutions Architects, with multi-account, multi-region support."
-    },
-    {
-      "name": "aws-dev-toolkit",
-      "source": "./solution-architecture/plugins/aws-dev-toolkit",
-      "version": "1.0.0",
-      "description": "AWS development toolkit for building, migrating, cost optimizing and performing architecture reviews on AWS. Authored by the Startup Solution Architects by distilling hard won lessons from speaking with countless orgs. You'll find insights for building on AWS that are not publicly documented elsewhere."
     }
   ]
 }
