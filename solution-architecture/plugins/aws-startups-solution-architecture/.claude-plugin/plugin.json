@@ -1,0 +1,31 @@
+{
+  "name": "aws-startups-solution-architecture",
+  "displayName": "AWS Startups Solution Architecture",
+  "version": "0.1.0",
+  "description": "Field practice from the AWS Startups Solution Architecture team, for the Solutions Architects and technical founders who run startup engagements. Prepare and run a startup architecture review, size an engagement to a company's stage and runway, pressure-test a design against a team that has no dedicated ops or security staff, and turn the result into a written recommendation. Draws all general-purpose AWS service depth from Agent Toolkit for AWS rather than restating it.",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "startups",
+    "startup",
+    "solution-architecture",
+    "solutions-architect",
+    "architecture-review",
+    "startup-stage",
+    "runway",
+    "credits",
+    "activate",
+    "lean-team",
+    "founder",
+    "engagement",
+    "design-review",
+    "technical-diligence"
+  ],
+  "skills": "./skills/",
+  "dependencies": [
+    { "name": "aws-core", "marketplace": "claude-plugins-official" },
+    { "name": "aws-agents", "marketplace": "claude-plugins-official" }
+  ]
+}
