@@ -4,7 +4,7 @@ Startup-specific plugins and tools from the AWS Startups Solution Architecture t
 
 ## Plugins
 
-- **[`aws-startups-solution-architecture`](plugins/aws-startups-solution-architecture/)** — Field practice for the Solutions Architects and technical founders who run startup engagements: scope an architecture review to a company's stage and runway, run a low-ceremony build loop with a founder, and pressure-test a design before it gets built. Draws all general-purpose AWS service depth from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) as an upstream dependency rather than restating it.
+- **[`aws-startups-solution-architecture`](plugins/aws-startups-solution-architecture/)**. Field practice for the Solutions Architects and technical founders who run startup engagements. Scope an architecture review to a company's stage and runway, run a low-ceremony build loop with a founder, and pressure-test a design before it gets built. Draws all general-purpose AWS service depth from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) as an upstream dependency rather than restating it.
 
 ## Where aws-dev-toolkit went
 
@@ -17,7 +17,9 @@ Existing `aws-dev-toolkit` installs continue to function but receive no updates.
 
 ## Contributing
 
-See the [root CONTRIBUTING guide](../CONTRIBUTING.md). Contributions to this folder must be startup-specific rather than general-purpose AWS guidance, so they do not re-create the overlap with Agent Toolkit for AWS that led to the previous plugin's removal.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the content gate that applies to this folder, and the [root CONTRIBUTING guide](../CONTRIBUTING.md) for the RFC process, code of conduct, and licensing.
+
+Contributions here must pass all three criteria: startup-specific rather than general-purpose AWS guidance, no overlap with Agent Toolkit for AWS, and no reference to deprecated or sunset AWS services. The gate exists so this folder does not re-create the overlap that led to the previous plugin's removal.
 
 ## License
 
