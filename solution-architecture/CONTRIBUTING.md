@@ -2,7 +2,17 @@
 
 This folder is open to contribution. It is also the folder whose previous plugin, `aws-dev-toolkit`, was removed because its content had grown into a duplicate of [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws). The gate below exists so that does not happen again.
 
-Read the [root contributing guide](../CONTRIBUTING.md) first for the RFC process, code of conduct, security reporting, and licensing. This document adds the content gate specific to this folder.
+Read the [root contributing guide](../CONTRIBUTING.md) for code of conduct, security reporting, and licensing. This document adds the content gate specific to this folder.
+
+## Start with an RFC, before you write the skill
+
+A new skill is a new artifact, so the root guide's [RFC requirement](../CONTRIBUTING.md#rfcs-for-new-features-artifacts-and-major-changes) applies: open an [RFC issue](https://github.com/awslabs/startups/issues/new/choose) titled `RFC: <what you want to add>` before doing the work.
+
+Do this first because criterion 2 below rejects more proposals than any other, and it is far cheaper to find out that Agent Toolkit for AWS already owns your topic in an issue thread than after you have written the skill. State in the RFC:
+
+- The technical problem, and the startup constraint that changes the answer.
+- What you checked for overlap: the specific upstream skills in `aws-core` and `aws-agents`, and the relevant AWS Startup Advisor content.
+- Why the answer differs from what a reviewer would find in those places.
 
 ## The gate: all three criteria must pass
 
@@ -56,11 +66,13 @@ A reviewer should not have to infer startup-specificity from prose. Declare it s
   ---
   ```
 
-- **Startup framing in the description.** The `description` should state the startup framing directly (stage, runway, credits, lean-team context), the way the AWS Startup Advisor skills do, rather than describing a generic AWS capability.
+- **Name the problem and the constraint in the description.** State the technical problem being solved and the startup constraint that reshapes the answer. `multi-tenant-isolation` names isolation enforced in IAM rather than application code, because there is no security engineer to catch a missing predicate in review. That is the shape: a real technical problem, plus why the small-team answer differs.
 
-- **Keywords.** Startup-relevant keywords (`activate`, `credits`, `startup`, `stage`, `runway`) should appear in the skill metadata where they genuinely apply. Do not keyword-stuff: a skill that mentions runway once to pass a grep, while otherwise being general-purpose service guidance, fails criterion 1 on review.
+- **Do not keyword-stuff.** Startup vocabulary (`runway`, `credits`, `stage`, `activate`) belongs in a description only where it is genuinely load-bearing. `gpu-capacity-strategy` mentions runway and credits because a multi-year commitment is literally spending runway and credits have expiry dates that break capacity plans. `multi-tenant-isolation` uses none of those words, and it is the stronger of the two skills. A skill that sprinkles "runway" to look startup-specific while otherwise being general service guidance fails criterion 1 on review.
 
-The frontmatter field is the mechanical signal. The reviewer still judges criteria 1 and 2 on substance, because a declared field can be added to any file, and the point of the gate is the substance rather than the field.
+- **Include trigger phrases.** List the phrases a user would actually type, including error strings (`InsufficientInstanceCapacity`) and informal phrasings (`cross-tenant data leak`, `noisy neighbor`). This is what makes the skill activate at the right moment rather than sitting unused.
+
+The `audience: startup` field is the only mechanical signal, and it is deliberately weak: any file can declare it. Criteria 1 and 2 are judged on substance by a reviewer, and that is the point. The field exists so a missing declaration is caught automatically, not so a present one proves anything.
 
 ## What we are actively looking for
 
@@ -76,10 +88,40 @@ Dependencies on plugins in `claude-plugins-official` require that marketplace to
 
 ## Before opening a PR
 
-- `mise run fmt` and `mise run lint:md` are clean.
-- `claude plugin validate <your-plugin-dir>` passes, and `claude plugin validate .` passes if you touched the marketplace.
-- If you added a plugin or changed dependencies, install it from a local marketplace once and confirm it enables with no dependency errors.
-- Every new `SKILL.md` declares `audience: startup`.
+Run these and confirm each is clean. CI fails the build if formatting changes any file, so formatting is not optional.
+
+```bash
+mise run fmt          # must leave the tree unchanged
+mise run lint:md      # must report 0 errors
+
+claude plugin validate ./solution-architecture/plugins/<your-plugin>
+claude plugin validate .   # only if you touched marketplace.json
+```
+
+If `mise` fails while installing its npm tools with a `401` or `Unable to authenticate`, that is a local npm registry problem rather than a repo problem: check whether `~/.npmrc` points at an internal registry with an expired token. You can run the same gates directly in the meantime:
+
+```bash
+npx dprint@0.51 fmt
+npx markdownlint-cli2@0.17 'solution-architecture/**/*.md'
+```
+
+Then, for a new plugin or a dependency change, prove it actually installs rather than assuming the manifest is enough:
+
+```bash
+claude plugin marketplace add /path/to/your/clone
+claude plugin install <your-plugin>@startups-for-aws
+claude plugin list          # confirm enabled, no dependency errors
+# then clean up:
+claude plugin uninstall <your-plugin>@startups-for-aws -y
+claude plugin marketplace remove startups-for-aws
+```
+
+A passing `validate` does not prove dependencies resolve. Cross-marketplace dependency errors only surface at install time.
+
+Also confirm:
+
+- Every new `SKILL.md` declares `audience: startup` under `metadata`.
+- No deprecated or sunset AWS service is referenced as a forward-looking choice.
 - No em dashes or en dashes, matching the existing prose style in this folder.
 
 ## Review
