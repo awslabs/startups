@@ -4,7 +4,9 @@ Startup-specific plugins and tools from the AWS Startups Solution Architecture t
 
 ## Plugins
 
-- **[`aws-startups-solution-architecture`](plugins/aws-startups-solution-architecture/)**. Field practice for the Solutions Architects and technical founders who run startup engagements. Scope an architecture review to a company's stage and runway, run a low-ceremony build loop with a founder, and pressure-test a design before it gets built. Draws all general-purpose AWS service depth from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) as an upstream dependency rather than restating it.
+- **[`aws-startups-solution-architecture`](plugins/aws-startups-solution-architecture/)**. Technical AWS solutions for the problems startups get stuck on: multi-tenant SaaS isolation enforced in IAM rather than application code, and accelerated compute capacity strategy for teams that cannot sign multi-year commitments. Draws all general-purpose AWS service depth from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) as an upstream dependency rather than restating it.
+
+  Currently two exemplar skills, deliberately. The plugin is scaffolding for Startup SAs to contribute the technical patterns they solve repeatedly; see [what to contribute](plugins/aws-startups-solution-architecture/README.md#what-to-contribute) for the verified gap list.
 
 ## Where aws-dev-toolkit went
 

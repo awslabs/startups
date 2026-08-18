@@ -10,13 +10,20 @@ A contribution is accepted only if it passes **all three**. Two out of three is 
 
 ### 1. Startup-specific, not general-purpose AWS
 
-The contribution must be meaningfully tailored to startups: startup stage, runway, credits and AWS Activate, lean-team defaults (no dedicated ops or security staff), or founder workflows.
+This folder is for **technical architecture and AWS problem solving**, where the technical constraints are startup constraints: no dedicated platform or security team, a fixed cost ceiling that is someone's runway, capacity that cannot be committed to for years, and a deadline that is a funding milestone. Those constraints change the correct technical answer, and that difference is what belongs here.
 
-General-purpose AWS service guidance that would read identically for an enterprise fails this criterion and belongs in Agent Toolkit for AWS.
+General-purpose AWS service guidance that would read identically for an enterprise fails this criterion and belongs in Agent Toolkit for AWS. This is the criterion that keeps the folder from re-accumulating the general-purpose content that caused the previous removal.
 
-This is the criterion that keeps the folder from re-accumulating the general-purpose content that caused the previous removal.
+**Founder coaching, stage-appropriateness advice, and business guidance also fail this criterion.** Stage detection, runway math, AWS Activate, credits strategy, and fundraise readiness belong in [AWS Startup Advisor](../advisor/), not here. Startup constraints are an input to the technical answer; they are not the subject.
 
-**Referencing AWS products and services is expected and allowed.** The test is whether the _framing_ is startup-specific, not whether AWS services are named. A skill about DynamoDB capacity modes fails. A skill about what to do when your credits expire in six weeks and DynamoDB is your largest line item passes.
+**Referencing AWS products and services is expected and allowed.** The test is whether the problem is a real technical problem that startup constraints reshape.
+
+| Passes                                                                    | Fails                                                                 |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Tenant isolation enforced in IAM because there is no security engineer    | How to write an IAM policy (belongs in `aws-iam` upstream)            |
+| Securing scarce GPU capacity without a multi-year commitment              | Which GPU instance family is fastest (belongs in `aws-compute`)       |
+| Scale-to-zero because an idle environment must cost approximately nothing | "Start simple and scale later" as general advice                      |
+| Cost regression caught in the deploy path before the monthly bill         | Whether the company is ready to raise a Series A (belongs in advisor) |
 
 ### 2. No overlap with Agent Toolkit for AWS
 
@@ -24,7 +31,7 @@ If Agent Toolkit for AWS already covers the capability, the contribution is a du
 
 **This is the load-bearing check**, because overlap is the conflict that drove the previous deprecation. Before contributing, check the upstream skill list in [`aws-core`](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-core/skills) and [`aws-agents`](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-agents/skills). Those plugins are declared as upstream dependencies, so their skills are already available to anyone who installs from this folder. Restating them here is strictly worse than depending on them.
 
-Also check [AWS Startup Advisor](../advisor/) for overlap. Founder-facing stage advice, AWS Activate, and credits guidance live there, not here.
+Also check [AWS Startup Advisor](../advisor/) for overlap, particularly its `architect-for-startups` skill and that skill's `references/` directory, which already covers a broad set of startup-framed architecture topics. Founder-facing stage advice, AWS Activate, and credits guidance live there, not here.
 
 Do not use the word "toolkit" in a plugin, skill, or agent name in this folder.
 
@@ -54,6 +61,12 @@ A reviewer should not have to infer startup-specificity from prose. Declare it s
 - **Keywords.** Startup-relevant keywords (`activate`, `credits`, `startup`, `stage`, `runway`) should appear in the skill metadata where they genuinely apply. Do not keyword-stuff: a skill that mentions runway once to pass a grep, while otherwise being general-purpose service guidance, fails criterion 1 on review.
 
 The frontmatter field is the mechanical signal. The reviewer still judges criteria 1 and 2 on substance, because a declared field can be added to any file, and the point of the gate is the substance rather than the field.
+
+## What we are actively looking for
+
+The plugin README carries a [list of verified gaps](plugins/aws-startups-solution-architecture/README.md#what-to-contribute): topics confirmed to be covered by neither Agent Toolkit for AWS nor AWS Startup Advisor, each a recurring startup engagement problem. Self-hosted inference serving is the largest one open today.
+
+Bring your own topic if it passes the scope test above. The two existing skills are the intended shape and depth: decision tables, the failure mode named explicitly, an anti-pattern list, and service mechanics delegated upstream rather than restated.
 
 ## Prefer an upstream dependency over a copy
 
