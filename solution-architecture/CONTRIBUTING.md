@@ -118,11 +118,17 @@ claude plugin marketplace remove startups-for-aws
 
 A passing `validate` does not prove dependencies resolve. Cross-marketplace dependency errors only surface at install time.
 
-Also confirm:
+Then run the gate itself. CI runs exactly this on every PR touching `solution-architecture/`:
 
-- Every new `SKILL.md` declares `audience: startup` under `metadata`.
-- No deprecated or sunset AWS service is referenced as a forward-looking choice.
-- No em dashes or en dashes, matching the existing prose style in this folder.
+```bash
+node solution-architecture/tools/contribution-gate/check.mjs
+```
+
+It checks the `audience: startup` declaration, banned naming, uncaveated sunset-service references, and prose style. It requires no credentials and no AWS access, so it also runs on pull requests from forks.
+
+**It does not decide criteria 1 and 2.** Whether a contribution is genuinely startup-specific, and whether it overlaps Agent Toolkit for AWS, are judgment calls that a script cannot settle. Those stay with reviewers, so a green gate means "nothing mechanically wrong," not "accepted."
+
+On sunset services the check is context-aware: warning against one or describing a migration off it passes, while recommending one as a forward-looking choice fails. If you get a false positive, phrase the line as the warning it presumably is rather than working around the check.
 
 ## Review
 
@@ -131,3 +137,15 @@ Changes here require review from the Solution Architecture team, plus admin revi
 **AgentCore review.** Contributions to this folder additionally require review from the AgentCore SME. Agent and AgentCore guidance is owned upstream by the [`aws-agents`](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-agents) plugin, which this folder consumes as a dependency, so agent-related content here is the likeliest place for criterion 2 overlap to reappear. Request that review on every PR in this folder rather than only on files with "agent" in the name, since the overlap usually arrives inside a skill about something else.
 
 This requirement is documented here rather than in `CODEOWNERS` because GitHub silently ignores a `CODEOWNERS` entry that names a team which does not exist or lacks write access to the repository. Add the entry once the reviewing team or user handle is confirmed, at which point this paragraph can point at it instead.
+
+### Automated reviewer agent (in progress)
+
+An AgentCore runtime that judges criteria 1 and 2 is being built. It is intentionally not part of the mechanical gate above, because reaching it requires AWS credentials and pull requests from forks receive no secrets. A credentialed job therefore cannot gate external contributions, which are the case the gate exists for.
+
+When that runtime is wired in, these are the constraints its caller must respect, verified against a live `InvokeAgentRuntime` call:
+
+- `--content-type application/json` is required. Omit it and the runtime returns HTTP 415 before the agent runs.
+- `--runtime-session-id` has a 33-character minimum. A commit SHA works; a PR number does not.
+- The response is written to an output file rather than stdout, and the returned `contentType` may say `text/plain` even when the body is JSON. Parse the body; do not trust that header.
+
+The agent should return a verdict per criterion rather than a single boolean, so a partial failure is distinguishable from a crash, and its own errors must be distinguishable from a genuine `fail`. A runtime that cannot be reached must not silently read as a pass.

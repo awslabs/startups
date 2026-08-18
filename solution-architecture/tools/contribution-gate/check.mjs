@@ -1,0 +1,184 @@
+#!/usr/bin/env node
+// Mechanical half of the solution-architecture contribution gate.
+//
+// Checks only what can be decided deterministically from file contents. The
+// judgment criteria (is this genuinely startup-specific, does it overlap Agent
+// Toolkit for AWS) are left to human and agent review, because a grep cannot
+// settle them and pretending otherwise would produce false confidence.
+//
+// Usage:
+//   node check.mjs <file>...      explicit file list (CI passes changed files)
+//   node check.mjs                scan all SKILL.md under solution-architecture/
+//
+// Exit 0 = pass, 1 = violations found, 2 = harness error.
+
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const REPO_ROOT = process.cwd();
+const SCOPE_DIR = "solution-architecture";
+
+// Services that are sunset, closed to new customers, or end-of-support.
+// Mentioning one to warn against it or migrate off it is allowed, so each
+// match is checked for a nearby warning cue before it is reported.
+const SUNSET = [
+  { pattern: /\bApp Mesh\b/gi, name: "AWS App Mesh" },
+  { pattern: /\bApp Runner\b/gi, name: "AWS App Runner" },
+  { pattern: /\bS3 Select\b/gi, name: "S3 Select" },
+  { pattern: /\bGlacier Select\b/gi, name: "Glacier Select" },
+  { pattern: /\bIoT Analytics\b/gi, name: "AWS IoT Analytics" },
+  { pattern: /\bKinesis Data Analytics\b/gi, name: "Kinesis Data Analytics" },
+  { pattern: /\bElastic Beanstalk\b/gi, name: "Elastic Beanstalk" },
+  { pattern: /\bAurora Serverless v1\b/gi, name: "Aurora Serverless v1" },
+  { pattern: /\blaunch configuration/gi, name: "EC2 launch configurations" },
+  { pattern: /\bCodeCommit\b/gi, name: "AWS CodeCommit" },
+  { pattern: /\bCloud9\b/gi, name: "AWS Cloud9" },
+  { pattern: /\bSimpleDB\b/gi, name: "Amazon SimpleDB" },
+];
+
+// A sunset mention is permitted when the surrounding line frames it as a
+// warning, a deprecation note, or a migration away from the service.
+const WARNING_CUE =
+  /\b(deprecat|sunset|end of support|end-of-support|closed to new|do not|don't|avoid|instead of|migrat|no longer|retir|legacy|EOL|rather than|not for new|stop)/i;
+
+const findings = [];
+const add = (file, criterion, line, message) =>
+  findings.push({ file, criterion, line, message });
+
+function walk(dir, out = []) {
+  for (const entry of readdirSync(dir)) {
+    if (entry === "node_modules" || entry.startsWith(".")) continue;
+    const full = join(dir, entry);
+    const st = statSync(full);
+    if (st.isDirectory()) walk(full, out);
+    else if (entry === "SKILL.md") out.push(full);
+  }
+  return out;
+}
+
+function lineOf(text, index) {
+  return text.slice(0, index).split("\n").length;
+}
+
+/** Criterion 3, and the mechanical part of criterion 1. */
+function checkSkill(file) {
+  const text = readFileSync(file, "utf8");
+  const rel = relative(REPO_ROOT, file);
+
+  // --- audience: startup declaration -------------------------------------
+  const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) {
+    add(rel, "frontmatter", 1, "No YAML frontmatter block found.");
+  } else {
+    const front = fm[1];
+    if (!/^\s*audience:\s*startup\s*$/m.test(front)) {
+      add(
+        rel,
+        "audience",
+        1,
+        "Missing `audience: startup` under `metadata:` in frontmatter. Required by solution-architecture/CONTRIBUTING.md.",
+      );
+    }
+    if (!/^\s*name:\s*\S+/m.test(front)) {
+      add(rel, "frontmatter", 1, "Frontmatter is missing a `name:` field.");
+    }
+    if (!/^\s*description:\s*\S/m.test(front)) {
+      add(rel, "frontmatter", 1, "Frontmatter is missing a `description:` field.");
+    }
+  }
+
+  // --- banned word in skill identity -------------------------------------
+  // "toolkit" is banned in names. Prose references to the upstream product
+  // "Agent Toolkit for AWS" are expected and allowed.
+  const nameMatch = text.match(/^\s*name:\s*(.+)$/m);
+  if (nameMatch && /toolkit/i.test(nameMatch[1])) {
+    add(
+      rel,
+      "naming",
+      lineOf(text, nameMatch.index),
+      `Skill name must not contain "toolkit": ${nameMatch[1].trim()}`,
+    );
+  }
+
+  // --- sunset services ----------------------------------------------------
+  const lines = text.split("\n");
+  for (const { pattern, name } of SUNSET) {
+    pattern.lastIndex = 0;
+    let m;
+    while ((m = pattern.exec(text)) !== null) {
+      const lineNo = lineOf(text, m.index);
+      const line = lines[lineNo - 1] ?? "";
+      if (WARNING_CUE.test(line)) continue; // warned about, not recommended
+      add(
+        rel,
+        "sunset-service",
+        lineNo,
+        `References ${name} without a deprecation or migration caveat. Warning against it is fine; recommending it is not.`,
+      );
+    }
+  }
+
+  // --- em/en dashes -------------------------------------------------------
+  const dash = text.match(/[—–]/);
+  if (dash) {
+    add(
+      rel,
+      "style",
+      lineOf(text, dash.index),
+      "Contains an em dash or en dash. This folder uses commas, periods, parentheses, or plain hyphens.",
+    );
+  }
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  let files;
+
+  if (args.length > 0) {
+    files = args
+      .filter((f) => f.endsWith("SKILL.md"))
+      .filter((f) => f.startsWith(SCOPE_DIR))
+      .filter((f) => existsSync(f)); // skip deletions
+  } else {
+    files = existsSync(SCOPE_DIR) ? walk(SCOPE_DIR) : [];
+  }
+
+  if (files.length === 0) {
+    console.log("contribution-gate: no in-scope SKILL.md files to check.");
+    return 0;
+  }
+
+  for (const f of files) checkSkill(f);
+
+  console.log(`contribution-gate: checked ${files.length} skill file(s).\n`);
+
+  if (findings.length === 0) {
+    console.log("All mechanical checks passed.");
+    console.log(
+      "\nNote: criteria 1 and 2 (startup-specific, no overlap with Agent Toolkit\n" +
+        "for AWS) are judgment calls and are NOT decided here. They remain with\n" +
+        "human and agent review.",
+    );
+    return 0;
+  }
+
+  const byFile = new Map();
+  for (const f of findings) {
+    if (!byFile.has(f.file)) byFile.set(f.file, []);
+    byFile.get(f.file).push(f);
+  }
+  for (const [file, fs] of byFile) {
+    console.log(`${file}`);
+    for (const f of fs) console.log(`  L${f.line}  [${f.criterion}] ${f.message}`);
+    console.log("");
+  }
+  console.log(`${findings.length} violation(s). See solution-architecture/CONTRIBUTING.md.`);
+  return 1;
+}
+
+try {
+  process.exit(main());
+} catch (err) {
+  console.error(`contribution-gate: harness error: ${err.message}`);
+  process.exit(2);
+}
