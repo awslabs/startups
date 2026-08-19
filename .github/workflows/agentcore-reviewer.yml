@@ -1,0 +1,217 @@
+name: AgentCore Reviewer
+
+# Advisory review of solution-architecture changes by the AgentCore reviewer
+# runtime. Judges the criteria a script cannot: whether a contribution is
+# genuinely startup-specific (criterion 1) and whether it overlaps Agent Toolkit
+# for AWS (criterion 2). See solution-architecture/CONTRIBUTING.md.
+#
+# Advisory by design. The job does not fail the build on a negative verdict,
+# because verdict stability has not been established: four runs against one
+# unchanged pull request produced REQUEST_CHANGES, APPROVE, REQUEST_CHANGES,
+# APPROVE. A gate that flips on a rerun teaches contributors to ignore it. See
+# skills/agentcore-patterns/references/git-code-reviewer-agent.md.
+#
+# Runs only where credentials are available. Pull requests from forks receive no
+# secrets, so the job self-skips rather than failing with a confusing auth error.
+# The deterministic checks in contribution-gate.yml cover fork pull requests.
+
+on:
+  pull_request:
+    paths:
+      - 'solution-architecture/**'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number to review'
+        required: true
+        type: string
+
+permissions:
+  contents: none
+
+jobs:
+  review:
+    name: Advisory review
+    # Skip on fork pull requests: no secrets are available, so the invocation
+    # cannot succeed. Not a failure, just out of scope.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      id-token: write # federate to AWS via OIDC, no long-lived keys
+      pull-requests: write # post the advisory review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      AWS_REGION: ${{ vars.AGENTCORE_REVIEWER_REGION || 'us-west-2' }}
+      RUNTIME_ARN: ${{ vars.AGENTCORE_REVIEWER_ARN }}
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+    steps:
+      - name: Check configuration
+        id: config
+        run: |
+          set -euo pipefail
+          if [ -z "${RUNTIME_ARN:-}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### AgentCore reviewer not configured"
+              echo ""
+              echo "Set the \`AGENTCORE_REVIEWER_ARN\` repository variable to the runtime ARN,"
+              echo "and \`AGENTCORE_REVIEWER_ROLE_ARN\` to an IAM role this repository may assume"
+              echo "via OIDC. Until then this job no-ops."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.config.outputs.configured == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        if: steps.config.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          role-to-assume: ${{ vars.AGENTCORE_REVIEWER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: agentcore-reviewer-${{ github.run_id }}
+
+      - name: Build review payload
+        if: steps.config.outputs.configured == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Diff against the merge base so unrelated commits on the base branch
+          # do not appear as part of this pull request.
+          if [ -n "${BASE_SHA:-}" ] && [ -n "${HEAD_SHA:-}" ]; then
+            MERGE_BASE="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+            RANGE_HEAD="$HEAD_SHA"
+          else
+            MERGE_BASE="$(git merge-base origin/main HEAD)"
+            RANGE_HEAD="HEAD"
+          fi
+          git diff --name-only --diff-filter=d "$MERGE_BASE" "$RANGE_HEAD" \
+            -- 'solution-architecture/**' > changed.txt || true
+          echo "Changed files:"
+          cat changed.txt
+
+          # The runtime reads the diff itself; sending file contents inline would
+          # blow the payload size on a large change.
+          python3 - <<'PY' > payload.json
+          import json, os, subprocess
+          base = os.environ.get("BASE_SHA") or "origin/main"
+          head = os.environ.get("HEAD_SHA") or "HEAD"
+          files = [l.strip() for l in open("changed.txt") if l.strip()]
+          diff = subprocess.run(
+              ["git", "diff", f"{base}...{head}", "--", "solution-architecture/"],
+              capture_output=True, text=True, check=False,
+          ).stdout
+          json.dump({
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "pr_number": int(os.environ["PR_NUMBER"]),
+              "head_sha": os.environ.get("HEAD_SHA", ""),
+              "changed_files": files,
+              "diff": diff,
+          }, open("payload.json", "w"))
+          PY
+          wc -c payload.json
+
+      - name: Invoke reviewer
+        if: steps.config.outputs.configured == 'true'
+        id: invoke
+        run: |
+          set -euo pipefail
+          # Session id has a 33-character minimum, so a bare PR number is
+          # rejected. The run id plus attempt keeps it unique per invocation,
+          # which also avoids a warm container serving stale code.
+          SESSION_ID="gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(printf '%s' "${GITHUB_SHA}" | cut -c1-12)-review"
+          while [ ${#SESSION_ID} -lt 33 ]; do SESSION_ID="${SESSION_ID}x"; done
+
+          set +e
+          # content-type is mandatory: without it the runtime returns HTTP 415
+          # before the agent runs.
+          aws bedrock-agentcore invoke-agent-runtime \
+            --region "$AWS_REGION" \
+            --agent-runtime-arn "$RUNTIME_ARN" \
+            --runtime-session-id "$SESSION_ID" \
+            --content-type application/json \
+            --accept application/json \
+            --payload "fileb://payload.json" \
+            response.json
+          INVOKE_RC=$?
+          set -e
+
+          if [ $INVOKE_RC -ne 0 ]; then
+            # An unreachable runtime must never read as a pass.
+            echo "reachable=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### AgentCore reviewer did not run"
+              echo ""
+              echo "\`invoke-agent-runtime\` exited $INVOKE_RC. No verdict was produced."
+              echo "This is not an approval. Review criteria 1 and 2 by hand."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "reachable=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish advisory review
+        if: steps.config.outputs.configured == 'true' && steps.invoke.outputs.reachable == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Parse the body rather than trusting the reported content type, which
+          # can say text/plain while carrying JSON.
+          python3 - <<'PY' > comment.md
+          import json, os
+          raw = open("response.json", encoding="utf-8", errors="replace").read().strip()
+          try:
+              data = json.loads(raw)
+          except json.JSONDecodeError:
+              print("### AgentCore reviewer returned unparseable output\n")
+              print("Not an approval. Review criteria 1 and 2 by hand.\n")
+              print("```\n" + raw[:3000] + "\n```")
+              raise SystemExit(0)
+
+          verdict = data.get("verdict", "unknown")
+          print("### AgentCore reviewer (advisory)\n")
+          print(f"**Verdict:** `{verdict}`\n")
+          print("This is advice, not an approval. A human reviewer decides.\n")
+
+          criteria = data.get("criteria") or {}
+          if criteria:
+              print("| Criterion | Verdict | Notes |")
+              print("| --- | --- | --- |")
+              for name, c in criteria.items():
+                  if isinstance(c, dict):
+                      v = c.get("verdict", "?")
+                      note = str(c.get("reason", "")).replace("|", "\\|")[:300]
+                  else:
+                      v, note = str(c), ""
+                  print(f"| `{name}` | {v} | {note} |")
+              print()
+
+          findings = data.get("findings") or []
+          if findings:
+              print(f"#### Findings ({len(findings)})\n")
+              for f in findings:
+                  loc = f.get("file", "")
+                  if f.get("line"):
+                      loc = f"{loc}:{f['line']}"
+                  crit = f.get("criterion", "")
+                  reason = str(f.get("reason", "")).strip()
+                  print(f"- **{loc}** ({crit}): {reason}")
+              print()
+          elif verdict != "unknown":
+              print("No findings reported.\n")
+          PY
+
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+          # COMMENT rather than APPROVE or REQUEST_CHANGES: advisory output must
+          # not satisfy or block a required human review.
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file comment.md
