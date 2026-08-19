@@ -134,10 +134,58 @@ findings were defensible each time but sat at confidence 0.60 to 0.75 against a
 rerun is worse than no verdict. Note that the usual lever is gone, since newer
 Claude models reject a `temperature` parameter outright.
 
-The fix that cost nothing was to move the unstable categories out of the verdict:
-report them fully, block on none of them. That took a verdict flipping twice in
-four runs to stable across three, with no information lost. Self-consistency
-voting across N runs also works and costs N times the tokens.
+The fix that cost nothing was to stop letting the unstable categories decide the
+verdict on their own: report them fully, and keep the state that gates a merge
+driven by the stable signals. That took a verdict flipping twice in four runs to
+stable across three, with no information lost. Self-consistency voting across N
+runs also works and costs N times the tokens.
+
+### The review state must match the body
+
+A reviewer that writes a concern and submits an approving review has contradicted
+itself, and the approval is the half that carries weight. On most forges an
+approving bot review is a real signal that can satisfy branch protection, so the
+agent ends up vouching for a change it just questioned.
+
+Drive the state off the strongest signal in the body, not off one category of it.
+A first cut computed the state from findings alone, so an axis marked as a concern
+with no finding attached left the review sitting at approved while the body listed
+concerns. Three states are enough:
+
+| State           | When                                                                     |
+| --------------- | ------------------------------------------------------------------------ |
+| Request changes | Anything stated as a concern                                             |
+| Comment         | Something raised but below that bar: a lesser finding, a borderline item |
+| Approve         | Every axis clear and nothing raised at any level                         |
+
+Comment is the one people skip, and it is the most useful of the three. It
+withholds the approval without blocking anything, which is the honest position for
+a suspicion the agent is not entitled to settle.
+
+Do request changes on the axes you have deliberately made advisory. Advisory means
+the agent does not settle the question, not that it stays quiet about it:
+requesting changes is a request, and a human dismisses or overrides it, which is
+the judgment your gate reserved for them in the first place. Say that in the review
+body so nobody reads the state as a machine veto.
+
+### Retract your own stale approvals
+
+Forges keep every review a reviewer has submitted, and a later comment does not
+retract an earlier approval. Fixing the state logic therefore does not fix an
+already-approved pull request: six standing approvals from earlier pushes kept the
+approving check visible after the logic was corrected, and no amount of new
+commenting removed them.
+
+So when the agent no longer approves, have it dismiss its own prior approvals
+before submitting. Scope that strictly to reviews authored by the agent's own
+identity, and resolve the identity at runtime rather than hardcoding it. Never
+touch a human's review; an agent that can dismiss human approvals is a much larger
+permission than reviewing.
+
+This is the same class of bug as the memory and warm-container traps: the current
+run was correct, and stale state from earlier runs was what the reader actually
+saw. When verifying a state change, check the standing state, not just the record
+the agent wrote this time.
 
 **Surface the borderline rather than dropping it.** A single threshold discards
 exactly the arguable cases a human most wants to see. Three bands work better:
@@ -238,6 +286,31 @@ text. A finding that says "does not follow the authoring guidance" without namin
 which line of which document is unactionable, and it is also how a model launders
 a guess into an assertion.
 
+### Write for the column the comment renders in
+
+A review comment is narrow, and everything the agent writes lands there. Two
+formatting failures make good findings unreadable.
+
+**Tables collapse.** A three-column table gave nearly all its width to the note and
+squeezed the rest until the header rendered as `St an ce` and a value as
+`bo rd erl ine`, one character per line. Use lists. A stance reads fine as an emoji
+with a legend, and the note then runs the full width.
+
+**Unformatted prose hides the evidence.** The model writes the notes, so instruct it
+to format as it writes: backtick every path, identifier, frontmatter field, error
+string, and version; cite locations as `path:line`; quote the offending text rather
+than paraphrasing it; lead with the claim and follow with the evidence; no headings
+or tables, since the prose is nested inside a list item. Unbackticked, a path like
+`solution-architecture/CONTRIBUTING.md` disappears into the sentence and the reader
+cannot see what to go look at.
+
+Put that instruction in the tool schema's field descriptions as well as the system
+prompt. The field description is what the model reads while filling the field,
+which is where the formatting decision actually happens.
+
+Sort by severity, not by schema order. A clean axis listed above a concern buries
+the thing that needed attention.
+
 ## Do not let the agent read your harness limits as defects
 
 Two findings here were the harness misleading the model.
@@ -294,6 +367,14 @@ what you have verified and put the rest in the summary.
 - **Reading stored records to confirm a deploy took effect.** The newest record
   may predate it, so a working change looks broken. Check the timestamp, or
   invoke once and look at that.
+- **Submitting an approving review alongside a concern.** The approval is the half
+  that carries weight, and it can satisfy branch protection.
+- **Computing the review state from findings alone.** An axis marked as a concern
+  with no finding attached will sit under an approval.
+- **Leaving your own earlier approvals standing.** A later comment does not retract
+  an approval, so the stale check remains visible after the logic is fixed.
+- **Tables in a review comment.** The column is too narrow; they collapse to one
+  character per line.
 - **Letting the reviewer reason about your conventions from memory.** It will
   invent some of them. Load the document or drop the axis.
 - **Loading every standard on every review.** The diff ends up competing with
