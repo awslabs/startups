@@ -45,63 +45,42 @@ const findings = [];
 const add = (file, criterion, line, message) =>
   findings.push({ file, criterion, line, message });
 
+/**
+ * Collect every markdown file in scope.
+ *
+ * Sunset-service and style checks apply to ALL of them, because the historical
+ * bug lived in reference files rather than in SKILL.md: the removed
+ * aws-dev-toolkit recommended App Mesh in references/compute.md and App Runner
+ * in references/cost-comparison.md. Checking only SKILL.md would leave the one
+ * place these have actually appeared unguarded.
+ */
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     if (entry === "node_modules" || entry.startsWith(".")) continue;
     const full = join(dir, entry);
     const st = statSync(full);
     if (st.isDirectory()) walk(full, out);
-    else if (entry === "SKILL.md") out.push(full);
+    else if (entry.endsWith(".md")) out.push(full);
   }
   return out;
 }
+
+const isSkill = (f) => f.endsWith("SKILL.md");
 
 function lineOf(text, index) {
   return text.slice(0, index).split("\n").length;
 }
 
-/** Criterion 3, and the mechanical part of criterion 1. */
-function checkSkill(file) {
+/**
+ * Criterion 3 and prose style. Applies to every markdown file in scope,
+ * including reference files, assets, and plugin READMEs.
+ */
+function checkAnyMarkdown(file) {
   const text = readFileSync(file, "utf8");
   const rel = relative(REPO_ROOT, file);
-
-  // --- audience: startup declaration -------------------------------------
-  const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!fm) {
-    add(rel, "frontmatter", 1, "No YAML frontmatter block found.");
-  } else {
-    const front = fm[1];
-    if (!/^\s*audience:\s*startup\s*$/m.test(front)) {
-      add(
-        rel,
-        "audience",
-        1,
-        "Missing `audience: startup` under `metadata:` in frontmatter. Required by solution-architecture/CONTRIBUTING.md.",
-      );
-    }
-    if (!/^\s*name:\s*\S+/m.test(front)) {
-      add(rel, "frontmatter", 1, "Frontmatter is missing a `name:` field.");
-    }
-    if (!/^\s*description:\s*\S/m.test(front)) {
-      add(rel, "frontmatter", 1, "Frontmatter is missing a `description:` field.");
-    }
-  }
-
-  // --- banned word in skill identity -------------------------------------
-  // "toolkit" is banned in names. Prose references to the upstream product
-  // "Agent Toolkit for AWS" are expected and allowed.
-  const nameMatch = text.match(/^\s*name:\s*(.+)$/m);
-  if (nameMatch && /toolkit/i.test(nameMatch[1])) {
-    add(
-      rel,
-      "naming",
-      lineOf(text, nameMatch.index),
-      `Skill name must not contain "toolkit": ${nameMatch[1].trim()}`,
-    );
-  }
+  const lines = text.split("\n");
 
   // --- sunset services ----------------------------------------------------
-  const lines = text.split("\n");
   for (const { pattern, name } of SUNSET) {
     pattern.lastIndex = 0;
     let m;
@@ -130,13 +109,75 @@ function checkSkill(file) {
   }
 }
 
+/**
+ * Skill-manifest checks. SKILL.md only, since it is the only file Claude Code
+ * discovers and the only one whose frontmatter is load-bearing. Reference files
+ * are pulled in on demand by a link from SKILL.md and carry no frontmatter
+ * contract, so requiring `audience:` on them would be wrong.
+ */
+function checkSkillManifest(file) {
+  const text = readFileSync(file, "utf8");
+  const rel = relative(REPO_ROOT, file);
+
+  const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) {
+    add(rel, "frontmatter", 1, "No YAML frontmatter block found.");
+  } else {
+    const front = fm[1];
+    if (!/^\s*audience:\s*startup\s*$/m.test(front)) {
+      add(
+        rel,
+        "audience",
+        1,
+        "Missing `audience: startup` under `metadata:` in frontmatter. Required by solution-architecture/CONTRIBUTING.md.",
+      );
+    }
+    if (!/^\s*name:\s*\S+/m.test(front)) {
+      add(rel, "frontmatter", 1, "Frontmatter is missing a `name:` field.");
+    }
+    if (!/^\s*description:\s*\S/m.test(front)) {
+      add(rel, "frontmatter", 1, "Frontmatter is missing a `description:` field.");
+    }
+  }
+
+  // "toolkit" is banned in names. Prose references to the upstream product
+  // "Agent Toolkit for AWS" are expected and allowed.
+  const nameMatch = text.match(/^\s*name:\s*(.+)$/m);
+  if (nameMatch && /toolkit/i.test(nameMatch[1])) {
+    add(
+      rel,
+      "naming",
+      lineOf(text, nameMatch.index),
+      `Skill name must not contain "toolkit": ${nameMatch[1].trim()}`,
+    );
+  }
+
+  // A reference file nothing links to is never loaded by Claude Code, so it is
+  // dead weight rather than content. Flag orphans at authoring time.
+  const skillDir = file.slice(0, file.lastIndexOf("/"));
+  const refDir = join(skillDir, "references");
+  if (existsSync(refDir)) {
+    for (const entry of readdirSync(refDir)) {
+      if (!entry.endsWith(".md")) continue;
+      if (!text.includes(`references/${entry}`)) {
+        add(
+          rel,
+          "orphan-reference",
+          1,
+          `references/${entry} is not linked from this SKILL.md, so Claude Code will never load it. Link it or remove it.`,
+        );
+      }
+    }
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
   let files;
 
   if (args.length > 0) {
     files = args
-      .filter((f) => f.endsWith("SKILL.md"))
+      .filter((f) => f.endsWith(".md"))
       .filter((f) => f.startsWith(SCOPE_DIR))
       .filter((f) => existsSync(f)); // skip deletions
   } else {
@@ -144,13 +185,20 @@ function main() {
   }
 
   if (files.length === 0) {
-    console.log("contribution-gate: no in-scope SKILL.md files to check.");
+    console.log("contribution-gate: no in-scope markdown files to check.");
     return 0;
   }
 
-  for (const f of files) checkSkill(f);
+  for (const f of files) {
+    checkAnyMarkdown(f);
+    if (isSkill(f)) checkSkillManifest(f);
+  }
 
-  console.log(`contribution-gate: checked ${files.length} skill file(s).\n`);
+  const skillCount = files.filter(isSkill).length;
+  console.log(
+    `contribution-gate: checked ${files.length} markdown file(s), ` +
+      `${skillCount} of them SKILL.md.\n`,
+  );
 
   if (findings.length === 0) {
     console.log("All mechanical checks passed.");
@@ -167,9 +215,11 @@ function main() {
     if (!byFile.has(f.file)) byFile.set(f.file, []);
     byFile.get(f.file).push(f);
   }
-  for (const [file, fs] of byFile) {
+  for (const [file, fs] of [...byFile].sort(([a], [b]) => a.localeCompare(b))) {
     console.log(`${file}`);
-    for (const f of fs) console.log(`  L${f.line}  [${f.criterion}] ${f.message}`);
+    for (const f of fs.sort((a, b) => a.line - b.line)) {
+      console.log(`  L${f.line}  [${f.criterion}] ${f.message}`);
+    }
     console.log("");
   }
   console.log(`${findings.length} violation(s). See solution-architecture/CONTRIBUTING.md.`);

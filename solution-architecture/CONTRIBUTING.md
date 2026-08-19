@@ -74,6 +74,36 @@ A reviewer should not have to infer startup-specificity from prose. Declare it s
 
 The `audience: startup` field is the only mechanical signal, and it is deliberately weak: any file can declare it. Criteria 1 and 2 are judged on substance by a reviewer, and that is the point. The field exists so a missing declaration is caught automatically, not so a present one proves anything.
 
+## Skill and reference file layout
+
+Depth belongs in reference files. A `SKILL.md` works best as a thin router that tells the model when to activate and which reference to open, with the substance living alongside it:
+
+```text
+skills/<skill-name>/
+  SKILL.md                       # required: router + frontmatter
+  references/<topic>.md           # the actual depth
+  references/<another-topic>.md
+```
+
+Three structural rules, verified against all 32 upstream Agent Toolkit skills:
+
+1. **Every skill directory needs a `SKILL.md`.** It is the only file Claude Code discovers, and its frontmatter `description` is what the model matches to decide whether the skill applies. A `references/` directory with no sibling `SKILL.md` is invisible.
+2. **Reference files are never auto-loaded.** They are read on demand _because `SKILL.md` links to them_. A file in `references/` that nothing links to will never be opened, so the gate flags it as an orphan.
+3. **Only `SKILL.md` carries frontmatter requirements.** Reference files need no `name`, `description`, or `audience` field. Do not add them.
+
+Nesting deeper is allowed (`references/<topic>/references/<subtopic>.md`) and upstream does this where a topic has genuine sub-branches.
+
+A routing table is the clearest way to link references, and it doubles as the description of what the skill covers:
+
+```markdown
+| Task                              | Reference                                               |
+| --------------------------------- | ------------------------------------------------------- |
+| Wiring a reviewer agent to a repo | [git-code-reviewer.md](references/git-code-reviewer.md) |
+| Choosing where the agent runs     | see `agents-deploy` in `aws-agents`                     |
+```
+
+Note the second row: when the answer is upstream, link upstream rather than writing a local copy.
+
 ## What we are actively looking for
 
 The plugin README carries a [list of verified gaps](plugins/aws-startups-solution-architecture/README.md#what-to-contribute): topics confirmed to be covered by neither Agent Toolkit for AWS nor AWS Startup Advisor, each a recurring startup engagement problem. Self-hosted inference serving is the largest one open today.
@@ -124,7 +154,11 @@ Then run the gate itself. CI runs exactly this on every PR touching `solution-ar
 node solution-architecture/tools/contribution-gate/check.mjs
 ```
 
-It checks the `audience: startup` declaration, banned naming, uncaveated sunset-service references, and prose style. It requires no credentials and no AWS access, so it also runs on pull requests from forks.
+Across **every markdown file** in this folder, including reference files, it checks for uncaveated sunset-service references and prose style. The removed `aws-dev-toolkit` recommended App Mesh in `references/compute.md` and App Runner in `references/cost-comparison.md`, so reference files are where this problem has actually shown up rather than a hypothetical.
+
+On `SKILL.md` specifically it additionally checks the `audience: startup` declaration, required frontmatter fields, banned naming, and reference files that no `SKILL.md` links to.
+
+It requires no credentials and no AWS access, so it also runs on pull requests from forks.
 
 **It does not decide criteria 1 and 2.** Whether a contribution is genuinely startup-specific, and whether it overlaps Agent Toolkit for AWS, are judgment calls that a script cannot settle. Those stay with reviewers, so a green gate means "nothing mechanically wrong," not "accepted."
 
