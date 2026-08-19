@@ -1,151 +1,180 @@
-# Running a judgment agent in your own CI path
+# An agent that reviews pull requests on your own repository
 
-Field notes from building an AgentCore agent that reviews pull requests for this
-repository. Written as a reference rather than a skill, because most of the
-underlying mechanics belong upstream: container and deploy mechanics are
-`agents-deploy`, IAM scoping and session lifecycle are `agents-harden`, memory is
-`agents-build`, all in `aws-agents`. Read those first. What follows is only the
-decisions a small team has to make that those skills do not cover.
+End-to-end wiring for an AgentCore agent that reviews pull requests: how it
+authenticates to GitHub, what it remembers between reviews, why the obvious CI
+trigger cannot reach it, and the judgment design that decides whether anyone
+trusts its output.
 
-The startup constraint that shapes all of it: there is nobody to babysit this. A
-reviewer that is wrong, slow, or noisy does not get tuned over a quarter by a
-platform team. It gets ignored, and then it is worse than nothing because it
-occupies the slot where review attention used to be.
+Building and deploying the agent is upstream: `agents-build` and `agents-deploy`
+in `aws-agents`. Nothing here restates them.
 
-## Decide what the agent is allowed to decide
+## Authentication: the identity decides what the agent may do
 
-The first design question is not the prompt. It is which findings may block a
-merge.
+The choice is not "token or App" on convenience grounds. GitHub refuses `APPROVE`
+and `REQUEST_CHANGES` when the credential's owner authored the pull request:
 
-| Finding kind                        | Blocks a merge      | Why                                                                                              |
-| ----------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
-| Deterministic and checkable in code | Yes                 | A count, a version tuple, a dangling path. If code can decide it, code should, and it is stable. |
-| Model judgment, high agreement      | Yes                 | Two files giving contradictory instructions is reproducible across runs.                         |
-| Model judgment, contested           | **No**              | Report it, quote it, let a human rule.                                                           |
-| Anything a linter already covers    | Never report at all | Duplicate findings train people to skim past all of them.                                        |
+```text
+422 Unprocessable Entity
+Review Can not approve your own pull request
+```
 
-The middle two are the ones that matter. Measure them before deciding, because
-the answer is empirical rather than a matter of taste.
+A personal access token therefore cannot record a verdict on your own work, only
+a comment. A GitHub App is a distinct identity, so its verdicts stand and the
+review is attributed to the bot rather than to a person.
 
-## Measure verdict stability before you let it gate anything
+| Credential              | Reads a public repo  | Posts a verdict on your own PR | Rate limit                  |
+| ----------------------- | -------------------- | ------------------------------ | --------------------------- |
+| No credential           | yes                  | no                             | 60/hour per IP              |
+| Personal access token   | yes                  | downgrades to a comment        | 5,000/hour                  |
+| GitHub App installation | yes, where installed | yes                            | 5,000/hour per installation |
 
-Run the reviewer against the same unchanged pull request several times and record
-the verdict. This is the cheapest experiment available and it changes the design.
+Practical consequences for a small team:
 
-Doing this here produced, on four runs of one unchanged pull request:
-`REQUEST_CHANGES`, `APPROVE`, `REQUEST_CHANGES`, `APPROVE`. The findings were
-substantively defensible each time, and they sat at confidence 0.60 to 0.75
-against a 0.6 reporting threshold, so they crossed it about half the time.
+- **An organization owner must install an App.** Repository write access is not
+  sufficient, and a private App can only be installed on the account that owns
+  it, so an App intended for an organization must be public. Expect to request
+  installation and wait.
+- **Enterprise policy can reject a token outright**, independently of its scopes.
+  A fine-grained token whose lifetime exceeds a policy limit fails with
+  `403 Resource not accessible by personal access token` even though the same
+  token works elsewhere. Read the message rather than adding scopes.
+- **Degrade rather than fail.** Resolve credentials in order: App, then token,
+  then unauthenticated. One App is never installed everywhere the agent is asked
+  to review, and a missing installation is an expected condition. Enabling App
+  auth here initially broke review of a repository where the App was not
+  installed, because the installation lookup threw and killed the run.
+- Store the App private key in Secrets Manager and read it with the runtime's
+  execution role. GitHub issues PKCS#1; WebCrypto needs PKCS#8, so convert once
+  with `openssl pkcs8 -topk8 -nocrypt` and store the result.
 
-A verdict that changes on a rerun is worse than no verdict. A contributor who
-re-runs CI, sees a different answer, and cannot tell which was right stops
-believing any of the output. Note that the usual lever does not exist: newer
-Claude models reject a `temperature` parameter outright, so determinism cannot be
-bought that way.
+## Never check out the pull request
 
-Two fixes, in order of preference:
+Read changed files through the REST API as data. Do not clone the branch, do not
+run anything from the diff. A reviewer that executes untrusted contributor code
+is a supply-chain hole with a friendly name, and reading via API is also what
+makes the same agent safe to point at forks later.
 
-1. **Move the unstable axes out of the verdict.** Report them fully, block on
-   none of them. Here that took a verdict that flipped twice in four runs to
-   stable across three consecutive runs, with no loss of information.
-2. **Self-consistency.** Run the judge N times, keep what appears in a majority.
-   Directly targets variance, at N times the token cost, which is the tradeoff a
-   small team is least able to absorb on every pull request.
+## The CI trigger, and why the obvious one fails
 
-## Surface the borderline instead of dropping it
+On a public repository, pull requests arrive from forks, and **a `pull_request`
+workflow triggered by a fork receives no secrets and no OIDC token.** It cannot
+assume a role, so it cannot invoke the runtime. This is the wiring that silently
+does not fire.
 
-A confidence threshold that silently discards everything below it throws away the
-most useful output. The items a model is unsure about are exactly the ones worth a
-human glance, and they are also the ones a threshold decides arbitrarily.
+| Trigger               | Has credentials on fork PRs | Note                                                                             |
+| --------------------- | --------------------------- | -------------------------------------------------------------------------------- |
+| `pull_request`        | no                          | Works only for same-repository branches                                          |
+| `pull_request_target` | yes                         | Runs in the base repo context. Checking out the fork head here leaks credentials |
+| `workflow_run`        | yes                         | Base-repo context, reads the PR through the API, never checks out fork code      |
 
-Three bands work better than one cutoff:
+`workflow_run` after the existing build is the safe default. Because the agent
+already reads through the API rather than checking anything out, moving between
+triggers is a workflow-file change rather than an agent rewrite.
 
-- Above the threshold: state it as a finding.
-- In a band below it: surface it as borderline, quote the offending text, name
-  what would settle it.
-- Far below: drop it.
+Two invocation details that fail with unhelpful errors: the session id has a
+minimum length (pad short ids), and the payload content type must be set
+explicitly.
 
-Widening from one cutoff to three bands here turned a review that reported
-"no findings" into one that surfaced four specific, checkable suspicions at
-confidence 0.35 to 0.45. Nothing about the model changed.
+## Memory: what is worth remembering
 
-## Report a stance on every axis, including the clean ones
+Use `actorId` for the repository and `sessionId` for the pull request, so
+decisions accumulate per repository and each review's turns stay grouped.
+Persist a one-line outcome per review; retrieve prior decisions before judging so
+the agent can say "this pattern was already rejected" instead of re-litigating.
 
-If the agent only speaks when it finds something, silence is ambiguous: a reviewer
-cannot distinguish "checked, nothing there" from "never looked at that". Emit a
-row per axis every run, with a one-line note even when clear. It costs a few
-hundred tokens and it is the difference between output a reviewer trusts and
-output they have to take on faith.
+Treat memory as an enhancement, never a dependency. A cold or failed retrieval
+must not fail the review.
 
-## Ground the model in facts computed by code
+## The judgment design that decides whether anyone trusts it
 
-Anything countable should be counted in code and handed to the model as given
-truth, not inferred by it. Skill counts, version tuples across manifest variants,
-paths that no longer resolve. The model is then reasoning over verified numbers
-instead of counting files in its head, which is where hallucinated specifics come
-from.
+The startup constraint bites hardest here. Nobody will tune this over a quarter.
+A reviewer that is noisy or inconsistent gets ignored, and then it is worse than
+nothing, because it occupies the slot where review attention used to be.
 
-The same principle applies to anything the judgment depends on. Checking "does
-this duplicate an upstream capability" requires knowing what upstream actually
-ships, so fetch the real inventory through the API rather than trusting model
-memory of a repository. When that fetch fails, say so in the prompt and instruct
-the model not to assert that a specific upstream component exists. An unavailable
-inventory must read as "unknown", never as "upstream owns nothing".
+**Report nothing your existing CI already reports.** Formatting, schema
+validation, secret scanning, and dependency CVEs are already covered. Every
+duplicate finding lowers the odds anyone reads the novel one. Name those tools in
+the prompt as out of scope.
 
-## Do not let the reviewer read its own limitations as defects
+**Measure verdict stability before letting the agent gate anything.** Run it
+against the same unchanged pull request several times and record the verdict. Four
+runs here produced `REQUEST_CHANGES`, `APPROVE`, `REQUEST_CHANGES`, `APPROVE`: the
+findings were defensible each time but sat at confidence 0.60 to 0.75 against a
+0.6 threshold, so they crossed it about half the time. A verdict that changes on a
+rerun is worse than no verdict. Note that the usual lever is gone, since newer
+Claude models reject a `temperature` parameter outright.
 
-Two failures here were the harness misleading the model, not the model being
-wrong.
+The fix that cost nothing was to move the unstable categories out of the verdict:
+report them fully, block on none of them. That took a verdict flipping twice in
+four runs to stable across three, with no information lost. Self-consistency
+voting across N runs also works and costs N times the tokens.
 
-Truncating a diff mid-word produced a finding that a file "ends at `An AgentCore
-runtime that j`". The file was fine; the cut was ours. Truncate on a line
-boundary and label the truncation as a tool limit in the text the model sees.
+**Surface the borderline rather than dropping it.** A single threshold discards
+exactly the arguable cases a human most wants to see. Three bands work better:
+state findings above the threshold, surface the band below it as borderline with
+the offending text quoted, drop the rest. Widening to three bands here turned a
+review that reported "no findings" into one that surfaced four specific,
+checkable suspicions at confidence 0.35 to 0.45, with no model change.
+
+**Report a stance on every axis, including the clean ones.** If the agent speaks
+only when it finds something, silence cannot be distinguished from never having
+looked.
+
+**Compute facts in code and hand them to the model as given truth.** Counts,
+version tuples, paths that no longer resolve. The model then reasons over verified
+numbers instead of counting in its head, which is where invented specifics come
+from. When a lookup the judgment depends on fails, say so in the prompt and
+forbid asserting that the thing exists: unavailable must read as "unknown", never
+as "absent".
+
+## Do not let the agent read your harness limits as defects
+
+Two findings here were the harness misleading the model.
+
+Truncating a long diff mid-word produced a finding that a file "ends at
+`An AgentCore runtime that j`". The file was fine; the cut was ours. Truncate on a
+line boundary and label the truncation as a tool limit in the text the model sees.
 
 The model also reported line numbers counted from the top of a diff hunk rather
 than file lines, which would have anchored inline comments to unrelated code. A
-prompt instruction helps, but arithmetic in a prompt is not reliable enough to
-place a comment by: validate the line against the diff and drop it when it does
-not match.
+hunk header `@@ -a,b +c,d @@` states the new-side start; prompt instructions help,
+but arithmetic in a prompt is not reliable enough to place a comment by. Validate
+the line against the diff and drop it when it does not match. Posting a comment
+against a line outside the diff also rejects the entire review, so anchor only
+what you have verified and put the rest in the summary.
 
-## Cost shape, and the one setting that matters
+## Operational notes
 
-Runtime billing is per CPU-second and memory-second while a request is in flight,
-so an idle reviewer costs nothing and the bill tracks pull-request volume. The
-model tokens dominate, not the compute.
-
-The setting worth attention is the idle session timeout. The default assumes a
-conversational agent holding a session open; a reviewer runs for a minute and is
-done. Setting it to minutes rather than the default is the difference between
-paying for work and paying for a warm container waiting for nobody. See
-`agents-harden` for session lifecycle mechanics.
-
-One operational surprise worth knowing: a session id is pinned to a warm
-container, so a stable id keeps serving the code that instance started with. A
-fix can be deployed, the runtime can report a new version, the pushed image can
-verifiably contain the fix, and invocations can still run the old code. Vary the
-session id per invocation, and treat runtime version as insufficient evidence
-that a change is live.
-
-## Where the service depth comes from
-
-- Container contract, deploy, versioning, rollback: `agents-deploy` in `aws-agents`.
-- IAM scoping, inbound auth, secrets, session lifecycle, quotas: `agents-harden`.
-- Memory, VPC, multi-agent, model selection: `agents-build`.
-- Model choice and inference cost: `amazon-bedrock` and `aws-ai-ml` in `aws-core`.
+- **A session id is pinned to a warm container.** A stable id keeps serving the
+  code that instance started with. A fix can be deployed, the runtime can report a
+  new version, the pushed image can verifiably contain the fix, and invocations can
+  still run the old code. Vary the session id per invocation, and treat runtime
+  version as insufficient evidence that a change is live.
+- **Set the idle session timeout deliberately.** The default suits a
+  conversational agent holding a session open. A reviewer runs for a minute, so
+  minutes rather than hours is the difference between paying for work and paying
+  for a warm container waiting for nobody.
+- **Public network mode is required if the agent calls GitHub.** VPC mode has no
+  egress without a NAT gateway, which is a standing cost for a workload whose only
+  outbound calls are an API and a model.
+- Cost tracks pull-request volume, and model tokens dominate the per-second
+  compute.
 
 ## Anti-patterns
 
+- **Checking out the pull request branch.** Read through the API. Cloning
+  contributor code into a credentialed runtime is the whole vulnerability.
+- **`pull_request_target` with a fork-head checkout.** The credentials it grants
+  are exactly what the checkout exposes.
 - **Letting a nondeterministic judge block a merge without measuring stability.**
-  Run the same pull request repeatedly first. If the verdict moves, the judgment
-  is advisory whether or not you label it that way.
-- **Reporting what existing CI already reports.** Every duplicate finding lowers
-  the odds anyone reads the novel one.
-- **A single confidence cutoff.** The band just under it is the most useful
-  output, and dropping it silently is the worst available handling.
-- **Asserting a judgment the process reserves for a human.** If the contribution
-  guide says reviewers decide, the agent quotes and defers. Claiming that
-  authority is how the tool loses standing.
-- **Trusting model-reported locations.** Validate line numbers against the diff
-  before anchoring anything to them.
+  If the verdict moves across runs, the judgment is advisory whether you label it
+  that way or not.
+- **Reporting what existing CI reports.** Duplicates train people to skim past
+  everything, including the finding that mattered.
+- **A single confidence cutoff.** The band just below it is the most useful
+  output; dropping it silently is the worst available handling.
+- **Asserting a judgment your process reserves for a human.** If the contribution
+  guide says reviewers decide, quote and defer. Claiming that authority is how the
+  tool loses standing.
 - **Treating a deployed version as proof the new code is running.** Warm
   containers outlive deploys.
