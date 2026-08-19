@@ -127,6 +127,87 @@ from. When a lookup the judgment depends on fails, say so in the prompt and
 forbid asserting that the thing exists: unavailable must read as "unknown", never
 as "absent".
 
+## Bake in the standards the team already agreed to
+
+A small team has no style council and no time to write one. Conventions live in
+whatever plugins and skills people happen to have installed, which means they
+differ per developer and nobody can say authoritatively what the standard is. That
+is the constraint that makes this worth doing: pointing the reviewer at specific
+documents is the cheapest way a team without a platform function ever gets a
+written, agreed standard, because the reviewer forces the question of which
+documents count.
+
+So treat the plugins and skills your developers are told to use as the reviewer's
+rubric. If a skill is good enough to be a working standard for the people writing
+code, it is the right thing to judge that code against. If nobody will agree to
+load it in the reviewer, the standard was never actually adopted, and you have
+learned that for the price of the conversation rather than after a quarter of
+inconsistent review.
+
+The alternative, letting the reviewer reason from model memory, is worse than
+having no standard: it will invent conventions, and a small team has nobody with
+the standing to say which invented rules to ignore.
+
+### What is worth loading
+
+| Source                                                        | Load it when                           | What it gives the review                                            |
+| ------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------- |
+| The authoring conventions for the artefact kind being changed | The pull request touches that artefact | Structural and descriptive conventions, quoted rather than recalled |
+| Your own scoped contribution guide                            | The pull request touches that folder   | The gate the change is actually held to                             |
+| The skill inventory of a declared upstream dependency         | Reviewing for duplication              | What upstream already owns, by capability rather than by name       |
+| A house style or engineering standard the team maintains      | Always, if it is short                 | The conventions a human reviewer would raise anyway                 |
+
+Two things not worth loading: anything already enforced deterministically, and
+anything nobody follows. The first produces duplicate findings, the second
+produces findings the team argues with rather than fixes. Both cost the same
+scarce thing, which is the willingness of three or four engineers to keep reading
+the bot.
+
+### Load selectively, or the diff loses
+
+Published authoring guidance is long. A full set can run several times the size of
+the rest of the prompt, and the changed code then competes for attention with
+documents that are mostly irrelevant to it. Trigger each document on the artefact
+it governs:
+
+- a changed skill definition pulls the skill-authoring conventions
+- a changed plugin or marketplace manifest pulls the structural conventions
+- a changed agent or command definition pulls its own conventions
+- a change to none of those pulls nothing
+
+In practice this turns a prompt that would carry every convention into one
+carrying the one or two that apply, at a fraction of the tokens, with no loss of
+relevant coverage. This is the progressive disclosure that skill authoring
+guidance itself prescribes, applied to the reviewer that reads it.
+
+### Fetch rather than vendor, and degrade rather than fail
+
+Read the documents at review time from their source of truth. Vendoring a copy
+into the container pins a snapshot that silently goes stale until someone
+redeploys, and the staleness is invisible in the review output. Fetching means an
+upstream correction reaches the reviewer without a deploy.
+
+The cost is a dependency that can be unavailable. Handle it explicitly: when a
+document cannot be fetched, load no standard rather than failing the review, and
+tell the model in the prompt that the standard was unavailable. An absent document
+must read as "unknown", never as "no such convention exists". Otherwise a
+rate-limited fetch quietly becomes a clean bill of health, and with nobody
+watching the reviewer's own health that failure can persist for weeks.
+
+### Frame them as conventions, not as law
+
+Instruct the model that these are conventions, that a coherent deliberate
+deviation is not a defect, and that content may predate a convention it now
+appears to violate. Then make the axis advisory. Adopted standards are still
+judgment calls at the edges, and a reviewer that blocks a merge on a convention
+the team adopted last week will be turned off within a week. On a team of a few
+engineers, one wrongly blocked pull request is enough to end the experiment.
+
+Require that any finding on this axis quote both the convention and the departing
+text. A finding that says "does not follow the authoring guidance" without naming
+which line of which document is unactionable, and it is also how a model launders
+a guess into an assertion.
+
 ## Do not let the agent read your harness limits as defects
 
 Two findings here were the harness misleading the model.
@@ -178,3 +259,13 @@ what you have verified and put the rest in the summary.
   tool loses standing.
 - **Treating a deployed version as proof the new code is running.** Warm
   containers outlive deploys.
+- **Letting the reviewer reason about your conventions from memory.** It will
+  invent some of them. Load the document or drop the axis.
+- **Loading every standard on every review.** The diff ends up competing with
+  documents that do not apply to it. Trigger each on the artefact it governs.
+- **Vendoring the standards into the image.** The copy goes stale invisibly, and
+  the review keeps citing a convention that has since changed.
+- **Letting an unavailable standard read as a passing one.** A rate-limited fetch
+  must produce "unknown", never silence that looks like approval.
+- **Blocking a merge on a convention.** Adopted standards are still judgment calls
+  at the edges. Report, quote, and let a human decide.
