@@ -85,6 +85,36 @@ the agent can say "this pattern was already rejected" instead of re-litigating.
 Treat memory as an enhancement, never a dependency. A cold or failed retrieval
 must not fail the review.
 
+### Stamp the commit, or re-review makes memory useless
+
+A reviewer that re-runs on every push writes a record per push. Keyed to the pull
+request alone, ten pushes leave ten near-identical entries, and a recalled
+decision cannot be distinguished from one about code that a later push already
+fixed. The agent then repeats findings the contributor has addressed, which is the
+fastest way to lose their attention.
+
+Put the commit in the record. Then tell the model in the prompt that a prior
+decision may already have been addressed by a later push, and that it is history
+unless the current diff still shows the problem. Retrieval is semantic, so without
+that instruction a superseded finding reads exactly like a live one.
+
+Keep the boundary clear about what belongs in memory at all. Store the reviewer's
+own verdicts and findings. Do not store pull request state: whether it is open,
+merged, approved, or who commented is authoritative in the forge and cheap to read
+per run, so caching it only creates a staleness bug. Memory is for what the
+reviewer concluded, not for what the forge already knows.
+
+### Stored state lies about deploy timing
+
+Memory records are the wrong place to check whether a code change took effect.
+Retrieval returns the newest records, which may predate the deploy, so a working
+fix reads as a failed one. This is the same class of confusion as a warm container
+serving old code, from the opposite direction: there, new code looked absent;
+here, old records make new code look broken.
+
+Compare the record's timestamp against the deploy before concluding anything from
+it, and prefer a fresh invocation over inspecting history.
+
 ## The judgment design that decides whether anyone trusts it
 
 The startup constraint bites hardest here. Nobody will tune this over a quarter.
@@ -259,6 +289,11 @@ what you have verified and put the rest in the summary.
   tool loses standing.
 - **Treating a deployed version as proof the new code is running.** Warm
   containers outlive deploys.
+- **Keying a memory record to the pull request alone.** With a review per push,
+  the records become indistinguishable and superseded findings read as live ones.
+- **Reading stored records to confirm a deploy took effect.** The newest record
+  may predate it, so a working change looks broken. Check the timestamp, or
+  invoke once and look at that.
 - **Letting the reviewer reason about your conventions from memory.** It will
   invent some of them. Load the document or drop the axis.
 - **Loading every standard on every review.** The diff ends up competing with
