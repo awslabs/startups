@@ -70,7 +70,13 @@ A reviewer should not have to infer startup-specificity from prose. Declare it s
 
 - **Do not keyword-stuff.** Startup vocabulary (`runway`, `credits`, `stage`, `activate`) belongs in a description only where it is genuinely load-bearing. `gpu-capacity-strategy` mentions runway and credits because a multi-year commitment is literally spending runway and credits have expiry dates that break capacity plans. `multi-tenant-isolation` uses none of those words, and it is the stronger of the two skills. A skill that sprinkles "runway" to look startup-specific while otherwise being general service guidance fails criterion 1 on review.
 
-- **Include trigger phrases.** List the phrases a user would actually type, including error strings (`InsufficientInstanceCapacity`) and informal phrasings (`cross-tenant data leak`, `noisy neighbor`). This is what makes the skill activate at the right moment rather than sitting unused.
+- **Generalize the triggers; do not list every query.** Describe categories of intent rather than an expanding list of near-verbatim phrases. The official `skill-creator` guidance is explicit that the goal is not "an ever-expanding list of specific queries that this skill should or shouldn't trigger for" but to "generalize from the failures to broader categories of user intent."
+
+- **Write the description in the imperative, opening with `Use when`.** State the situation the skill applies to, then what it covers, then what it is not for. Keep it to roughly 100 to 200 words. The hard limit is 1024 characters, enforced by the official validator, and text over it is truncated.
+
+- **Do not add `when_to_use`.** The field is deprecated; the `plugin-dev` skill reviewer states plainly: "`when_to_use` (note: deprecated, use description only)." All triggering information belongs in `description`. Do not add `version` either, since the official validator rejects it. Allowed fields are `name`, `description`, `license`, `allowed-tools`, `metadata`, and `compatibility`.
+
+- **Write the body in the imperative, not the second person.** "Apply these patterns to agents that..." rather than "you should apply these to your agents." Reference files may keep a field-note voice; `SKILL.md` should not.
 
 The `audience: startup` field is the only mechanical signal, and it is deliberately weak: any file can declare it. Criteria 1 and 2 are judged on substance by a reviewer, and that is the point. The field exists so a missing declaration is caught automatically, not so a present one proves anything.
 
@@ -85,6 +91,8 @@ skills/<skill-name>/
   references/<another-topic>.md
 ```
 
+This is the documented pattern, not a local invention. From the [skills documentation](https://code.claude.com/docs/en/skills): "Skills can include multiple files in their directory. This keeps `SKILL.md` focused on the essentials while letting Claude access detailed reference material only when needed." It also sets the ceiling: "Keep `SKILL.md` under 500 lines. Move detailed reference material to separate files."
+
 Three structural rules, verified against all 32 upstream Agent Toolkit skills:
 
 1. **Every skill directory needs a `SKILL.md`.** It is the only file Claude Code discovers, and its frontmatter `description` is what the model matches to decide whether the skill applies. A `references/` directory with no sibling `SKILL.md` is invisible.
@@ -93,16 +101,21 @@ Three structural rules, verified against all 32 upstream Agent Toolkit skills:
 
 Nesting deeper is allowed (`references/<topic>/references/<subtopic>.md`) and upstream does this where a topic has genuine sub-branches.
 
-A routing table is the clearest way to link references, and it doubles as the description of what the skill covers:
+Link reference files with a bolded backticked path, then a dash, then when to read it. This is the shape the official authoring guidance prescribes:
 
 ```markdown
-| Task                              | Reference                                               |
-| --------------------------------- | ------------------------------------------------------- |
-| Wiring a reviewer agent to a repo | [git-code-reviewer.md](references/git-code-reviewer.md) |
-| Choosing where the agent runs     | see `agents-deploy` in `aws-agents`                     |
+## Reference files
+
+- **`references/git-code-reviewer-agent.md`**: Read before letting any agent gate a merge. Covers ...
 ```
 
-Note the second row: when the answer is upstream, link upstream rather than writing a local copy.
+**Make upstream pointers invocable.** When the answer lives upstream, write it as a callable skill reference rather than prose, so a model can act on the pointer instead of guessing a name:
+
+```markdown
+- **`Skill("aws-agents:agents-deploy")`**: Container contract, deployment, versioning, rollback.
+```
+
+Every such pointer must name a skill that actually exists. The gate verifies this, because a plugin whose whole premise is deference is worthless if its pointers are wrong.
 
 ## What we are actively looking for
 

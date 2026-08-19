@@ -41,6 +41,73 @@ const SUNSET = [
 const WARNING_CUE =
   /\b(deprecat|sunset|end of support|end-of-support|closed to new|do not|don't|avoid|instead of|migrat|no longer|retir|legacy|EOL|rather than|not for new|stop)/i;
 
+// Frontmatter fields the official skill validator accepts. Notably `when_to_use`
+// is deprecated and `version` is rejected, so both are flagged here rather than
+// silently shipped.
+const ALLOWED_FRONTMATTER = new Set([
+  "name",
+  "description",
+  "license",
+  "allowed-tools",
+  "disallowed-tools",
+  "metadata",
+  "compatibility",
+  "paths",
+  "shell",
+  "user-invocable",
+  "model",
+]);
+
+const DESCRIPTION_MAX = 1024; // enforced by skill-creator/scripts/quick_validate.py
+
+/**
+ * Plugins a Skill("plugin:skill") pointer may target: the declared upstream
+ * dependencies, plus sibling plugins in this repo.
+ *
+ * Skills inside this repo are verified to exist. Upstream skills cannot be,
+ * because aws-core and aws-agents are external dependencies that are not
+ * checked out in CI, so only the plugin prefix is validated for those. A typo
+ * in an upstream skill name is caught by review rather than here, and claiming
+ * otherwise would be a check that silently passes everything.
+ */
+function resolvableSkillTargets() {
+  const inRepo = new Map(); // plugin name -> Set of skill names
+  const pluginRoots = ["advisor/plugins", "migrate/plugins", "solution-architecture/plugins"];
+  for (const root of pluginRoots) {
+    if (!existsSync(root)) continue;
+    for (const plugin of readdirSync(root)) {
+      const skillsDir = join(root, plugin, "skills");
+      if (!existsSync(skillsDir)) continue;
+      const skills = new Set();
+      for (const entry of readdirSync(skillsDir)) {
+        if (existsSync(join(skillsDir, entry, "SKILL.md"))) skills.add(entry);
+      }
+      inRepo.set(plugin, skills);
+    }
+  }
+  return inRepo;
+}
+
+/** Upstream plugin prefixes declared as dependencies in any plugin.json here. */
+function declaredDependencyPlugins() {
+  const deps = new Set();
+  const root = "solution-architecture/plugins";
+  if (!existsSync(root)) return deps;
+  for (const plugin of readdirSync(root)) {
+    const manifest = join(root, plugin, ".claude-plugin", "plugin.json");
+    if (!existsSync(manifest)) continue;
+    try {
+      const json = JSON.parse(readFileSync(manifest, "utf8"));
+      for (const d of json.dependencies ?? []) {
+        deps.add(typeof d === "string" ? d : d.name);
+      }
+    } catch {
+      /* manifest validity is claude plugin validate's job, not ours */
+    }
+  }
+  return deps;
+}
+
 const findings = [];
 const add = (file, criterion, line, message) =>
   findings.push({ file, criterion, line, message });
@@ -137,6 +204,62 @@ function checkSkillManifest(file) {
     }
     if (!/^\s*description:\s*\S/m.test(front)) {
       add(rel, "frontmatter", 1, "Frontmatter is missing a `description:` field.");
+    }
+
+    // Top-level keys only, so `audience:` nested under `metadata:` is not
+    // mistaken for an unknown field.
+    for (const m of front.matchAll(/^([A-Za-z][\w-]*):/gm)) {
+      const key = m[1];
+      if (ALLOWED_FRONTMATTER.has(key)) continue;
+      const hint = key === "when_to_use"
+        ? "`when_to_use` is deprecated; put triggering information in `description`."
+        : key === "version"
+        ? "`version` is rejected by the official skill validator; remove it."
+        : `Unknown frontmatter field \`${key}\`.`;
+      add(rel, "frontmatter", 1 + lineOf(front, m.index), hint);
+    }
+
+    // Hard limit enforced by the official validator; over it, text is truncated.
+    const desc = front.match(/^description:\s*(?:"([\s\S]*?)"|'([\s\S]*?)'|(.+))\s*$/m);
+    if (desc) {
+      const value = (desc[1] ?? desc[2] ?? desc[3] ?? "").trim();
+      if (value.length > DESCRIPTION_MAX) {
+        add(
+          rel,
+          "description-length",
+          1,
+          `description is ${value.length} characters, over the ${DESCRIPTION_MAX} limit enforced by the official skill validator. Text past the limit is truncated.`,
+        );
+      }
+    }
+  }
+
+  // --- invocable upstream pointers ----------------------------------------
+  // A plugin whose premise is deference is worthless if its pointers are wrong.
+  const inRepo = resolvableSkillTargets();
+  const upstream = declaredDependencyPlugins();
+  for (const m of text.matchAll(/Skill\(\s*"([^"]+)"\s*\)/g)) {
+    const target = m[1];
+    if (!target.includes(":")) continue; // bare skill name, not a plugin pointer
+    const [plugin, skill] = target.split(":");
+    const lineNo = lineOf(text, m.index);
+
+    if (inRepo.has(plugin)) {
+      if (!inRepo.get(plugin).has(skill)) {
+        add(
+          rel,
+          "broken-pointer",
+          lineNo,
+          `Skill("${target}") names no skill that exists in this repo. Plugin \`${plugin}\` has no \`${skill}\` skill.`,
+        );
+      }
+    } else if (!upstream.has(plugin)) {
+      add(
+        rel,
+        "broken-pointer",
+        lineNo,
+        `Skill("${target}") points at plugin \`${plugin}\`, which is neither in this repo nor a declared dependency in plugin.json.`,
+      );
     }
   }
 

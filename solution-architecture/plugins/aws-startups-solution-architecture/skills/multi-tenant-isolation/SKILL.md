@@ -1,6 +1,7 @@
 ---
 name: multi-tenant-isolation
-description: "Design and fix tenant isolation for a multi-tenant SaaS on AWS: pick a silo/pool/bridge model per layer, enforce isolation in IAM with dynamic session policies rather than application code, partition data in DynamoDB/Postgres/S3, route requests to the right tenant context, and attribute cost per tenant. Use when building a SaaS control plane, choosing a tenancy model, hardening an existing pooled deployment against cross-tenant access, or onboarding a customer who demands dedicated infrastructure. Triggers on: multi-tenant, multitenant, tenant isolation, silo vs pool, tenant per schema, noisy neighbor, cross-tenant data leak, per-tenant cost, SaaS control plane, enterprise customer wants dedicated. Not for: single-tenant application architecture (use aws-core), or general IAM policy authoring (use the aws-iam skill in aws-core)."
+description: "Use when designing or fixing tenant isolation for a multi-tenant SaaS on AWS, where a team with no dedicated security engineer must make a cross-tenant leak structurally impossible rather than a code-review responsibility. Covers choosing a silo, pool, or bridge model per layer rather than per application, enforcing isolation in IAM session policies and the database so a forgotten predicate fails closed, partitioning data across DynamoDB, Postgres, and S3, containing noisy neighbors, and attributing cost per tenant in a pooled fleet. Also use when hardening an existing pooled deployment against cross-tenant access, or when one enterprise customer demands dedicated infrastructure mid-deal. Not for single-tenant architecture or general IAM policy authoring, which belong to the aws-core skills upstream."
+license: Apache-2.0
 metadata:
   audience: startup
 ---
@@ -73,13 +74,15 @@ This arrives as a sales requirement, usually mid-deal, and the answer should alr
 
 ## Where the service depth comes from
 
-Do not restate service mechanics here. Pull them from Agent Toolkit for AWS and spend the reasoning on the tenancy decision.
+Do not restate service mechanics here. Invoke the upstream skills directly and spend the reasoning on the tenancy decision.
 
-- IAM roles, `AssumeRole`, policy conditions: the `aws-iam` skill in `aws-core`.
-- DynamoDB and Aurora specifics: `aws-database` in `aws-core`.
-- Compute, queues, and concurrency: `aws-compute`, `aws-serverless`, `aws-messaging-and-streaming` in `aws-core`.
-- Metrics and dimensions: `aws-observability` in `aws-core`.
-- Cost floors and allocation tags: `aws-billing-and-cost-management` in `aws-core`.
+- **`Skill("aws-core:aws-iam")`**: IAM roles, `AssumeRole`, session policies, and policy conditions.
+- **`Skill("aws-core:aws-database")`**: DynamoDB key design, Aurora and Postgres specifics.
+- **`Skill("aws-core:aws-compute")`**: Compute capacity and scaling.
+- **`Skill("aws-core:aws-serverless")`**: Per-function concurrency and partitioning.
+- **`Skill("aws-core:aws-messaging-and-streaming")`**: Queue isolation and per-tenant bulkheads.
+- **`Skill("aws-core:aws-observability")`**: Metric dimensions and per-tenant attribution.
+- **`Skill("aws-core:aws-billing-and-cost-management")`**: Cost floors, minimums, and allocation tags.
 
 ## Anti-patterns
 

@@ -1,6 +1,7 @@
 ---
 name: gpu-capacity-strategy
-description: "Secure and pay for scarce accelerated compute on AWS when you are small: choose between on-demand, Spot, Capacity Blocks, and reservations for training and inference, get GPU quota actually approved, survive Spot interruption mid-training, and decide when a managed model endpoint beats owning instances at all. Use when GPU capacity is unavailable, a quota request is blocked, training costs are unsustainable, or you are sizing accelerated capacity for a launch. Triggers on: cannot launch GPU instance, InsufficientInstanceCapacity, GPU quota increase, capacity block, spot interruption training, p5 unavailable, GPU too expensive, need H100, inference cost per token, Trainium, Inferentia. Not for: choosing a model or writing inference code (use amazon-bedrock or aws-ai-ml in aws-core), or general instance-type selection (use aws-compute in aws-core)."
+description: "Use when securing and paying for scarce accelerated compute on AWS without the ability to sign a multi-year commitment, because the mechanisms that guarantee capacity require exactly the commitment a pre-revenue company cannot responsibly make. Covers matching the purchase model to the workload shape across on-demand, Spot, and Capacity Blocks, getting a GPU quota request actually approved, treating approved quota as distinct from available capacity, surviving Spot interruption mid-training through checkpoint and resume, and deciding when a managed per-token endpoint beats owning instances at real utilization. Also use when a GPU launch fails for capacity reasons, a quota request is stalled, or accelerated spend is outpacing runway. Not for model selection, inference code, or general instance-type selection, which belong to the aws-core skills upstream."
+license: Apache-2.0
 metadata:
   audience: startup
 ---
@@ -70,10 +71,14 @@ Spot is the difference between affordable and unaffordable experimentation, and 
 
 ## Where the service depth comes from
 
-- Instance families, Spot mechanics, Auto Scaling: `aws-compute` and `aws-containers` in `aws-core`.
-- Model selection, deployment, and AWS silicon porting: `aws-ai-ml` and `amazon-bedrock` in `aws-core`.
-- Agent and inference runtimes: the `aws-agents` skills.
-- Pricing lookups and cost allocation: `aws-billing-and-cost-management` in `aws-core`.
+Do not restate service mechanics here. Invoke the upstream skills directly.
+
+- **`Skill("aws-core:aws-compute")`**: Instance families, Spot mechanics, Auto Scaling, and capacity errors.
+- **`Skill("aws-core:aws-containers")`**: Fargate Spot and container capacity.
+- **`Skill("aws-core:aws-ai-ml")`**: Model deployment, SageMaker endpoints, and AWS silicon porting.
+- **`Skill("aws-core:amazon-bedrock")`**: Managed model invocation and per-token pricing.
+- **`Skill("aws-agents:agents-deploy")`**: Agent and inference runtime deployment.
+- **`Skill("aws-core:aws-billing-and-cost-management")`**: Pricing lookups and cost allocation.
 
 Verify current instance availability, quota behavior, and pricing against those sources rather than from memory. This area changes faster than most, and stale accelerator specifics are worse than none.
 
