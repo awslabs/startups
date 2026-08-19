@@ -121,7 +121,7 @@ Every such pointer must name a skill that actually exists. The gate verifies thi
 
 The plugin README carries a [list of verified gaps](plugins/aws-startups-solution-architecture/README.md#what-to-contribute): topics confirmed to be covered by neither Agent Toolkit for AWS nor AWS Startup Advisor, each a recurring startup engagement problem. Self-hosted inference serving is the largest one open today.
 
-Bring your own topic if it passes the scope test above. The two existing skills are the intended shape and depth: decision tables, the failure mode named explicitly, an anti-pattern list, and service mechanics delegated upstream rather than restated.
+Bring your own topic if it passes the scope test above. The existing skills are the intended shape and depth: decision tables, the failure mode named explicitly, an anti-pattern list, and service mechanics delegated upstream rather than restated.
 
 ## Prefer an upstream dependency over a copy
 

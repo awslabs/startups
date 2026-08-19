@@ -4,11 +4,11 @@ AI agent plugins, tools, and resources for startup builders on AWS.
 
 ## Plugins
 
-| Plugin                                                           | Description                                                                                                                                                                                                                                                                                                                                                                          | Status    |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| **[aws-startup-advisor](advisor/)**                              | Startup-focused build + migrate guidance built on patterns from 350,000+ startups: AWS Activate credits & offers, a knowledge base (sample architectures, learn articles), a copy-paste prompt library, stage-aware architecture advice, and interactive scaffolding — plus the full migration toolkit (gcp-to-aws, heroku-to-aws, llm-to-bedrock, agent-advisor, tf-best-practices) | Available |
-| **[migration-to-aws](migrate/)**                                 | Assess, plan & execute: migrate GCP/Heroku infrastructure and AI workloads to AWS (discovery, architecture mapping, cost analysis, Terraform), rewrite LLM SDK calls to Amazon Bedrock, and select an AWS runtime + build a POC for AI agents. Bundles the gcp-to-aws, heroku-to-aws, llm-to-bedrock, and agent-advisor skills                                                       | Available |
-| **[aws-startups-solution-architecture](solution-architecture/)** | Technical AWS solutions for the problems startups get stuck on: multi-tenant SaaS isolation enforced in IAM rather than application code, and accelerated compute capacity strategy for teams that cannot sign multi-year commitments. Draws general-purpose AWS service depth from Agent Toolkit for AWS as an upstream dependency                                                  | Available |
+| Plugin                                                           | Description                                                                                                                                                                                                                                                                                                                                                                                            | Status    |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **[aws-startup-advisor](advisor/)**                              | Startup-focused build + migrate guidance built on patterns from 350,000+ startups: AWS Activate credits & offers, a knowledge base (sample architectures, learn articles), a copy-paste prompt library, stage-aware architecture advice, and interactive scaffolding — plus the full migration toolkit (gcp-to-aws, heroku-to-aws, llm-to-bedrock, agent-advisor, tf-best-practices)                   | Available |
+| **[migration-to-aws](migrate/)**                                 | Assess, plan & execute: migrate GCP/Heroku infrastructure and AI workloads to AWS (discovery, architecture mapping, cost analysis, Terraform), rewrite LLM SDK calls to Amazon Bedrock, and select an AWS runtime + build a POC for AI agents. Bundles the gcp-to-aws, heroku-to-aws, llm-to-bedrock, and agent-advisor skills                                                                         | Available |
+| **[aws-startups-solution-architecture](solution-architecture/)** | Technical AWS solutions for the problems startups get stuck on: multi-tenant SaaS isolation enforced in IAM rather than application code, accelerated compute capacity strategy for teams that cannot sign multi-year commitments, and running a judgment agent such as an LLM reviewer inside a CI path. Draws general-purpose AWS service depth from Agent Toolkit for AWS as an upstream dependency | Available |
 
 ## Installation
 
@@ -80,7 +80,8 @@ awslabs/startups/
 │   └── plugins/
 │       └── aws-startups-solution-architecture/
 │                                      #   skills: multi-tenant-isolation,
-│                                      #           gpu-capacity-strategy
+│                                      #           gpu-capacity-strategy,
+│                                      #           agentcore-patterns
 │                                      #   deps: aws-core, aws-agents (Agent Toolkit for AWS)
 └── ...                               # Future team folders
 ```

@@ -2,7 +2,7 @@
 
 Technical AWS solutions for the problems startups actually get stuck on, from the AWS Startups Solution Architecture team.
 
-This plugin is **project scaffolding with two exemplar skills**. It exists so Startup SAs have somewhere to contribute the hard technical patterns they solve repeatedly in the field. If you are an SA with a pattern you have explained more than twice, it belongs here. See [what to contribute](#what-to-contribute).
+This plugin is **project scaffolding with three exemplar skills**. It exists so Startup SAs have somewhere to contribute the hard technical patterns they solve repeatedly in the field. If you are an SA with a pattern you have explained more than twice, it belongs here. See [what to contribute](#what-to-contribute).
 
 ## Scope
 
@@ -23,7 +23,7 @@ Two neighbors own adjacent surface, and staying off theirs is the point:
 
 ## Skills
 
-Two exemplars, both chosen because neither neighbor covers them and both are recurring field problems.
+Three exemplars, each chosen because neither neighbor covers it and each is a recurring field problem.
 
 | Skill                    | Problem it solves                                                                                                                                                                                            |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -45,7 +45,7 @@ Verified gaps: as of this writing, neither Agent Toolkit for AWS nor AWS Startup
 
 Bring your own topic if it fits the scope test above. Every contribution must pass all three criteria in the [contributing guide](../../CONTRIBUTING.md); criterion 2, no overlap with Agent Toolkit for AWS, rejects most proposals, so check the upstream skill list first.
 
-The two existing skills are the intended shape and depth: decision tables, the failure mode named explicitly, an anti-pattern list, and service mechanics delegated upstream rather than restated.
+The existing skills are the intended shape and depth: decision tables, the failure mode named explicitly, an anti-pattern list, and service mechanics delegated upstream rather than restated.
 
 ## Upstream dependencies
 
