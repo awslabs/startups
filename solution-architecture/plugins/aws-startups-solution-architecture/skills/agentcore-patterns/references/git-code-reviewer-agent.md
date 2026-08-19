@@ -1,4 +1,4 @@
-# An agent that reviews pull requests on your own repository
+# An agent that reviews pull requests
 
 End-to-end wiring for an AgentCore agent that reviews pull requests: how it
 authenticates to GitHub, what it remembers between reviews, why the obvious CI
@@ -41,7 +41,7 @@ Practical consequences for a small team:
 - **Degrade rather than fail.** Resolve credentials in order: App, then token,
   then unauthenticated. One App is never installed everywhere the agent is asked
   to review, and a missing installation is an expected condition. Enabling App
-  auth here initially broke review of a repository where the App was not
+  auth without that fallback broke review of a repository where the App was not
   installed, because the installation lookup threw and killed the run.
 - Store the App private key in Secrets Manager and read it with the runtime's
   execution role. GitHub issues PKCS#1; WebCrypto needs PKCS#8, so convert once
@@ -97,8 +97,8 @@ duplicate finding lowers the odds anyone reads the novel one. Name those tools i
 the prompt as out of scope.
 
 **Measure verdict stability before letting the agent gate anything.** Run it
-against the same unchanged pull request several times and record the verdict. Four
-runs here produced `REQUEST_CHANGES`, `APPROVE`, `REQUEST_CHANGES`, `APPROVE`: the
+against the same unchanged pull request several times and record the verdict. In one measured
+case four runs produced `REQUEST_CHANGES`, `APPROVE`, `REQUEST_CHANGES`, `APPROVE`: the
 findings were defensible each time but sat at confidence 0.60 to 0.75 against a
 0.6 threshold, so they crossed it about half the time. A verdict that changes on a
 rerun is worse than no verdict. Note that the usual lever is gone, since newer
@@ -112,7 +112,7 @@ voting across N runs also works and costs N times the tokens.
 **Surface the borderline rather than dropping it.** A single threshold discards
 exactly the arguable cases a human most wants to see. Three bands work better:
 state findings above the threshold, surface the band below it as borderline with
-the offending text quoted, drop the rest. Widening to three bands here turned a
+the offending text quoted, drop the rest. In the same case, widening to three bands turned a
 review that reported "no findings" into one that surfaced four specific,
 checkable suspicions at confidence 0.35 to 0.45, with no model change.
 

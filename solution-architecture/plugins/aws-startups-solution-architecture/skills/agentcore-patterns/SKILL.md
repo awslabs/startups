@@ -16,7 +16,7 @@ Design for that outcome. Measure stability before granting an agent authority to
 
 ## Reference files
 
-- **`references/git-code-reviewer-agent.md`**: Read before letting any agent gate a merge. Field notes from running a pull-request reviewer on this repository: which finding kinds may block, measured verdict stability across repeated runs of one unchanged pull request, three-band confidence reporting, grounding the model in code-computed facts, keeping the harness from misleading the model, and the cost and warm-container behavior that make a deployed fix appear not to run.
+- **`references/git-code-reviewer-agent.md`**: Read before letting any agent gate a merge. End-to-end wiring for a pull-request reviewer: why the credential identity decides whether a verdict can be recorded at all, why the reviewer must read the diff through the API rather than check it out, why the obvious CI trigger cannot reach a credentialed runtime, which finding kinds may block a merge, how to measure verdict stability before granting that authority, three-band confidence reporting, and the warm-container behavior that makes a deployed fix appear not to run.
 
 ## Upstream skills to defer to
 
