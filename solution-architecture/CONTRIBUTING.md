@@ -179,20 +179,8 @@ On sunset services the check is context-aware: warning against one or describing
 
 ## Review
 
-Changes here require review from the Solution Architecture team, plus admin review for marketplace, `SKILL.md`, and plugin-manifest changes. See [CODEOWNERS](../.github/CODEOWNERS) for the current routing.
+A pull request here needs approval from the Solution Architecture team. Changes to `marketplace.json`, any `SKILL.md`, or a plugin manifest additionally need admin approval. See [CODEOWNERS](../.github/CODEOWNERS) for the current routing.
 
-**AgentCore review.** Contributions to this folder additionally require review from the AgentCore SME. Agent and AgentCore guidance is owned upstream by the [`aws-agents`](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-agents) plugin, which this folder consumes as a dependency, so agent-related content here is the likeliest place for criterion 2 overlap to reappear. Request that review on every PR in this folder rather than only on files with "agent" in the name, since the overlap usually arrives inside a skill about something else.
+Automated checks run on every pull request that touches this folder, and passing them is necessary rather than sufficient. They decide nothing about criteria 1 and 2, so a green run means only that nothing mechanically wrong was found.
 
-This requirement is documented here rather than in `CODEOWNERS` because GitHub silently ignores a `CODEOWNERS` entry that names a team which does not exist or lacks write access to the repository. Add the entry once the reviewing team or user handle is confirmed, at which point this paragraph can point at it instead.
-
-### Automated reviewer agent (in progress)
-
-An AgentCore runtime that judges criteria 1 and 2 is being built. It is intentionally not part of the mechanical gate above, because reaching it requires AWS credentials and pull requests from forks receive no secrets. A credentialed job therefore cannot gate external contributions, which are the case the gate exists for.
-
-When that runtime is wired in, these are the constraints its caller must respect, verified against a live `InvokeAgentRuntime` call:
-
-- `--content-type application/json` is required. Omit it and the runtime returns HTTP 415 before the agent runs.
-- `--runtime-session-id` has a 33-character minimum. A commit SHA works; a PR number does not.
-- The response is written to an output file rather than stdout, and the returned `contentType` may say `text/plain` even when the body is JSON. Parse the body; do not trust that header.
-
-The agent should return a verdict per criterion rather than a single boolean, so a partial failure is distinguishable from a crash, and its own errors must be distinguishable from a genuine `fail`. A runtime that cannot be reached must not silently read as a pass.
+An automated reviewer that comments on criteria 1 and 2 is in development. Treat its output as advice: it does not approve on the team's behalf, and a human still decides.
