@@ -14,7 +14,7 @@ Point this plugin at your Heroku account (via your authenticated Heroku CLI, rea
 **For infrastructure migrations:**
 
 - **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, and more
-- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
+- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, and (when the Generate path runs `tf-best-practices` — today **`gcp-to-aws`**) `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), plus a full `terraform/README.md`. Heroku Generate wiring for that gate is planned; until then do not assume Heroku always emits `baseline.tf`.
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration, secrets migration, and post-migration validation
 - **Estimates costs across three tiers** — Premium, Balanced, and Optimized — using real-time AWS pricing, compared against your current spend
@@ -33,7 +33,7 @@ Point this plugin at your Heroku account (via your authenticated Heroku CLI, rea
 | Capability                 | Base LLM                          | This Plugin                                                                                                                                        |
 | -------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Terraform generation       | Generic templates                 | Your actual config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                                                |
-| Security baseline          | Not included                      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts                                           |
+| Security baseline          | Not included                      | When infra Generate runs the `tf-best-practices` path (**`gcp-to-aws` today**): `baseline.tf` with GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts. Standalone policy gate also available. |
 | Database migration tooling | "Use DMS"                         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                                                    |
 | Cost estimation            | Stale guesses                     | Three-tier pricing (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your current bill                                          |
 | Migration plan             | Generic checklist                 | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                                                |
@@ -208,6 +208,18 @@ The `agent-advisor` skill (bundled in this plugin) is the entry point for **runn
 See [skills/agent-advisor/SKILL.md](skills/agent-advisor/SKILL.md) for the full trigger list, phases, and gates.
 
 ## Requirements
+
+### First-session checklist
+
+Before a long Clarify interview, make sure these are available on the machine (skills also probe `uv`/`uvx` once on cold start):
+
+| Need | Why | If missing |
+| ---- | --- | ---------- |
+| Agent host (Claude Code / Cursor / Codex / Kiro, etc.) | Runs the skills | Install your agent |
+| **Python 3** | Report validators at Generate | Soft warning; fix before trusting HTML validation |
+| **`uv` / `uvx`** | Live `awspricing` MCP + llm-to-bedrock / agent-advisor scripts | Infra Estimate uses **cached** rates; install from [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
+| AWS CLI credentials | Optional for some paths; needed for live AWS checks / Bedrock execute | Configure when those paths run |
+| At least one discovery input | Live `gcloud` / `heroku`, Terraform, app code, and/or billing | Skill stops if nothing can produce artifacts |
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
