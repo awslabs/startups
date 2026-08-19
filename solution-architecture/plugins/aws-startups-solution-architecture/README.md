@@ -29,6 +29,9 @@ Two exemplars, both chosen because neither neighbor covers them and both are rec
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `multi-tenant-isolation` | Tenancy model per layer, isolation enforced in IAM and the database rather than application code, per-tenant cost attribution, and what to do when one enterprise customer demands dedicated infrastructure. |
 | `gpu-capacity-strategy`  | Getting accelerated capacity at all, getting quota approved, surviving Spot interruption mid-training, and avoiding a multi-year commitment signed against a projection.                                     |
+| `agentcore-patterns`     | Running a judgment agent inside your own CI path: what it may block, measuring verdict stability before it gates anything, confidence banding, and warm-container staleness.                                 |
+
+`agentcore-patterns` is also the layout exemplar: a thin `SKILL.md` router with the depth in `references/`. That is the intended shape for this plugin, since solution-architecture content is mostly reference material.
 
 ## What to contribute
 
