@@ -19,7 +19,7 @@ _contributes:
 
 ## Overview
 
-Transform `aws-design.json` into deployable Terraform HCL configurations. Produces a `terraform/` directory in `$MIGRATION_DIR/` containing valid, `terraform validate`-passing configurations for all designed AWS resources, plus the selected Elastic Beanstalk deploy artifact when EB is present.
+Transform `aws-design.json` into review-ready Terraform HCL configurations. Produces a `terraform/` directory in `$MIGRATION_DIR/` containing valid, `terraform validate`-passing configurations for all designed AWS resources, plus the selected Elastic Beanstalk deploy artifact when EB is present. Elastic Beanstalk configurations require customer-supplied application port and health check path values before `terraform plan` can succeed.
 
 ## Output Structure
 
@@ -158,6 +158,47 @@ variable "migration_id" {
 - Cache: `cache_node_type`, `cache_engine_version`, `cache_multi_az`
 - Messaging: `msk_broker_instance_type`, `msk_broker_count`, `msk_storage_gb`
 - Network: `vpc_id` (when referencing existing), `subnet_ids` (when referencing existing), `vpc_cidr` (when creating new)
+
+**Elastic Beanstalk web runtime inputs** — For each service where `aws_service ==
+"Elastic Beanstalk"` and `aws_config.process_type == "web"`, sanitize the app name
+by replacing `-` with `_`, then emit that app's two variables below. Do not emit
+these variables for non-web Elastic Beanstalk services. The variables intentionally
+have no `default`: the generator has no evidence for either application-specific
+value, and `terraform plan -input=false` must fail with Terraform's
+required-variable diagnostic until the customer supplies both values.
+
+```hcl
+variable "eb_application_port_<app_sanitized>_web" {
+  description = "Exact port value the <heroku_app> Elastic Beanstalk web process listens on"
+  type        = string
+
+  validation {
+    condition = (
+      can(regex("^[1-9][0-9]{0,4}$", var.eb_application_port_<app_sanitized>_web)) &&
+      try(tonumber(var.eb_application_port_<app_sanitized>_web) <= 65535, false)
+    )
+    error_message = "Elastic Beanstalk application port must be an integer from 1 through 65535."
+  }
+}
+
+variable "eb_health_check_path_<app_sanitized>_web" {
+  description = "Exact HTTP health check path for the <heroku_app> Elastic Beanstalk web environment"
+  type        = string
+
+  validation {
+    condition = (
+      startswith(var.eb_health_check_path_<app_sanitized>_web, "/") &&
+      length(var.eb_health_check_path_<app_sanitized>_web) <= 1024
+    )
+    error_message = "Elastic Beanstalk health check path must start with / and contain at most 1024 characters."
+  }
+}
+```
+
+Preserve both customer values exactly. Reference each variable directly from the
+corresponding app's Elastic Beanstalk setting. Validate but do not trim, normalize,
+convert, or replace either value, and do not derive a fallback from the source
+repository.
 
 **Naming convention:** `<resource_type>_<heroku_app>_<attribute>` (sanitize app names: replace `-` with `_`).
 
@@ -1033,7 +1074,7 @@ resource "aws_elastic_beanstalk_environment" "<app_name>_<process_type>" {
   setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"
     name      = "HealthCheckPath"
-    value     = "/health"
+    value     = var.eb_health_check_path_<app_sanitized>_web
   }
   # {{ENDIF}}
 
@@ -1069,11 +1110,13 @@ resource "aws_elastic_beanstalk_environment" "<app_name>_<process_type>" {
     value     = var.eb_deployment_policy
   }
 
+  # {{IF process_type == "web"}}
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "PORT"
-    value     = "5000"
+    value     = var.eb_application_port_<app_sanitized>_web
   }
+  # {{ENDIF}}
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
@@ -1911,6 +1954,15 @@ migration_id = "<migration_id>"
 # Container images (one per Fargate service)
 # container_image_<app>_<process_type> = "<account_id>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>"
 
+# {{IF has_beanstalk_web}}
+# Elastic Beanstalk web runtime settings (one required pair per web app; no defaults).
+# Repeat these assignments for every Elastic Beanstalk web app, replacing
+# <app_sanitized> with its hyphen-to-underscore app name. Leaving any assignment
+# absent makes `terraform plan -input=false` stop with a required-variable diagnostic.
+# eb_application_port_<app_sanitized>_web  = <quoted application listen port>
+# eb_health_check_path_<app_sanitized>_web = <quoted HTTP health check path>
+# {{ENDIF}}
+
 # Elastic Beanstalk CodePipeline deploy (only when eb_deploy_method = "codepipeline")
 # github_connection_arn = "arn:aws:codestar-connections:<region>:<account_id>:connection/<id>"
 # github_repo           = "owner/repository"
@@ -1940,6 +1992,7 @@ After all files are written:
 3. **Variable completeness**: Every `var.*` reference has a corresponding `variable` block in `variables.tf`
 4. **Output references**: Every `output` references a declared resource attribute
 5. **Tag consistency**: Every resource has the default tags (applied via provider `default_tags`)
+6. **Elastic Beanstalk web runtime inputs**: For every EB web service, verify its per-app `eb_application_port_<app>_web` and `eb_health_check_path_<app>_web` variables are declared without defaults, include the required validation blocks, and are referenced directly by that app's `PORT` and `HealthCheckPath` settings. Verify non-web EB services do not require these variables. Do not report an EB web configuration as ready to plan until the customer has supplied both values for every web app.
 
 **Note:** Full `terraform validate` requires `terraform init` (provider download). The generated configuration SHOULD pass `terraform validate` when run with network access. If validation cannot run (no Terraform binary, no network), log a note but do NOT block generation.
 
