@@ -418,6 +418,11 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Mistral Large 3                  | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                                              |
 | DeepSeek-R1                      | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                                              |
 | DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active (Sydney only)                                |
+| GPT-5.6 Luna                     | openai.gpt-5.6-luna                      | OpenAI    | 0.22       | 1.32        | 272K    | fast      | active (mantle only; 1M tier 0.44/1.98)             |
+| GPT-5.6 Terra                    | openai.gpt-5.6-terra                     | OpenAI    | 2.20       | 13.20       | 272K    | flagship  | active (mantle only; 1M tier 4.40/19.80)            |
+| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 5.50       | 33.00       | 272K    | frontier  | active (mantle only; 1M tier 11.00/49.50)           |
+| GPT-5.5                          | openai.gpt-5.5                           | OpenAI    | 5.50       | 33.00       | 272K    | frontier  | active (mantle only; no 1M tier)                    |
+| GPT-5.4                          | openai.gpt-5.4                           | OpenAI    | 2.75       | 16.50       | 272K    | flagship  | active (mantle only; no 1M tier)                    |
 | gpt-oss-20b                      | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                                              |
 | gpt-oss-120b                     | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                                              |
 | GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 5.50       | 33.00       | 1M      | flagship  | active (Mantle/Responses API only)                  |
@@ -528,17 +533,44 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (DeepSeek)
 
 ### OpenAI on Bedrock (GPT-5.6 and gpt-oss)
 
-**Standard tier** per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (OpenAI).
+See `shared/openai-on-bedrock.md` for model IDs, endpoint paths, regions, quotas, and caching rules. **Bedrock
+in-region is priced at parity with OpenAI's _data residency_ tier — exactly 1.10x OpenAI's standard list price** — so
+a same-model migration costs about 10% MORE, not the same. Do not describe it as cost-neutral.
 
-**GPT-5.6 frontier models** (Sol / Terra / Luna, GA July 13, 2026) — served on the `bedrock-mantle` endpoint via the OpenAI Responses API path only (no Converse / bedrock-runtime, no geo/global inference profiles). In-region rates below reflect the July 30, 2026 price reduction (Luna −80%, Terra −20%) and are at parity with OpenAI's data-residency tier. Breakpoint pricing at 272K input tokens: >272K (up to 1M) is 2× input / 1.5× output.
+#### Proprietary GPT models — short context (272K), in-region
 
-| Model         | Region                                         | Input $/1M (≤272K) | Output $/1M (≤272K) | Input $/1M (>272K) | Output $/1M (>272K) |
-| ------------- | ---------------------------------------------- | ------------------ | ------------------- | ------------------ | ------------------- |
-| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                   | 5.50               | 33.00               | 11.00              | 49.50               |
-| GPT-5.6 Terra | US East (N. Virginia / Ohio), US West (Oregon) | 2.20               | 13.20               | 4.40               | 19.80               |
-| GPT-5.6 Luna  | US East (N. Virginia / Ohio), US West (Oregon) | 0.22               | 1.32                | 0.44               | 1.98                |
+Regions: us-east-1 / us-east-2 for all five; us-west-2 additionally carries Terra, Luna and GPT-5.4; us-gov-west-1 carries GPT-5.4 (at its own rate below).
 
-**gpt-oss open-weight models:**
+| Model         | Input $/1M | Output $/1M | Cache write $/1M | Cache read $/1M |
+| ------------- | ---------- | ----------- | ---------------- | --------------- |
+| GPT-5.6 Sol   | 5.50       | 33.00       | 6.875            | 0.55            |
+| GPT-5.6 Terra | 2.20       | 13.20       | 2.75             | 0.22            |
+| GPT-5.6 Luna  | 0.22       | 1.32        | 0.275            | 0.022           |
+| GPT-5.5       | 5.50       | 33.00       | —                | 0.55            |
+| GPT-5.4       | 2.75       | 16.50       | —                | 0.275           |
+
+#### Long context (1M) — GPT-5.6 only, 2.0x input / 1.5x output
+
+| Model         | Input $/1M | Output $/1M |
+| ------------- | ---------- | ----------- |
+| GPT-5.6 Sol   | 11.00      | 49.50       |
+| GPT-5.6 Terra | 4.40       | 19.80       |
+| GPT-5.6 Luna  | 0.44       | 1.98        |
+
+A workload above 272K context must be priced at the long-context tier. GPT-5.5 and GPT-5.4 have no such tier, so
+their usable window is 272K. Global cross-region pricing is unpublished. GovCloud GPT-5.4 is 3.30 / 19.80.
+
+> **Two source conflicts.** The AWS News Blog for the July 30 repricing quotes Luna at **0.20 / 1.20** — OpenAI's
+> standard-tier figure, not the Bedrock in-region rate above; prefer the pricing page. And these models are absent
+> from the AWS Price List API entirely: querying `AmazonBedrock` returns only `gpt-oss` and GPT OSS Safeguard, and
+> filtering on `GPT-5` or a `gpt-5` usage type returns zero rows (price-list publication 2026-08-04). The `awspricing`
+> MCP cannot price them, and an empty result is **not** evidence the model is unavailable.
+
+**Prompt caching (GPT-5.6 only):** cached input read at a 90% discount, cache write at 1.25x uncached input, minimum
+1,024-token prefix, up to 4 breakpoints, ≥30-minute retention. Cached input is exempt from the input-TPM quota.
+GPT-5.5 and GPT-5.4 do not list prompt caching support.
+
+#### Open-weight gpt-oss
 
 | Model        | Region                | Input $/1M | Output $/1M |
 | ------------ | --------------------- | ---------- | ----------- |
@@ -783,24 +815,34 @@ Prices per 1M tokens. Source: [ai.google.dev/gemini-api/docs/pricing](https://ai
 
 Prices per 1M tokens. GPT-5.5 and GPT-5.5 Pro use the same breakpoint pricing structure as GPT-5.4 at 272K input tokens. GPT-5.4 and GPT-5.4 Pro use **breakpoint pricing** at 272K input tokens: rates below are for <272K context; above 272K, input is 2x and output is 1.5x.
 
-| Model        | Input $/1M | Output $/1M | Context | Tier      |
-| ------------ | ---------- | ----------- | ------- | --------- |
-| GPT-5.5      | 5.00       | 30.00       | 1M      | flagship  |
-| GPT-5.5 Pro  | 30.00      | 180.00      | 1M      | premium   |
-| GPT-5.4      | 2.50       | 15.00       | 1.05M   | flagship  |
-| GPT-5.4 Mini | 0.75       | 4.50        | —       | fast      |
-| GPT-5.4 Nano | 0.20       | 1.25        | —       | budget    |
-| GPT-5.4 Pro  | 30.00      | 180.00      | 1.05M   | premium   |
-| GPT-5.2      | 1.75       | 14.00       | 200K    | flagship  |
-| GPT-5.1      | 1.25       | 10.00       | 200K    | flagship  |
-| GPT-5 Mini   | 0.25       | 2.00        | 200K    | fast      |
-| GPT-5 Nano   | 0.05       | 0.40        | 128K    | budget    |
-| GPT-4.1      | 2.00       | 8.00        | 1M      | flagship  |
-| GPT-4.1 Mini | 0.40       | 1.60        | 1M      | fast      |
-| GPT-4.1 Nano | 0.10       | 0.40        | 1M      | budget    |
-| GPT-4o       | 2.50       | 10.00       | 128K    | flagship  |
-| o3           | 2.00       | 8.00        | 200K    | reasoning |
-| o4-mini      | 1.10       | 4.40        | 200K    | reasoning |
+> **Tier note — these rows are OpenAI's STANDARD tier.** Bedrock in-region for the same models is priced at OpenAI's
+> _data residency_ tier, exactly 1.10x the figures below (see the **OpenAI on Bedrock** section above). So for
+> GPT-5.6 Sol / Terra / Luna, GPT-5.5 and GPT-5.4 a same-model move is a ~10% increase, not parity — compute it from
+> the Bedrock table, not by assuming these numbers carry over. The rows below are the right source-side baseline for
+> a customer on OpenAI standard, and remain the only figures available for models with **no** Bedrock equivalent
+> (GPT-5.x Pro, GPT-5.2/5.1, GPT-4.x, o-series).
+
+| Model         | Input $/1M   | Output $/1M  | Context | Tier      |
+| ------------- | ------------ | ------------ | ------- | --------- |
+| GPT-5.6 Sol   | _unverified_ | _unverified_ | 1M      | frontier  |
+| GPT-5.6 Terra | _unverified_ | _unverified_ | 1M      | flagship  |
+| GPT-5.6 Luna  | 0.20         | 1.20         | 1M      | fast      |
+| GPT-5.5       | 5.00         | 30.00        | 1M      | flagship  |
+| GPT-5.5 Pro   | 30.00        | 180.00       | 1M      | premium   |
+| GPT-5.4       | 2.50         | 15.00        | 1.05M   | flagship  |
+| GPT-5.4 Mini  | 0.75         | 4.50         | —       | fast      |
+| GPT-5.4 Nano  | 0.20         | 1.25         | —       | budget    |
+| GPT-5.4 Pro   | 30.00        | 180.00       | 1.05M   | premium   |
+| GPT-5.2       | 1.75         | 14.00        | 200K    | flagship  |
+| GPT-5.1       | 1.25         | 10.00        | 200K    | flagship  |
+| GPT-5 Mini    | 0.25         | 2.00         | 200K    | fast      |
+| GPT-5 Nano    | 0.05         | 0.40         | 128K    | budget    |
+| GPT-4.1       | 2.00         | 8.00         | 1M      | flagship  |
+| GPT-4.1 Mini  | 0.40         | 1.60         | 1M      | fast      |
+| GPT-4.1 Nano  | 0.10         | 0.40         | 1M      | budget    |
+| GPT-4o        | 2.50         | 10.00        | 128K    | flagship  |
+| o3            | 2.00         | 8.00         | 200K    | reasoning |
+| o4-mini       | 1.10         | 4.40         | 200K    | reasoning |
 
 ## Security Baseline
 
