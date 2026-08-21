@@ -253,6 +253,8 @@ Interpret → `ai_critical_feature`. Default: J → no override.
 
 ## Q18 — What's your AI usage volume and cost tolerance?
 
+**Volume half auto-resolves:** If `openai-usage-profile.json` exists with non-zero usage AND `metadata.partial_window` is `false` (a partial window is not a monthly volume — ask normally in that case), derive the volume tier from Σ `usage_by_model[].input_tokens + output_tokens` (< 1M → `"low"`, 1–10M → `"medium"`, > 10M → `"high"`) and ask ONLY the cost-tolerance half ("Your usage data shows [tier] volume. Is budget tight enough to prioritize cost control over model quality? [Y/N]"). Record `ai_token_volume` from the data (`chosen_by: "extracted"`, `source: "openai-usage-profile:usage_by_model"`), not the answer.
+
 > A) Low volume + quality priority — small-scale, quality matters most
 > B) Medium volume + balanced — moderate production use, balanced approach
 > C) High volume + cost critical — high scale, budget is tight, need cost control
@@ -269,7 +271,7 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 
 ## Q19 — Which Gemini or OpenAI model are you currently using?
 
-**Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19.
+**Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19. If `openai-usage-profile.json` exists, prefer its top model by token volume (`usage_by_model[0].model`) as the baseline — billed usage is stronger evidence than code detection — and mention the runner-up models to the user rather than re-asking.
 
 _Skip when:_ Primary model fully resolved from discovery. Use detected value with `chosen_by: "extracted"`.
 

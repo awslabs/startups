@@ -60,6 +60,20 @@ const ALLOWLIST: Record<string, Set<string>> = {
     "scripts/test_build_diagram.py",
     "scripts/test_unit_grouping.py",
   ]),
+  "gcp-to-aws": new Set([
+    // OpenAI Admin API usage discovery (discover-openai-api.md) is advisor-only
+    // for now; these files carry its registration and downstream wiring. If the
+    // feature is later ported to migrate/, remove these entries so the gate
+    // resumes guarding them.
+    "SKILL.md",
+    "references/phases/clarify/clarify-ai-only.md",
+    "references/phases/clarify/clarify-ai.md",
+    "references/phases/design/design-ai.md",
+    "references/phases/discover/discover-billing.md",
+    "references/phases/discover/discover.md",
+    "references/phases/estimate/estimate-ai.md",
+    "references/shared/schema-discover-ai.md",
+  ]),
   "heroku-to-aws": new Set([
     "references/vendored/dsl/INTERPRETER.md",
     "references/vendored/estimate/estimation-infra.schema.json",

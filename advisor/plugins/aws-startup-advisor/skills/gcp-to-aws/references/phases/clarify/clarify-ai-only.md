@@ -258,6 +258,8 @@ Interpret → `ai_vision`. Default: A → no constraint.
 
 ## Q7 — Monthly AI usage volume
 
+**Auto-resolve (skip the question):** If `openai-usage-profile.json` exists with non-zero usage, compute total monthly tokens = Σ `usage_by_model[].input_tokens + output_tokens`, map to the tiers below (< 1M → `"low"`, 1–10M → `"medium"`, 10–100M → `"high"`, > 100M → `"very_high"`), record the extraction (`chosen_by: "extracted"`, `source: "openai-usage-profile:usage_by_model"`), and tell the user: "Resolved from your OpenAI usage data: [N tokens/month → tier]." Ask Q7 only if the profile is absent or `partial_window` makes the volume unreliable.
+
 > A) < 1M tokens | B) 1–10M | C) 10–100M | D) > 100M | E) Don't know
 
 | Answer    | Impact                                             |

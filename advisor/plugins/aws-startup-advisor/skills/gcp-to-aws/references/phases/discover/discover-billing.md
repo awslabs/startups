@@ -16,6 +16,8 @@ Scan the target directory for billing data:
 - `**/*cost*.csv`, `**/*cost*.json` — Cost report exports
 - `**/*usage*.csv`, `**/*usage*.json` — Usage report exports
 
+**Exclude `.migration/**`** — migration run artifacts (e.g. `openai-usage-profile.json`, `openai-capture/`) are never billing input.
+
 **Exit gate:** If NO billing files are found, **exit cleanly**. Return no output artifacts. Other sub-discovery files may still produce artifacts.
 
 ---
