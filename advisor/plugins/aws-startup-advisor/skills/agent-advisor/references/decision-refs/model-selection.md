@@ -1,7 +1,7 @@
 # Bedrock Model Selection (mapping only — no pricing)
 
-Distilled from the `gcp-to-aws` skill's Q16/Q17 tables and `ai-model-lifecycle.md`.
-**Source:** `skills/gcp-to-aws/references/phases/clarify/clarify-ai.md` (Q16/Q17)
+Distilled from the migration-to-aws plugin's Q16/Q17 tables and `ai-model-lifecycle.md`.
+**Source:** `migration-to-aws/skills/gcp-to-aws/references/phases/clarify/clarify-ai.md` (Q16/Q17)
 
 - `.../shared/ai-model-lifecycle.md`. Last aligned: 2026-06-30.
 
@@ -21,7 +21,7 @@ file — it is dispatched by source provider so the path vocabulary and rules di
 
 - **Anthropic** → `scripts/anthropic_model_recommendation.py` + `references/models/anthropic-bedrock-2026-07-21.json`
   (paths: `mantle_messages`, `runtime_converse`, `runtime_invoke`).
-- **OpenAI** → `scripts/openai_model_recommendation.py` + `references/models/openai-bedrock-2026-07-21.json`
+- **OpenAI** → `scripts/openai_model_recommendation.py` + `references/models/openai-bedrock-2026-08-21.json`
   (paths: `mantle_openai_responses`, `runtime_converse`; Chat Completions reshapes to Responses).
 - **Azure OpenAI / other** → generic `provider_module_pending` until a dedicated module exists.
 
@@ -59,7 +59,7 @@ when a cheaper candidate satisfies it.
 Three of these are **separate capabilities, not text-model swaps** — they become their own
 target contracts (`additional_targets` / a separate workload) instead of changing the text
 model: `image_generation` (image model/service), `speech` (STT/TTS services), `embedding`
-(a Bedrock embedding model). Detailed pricing/TCO → the `llm-to-bedrock` skill.
+(a Bedrock embedding model). Detailed pricing/TCO → migration-to-aws (llm-to-bedrock skill).
 
 The selectable model pool is drift-guarded against the sibling skill's lifecycle registry at
 `skills/gcp-to-aws/references/shared/ai-model-lifecycle.md` (a Legacy/EOL model entering the
