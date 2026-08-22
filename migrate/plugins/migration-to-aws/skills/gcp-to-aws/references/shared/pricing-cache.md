@@ -420,7 +420,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active (Sydney only)                                |
 | gpt-oss-20b                      | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                                              |
 | gpt-oss-120b                     | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                                              |
-| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 5.50       | 33.00       | 1M      | flagship  | active (Mantle/Responses API only)                  |
+| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 4.00       | 20.00       | 1M      | flagship  | active (Mantle/Responses API only)                  |
 | GPT-5.6 Terra                    | openai.gpt-5.6-terra                     | OpenAI    | 2.20       | 13.20       | 1M      | mid       | active (Mantle/Responses API only)                  |
 | GPT-5.6 Luna                     | openai.gpt-5.6-luna                      | OpenAI    | 0.22       | 1.32        | 1M      | fast      | active (Mantle/Responses API only)                  |
 | Gemma 3 4B IT                    | google.gemma-3-4b-it                     | Google    | 0.04       | 0.08        | 128K    | budget    | active                                              |
@@ -530,11 +530,11 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (DeepSeek)
 
 **Standard tier** per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (OpenAI).
 
-**GPT-5.6 frontier models** (Sol / Terra / Luna, GA July 13, 2026) — served on the `bedrock-mantle` endpoint via the OpenAI Responses API path only (no Converse / bedrock-runtime, no geo/global inference profiles). In-region rates below reflect the July 30, 2026 price reduction (Luna −80%, Terra −20%) and are at parity with OpenAI's data-residency tier. Breakpoint pricing at 272K input tokens: >272K (up to 1M) is 2× input / 1.5× output.
+**GPT-5.6 frontier models** (Sol / Terra / Luna, GA July 13, 2026) — served on the `bedrock-mantle` endpoint via the OpenAI Responses API path only (no Converse / bedrock-runtime, no geo/global inference profiles). In-region rates below reflect the July 30, 2026 price reduction (Luna −80%, Terra −20%) plus a subsequent Sol price reduction (20% lower input, 33.3% lower output, promotional through at least Nov 21, 2026), and are at parity with OpenAI's data-residency tier. Breakpoint pricing at 272K input tokens: >272K (up to 1M) is 2× input / 1.5× output.
 
 | Model         | Region                                         | Input $/1M (≤272K) | Output $/1M (≤272K) | Input $/1M (>272K) | Output $/1M (>272K) |
 | ------------- | ---------------------------------------------- | ------------------ | ------------------- | ------------------ | ------------------- |
-| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                   | 5.50               | 33.00               | 11.00              | 49.50               |
+| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                   | 4.00               | 20.00               | 8.00               | 36.00               |
 | GPT-5.6 Terra | US East (N. Virginia / Ohio), US West (Oregon) | 2.20               | 13.20               | 4.40               | 19.80               |
 | GPT-5.6 Luna  | US East (N. Virginia / Ohio), US West (Oregon) | 0.22               | 1.32                | 0.44               | 1.98                |
 
