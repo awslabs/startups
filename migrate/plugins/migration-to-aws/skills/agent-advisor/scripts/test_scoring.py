@@ -4,6 +4,7 @@ import pathlib
 import pytest
 
 import scoring
+import score_units
 
 
 def _write_profile(directory, profile):
@@ -78,6 +79,183 @@ def test_hard_constraint_no_match():
     assert eliminated == {}
 
 
+_AWS_DOCS_SOURCE = "https://docs.aws.amazon.com/lambda/latest/dg/configuration-timeout.html"
+_AGENTCORE_SESSION_SOURCE = "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agents-tools-runtime.html"
+_AGENTCORE_GPU_SOURCE = "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-instances-how-it-works.html"
+_AGENTCORE_COMPUTE_SOURCE = "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-how-it-works.html"
+_MICROVMS_SOURCE = "https://docs.aws.amazon.com/lambda/latest/dg/"
+
+
+def _run_evidence(verifications, run_id="test-run"):
+    return {
+        "artifact_type": scoring.RUN_EVIDENCE_ARTIFACT_TYPE,
+        "schema_version": scoring.RUN_EVIDENCE_SCHEMA_VERSION,
+        "run_id": run_id,
+        "verifications": verifications,
+    }
+
+
+def test_verification_required_constraint_is_deferred_and_provisional():
+    profiles = [{**_minimal("agentcore"), "hard_constraints": [{
+        "field": "session_duration", "value": "over_8hr", "reason": "8hr cap",
+        "verification_required": True, "verification_key": "agentcore.session_cap",
+        "verification_expected_value": "8h", "verification_sources": [_AWS_DOCS_SOURCE],
+    }]}]
+    result = scoring.score({"entry_point": "build_scratch", "answers": {
+        "session_duration": "over_8hr"}}, profiles=profiles)
+    assert result["eliminated"] == {}
+    assert result["recommendation_status"] == "provisional"
+    assert result["deferred_verification_requirements"] == [{
+        "runtime": "agentcore", "field": "session_duration", "value": "over_8hr",
+        "reason": "8hr cap", "verification_key": "agentcore.session_cap",
+        "verification_expected_value": "8h",
+        "verification_sources": [_AWS_DOCS_SOURCE],
+    }]
+
+
+def test_seed_controlled_evidence_cannot_finalize_elimination():
+    profiles = [{**_minimal("agentcore"), "hard_constraints": [{
+        "field": "session_duration", "value": "over_8hr", "reason": "8hr cap",
+        "verification_required": True, "verification_key": "agentcore.session_cap",
+        "verification_expected_value": "8h", "verification_sources": [_AWS_DOCS_SOURCE],
+    }]}]
+    result = scoring.score({"entry_point": "build_scratch", "answers": {
+        "session_duration": "over_8hr",
+        "current_run_verifications": {
+            "agentcore.session_cap": {
+                "status": "verified", "verified_this_run": True,
+                "source": _AWS_DOCS_SOURCE, "value": "8h",
+            },
+        },
+    }}, profiles=profiles)
+    assert result["eliminated"] == {}
+    assert result["recommendation_status"] == "provisional"
+
+
+@pytest.mark.parametrize("record", [
+    {"status": "verified"},
+    {"status": "verified", "source": _AWS_DOCS_SOURCE},
+    {"status": "verified", "value": "8h"},
+    {"status": "verified", "source": "https://example.com/agentcore", "value": "8h"},
+])
+def test_incomplete_run_materialized_evidence_cannot_finalize_elimination(record):
+    profiles = [{**_minimal("agentcore"), "hard_constraints": [{
+        "field": "session_duration", "value": "over_8hr", "reason": "8hr cap",
+        "verification_required": True, "verification_key": "agentcore.session_cap",
+        "verification_expected_value": "8h", "verification_sources": [_AWS_DOCS_SOURCE],
+    }]}]
+    result = scoring.score(
+        {"entry_point": "build_scratch", "answers": {"session_duration": "over_8hr"}},
+        profiles=profiles,
+        run_evidence=_run_evidence({"agentcore.session_cap": record}),
+    )
+    assert result["eliminated"] == {}
+    assert result["recommendation_status"] == "provisional"
+
+
+def test_changed_lambda_value_cannot_apply_stale_elimination():
+    profiles = [{**_minimal("lambda"), "hard_constraints": [{
+        "field": "session_duration", "value": "15min_to_8hr", "reason": "15m cap",
+        "verification_required": True, "verification_key": "lambda.timeout",
+        "verification_expected_value": "15m", "verification_sources": [_AWS_DOCS_SOURCE],
+    }]}]
+    result = scoring.score(
+        {"entry_point": "build_scratch", "answers": {"session_duration": "15min_to_8hr"}},
+        profiles=profiles,
+        run_evidence=_run_evidence({"lambda.timeout": {
+            "status": "verified", "source": _AWS_DOCS_SOURCE, "value": "30m",
+        }}),
+    )
+    assert result["eliminated"] == {}
+    assert result["recommendation_status"] == "provisional"
+
+
+def test_agentcore_compute_evidence_cannot_certify_gpu_constraint():
+    profiles = [{**_minimal("agentcore"), "hard_constraints": [{
+        "field": "compute_tier", "value": "gpu", "reason": "no GPU support",
+        "verification_required": True, "verification_key": "agentcore.gpu_support",
+        "verification_expected_value": "unsupported", "verification_sources": [_AGENTCORE_GPU_SOURCE],
+    }]}]
+    result = scoring.score(
+        {"entry_point": "build_scratch", "answers": {"compute_tier": "gpu"}},
+        profiles=profiles,
+        run_evidence=_run_evidence({"agentcore.gpu_support": {
+            "status": "verified", "source": _AGENTCORE_COMPUTE_SOURCE,
+            "value": "unsupported",
+        }}),
+    )
+    assert result["eliminated"] == {}
+    assert result["recommendation_status"] == "provisional"
+
+
+def test_source_backed_matching_run_materialized_evidence_finalizes_constraint():
+    profiles = [{**_minimal("agentcore"), "hard_constraints": [{
+        "field": "session_duration", "value": "over_8hr", "reason": "8hr cap",
+        "verification_required": True, "verification_key": "agentcore.session_cap",
+        "verification_expected_value": "8h", "verification_sources": [_AWS_DOCS_SOURCE],
+    }]}]
+    result = scoring.score(
+        {"entry_point": "build_scratch", "answers": {"session_duration": "over_8hr"}},
+        profiles=profiles,
+        run_evidence=_run_evidence({"agentcore.session_cap": {
+            "status": "verified", "source": _AWS_DOCS_SOURCE, "value": "8h",
+        }}),
+    )
+    assert result["eliminated"] == {"agentcore": "8hr cap"}
+    assert result["deferred_verification_requirements"] == []
+    assert result["recommendation_status"] == "final"
+
+
+def test_seed_schema_rejects_current_run_verifications():
+    import jsonschema
+
+    schema_path = pathlib.Path(scoring.__file__).parent / "schemas" / "seed.json"
+    schema = json.loads(schema_path.read_text())
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate({"system": {"current_run_verifications": {}}}, schema)
+
+
+def test_score_units_ignores_seed_evidence_and_uses_run_artifact(tmp_path, capsys):
+    answers_path = tmp_path / "answers.json"
+    answers_path.write_text(json.dumps({
+        "entry_point": "build_scratch",
+        "system": {"current_run_verifications": {"lambda.timeout": {
+            "status": "verified", "verified_this_run": True,
+            "source": _AWS_DOCS_SOURCE, "value": "15m",
+        }}},
+        "primary_unit": "primary-agent",
+        "units": {"primary-agent": {
+            "workload_class": "agent_session", "session_duration": "15min_to_8hr",
+        }},
+    }))
+
+    assert score_units.main([str(answers_path)]) == 0
+    seed_only = json.loads(capsys.readouterr().out)
+    assert "lambda" not in seed_only["eliminated"]
+    assert seed_only["recommendation_status"] == "provisional"
+
+    (tmp_path / score_units.RUN_EVIDENCE_FILENAME).write_text(json.dumps(
+        _run_evidence({"lambda.timeout": {
+            "status": "verified", "source": _AWS_DOCS_SOURCE, "value": "15m",
+        }}, run_id=tmp_path.name)
+    ))
+    assert score_units.main([str(answers_path)]) == 0
+    materialized = json.loads(capsys.readouterr().out)
+    assert "lambda" in materialized["eliminated"]
+    assert materialized["recommendation_status"] == "final"
+
+
+def test_score_units_rejects_evidence_from_another_run(tmp_path):
+    answers_path = tmp_path / "answers.json"
+    answers_path.write_text(json.dumps({"system": {}, "units": {}}))
+    (tmp_path / score_units.RUN_EVIDENCE_FILENAME).write_text(json.dumps(
+        _run_evidence({}, run_id="another-run")
+    ))
+
+    with pytest.raises(ValueError, match="run_id must match"):
+        score_units.main([str(answers_path)])
+
+
 def test_compute_scores_uses_affinity_and_neutral_default():
     profiles = [
         {**_minimal("agentcore"), "affinities": {
@@ -88,10 +266,10 @@ def test_compute_scores_uses_affinity_and_neutral_default():
     ]
     answers = {"session_duration": "15min_to_8hr", "traffic_pattern": "bursty"}
     scores = scoring._compute_scores(answers, profiles, eliminated={})
-    # agentcore: 5 + 5 + neutral(2)*12 remaining dims = 34
-    # ecs: 3 + neutral(2) + neutral(2)*12 = 29
-    assert scores["agentcore"] == 5 + 5 + scoring.NEUTRAL_SCORE * 12
-    assert scores["ecs"] == 3 + scoring.NEUTRAL_SCORE * 13
+    # agentcore: 5 + 5 + neutral(2) for each remaining dim
+    # ecs: 3 + neutral(2) for each remaining dim
+    assert scores["agentcore"] == 5 + 5 + scoring.NEUTRAL_SCORE * (len(scoring.DIMENSIONS) - 2)
+    assert scores["ecs"] == 3 + scoring.NEUTRAL_SCORE * (len(scoring.DIMENSIONS) - 1)
     assert scores["agentcore"] > scores["ecs"]
 
 
@@ -217,28 +395,28 @@ def test_assumptions_lists_unknown_dimensions():
 
 def test_warning_fires_for_microvms_high_launch():
     warnings = scoring._collect_warnings(
-        {"launch_concurrency": "high"}, "lambda_microvms")
+        {"launch_concurrency": "high"}, {}, "lambda_microvms")
     assert len(warnings) == 1
-    assert "5 TPS" in warnings[0]
+    assert "current-run verification" in warnings[0]
 
 
 def test_warning_fires_for_microvms_in_co_recommend():
     warnings = scoring._collect_warnings(
-        {"launch_concurrency": "high"}, "co_recommend",
+        {"launch_concurrency": "high"}, {}, "co_recommend",
         co_recommend=["agentcore", "lambda_microvms"])
     assert len(warnings) == 1
-    assert "5 TPS" in warnings[0]
+    assert "current-run verification" in warnings[0]
 
 
 def test_no_warning_when_microvms_not_in_co_recommend():
     assert scoring._collect_warnings(
-        {"launch_concurrency": "high"}, "co_recommend",
+        {"launch_concurrency": "high"}, {}, "co_recommend",
         co_recommend=["ecs", "eks"]) == []
 
 
 def test_no_warning_for_other_verdict():
     assert scoring._collect_warnings(
-        {"launch_concurrency": "high"}, "agentcore") == []
+        {"launch_concurrency": "high"}, {}, "agentcore") == []
 
 
 def test_score_end_to_end_with_fixture_profiles(tmp_path):
@@ -304,19 +482,80 @@ def _real_profiles():
     return scoring.load_profiles()  # default RUNTIMES_DIR
 
 
+def _high_launch_microvms_evidence():
+    return _run_evidence({
+        "agentcore.max_compute": {
+            "status": "verified",
+            "source": _AGENTCORE_COMPUTE_SOURCE,
+            "value": "2vCPU/8GB",
+        },
+        "lambda.timeout": {
+            "status": "verified",
+            "source": _AWS_DOCS_SOURCE,
+            "value": "15m",
+        },
+    })
+
+
+def _microvms_launch_capacity_requirement():
+    return {
+        "runtime": "lambda_microvms",
+        "field": "launch_concurrency",
+        "value": "high",
+        "reason": "Lambda MicroVMs launch capacity must be verified before selection for high launch concurrency",
+        "verification_key": "lambda_microvms.launch_tps",
+        "verification_expected_value": "5 (not adjustable)",
+        "verification_sources": [_MICROVMS_SOURCE],
+    }
+
+
 def test_golden_loads_five_ga_runtimes():
     ids = {p["id"] for p in _real_profiles()}
     assert ids == {"agentcore", "lambda_microvms", "ecs", "eks", "lambda"}
 
 
-def test_golden_over_8hr_eliminates_agentcore_and_microvms():
-    # Regression against the old PM decision-tree bug (spec §7.1).
+def test_golden_over_8hr_routes_agentcore_to_instances_not_elimination():
+    """>8h no longer eliminates AgentCore: the Instances compute type (AWS-managed
+    EC2 via capacity providers, launched 2026-08-06) supports sessions up to 14
+    days. Without current-run evidence the Lambda-family caps are DEFERRED (the
+    verification gating), not eliminated — but AgentCore appears in NEITHER list:
+    its duration constraint was deleted outright, not gated, because Instances
+    made it false as a constraint regardless of what the microVMs fact verifies
+    to. The verdict carries agentcore_compute_type=instances plus the caveat
+    warning so downstream phases never build the microVM shape for a multi-day
+    workload."""
     result = scoring.score({
         "entry_point": "migrate",
         "answers": {"session_duration": "over_8hr"}}, profiles=_real_profiles())
-    assert "agentcore" in result["eliminated"]
+    assert "agentcore" not in result["eliminated"]
+    deferred_runtimes = {d["runtime"] for d in result["deferred_verification_requirements"]}
+    assert "agentcore" not in deferred_runtimes
+    assert {"lambda", "lambda_microvms"} <= deferred_runtimes
+    assert result["agentcore_compute_type"] == "instances"
+    assert any("14 days" in w for w in result["warnings"])
+
+
+def test_golden_over_8hr_verified_evidence_finalizes_lambda_family_only():
+    # Verified volatile caps make the Lambda-family eliminations FINAL — while the
+    # same run supplying the old agentcore.session_cap evidence must not revive
+    # the deleted AgentCore constraint.
+    result = scoring.score(
+        {"entry_point": "migrate", "answers": {"session_duration": "over_8hr"}},
+        profiles=_real_profiles(),
+        run_evidence=_run_evidence({
+            "agentcore.session_cap": {"status": "verified",
+                                      "source": _AGENTCORE_SESSION_SOURCE, "value": "8h"},
+            "lambda_microvms.session_cap": {"status": "verified",
+                                            "source": _MICROVMS_SOURCE, "value": "8h"},
+            "lambda.timeout": {"status": "verified",
+                               "source": _AWS_DOCS_SOURCE, "value": "15m"},
+        }),
+    )
+    assert "agentcore" not in result["eliminated"]
     assert "lambda_microvms" in result["eliminated"]
-    assert result["verdict"] in ("ecs", "eks", "co_recommend")
+    assert "lambda" in result["eliminated"]
+    assert result["recommendation_status"] == "final"
+    assert result["agentcore_compute_type"] == "instances"
 
 
 def test_golden_microvms_wins_process_level_resume():
@@ -329,11 +568,13 @@ def test_golden_microvms_wins_process_level_resume():
 
 
 def test_golden_microvms_wins_heavy_non_gpu():
+    # heavy_non_gpu no longer eliminates AgentCore (Instances can size up), but
+    # Lambda MicroVMs' heavy-compute affinity keeps it the winner here.
     result = scoring.score({
         "entry_point": "build_deploy",
         "answers": {"compute_tier": "heavy_non_gpu", "session_duration": "15min_to_8hr"}},
         profiles=_real_profiles())
-    assert "agentcore" in result["eliminated"]
+    assert "agentcore" not in result["eliminated"]
     assert result["verdict"] == "lambda_microvms"
 
 
@@ -348,13 +589,77 @@ def test_golden_agentic_io_wait_favors_agentcore():
     assert result["deployment_model"] == "harness"
 
 
-def test_golden_microvms_high_launch_emits_warning():
-    result = scoring.score({
-        "entry_point": "build_deploy",
-        "answers": {"compute_tier": "heavy_non_gpu", "session_duration": "15min_to_8hr",
-                    "launch_concurrency": "high"}}, profiles=_real_profiles())
-    assert result["verdict"] == "lambda_microvms"
-    assert any("5 TPS" in w for w in result["warnings"])
+def test_golden_microvms_high_launch_requires_capacity_verification():
+    result = scoring.score(
+        {"entry_point": "build_deploy", "answers": {
+            "compute_tier": "heavy_non_gpu", "session_duration": "15min_to_8hr",
+            "launch_concurrency": "high",
+        }},
+        profiles=_real_profiles(),
+        run_evidence=_high_launch_microvms_evidence(),
+    )
+    # Merged semantics: heavy compute no longer eliminates AgentCore (Instances),
+    # so high-launch heavy work is a genuine co-recommendation — the MicroVMs
+    # capacity-verification machinery below still applies while it is in the set.
+    assert result["verdict"] == "co_recommend"
+    assert set(result["co_recommend"]) == {"agentcore", "lambda_microvms"}
+    assert result["agentcore_compute_type"] == "instances"
+    assert result["recommendation_status"] == "provisional"
+    assert result["deferred_verification_requirements"] == [
+        _microvms_launch_capacity_requirement()]
+    assert any("before selection" in warning for warning in result["warnings"])
+
+
+@pytest.mark.parametrize("record", [
+    {"status": "verified", "source": _AWS_DOCS_SOURCE, "value": "5 (not adjustable)"},
+    {"status": "verified", "source": _MICROVMS_SOURCE, "value": "4"},
+])
+def test_golden_microvms_high_launch_rejects_wrong_capacity_evidence(record):
+    evidence = _high_launch_microvms_evidence()
+    evidence["verifications"]["lambda_microvms.launch_tps"] = record
+    result = scoring.score(
+        {"entry_point": "build_deploy", "answers": {
+            "compute_tier": "heavy_non_gpu", "session_duration": "15min_to_8hr",
+            "launch_concurrency": "high",
+        }},
+        profiles=_real_profiles(),
+        run_evidence=evidence,
+    )
+    # Merged semantics: heavy compute no longer eliminates AgentCore (Instances),
+    # so high-launch heavy work is a genuine co-recommendation — the MicroVMs
+    # capacity-verification machinery below still applies while it is in the set.
+    assert result["verdict"] == "co_recommend"
+    assert set(result["co_recommend"]) == {"agentcore", "lambda_microvms"}
+    assert result["agentcore_compute_type"] == "instances"
+    assert result["recommendation_status"] == "provisional"
+    assert result["deferred_verification_requirements"] == [
+        _microvms_launch_capacity_requirement()]
+
+
+def test_golden_microvms_high_launch_emits_verified_warning():
+    evidence = _high_launch_microvms_evidence()
+    evidence["verifications"]["lambda_microvms.launch_tps"] = {
+        "status": "verified",
+        "source": _MICROVMS_SOURCE,
+        "value": "5 (not adjustable)",
+    }
+    result = scoring.score(
+        {"entry_point": "build_deploy", "answers": {
+            "compute_tier": "heavy_non_gpu", "session_duration": "15min_to_8hr",
+            "launch_concurrency": "high",
+        }},
+        profiles=_real_profiles(),
+        run_evidence=evidence,
+    )
+    # Merged semantics: heavy compute no longer eliminates AgentCore (Instances),
+    # so high-launch heavy work is a genuine co-recommendation — the MicroVMs
+    # capacity-verification machinery below still applies while it is in the set.
+    assert result["verdict"] == "co_recommend"
+    assert set(result["co_recommend"]) == {"agentcore", "lambda_microvms"}
+    assert result["agentcore_compute_type"] == "instances"
+    assert result["recommendation_status"] == "final"
+    assert result["deferred_verification_requirements"] == []
+    assert any("verified in this run" in warning for warning in result["warnings"])
 
 
 VALID_STATUSES = {"ga", "preview", "coming_soon"}
@@ -377,11 +682,25 @@ def test_profile_is_well_formed(profile):
         assert declared == legal, (
             f"{profile['id']}.{dim} declares {sorted(declared)}, "
             f"must declare all of {sorted(legal)}")
-    # hard-constraint fields must be answerable keys
+    # Verification gates must name an answerable condition and a profile fact that can be checked.
     answerable = set(scoring.DIMENSIONS) | {"compliance"}
+    verification_keys = {
+        fact["verification_key"] for fact in profile["volatile_facts"]
+        if "verification_key" in fact
+    }
     for constraint in profile["hard_constraints"]:
         assert constraint["field"] in answerable
         assert "reason" in constraint and constraint["reason"]
+        if constraint.get("verification_required"):
+            assert constraint.get("verification_key") in verification_keys
+    for requirement in profile.get("selection_verification_requirements", []):
+        assert requirement["field"] in answerable
+        assert "reason" in requirement and requirement["reason"]
+        assert requirement["verification_key"] in verification_keys
+        assert isinstance(requirement["verification_expected_value"], str)
+        assert requirement["verification_expected_value"]
+        assert isinstance(requirement["verification_sources"], list)
+        assert requirement["verification_sources"]
 
 
 # --- Drift detection: our model pool must stay Active vs the source lifecycle file ---

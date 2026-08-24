@@ -823,7 +823,9 @@ def test_scoring_result_schema_scored_only():
     V = jsonschema.Draft7Validator(schema)
     _unit = {"verdict": "ecs", "scores": {"ecs": 10}, "eliminated": {},
              "deployment_model": None, "agentcore_services": [],
-             "model_recommendation": {"model": "m", "reasoning": "r"}}
+             "model_recommendation": {"model": "m", "reasoning": "r"},
+             "deferred_verification_requirements": [],
+             "recommendation_status": "final"}
     scored = {**_unit, "assumptions_used": [], "warnings": [], "units": {"solo": _unit}}
     assert V.is_valid(scored), "scored shape (wrapped, non-empty units) must validate"
     assert not V.is_valid({**scored, "units": {}}), "empty units must be rejected"
@@ -1073,6 +1075,8 @@ def test_schema_validates_each_units_value():
     bare = {"verdict": "ecs", "scores": {"ecs": 10}, "eliminated": {},
             "deployment_model": None, "agentcore_services": [],
             "model_recommendation": {"model": "m", "reasoning": "r"},
+             "deferred_verification_requirements": [],
+             "recommendation_status": "final",
             "assumptions_used": [], "warnings": []}
     assert V.is_valid({**bare, "units": {"solo": bare}}), "valid per-unit value must validate"
     assert not V.is_valid({**bare, "units": {"broken": {}}}), \

@@ -8,9 +8,10 @@ or the run directory in an outbound request — the answer never depends on it.
 
 ## Fields to verify at runtime via the awsknowledge MCP
 
-- AgentCore session cap (currently "8h, extending")
-- AgentCore compute cap (2 vCPU / 8 GB)
-- AgentCore / Lambda MicroVMs region availability
+- AgentCore microVMs session cap (currently 8h) and Instances session cap (currently 14d)
+- AgentCore microVMs compute cap (2 vCPU / 8 GB; Instances lifts it via EC2 choice)
+- AgentCore / AgentCore Instances / Lambda MicroVMs region availability (Instances
+  launched 2026-08 in a limited region set)
 - Lambda MicroVMs launch TPS (5, not adjustable)
 - FedRAMP certification status for AgentCore and Lambda MicroVMs
 - Any Bedrock model price (defer to migration-to-aws pricing cache; never hardcode here)
@@ -108,3 +109,30 @@ Choose the wording that matches what actually happened:
 The footer is a summary, not the only place a date belongs. A cached number quoted in the body —
 a service limit, a scaling ceiling, a price anchor — carries its own snapshot date at the point of
 use, so a reader who reads one section is not relying on a footer they may never reach.
+
+## Pre-scoring verification contract
+
+Before scoring, inspect every matching runtime hard constraint marked `verification_required`. Do not place verification records in `seed.json` or `answers.json`: those files are reusable workload input and cannot prove that a lookup happened in this run.
+
+After this run observes a verification result, write `$RUN_DIR/current-run-verifications.json` using `scripts/schemas/current-run-verifications.json`:
+
+```json
+{
+  "artifact_type": "agent-advisor.current-run-verifications",
+  "schema_version": 1,
+  "run_id": "<the $RUN_DIR directory name>",
+  "verifications": {
+    "<verification_key>": {
+      "status": "verified",
+      "source": "https://docs.aws.amazon.com/...",
+      "value": "<canonical observed value>"
+    }
+  }
+}
+```
+
+The artifact is run-materialized evidence: write it only after this run actually observes the source, and validate it before scoring. `score_units.py` verifies that its `run_id` matches the directory containing `answers.json`; absent or invalid evidence is ignored only by leaving the result provisional, while a mismatched artifact is a hard error. A verified record must use a public AWS documentation URL that exactly matches a constraint's `verification_sources`, and its `value` must exactly match that constraint's `verification_expected_value`. Otherwise omit the verified record or record `not_verified`/`failed`.
+
+One verification key represents exactly one service claim. Do not use CPU/memory evidence to certify GPU support, or a general service page to certify an unobserved limit. A changed observed value is evidence that the static profile needs review, not permission to apply the old elimination.
+
+Cached profile values, a prior run, and unobserved documentation are useful context but are not current-run verification. They cannot hard-eliminate a runtime and cannot support final pricing, availability, quota, or I/O-wait billing claims. The scorer therefore emits deferred verification requirements (including the exact expected value) and a `provisional` recommendation until valid run-materialized evidence is supplied. This procedure is mandatory before any final recommendation or release decision.

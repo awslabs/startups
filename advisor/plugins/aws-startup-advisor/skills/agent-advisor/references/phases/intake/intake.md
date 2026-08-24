@@ -101,3 +101,7 @@ Write `$RUN_DIR/.phase-status.json` with `entry_point`, `audience` (from Q2), `i
 completed. Set `discover` = pending if entry point is build_deploy/migrate AND the user
 offered a code path, else `skipped`. Set all later phases (`clarify`, `model-recommend`,
 `confirm`, `design`, `estimate`, `generate`) to pending.
+
+## Step 2 amendment — target maturity
+
+Ask **Q3 — Target maturity** in the same AskUserQuestion call unless a valid run seed supplies `target_maturity`: Prototype → `prototype`; Private beta → `private_beta`; Production → `production`. Persist the selected value as top-level `target_maturity` in `.phase-status.json`. Do not infer this value from a runtime or a successful deployment.

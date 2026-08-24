@@ -16,8 +16,10 @@ Rules are evaluated IN ORDER — first match wins. Cite the rule id in
 
 Hard constraints (checked before the table):
 
-- `batch` is **never AgentCore** — AgentCore sessions are interactive-shaped (8h cap,
-  per-session billing); a batch job on AgentCore pays session premiums for nothing.
+- `batch` is **never AgentCore** — AgentCore sessions are interactive-shaped
+  (session-scoped billing and lifecycle; even the Instances compute type frames work
+  as sessions with a 14-day ceiling); a batch job on AgentCore pays session premiums
+  for nothing that AWS Batch does not do cheaper.
 - Anything needing > 15 min per invocation is never plain Lambda (W2 guards this).
 
 These verdicts feed the same consolidation question as scored units (SKILL.md

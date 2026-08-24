@@ -24,6 +24,9 @@ clarify.md Step 3 (do not invent new keys/values).
   some control / full control." → minimal / moderate / full_control.
 - **compute_tier**: "Does a task do heavy number-crunching (video, large data, ML), or mostly
   call an AI model and wait?" → heavy_non_gpu / light; ask about GPU only if heavy.
+- **instance_type_requirement**: "Has your team been told the agent must run on a specific
+  kind of server (a particular machine size, a GPU, or ARM chips)? Most teams answer no."
+  → yes / no; default unknown if unsure.
 - **idle_resume**: "If a user steps away and comes back, must the work continue exactly where
   it paused?" → process_level / filesystem / none.
 - **launch_concurrency**: "At peak, roughly how many new sessions start per second?" → high

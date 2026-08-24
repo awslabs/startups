@@ -1,12 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "agent-advisor run seed",
-  "description": "Machine-readable answers for a non-interactive run. Supplies the dimensions Clarify would otherwise ask a human for, so the deterministic scoring engine receives identical input on every run. Prose (CLAUDE.md) describes context; this file supplies enum values. Every key is optional — a dimension absent here falls through to prose, then to code detection, then to an `assumed` value that MUST be recorded in UNANSWERED.md.",
+  "description": "Machine-readable reusable workload answers for a non-interactive run. It supplies dimensions Clarify would otherwise ask a human for. It cannot contain current-run verification evidence; that evidence belongs only in the run-materialized current-run-verifications.json artifact.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "entry_point": { "enum": ["build_scratch", "build_deploy", "migrate", "add_capabilities"] },
     "audience": { "enum": ["technical", "business"] },
+    "target_maturity": {
+      "enum": ["prototype", "private_beta", "production"],
+      "description": "Target launch maturity. Intake persists this value in run state; it is not inferred from the chosen runtime."
+    },
+    "readiness": { "$ref": "#/definitions/readiness" },
     "system": { "$ref": "#/definitions/systemDims" },
     "units": {
       "type": "object",
@@ -36,6 +41,30 @@
     }
   },
   "definitions": {
+    "readiness": {
+      "type": "object",
+      "description": "Control evidence for the selected maturity. Keys are the controls named in maturity-readiness.md; omitted values remain unknown and become gaps for beta/production.",
+      "additionalProperties": { "enum": ["met", "gap", "not_applicable", "unknown"] }
+    },
+    "currentRunVerifications": {
+      "type": "object",
+      "description": "Current-run evidence only. A verified record must include a public AWS documentation URL and the non-empty observed canonical value; cached evidence cannot be marked verified.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "verified_this_run"],
+        "properties": {
+          "status": { "enum": ["verified", "not_verified", "failed"] },
+          "verified_this_run": { "type": "boolean" },
+          "source": { "type": "string", "pattern": "^https://([A-Za-z0-9-]+\\.)*aws\\.amazon\\.com(/|$)" },
+          "value": { "type": "string", "minLength": 1 }
+        },
+        "allOf": [{
+          "if": { "properties": { "status": { "const": "verified" } } },
+          "then": { "required": ["source", "value"] }
+        }]
+      }
+    },
     "systemDims": {
       "type": "object",
       "additionalProperties": false,

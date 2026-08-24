@@ -96,7 +96,7 @@ function walk(root: string, rel = ""): string[] {
   if (!existsSync(abs)) return [];
   const out: string[] = [];
   for (const entry of readdirSync(abs)) {
-    if (entry === "__pycache__" || entry === ".pytest_cache" || entry.endsWith(".pyc")) continue;
+    if (entry === "__pycache__" || entry === ".pytest_cache" || entry === ".venv" || entry.endsWith(".pyc")) continue;
     const r = rel ? join(rel, entry) : entry;
     if (statSync(join(root, r)).isDirectory()) out.push(...walk(root, r));
     else out.push(r);

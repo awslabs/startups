@@ -115,11 +115,11 @@ Percentages below are blended savings using a 2:1 input-to-output token ratio.
 
 ### OpenAI GPT-5.6 on Bedrock (Sol / Terra / Luna) — same-provider path
 
-GPT-5.6 launched July 13, 2026 and is GA on Bedrock. This is the preferred first mapping for OpenAI-sourced applications: the model family does not change, so prompt adaptation, behavior-delta analysis, and quality re-evaluation are largely unnecessary. Bedrock in-region pricing is at parity with OpenAI's data-residency tier (a ~10% premium over OpenAI Standard; rates below reflect the July 30 price reduction).
+GPT-5.6 launched July 13, 2026 and is GA on Bedrock. This is the preferred first mapping for OpenAI-sourced applications: the model family does not change, so prompt adaptation, behavior-delta analysis, and quality re-evaluation are largely unnecessary. Bedrock in-region pricing is at parity with OpenAI's data-residency tier (a ~10% premium over OpenAI Standard; rates below reflect the November 2026 Sol price reduction (following the July 30 Terra/Luna reductions)ce reduction).
 
 | OpenAI Model (source)            | Bedrock GPT-5.6 Target | Model ID               | Bedrock Price (≤272K ctx) | Notes                                          |
 | -------------------------------- | ---------------------- | ---------------------- | ------------------------- | ---------------------------------------------- |
-| GPT-5.6 Sol / GPT-5.5 / o3-pro   | GPT-5.6 Sol            | `openai.gpt-5.6-sol`   | $5.50 / $33.00            | Flagship; frontier reasoning + agentic         |
+| GPT-5.6 Sol / GPT-5.5 / o3-pro   | GPT-5.6 Sol            | `openai.gpt-5.6-sol`   | $4.00 / $20.00            | Flagship; frontier reasoning + agentic         |
 | GPT-5.6 Terra / GPT-5.4 / GPT-4o | GPT-5.6 Terra          | `openai.gpt-5.6-terra` | $2.20 / $13.20            | Balanced tier; ≈ GPT-5.5 quality at lower cost |
 | GPT-5.6 Luna / Mini & Nano tiers | GPT-5.6 Luna           | `openai.gpt-5.6-luna`  | $0.22 / $1.32             | Fast/affordable; high-volume inference         |
 

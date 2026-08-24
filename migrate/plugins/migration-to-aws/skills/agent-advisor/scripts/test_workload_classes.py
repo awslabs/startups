@@ -31,7 +31,8 @@ def test_rules_present_in_order():
 
 
 def test_batch_never_agentcore():
-    # AgentCore sessions cap at 8h and bill per session — wrong shape for batch.
+    # AgentCore frames work as sessions with session-scoped billing (even the
+    # Instances compute type, 14d ceiling) — wrong shape for batch schedulers.
     text = _text()
     assert "batch" in text
     assert re.search(r"batch.{0,400}never AgentCore", text, re.DOTALL | re.IGNORECASE)

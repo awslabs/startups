@@ -182,3 +182,7 @@ Stage 3 reads gcp-to-aws artifacts ONLY via this recorded path, never by re-glob
 | `scripts/test_workload_classes.py`                   | Content lock for workload-classes.md (verdicts table)                                                          |
 | `scripts/test_unit_grouping.py`                      | Unit grouping + pattern matching (workload-class assignment)                                                   |
 | `scripts/test_collapse_invariant.py`                 | Collapse-invariant ordering enforcement (A→B implies [B] ⊆ [A] outputs)                                        |
+
+## Maturity and readiness contract
+
+Intake persists `target_maturity` (`prototype`, `private_beta`, or `production`) in run state. Clarify carries it and the readable `readiness` record into `answers.json`. Current-run verification evidence remains exclusively in the sibling `$RUN_DIR/current-run-verifications.json` artifact: never copy it into `seed.json` or `answers.json`. Design and Generate may consume that artifact only after validating its schema and matching `run_id`, and may carry forward verified outcomes but not the raw evidence records. Load `references/decision-refs/maturity-readiness.md` whenever target maturity is selected. A cached volatile fact may inform discovery, but only a record verified in this run can make a verification-required constraint final; otherwise the score remains provisional with deferred verification requirements.

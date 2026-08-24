@@ -26,7 +26,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: design.json
     _on_failure: _halt_and_inform
-  - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; every model-bearing unit's model_recommendation is derived from the matching model-recommendation.json workload entry and accepted confirm.model_decision, including model_identity, model, api_path, invocation_model_id, source, source_analysis, feature_assessment, compatibility, architecture_impacts, additional_targets (separate-modality target contracts, carried verbatim when present), blocks, tuning, migration_deltas, evaluation, rollout, provisional verification, and live_verification when model-verification.json exists; no model was independently selected from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled Public Preview regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
+  - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_compute_type, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; every agentcore-verdict unit carries agentcore_compute_type (microvms or instances) verbatim from its scoring result and every non-agentcore unit carries null — the compute type is never re-derived in Design; every model-bearing unit's model_recommendation is derived from the matching model-recommendation.json workload entry and accepted confirm.model_decision, including model_identity, model, api_path, invocation_model_id, source, source_analysis, feature_assessment, compatibility, architecture_impacts, additional_targets (separate-modality target contracts, carried verbatim when present), blocks, tuning, migration_deltas, evaluation, rollout, provisional verification, and live_verification when model-verification.json exists; no model was independently selected from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled Public Preview regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
     _on_failure: _halt_and_inform
 ---
 
@@ -84,7 +84,10 @@ eliminated). Set `io_wait_tco_note = true` in design.json and include a short no
 e.g.: "Your traffic is spiky / has human-in-the-loop waits — on AgentCore you pay nothing while
 the agent waits on the model or a human (active-CPU billing only), which is a real TCO edge vs
 always-on compute. Exact numbers come from the migration/pricing plugins." No dollar figures
-here. If AgentCore is not viable, omit the note.
+here. If AgentCore is not viable, omit the note. **The note applies to the microVMs compute
+type only** — when `agentcore_compute_type` is `instances`, billing is EC2 in the user's
+account plus a management fee (an idle instance costs money unless the session is stopped),
+so omit the $0-I/O-wait claim and let the scoring warning carry the pricing caveat instead.
 
 ## Step 4c — FedRAMP status (WIP, not a hard block)
 
@@ -173,8 +176,9 @@ observed this run.
 
 Assemble per unit:
 
-- `agent_session` units: verdict/deployment_model/services from that unit's scoring result +
-  that unit's confirm overrides; model/path from
+- `agent_session` units: verdict/deployment_model/agentcore_compute_type/services from that
+  unit's scoring result + that unit's confirm overrides (compute type is copied verbatim,
+  never re-derived — scoring owns the >8h / GPU / instance-type routing); model/path from
   `model-recommendation.json.workloads[<unit_id>]` + the accepted
   `confirm.json.units[<unit_id>].model_decision` — read `confirm.json.units[<unit_id>]`
   (deployment_model, agentcore_services, chosen_runtime, tool_choices) for THIS unit, not a
@@ -312,6 +316,7 @@ considered" and the "Eliminated" line (Generate reads design.json, not scoring-r
       "effective_runtime": "... (= verdict when split; = platform.runtime when consolidated)",
       "coupling": { "mode": "queue | api | a2a | none (carried over from context-signals.json.units[])" },
       "deployment_model": "...",
+      "agentcore_compute_type": "microvms | instances | null (verbatim from this unit's scoring result; instances = capacity-provider EC2 — >8h/GPU/heavy/instance-type workloads)",
       "agentcore_services": [...],
       "model_recommendation": {...},
       "rationale": "...",
@@ -325,9 +330,11 @@ considered" and the "Eliminated" line (Generate reads design.json, not scoring-r
     "shared_services": [...]
   },
   "verdict": "...", "chosen_runtime": "...", "deployment_model": "...",
+  "agentcore_compute_type": "microvms | instances | null",
   "agentcore_services": [...], "model_recommendation": {...}, "warnings": [...],
   "scores": {...}, "eliminated": {...}, "blocking_constraints": [...],
-  "volatile_facts": {"session_cap": {"value": "8h", "source": "mcp|cached"}},
+  "volatile_facts": {"microvms_session_cap": {"value": "8h", "source": "mcp|cached"},
+                     "instances_session_cap": {"value": "14d", "source": "mcp|cached"}},
   "managed_alternative": "claude_managed | bedrock_managed | none",
   "io_wait_tco_note": true|false,
   "fedramp_note": true|false,
@@ -358,3 +365,9 @@ in Step 6, independent of `handoff_required`.)
   handoff. Estimate runs on migrate too — it produces the target-state run cost per unit; the
   migration TCO comparison stays with the Migration Plan engine.
 - otherwise → set `phases.design` = completed and continue to Estimate.
+
+## Maturity/readiness and provisional-verification extension
+
+Load `references/decision-refs/maturity-readiness.md` with the design inputs. Copy `target_maturity`, `readiness`, `recommendation_status`, and `deferred_verification_requirements` from the run artifacts into `design.json`, preserving the release and evaluation gates applicable to the tier. A `provisional` recommendation is not a launch approval: state the unresolved constraint, verification key, owner, and blocking decision explicitly.
+
+This supersedes the unconditional statement in Step 4b: include an AgentCore I/O-wait billing advantage only if the sibling `$RUN_DIR/current-run-verifications.json` artifact is schema-valid, its `run_id` matches `$RUN_DIR`, and its `agentcore.io_wait_billing` record has `status: "verified"` with a source-backed observed value from this run. Never read or write verification evidence through `answers.json`. Without validated current-run evidence, say only that the billing behavior requires current verification and do not make a comparative billing claim.

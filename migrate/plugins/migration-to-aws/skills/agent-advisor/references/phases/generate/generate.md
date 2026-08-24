@@ -241,3 +241,7 @@ whenever the seed was silent.
 
 Note: for `migrate` WITH a completed migration plan, Gate 2 is asked at the end of
 migration-plan.md (its Step 6), using the same wording as point 2 above.
+
+## Maturity/readiness output extension
+
+Recommendation.md and mini-brief.md must state target maturity, readiness status, concrete gaps, tier-appropriate release/evaluation gates, recommendation status, and every deferred verification requirement. Label the mini-brief **Provisional** whenever `design.json.recommendation_status == "provisional"`; it must say that no runtime decision, pricing claim, or launch gate relying on deferred evidence is final. Include the AgentCore I/O-wait billing benefit only when Design recorded current-run verification; otherwise report the check as pending without a static billing result.

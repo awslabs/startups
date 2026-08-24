@@ -68,6 +68,15 @@ switch** between **Harness** (no-code, managed loop — declare the agent as con
 `deployment_preference` in Clarify, it already drove this — restate it and let them change their
 mind here. Record the final choice in `confirm.json`.
 
+When the unit's scoring result carries `agentcore_compute_type: "instances"`, ALSO state it
+plainly before they confirm — it changes the cost model and the architecture: "Your >8h
+sessions / GPU / instance-type requirement routes this to the **Instances** compute type:
+AWS-managed EC2 in your account (capacity provider), sessions up to 14 days, billed at EC2
+rates plus a management fee — not the consumption / $0-I/O-wait model." The compute type is
+informational here (scoring owns the routing; the user changes it by changing the answer that
+triggered it), so do not add a confirm question for it — just make sure no one reaches Design
+believing they are getting microVM pricing.
+
 Then ask which AgentCore services to enable beyond the always-on set (identity, observability,
 evaluations, optimization). Multi-select, seeded from `agentcore_services`:
 

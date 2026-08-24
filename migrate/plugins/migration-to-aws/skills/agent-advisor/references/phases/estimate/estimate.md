@@ -54,7 +54,12 @@ and the `units[]` array from design.json. Each unit has `id`, `workload_class`, 
 
 Cached anchors (order-of-magnitude, us-east-1, verify; last updated 2025-07-14 — refresh via awspricing MCP when >30 days old):
 
-- AgentCore: ~$0.0895/vCPU-hour (active CPU only), ~$0.00945/GB-hour
+- AgentCore (microVMs compute type): ~$0.0895/vCPU-hour (active CPU only), ~$0.00945/GB-hour
+- AgentCore (Instances compute type, `agentcore_compute_type: "instances"` in design.json):
+  EC2 On-Demand rate for the chosen instance type (user's Savings Plans / ODCRs apply) PLUS
+  an AgentCore management fee — NOT consumption-based and NOT $0 during I/O wait. No cached
+  anchor here: pull the EC2 rate via the awspricing MCP (instance type comes from the user's
+  instance_type_requirement answer, else assume a mid-size general-purpose type and say so).
 - Lambda MicroVMs: ~$0.0997/vCPU-hour, ~$0.0132/GB-hour
 - Fargate: ~$0.04048/vCPU-hour, ~$0.004445/GB-hour
 - Bedrock model token rates: defer to migration-to-aws pricing cache for exact figures

@@ -7,6 +7,7 @@ _reads:
   - interpreted core-question answers (collected inline in clarify.md)
 _produces:
   - answers.json
+  - current-run-verifications.json
   - scoring-result.json
 ---
 
@@ -15,9 +16,14 @@ _produces:
 > **Assembler unit.** The Clarify phase presents the core scoring questions (in
 > the audience-specific wording loaded from clarify-technical.md /
 > clarify-business.md), interprets the answers, and writes `answers.json`
-> inline within `clarify.md` (Step 4), then runs the deterministic scoring
-> engine, which writes `scoring-result.json` (Step 5). This unit records the
-> artifact-level contract for the phase: it is the single creator of both
-> `answers.json` and `scoring-result.json`, and its postconditions (declared on
-> the phase) are the phase's completion gate. See `clarify.md` § Step 4–5 for
-> the legal answer keys/values and the scoring command.
+> inline within `clarify.md` (Step 4). Before scoring, it creates the sibling
+> `current-run-verifications.json` artifact and records only evidence actually
+> observed in this run; then it runs the deterministic scoring engine, which
+> writes `scoring-result.json` (Step 5). This unit is the single creator of all
+> three phase artifacts. See `clarify.md` § Step 4–5 for legal answer keys,
+> the verification-evidence contract, and the scoring command.
+
+The assembled workload answers preserve `target_maturity` and `readiness` but
+never contain current-run verification evidence. The scoring artifact preserves
+its `recommendation_status` and `deferred_verification_requirements`; deferred
+verification is not silently converted into an elimination or final recommendation.

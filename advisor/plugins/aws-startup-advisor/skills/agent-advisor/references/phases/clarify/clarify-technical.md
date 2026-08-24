@@ -10,7 +10,11 @@ _contributes:
 Use direct technical terms. Map each answer onto the keys in clarify.md Step 3.
 
 - **session_duration**: "How long do agent tasks typically run? seconds / minutes / hours
-  (≤8h) / >8h or continuous."
+  (≤8h) / >8h or continuous." (>8h no longer rules AgentCore out — it routes to the
+  Instances compute type, sessions up to 14 days. Truly always-on services are still
+  steered elsewhere by `traffic_pattern`.)
+- **instance_type_requirement**: "Do you have a requirement to choose a particular EC2
+  instance type for your agent — a specific family/size, a GPU model, or ARM? yes / no."
 - **traffic_pattern**: "Traffic shape? bursty with idle / steady continuous / mostly idle."
 - **session_state**: "Execution model? stateless / stateful / human-in-the-loop approvals."
 - **isolation**: "Multi-tenant isolation required between users? required / nice-to-have / not needed."
