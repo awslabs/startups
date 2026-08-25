@@ -95,7 +95,7 @@ Emit ARM64 in Terraform:
 - ECS Fargate: `runtime_platform { cpu_architecture = "ARM64", operating_system_family = "LINUX" }`
 - Lambda: `architectures = ["arm64"]`
 - EKS standard node groups (`kubernetes: eks-standard`): arm64 AMI node group (single-arch on dev; note optional mixed-cluster module for prod)
-- EKS Auto Mode (`kubernetes: eks-auto`, the GKE default): no AMI/launch template — select arm64 on the NodePool / `aws_eks_node_class` (`requirements` matching `kubernetes.io/arch: arm64`)
+- EKS Auto Mode (`kubernetes: eks-auto`, the GKE default): **Graviton is not a flag on the cluster.** Auto Mode's built-in `general-purpose` NodePool (the one that schedules app workloads) is **amd64-only and immutable** — only the tainted `system` NodePool (cluster add-ons) is multi-arch — so arm64 **cannot** be selected on `aws_eks_cluster` or the built-in pools. To actually run arm64 workloads you must apply a **custom Karpenter NodePool + EC2NodeClass** (`requirements: kubernetes.io/arch In ["arm64"]`) as a **Kubernetes manifest** via `kubectl`/Helm after the cluster is up (see `generate-artifacts-infra.md` for the emitted manifest + apply step). If the run does not emit and apply that manifest, Auto Mode nodes run **amd64** — set `target_architecture: amd64`, drop the arm64 build, and **flag Graviton as not applied**; never report arm64 for an Auto Mode cluster that only has the built-in `general-purpose` pool.
 - Docker build step in the runbook: `docker build --platform linux/arm64` (not multi-arch by default)
   Include a "Graviton Migration Notes" section in the output docs: services moved to arm64, any `conditional` caveats, and the recommendation to validate with a load test post-migration.
 
