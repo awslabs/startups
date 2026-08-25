@@ -174,7 +174,7 @@ Phase 4 of 6 complete (Estimate). Remaining: Generate (+ optional Feedback).
 
 [A] Done for now — I have what I need to decide
 [B] Explore what-ifs — reprice scenarios side by side (~1 min each): region,
-    single-AZ database, EKS Auto Mode vs standard EKS vs Fargate, Graviton
+    single-AZ database, EKS vs Fargate, Graviton
 [C] Generate Terraform and migration scripts
 ```
 

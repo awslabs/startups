@@ -144,29 +144,6 @@ Example:
 }
 ```
 
-**Canonical `config` keys for `google_container_cluster`** (Clarify Q8 default and the `compute.md` GKE rubric read these — use EXACTLY these keys):
-
-- `config.autopilot_enabled` — boolean. `true` when the GKE cluster runs in **Autopilot** mode, `false` for **Standard** mode. Normalized from Terraform `enable_autopilot` (IaC path) or the live `autopilot.enabled` capture field (live path). Omit only when neither source resolves it — an omitted value is treated as Standard/unknown by downstream defaults, so prefer writing an explicit boolean whenever the signal exists.
-- `config.node_machine_type` — the primary node pool `machine_type` when present (Standard clusters only; Autopilot has no node pools). Optional; used for Graviton signal and node sizing.
-
-Example:
-
-```json
-{
-  "address": "google_container_cluster.primary",
-  "type": "google_container_cluster",
-  "name": "primary",
-  "classification": "PRIMARY",
-  "tier": "compute",
-  "confidence": 0.99,
-  "config": {
-    "autopilot_enabled": true
-  },
-  "depth": 2,
-  "cluster_id": "compute_gke_us-central1_001"
-}
-```
-
 **Key Sections:**
 
 - `metadata` — Report metadata (report_date, project_directory, terraform_version)

@@ -194,15 +194,15 @@ Activate package selection is owned by **Q27** (`startup_program_status`) when C
 > B) No, AWS-only is acceptable
 > C) I don't know
 
-| Answer                    | Recommendation Impact                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Yes, multi-cloud required | **Immediate EKS Standard Cluster recommendation** — Kubernetes is the only portable abstraction layer. Skip Q8. ECS Fargate excluded. |
-| No, AWS-only acceptable   | Full compute decision tree continues — EKS Auto Mode vs standard EKS vs ECS Fargate evaluated based on K8s preference (Q8)            |
+| Answer                    | Recommendation Impact                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Yes, multi-cloud required | **Immediate EKS recommendation** — Kubernetes is the only portable abstraction layer. Skip Q8. ECS Fargate excluded. |
+| No, AWS-only acceptable   | Full compute decision tree continues — EKS vs ECS Fargate evaluated based on K8s sentiment (Q8)                      |
 
 Interpret:
 
 ```
-A -> compute: "eks" — Immediate EKS Standard Cluster recommendation (kubernetes: "eks-standard"). EKS Auto Mode is NOT used for multi-cloud — its node management is AWS-specific and defeats portability; a standard EKS cluster is the portable target. EARLY EXIT: skip Q8.
+A -> compute: "eks" — Immediate EKS recommendation. EARLY EXIT: skip Q8.
 B -> (no constraint written — full compute decision tree continues)
 C -> same as default (B) — assume AWS-only
 ```

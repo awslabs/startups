@@ -321,17 +321,6 @@ captured, populate `ai_detection` exactly as `discover-iac.md` Step 2 would
 (signal method `"live_gcloud"`, confidence 95, `ai_services: ["vertex_ai"]`,
 `has_ai_workload: true`). Otherwise `has_ai_workload: false`, `confidence: 0`.
 
-**Config normalization (`google_container_cluster`):** the row 3 capture includes
-`autopilot.enabled`. Normalize it into the inventory resource's `config` using the
-canonical keys from `schema-discover-iac.md`:
-
-- `config.autopilot_enabled` — from the captured `autopilot.enabled`. Write `true`
-  when `autopilot.enabled == true`, `false` otherwise (a cluster reporting node
-  pools with `autopilot.enabled` absent/false is Standard mode). This drives the
-  Clarify Q8 default and the `compute.md` GKE rubric (Autopilot → EKS Auto Mode).
-- `config.node_machine_type` — from the primary `nodePools[].config.machineType`
-  when present (Standard clusters). Omit for Autopilot.
-
 ## Step 4: Infer Edges from Resolved Config
 
 Live captures contain resolved values, which often beat HCL references. Build
