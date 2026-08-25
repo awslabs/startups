@@ -94,7 +94,8 @@ Emit ARM64 in Terraform:
 - EC2: `instance_type = "m7g.xlarge"` (etc.)
 - ECS Fargate: `runtime_platform { cpu_architecture = "ARM64", operating_system_family = "LINUX" }`
 - Lambda: `architectures = ["arm64"]`
-- EKS: arm64 AMI node group (single-arch on dev; note optional mixed-cluster module for prod)
+- EKS standard node groups (`kubernetes: eks-standard`): arm64 AMI node group (single-arch on dev; note optional mixed-cluster module for prod)
+- EKS Auto Mode (`kubernetes: eks-auto`, the GKE default): no AMI/launch template — select arm64 on the NodePool / `aws_eks_node_class` (`requirements` matching `kubernetes.io/arch: arm64`)
 - Docker build step in the runbook: `docker build --platform linux/arm64` (not multi-arch by default)
   Include a "Graviton Migration Notes" section in the output docs: services moved to arm64, any `conditional` caveats, and the recommendation to validate with a load test post-migration.
 
