@@ -72,51 +72,53 @@ _Note: If Q5=Yes (multi-cloud), this question is skipped — `compute: "eks"` is
 
 ---
 
-## Q8 — How does your team feel about managing Kubernetes?
+## Q8 — How do you want to run your Kubernetes workloads on AWS?
 
-_Fire when:_ GKE cluster present AND Q5 != A (multi-cloud). Skip when: Q5 = A (already resolved to EKS) or no GKE in inventory.
+_Fire when:_ GKE cluster present AND Q5 != A (multi-cloud). Skip when: Q5 = A (already resolved to EKS Standard Cluster) or no GKE in inventory.
 
-**Rationale:** When multi-cloud is not required (Q5=No) and GKE is detected, team sentiment is the deciding factor between EKS and ECS Fargate. This is subjective and cannot be inferred from IaC.
+**Rationale:** You are already on GKE, so the starting assumption is that you keep Kubernetes — the default AWS target is **EKS Auto Mode**, where AWS provisions, scales, patches, and operates the nodes for you (the same hands-off model as GKE Autopilot, and the approach AWS recommends going forward). Q8 confirms that default and offers two explicit off-ramps: manage the nodes yourself (standard EKS), or drop Kubernetes entirely (ECS Fargate). This is subjective and cannot be inferred from IaC.
 
-**Context for user:** When asking, frame it practically so the user gives an honest answer rather than aspirational:
+**Autopilot context (read `config.autopilot_enabled` on the `google_container_cluster` from `gcp-resource-inventory.json`):**
 
-- **Love it / K8s expert** — your team writes Helm charts, debugs CrashLoopBackOff in their sleep, and actively chose K8s
-- **Neutral / Competent** — K8s works, your team can operate it, but it's not a passion project
-- **Frustrated / Steep curve** — K8s feels like overhead; your team spends more time fighting YAML than shipping features
+- **Autopilot cluster** (`autopilot_enabled: true`) → your cluster is already fully node-managed. EKS Auto Mode is the direct equivalent; lead with option A and note the 1:1 fit. Standard node groups (B) would be a step _backward_ in operational model — only surface it if the user asks.
+- **Standard cluster** (`autopilot_enabled: false`) → you manage node pools today. Auto Mode is still the recommended default (A), but present B (standard managed node groups) as a first-class option since it preserves your current node-management model.
+- **Unknown** (flag absent) → present A as default; mention both B and C.
 
-> Your team's Kubernetes experience determines whether we recommend EKS (Kubernetes on AWS) or ECS Fargate (simpler managed containers).
+**Context for user:** When asking, frame it practically:
+
+- **Fully-managed Kubernetes** — keep Kubernetes and your manifests/Helm charts, but let AWS run the nodes (autoscaling, patching, right-sizing). Closest match to GKE Autopilot.
+- **Self-managed nodes** — keep Kubernetes and take direct control of the node groups (instance types, node pools, upgrades). A standard EKS cluster.
+- **Drop Kubernetes** — move to ECS Fargate: simpler managed containers, no Kubernetes control plane or manifests to operate.
+
+> You're on GKE today, so by default we keep you on Kubernetes with **EKS Auto Mode** — AWS runs the nodes for you, like GKE Autopilot. How would you like to proceed?
 >
-> A) Love it / Team is K8s expert
-> B) Neutral / Competent with K8s
-> C) Frustrated / Learning curve steep
+> A) Keep Kubernetes, fully managed — EKS Auto Mode (recommended, default)
+> B) Keep Kubernetes, I'll manage the nodes — EKS with managed node groups (standard cluster)
+> C) Drop Kubernetes — simpler managed containers (ECS Fargate)
 > D) N/A — We don't use Kubernetes
 > E) I don't know
 
-| Answer                   | Recommendation Impact                                                                                        |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Love it / K8s expert     | EKS recommended — preserves existing Kubernetes investment and expertise                                     |
-| Neutral / Competent      | EKS recommended with managed node groups to reduce operational burden                                        |
-| Frustrated / Steep curve | **Strong ECS Fargate recommendation** — eliminates Kubernetes management entirely; simpler operational model |
+| Answer                        | Recommendation Impact                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Fully managed (Auto Mode)     | **EKS Auto Mode** — AWS provisions/scales/patches nodes; lowest-ops way to keep Kubernetes; AWS-recommended default |
+| Self-managed nodes (standard) | **EKS with managed node groups** — preserves direct node control; you own instance types, node pools, and upgrades  |
+| Drop Kubernetes               | **ECS Fargate** — eliminates the Kubernetes control plane and manifests entirely; simplest operational model        |
 
-_Note: If Q5=Yes (multi-cloud), this question is skipped and EKS is already decided._
+_Note: If Q5=Yes (multi-cloud), this question is skipped and EKS Standard Cluster is already decided._
 
 Interpret:
 
 ```
-A -> kubernetes: "eks-managed" — EKS recommended, preserves K8s investment
-B -> kubernetes: "eks-or-ecs" — EKS with managed node groups to reduce operational burden
-C -> kubernetes: "ecs-fargate" — Strong ECS Fargate recommendation, eliminates K8s management
+A -> kubernetes: "eks-auto" — EKS Auto Mode (default managed Kubernetes; AWS operates the nodes)
+B -> kubernetes: "eks-standard" — EKS with managed node groups (explicit standard-cluster opt-out)
+C -> kubernetes: "ecs-fargate" — ECS Fargate, drop Kubernetes
 D -> (no constraint written — no K8s workloads)
-E -> same as default — see IaC-signal default rule below
+E -> same as default (A)
 ```
 
-**Default (IaC-signal driven):**
+**Default:** **A** (`kubernetes: "eks-auto"`). GKE usage signals Kubernetes adoption, and EKS Auto Mode is the low-ops, AWS-recommended way to keep it — so teams that answer E ("I don't know") or skip the question land on Auto Mode, not off Kubernetes. Standard node groups (B) and ECS Fargate (C) remain available via explicit answers. When `config.autopilot_enabled: true`, the default is an especially strong match (Autopilot → Auto Mode is the closest cross-cloud equivalent).
 
-- If `gcp-resource-inventory.json` contains `google_container_cluster` resources → Default **C** (`kubernetes: "ecs-fargate"`). Teams that answer "I don't know" are better served by Fargate's lower operational overhead; EKS remains available via explicit answers A and B.
-- If no `google_container_cluster` in inventory (Cloud Run, Cloud Functions, or billing-only) → Default **C** (`kubernetes: "ecs-fargate"`). No Kubernetes signal; Fargate is the lower-ops starting point.
-- If inventory is absent (billing-only mode) → Default **C** (`kubernetes: "ecs-fargate"`).
-
-**Rationale:** Teams that answer E ("I don't know") have not expressed a Kubernetes preference. Defaulting to Fargate gives them a simpler, lower-ops starting point regardless of what discovery found. Teams who actively want EKS will answer A or B explicitly. EKS remains fully available via explicit answers A and B.
+_Note: Q8 fires only when a `google_container_cluster` is present. Non-GKE containerized workloads (Cloud Run, Cloud Functions) are unaffected — they map to Fargate/Lambda via their own deterministic fast-path regardless of this answer._
 
 ---
 
