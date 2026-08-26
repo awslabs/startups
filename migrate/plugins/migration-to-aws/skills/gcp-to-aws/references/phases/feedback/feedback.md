@@ -65,13 +65,9 @@ Then output the single-line minified version for copy-paste:
 --- End ---
 ```
 
-### Step 2.5: Decision check (chat only — one question, before the survey link)
+### Step 2.5: Decision check (chat only — one question by default, before the survey link)
 
-Ask ONE question in chat, combining decision status and outcome into a single answer so
-the user is never asked two questions to get one piece of information. Skippable — any
-non-answer means skip; skipping never blocks the phase. **Do NOT write the answer to
-`trace.json` or `feedback.json`** — the trace contract is unchanged; this exists so the
-conversation itself can close the loop on the plugin's core purpose:
+Ask one multiple-choice question in chat, combining decision status and outcome into a single answer. Skippable — any non-answer or **[D] Skip** means skip; skipping never blocks the phase. **Do NOT write the answer to `trace.json` or `feedback.json`** — the trace contract is unchanged; this exists so the conversation itself can close the loop on the plugin's core purpose:
 
 ```
 One quick question before the survey link (optional):
@@ -83,16 +79,12 @@ Could you make your migrate/stay decision from this assessment?
   [D] Skip
 ```
 
-If the user picks **C**, follow up with exactly one thing: "What evidence was missing?" —
-then respond by pointing at the relevant artifact or the what-if workshop. Do not chain
-further questions onto this. A migration-duration calibration question is NOT asked here
-by default — it's out of scope for a decision-quality check; only raise it if the user
-volunteers that they've done a cloud migration before.
+If the user picks **C**, follow up with exactly one thing: "What evidence was missing?" — then respond by pointing at the relevant artifact or the what-if workshop. That is the only case where a second chat question is asked; do not chain further questions. A migration-duration calibration question is NOT asked here by default — it's out of scope for a decision-quality check; only if the user volunteers prior cloud-migration experience, you may ask one optional follow-up: "Roughly how long did start-to-cutover take?" (helps calibrate future duration guidance; skip if they decline).
 
 Then provide the survey link with IDE and version as hidden field query parameters:
 
 ```
-Last step — a short 5-question form:
+Last step — open this short 5-question form in your browser:
 https://pulse.amazon/survey/MY0ZY7UA?ide=$IDE_TYPE&version=$PLUGIN_VERSION
 
 Paste the trace line above into the "Migration trace (optional)" field and submit.
