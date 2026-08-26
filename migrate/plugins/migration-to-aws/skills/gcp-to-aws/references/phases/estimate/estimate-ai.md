@@ -32,6 +32,8 @@ Read from `$MIGRATION_DIR/`:
 - **`preferences.json`** — `ai_constraints.ai_token_volume.value`, `ai_constraints.ai_capabilities_required.value`
 - **`aws-design-ai.json`** — `metadata.ai_source`, `ai_architecture.honest_assessment`, `ai_architecture.tiered_strategy`, `ai_architecture.bedrock_models[]` (with `source_provider_price`, `bedrock_price`, `honest_assessment`), `ai_architecture.capability_mapping`
 
+**Traditional-AI workloads (not yet costed by this phase):** `design_blocks[]` entries with `target_aws_service` set (capability `document_extraction`, `image_analysis`, or `speech_transcription` — Textract, Rekognition, Transcribe) are per-page/per-image/per-minute priced, not token priced, and this phase's cost model does not cover them yet. Skip these blocks in Parts 1–2 below; list them in the output under a `services_not_estimated[]` array (`{workload_id, target_aws_service, reason: "not_token_priced"}`) so the user knows they're excluded rather than assumed free.
+
 ---
 
 ## Part 1: Establish Current AI Costs

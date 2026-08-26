@@ -26,6 +26,16 @@ If the detected AI workload is LLM-based (generative models), load the source-sp
 - **Image classification, OCR** → AWS Rekognition (images) or Textract (OCR)
 - **Document understanding** → AWS Textract (more powerful for docs)
 
+### Cloud Speech-to-Text
+
+- **Audio/video transcription (batch or streaming)** → AWS Transcribe
+- **Call center audio (with sentiment/topic detection needs)** → AWS Transcribe Call Analytics
+
+### Document AI
+
+- **Form/invoice/receipt/ID extraction** → AWS Textract (`AnalyzeExpense`, `AnalyzeID`, or `AnalyzeDocument` with `FORMS`/`TABLES` depending on document type)
+- **General document OCR** → AWS Textract (`DetectDocumentText`)
+
 ### Cloud ML Engine (deprecated — legacy Terraform configs only)
 
 - **Model training** → SageMaker (managed training jobs)
@@ -70,6 +80,20 @@ Apply in order:
 - Criterion 1 (Eliminators): PASS
 - Criterion 2 (Operational Model): SageMaker Autopilot (managed)
 - → **AWS: SageMaker Autopilot + Canvas (for low-code)**
+- Confidence: `inferred`
+
+### Example 4: Document AI (workload capability `document_extraction`)
+
+- GCP: `documentai.process_document` call detected in app code
+- Signals: Pre-built document extraction API, no custom model training
+- → **AWS: Textract** (`AnalyzeExpense` for invoices/receipts, `AnalyzeID` for identity documents, `AnalyzeDocument` with `FORMS`/`TABLES` for general forms, `DetectDocumentText` for plain OCR — pick the closest match to the detected GCP processor type; default to `AnalyzeDocument` with `FORMS`/`TABLES` when the processor type can't be determined)
+- Confidence: `inferred`
+
+### Example 5: Cloud Speech-to-Text (workload capability `speech_transcription`)
+
+- GCP: `speech.recognize` or `speech.long_running_recognize` call detected in app code
+- Signals: Pre-built speech-to-text API
+- → **AWS: Transcribe** (streaming → `StartStreamTranscription`; batch → `StartTranscriptionJob`)
 - Confidence: `inferred`
 
 ## Output Schema
