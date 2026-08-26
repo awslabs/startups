@@ -68,6 +68,11 @@
       "class": "reasoning",
       "context_window": 272000,
       "output_token_ceiling": "unknown",
+      "region_availability": {
+        "commercial": ["us-east-1", "us-east-2"],
+        "govcloud": [],
+        "evidence": "Commercial set per this catalog's pricing cache (US East N. Virginia / Ohio). The 2026-08 GovCloud announcement names Terra and Luna only \u2014 Sol's GovCloud availability is not stated; treat as unknown, not absent."
+      },
       "capabilities": [
         "reasoning",
         "tool_or_function_calling",
@@ -119,6 +124,11 @@
       "class": "reasoning",
       "context_window": "unknown",
       "output_token_ceiling": "unknown",
+      "region_availability": {
+        "commercial": ["us-east-1", "us-east-2", "us-west-2"],
+        "govcloud": ["us-gov-west-1", "us-gov-east-1"],
+        "evidence": "AWS What's New 2026-08 (openai-gpt-terra-luna-govcloud): \"GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East)\"; commercial set per this catalog's pricing cache \u2014 verify against the pricing page before relying on it."
+      },
       "capabilities": [
         "reasoning",
         "tool_or_function_calling"
@@ -141,6 +151,11 @@
       "class": "reasoning",
       "context_window": "unknown",
       "output_token_ceiling": "unknown",
+      "region_availability": {
+        "commercial": ["us-east-1", "us-east-2", "us-west-2"],
+        "govcloud": ["us-gov-west-1", "us-gov-east-1"],
+        "evidence": "AWS What's New 2026-08 (openai-gpt-terra-luna-govcloud): \"GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East)\"; commercial set per this catalog's pricing cache \u2014 verify against the pricing page before relying on it."
+      },
       "capabilities": [
         "reasoning",
         "tool_or_function_calling"

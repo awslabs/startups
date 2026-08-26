@@ -130,7 +130,7 @@ Long-context (>272K, up to 1M) rates are 2× input / 1.5× output — see `prici
 - **Mantle-only.** GPT-5.6 models are served exclusively on the `bedrock-mantle` endpoint via the OpenAI **Responses API** path (`openai/v1/responses`). No `bedrock-runtime`, no Converse API, no Invoke ([model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-56-terra.html)). Applications on the OpenAI SDK migrate with an env-var + model-string swap; applications you plan to rewrite onto boto3 `converse()` cannot target GPT-5.6.
 - **No geo/global inference profiles.** Model IDs are bare (`openai.gpt-5.6-terra`); geo-prefixed (`us.`) and global inference IDs are not supported.
 - **No Bedrock Guardrails / Knowledge Bases integration on the Mantle path.** If those are requirements, use a Converse-capable family (Claude, Nova) instead.
-- **Region availability.** Confirm the target region serves GPT-5.6 on Mantle (us-east-1, us-east-2, us-west-2 at minimum; check the pricing page for current list).
+- **Region availability.** Confirm the target region serves GPT-5.6 on Mantle (us-east-1, us-east-2, us-west-2 at minimum for commercial regions; Terra and Luna are now also available in AWS GovCloud (US-West, US-East); check the pricing page for current list).
 
 **Cost cross-check vs Claude:** Sonnet 4.6 ($3.00/$15.00, Converse-capable, prompt caching, geo profiles) is in the same capability tier as Terra ($2.20/$13.20). Terra is ~15% cheaper on blended tokens; Sonnet 4.6 wins on Bedrock-native features and long-context pricing. Present both; let workload requirements decide.
 

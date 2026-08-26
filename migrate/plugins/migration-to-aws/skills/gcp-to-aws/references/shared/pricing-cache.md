@@ -532,11 +532,11 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (DeepSeek)
 
 **GPT-5.6 frontier models** (Sol / Terra / Luna, GA July 13, 2026) — served on the `bedrock-mantle` endpoint via the OpenAI Responses API path only (no Converse / bedrock-runtime, no geo/global inference profiles). In-region rates below reflect the July 30, 2026 price reduction (Luna −80%, Terra −20%) plus a subsequent Sol price reduction (20% lower input, 33.3% lower output, promotional through at least Nov 21, 2026), and are at parity with OpenAI's data-residency tier. Breakpoint pricing at 272K input tokens: >272K (up to 1M) is 2× input / 1.5× output.
 
-| Model         | Region                                         | Input $/1M (≤272K) | Output $/1M (≤272K) | Input $/1M (>272K) | Output $/1M (>272K) |
-| ------------- | ---------------------------------------------- | ------------------ | ------------------- | ------------------ | ------------------- |
-| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                   | 4.00               | 20.00               | 8.00               | 36.00               |
-| GPT-5.6 Terra | US East (N. Virginia / Ohio), US West (Oregon) | 2.20               | 13.20               | 4.40               | 19.80               |
-| GPT-5.6 Luna  | US East (N. Virginia / Ohio), US West (Oregon) | 0.22               | 1.32                | 0.44               | 1.98                |
+| Model         | Region                                                                                         | Input $/1M (≤272K) | Output $/1M (≤272K) | Input $/1M (>272K) | Output $/1M (>272K) |
+| ------------- | ---------------------------------------------------------------------------------------------- | ------------------ | ------------------- | ------------------ | ------------------- |
+| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                                                                   | 4.00               | 20.00               | 8.00               | 36.00               |
+| GPT-5.6 Terra | US East (N. Virginia / Ohio), US West (Oregon), AWS GovCloud (US-West), AWS GovCloud (US-East) | 2.20               | 13.20               | 4.40               | 19.80               |
+| GPT-5.6 Luna  | US East (N. Virginia / Ohio), US West (Oregon), AWS GovCloud (US-West), AWS GovCloud (US-East) | 0.22               | 1.32                | 0.44               | 1.98                |
 
 **gpt-oss open-weight models:**
 
