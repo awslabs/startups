@@ -65,31 +65,37 @@ Then output the single-line minified version for copy-paste:
 --- End ---
 ```
 
-### Step 2.5: Decision check (chat only — optional, before the survey link)
+### Step 2.5: Decision check (chat only — one question, before the survey link)
 
-Ask three quick questions in chat. All are skippable — any non-answer means skip; skipping never blocks the phase. **Do NOT write the answers to `trace.json` or `feedback.json`** — the trace contract is unchanged; these exist so the conversation itself can close the loop on the plugin's core purpose:
+Ask ONE question in chat, combining decision status and outcome into a single answer so
+the user is never asked two questions to get one piece of information. Skippable — any
+non-answer means skip; skipping never blocks the phase. **Do NOT write the answer to
+`trace.json` or `feedback.json`** — the trace contract is unchanged; this exists so the
+conversation itself can close the loop on the plugin's core purpose:
 
 ```
-Before the survey link — three quick questions (all optional):
+One quick question before the survey link (optional):
 
-1. Could you make your migrate/stay decision from this assessment? (yes / partly / no)
-2. If you decided: which way are you leaning? (migrate / stay / defer)
-3. If you couldn't decide: what evidence was missing?
-4. If you've completed a cloud migration before: how long did it actually take,
-   start to cutover? (helps us calibrate — the plugin deliberately avoids
-   quoting week/hour estimates because it has no real-world duration data yet)
+Could you make your migrate/stay decision from this assessment?
+  [A] Yes — leaning migrate
+  [B] Yes — leaning stay
+  [C] Not yet — still deciding / need more evidence
+  [D] Skip
 ```
 
-Respond briefly to whatever they share (e.g. point at the relevant artifact or the what-if workshop for missing-evidence answers), then continue to the survey link below.
+If the user picks **C**, follow up with exactly one thing: "What evidence was missing?" —
+then respond by pointing at the relevant artifact or the what-if workshop. Do not chain
+further questions onto this. A migration-duration calibration question is NOT asked here
+by default — it's out of scope for a decision-quality check; only raise it if the user
+volunteers that they've done a cloud migration before.
 
 Then provide the survey link with IDE and version as hidden field query parameters:
 
 ```
-Open the feedback form in your browser:
+Last step — a short 5-question form:
 https://pulse.amazon/survey/MY0ZY7UA?ide=$IDE_TYPE&version=$PLUGIN_VERSION
 
-Answer the 5 quick questions in the form, then paste the trace line above
-into the "Migration trace (optional)" field and submit.
+Paste the trace line above into the "Migration trace (optional)" field and submit.
 ```
 
 Replace `$IDE_TYPE` and `$PLUGIN_VERSION` with the actual values detected in Step 0. Example: `https://pulse.amazon/survey/MY0ZY7UA?ide=claude-code&version=1.0.0`
