@@ -74,7 +74,7 @@ Call the **Skill** tool with skill name `migration-to-aws:gcp-to-aws`.
 
 Before invoking, tell the user:
 
-> "I'm now invoking the migration-to-aws Assess skill to discover your AI workloads and design
+> "I'm now invoking the gcp-to-aws Assess skill to discover your AI workloads and design
 > the Bedrock migration. It will ask you some questions — please answer them. (Don't be
 > confused by the skill's `gcp-to-aws` name — it also covers pure AI/LLM migrations with no
 > GCP or infrastructure component, which is how it's being used here.)"
@@ -88,7 +88,11 @@ and Generate phases. The source code to scan is at `$REPO`.
 - Source code is at `$REPO` — when the skill asks for GCP sources or scans for files, point it there
 - This is an AI/LLM workload migration — the AI path is the goal
 - Unless Terraform/IaC files are actually present in `$REPO`, skip IaC discovery
-- Unless the user offers billing data, skip billing discovery
+- Unless the user offers billing data, skip billing discovery. If the source provider is
+  OpenAI, the skill may instead offer its OpenAI Admin API usage discovery
+  (`discover-openai-api.md` — read-only, consent-gated, needs an Admin key with
+  **Usage** set to **Read**); accepting it gives Estimate real spend and token volumes without
+  manual CSV exports
 
 ### A2 — Wait for Assess completion
 

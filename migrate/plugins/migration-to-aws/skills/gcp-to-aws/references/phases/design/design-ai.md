@@ -14,7 +14,7 @@ Read `$MIGRATION_DIR/ai-workload-profile.json`:
 - `models[]` — Detected AI models with service, capabilities, evidence
 - `integration` — SDK, frameworks, languages, gateway type, capability summary
 - `infrastructure[]` — Terraform resources related to AI (may be empty)
-- `current_costs` — Present only if billing data was provided
+- `current_costs` — Present only if billing data or OpenAI usage API data was provided (`source` field records which)
 
 Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If absent: use defaults (prefer managed Bedrock, no latency constraint, no budget cap).
 
@@ -27,6 +27,8 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 - `"anthropic"` → load `references/design-refs/ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use ai-openai-to-bedrock.md for Anthropic SDK users)
 - `"both"` → load both `ai-gemini-to-bedrock.md` and `ai-openai-to-bedrock.md`
 - `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
+
+**Additional load, independent of `ai_source` above:** If any entry in `workloads[]` (from `preferences.json`, falling back to `ai-workload-profile.json`) has `capability` equal to `document_extraction`, `image_analysis`, or `speech_transcription`, ALSO load `references/design-refs/ai.md` — even when a generative `ai_source` already selected a different ref above. A workload's non-generative capability is evaluated independently of the codebase's primary LLM provider; e.g. an `ai_source: "openai"` codebase that also calls `documentai.process_document` needs both `ai-openai-to-bedrock.md` (for its GPT workload) and `ai.md` (for its Document AI workload).
 
 ---
 
@@ -99,15 +101,24 @@ For each `workloads[]` entry:
 
 1. **Use the workload's `capability` to select the Bedrock target class:**
 
-   | Capability          | Target Class                                           | Default Model                  |
-   | ------------------- | ------------------------------------------------------ | ------------------------------ |
-   | `text_generation`   | Text/reasoning                                         | Apply override hierarchy below |
-   | `structured_output` | Text/reasoning (same models support structured output) | Apply override hierarchy below |
-   | `image_generation`  | Image generation                                       | Amazon Nova Canvas             |
-   | `embedding`         | Embedding                                              | Amazon Titan Embed Text v2     |
-   | `speech_to_text`    | Speech-to-text                                         | Amazon Transcribe              |
-   | `text_to_speech`    | Text-to-speech                                         | Amazon Polly                   |
-   | `unknown`           | Text/reasoning (default)                               | Apply override hierarchy below |
+   | Capability             | Target Class                                                      | Default Model / Service                                            |
+   | ---------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------ |
+   | `text_generation`      | Text/reasoning                                                    | Apply override hierarchy below                                     |
+   | `structured_output`    | Text/reasoning (same models support structured output)            | Apply override hierarchy below                                     |
+   | `image_generation`     | Image generation                                                  | Stability AI (Core / Ultra)                                        |
+   | `embedding`            | Embedding                                                         | Amazon Titan Embed Text v2                                         |
+   | `speech_to_text`       | Speech-to-text                                                    | Amazon Transcribe                                                  |
+   | `text_to_speech`       | Text-to-speech                                                    | Amazon Polly                                                       |
+   | `document_extraction`  | Traditional AI (non-Bedrock) — see `references/design-refs/ai.md` | AWS Textract (variant per detected GCP Document AI processor type) |
+   | `image_analysis`       | Traditional AI (non-Bedrock) — see `references/design-refs/ai.md` | AWS Rekognition                                                    |
+   | `speech_transcription` | Traditional AI (non-Bedrock) — see `references/design-refs/ai.md` | AWS Transcribe                                                     |
+   | `unknown`              | Text/reasoning (default)                                          | Apply override hierarchy below                                     |
+
+   **`document_extraction`, `image_analysis`, `speech_transcription` are not Bedrock models.** For these three capabilities:
+   - Do NOT set `target_bedrock_model` — leave it `null`.
+   - Set `target_aws_service` instead (e.g., `"textract"`, `"rekognition"`, `"transcribe"`) using the mapping from `references/design-refs/ai.md`.
+   - Skip the override hierarchy in step 2 below — Q16–Q19 preferences (quality/speed/cost model tuning) don't apply to these services; there is no model tier to select.
+   - `honest_assessment` (Part 1 continued, below) does not apply — these are feature/service swaps, not a cost-driven model migration decision. Set `honest_assessment: "not_applicable"` for these workloads in the output.
 
 2. **For text/reasoning capabilities:** Apply the existing override hierarchy from `ai_constraints`:
    - Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > source model baseline
@@ -121,13 +132,26 @@ For each `workloads[]` entry:
        "workload_id": "wl_3a1f2c",
        "model_id": "gemini-2.5-flash",
        "target_bedrock_model": "amazon.nova-lite-v1:0",
+       "target_aws_service": null,
        "capability": "text_generation",
        "capability_confidence": "medium",
        "rationale": "text_generation + medium confidence + balanced priority → Nova Lite",
        "confidence_warning": null
+     },
+     {
+       "workload_id": "wl_8b4e91",
+       "model_id": "documentai.process_document",
+       "target_bedrock_model": null,
+       "target_aws_service": "textract",
+       "capability": "document_extraction",
+       "capability_confidence": "high",
+       "rationale": "document_extraction (GCP Document AI) → AWS Textract per references/design-refs/ai.md",
+       "confidence_warning": null
      }
    ]
    ```
+
+   **Field contract addition:** `target_aws_service` is `null` for all Bedrock-model capabilities (`text_generation`, `structured_output`, `image_generation`, `embedding`, `speech_to_text`, `text_to_speech`, `unknown`) and is one of `"textract"`, `"rekognition"`, `"transcribe"` for the three traditional-AI capabilities. `target_bedrock_model` and `target_aws_service` are mutually exclusive — exactly one is non-null per `design_block`.
 
 4. **Confidence warning:** Set `confidence_warning` to a non-null string (identifying the workload and noting manual review required) when `capability_confidence == "low"`. Null for `high` and `medium`.
 
@@ -223,7 +247,7 @@ If `models[]` contains more than one model, check for coordination patterns and 
    > ⚠️ "Multiple models detected ([count]). Recommend a tiered migration strategy: migrate and validate one model at a time, starting with the lowest-risk (highest-volume, simplest task). See Part 1B for tiered routing recommendations."
 
 4. **Text generation + image generation** — If `models[]` contains both text generation AND image generation capabilities:
-   > ⚠️ "Image generation migration (e.g., DALL-E/gpt-image → Nova Canvas) requires separate evaluation. Image quality is subjective — plan for human evaluation alongside automated metrics."
+   > ⚠️ "Image generation migration (e.g., DALL-E/gpt-image → Stability AI) requires separate evaluation. Image quality is subjective — plan for human evaluation alongside automated metrics. Default to Stable Image Core (cost-first) or Stable Image Ultra (quality-first); do not recommend Nova Canvas."
 
 5. **Speech models** — If `models[]` contains speech-to-text or text-to-speech capabilities:
    > ⚠️ "Speech model migration targets different AWS services (Whisper → Amazon Transcribe, TTS → Amazon Polly or Nova Sonic) with different pricing models and APIs. These are not Bedrock model swaps — they require separate integration work."
@@ -315,7 +339,7 @@ Generate concrete code examples using actual model IDs from the selected Bedrock
 
 **OpenRouter-specific guidance** (if `gateway_type == "llm_router"` AND `detection_signals` contains OpenRouter evidence):
 
-OpenRouter is a hosted routing service (not self-hosted like LiteLLM). It adds a margin on top of provider pricing. Present three options to the user:
+OpenRouter is a hosted routing service (not self-hosted like LiteLLM). It adds a margin on top of provider pricing. **First check whether the underlying model is an OpenAI model with a Mantle target** (`ai_source == "openai"`, per the Mantle guidance above) — OpenRouter is a transport layer, not a different model, so an OpenAI model routed through OpenRouter is eligible for the same same-model Mantle path a direct-SDK OpenAI source gets. Present the options below to the user:
 
 > **If the startup was using OpenRouter primarily for cost-based routing within one model family**
 > (e.g., routing between Claude Haiku and Claude Sonnet, or Nova Lite and Nova Pro),
@@ -323,13 +347,14 @@ OpenRouter is a hosted routing service (not self-hosted like LiteLLM). It adds a
 > needed. If they routed across providers (e.g., Claude ↔ GPT-4o), they still need
 > app-level or LiteLLM routing after migration.
 
-| Option                          | Action                                                    | Effort    | Trade-off                                                                  |
-| ------------------------------- | --------------------------------------------------------- | --------- | -------------------------------------------------------------------------- |
-| A) Direct Bedrock (recommended) | Remove OpenRouter, call Bedrock API directly              | 1–2 weeks | Removes middleman + margin; requires SDK changes                           |
-| B) Self-hosted LiteLLM          | Replace OpenRouter with LiteLLM proxy pointing to Bedrock | 1–3 days  | Preserves router pattern; removes OpenRouter dependency; adds self-hosting |
-| C) Keep OpenRouter              | Use OpenRouter with `amazon/` prefixed Bedrock models     | Hours     | Lowest effort; retains OpenRouter dependency and margin                    |
+| Option                                                                     | Action                                                                                    | Effort    | Trade-off                                                                                                                                                                                           |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A) Same model via Mantle (recommended when the source model is on Bedrock) | Remove OpenRouter, point the existing OpenAI SDK at Bedrock Mantle with the same model ID | Days      | Keeps the same model — no eval/prompt-behavior risk; requires base URL, credential, and model-ID-format changes (e.g. `openai/gpt-4o` → an OpenAI-compatible Bedrock model ID); not a one-line swap |
+| B) Direct Bedrock, cross-family                                            | Remove OpenRouter, call Bedrock API directly with a Claude/Nova model                     | 1–2 weeks | Removes middleman + margin; requires SDK + prompt changes; use when no Mantle target exists or cost is the priority                                                                                 |
+| C) Self-hosted LiteLLM                                                     | Replace OpenRouter with LiteLLM proxy pointing to Bedrock                                 | 1–3 days  | Preserves router pattern; removes OpenRouter dependency; adds self-hosting                                                                                                                          |
+| D) Keep OpenRouter                                                         | Use OpenRouter with `amazon/` prefixed Bedrock models                                     | Hours     | Lowest effort; retains OpenRouter dependency and margin; this is a model switch, not a same-model move                                                                                              |
 
-Record user's choice (or recommend A if not asked) in `aws-design-ai.json` → `code_migration.openrouter_path`: `"direct"` / `"litellm"` / `"keep_openrouter"`.
+Recommend **A** when `ai_source == "openai"` and a Mantle target exists (region gate passes per the Mantle guidance above); otherwise recommend **B** and present C/D as lower-effort alternatives. Record user's choice (or the recommended default if not asked) in `aws-design-ai.json` → `code_migration.openrouter_path`: `"same_model_mantle"` / `"direct"` / `"litellm"` / `"keep_openrouter"`.
 
 ---
 
@@ -339,25 +364,26 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 
 **Schema — top-level fields:**
 
-| Field                                 | Type        | Description                                                                                                                                                                                         |
-| ------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `metadata`                            | object      | `phase`, `focus`, `ai_source`, `bedrock_models_selected`, `timestamp`                                                                                                                               |
-| `ai_architecture.honest_assessment`   | string      | `"strong_migrate"`, `"moderate_migrate"`, `"weak_migrate"`, `"recommend_stay"`                                                                                                                      |
-| `ai_architecture.tiered_strategy`     | object/null | Tiered model routing (null for low/medium volume)                                                                                                                                                   |
-| `ai_architecture.bedrock_models`      | array       | Per-model: `gcp_model_id`, `aws_model_id`, `capabilities_matched[]`, `capability_gaps[]`, `honest_assessment`, `source_provider_price`, `bedrock_price`, `price_comparison`, `migration_complexity` |
-| `ai_architecture.capability_mapping`  | object      | Per-capability: `parity` (full/partial/none), `notes`                                                                                                                                               |
-| `ai_architecture.code_migration`      | object      | `primary_pattern`, `framework`, `files_to_modify[]`, `dependency_changes`                                                                                                                           |
-| `ai_architecture.infrastructure`      | array       | GCP resource → AWS equivalent mappings with confidence                                                                                                                                              |
-| `ai_architecture.services_to_migrate` | array       | GCP service → AWS service with effort and notes                                                                                                                                                     |
-| `regional_warnings`                   | array       | Per-service: `service`, `target_region`, `nearest_available`, `impact` (empty array if all services available)                                                                                      |
-| `multi_model_warnings`                | array       | Per-warning: `type`, `message` (empty array if single model or no coordination issues)                                                                                                              |
-| `agentic_design`                      | object/null | Present only when `agentic_profile.is_agentic == true`. Contains `migration_approach`, path-specific config (e.g., `harness_config`). Null or absent for non-agentic workloads.                     |
+| Field                                 | Type        | Description                                                                                                                                                                                                                                      |
+| ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `metadata`                            | object      | `phase`, `focus`, `ai_source`, `bedrock_models_selected`, `timestamp`                                                                                                                                                                            |
+| `ai_architecture.honest_assessment`   | string      | `"strong_migrate"`, `"moderate_migrate"`, `"weak_migrate"`, `"recommend_stay"`, `"not_applicable"` (per-workload only — traditional-AI capabilities `document_extraction`/`image_analysis`/`speech_transcription`; never the overall assessment) |
+| `ai_architecture.tiered_strategy`     | object/null | Tiered model routing (null for low/medium volume)                                                                                                                                                                                                |
+| `ai_architecture.bedrock_models`      | array       | Per-model: `gcp_model_id`, `aws_model_id`, `capabilities_matched[]`, `capability_gaps[]`, `honest_assessment`, `source_provider_price`, `bedrock_price`, `price_comparison`, `migration_complexity`                                              |
+| `ai_architecture.capability_mapping`  | object      | Per-capability: `parity` (full/partial/none), `notes`                                                                                                                                                                                            |
+| `ai_architecture.code_migration`      | object      | `primary_pattern`, `framework`, `files_to_modify[]`, `dependency_changes`                                                                                                                                                                        |
+| `ai_architecture.infrastructure`      | array       | GCP resource → AWS equivalent mappings with confidence                                                                                                                                                                                           |
+| `ai_architecture.services_to_migrate` | array       | GCP service → AWS service with effort and notes                                                                                                                                                                                                  |
+| `regional_warnings`                   | array       | Per-service: `service`, `target_region`, `nearest_available`, `impact` (empty array if all services available)                                                                                                                                   |
+| `multi_model_warnings`                | array       | Per-warning: `type`, `message` (empty array if single model or no coordination issues)                                                                                                                                                           |
+| `agentic_design`                      | object/null | Present only when `agentic_profile.is_agentic == true`. Contains `migration_approach`, path-specific config (e.g., `harness_config`). Null or absent for non-agentic workloads.                                                                  |
 
 ## Validation Checklist
 
 - [ ] `metadata.ai_source` matches `summary.ai_source` from input
 - [ ] Every model in `models[]` has a corresponding `bedrock_models` entry
 - [ ] Every `bedrock_models[]` entry has pricing (`source_provider_price`, `bedrock_price`, `price_comparison`)
+- [ ] Every `design_blocks[]` entry with `capability` in {`document_extraction`, `image_analysis`, `speech_transcription`} has `target_bedrock_model: null`, a non-null `target_aws_service`, and `honest_assessment: "not_applicable"` — these are NOT included in `bedrock_models[]` and do NOT need pricing here. (Estimate phase currently excludes them from cost analysis entirely — see `estimate-ai.md` "Traditional-AI workloads" note. Per-page/per-image/per-minute cost modeling for Textract/Rekognition/Transcribe is a known follow-up, not yet implemented.)
 - [ ] `capability_mapping` covers every `true` capability from `capabilities_summary`
 - [ ] `code_migration.primary_pattern` matches `integration.pattern`
 - [ ] All model IDs use current Bedrock identifiers (Active status per `shared/ai-model-lifecycle.md`)

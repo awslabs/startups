@@ -56,20 +56,23 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 1. **High-confidence rows (confidence = `high`):** Pre-fill Bedrock target from `capability → Bedrock model` mapping. Do NOT ask Q16–Q22 for these rows unless the user edits.
 
 2. **Medium/low-confidence rows:** Ask at most 2 questions per row:
-   - "Is the detected capability correct?" (confirm or select from: text_generation, structured_output, image_generation, embedding, speech_to_text, text_to_speech, unknown)
+   - "Is the detected capability correct?" (confirm or select from: text_generation, structured_output, image_generation, embedding, speech_to_text, text_to_speech, document_extraction, image_analysis, speech_transcription, unknown)
    - "What matters most for this workload?" (Q16 priority: quality/speed/cost/balanced)
 
 3. **Target mapping** (default, overridden by user edits — look up actual model IDs from design-refs tables, not hardcoded names):
 
-   | Capability        | Target Class                                   | Notes                                                                                                                              |
-   | ----------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-   | text_generation   | Text/reasoning class                           | Apply Q16–Q19 override hierarchy                                                                                                   |
-   | structured_output | Text/reasoning class (same as text_generation) | Uses same Bedrock target as text_generation for that workload's priority tier — structured output is a mode, not a different model |
-   | image_generation  | Image generation class                         | e.g., Nova Canvas                                                                                                                  |
-   | embedding         | Embedding class                                | e.g., Titan Embed Text v2                                                                                                          |
-   | speech_to_text    | Speech-to-text class                           | e.g., Transcribe                                                                                                                   |
-   | text_to_speech    | Text-to-speech class                           | e.g., Polly                                                                                                                        |
-   | unknown           | Ask Q16–Q22 for this workload                  | Falls back to full questionnaire                                                                                                   |
+   | Capability           | Target Class                                   | Notes                                                                                                                                                  |
+   | -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | text_generation      | Text/reasoning class                           | Apply Q16–Q19 override hierarchy                                                                                                                       |
+   | structured_output    | Text/reasoning class (same as text_generation) | Uses same Bedrock target as text_generation for that workload's priority tier — structured output is a mode, not a different model                     |
+   | image_generation     | Image generation class                         | e.g., Stable Image Core (cost) / Ultra (quality)                                                                                                       |
+   | embedding            | Embedding class                                | e.g., Titan Embed Text v2                                                                                                                              |
+   | speech_to_text       | Speech-to-text class                           | e.g., Transcribe                                                                                                                                       |
+   | text_to_speech       | Text-to-speech class                           | e.g., Polly                                                                                                                                            |
+   | document_extraction  | Traditional-AI (non-LLM) class                 | GCP Document AI detected — no Q16–Q22 questions; routes to Design's `ai.md` rubric (Textract / Bedrock Data Automation), not a Bedrock model pick      |
+   | image_analysis       | Traditional-AI (non-LLM) class                 | GCP Vision API detected — no Q16–Q22 questions; routes to Design's `ai.md` rubric (Rekognition / Bedrock Data Automation), not a Bedrock model pick    |
+   | speech_transcription | Traditional-AI (non-LLM) class                 | GCP Speech-to-Text detected — no Q16–Q22 questions; routes to Design's `ai.md` rubric (Transcribe / Bedrock Data Automation), not a Bedrock model pick |
+   | unknown              | Ask Q16–Q22 for this workload                  | Falls back to full questionnaire                                                                                                                       |
 
 4. **After confirmation — persist workloads[] to preferences.json (REQUIRED):**
 
@@ -243,7 +246,7 @@ Interpret → `ai_priority`. Default: E → `"balanced"`.
 | RAG optimization                     | Amazon Bedrock Knowledge Bases recommended alongside model; Titan Embeddings for vector store                                                                                                                                                                                                                                                                                      |
 | Agentic workflows                    | Claude Sonnet 5 with AgentCore (Harness); multi-agent orchestration guidance included                                                                                                                                                                                                                                                                                              |
 | Real-time speed (< 500ms)            | Claude Haiku 4.5 or Nova Micro; streaming response guidance included                                                                                                                                                                                                                                                                                                               |
-| Multimodal with image generation     | Claude Sonnet 5 (vision) + Amazon Nova Canvas for generation                                                                                                                                                                                                                                                                                                                       |
+| Multimodal with image generation     | Claude Sonnet 5 (vision) + Stability AI for generation (Core cost-first / Ultra quality-first)                                                                                                                                                                                                                                                                                     |
 | Real-time conversational speech      | Amazon Nova 2 Sonic recommended for speech-to-speech; latency guidance included                                                                                                                                                                                                                                                                                                    |
 | None                                 | Default recommendation from Q16 priority stands                                                                                                                                                                                                                                                                                                                                    |
 
@@ -252,6 +255,8 @@ Interpret → `ai_critical_feature`. Default: J → no override.
 ---
 
 ## Q18 — What's your AI usage volume and cost tolerance?
+
+**Volume half auto-resolves:** If `openai-usage-profile.json` exists with non-zero usage AND `metadata.partial_window` is `false` (a partial window is not a monthly volume — ask normally in that case), derive the volume tier from Σ `usage_by_model[].input_tokens + output_tokens` (< 1M → `"low"`, 1–10M → `"medium"`, > 10M → `"high"`) and ask ONLY the cost-tolerance half ("Your usage data shows [tier] volume. Is budget tight enough to prioritize cost control over model quality? [Y/N]"). Record `ai_token_volume` from the data (`chosen_by: "extracted"`, `source: "openai-usage-profile:usage_by_model"`), not the answer.
 
 > A) Low volume + quality priority — small-scale, quality matters most
 > B) Medium volume + balanced — moderate production use, balanced approach
@@ -269,7 +274,7 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 
 ## Q19 — Which Gemini or OpenAI model are you currently using?
 
-**Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19.
+**Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19. If `openai-usage-profile.json` exists, prefer its top model by token volume (`usage_by_model[0].model`) as the baseline — billed usage is stronger evidence than code detection — and mention the runner-up models to the user rather than re-asking.
 
 _Skip when:_ Primary model fully resolved from discovery. Use detected value with `chosen_by: "extracted"`.
 
@@ -425,7 +430,8 @@ Before presenting Category G questions, show:
 
 **Auto-detect signals** — recommend default based on `agentic_profile.framework`:
 
-- `gateway_type` is `"llm_router"` (LiteLLM or OpenRouter detected) → Default to **A (retarget)**. These users are already abstracted from the model provider — migration is a config change (swap model IDs), not a code rewrite. Set `migration_approach: "retarget"` automatically and skip Q23 unless the user explicitly asks to evaluate Harness or Strands.
+- `gateway_type` is `"llm_router"` and evidence is **LiteLLM** → Default to **A (retarget)**. Already abstracted from the model provider — migration is a config change (swap model IDs), not a code rewrite. Set `migration_approach: "retarget"` automatically and skip Q23 unless the user explicitly asks to evaluate Harness or Strands.
+- `gateway_type` is `"llm_router"` and evidence is **OpenRouter** → Default to **A (retarget)** only when the underlying model is an OpenAI model with a Mantle target (same-model Mantle move, per `design-ai.md`'s OpenRouter guidance). Otherwise surface the full option set — an OpenRouter → Mantle move changes the base URL, credential type, and model-ID format, so it is not the same one-line change LiteLLM users get. Set `migration_approach: "retarget"` with `chosen_by: "extracted"` only in the Mantle-eligible case; otherwise ask Q23.
 - `langgraph`, `crewai`, `autogen` → Default to A (retarget). These frameworks support Bedrock as a model provider with minimal code changes.
 - `openai_agents` → Surface all options. OpenAI Agents SDK is tightly coupled to OpenAI API; retarget is harder. Note partial retarget (HTTP-compatible routing to Bedrock) as a bridge.
 - `strands` → Already AWS-native. Recommend B (Harness) for managed deployment or note "already on target framework."

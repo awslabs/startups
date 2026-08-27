@@ -90,12 +90,12 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 
 ### Legacy/Specialized
 
-| Gemini Model            | Price (in/out per 1M)                                                | Best Bedrock Match  | Bedrock Price   | Winner                                                           |
-| ----------------------- | -------------------------------------------------------------------- | ------------------- | --------------- | ---------------------------------------------------------------- |
-| Gemini 1.5 Pro          | **Legacy — EOL Sep 24, 2025. Migrate to Gemini 2.5 Pro or 3.x Pro.** | Claude Sonnet 5     | $3.00 / $15.00  | If still in use, migrate source model first                      |
-| text-bison / chat-bison | Legacy                                                               | Llama 4 Scout       | $0.17 / $0.66   | Bedrock (better quality + cheaper)                               |
-| text-embedding-004      | $0.025 / N/A                                                         | Titan Embeddings V2 | $0.02 / N/A     | Bedrock 20% cheaper                                              |
-| imagen-*                | Varies                                                               | Nova Canvas         | $0.04-$0.08/img | Titan Image Gen v2 is Legacy (EOL Jun 30, 2026); use Nova Canvas |
+| Gemini Model            | Price (in/out per 1M)                                                | Best Bedrock Match  | Bedrock Price  | Winner                                                                    |
+| ----------------------- | -------------------------------------------------------------------- | ------------------- | -------------- | ------------------------------------------------------------------------- |
+| Gemini 1.5 Pro          | **Legacy — EOL Sep 24, 2025. Migrate to Gemini 2.5 Pro or 3.x Pro.** | Claude Sonnet 5     | $3.00 / $15.00 | If still in use, migrate source model first                               |
+| text-bison / chat-bison | Legacy                                                               | Llama 4 Scout       | $0.17 / $0.66  | Bedrock (better quality + cheaper)                                        |
+| text-embedding-004      | $0.025 / N/A                                                         | Titan Embeddings V2 | $0.02 / N/A    | Bedrock 20% cheaper                                                       |
+| imagen-*                | Varies                                                               | Stable Image Core   | $0.04/img      | Nova Canvas excluded (EOL Sep 30, 2026); Ultra $0.08/img if quality-first |
 
 _Percentages are blended savings using a 2:1 input-to-output token ratio. Actual savings depend on your input/output ratio._
 

@@ -37,6 +37,18 @@ In the provided path, look for:
   include Anthropic `messages`, OpenAI `chat_completions` / `responses`, and Bedrock
   `converse` / `invoke_model`. Do not collapse exact IDs such as
   `claude-3-7-sonnet-latest` into a coarse `claude` family.
+  - **Gateway/router detection (OpenRouter, LiteLLM):** a `base_url` (or `OPENAI_BASE_URL` env
+    var) containing `openrouter.ai`, or an `OPENROUTER_API_KEY` / `OR_API_KEY` present, means
+    the calls are routed through OpenRouter, not the provider's direct API. This is a transport
+    difference, not a different model — classify `provider` from the underlying model, not as
+    `unknown`. OpenRouter model IDs are provider-prefixed slugs (`openai/gpt-5.4`,
+    `anthropic/claude-sonnet-4-6`, `google/gemini-2.5-pro`); the prefix names the real
+    `provider`. Record the raw slug unchanged in `model_ids[]` (do not strip the prefix — Model
+    Recommend's family detection tolerates it) and set `sdk` to `"openai (via OpenRouter)"` so
+    the transport is visible downstream. The same rule applies to a detected LiteLLM router
+    (`litellm` import, `LITELLM_PROXY_BASE_URL`), with `sdk: "openai (via LiteLLM)"`. Without
+    this rule, a real OpenAI model routed through a gateway falls through to `provider:
+    "unknown"` and is scored as if it were an unclassified/Bedrock-native source.
 - **Anthropic migration-sensitive features**: `budget_tokens`; `temperature` / `top_p` /
   `top_k`; assistant-prefill messages; refusal handling; explicit or framework-default
   `max_tokens`; structured output; prompt caching; server tools; Files API / URL sources;
