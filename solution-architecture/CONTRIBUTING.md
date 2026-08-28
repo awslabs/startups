@@ -76,6 +76,8 @@ A reviewer should not have to infer startup-specificity from prose. Declare it s
 
 - **Write the description in the imperative, opening with `Use when`.** State the situation the skill applies to, then what it covers, then what it is not for. Keep it to roughly 100 to 200 words. The hard limit is 1024 characters, enforced by the official validator, and text over it is truncated.
 
+  This is a deliberate folder-wide ruling, because the two official authoring plugins disagree. `skill-creator` prescribes the imperative; `plugin-dev`'s `skill-development` prescribes third person (`This skill should be used when...`). We follow `skill-creator`, for two reasons: its guidance is backed by the description optimizer and the validator that actually gates skills, and the imperative reads better in a listing where every entry would otherwise begin with the same five words. Apply it consistently. An automated reviewer that loads `plugin-dev` conventions may flag the deviation; this paragraph is the answer, and the deviation is intentional rather than an oversight.
+
 - **Do not add `when_to_use`.** The field is deprecated; the `plugin-dev` skill reviewer states plainly: "`when_to_use` (note: deprecated, use description only)." All triggering information belongs in `description`. Do not add `version` either, since the official validator rejects it. Allowed fields are `name`, `description`, `license`, `allowed-tools`, `metadata`, and `compatibility`.
 
 - **Write the body in the imperative, not the second person.** "Apply these patterns to agents that..." rather than "you should apply these to your agents." Reference files may keep a field-note voice; `SKILL.md` should not.
