@@ -371,6 +371,16 @@ misread as a bug in the agent.
   new version, the pushed image can verifiably contain the fix, and invocations can
   still run the old code. Vary the session id per invocation, and treat runtime
   version as insufficient evidence that a change is live.
+- **Retry the invocation, and vary the session id when you do.** A transient
+  failure otherwise leaves that revision with no review at all until someone pushes
+  again, and the job reports success, so nothing signals the gap. A 500 from the
+  runtime did exactly that here. Reusing the session id on retry pins the request to
+  the container that just failed, which is how a retry reproduces the same fault.
+- **Decide which way to fail on a retry, and say so.** If an attempt posts the
+  review and then fails to return, retrying posts a second one. Duplicating an
+  advisory comment is noise; a silently unreviewed revision looks like a pass. Prefer
+  the noise, and supersede your own standing verdicts so the duplicate does not
+  accumulate as state.
 - **Set the idle session timeout deliberately.** The default suits a
   conversational agent holding a session open. A reviewer runs for a minute, so
   minutes rather than hours is the difference between paying for work and paying

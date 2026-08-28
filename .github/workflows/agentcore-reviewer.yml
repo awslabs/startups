@@ -123,25 +123,46 @@ jobs:
           JSON
           cat payload.json
 
-          # Session id has a 33-character minimum, so a bare PR number is
-          # rejected. Unique per run, which also avoids a warm container serving
-          # code from a previous deploy.
-          SESSION_ID="gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-pr${PR_NUMBER}-agentcore-review"
-          while [ ${#SESSION_ID} -lt 33 ]; do SESSION_ID="${SESSION_ID}x"; done
+          # Retried, because a transient failure otherwise leaves a revision with no
+          # review at all until someone pushes again. A 500 from the runtime did
+          # exactly that on this pull request, and the job still reported success.
+          #
+          # Accepted risk: if an attempt posts the review and then fails to return,
+          # a retry posts a second one. That is the better direction to fail, since
+          # the bot supersedes its own standing verdicts and a duplicate advisory
+          # comment is noise, while a silently unreviewed revision looks like a pass.
+          ATTEMPTS=3
+          INVOKE_RC=1
+          for attempt in $(seq 1 $ATTEMPTS); do
+            # A fresh session id per attempt. Reusing one pins the request to the
+            # warm container that just failed, which is how a retry ends up
+            # reproducing the same fault.
+            SESSION_ID="gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-a${attempt}-pr${PR_NUMBER}-review"
+            while [ ${#SESSION_ID} -lt 33 ]; do SESSION_ID="${SESSION_ID}x"; done
 
-          set +e
-          # content-type is mandatory: without it the runtime returns HTTP 415
-          # before the agent runs.
-          aws bedrock-agentcore invoke-agent-runtime \
-            --region "$AWS_REGION" \
-            --agent-runtime-arn "$RUNTIME_ARN" \
-            --runtime-session-id "$SESSION_ID" \
-            --content-type application/json \
-            --accept application/json \
-            --payload "fileb://payload.json" \
-            response.json
-          INVOKE_RC=$?
-          set -e
+            echo "attempt ${attempt}/${ATTEMPTS} (session ${SESSION_ID})"
+            set +e
+            # content-type is mandatory: without it the runtime returns HTTP 415
+            # before the agent runs.
+            aws bedrock-agentcore invoke-agent-runtime \
+              --region "$AWS_REGION" \
+              --agent-runtime-arn "$RUNTIME_ARN" \
+              --runtime-session-id "$SESSION_ID" \
+              --content-type application/json \
+              --accept application/json \
+              --payload "fileb://payload.json" \
+              response.json
+            INVOKE_RC=$?
+            set -e
+
+            [ $INVOKE_RC -eq 0 ] && break
+
+            if [ "$attempt" -lt "$ATTEMPTS" ]; then
+              BACKOFF=$((attempt * 30))
+              echo "attempt ${attempt} failed (exit ${INVOKE_RC}); retrying in ${BACKOFF}s"
+              sleep "$BACKOFF"
+            fi
+          done
 
           if [ $INVOKE_RC -ne 0 ]; then
             # An unreachable runtime must never read as a pass.
@@ -149,7 +170,7 @@ jobs:
             {
               echo "### AgentCore reviewer did not run"
               echo ""
-              echo "\`invoke-agent-runtime\` exited $INVOKE_RC, so no verdict was produced."
+              echo "\`invoke-agent-runtime\` failed $ATTEMPTS time(s), last exit $INVOKE_RC, so no verdict was produced."
               echo "This is **not** an approval. Review criteria 1 and 2 by hand."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
