@@ -34,7 +34,7 @@ Practical consequences for a small team:
   sufficient, and a private App can only be installed on the account that owns
   it, so an App intended for an organization must be public. Expect to request
   installation and wait.
-- **Enterprise policy can reject a token outright**, independently of its scopes.
+- **Organization policy can reject a token outright**, independently of its scopes.
   A fine-grained token whose lifetime exceeds a policy limit fails with
   `403 Resource not accessible by personal access token` even though the same
   token works elsewhere. Read the message rather than adding scopes.

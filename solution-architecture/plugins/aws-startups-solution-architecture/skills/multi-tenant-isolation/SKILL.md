@@ -1,6 +1,6 @@
 ---
 name: multi-tenant-isolation
-description: "This skill should be used when designing or fixing tenant isolation for a multi-tenant SaaS on AWS, where a team with no dedicated security engineer must make a cross-tenant leak structurally impossible rather than a code-review responsibility. Covers choosing a silo, pool, or bridge model per layer rather than per application, enforcing isolation in IAM session policies and the database so a forgotten predicate fails closed, partitioning data across DynamoDB, Postgres, and S3, containing noisy neighbors, and attributing cost per tenant in a pooled fleet. It should also be used when hardening an existing pooled deployment against cross-tenant access, or when one enterprise customer demands dedicated infrastructure mid-deal. Not for single-tenant architecture or general IAM policy authoring, which belong to the aws-core skills upstream."
+description: "This skill should be used when designing or fixing tenant isolation for a multi-tenant SaaS on AWS, where a team with no dedicated security engineer must make a cross-tenant leak structurally impossible rather than a code-review responsibility. Covers choosing a silo, pool, or bridge model per layer rather than per application, enforcing isolation in IAM session policies and the database so a forgotten predicate fails closed, partitioning data across DynamoDB, Postgres, and S3, containing noisy neighbors, and attributing cost per tenant in a pooled fleet. It should also be used when hardening an existing pooled deployment against cross-tenant access, or when one large customer demands dedicated infrastructure mid-deal. Not for single-tenant architecture or general IAM policy authoring, which belong to the aws-core skills upstream."
 license: Apache-2.0
 metadata:
   audience: startup
@@ -63,12 +63,15 @@ Pooled compute means one tenant's load degrades everyone. Before it happens:
 - Pooled resources cannot be split by tags. Attribute with a usage proxy you already emit (requests, storage bytes, compute milliseconds, tokens) and apportion the shared bill against it.
 - Emit that proxy from day one. Retrofitting per-tenant usage data across a pooled fleet is painful and often approximate.
 
-## When an enterprise customer demands dedicated infrastructure
+## When a large customer demands dedicated infrastructure
 
-This arrives as a sales requirement, usually mid-deal, and the answer should already exist.
+This is the startup's problem, not the customer's: a prospect big enough to change the
+runway has asked for something the architecture does not do yet, and the deal is
+waiting on the answer. It arrives as a sales requirement rather than a technical one,
+usually mid-deal, so the answer should already exist before it is asked.
 
 - If the contract requires physical isolation, silo that tenant only. Do not migrate the whole platform to silo for one customer.
-- A separate AWS account per siloed tenant gives the hardest boundary and the cleanest cost attribution, at the price of account management. See the `aws-iam` skill in `aws-core` for cross-account patterns.
+- A separate AWS account per siloed tenant gives the hardest boundary and the cleanest cost attribution, at the price of account management. See `Skill("aws-core:aws-iam")` for cross-account patterns.
 - Keep one deployment pipeline across both models. Two divergent architectures is the outcome that actually hurts, because every future change ships twice.
 - Price it against the real floor, including the fixed monthly minimums that exist at zero usage.
 
@@ -92,4 +95,4 @@ Do not restate the mechanics these own. Invoke them directly, and spend the reas
 - Choosing silo for every tenant without adding up the fixed floors at zero usage.
 - One tenancy model imposed on every layer because it is simpler to describe.
 - Adding the tenant dimension to metrics after the first noisy-neighbor incident.
-- A second architecture forked for one enterprise customer, then maintained in parallel forever.
+- A second architecture forked for one large customer, then maintained in parallel forever.

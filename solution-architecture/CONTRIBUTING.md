@@ -22,7 +22,7 @@ A contribution is accepted only if it passes **all three**. Two out of three is 
 
 This folder is for **technical architecture and AWS problem solving**, where the technical constraints are startup constraints: no dedicated platform or security team, a fixed cost ceiling that is someone's runway, capacity that cannot be committed to for years, and a deadline that is a funding milestone. Those constraints change the correct technical answer, and that difference is what belongs here.
 
-General-purpose AWS service guidance that would read identically for an enterprise fails this criterion and belongs in Agent Toolkit for AWS. This is the criterion that keeps the folder from re-accumulating the general-purpose content that caused the previous removal.
+General-purpose AWS service guidance that would read identically for a large, established company fails this criterion and belongs in Agent Toolkit for AWS. This is the criterion that keeps the folder from re-accumulating the general-purpose content that caused the previous removal.
 
 **Founder coaching, stage-appropriateness advice, and business guidance also fail this criterion.** Stage detection, runway math, AWS Activate, credits strategy, and fundraise readiness belong in [AWS Startup Advisor](../advisor/), not here. Startup constraints are an input to the technical answer; they are not the subject.
 
@@ -74,7 +74,7 @@ A reviewer should not have to infer startup-specificity from prose. Declare it s
 
 - **Do not keyword-stuff.** Startup vocabulary (`runway`, `credits`, `stage`, `activate`) belongs in a description only where it is genuinely load-bearing. `multi-tenant-isolation` uses none of those words and is the stronger skill in this folder. A skill that sprinkles "runway" to look startup-specific while otherwise being general service guidance fails criterion 1 on review.
 
-  A worked rejection: a `gpu-capacity-strategy` skill was proposed and removed during review. It used runway and credits correctly, but the substance was a commitment-versus-observed-usage ladder that an enterprise division without procurement authority faces identically. Naming the startup constraint is not the same as the constraint changing the answer, and that distinction is what criterion 1 tests.
+  A worked rejection: a `gpu-capacity-strategy` skill was proposed and removed during review. It used runway and credits correctly, but the substance was a commitment-versus-observed-usage ladder that any team without procurement authority faces identically, whatever the size of the company. Naming the startup constraint is not the same as the constraint changing the answer, and that distinction is what criterion 1 tests.
 
 - **Generalize the triggers; do not list every query.** Describe categories of intent rather than an expanding list of near-verbatim phrases. The goal is not an ever-expanding list of specific queries a skill should or should not fire on, but to generalize to broader categories of user intent.
 
