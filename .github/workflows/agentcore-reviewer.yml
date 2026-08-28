@@ -11,6 +11,14 @@ name: AgentCore Reviewer
 # request through the API rather than checking it out is what keeps an untrusted
 # branch from executing anything here.
 #
+# Not executing that content is only half of it. The runtime's prompt also treats
+# everything under review as data rather than as instructions addressed to it, since
+# a pull request can otherwise ask the reviewer to approve it. See the untrusted
+# content rules in skills/agentcore-patterns/references/git-code-reviewer-agent.md.
+# This job holds no write access to the pull request, so the review is published
+# under the App identity and steering the model cannot escalate past what that App
+# is permitted to do.
+#
 # The runtime publishes its own review to the pull request when `submit` is set,
 # using its GitHub App identity. That is why this job sends `submit: true`: the
 # review appears on the pull request the same way whether the runtime is invoked
