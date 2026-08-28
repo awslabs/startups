@@ -41,8 +41,7 @@ permissions:
 jobs:
   review:
     name: Advisory review
-    # Fork pull requests get no secrets, so the invocation cannot succeed.
-    # Skipping is correct rather than failing on a confusing auth error.
+    # Same-repo pull requests only; see the fork note above.
     if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       # The runtime posts its review with its own GitHub App token, so this job
