@@ -117,6 +117,12 @@ it, and prefer a fresh invocation over inspecting history.
 
 ## The judgment design that decides whether anyone trusts it
 
+Evaluators, online monitoring, and CI quality gates are general agent-quality
+machinery owned by `Skill("aws-agents:agents-optimize")`. Go there to set up
+measurement. This section is narrower: what to do once the agent _is_ the gate, so
+its verdict carries authority over someone else's merge, and the question is
+whether it has earned that.
+
 The startup constraint bites hardest here. Nobody will tune this over a quarter.
 A reviewer that is noisy or inconsistent gets ignored, and then it is worse than
 nothing, because it occupies the slot where review attention used to be.
