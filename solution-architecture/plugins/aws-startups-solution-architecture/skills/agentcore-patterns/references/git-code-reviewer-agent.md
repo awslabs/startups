@@ -329,6 +329,12 @@ what you have verified and put the rest in the summary.
 
 ## Operational notes
 
+Session lifecycle, idle timeout, cold start, network mode, and quota behavior are
+general AgentCore mechanics owned by `Skill("aws-agents:agents-harden")`. Go there
+for how they work. What follows is only where a reviewer workload makes a
+non-obvious choice, or where the general behavior produces a trap that is easy to
+misread as a bug in the agent.
+
 - **A session id is pinned to a warm container.** A stable id keeps serving the
   code that instance started with. A fix can be deployed, the runtime can report a
   new version, the pushed image can verifiably contain the fix, and invocations can
