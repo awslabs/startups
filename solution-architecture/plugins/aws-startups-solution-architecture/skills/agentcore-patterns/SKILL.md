@@ -26,7 +26,7 @@ Do not restate the mechanics these own. Invoke them directly:
 - **`Skill("aws-agents:agents-deploy")`**: Container contract, deployment, versioning, rollback, and deploy-failure diagnosis.
 - **`Skill("aws-agents:agents-harden")`**: IAM scoping, inbound auth, secret handling, session lifecycle, and quotas.
 - **`Skill("aws-agents:agents-debug")`**: Traces, logs, and diagnosis of a deployed agent.
-- **`Skill("aws-agents:agents-optimize")`**: Latency and token-cost tuning of an existing agent.
+- **`Skill("aws-agents:agents-optimize")`**: Evaluators, online monitoring, CI/CD quality gates, observability, and latency and token-cost tuning. **Read this first if the goal is to measure an agent's quality.** It owns the evaluator and quality-gate machinery; this skill covers only the narrower case where the agent _is_ the gate, and the question is whether its verdicts are stable enough to carry authority.
 - **`Skill("aws-core:amazon-bedrock")`**: Model invocation, prompt caching, and throttling diagnosis.
 - **`Skill("aws-core:aws-ai-ml")`**: Model selection and inference-cost comparison.
 

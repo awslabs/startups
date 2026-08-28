@@ -2,7 +2,7 @@
 
 Technical AWS solutions for the problems startups actually get stuck on, from the AWS Startups Solution Architecture team.
 
-This plugin is **project scaffolding with three exemplar skills**. It exists so Startup SAs have somewhere to contribute the hard technical patterns they solve repeatedly in the field. If you are an SA with a pattern you have explained more than twice, it belongs here. See [what to contribute](#what-to-contribute).
+This plugin is **project scaffolding with two exemplar skills**. It exists so Startup SAs have somewhere to contribute the hard technical patterns they solve repeatedly in the field. If you are an SA with a pattern you have explained more than twice, it belongs here. See [what to contribute](#what-to-contribute).
 
 ## Scope
 
@@ -23,12 +23,11 @@ Two neighbors own adjacent surface, and staying off theirs is the point:
 
 ## Skills
 
-Three exemplars, each chosen because neither neighbor covers it and each is a recurring field problem.
+Two exemplars, each chosen because neither neighbor covers it and each is a recurring field problem.
 
 | Skill                    | Problem it solves                                                                                                                                                                                            |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `multi-tenant-isolation` | Tenancy model per layer, isolation enforced in IAM and the database rather than application code, per-tenant cost attribution, and what to do when one enterprise customer demands dedicated infrastructure. |
-| `gpu-capacity-strategy`  | Getting accelerated capacity at all, getting quota approved, surviving Spot interruption mid-training, and avoiding a multi-year commitment signed against a projection.                                     |
 | `agentcore-patterns`     | Running a judgment agent inside your own CI path: what it may block, measuring verdict stability before it gates anything, confidence banding, and warm-container staleness.                                 |
 
 `agentcore-patterns` is also the layout exemplar: a thin `SKILL.md` router with the depth in `references/`. That is the intended shape for this plugin, since solution-architecture content is mostly reference material.

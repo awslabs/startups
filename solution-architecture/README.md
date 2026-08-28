@@ -4,9 +4,9 @@ Startup-specific plugins and tools from the AWS Startups Solution Architecture t
 
 ## Plugins
 
-- **[`aws-startups-solution-architecture`](plugins/aws-startups-solution-architecture/)**. Technical AWS solutions for the problems startups get stuck on: multi-tenant SaaS isolation enforced in IAM rather than application code, accelerated compute capacity strategy for teams that cannot sign multi-year commitments, and running a judgment agent such as an LLM reviewer inside a CI path. Draws all general-purpose AWS service depth from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) as an upstream dependency rather than restating it.
+- **[`aws-startups-solution-architecture`](plugins/aws-startups-solution-architecture/)**. Technical AWS solutions for the problems startups get stuck on: multi-tenant SaaS isolation enforced in IAM rather than application code, and running a judgment agent such as an LLM reviewer inside a CI path. Draws all general-purpose AWS service depth from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) as an upstream dependency rather than restating it.
 
-  Currently three exemplar skills, deliberately. The plugin is scaffolding for Startup SAs to contribute the technical patterns they solve repeatedly; see [what to contribute](plugins/aws-startups-solution-architecture/README.md#what-to-contribute) for the verified gap list.
+  Currently two exemplar skills, deliberately. The plugin is scaffolding for Startup SAs to contribute the technical patterns they solve repeatedly; see [what to contribute](plugins/aws-startups-solution-architecture/README.md#what-to-contribute) for the verified gap list.
 
 ## Where aws-dev-toolkit went
 

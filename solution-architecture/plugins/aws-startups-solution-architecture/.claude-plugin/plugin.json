@@ -2,7 +2,7 @@
   "name": "aws-startups-solution-architecture",
   "displayName": "AWS Startups Solution Architecture",
   "version": "0.1.0",
-  "description": "Technical AWS solutions for the problems startups get stuck on, from the AWS Startups Solution Architecture team. Multi-tenant SaaS isolation enforced in IAM rather than application code, accelerated compute capacity strategy for teams that cannot sign multi-year commitments, and running a judgment agent such as an LLM reviewer inside a CI path. Startup here means the technical constraints are startup constraints: no dedicated platform or security team, a cost ceiling that is someone's runway, and a deadline that is a funding milestone. Draws all general-purpose AWS service depth from Agent Toolkit for AWS as an upstream dependency rather than restating it.",
+  "description": "Technical AWS solutions for the problems startups get stuck on, from the AWS Startups Solution Architecture team. Multi-tenant SaaS isolation enforced in IAM rather than application code, and running a judgment agent such as an LLM reviewer inside a CI path. Startup here means the technical constraints are startup constraints: no dedicated platform or security team, a cost ceiling that is someone's runway, and a deadline that is a funding milestone. Draws all general-purpose AWS service depth from Agent Toolkit for AWS as an upstream dependency rather than restating it.",
   "author": {
     "name": "Amazon Web Services"
   },
@@ -17,14 +17,6 @@
     "saas",
     "noisy-neighbor",
     "per-tenant-cost",
-    "gpu",
-    "gpu-quota",
-    "accelerated-compute",
-    "capacity-block",
-    "spot-interruption",
-    "inference-cost",
-    "trainium",
-    "inferentia",
     "lean-team",
     "runway"
   ],
