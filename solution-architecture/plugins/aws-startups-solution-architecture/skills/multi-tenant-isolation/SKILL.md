@@ -72,9 +72,9 @@ This arrives as a sales requirement, usually mid-deal, and the answer should alr
 - Keep one deployment pipeline across both models. Two divergent architectures is the outcome that actually hurts, because every future change ships twice.
 - Price it against the real floor, including the fixed monthly minimums that exist at zero usage.
 
-## Where the service depth comes from
+## Upstream skills to defer to
 
-Do not restate service mechanics here. Invoke the upstream skills directly and spend the reasoning on the tenancy decision.
+Do not restate the mechanics these own. Invoke them directly, and spend the reasoning on the tenancy decision:
 
 - **`Skill("aws-core:aws-iam")`**: IAM roles, `AssumeRole`, session policies, and policy conditions.
 - **`Skill("aws-core:aws-database")`**: DynamoDB key design, Aurora and Postgres specifics.
