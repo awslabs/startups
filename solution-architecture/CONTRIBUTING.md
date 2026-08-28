@@ -43,6 +43,10 @@ If Agent Toolkit for AWS already covers the capability, the contribution is a du
 
 Also check [AWS Startup Advisor](../advisor/) for overlap, particularly its `architect-for-startups` skill and that skill's `references/` directory, which already covers a broad set of startup-framed architecture topics. Founder-facing stage advice, AWS Activate, and credits guidance live there, not here.
 
+**This is judged at the discovery surface.** `SKILL.md` is the only file Claude Code discovers, and its description decides what gets loaded. A description claiming a capability upstream already owns creates two front doors to one topic: they compete for activation, the model may load the local one instead of the authoritative one, and they drift. That is the failure that removed the previous plugin here.
+
+Files under `references/` have no discovery surface. They load only because a `SKILL.md` linked them, so a reader has already chosen the skill. Prose there that restates upstream mechanics as context is not duplication, it is how a readable reference is written, and it is not grounds for rejection. The exception is wholesale reproduction of an upstream skill's substance, which is a maintenance burden worth avoiding but not a routing collision.
+
 Do not use the word "toolkit" in a plugin, skill, or agent name in this folder.
 
 ### 3. No deprecated or sunset AWS services
