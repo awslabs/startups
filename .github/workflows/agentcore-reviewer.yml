@@ -47,6 +47,10 @@ jobs:
       # The runtime posts its review with its own GitHub App token, so this job
       # needs no write access to the pull request. OIDC federation is all it uses.
       id-token: write
+      # A commit status reporting what the reviewer actually did. The Actions check
+      # only reports whether this job ran, and is green whether a review was posted,
+      # the runtime was unreachable, or the job no-opped on missing configuration.
+      statuses: write
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -54,6 +58,21 @@ jobs:
       RUNTIME_ARN: ${{ vars.AGENTCORE_REVIEWER_ARN }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
+      # Posted first so the tip shows the reviewer has picked up this revision,
+      # rather than leaving several minutes of apparent silence.
+      - name: Signal review started
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state=pending \
+            -f context=agentcore-reviewer \
+            -f description="Reviewing this revision" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --silent
+
       - name: Check configuration
         id: config
         run: |
@@ -187,3 +206,34 @@ jobs:
                   print(f"| `{a.get('axis', '')}` | {a.get('stance', '')} | {note} |")
               print()
           PY
+
+      # Always runs. An unresolved pending status would sit on the tip forever, and
+      # would block the merge outright if this context were ever added to required
+      # checks. State is `success` in every outcome because the reviewer is
+      # advisory: the description carries what happened, and a judgment it cannot
+      # settle must not present as a failed check.
+      - name: Signal review finished
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CONFIGURED: ${{ steps.config.outputs.configured }}
+          REACHABLE: ${{ steps.invoke.outputs.reachable }}
+        run: |
+          set -euo pipefail
+          if [ "${CONFIGURED:-}" != "true" ]; then
+            DESC="Not configured, no review performed"
+          elif [ "${REACHABLE:-}" != "true" ]; then
+            DESC="Runtime unreachable, no verdict produced"
+          elif [ -f response.json ]; then
+            DESC="$(jq -r 'if .error then "Runtime returned an error, no verdict" else "\(.verdict // "unknown"): \(.findings//[]|length) finding(s), \(.borderline//[]|length) borderline, review \(if .submitted then "posted" else "not posted" end)" end' response.json 2>/dev/null || echo "Review returned unreadable output")"
+          else
+            DESC="Review did not complete"
+          fi
+          echo "status: ${DESC}"
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state=success \
+            -f context=agentcore-reviewer \
+            -f description="${DESC:0:139}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --silent
