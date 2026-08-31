@@ -36,7 +36,10 @@
           "additionalProperties": false,
           "required": ["reason", "detail"],
           "properties": {
-            "reason": { "type": "string", "enum": ["model_access", "source_key_auth", "model_unresolvable"] },
+            "reason": {
+              "type": "string",
+              "enum": ["model_access", "source_key_auth", "model_unresolvable", "authz", "mantle_deps_missing"]
+            },
             "detail": { "type": "string" }
           }
         }

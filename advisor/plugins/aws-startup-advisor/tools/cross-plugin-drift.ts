@@ -109,14 +109,12 @@ const missing: string[] = [];
 let allowlisted = 0;
 let identical = 0;
 
-for (const skill of SKILLS) {
-  const srcRoot = join(SRC, "skills", skill);
-  const dstRoot = join(DST, "skills", skill);
-  const allow = ALLOWLIST[skill] ?? new Set<string>();
+/** Compare one src subtree against its dst counterpart under `label`. */
+function compareTree(srcRoot: string, dstRoot: string, label: string, allow: Set<string>): void {
   for (const rel of walk(srcRoot)) {
     const df = join(dstRoot, rel);
     if (!existsSync(df)) {
-      missing.push(`skills/${skill}/${rel}`);
+      missing.push(`${label}/${rel}`);
       continue;
     }
     const same = normalize(readFileSync(join(srcRoot, rel), "utf8")) === normalize(readFileSync(df, "utf8"));
@@ -124,12 +122,27 @@ for (const skill of SKILLS) {
       identical++;
     } else if (allow.has(rel)) {
       allowlisted++;
-      if (listMode) console.log(`allow  skills/${skill}/${rel}`);
+      if (listMode) console.log(`allow  ${label}/${rel}`);
     } else {
-      drift.push(`skills/${skill}/${rel}`);
+      drift.push(`${label}/${rel}`);
     }
   }
 }
+
+for (const skill of SKILLS) {
+  compareTree(
+    join(SRC, "skills", skill),
+    join(DST, "skills", skill),
+    `skills/${skill}`,
+    ALLOWLIST[skill] ?? new Set<string>(),
+  );
+}
+
+// The subagent prompts are copied between plugins exactly like the skill trees and
+// drift exactly the same way — a fix to an agents/ prompt on one side is invisible
+// to the other. They sat outside this check while four llm2bedrock prompts diverged
+// with the build green, so they are compared here too.
+compareTree(join(SRC, "agents"), join(DST, "agents"), "agents", ALLOWLIST["agents"] ?? new Set<string>());
 
 if (listMode) {
   console.log(`\n${identical} identical, ${allowlisted} allowlisted, ${drift.length} drift, ${missing.length} missing`);
@@ -151,4 +164,7 @@ if (missing.length || drift.length) {
   process.exit(1);
 }
 
-console.log(`cross-plugin drift check: OK (${identical} identical, ${allowlisted} allowlisted across ${SKILLS.length} skill trees)`);
+console.log(
+  `cross-plugin drift check: OK (${identical} identical, ${allowlisted} allowlisted `
+    + `across ${SKILLS.length} skill trees + agents/)`,
+);

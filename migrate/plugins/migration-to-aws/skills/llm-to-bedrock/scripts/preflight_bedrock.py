@@ -7,7 +7,10 @@ Always prints JSON — including for missing credentials / bad region — so the
 caller can parse the verdict instead of a traceback. On failure the top level
 carries `reason`/`detail`/`failing_models` lifted from the first failing model.
 Chat models are probed via Converse; embedding models (which don't speak
-Converse) via InvokeModel with their family's request body.
+Converse) via InvokeModel with their family's request body. Bare OpenAI
+proprietary GPT ids are mantle-served and probed via the OpenAI Responses API;
+GPT-5.6 CRIS profile ids (us./in./global. prefixed) are bedrock-runtime targets
+and take the normal Converse probe.
 The 1-token probe costs a fraction of a cent (noted in output).
 """
 import argparse, json, sys
@@ -51,6 +54,91 @@ def classify_invoke_error(code: str, message: str) -> dict:
 def is_embedding_model(model_id: str) -> bool:
     """Pure: embedding models don't speak the Converse API."""
     return "embed" in model_id.lower()
+
+
+def is_mantle_model(model_id: str) -> bool:
+    """Pure: ids that must be probed via the mantle Responses API rather than
+    Converse/InvokeModel. Matches the BARE proprietary GPT ids (`openai.gpt-5*`),
+    which are mantle-served. Deliberately does NOT match:
+    - gpt-oss ids (Converse-capable on bedrock-runtime), and
+    - GPT-5.6 CRIS profile ids (`us.`/`in.`/`global.` prefixed) — those are
+      bedrock-runtime targets where Converse IS supported, so falling through to
+      the standard Converse probe is the correct behavior, not an accident."""
+    mid = model_id.lower()
+    return mid.startswith("openai.gpt-5") and "oss" not in mid
+
+
+def classify_mantle_error(status: int | None, message: str) -> dict:
+    """Pure: map an OpenAI-SDK HTTP status from the mantle endpoint to a verdict.
+
+    Mirrors classify_invoke_error's contract but for the mantle surface, where the
+    remedies differ: IAM needs bedrock-mantle:* actions (not bedrock:InvokeModel),
+    and mantle itself has no cross-region form — though for GPT-5.6 a
+    bedrock-runtime CRIS id can cover the region instead."""
+    if status in (401, 403):
+        lowered = message.lower()
+        if ("model access" in lowered or "access to the model" in lowered
+                or "use the model" in lowered or "not authorized to use" in lowered):
+            return {"ok": False, "reason": "model_access",
+                    "detail": f"Bedrock model access not enabled for this model — {message}. "
+                              f"Enable it in the Bedrock console (Model access page); "
+                              f"this is separate from IAM."}
+        return {"ok": False, "reason": "authz",
+                "detail": f"IAM denies mantle inference — {message}. Grant bedrock-mantle "
+                          f"actions (e.g. the AmazonBedrockMantleInferenceAccess managed "
+                          f"policy); bedrock:InvokeModel does NOT authorize these models."}
+    if status == 404:
+        return {"ok": False, "reason": "model_unavailable",
+                "detail": f"Model not available at this mantle endpoint/region — {message}. "
+                          f"Mantle is in-region only; for GPT-5.6 try a bedrock-runtime CRIS "
+                          f"id (us./in./global. prefixed) instead, for GPT-5.5/5.4 switch to "
+                          f"a supported region or a different model."}
+    if status == 429:
+        # Reaching a token-per-minute ceiling still proves we are authorized.
+        return {"ok": True, "reason": "throttled_ok",
+                "detail": "Authorized (probe throttled on a TPM quota, which still proves access)."}
+    return {"ok": False, "reason": "unknown", "detail": f"{status}: {message}"}
+
+
+def probe_mantle_model(model_id: str, region: str) -> dict:
+    """Real minimal probe against the mantle Responses API.
+
+    Fails CLOSED when the OpenAI SDK is missing. This deliberately does NOT follow
+    the `embedding_unprobed` precedent: that one passes because an unrecognized
+    embedding family is a rare edge case, whereas a missing SDK here would be the
+    normal path for every run if the dependency were absent — returning ok=True
+    would turn a fail-fast preflight into an unconditional green light and let the
+    migration proceed with endpoint, model, and IAM access never checked. Both
+    packages are declared in pyproject.toml, so reaching this branch means the
+    pinned environment is broken and the operator needs to know."""
+    try:
+        from aws_bedrock_token_generator import provide_token
+        from openai import BedrockOpenAI
+    except ImportError as e:
+        return {"ok": False, "reason": "mantle_deps_missing",
+                "detail": f"Cannot probe mantle-only model {model_id}: {e}. This needs "
+                          f"'openai>=2.45.0' and 'aws-bedrock-token-generator', both declared "
+                          f"in scripts/pyproject.toml — re-sync the pinned environment "
+                          f"(`uv sync --project <scripts dir>`). Access was NOT verified; "
+                          f"preflight fails closed rather than assuming it works."}
+    try:
+        client = BedrockOpenAI(
+            aws_region=region,
+            bedrock_token_provider=lambda: provide_token(region=region),
+            max_retries=0,
+        )
+        client.responses.create(model=model_id, input="ping", max_output_tokens=16, store=False)
+        return {"ok": True, "reason": "ok", "detail": "Mantle Responses API authorized."}
+    except Exception as e:  # noqa: BLE001 - SDK raises many types; status is what matters
+        status = getattr(e, "status_code", None)
+        if status is None:
+            resp = getattr(e, "response", None)
+            status = getattr(resp, "status_code", None)
+        if status is None:
+            return {"ok": False, "reason": "credentials",
+                    "detail": f"{type(e).__name__}: {e}. Check AWS credentials, the region "
+                              f"name, and network access to the bedrock-mantle endpoint."}
+        return classify_mantle_error(int(status), str(e))
 
 
 def _embed_request_body(model_id: str) -> dict | None:
@@ -173,14 +261,25 @@ def main(argv=None) -> int:
     results = []
     all_ok = True
     for model_id in model_ids:
-        verdict = probe_model(client, model_id)
-        rpm = quota_rpm(quotas, model_id)
-        verdict["model_id"] = model_id
-        verdict["rpm_quota"] = rpm
-        if rpm is not None and args.dataset_size > rpm:
-            verdict["quota_warning"] = (
-                f"Dataset ({args.dataset_size}) exceeds ~{rpm} RPM quota — "
-                f"Eval will pace with backoff and may be slow.")
+        if is_mantle_model(model_id):
+            verdict = probe_mantle_model(model_id, args.region)
+            verdict["model_id"] = model_id
+            # Mantle enforces per-model input/output TPM quotas and has no RPM
+            # quota, so an RPM-derived pacing warning would be meaningless here.
+            verdict["rpm_quota"] = None
+            verdict["quota_note"] = (
+                "Mantle quotas are per-model input/output tokens per minute; there is no RPM "
+                "quota. Pace on token throughput, and note that prompt-cached input tokens are "
+                "exempt from the input-TPM quota.")
+        else:
+            verdict = probe_model(client, model_id)
+            rpm = quota_rpm(quotas, model_id)
+            verdict["model_id"] = model_id
+            verdict["rpm_quota"] = rpm
+            if rpm is not None and args.dataset_size > rpm:
+                verdict["quota_warning"] = (
+                    f"Dataset ({args.dataset_size}) exceeds ~{rpm} RPM quota — "
+                    f"Eval will pace with backoff and may be slow.")
         all_ok = all_ok and verdict["ok"]
         results.append(verdict)
 

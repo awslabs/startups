@@ -10,6 +10,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from iam_policy import (
     foundation_model_arn,
     generate_policy,
+    is_mantle_model,
+    mantle_project_arn,
     inference_profile_arn,
     is_inference_profile,
 )
@@ -20,7 +22,7 @@ ACCOUNT = "123456789012"
 
 class TestIsInferenceProfile:
     def test_geo_prefix_us(self):
-        assert is_inference_profile("us.anthropic.claude-sonnet-4-6")
+        assert is_inference_profile("us.anthropic.claude-sonnet-5")
 
     def test_geo_prefix_eu(self):
         assert is_inference_profile("eu.anthropic.claude-haiku-4-5-20251001-v1:0")
@@ -38,8 +40,8 @@ class TestArnGeneration:
         assert arn == "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
 
     def test_inference_profile_arn(self):
-        arn = inference_profile_arn("us.anthropic.claude-sonnet-4-6", REGION, ACCOUNT)
-        assert arn == f"arn:aws:bedrock:{REGION}:{ACCOUNT}:inference-profile/us.anthropic.claude-sonnet-4-6"
+        arn = inference_profile_arn("us.anthropic.claude-sonnet-5", REGION, ACCOUNT)
+        assert arn == f"arn:aws:bedrock:{REGION}:{ACCOUNT}:inference-profile/us.anthropic.claude-sonnet-5"
 
 
 class TestGeneratePolicy:
@@ -54,7 +56,7 @@ class TestGeneratePolicy:
         assert "foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0" in stmt["Resource"][0]
 
     def test_inference_profile_generates_dual_arns(self):
-        policy = generate_policy(["us.anthropic.claude-sonnet-4-6"], REGION, ACCOUNT)
+        policy = generate_policy(["us.anthropic.claude-sonnet-5"], REGION, ACCOUNT)
         resources = policy["Statement"][0]["Resource"]
         assert len(resources) == 2
         has_foundation = any("foundation-model/" in r for r in resources)
@@ -64,7 +66,7 @@ class TestGeneratePolicy:
 
     def test_mixed_models(self):
         models = [
-            "us.anthropic.claude-sonnet-4-6",
+            "us.anthropic.claude-sonnet-5",
             "amazon.nova-lite-v1:0",
         ]
         policy = generate_policy(models, REGION, ACCOUNT)
@@ -103,7 +105,7 @@ class TestCLI:
         result = subprocess.run(  # nosec B603
             [
                 sys.executable, str(Path(__file__).parent / "iam_policy.py"),
-                "--models", "us.anthropic.claude-sonnet-4-6,amazon.nova-lite-v1:0",
+                "--models", "us.anthropic.claude-sonnet-5,amazon.nova-lite-v1:0",
                 "--region", REGION,
                 "--account-id", ACCOUNT,
                 "--output", str(out),
@@ -113,3 +115,56 @@ class TestCLI:
         assert result.returncode == 0
         policy = json.loads(out.read_text())
         assert len(policy["Statement"][0]["Resource"]) == 3
+
+
+def test_mantle_model_detection_excludes_gpt_oss():
+    assert is_mantle_model("openai.gpt-5.6-terra") is True
+    assert is_mantle_model("openai.gpt-5.5") is True
+    assert is_mantle_model("openai.gpt-oss-120b-1:0") is False
+    assert is_mantle_model("anthropic.claude-sonnet-4-6") is False
+
+
+def test_mantle_target_gets_mantle_actions_not_invoke_model():
+    # Regression: the generated policy emitted only bedrock:InvokeModel against a
+    # foundation-model ARN, which cannot authorize a mantle call — the migrated app
+    # would deploy and immediately fail authorization.
+    pol = generate_policy(["openai.gpt-5.6-terra"], "us-east-1", "111122223333")
+    sids = {s["Sid"] for s in pol["Statement"]}
+    assert "BedrockMantleInference" in sids
+    assert "BedrockMantleCallWithBearerToken" in sids
+    # An all-mantle run must NOT emit an InvokeModel statement with an empty
+    # Resource list — that is an invalid IAM policy.
+    assert "BedrockInvokeModelScoped" not in sids
+    for s in pol["Statement"]:
+        assert s.get("Resource"), s["Sid"]
+
+
+def test_mantle_bearer_token_is_scoped_to_star():
+    # AWS does not support narrowing CallWithBearerToken; it must be "*".
+    pol = generate_policy(["openai.gpt-5.5"], "us-east-1", "111122223333")
+    bearer = [s for s in pol["Statement"] if s["Sid"] == "BedrockMantleCallWithBearerToken"][0]
+    assert bearer["Resource"] == "*"
+    assert bearer["Action"] == ["bedrock-mantle:CallWithBearerToken"]
+
+
+def test_mantle_inference_scoped_to_account_and_region():
+    pol = generate_policy(["openai.gpt-5.5"], "us-west-2", "999988887777")
+    inf = [s for s in pol["Statement"] if s["Sid"] == "BedrockMantleInference"][0]
+    assert inf["Resource"] == "arn:aws:bedrock-mantle:us-west-2:999988887777:project/*"
+
+
+def test_mixed_targets_emit_both_runtime_and_mantle_statements():
+    pol = generate_policy(
+        ["openai.gpt-5.6-luna", "us.anthropic.claude-sonnet-4-6"], "us-east-1", "111122223333")
+    sids = [s["Sid"] for s in pol["Statement"]]
+    assert "BedrockInvokeModelScoped" in sids
+    assert "BedrockMantleInference" in sids
+    invoke = [s for s in pol["Statement"] if s["Sid"] == "BedrockInvokeModelScoped"][0]
+    # The mantle model must not leak into the InvokeModel resource list.
+    assert not any("gpt-5" in r for r in invoke["Resource"])
+
+
+def test_gpt_oss_stays_on_the_runtime_path():
+    pol = generate_policy(["openai.gpt-oss-120b-1:0"], "us-east-1", "111122223333")
+    sids = {s["Sid"] for s in pol["Statement"]}
+    assert sids == {"BedrockInvokeModelScoped"}

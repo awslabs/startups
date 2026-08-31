@@ -142,3 +142,118 @@ def test_access_denied_iam_variant_still_routes_to_authz():
         "bedrock:InvokeModel on resource ...")
     assert v["reason"] == "authz"
     assert "bedrock:InvokeModel" in v["detail"]
+
+
+def test_mantle_model_detection_excludes_gpt_oss_and_cris_forms():
+    # Bare proprietary GPT ids are mantle-served; gpt-oss speaks Converse; and
+    # GPT-5.6 CRIS profile ids (us./in./global.) are bedrock-runtime targets that
+    # MUST take the Converse probe — Converse is supported there (2026-08-21).
+    assert p.is_mantle_model("openai.gpt-5.6-terra") is True
+    assert p.is_mantle_model("openai.gpt-5.6-sol") is True
+    assert p.is_mantle_model("openai.gpt-5.5") is True
+    assert p.is_mantle_model("openai.gpt-5.4") is True
+    assert p.is_mantle_model("openai.gpt-oss-120b-1:0") is False
+    assert p.is_mantle_model("us.openai.gpt-5.6-sol") is False
+    assert p.is_mantle_model("in.openai.gpt-5.6-luna") is False
+    assert p.is_mantle_model("global.openai.gpt-5.6-terra") is False
+    assert p.is_mantle_model("anthropic.claude-sonnet-4-6") is False
+    assert p.is_mantle_model("amazon.nova-lite-v1:0") is False
+
+
+def test_mantle_authz_error_points_at_mantle_actions_not_invoke_model():
+    # Regression: sending the user to bedrock:InvokeModel is a dead end for these
+    # models — mantle inference needs bedrock-mantle:* actions.
+    v = p.classify_mantle_error(403, "User is not authorized to perform bedrock-mantle:CreateInference")
+    assert v["ok"] is False
+    assert v["reason"] == "authz"
+    assert "bedrock-mantle" in v["detail"]
+    assert "does NOT authorize" in v["detail"]
+
+
+def test_mantle_model_unavailable_remedy_is_family_split():
+    # Verified 2026-08-21: mantle itself is in-region only, but GPT-5.6 now has a
+    # bedrock-runtime CRIS path — so the 404 remedy must offer the CRIS form for
+    # 5.6 while making clear 5.5/5.4 have no prefixed form. An earlier version of
+    # this test asserted the opposite (never suggest a prefix), which matched the
+    # pre-2026-08-21 docs.
+    v = p.classify_mantle_error(404, "model not found")
+    assert v["ok"] is False
+    assert v["reason"] == "model_unavailable"
+    assert "in-region only" in v["detail"]
+    assert "CRIS" in v["detail"] and "us./in./global." in v["detail"]
+    assert "GPT-5.5/5.4" in v["detail"]
+
+def test_mantle_throttle_is_ok_for_preflight():
+    v = p.classify_mantle_error(429, "too many tokens per minute")
+    assert v["ok"] is True
+    assert v["reason"] == "throttled_ok"
+
+
+def test_mantle_model_access_variant_routes_to_console_fix():
+    v = p.classify_mantle_error(403, "You do not have access to the model with the specified model ID")
+    assert v["ok"] is False
+    assert v["reason"] == "model_access"
+    assert "console" in v["detail"].lower()
+
+
+def test_main_probes_mantle_models_without_bedrock_runtime(monkeypatch, capsys):
+    # Regression: mantle-only models were probed with bedrock-runtime Converse,
+    # which always fails, so preflight blocked every GPT-5.x migration.
+    import json
+    calls = {}
+
+    def fake_probe_mantle(model_id, region):
+        calls["mantle"] = (model_id, region)
+        return {"ok": True, "reason": "ok", "detail": "Mantle Responses API authorized."}
+
+    def fake_probe_model(client, model_id):
+        raise AssertionError("must not probe a mantle-only model via bedrock-runtime")
+
+    monkeypatch.setattr(p, "probe_mantle_model", fake_probe_mantle)
+    monkeypatch.setattr(p, "probe_model", fake_probe_model)
+    monkeypatch.setattr(p, "fetch_bedrock_quotas", lambda region: [])
+
+    import boto3
+    monkeypatch.setattr(boto3, "client", lambda *a, **k: object())
+
+    rc = p.main(["--region", "us-east-1", "--models", "openai.gpt-5.6-terra", "--dataset-size", "9999"])
+    out = json.loads(capsys.readouterr().out)
+
+    assert rc == 0
+    assert calls["mantle"] == ("openai.gpt-5.6-terra", "us-east-1")
+    entry = out["models"][0]
+    assert entry["ok"] is True
+    assert entry["rpm_quota"] is None
+    # A dataset larger than any RPM number must not produce an RPM pacing warning
+    # for a model that has no RPM quota.
+    assert "quota_warning" not in entry
+    assert "no RPM quota" in entry["quota_note"]
+
+
+def test_mantle_missing_deps_fails_closed(monkeypatch):
+    # Regression: this returned ok=True with a caveat, mirroring the rare
+    # `embedding_unprobed` case. But a missing SDK is the NORMAL path if the
+    # dependency is absent, so passing turned a fail-fast preflight into an
+    # unconditional green light — endpoint, model and IAM access never checked.
+    import builtins
+    real_import = builtins.__import__
+
+    def no_openai(name, *a, **k):
+        if name in ("openai", "aws_bedrock_token_generator"):
+            raise ImportError(f"No module named {name!r}")
+        return real_import(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", no_openai)
+    v = p.probe_mantle_model("openai.gpt-5.6-terra", "us-east-1")
+    assert v["ok"] is False
+    assert v["reason"] == "mantle_deps_missing"
+    assert "NOT verified" in v["detail"]
+
+
+def test_mantle_deps_are_declared_in_pinned_env():
+    # The fail-closed path above must never trigger in a correctly synced env,
+    # so the pinned toolchain has to declare both packages.
+    import pathlib
+    toml = (pathlib.Path(__file__).resolve().parent / "pyproject.toml").read_text()
+    assert "openai>=2.45.0" in toml
+    assert "aws-bedrock-token-generator" in toml
