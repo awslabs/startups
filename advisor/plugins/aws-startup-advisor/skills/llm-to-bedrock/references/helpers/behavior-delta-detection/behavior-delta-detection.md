@@ -12,6 +12,18 @@ The motivation is to prevent silent UX changes during migration. Example: OpenAI
 
 For Anthropic 1P → Bedrock (`same_model_family: true`), parameter surfaces are identical — skip this skill entirely. For custom OpenAI-compatible providers (Together, Fireworks, etc.), v1 also skips — emit `behavior_deltas: []`.
 
+**OpenAI → the same GPT model on Bedrock is also `same_model_family: true`.** When the target is a proprietary GPT model on `bedrock-mantle` (`openai.gpt-5.6-sol` / `-terra` / `-luna`, `openai.gpt-5.5`, `openai.gpt-5.4`), the model is unchanged, so the model-parameter deltas in `references/openai-to-bedrock.md` — temperature range, penalty parameters, stop-sequence limits — **do not apply**. Applying them would prompt the user to accept range changes that are not happening.
+
+That case is not delta-free, though: the **API surface** can change (Chat Completions → Responses) and reasoning models require reasoning items to be echoed back across turns. Read only the "Same-model (mantle) deltas" section of `references/openai-to-bedrock.md` for those, and skip the parameter-surface blocks.
+
+Decide from the resolved target model id, not from `source_provider`:
+
+| Source | Target model id          | What to load                                              |
+| ------ | ------------------------ | --------------------------------------------------------- |
+| openai | `openai.gpt-5*` (mantle) | Same-model (mantle) deltas ONLY                           |
+| openai | Claude / Nova / DeepSeek | Full parameter-surface deltas (cross-family)              |
+| openai | `openai.gpt-oss-*`       | Full parameter-surface deltas — different model, Converse |
+
 ## Choose the right reference
 
 | source_provider | reference file                  |

@@ -115,12 +115,15 @@ Do **not** repeat these as "costs" in the user-facing summary.
 
 Present the monthly and annual cost difference between current GCP AI spend and projected Bedrock cost:
 
+- **If the model is unchanged** (`model_change: false`): projected cost is **about 10% higher**, not the same — Bedrock in-region is priced at OpenAI's data-residency tier, which is 1.10x OpenAI standard. Quote the increase plainly and make the case on non-cost grounds. If any workload exceeds 272K context, price it at the long-context tier (2.0x input / 1.5x output) and show that separately; it can dominate the comparison.
 - **If Bedrock is cheaper**: present monthly and annual savings clearly
 - **If Bedrock is more expensive**: state clearly, justify with non-cost benefits or note "not justified if cost is the only priority"
 
-Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, present prominently.
+Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, present prominently along with `honest_assessment_reason`.
 
-**Non-cost benefits to present:** model flexibility (30+ models), prompt caching (Claude, 90% savings), AWS ecosystem (Guardrails, Knowledge Bases, Agents), vendor diversification, multi-model strategy.
+**Non-cost benefits to present:** usage counting toward existing AWS commitments, IAM/VPC/PrivateLink/KMS/CloudTrail governance, in-region processing for data residency, prompt caching (Claude, and GPT-5.6 at 90% off cached input with cached tokens exempt from the input-TPM quota), model flexibility (100+ models), AWS ecosystem (Guardrails, Knowledge Bases, AgentCore), and — for a same-model move — the elimination of behavior-delta and prompt-regression risk.
+
+**Pricing source caveat for OpenAI models:** the AWS Price List API does not carry the proprietary GPT-5.x models, so the `awspricing` MCP returns no rows for them. An empty result is **not** evidence the model is unavailable or free. Use `shared/pricing-cache.md`, and treat rows marked `unverified` there as blocking for any quoted figure — resolve them from the Bedrock pricing page first. See `shared/openai-on-bedrock.md`.
 
 **Note:** Human/professional-services one-time migration costs are intentionally out of scope for this advisor and excluded from ROI calculations.
 
@@ -153,6 +156,7 @@ Produce a clear migrate/stay/optimize verdict for the AI workload migration. Thi
 
 | Condition                                                                                                                         | Verdict             | `recommendation.path` |
 | --------------------------------------------------------------------------------------------------------------------------------- | ------------------- | --------------------- |
+| **Same model on Bedrock** (`model_change: false`) — ~10% higher, short-context; non-cost benefits carry it                        | Migrate with caveat | `migrate_optimized`   |
 | Bedrock cheaper AND capabilities match                                                                                            | Migrate             | `migrate_optimized`   |
 | Bedrock more expensive BUT non-cost benefits justify (vendor diversification, Guardrails, multi-model) AND user priority ≠ `cost` | Migrate with caveat | `migrate_optimized`   |
 | Bedrock more expensive AND user priority = `cost` AND no compelling non-cost reason                                               | Stay                | `stay`                |
@@ -176,6 +180,7 @@ Produce a clear migrate/stay/optimize verdict for the AI workload migration. Thi
 
 - MUST emit `recommendation` — never omit. If data is insufficient, set `confidence: "low"` and state why in `rationale`.
 - If `honest_assessment` from `aws-design-ai.json` says `recommend_stay`, `recommendation.path` MUST be `stay` regardless of cost numbers.
+- **A same-model move is a modest cost increase, not parity.** When `bedrock_models[].model_change` is `false`, Bedrock in-region costs ~10% more than OpenAI standard for the same model. Report that figure rather than "no savings identified", and argue the case on commitments, governance, residency, prompt caching, and eliminated behavior-delta risk. A ~10% increase alone should not route to `stay` unless `ai_priority = cost` and no non-cost driver applies; a long-context workload at the 1M tier is a different matter and may legitimately favour staying.
 - For multi-workload runs: if some workloads favor migration and others don't, use `migrate_phased` and list which workloads to migrate vs. keep in `rationale`.
 
 ---
