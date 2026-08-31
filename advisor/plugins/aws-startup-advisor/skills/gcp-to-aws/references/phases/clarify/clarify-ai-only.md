@@ -181,23 +181,26 @@ Establishes baseline Bedrock recommendation. Override hierarchy: Q10 special fea
 
 _Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` **with confidence ≥ 0.8** (the same threshold as full-flow Q19) — auto-detect with `chosen_by: "extracted"` and do not present this question. The detected models are already shown in the Step 1 summary. Below 0.8, present the question with the detected model(s) offered as the suggested answer. With 2+ detected models, record `ai_model_baseline` as an array (one entry per model).
 
-> A) Gemini Flash | B) Gemini Pro | C) GPT-3.5 Turbo | D) GPT-4/4 Turbo | E) GPT-4o | F) GPT-5.4/Mini/Nano | G) GPT-5/5.x (older) | H) GPT-5.5/Pro | I) o-series | J) Claude (Anthropic SDK) | K) Other/Multiple | L) Don't know
+> A) Gemini Flash | B) Gemini Pro | C) GPT-3.5 Turbo | D) GPT-4/4 Turbo | E) GPT-4o | F) GPT-5.4/Mini/Nano | F2) GPT-5.6 Sol/Terra/Luna | G) GPT-5/5.x (older) | H) GPT-5.5/Pro | I) o-series | J) Claude (Anthropic SDK) | K) Other/Multiple | L) Don't know
 
-| Source         | Baseline Recommendation         | Pricing Context                    |
-| -------------- | ------------------------------- | ---------------------------------- |
-| Gemini Flash   | Claude Haiku 4.5 ($1/$5)        | Strong savings                     |
-| Gemini Pro     | Claude Sonnet 5 ($3/$15)        | Comparable tier                    |
-| GPT-3.5 Turbo  | Claude Haiku 4.5 ($1/$5)        | Faster and cheaper                 |
-| GPT-4/4 Turbo  | Claude Sonnet 5 ($3/$15)        | Major savings (GPT-4T: $10/$30)    |
-| GPT-4o         | Claude Sonnet 5 ($3/$15)        | Modest savings on output           |
-| GPT-5.4        | Claude Sonnet 5 ($3/$15)        | ~5% cheaper on OpenAI; near parity |
-| GPT-5.4 Mini   | Nova Lite ($0.06/$0.24)         | 94% cheaper on Bedrock             |
-| GPT-5.4 Nano   | Nova Micro ($0.035/$0.14)       | 87% cheaper on Bedrock             |
-| GPT-5.4 Pro    | Nova 2 Pro ($1.38/$11)          | 94% cheaper on Bedrock             |
-| GPT-5/5.x      | Claude Sonnet 5 ($3/$15)        | Savings story is quality, not cost |
-| GPT-5 flagship | Claude Opus 4.8 ($5/$25)        | Cheaper than GPT-5 Pro ($15/$120)  |
-| o-series       | Sonnet 5 with extended thinking | o1 $15/$60 → significant savings   |
-| Claude (any)   | Same model on Bedrock           | Client swap only — no model change |
+| Source        | Baseline Recommendation        | Pricing Context                    |
+| ------------- | ------------------------------ | ---------------------------------- |
+| Gemini Flash  | Claude Haiku 4.5 ($1/$5)       | Strong savings                     |
+| Gemini Pro    | Claude Sonnet 5 ($3/$15)       | Comparable tier                    |
+| GPT-5.6 (any) | **Same model on Bedrock**      | ~10% over OpenAI std (DR tier)     |
+| GPT-5.5       | **Same model on Bedrock**      | ~10% over OpenAI std (DR tier)     |
+| GPT-5.4       | **Same model on Bedrock**      | ~10% over OpenAI std (DR tier)     |
+| GPT-3.5 Turbo | GPT-5.6 Luna; or Haiku 4.5     | Luna 36% cheaper, 77% under Haiku  |
+| GPT-4/4 Turbo | GPT-5.6 Terra; or Sonnet 5     | Not on Bedrock — offer both        |
+| GPT-4o        | GPT-5.6 Terra; or Sonnet 5     | Not on Bedrock — offer both        |
+| GPT-5.4 Mini  | GPT-5.6 Luna; or Nova Lite     | Mini not on Bedrock — offer both   |
+| GPT-5.4 Nano  | GPT-5.6 Luna; or Nova Micro    | Nano not on Bedrock — offer both   |
+| GPT-5.x Pro   | GPT-5.6 Sol; or Nova 2 Pro     | Pro not on Bedrock — offer both    |
+| GPT-5/5.1/5.2 | GPT-5.6 Terra; or Sonnet 5     | Not on Bedrock — offer both        |
+| o-series      | GPT-5.6 Sol/Terra; or Sonnet 5 | Not on Bedrock — offer both        |
+| Claude (any)  | Same model on Bedrock          | Client swap only — no model change |
+
+**Same-model rows first.** GPT-5.6 / 5.5 / 5.4 run on Bedrock, so those sources map to themselves. Cost is ~10% ABOVE OpenAI standard (Bedrock in-region is priced at OpenAI's data-residency tier), so the case is AWS commitments, governance, and residency — not savings, and not parity. They are `bedrock-mantle` / Responses-only and in-region only; see `references/shared/openai-on-bedrock.md`. For sources with no Bedrock equivalent, present both a same-vendor upgrade and a cross-family option rather than pre-picking.
 
 Override examples: GPT-4 + Q2=cost → Haiku; Flash + Q10=extended thinking → Sonnet; GPT-4o + Q10=speech → Nova 2 Sonic; GPT-5.5 + Q2=cost → Sonnet 5.
 

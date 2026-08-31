@@ -39,12 +39,12 @@ Read from prompt context (forwarded from llm2bedrock-code-analyzer, llm2bedrock-
 
 - **`<GOLDEN_DATASET_PATH>`** — `<repo>/.saws-migrate/golden-dataset/prompts.jsonl` (from T2-2). May be empty if T2-2 took the abort / paste / vision-no-images / embeddings path.
 - **`<TEMPLATE_PATH>`** — `<repo>/.saws-migrate/golden-dataset/templates/prompt_template.txt` (from T2-2).
-- **`<TARGET_MODEL_ID>`** — Bedrock target model ID from the migration plan, validated by llm2bedrock-code-analyzer §10. Substitute in every `boto3.converse` call below.
+- **`<TARGET_MODEL_ID>`** — Bedrock target model ID from the migration plan, validated by llm2bedrock-code-analyzer §10. Substitute it in every Bedrock call below. **It also selects the API path:** a bare `openai.gpt-5*` id (excluding `-oss`) is mantle-served and must use the Responses client in §6a; a `us.`/`in.`/`global.`-prefixed `openai.gpt-5.6-*` CRIS id is a `bedrock-runtime` target and uses `boto3.converse` like any other profile; everything else uses `boto3.converse`. See the table at the top of §6.
 - **`<REGION>`** — AWS region for Bedrock (the `AWS region:` line in your context).
 - **From `llm2bedrock-code-analyzer` (`AiAnalysisData`)** — key fields:
   - `source_provider` — `openai` / `anthropic` / `google` / `cohere` / `custom`. Drives §9 baseline gating. (Vertex AI customers are emitted as `google` here; the analyzer's `errors` field carries the `vertex AI auth detected` signal that gates baseline collection upstream — by the time you reach §9, `source_baseline_available` already reflects that.)
   - `source_models` — list of source-model IDs. Pass `<SOURCE_MODEL_ID>` to the §9 baseline skill verbatim.
-  - `same_model_family` — `true` only for Anthropic 1P → Bedrock Claude; triggers §8 short-circuit.
+  - `same_model_family` — `true` when the model is unchanged: Anthropic 1P → Bedrock Claude, or OpenAI → the same GPT model on Bedrock (`openai.gpt-5*`). Triggers the §8 short-circuit.
   - `source_baseline_available` — `true` iff the user supplied a source-provider API key (orchestration skill Phase B3) and it was written to `<repo>/.saws-migrate/.source-provider-env`. When `false`, §9 skips and the report banner will note the gap.
   - `special_patterns` — `{streaming, function_calling, embeddings, vision}` booleans. Drives §5 layer selection.
   - `bedrock_provider_available` — informational ONLY. This is a rewrite-strategy flag for T2-5, NOT an account-capability flag. Do NOT use it to decide whether your Bedrock calls will work — Step §6 verifies that directly.
@@ -125,7 +125,26 @@ When reporting results, clearly separate which layers passed / failed / skipped.
 # 6. Setup + Bedrock connectivity check
 
 Create the eval results directory and verify Bedrock connectivity against the
-target model using the SAME API path Step 4 will use (`boto3.converse`).
+target model using the SAME API path the evaluation will use.
+
+**First, pick the API path from `<TARGET_MODEL_ID>` — this decides every Bedrock
+call in §6, §9.5 and §10:**
+
+| `<TARGET_MODEL_ID>` matches                       | API path         | Connectivity | Vision smoke | Golden eval              |
+| ------------------------------------------------- | ---------------- | ------------ | ------------ | ------------------------ |
+| bare `openai.gpt-5*` (not `-oss`)                 | Mantle Responses | §6a          | §9.5a        | §8 loop (same-model)     |
+| `us.`/`in.`/`global.` + `openai.gpt-5.6-*` (CRIS) | `boto3.converse` | §6           | §9.5         | §8 loop (same-model)     |
+| anything else (Claude, Nova, `openai.gpt-oss-*`)  | `boto3.converse` | §6           | §9.5         | §10, or §8 if same-model |
+
+The proprietary OpenAI GPT models are served ONLY on the `bedrock-mantle`
+endpoint. Calling `boto3.converse` against one fails, so running the Converse
+check below for a mantle target would abort this agent before it ever reached
+§8's same-model short-circuit. Route those to §6a instead.
+
+This choice is made once and holds for every Bedrock call in the run. It is
+independent of `same_model_family`: the short-circuit decides whether to _score_,
+while this table decides _how to call_. A same-model Anthropic run still uses
+Converse, and a same-model OpenAI run still needs its vision smoke test.
 
 ```bash
 mkdir -p <repo>/.saws-migrate/eval-results
@@ -166,6 +185,59 @@ Interpret the result:
   `bedrock_provider_available` from the orchestrator context (it is a
   rewrite-strategy flag, not an account-capability flag).
 
+# 6a. Mantle connectivity check (proprietary OpenAI GPT targets)
+
+Use this INSTEAD of §6 when `<TARGET_MODEL_ID>` matches `openai.gpt-5*` (excluding
+`-oss`). Same purpose, different endpoint and SDK.
+
+```bash
+mkdir -p <repo>/.saws-migrate/eval-results
+
+AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
+import os, sys
+from aws_bedrock_token_generator import provide_token
+from openai import BedrockOpenAI
+region = os.environ.get('AWS_REGION', 'us-east-1')
+try:
+    client = BedrockOpenAI(aws_region=region,
+                           bedrock_token_provider=lambda: provide_token(region=region),
+                           max_retries=2)
+    r = client.responses.create(model='<TARGET_MODEL_ID>', input='ping',
+                                max_output_tokens=16, store=False)
+    print('OK:', r.output_text)
+except Exception as e:
+    print(f'FAIL [{type(e).__name__}]: {e}', file=sys.stderr)
+    sys.exit(1)
+PY
+```
+
+Interpret the result:
+
+- **Exit 0 + "OK:" line** — proceed to §7.
+- **HTTP 404 / model-not-found** — the model is not available at this endpoint or
+  region. These models are **in-region only**, so there is no cross-region
+  inference profile to fall back to and `resolve-bedrock-model-id`'s
+  inference-profile ranking does not apply. Return
+  `{ blocked: { reason: 'model_unresolvable', detail: '<the exact error> — <TARGET_MODEL_ID> is not available on the bedrock-mantle endpoint in <REGION>. Mantle is in-region only; for GPT-5.6 a bedrock-runtime CRIS id (us./in./global. prefixed) may cover the region instead, while GPT-5.5/5.4 need a supported region or a different model.' } }`.
+  Use `model_unresolvable` rather than a new reason — its recovery path (user
+  picks or pastes an ID, recorded in `resolved_model_overrides`) is exactly right
+  here. For GPT-5.6 a `us.`/`in.`/`global.`-prefixed CRIS candidate is legitimate
+  (it switches the run to the Converse path); for GPT-5.5 / GPT-5.4 no prefixed
+  form exists — do not offer one.
+- **HTTP 401 / 403** — distinguish the two causes from the message. If it names
+  model access, return `{ blocked: { reason: 'model_access', ... } }` as in §6.
+  Otherwise it is IAM: the principal needs the `bedrock-mantle:*` actions
+  (`CreateInference`, `CallWithBearerToken`), **not** `bedrock:InvokeModel`.
+  Return `{ blocked: { reason: 'authz', detail: '<exact error> — grant bedrock-mantle actions (e.g. the AmazonBedrockMantleInferenceAccess managed policy); bedrock:InvokeModel does not authorize these models.' } }`.
+- **`ModuleNotFoundError`** — the pinned scripts environment is missing `openai` or
+  `aws-bedrock-token-generator` (both are declared in `scripts/pyproject.toml`).
+  Return `{ blocked: { reason: 'mantle_deps_missing', detail: '<exact error> — re-sync the pinned environment.' } }`. Do NOT treat this as a passing check.
+- **Any other failure** — surface the exact error type and message and STOP, as in §6.
+
+Because these targets are same-model migrations, §8's short-circuit applies right
+after §7: run each golden prompt through this same Responses client for
+connectivity verification rather than the Converse script in §10.
+
 # 7. Load golden dataset
 
 ```bash
@@ -177,14 +249,61 @@ If `total_golden_cases == 0` (T2-2 abort / paste / vision-no-images / embeddings
 
 # 8. Same-model-family short-circuit
 
-If `same_model_family: true` (Anthropic 1P → Bedrock Claude):
+If `same_model_family: true` — either Anthropic 1P → Bedrock Claude, or OpenAI → the same GPT model on Bedrock (`openai.gpt-5*`):
 
 - Skip rubric generation and scoring (no parameter-surface drift to score against).
 - Just verify each prompt works on Bedrock (connectivity + response format): run each prompt, check for errors, verify response is non-empty.
+- **Use the API path §6 selected, not §10's script.** For an Anthropic 1P → Claude run that is `boto3.converse`. For an `openai.gpt-5*` run it is the Mantle Responses client from §6a — `client.responses.create(model='<TARGET_MODEL_ID>', input=<prompt>, max_output_tokens=<n>, store=False)`, reading `r.output_text`. §10's script is Converse-only and will fail against a mantle target; do not call it here.
 - Output pass / fail per prompt; count successes as `success_count`.
 - Compute `pass_rate = success_count / total_cases` (connectivity-only ratio) and write `failures = total_cases - success_count`.
 - In §14, set `live_source_baseline: false` (no live comparison ran) and add `notes` prefix `same_model_family: true — connectivity-only verification, no rubric scoring`. T2-6 reads that prefix to render the report banner with "connectivity verified" instead of "judge scored X/Y prompts". Set `source_baseline_quality: 'unknown'` (no live baseline ran).
-- Skip to §14 (no §9 baseline, no §11 scoring, no §12–§13 adaptation).
+- **§9.5 still runs when `special_patterns.vision == true`** — do NOT skip it. It is the Layer 2 gate that proves image input works before any per-case image call, and skipping it would let a vision migration report `pass_rate: 1.0` without a single image request. §9.5 selects its own API path (Converse or Responses) the same way §6 does, so it is valid for both same-model variants.
+- **Send image input for every golden case that has one.** If a case's `image_path` is non-null, the verification call MUST include the image, not just the prompt text — see the per-path shapes below. A vision run whose cases are sent as text-only is not a verification, and the resulting pass rate is meaningless.
+- Skip to §14 (no §9 baseline, no §10 Converse eval, no §11 scoring, no §12–§13 adaptation). §10 is Converse-only, so for a mantle target it is replaced by the loop described here, not merely skipped.
+
+Build the request with the shared helper — do NOT assemble these dicts inline:
+
+```python
+import sys; sys.path.insert(0, "<scriptsDir>")
+from image_input import converse_message, responses_message
+
+# Golden-case fields are `user_prompt`, `system_prompt`, `image_path` — NOT `prompt`.
+# (Canonical record shape: llm2bedrock-log-ingestor §9.)
+raw = open(case["image_path"], "rb").read() if case.get("image_path") else None
+
+# Converse target:
+msgs = [converse_message(case["user_prompt"], case.get("image_path"), raw)]
+kwargs = {"modelId": "<TARGET_MODEL_ID>", "messages": msgs,
+          "inferenceConfig": {"maxTokens": 512}}
+if case.get("system_prompt"):
+    kwargs["system"] = [{"text": case["system_prompt"]}]
+r = c.converse(**kwargs)
+
+# Mantle target: a system prompt becomes a developer-role item ahead of the user item.
+items = []
+if case.get("system_prompt"):
+    items.append({"role": "developer",
+                  "content": [{"type": "input_text", "text": case["system_prompt"]}]})
+items.append(responses_message(case["user_prompt"], case.get("image_path"), raw))
+r = client.responses.create(model="<TARGET_MODEL_ID>", input=items,
+                            max_output_tokens=512, store=False)
+```
+
+Two things the helper exists to get right, both of which fail _only_ on golden cases
+while the §9.5 / §9.5a smoke tests still pass (those hardcode a known-good jpeg):
+
+- **The file extension is not the wire format.** A `.jpg` case is `format: "jpeg"`
+  for Converse and `image/jpeg` for Responses; `jpg` and `image/jpg` are rejected.
+- **Responses content must be wrapped in a message item.** `input` takes
+  `[{"role": "user", "content": [...]}]`, not a bare `[{"type": "input_text", ...}]`
+  list. `responses_message` returns the wrapper for exactly this reason.
+
+An unsupported image type raises rather than being passed through, so record that
+case as a failure with the raised message rather than retrying it as text.
+
+Count a case as failed if the call errors or returns empty output. If a case with an
+`image_path` cannot be sent as an image at all, record it as a failure and say so in
+`notes` — never silently downgrade it to a text-only call.
 
 # 9. Live source-model baseline (PM trust-gap fix)
 
@@ -199,8 +318,9 @@ If `same_model_family: true` (Anthropic 1P → Bedrock Claude):
   for the final report. The report will
   surface a banner explaining the pass rate is not a side-by-side
   comparison.
-- `same_model_family == true` (Anthropic 1P → Bedrock Claude) → SKIP.
-  §8 already short-circuits scoring entirely; live baseline adds nothing.
+- `same_model_family == true` (Anthropic 1P → Bedrock Claude, or OpenAI →
+  the same GPT model on Bedrock) → SKIP. §8 already short-circuits scoring
+  entirely; a live baseline would compare the model against itself.
 
 **Procedure:**
 
@@ -242,6 +362,10 @@ If `same_model_family: true` (Anthropic 1P → Bedrock Claude):
 
 If `special_patterns.vision == false`, SKIP this section.
 
+**This section runs for same-model migrations too** (both Anthropic 1P → Claude and OpenAI → the same GPT model). §8 short-circuits scoring, not image verification: it is the only gate that proves image input works before per-case image calls, so skipping it would let a vision migration pass without ever sending an image.
+
+**Pick the API path exactly as §6 did.** The script below uses `boto3.converse` and is valid for Converse targets. For a mantle-only `openai.gpt-5*` target use §9.5a instead — the GPT-5.x model cards list image input as supported, but it goes through the Responses API, not Converse.
+
 Otherwise, run a one-shot Bedrock call against a public Wikipedia image to prove the SDK accepts image input before §10 attempts it on every golden prompt. If the public CDN isn't reachable, the smoke is INCONCLUSIVE — do NOT attempt an inline-fixture fallback (tiny synthetic JPEGs trip Claude's minimum-dimension validators and produce false `VISION_FAIL` even when the SDK is fine):
 
 ```bash
@@ -280,7 +404,59 @@ Outcomes:
 - **`VISION_INFRA_SKIPPED`** — image download failed (DNS / proxy / air-gapped machine). Bedrock vision was NOT exercised; the test is inconclusive at this layer. Add to `notes`: `vision_smoke_skipped: CDN unreachable — Bedrock vision SDK path not exercised at smoke layer`. Proceed to §10 — golden cases carry their own images from T2-2, which will exercise the SDK directly.
 - **`VISION_FAIL`** — Bedrock rejected the image (`ValidationException`, `AccessDeniedException`, etc.). Surface the exact error in your result file's `notes`, STOP — golden vision eval will fail the same way. (If the failure is an `AccessDeniedException` on model access, route it through `{ blocked: { reason: 'model_access', detail: ... } }` per §6.)
 
+# 9.5a Mantle vision smoke test (proprietary OpenAI GPT targets)
+
+Use this INSTEAD of §9.5 when `<TARGET_MODEL_ID>` matches `openai.gpt-5*` (excluding `-oss`) AND `special_patterns.vision == true`. Same purpose and same three outcomes; the image travels as a base64 data URL on the Responses API rather than as Converse image bytes.
+
+```bash
+AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
+import base64, os, sys
+try:
+    import urllib.request
+    img = urllib.request.urlopen(
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/320px-Cat_November_2010-1a.jpg",
+        timeout=15,
+    ).read()
+except Exception as e:
+    print(f"VISION_INFRA_SKIPPED [{type(e).__name__}]: {e}", file=sys.stderr)
+    sys.exit(0)
+
+from aws_bedrock_token_generator import provide_token
+from openai import BedrockOpenAI
+region = os.environ.get("AWS_REGION", "us-east-1")
+data_url = "data:image/jpeg;base64," + base64.b64encode(img).decode()
+try:
+    client = BedrockOpenAI(aws_region=region,
+                           bedrock_token_provider=lambda: provide_token(region=region),
+                           max_retries=2)
+    r = client.responses.create(
+        model="<TARGET_MODEL_ID>",
+        input=[{"role": "user", "content": [
+            {"type": "input_text", "text": "Describe this image briefly."},
+            # `detail` is Required on ResponseInputImageParam in the pinned SDK.
+            {"type": "input_image", "image_url": data_url, "detail": "auto"},
+        ]}],
+        max_output_tokens=32,
+        store=False,
+    )
+    print("VISION_OK:", r.output_text)
+except Exception as e:
+    print(f"VISION_FAIL [{type(e).__name__}]: {e}", file=sys.stderr)
+    sys.exit(1)
+PY
+```
+
+Outcomes are the same as §9.5: `VISION_OK` → proceed; `VISION_INFRA_SKIPPED` → record `vision_smoke_skipped` in `notes` and proceed (the golden cases carry their own images and will exercise the path directly); `VISION_FAIL` → surface the exact error and STOP, routing a model-access denial through `{ blocked: { reason: 'model_access', ... } }` and an IAM denial through `{ blocked: { reason: 'authz', ... } }` per §6a.
+
+**On `VISION_FAIL` specifically, do not fall back to text-only prompts.** The migration's vision capability is unverified at that point, and a text-only pass rate would misrepresent it as working. The content-block shape above is the documented OpenAI Responses form; if it is rejected for a reason other than access, report the exact error rather than guessing at an alternative shape.
+
 # 10. Run golden prompt evaluation
+
+> **Converse-only.** The script below calls `boto3.converse` and is valid only for
+> the API path §6 selected. A `openai.gpt-5*` target never reaches this section —
+> §8's same-model short-circuit fires first and verifies prompts through the Mantle
+> Responses client from §6a. If you somehow arrive here with a mantle target,
+> stop and report the contradiction rather than running a call that cannot work.
 
 For each prompt in the golden dataset, run the evaluation via `python` stdin (avoids the brittle nested-heredoc + escaped-quote pattern that breaks on any literal `'` inside the script):
 
@@ -668,7 +844,9 @@ These mutually-exclusive control states replace the normal eval object when they
 - **`blocked`** — a genuine hard stop that needs user resolution. Return `{ blocked: { reason, detail } }` where `reason` is one of:
   - `model_access` — Bedrock model access not enabled for the account (§6 `AccessDeniedException`, or a §9.5 vision access denial). Put the console URL + exact error in `detail`.
   - `source_key_auth` — the source-provider API key returned 401/403 (§9 all-401/403). Put the provider name + that a new key (or skip) is needed in `detail`. NEVER put the key value in `detail`.
-  - `model_unresolvable` — the target model id cannot be resolved even after `resolve-bedrock-model-id` (§6). Put the exact `ValidationException` message + the model id you tried in `detail`.
+  - `model_unresolvable` — the target model id cannot be resolved even after `resolve-bedrock-model-id` (§6), **or** a mantle target returned 404 in this region (§6a). Put the exact error message + the model id you tried in `detail`; for the mantle case also state that these models are in-region only.
+  - `authz` — IAM denies inference (§6 `AccessDeniedException` on `bedrock:InvokeModel*`, or §6a 401/403 that does not name model access). Name the action set to grant in `detail`: `bedrock:InvokeModel*` for Converse targets, the `bedrock-mantle:*` actions for mantle targets. Keep this distinct from `model_access` — they have different fixes.
+  - `mantle_deps_missing` — the pinned scripts environment lacks `openai` / `aws-bedrock-token-generator`, so a mantle target could not be probed (§6a `ModuleNotFoundError`). Say access was NOT verified and that the env needs re-syncing.
 - **`partial`** — the run was throttle-truncated. Return `{ partial: { completed: <N scored>, total: <M total>, reason: 'throttled' } }` when the 429 retry budget (§10) is exhausted with cases still unscored.
 
 ## What goes in the eval object's fields

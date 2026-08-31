@@ -23,7 +23,10 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 **Load source-specific design reference based on `ai_source`:**
 
 - `"gemini"` → load `references/design-refs/ai-gemini-to-bedrock.md`
-- `"openai"` → load `references/design-refs/ai-openai-to-bedrock.md`
+- `"openai"` → load `references/design-refs/ai-openai-to-bedrock.md` **and**
+  `references/shared/openai-on-bedrock.md` (the fact base: model IDs, endpoint paths, region matrix, quotas,
+  caching). OpenAI's proprietary GPT models run on Bedrock, so the source model is often itself the target — the
+  mapping guide's Tier 0 path is the default, not a cross-family swap.
 - `"anthropic"` → load `references/design-refs/ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use ai-openai-to-bedrock.md for Anthropic SDK users)
 - `"both"` → load both `ai-gemini-to-bedrock.md` and `ai-openai-to-bedrock.md`
 - `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
@@ -120,8 +123,14 @@ For each `workloads[]` entry:
    - Skip the override hierarchy in step 2 below — Q16–Q19 preferences (quality/speed/cost model tuning) don't apply to these services; there is no model tier to select.
    - `honest_assessment` (Part 1 continued, below) does not apply — these are feature/service swaps, not a cost-driven model migration decision. Set `honest_assessment: "not_applicable"` for these workloads in the output.
 
-2. **For text/reasoning capabilities:** Apply the existing override hierarchy from `ai_constraints`:
-   - Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > source model baseline
+2. **For text/reasoning capabilities:** Apply the override hierarchy from `ai_constraints`:
+   - Q17 special features (hard override) > **same-model availability** > Q16 priority > Q18/Q21 volume and latency >
+     source model baseline
+   - **Same-model availability outranks Q16 priority.** If the source model is available on Bedrock and the target
+     region carries it, keep it — a `balanced` or unset priority must not silently move the workload to a different
+     model family. Only a Q17 hard feature override (a capability the source model cannot serve) beats it. An
+     explicit `ai_priority = "cost"` does not override it either; it adds a cost alternative alongside the same-model
+     recommendation (see the mapping guide's Tier 2).
    - This ensures single-workload sophistication is preserved per workload
 
 3. **Emit one `design_block` per workload** in `aws-design-ai.json`:
@@ -181,11 +190,28 @@ Treat model mapping as compatibility-guided, not 1:1 parity. Before cutover, req
 
 **Stay-or-migrate assessment per model:**
 
+Check the same-model case FIRST — it short-circuits the cost comparison:
+
+- **Source model is available on Bedrock** (per `shared/openai-on-bedrock.md`) AND the target region carries it →
+  `"strong_migrate"`. Set `model_change: false`. The rationale is risk (no behavior delta) plus AWS commitments,
+  governance, and residency — **not** cost: Bedrock in-region is priced at OpenAI's data-residency-tier rate, about
+  10% above OpenAI standard, so report a modest cost increase rather than parity. Do not downgrade the assessment for
+  that ~10%, and do not claim it is free. If the workload exceeds 272K context, price it at the long-context tier
+  (2.0x input, 1.5x output) — the gap is then substantial and may change the recommendation.
+- Source model on Bedrock but the target region does not carry it → treat as no-same-model below, and record the
+  region as the cause in `regional_warnings[]`. Do not report this as a model-quality judgment.
 - Bedrock cheaper → `"strong_migrate"`
 - Bedrock within 25% of source AND priority != cost → `"moderate_migrate"`
 - Source > 25% cheaper AND priority = cost → `"weak_migrate"` or `"recommend_stay"`
 
 Overall assessment = weakest across all models. If any `"recommend_stay"`, flag prominently.
+
+**`recommend_stay` requires a non-cost reason when the source provider's models are on Bedrock.** For an OpenAI
+source, a ~10% premium alone is usually too small to justify staying, but a long-context workload priced at the 1M
+tier can be. Beyond cost, these justify `recommend_stay`: a fixed
+region with no suitable model, Realtime API dependence, image/speech/embedding capabilities that map to other AWS
+services rather than to an OpenAI model, Assistants API with file search / vector stores / code interpreter, or a
+confirmed unsupported API surface. Record which one in `honest_assessment_reason`.
 
 **Model comparison table** (include in output and user summary): Model, Provider, Max Context, Input/Output Price per 1M, Price Comparison, Streaming, Function Calling, Assessment.
 
@@ -223,8 +249,10 @@ Prompt Routing as an option. It automatically routes each request to the cheapes
 that can handle it at adequate quality — the AWS-native automation of the tiered strategy above.
 
 > Intelligent Prompt Routing only routes within a single model family. It does NOT replace
-> cross-provider routing (e.g., Claude ↔ GPT-4o). If the startup was using OpenRouter or
-> LiteLLM to route across providers, they still need app-level routing for cross-family calls.
+> cross-family routing (e.g., Claude ↔ GPT-5.6). Note that even though both families are now on
+> Bedrock, Claude is reached via `bedrock-runtime`/Converse and the proprietary GPT models via
+> `bedrock-mantle`/Responses — two different client surfaces. A router spanning them still needs
+> app-level or LiteLLM routing with two client paths; being "all on Bedrock" does not unify them.
 > One-line caveat: adds a routing-prediction latency hop; verify model support at
 > docs.aws.amazon.com/bedrock/latest/userguide/prompt-routing.html before recommending.
 
@@ -283,13 +311,13 @@ For each model in `models[]`, record:
 - **Workload type**: text generation, embeddings, vision, code generation, custom model
 - **Integration pattern mapping**:
 
-| GCP Pattern  | AWS Pattern                                      | Effort  |
-| ------------ | ------------------------------------------------ | ------- |
-| `direct_sdk` | Mantle OpenAI-compat (if OpenAI source + region) | Minimal |
-| `direct_sdk` | Bedrock SDK (boto3 / AWS SDK)                    | Medium  |
-| `framework`  | LangChain/LlamaIndex + Bedrock                   | Low     |
-| `rest_api`   | Bedrock REST API                                 | Medium  |
-| `mixed`      | Match per-model                                  | Varies  |
+| GCP Pattern  | AWS Pattern                                                               | Effort  |
+| ------------ | ------------------------------------------------------------------------- | ------- |
+| `direct_sdk` | Mantle Responses API (OpenAI source, model on Bedrock, region carries it) | Minimal |
+| `direct_sdk` | Bedrock SDK (boto3 / AWS SDK)                                             | Medium  |
+| `framework`  | LangChain/LlamaIndex + Bedrock                                            | Low     |
+| `rest_api`   | Bedrock REST API                                                          | Medium  |
+| `mixed`      | Match per-model                                                           | Varies  |
 
 - **Migration complexity**: Low / Medium / High
 
@@ -317,23 +345,27 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 
 **Patterns to include (matched to detected language and source):**
 
-| Pattern              | Source                    | Target                 | Key Change                                                                                           |
-| -------------------- | ------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| Direct SDK (OpenAI)  | OpenAI                    | Mantle (OpenAI-compat) | Change `OPENAI_BASE_URL` + `OPENAI_API_KEY` + model string (zero code changes)                       |
-| Direct SDK           | Vertex AI                 | boto3 Converse API     | `generate_content()` → `converse()`                                                                  |
-| Direct SDK           | OpenAI                    | boto3 Converse API     | `completions.create()` → `converse()` (use if Mantle region unavailable or Converse features needed) |
-| Direct SDK           | Anthropic                 | boto3 Converse API     | `messages.create()` → `converse()` with Claude model ID on Bedrock                                   |
-| LangChain            | ChatVertexAI / ChatOpenAI | ChatBedrock            | Swap import and model_id                                                                             |
-| LlamaIndex           | Vertex / OpenAI LLM       | BedrockConverse        | Swap import                                                                                          |
-| LLM Router (LiteLLM) | Any                       | Config change          | `model="bedrock/<model_id>"` (1 line)                                                                |
-| Embeddings           | TextEmbeddingModel        | Titan Embeddings v2    | `invoke_model` with JSON body                                                                        |
-| Streaming            | `stream=True`             | `converse_stream`      | Event loop over `contentBlockDelta`                                                                  |
+| Pattern                         | Source                    | Target               | Key Change                                                                                           |
+| ------------------------------- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------- |
+| Direct SDK (OpenAI), same model | OpenAI                    | Mantle Responses API | Base URL → `.../openai/v1`, Bedrock credential, `openai.gpt-*` model ID, `bedrock-mantle:*` IAM      |
+| Direct SDK                      | Vertex AI                 | boto3 Converse API   | `generate_content()` → `converse()`                                                                  |
+| Direct SDK                      | OpenAI                    | boto3 Converse API   | `completions.create()` → `converse()` (use if Mantle region unavailable or Converse features needed) |
+| Direct SDK                      | Anthropic                 | boto3 Converse API   | `messages.create()` → `converse()` with Claude model ID on Bedrock                                   |
+| LangChain                       | ChatVertexAI / ChatOpenAI | ChatBedrock          | Swap import and model_id                                                                             |
+| LlamaIndex                      | Vertex / OpenAI LLM       | BedrockConverse      | Swap import                                                                                          |
+| LLM Router (LiteLLM)            | Any                       | Config change        | `model="bedrock/<model_id>"` (1 line)                                                                |
+| Embeddings                      | TextEmbeddingModel        | Titan Embeddings v2  | `invoke_model` with JSON body                                                                        |
+| Streaming                       | `stream=True`             | `converse_stream`    | Event loop over `contentBlockDelta`                                                                  |
 
-**Mantle (OpenAI-compatible endpoints):** If `ai_source = "openai"` and `integration.pattern = "direct_sdk"`, prefer the Mantle path as the primary migration option. Mantle provides OpenAI-compatible Chat Completions and Responses APIs on Bedrock — the existing OpenAI SDK code works with zero changes, only environment variable updates. Check [Mantle regional availability](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) — if the target region does not have Mantle, fall back to the boto3 Converse API path. Record `migration_path: "mantle"` or `migration_path: "converse"` in `aws-design-ai.json` → `ai_architecture.code_migration`.
+**Mantle Responses API (primary path for OpenAI sources):** If `ai_source = "openai"` and the source model is on Bedrock, this is the primary option. The application keeps the OpenAI SDK and the same model; only the base URL, credential, model ID, and IAM actions change. Read `references/shared/openai-on-bedrock.md` for the exact values — three details break naive implementations: the path is `/openai/v1/responses` (not `/v1/responses`), the credential must be a Bedrock API key or token provider (not an OpenAI key), and IAM needs `bedrock-mantle:*` actions (not `bedrock:InvokeModel`). Record `migration_path: "mantle_openai_responses"` and `model_change: false`.
 
-**Mantle throughput caveat (medium/high volume):** Mantle runs on a shared 10,000 RPM account limit. For workloads with `ai_token_volume = "medium"` or `"high"`, add a note in the design summary: "Mantle is subject to a shared 10K RPM account limit. At medium/high volume, monitor for 429s and consider migrating to `bedrock-runtime` (Converse API) for dedicated throughput." See `references/shared/ai-migration-guardrails.md` for the full risk table.
+**This is not a zero-code change if the source uses Chat Completions.** Chat Completions support is unverified for the proprietary GPT models — every AWS sample uses Responses. If `integration` evidence shows `chat.completions.create`, plan a reshape to `responses.create` and probe the target account before committing. Only a source already on `responses.create` is close to a drop-in.
 
-**gpt-oss migration path:** If `ai_source = "openai"` and the user wants to preserve OpenAI model architecture while consolidating on AWS, offer `gpt-oss` on Bedrock as a fourth migration path alongside Mantle, Converse API, and framework swap. Record `migration_path: "gpt-oss"` in `aws-design-ai.json` → `ai_architecture.code_migration`. The gpt-oss path uses the Converse API with the gpt-oss Bedrock model ID — it is not an OpenAI-compatible endpoint. Note the Claude 4.7+ output TPM cap (2M) if the user is migrating from a high-output OpenAI workload.
+**No Converse fallback for proprietary GPT models.** The GPT-5.x models are `bedrock-mantle` only and in-region only — there is no `bedrock-runtime` path and no cross-region inference profile. If the workload needs Bedrock Guardrails, Knowledge Bases, invocation logging, or a region these models do not serve, that requires a **model change** to a Bedrock-native model (or gpt-oss), not an endpoint change. Record `migration_path: "converse"` with `model_change: true` in that case.
+
+**Mantle throughput (medium/high volume):** quotas on `bedrock-mantle` are **per-model, per-region input TPM and output TPM — there is no RPM quota**. For `ai_token_volume = "medium"` or `"high"`, note: "Mantle enforces per-model input/output TPM quotas per region; 429s indicate a TPM ceiling, not a request-rate cap. Mitigate with exponential backoff, spreading load across minutes, and prompt caching (cached input is exempt from the input-TPM quota). There is no `bedrock-runtime` fallback for these models, so sustained growth needs a quota increase." See `references/shared/ai-migration-guardrails.md`.
+
+**gpt-oss migration path:** If `ai_source = "openai"` and the user wants OpenAI-architecture models on the Bedrock-native runtime surface, offer `gpt-oss` as an additional path. Unlike the proprietary GPT models, gpt-oss **does** support `bedrock-runtime` (Converse / InvokeModel), so it is the option when Guardrails or invocation logging are required and an OpenAI-lineage model is preferred. It sits a capability class below the GPT-5.x frontier tier. Record `migration_path: "gpt-oss"`.
 
 Generate concrete code examples using actual model IDs from the selected Bedrock models. Only include patterns matching the detected integration.
 
@@ -364,19 +396,20 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 
 **Schema — top-level fields:**
 
-| Field                                 | Type        | Description                                                                                                                                                                                                                                      |
-| ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `metadata`                            | object      | `phase`, `focus`, `ai_source`, `bedrock_models_selected`, `timestamp`                                                                                                                                                                            |
-| `ai_architecture.honest_assessment`   | string      | `"strong_migrate"`, `"moderate_migrate"`, `"weak_migrate"`, `"recommend_stay"`, `"not_applicable"` (per-workload only — traditional-AI capabilities `document_extraction`/`image_analysis`/`speech_transcription`; never the overall assessment) |
-| `ai_architecture.tiered_strategy`     | object/null | Tiered model routing (null for low/medium volume)                                                                                                                                                                                                |
-| `ai_architecture.bedrock_models`      | array       | Per-model: `gcp_model_id`, `aws_model_id`, `capabilities_matched[]`, `capability_gaps[]`, `honest_assessment`, `source_provider_price`, `bedrock_price`, `price_comparison`, `migration_complexity`                                              |
-| `ai_architecture.capability_mapping`  | object      | Per-capability: `parity` (full/partial/none), `notes`                                                                                                                                                                                            |
-| `ai_architecture.code_migration`      | object      | `primary_pattern`, `framework`, `files_to_modify[]`, `dependency_changes`                                                                                                                                                                        |
-| `ai_architecture.infrastructure`      | array       | GCP resource → AWS equivalent mappings with confidence                                                                                                                                                                                           |
-| `ai_architecture.services_to_migrate` | array       | GCP service → AWS service with effort and notes                                                                                                                                                                                                  |
-| `regional_warnings`                   | array       | Per-service: `service`, `target_region`, `nearest_available`, `impact` (empty array if all services available)                                                                                                                                   |
-| `multi_model_warnings`                | array       | Per-warning: `type`, `message` (empty array if single model or no coordination issues)                                                                                                                                                           |
-| `agentic_design`                      | object/null | Present only when `agentic_profile.is_agentic == true`. Contains `migration_approach`, path-specific config (e.g., `harness_config`). Null or absent for non-agentic workloads.                                                                  |
+| Field                                      | Type        | Description                                                                                                                                                                                                                                      |
+| ------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `metadata`                                 | object      | `phase`, `focus`, `ai_source`, `bedrock_models_selected`, `timestamp`                                                                                                                                                                            |
+| `ai_architecture.honest_assessment`        | string      | `"strong_migrate"`, `"moderate_migrate"`, `"weak_migrate"`, `"recommend_stay"`, `"not_applicable"` (per-workload only — traditional-AI capabilities `document_extraction`/`image_analysis`/`speech_transcription`; never the overall assessment) |
+| `ai_architecture.honest_assessment_reason` | string/null | Required when `honest_assessment == "recommend_stay"`. The specific non-cost blocker (region, Realtime API, separate-service capability, Assistants API feature, unsupported API surface). Null otherwise.                                       |
+| `ai_architecture.tiered_strategy`          | object/null | Tiered model routing (null for low/medium volume)                                                                                                                                                                                                |
+| `ai_architecture.bedrock_models`           | array       | Per-model: `gcp_model_id`, `aws_model_id`, `capabilities_matched[]`, `capability_gaps[]`, `honest_assessment`, `source_provider_price`, `bedrock_price`, `price_comparison`, `migration_complexity`                                              |
+| `ai_architecture.capability_mapping`       | object      | Per-capability: `parity` (full/partial/none), `notes`                                                                                                                                                                                            |
+| `ai_architecture.code_migration`           | object      | `primary_pattern`, `framework`, `files_to_modify[]`, `dependency_changes`                                                                                                                                                                        |
+| `ai_architecture.infrastructure`           | array       | GCP resource → AWS equivalent mappings with confidence                                                                                                                                                                                           |
+| `ai_architecture.services_to_migrate`      | array       | GCP service → AWS service with effort and notes                                                                                                                                                                                                  |
+| `regional_warnings`                        | array       | Per-service: `service`, `target_region`, `nearest_available`, `impact` (empty array if all services available)                                                                                                                                   |
+| `multi_model_warnings`                     | array       | Per-warning: `type`, `message` (empty array if single model or no coordination issues)                                                                                                                                                           |
+| `agentic_design`                           | object/null | Present only when `agentic_profile.is_agentic == true`. Contains `migration_approach`, path-specific config (e.g., `harness_config`). Null or absent for non-agentic workloads.                                                                  |
 
 ## Validation Checklist
 
@@ -389,6 +422,9 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 - [ ] All model IDs use current Bedrock identifiers (Active status per `shared/ai-model-lifecycle.md`)
 - [ ] No Legacy model is used as `bedrock_models[].aws_model_id` unless no Active alternative exists (with EOL date noted)
 - [ ] `honest_assessment` logic is consistent (weakest model drives overall)
+- [ ] If `ai_source` includes `"openai"`: every model that `shared/openai-on-bedrock.md` lists as available on Bedrock, and whose target region carries it, is mapped to **itself** with `model_change: false` — not to a Claude/Nova substitute
+- [ ] If `honest_assessment == "recommend_stay"`: `honest_assessment_reason` names a non-cost blocker (cost parity alone is never sufficient for an OpenAI source)
+- [ ] No `bedrock_models[]` entry pairs a proprietary `openai.gpt-*` model ID with a Converse/`bedrock-runtime` migration path (those models are mantle-only)
 - [ ] `regional_warnings` is present (empty array `[]` if no issues; populated if any service unavailable in target region)
 - [ ] `multi_model_warnings` is present (empty array `[]` if single model or no coordination issues)
 - [ ] If `agentic_profile.is_agentic == true`: `agentic_design` object is present with `migration_approach` matching `preferences.json`
