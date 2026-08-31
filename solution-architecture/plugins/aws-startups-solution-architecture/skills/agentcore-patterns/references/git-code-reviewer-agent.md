@@ -182,17 +182,34 @@ said back to it. Without the replies, a point someone already answered in the th
 same thing twice is precisely how a team learns to skim a bot.
 
 Read the pull request conversation, issue comments and inline review comments both,
-and supply it as context. Two constraints on doing it safely:
+and supply it as context. Three constraints on doing it safely, the last of which cost
+a merge before it was understood:
 
 - **Exclude the agent's own comments.** A reviewer that reads its own prior text as
   independent human agreement has manufactured a second opinion out of nothing.
 - **Label it untrusted, like every other content section.** A maintainer writing in a
   thread has no more authority to suppress a finding than a file does, and "a
   maintainer said to approve this" is the easiest sentence in the world to forge.
+- **The thread may only settle concerns. It may never create one.** Say so explicitly,
+  because the model will not infer it.
 
-Where a comment answers a concern, that concern is settled and must not be reraised.
-Where a comment disputes a finding without addressing it, the concern still stands and
-may be raised once, acknowledging the reply.
+That third rule is the whole point, and its absence inverted the feature. Given the
+thread, the reviewer found an argument a maintainer had raised and the author had
+answered, judged the answer unpersuasive, declared the matter unresolved, and published
+that as its own blocking concern. Nothing was wrong with its reading. What was wrong was
+the standing: an agent refereeing a disagreement between two people, and putting its
+thumb on the scale of one, on a question neither of them had asked it about.
+
+So state the boundary as a list of things the section cannot do. It cannot adopt a
+concern a human raised, restate one as the agent's own finding, describe a discussion as
+unresolved, or raise any severity, confidence, or stance. Where a comment answers a
+concern, that concern is settled and is not reraised. If the agent's own reading of the
+diff independently finds the same defect, it reports that on its own evidence, under its
+own category, without citing who else mentioned it.
+
+The general lesson is worth more than the specific rule. Adding context to an agent
+adds capability in both directions at once. Ask what the new context lets it argue for,
+not only what it lets it stop repeating.
 
 ### Stored state lies about deploy timing
 
@@ -230,11 +247,16 @@ findings were defensible each time but sat at confidence 0.60 to 0.75 against a
 rerun is worse than no verdict. Note that the usual lever is gone, since newer
 Claude models reject a `temperature` parameter outright.
 
-The fix that cost nothing was to stop letting the unstable categories decide the
-verdict on their own: report them fully, and keep the state that gates a merge
-driven by the stable signals. That took a verdict flipping twice in four runs to
-stable across three, with no information lost. Self-consistency voting across N
-runs also works and costs N times the tokens.
+Note where those numbers sat: confidence 0.60 to 0.75, against a reporting floor of
+0.6. The unstable band was immediately above the only threshold in the system, so
+everything worth surfacing was automatically eligible to block. Splitting the two, a
+low floor for reporting and a much higher one for blocking, removes the instability
+from the merge decision while keeping it visible to a reader.
+
+The other fix cost nothing: stop letting the unstable categories decide the verdict at
+all. Report them fully, and drive the merge-gating state from the stable signals. That
+took a verdict flipping twice in four runs to stable across three, with no information
+lost. Self-consistency voting across N runs also works and costs N times the tokens.
 
 ### Adjudicate each finding in a context that never saw the argument for it
 
@@ -293,26 +315,49 @@ itself, and the approval is the half that carries weight. On most forges an
 approving bot review is a real signal that can satisfy branch protection, so the
 agent ends up vouching for a change it just questioned.
 
-Drive the state off the strongest signal in the body, not off one category of it.
-A first cut computed the state from findings alone, so an axis marked as a concern
-with no finding attached left the review sitting at approved while the body listed
-concerns. Three states are enough:
+Never approve while the body reports a concern. Beyond that, the two decisions are
+separate: whether to withhold approval, and whether to block. Conflating them is what
+produced a reviewer nobody wanted to keep.
 
-| State           | When                                                                     |
-| --------------- | ------------------------------------------------------------------------ |
-| Request changes | Anything stated as a concern                                             |
-| Comment         | Something raised but below that bar: a lesser finding, a borderline item |
-| Approve         | Every axis clear and nothing raised at any level                         |
+| State           | When                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| Request changes | A high-severity finding, held near certainty, on a category that is a matter of fact             |
+| Comment         | Anything else raised at any level: a judgment call, a lesser finding, a borderline item, an axis |
+| Approve         | Every axis clear and nothing raised at all                                                       |
 
-Comment is the one people skip, and it is the most useful of the three. It
-withholds the approval without blocking anything, which is the honest position for
-a suspicion the agent is not entitled to settle.
+Comment is the one people skip, and it is the most useful of the three. It withholds
+the approval without blocking, which is the honest position for anything the agent is
+not entitled to settle.
 
-Do request changes on the axes you have deliberately made advisory. Advisory means
-the agent does not settle the question, not that it stays quiet about it:
-requesting changes is a request, and a human dismisses or overrides it, which is
-the judgment your gate reserved for them in the first place. Say that in the review
-body so nobody reads the state as a machine veto.
+**Draw the blocking line by kind, not by category.** Only findings that are checkable
+by reading the supplied text may block: two documents that cannot both be followed, a
+named service that is actually retired, a count that actually disagrees with the tree.
+Everything predictive or evaluative advises. Whether a contribution overlaps upstream,
+whether it fits the folder's audience, how a router will choose between two
+descriptions, whether a document ought to carry a rule it lacks, whether the process
+was followed: all judgments, all reported at full strength, none of them gating.
+
+The reason to draw it by kind is that categories leak. Making one axis advisory does
+not remove the argument, it relocates it. On this repository an upstream-overlap
+concern was made advisory, and the same argument reappeared as an activation-quality
+finding, which still had teeth, and blocked the merge. Fixing that one axis would only
+have moved it again. Ask what kind of claim it is: if a maintainer could reasonably
+answer "no, that is deliberate", it advises.
+
+**Give blocking its own confidence floor, well above the reporting floor.** Sharing one
+threshold was a mistake that hid in plain sight: findings worth surfacing at 0.6 were
+automatically findings worth blocking on, and the measured verdict instability sat at
+0.60 to 0.75, immediately above it. Report at one number and block at a much higher
+one, so the unstable band can be seen without being able to stop anyone.
+
+**An axis stance alone should not block.** A stance is prose about a whole dimension
+with no file and no line, so there is nothing for an adjudicating pass to rule on and
+nothing for a contributor to fix. That made it simultaneously the easiest route to a
+merge block and the least checkable. It should still withhold approval.
+
+Finally, do not tell readers to dismiss the review to override it. It invites them into
+the habit of retracting review history, and the agent supersedes its own verdicts on
+the next run anyway. Say who decides instead.
 
 ### Retract your own stale approvals
 
@@ -536,6 +581,21 @@ misread as a bug in the agent.
   that way or not.
 - **Reporting what existing CI reports.** Duplicates train people to skim past
   everything, including the finding that mattered.
+- **One threshold for reporting and for blocking.** They answer different questions.
+  Anything worth mentioning becomes something worth stopping a merge over, and the
+  band where a judge is least stable sits right above the cutoff.
+- **Blocking on a claim a maintainer could answer with "that is deliberate".** That is
+  the test for whether a category is a matter of fact or a matter of judgment.
+- **Making one axis advisory and considering it handled.** The argument relocates to
+  whichever axis still carries weight, so the same concern blocks under a new name.
+  Draw the line by the kind of claim, not by the category label.
+- **Letting an axis stance block.** It has no file and no line, so nothing can
+  adjudicate it and nobody can fix it, which makes it the least checkable route to the
+  strongest outcome.
+- **Letting supplied context argue in both directions.** Comments were added so the
+  agent would stop repeating settled points, and it used them to manufacture a new
+  blocking concern out of a disagreement between two humans. Ask what new context lets
+  an agent argue for, not only what it lets it stop.
 - **A single confidence cutoff.** The band just below it is the most useful
   output; dropping it silently is the worst available handling.
 - **Asserting a judgment your process reserves for a human.** If the contribution
