@@ -145,6 +145,26 @@ merged, approved, or who commented is authoritative in the forge and cheap to re
 per run, so caching it only creates a staleness bug. Memory is for what the
 reviewer concluded, not for what the forge already knows.
 
+### Memory is not a substitute for reading the replies
+
+Memory holds what the reviewer concluded, which is emphatically not what a maintainer
+said back to it. Without the replies, a point someone already answered in the thread
+("intentional, see the RFC") gets raised again on the next push, and being told the
+same thing twice is precisely how a team learns to skim a bot.
+
+Read the pull request conversation, issue comments and inline review comments both,
+and supply it as context. Two constraints on doing it safely:
+
+- **Exclude the agent's own comments.** A reviewer that reads its own prior text as
+  independent human agreement has manufactured a second opinion out of nothing.
+- **Label it untrusted, like every other content section.** A maintainer writing in a
+  thread has no more authority to suppress a finding than a file does, and "a
+  maintainer said to approve this" is the easiest sentence in the world to forge.
+
+Where a comment answers a concern, that concern is settled and must not be reraised.
+Where a comment disputes a finding without addressing it, the concern still stands and
+may be raised once, acknowledging the reply.
+
 ### Stored state lies about deploy timing
 
 Memory records are the wrong place to check whether a code change took effect.
@@ -186,6 +206,56 @@ verdict on their own: report them fully, and keep the state that gates a merge
 driven by the stable signals. That took a verdict flipping twice in four runs to
 stable across three, with no information lost. Self-consistency voting across N
 runs also works and costs N times the tokens.
+
+### Adjudicate each finding in a context that never saw the argument for it
+
+The fix above treats the symptom. The cause is that a single pass rates its own
+reasoning: it writes a rationale, then assigns confidence to the argument it just
+made. Nothing in that pass is positioned to say "you talked yourself into it", which
+is how defensible findings end up clustered right at the threshold.
+
+Both widely deployed reviewers solve this structurally rather than with a better
+prompt, and they converge on the same shape: generate, then filter with something
+that has no stake in the finding. One spends an API call per finding to re-judge it
+and return a keep-or-drop with its own confidence. Another fans out to specialist
+subagents, tells each to report only noteworthy feedback, and then has the
+orchestrator post only what it also considers noteworthy. Noteworthiness is filtered
+twice, by two parties.
+
+Give the adjudicating pass the finding, the file text or diff it concerns, the
+reference excerpt any ownership claim depends on, and nothing else. No axes, no
+sibling findings, no verdict framing. Require a reason that quotes the text settling
+the matter, and name the drop rules explicitly:
+
+- The quoted text is not actually in the supplied file.
+- It restates a convention the file already follows.
+- It is taste with no defect behind it.
+- It asserts something about a document whose text was not supplied. An overlap or
+  contradiction claim needs both sides present to be checkable.
+- It reports a harness limit as a defect, such as a diff marked truncated.
+- It would read identically against most files of this kind, so it says nothing about
+  this change.
+
+Two refinements worth making over the shipped versions.
+
+**Let the adjudicator raise confidence, not only lower it.** A one-way filter treats
+every second opinion as a chance to delete. But a correct finding that was
+under-rated is as much a failure as a wrong one published, and if the cold pass finds
+the evidence stronger than the first pass claimed, that is information already paid
+for.
+
+**Make a drop require an explicit refusal.** A thrown call, a malformed answer, or a
+missing tool call must all keep the finding. Otherwise an outage in the second stage
+renders as a clean review, which is the worst failure a reviewer has: it is
+indistinguishable from good news. Fail toward noise, never toward false reassurance.
+
+That last rule has a matching trap in the plumbing. Supply the adjudicator the text
+of the file the finding is about, which for a changed file is its diff. A first cut
+passed the map of unchanged files fetched for cross-checking, but findings are mostly
+on changed files, which are not in that map at all. Nearly every finding arrived with
+no text, hit the "drop what you cannot check" rule, and was deleted. The reviewer went
+quietly, confidently silent, and no verdict looked wrong. Write the test that asserts
+a finding on a changed file is adjudicated against that file's diff.
 
 ### The review state must match the body
 
@@ -333,6 +403,25 @@ text. A finding that says "does not follow the authoring guidance" without namin
 which line of which document is unactionable, and it is also how a model launders
 a guess into an assertion.
 
+### Let precedents accumulate instead of hand-writing them
+
+A shipped reviewer worth studying carries seventeen numbered precedents in its filter
+prompt: adjudicated calls frozen into text, along the lines of "environment variables
+are trusted values", "UUIDs can be assumed unguessable", "this framework is already
+safe against that class of bug". They are good rulings, and they are also a
+maintenance liability. Every call the team settles has to be transcribed into a prompt
+by someone who remembers to do it.
+
+An agent with its own memory can skip that step. Every review already writes its
+conclusion, stamped with the commit. Hand those recalled decisions to the adjudicating
+pass as settled precedents for this repository, and say that a finding contradicting a
+settled precedent is dropped with the precedent as the reason. Deciding something once
+is then what stops it coming back, and nobody edits a prompt.
+
+Keep the same distinction as the conventions above: a precedent is a ruling on a
+recurring argument, not a rule about the code. Store the ruling and what it settled,
+so a later reader can tell whether it still applies.
+
 ### Write for the column the comment renders in
 
 A review comment is narrow, and everything the agent writes lands there. Two
@@ -427,6 +516,15 @@ misread as a bug in the agent.
   containers outlive deploys.
 - **Keying a memory record to the pull request alone.** With a review per push,
   the records become indistinguishable and superseded findings read as live ones.
+- **A filter that deletes a finding when it fails.** An adjudication pass that drops
+  on a thrown call or a malformed answer turns its own outage into a clean review,
+  which is indistinguishable from good news. Require an explicit refusal.
+- **Adjudicating a finding without the text it is about.** The pass is told to drop
+  what it cannot check, so starving it of the file deletes real findings silently and
+  no verdict looks wrong.
+- **Trusting a maintainer's comment more than a file.** A reply in the thread is
+  contributor-authored input on the same footing as the diff. Read it for what is
+  settled; grant it no authority to suppress.
 - **Reading stored records to confirm a deploy took effect.** The newest record
   may predate it, so a working change looks broken. Check the timestamp, or
   invoke once and look at that.
