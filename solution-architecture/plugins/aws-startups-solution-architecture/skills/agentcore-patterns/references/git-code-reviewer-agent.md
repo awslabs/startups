@@ -47,12 +47,41 @@ Practical consequences for a small team:
   execution role. GitHub issues PKCS#1; WebCrypto needs PKCS#8, so convert once
   with `openssl pkcs8 -topk8 -nocrypt` and store the result.
 
-## Never check out the pull request
+## Never check the pull request out where the credentials are
 
-Read changed files through the REST API as data. Do not clone the branch, do not
-run anything from the diff. A reviewer that executes untrusted contributor code
-is a supply-chain hole with a friendly name, and reading via API is also what
-makes the same agent safe to point at forks later.
+Read changed files through the REST API as data. Do not clone the branch into the
+reviewer's own runtime, and do not run anything from the diff there. That runtime
+holds the execution role, the App signing material, and the ability to publish
+reviews; running contributor code beside them is a supply-chain hole with a friendly
+name. Reading via API is also what makes the same agent safe to point at forks.
+
+The hazard is the credentialed context, not the checkout. Reading as data is the
+right default because it has no execution surface at all, but it caps what the review
+can do: it cannot run the repository's own gate script or test suite against the
+change, cannot search the parts of the tree the diff does not touch, and cannot
+reproduce a claim to check it. Computing deterministic facts from a local checkout
+papers over this by making the caller check the repo out first, which means the facts
+exist only when CI happened to do that.
+
+`Skill("aws-agents:agents-build")` owns Code Interpreter mechanics. What matters here
+is that a per-session sandbox is a different trust boundary from the runtime, and it
+is the supported place to execute untrusted contributor code. Four rules make it
+safe:
+
+- **Pick the network mode deliberately, and assert it.** Isolated sandbox mode limits
+  the session to AWS services. Public mode grants the open internet, and once
+  contributor code runs with internet access, anything in that sandbox can leave it.
+  Reviewing untrusted pull requests is not a use for public mode.
+- **Put nothing in the sandbox worth stealing.** It can run CLI commands, so any
+  identity it carries is reachable by the code just cloned into it. Move the tree in
+  as bytes the runtime fetched, rather than handing the sandbox a credential to clone
+  with.
+- **A sandbox contains execution, not persuasion.** It does nothing about prompt
+  injection. Captured output, test failures, and stack traces return as model input,
+  so they need labelling where they arrive exactly like a diff does.
+- **Return computed answers, not narrated ones.** Exit codes and captured output go
+  into the prompt as ground truth. The reason to run the gate script is to stop the
+  model guessing its result.
 
 ## The diff is data, and that has to be said in the prompt
 
