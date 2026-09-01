@@ -57,7 +57,7 @@ test("recommending a sunset service is caught however it is phrased", () => {
   // that appear when recommending a service exempted the recommendation.
   assert.ok(flags("Use App Runner instead of ECS for a simple container service."));
   assert.ok(flags("Migrate to App Runner for the fastest path to production."));
-  assert.ok(flags("Prefer CodeCommit over GitHub to avoid a third-party dependency."));
+  assert.ok(flags("Prefer Cloud9 over a local IDE to avoid per-developer setup."));
   assert.ok(flags("App Runner is a good default."));
 });
 
@@ -66,8 +66,8 @@ test("warning about a sunset service is still allowed", () => {
   // on the line is unambiguous; a directional phrase counts only before the name.
   assert.ok(!flags("App Runner is deprecated, use ECS instead."));
   assert.ok(!flags("Do not use App Runner for new services."));
-  assert.ok(!flags("Migrate away from CodeCommit before it is retired."));
-  assert.ok(!flags("Avoid CodeCommit; it is closed to new customers."));
+  assert.ok(!flags("Migrate away from Cloud9 before it is retired."));
+  assert.ok(!flags("Avoid Cloud9; it is closed to new customers."));
   assert.ok(!flags("Replace App Mesh with ECS Service Connect."));
   assert.ok(!flags("App Mesh is retired, so use ECS Service Connect."));
 });
@@ -76,12 +76,19 @@ test("a directional phrase after the service name does not exempt it", () => {
   // The line-scoped cue meant any cue word anywhere granted an exemption, so a
   // recommendation followed by an unrelated "avoid" or "instead of" passed.
   assert.ok(flags("Choose App Runner, and avoid managing servers yourself."));
-  assert.ok(flags("Pick CodeCommit rather than paying for a third-party host."));
+  assert.ok(flags("Pick Cloud9 rather than paying for per-seat IDE licences."));
 });
 
 test("the gate reports the line number of the offending mention", () => {
   const { out } = run("Fine line.\n\nApp Runner is a good default.\n");
   assert.match(out, /L3/);
+});
+
+test("a service that came back is not flagged", () => {
+  // CodeCommit closed to new customers in July 2024 and reopened in November 2025.
+  // A stale entry in the list blocks correct advice, which is the opposite of the
+  // check's purpose, and a reopening is announced far more quietly than a closure.
+  assert.ok(!flags("Use CodeCommit for a private Git repository close to your CI."));
 });
 
 test("prose with no sunset service passes", () => {

@@ -38,10 +38,37 @@ name: AgentCore Reviewer
 # empty, since a dispatch input is a user-controlled parameter that can change what
 # the build acts on. To re-review a pull request, push to it or use `gh pr comment`
 # to re-trigger, rather than passing a PR number by hand.
+# Triggered by the Build workflow finishing rather than by the pull request directly.
+#
+# A `pull_request` workflow triggered by a fork gets no secrets, no OIDC token, and a
+# read-only `GITHUB_TOKEN` whatever the `permissions:` block says. It therefore could not
+# assume a role, could not reach the runtime, and could not even post a status saying so.
+# The job carried `if: head.repo.full_name == github.repository` to skip forks, and a
+# skipped job runs none of its steps, `if: always()` included, because step-level
+# `always()` only survives earlier step failures inside a job that is already running. So
+# a fork pull request carried no `agentcore-reviewer` status at all: not a failure, not a
+# skip, absent. Against this file's own rule that an unreachable runtime must never read
+# as a pass, absent is worse, because a reader cannot tell "not reviewed" from "nothing
+# to say". External contributions are the case this folder's gate exists for, and they
+# were the case getting no criteria 1 and 2 review.
+#
+# `workflow_run` runs in the base repository's context, so credentials exist for fork
+# pull requests too. It is safe here only because the runtime fetches the diff itself
+# through the API and nothing is ever checked out: `pull_request_target` would grant the
+# same credentials, but checking out a fork head under them is the classic way to leak
+# them.
+#
+# Two consequences of `workflow_run` worth knowing before editing this file:
+#
+#   1. Only the copy on the default branch ever runs. Changes here cannot be exercised by
+#      a pull request, including the pull request that makes them, so verify against a
+#      branch merged to main.
+#   2. It supports no `paths:` filter, so the `solution-architecture/**` scope is applied
+#      inside the job instead. See "Resolve the pull request".
 on:
-  pull_request:
-    paths:
-      - 'solution-architecture/**'
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
 
 permissions:
   contents: none
@@ -49,8 +76,9 @@ permissions:
 jobs:
   review:
     name: Advisory review
-    # Same-repo pull requests only; see the fork note above.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Only pull request builds. Build also runs on workflow_dispatch, which has no pull
+    # request to review.
+    if: github.event.workflow_run.event == 'pull_request'
     permissions:
       # The runtime posts its review with its own GitHub App token, so this job
       # needs no write access to the pull request. OIDC federation is all it uses.
@@ -64,14 +92,48 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AGENTCORE_REVIEWER_REGION || 'us-west-2' }}
       RUNTIME_ARN: ${{ vars.AGENTCORE_REVIEWER_ARN }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      # The head sha is on the workflow_run payload. The pull request number is not,
+      # reliably, so it is resolved in the first step below.
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
+      # `workflow_run.pull_requests` is empty precisely when the head repository is a
+      # fork, which is the case this trigger exists to serve, so it cannot be used.
+      # Resolve from the head sha instead, and apply the path scope here since
+      # `workflow_run` accepts no `paths:` filter.
+      - name: Resolve the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          NUMBER="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+            --jq '[.[] | select(.state == "open")] | first | .number // empty')"
+
+          if [ -z "${NUMBER}" ]; then
+            echo "No open pull request for ${HEAD_SHA}; nothing to review."
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Resolved pull request #${NUMBER} for ${HEAD_SHA}"
+
+          # Stand in for the `paths:` filter this trigger does not support. Reviewing a
+          # pull request that touches nothing in scope would spend a model call to say
+          # nothing, and would post a status on changes this folder does not govern.
+          if gh api "repos/${GITHUB_REPOSITORY}/pulls/${NUMBER}/files?per_page=100" \
+            --jq '.[].filename' | grep -q '^solution-architecture/'; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No solution-architecture/ changes; out of scope for this reviewer."
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "number=${NUMBER}" >> "$GITHUB_OUTPUT"
+
       # Posted first so the tip shows the reviewer has picked up this revision,
       # rather than leaving several minutes of apparent silence.
       - name: Signal review started
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           gh api "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
@@ -245,7 +307,6 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           CONFIGURED: ${{ steps.config.outputs.configured }}
           REACHABLE: ${{ steps.invoke.outputs.reachable }}
         run: |

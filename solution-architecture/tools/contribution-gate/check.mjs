@@ -31,9 +31,16 @@ const SUNSET = [
   { pattern: /\bElastic Beanstalk\b/gi, name: "Elastic Beanstalk" },
   { pattern: /\bAurora Serverless v1\b/gi, name: "Aurora Serverless v1" },
   { pattern: /\blaunch configuration/gi, name: "EC2 launch configurations" },
-  { pattern: /\bCodeCommit\b/gi, name: "AWS CodeCommit" },
   { pattern: /\bCloud9\b/gi, name: "AWS Cloud9" },
   { pattern: /\bSimpleDB\b/gi, name: "Amazon SimpleDB" },
+  // AWS CodeCommit was here and has been removed. It closed to new customers on
+  // 2024-07-25 and REOPENED on 2025-11-25, so recommending it is fine again and
+  // flagging it was a false positive. See the CodeCommit user guide document history.
+  //
+  // Re-verify this list rather than trusting it. A closure is announced loudly and a
+  // reopening is not, so an entry here rots silently in the direction that blocks
+  // correct advice. This check is meant to stop bad recommendations, and a stale entry
+  // makes it stop good ones. Last audited 2026-09-01.
 ];
 
 // Words saying the service itself is on the way out. Unambiguous wherever they sit
