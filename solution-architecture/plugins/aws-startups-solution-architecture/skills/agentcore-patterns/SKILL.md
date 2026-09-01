@@ -1,6 +1,6 @@
 ---
 name: agentcore-patterns
-description: "This skill should be used when deciding whether an automated agent's verdict may carry authority over someone else's merge, and how to publish it so reviewers trust it rather than route around it. Covers which finding kinds may block versus advise, why an unstable verdict must not gate, surfacing borderline items instead of dropping them, grounding claims in facts computed by code rather than recalled, and the review-state and memory behaviour that decides whether contributors keep reading the output. It should also be used when such an agent is being ignored, contradicts itself between runs, or reports a state that no current review supports. Not for measuring or improving an agent's own output quality, which belongs to aws-agents:agents-optimize, nor for building, deploying, or hardening an agent."
+description: "This skill should be used when an automated agent's output is published under its own identity and carries weight in someone else's work, such as a reviewer whose verdict lands on a pull request, and the open question is how much authority it has actually earned. Covers which conclusions such an agent may state as settled and which it must hand to a person, why a verdict that moves between runs on unchanged input cannot be allowed to decide anything, handing an uncertain item to a human rather than discarding it, grounding each claim in something computed rather than recalled, and the published-state and recall behaviour that decides whether people keep reading the output or learn to skim it. It should also be used when such an agent is being ignored, contradicts itself between runs, or reports a state that nothing current supports. Not for measuring or improving an agent's own output quality, which belongs to aws-agents:agents-optimize, nor for building, deploying, or hardening an agent."
 license: Apache-2.0
 metadata:
   audience: startup
@@ -16,7 +16,13 @@ Design for that outcome. Measure stability before granting an agent authority to
 
 ## Reference files
 
-- **`references/git-code-reviewer-agent.md`**: Read before letting any agent gate a merge. End-to-end wiring for a pull-request reviewer: why the credential identity decides whether a verdict can be recorded at all, why the reviewer must read the diff through the API rather than check it out into the runtime that holds its credentials, and when a per-session sandbox is the right place to execute instead, why the obvious CI trigger cannot reach a credentialed runtime, which finding kinds may block a merge, how to measure verdict stability before granting that authority, why a second pass that never saw the argument for a finding is what fixes the cause rather than the symptom, three-band confidence reporting, why the replies on a pull request have to be read and why they are still untrusted input, how settled rulings accumulate in memory instead of being hand-written into a prompt, how to load the team's own plugins and skills as the reviewer's rubric instead of letting it recall conventions from memory, why the submitted review state must match what the body says and why stale approvals have to be retracted rather than merely superseded, how to write findings for the narrow column a review comment renders in, and the warm-container behavior that makes a deployed fix appear not to run.
+- **`references/git-code-reviewer-agent.md`**: Read before letting any agent's output
+  carry weight in someone else's work. End-to-end wiring for a pull-request reviewer,
+  from the credential identity that decides whether a verdict can be recorded at all,
+  through reading the pull request as data, the trigger that reaches a credentialed
+  runtime, what the agent should remember between runs, and the judgment design that
+  decides whether anyone keeps reading the output. Written as field notes, including
+  the failures.
 
 ## Upstream skills to defer to
 
