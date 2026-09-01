@@ -14,7 +14,7 @@ Point this plugin at your GCP project or Heroku account, your Terraform files, a
 **For infrastructure migrations:**
 
 - **Maps your GCP resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora (based on availability requirements), GKE → EKS, Cloud Storage → S3, VPC → VPC, and more
-- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
+- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, and a full `terraform/README.md`. For GCP migrations, also emits `baseline.tf` with account-wide security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning) — `heroku-to-aws` does not yet emit this file.
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration (GCR → ECR), secrets migration (GCP Secret Manager → AWS Secrets Manager), and post-migration validation
 - **Estimates monthly costs across three tiers** — Premium, Balanced, and Optimized — using real-time AWS pricing, compared against your current GCP spend
@@ -112,7 +112,7 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 | Capability                 | Base LLM          | This Plugin                                                                                                                   |
 | -------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                       |
-| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts                      |
+| Security baseline          | Not included      | `baseline.tf` with GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, and budget alerts — always emitted by `gcp-to-aws` Generate. Not yet emitted by `heroku-to-aws` (planned). A standalone `tf-best-practices` policy gate is also available for reviewing existing Terraform. |
 | Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                               |
 | Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill |
 | Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                           |
