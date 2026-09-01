@@ -36,10 +36,25 @@ const SUNSET = [
   { pattern: /\bSimpleDB\b/gi, name: "Amazon SimpleDB" },
 ];
 
-// A sunset mention is permitted when the surrounding line frames it as a
-// warning, a deprecation note, or a migration away from the service.
-const WARNING_CUE =
-  /\b(deprecat|sunset|end of support|end-of-support|closed to new|do not|don't|avoid|instead of|migrat|no longer|retir|legacy|EOL|rather than|not for new|stop)/i;
+// Words saying the service itself is on the way out. Unambiguous wherever they sit
+// on the line, so they are matched line-wide.
+const SUNSET_STATUS_CUE =
+  /\b(deprecat|sunset|end of support|end-of-support|closed to new|no longer|retir|legacy|EOL|not for new|unsupported|removed|retired)/i;
+
+// Phrases framing the mention as moving away from the service. Unlike the status
+// words these are directional, so they only mean "warning" when they come BEFORE the
+// service name.
+//
+// The previous single list mixed both kinds and matched line-wide, which exempted the
+// phrasings a recommendation actually uses. Verified against the gate at the time:
+// "Use App Runner instead of ECS", "Migrate to App Runner", and "Prefer CodeCommit
+// over GitHub to avoid a third-party dependency" all passed, because `instead of`,
+// `migrat`, and `avoid` were treated as warnings wherever they appeared. Only the bare
+// "App Runner is a good default." was caught, leaving the check weakest on exactly the
+// case it exists for: the removed plugin's App Runner and App Mesh recommendations were
+// written as recommendations.
+const MOVING_AWAY_CUE =
+  /\b(do not|don't|never|avoid|stop|drop|remove[ds]?|replac\w*|migrat\w*\s+(off|away|from)|mov\w*\s+(off|away|from)|away from|off of|rather than|instead of)\b[^.]{0,40}$/i;
 
 // Frontmatter fields the official skill validator accepts. Notably `when_to_use`
 // is deprecated and `version` is rejected, so both are flagged here rather than
@@ -154,7 +169,13 @@ function checkAnyMarkdown(file) {
     while ((m = pattern.exec(text)) !== null) {
       const lineNo = lineOf(text, m.index);
       const line = lines[lineNo - 1] ?? "";
-      if (WARNING_CUE.test(line)) continue; // warned about, not recommended
+
+      // Status words exempt the line wherever they appear. Directional phrases only
+      // exempt it when they precede the service name, so "use A instead of B" does not
+      // read as a warning about A.
+      const lineStart = text.lastIndexOf("\n", Math.max(0, m.index - 1)) + 1;
+      const before = text.slice(lineStart, m.index);
+      if (SUNSET_STATUS_CUE.test(line) || MOVING_AWAY_CUE.test(before)) continue;
       add(
         rel,
         "sunset-service",

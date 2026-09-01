@@ -14,6 +14,27 @@ Do this first because criterion 2 below rejects more proposals than any other, a
 - What you checked for overlap: the specific upstream skills in `aws-core` and `aws-agents`, and the relevant AWS Startup Advisor content.
 - Why the answer differs from what a reviewer would find in those places.
 
+### What does not need an RFC
+
+The requirement is about content, because content is what the three criteria below
+judge. An RFC exists so a scope argument happens in an issue thread rather than after
+someone has written a skill. Where there is no scope argument to have, it buys nothing
+and should be skipped:
+
+- Fixing the enforcement tooling in `tools/`, including a check that passes something
+  it was written to catch.
+- Fixing the reviewer workflow in `.github/workflows/`.
+- Corrections to an existing skill or reference: a wrong command, a dead link, a
+  service that has since been sunset, wording that misstates what the skill does.
+- Editing this guide to say what it already means.
+
+Anything that adds a skill, an agent, a reference file, or new guidance needs an RFC,
+whatever its size. The test is not how large the change is. It is whether a maintainer
+could reasonably want to redirect it before the work happens.
+
+Say in the pull request description which of these applies. A fix that explains why it
+needed no RFC is easier to review than one that leaves a reader to work it out.
+
 ## The gate: all three criteria must pass
 
 A contribution is accepted only if it passes **all three**. Two out of three is a rejection, not a majority.
