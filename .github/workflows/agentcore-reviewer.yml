@@ -207,10 +207,26 @@ jobs:
           role-session-name: agentcore-reviewer-${{ github.run_id }}
 
       - name: Invoke reviewer
-        if: steps.config.outputs.configured == 'true'
+        # `relevant` is false when the resolve step found no open pull request, or none
+        # of the changed files are in scope. Without this the filter it computes was
+        # dead: it ran, decided, and nothing read the answer.
+        if: steps.config.outputs.configured == 'true' && steps.pr.outputs.relevant == 'true'
         id: invoke
+        env:
+          # Must be a step env, not a job env: a job-level `env` cannot reference the
+          # `steps` context. Dropping this from the job env without re-adding it here is
+          # what broke run 33553949835 with "PR_NUMBER: unbound variable" under `set -u`.
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           set -euo pipefail
+
+          # `set -u` catches an unset variable but not an empty one, and an empty value
+          # would build `"prNumber": ,` and fail as a confusing JSON parse error inside
+          # the runtime rather than here.
+          if [ -z "${PR_NUMBER:-}" ]; then
+            echo "PR_NUMBER resolved empty; refusing to invoke with a malformed payload." >&2
+            exit 1
+          fi
           # The runtime resolves owner, repo, and prNumber, pulls the diff itself,
           # and with `submit` publishes the review to the pull request under its
           # App identity.
@@ -348,10 +364,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CONFIGURED: ${{ steps.config.outputs.configured }}
           REACHABLE: ${{ steps.invoke.outputs.reachable }}
+          RELEVANT: ${{ steps.pr.outputs.relevant }}
         run: |
           set -euo pipefail
           if [ "${CONFIGURED:-}" != "true" ]; then
             DESC="Not configured, no review performed"
+          elif [ "${RELEVANT:-}" != "true" ]; then
+            # Distinguished from unreachable on purpose. Reporting "runtime unreachable"
+            # for a pull request that simply changed nothing in scope would send someone
+            # to debug infrastructure that is working.
+            DESC="No solution-architecture/ changes, nothing to review"
           elif [ "${REACHABLE:-}" != "true" ]; then
             DESC="Runtime unreachable, no verdict produced"
           elif [ -f response.json ]; then
