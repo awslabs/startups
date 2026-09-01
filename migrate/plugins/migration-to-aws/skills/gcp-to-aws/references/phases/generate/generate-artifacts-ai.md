@@ -167,6 +167,7 @@ Skip if `ai_framework` = `"direct"` or absent. Read `preferences.json` → `ai_c
 
 Check `aws-design-ai.json` → `code_migration.openrouter_path` (set in Design Part 5):
 
+- `"same_model_mantle"` → Skip gateway config. Run **Step 1M** (Mantle migration script) using the OpenRouter-sourced model ID as the "current model ID" input. Add a header note that Step 1M's usual "no code changes required" claim does NOT hold here: OpenRouter → Mantle changes the base URL, credential type (Bedrock API key/token provider, not an OpenRouter key), and the model-ID format (e.g. `openai/gpt-4o` → the Mantle model ID). Print this as an explicit line in the generated script rather than reusing Step 1M's unchanged-code language verbatim.
 - `"direct"` → Skip gateway config. Generate provider adapter instead (same as Step 1 for direct SDK users). Note: "Migrating from OpenRouter to direct Bedrock API removes the routing middleman and OpenRouter's margin."
 - `"litellm"` → Generate `gateway_config.yaml` in LiteLLM format (standard `llm_router` logic above) + add header comment: "# Migration from OpenRouter to self-hosted LiteLLM with Bedrock backend\n# Install: pip install litellm\n# Run: litellm --config gateway_config.yaml"
 - `"keep_openrouter"` → Generate `gateway_config.json` with OpenRouter model ID mappings:

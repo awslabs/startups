@@ -74,6 +74,7 @@ User must provide at least one GCP source:
 - **Terraform IaC**: `.tf` files (with optional `.tfvars`, `.tfstate`)
 - **Application code**: Source files with GCP SDK or AI framework imports
 - **Billing data**: GCP billing/cost/usage export files (CSV or JSON)
+- **OpenAI usage API** (supplement, for AI workloads on OpenAI): an OpenAI **Admin** API key with **Usage** set to **Read** (API scope `api.usage.read`) — read-only, consent-gated capture of real cost and token usage (see `references/phases/discover/discover-openai-api.md`); replaces manual billing CSV exports for OpenAI spend. Not a standalone source: usage data supplies spend and volumes but not integration or capability detail, so AI migration design still requires application code (or another source above)
 
 If no Terraform is found (even when app code or billing files exist — they cannot produce an infrastructure inventory), offer live discovery per `discover.md` Step 1d; stop only when nothing will produce any artifact. Live discovery covers infrastructure only — AI/agentic workload detection still requires application code.
 
@@ -220,7 +221,7 @@ Replace `MMDD-HHMM` with the actual migration ID, generate the `last_updated` IS
 
 | Phase        | Inputs                                                                                                                                                                   | Outputs                                                                                                                                                                                                                                       | Reference                                |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Discover** | `.tf` files, app source code, and/or billing exports (at least one required)                                                                                             | `gcp-resource-inventory.json`, `gcp-resource-clusters.json`, `ai-workload-profile.json`, `billing-profile.json`, `.phase-status.json` updated (outputs vary by input)                                                                         | `references/phases/discover/discover.md` |
+| **Discover** | `.tf` files, app source code, and/or billing exports (at least one required); optional OpenAI Admin API access supplements with real AI spend                            | `gcp-resource-inventory.json`, `gcp-resource-clusters.json`, `ai-workload-profile.json`, `billing-profile.json`, `openai-usage-profile.json`, `.phase-status.json` updated (outputs vary by input)                                            | `references/phases/discover/discover.md` |
 | **Clarify**  | Discovery artifacts (`gcp-resource-inventory.json`, `gcp-resource-clusters.json`, `ai-workload-profile.json`, `billing-profile.json` — whichever exist)                  | `preferences.json`, `.phase-status.json` updated                                                                                                                                                                                              | `references/phases/clarify/clarify.md`   |
 | **Design**   | `preferences.json` + discovery artifacts                                                                                                                                 | `aws-design.json` (infra), `aws-design-ai.json` (AI), `aws-design-billing.json` (billing-only)                                                                                                                                                | `references/phases/design/design.md`     |
 | **Estimate** | `aws-design.json` or `aws-design-billing.json` or `aws-design-ai.json`, `preferences.json`                                                                               | `estimation-infra.json` or `estimation-ai.json` or `estimation-billing.json`, `.phase-status.json` updated                                                                                                                                    | `references/phases/estimate/estimate.md` |
@@ -253,7 +254,8 @@ gcp-to-aws/
 │   │   │   ├── discover-iac.md                 # Terraform/IaC discovery
 │   │   │   ├── discover-live.md                # Live gcloud CLI discovery (read-only, consent-gated)
 │   │   │   ├── discover-app-code.md            # App code discovery
-│   │   │   └── discover-billing.md             # Billing data discovery
+│   │   │   ├── discover-billing.md             # Billing data discovery
+│   │   │   └── discover-openai-api.md          # OpenAI Admin API usage discovery (read-only, consent-gated)
 │   │   ├── clarify/
 │   │   │   ├── clarify.md                     # Phase 2: Clarify orchestrator
 │   │   │   ├── clarify-global.md              # Category A: Global/Strategic (Q1-Q7)

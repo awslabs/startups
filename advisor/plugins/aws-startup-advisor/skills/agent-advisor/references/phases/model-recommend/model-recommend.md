@@ -8,7 +8,7 @@ _input:
   - context-signals.json
 _knowledge:
   - { file: references/models/anthropic-bedrock-2026-07-21.json }
-  - { file: references/models/openai-bedrock-2026-07-21.json }
+  - { file: references/models/openai-bedrock-2026-08-21.json }
 _assemble:
   _file: phases/model-recommend/model-recommend-assemble.md
 _produces:
@@ -92,9 +92,23 @@ reuse the Anthropic `preserve_messages_api` switch):
 - minimum context window and expected output-token ceiling?
 - allow Global CRIS or require a geography-scoped profile (runtime Converse only)?
 
-OpenAI is handled by a dedicated provider module (`openai-bedrock-2026-07-21.json` catalog):
+OpenAI is handled by a dedicated provider module (`openai-bedrock-2026-08-21.json` catalog):
 GPT-5.x on Mantle is Responses-only, so a Chat Completions source is reshaped, not routed to
-`mantle_openai_chat`. Azure OpenAI remains an explicit `provider_module_pending` generic result.
+`mantle_openai_chat`. GPT-5.6 sources additionally carry a SAME-MODEL `runtime_converse`
+candidate via CRIS ids (verified 2026-08-21) — governance requirements no longer force a
+family switch for them, while GPT-5.5/5.4 remain mantle-only. Azure OpenAI remains an
+explicit `provider_module_pending` generic result.
+
+**OpenRouter/LiteLLM-sourced OpenAI models still use the OpenAI module.** Discover records the
+underlying `provider` (e.g. `openai`) even when the calls transit a gateway — see `discover.md`'s
+gateway-detection rule. Do not treat a gateway-routed source as `unknown` or route it to the
+generic branch: the model itself, and therefore the Mantle/Converse recommendation, is unaffected
+by the gateway. What changes is `api_continuity`: a gateway-routed source is not, by construction,
+calling the OpenAI SDK directly, so its actual migration effort is closer to `preferred` than
+`required` — ask this explicitly rather than assuming `required` from the SDK detection default,
+and note in `[TUNE]`/rationale that landing on Mantle from OpenRouter means a real base-URL,
+credential, and model-ID-format change, not the zero-code-change claim that applies to a direct
+OpenAI SDK caller.
 
 Do not ask users to choose an API path by name unless they already expressed a preference.
 The deterministic engine ranks `(model, api_path)` candidates together after filtering hard

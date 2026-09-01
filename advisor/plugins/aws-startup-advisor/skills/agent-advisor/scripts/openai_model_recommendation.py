@@ -137,9 +137,30 @@ def _converse_tier_for_source(source):
     return _CONVERSE_TIER_DEFAULT
 
 
+def _same_model_runtime_key(source):
+    """GPT-5.6 sources have a SAME-MODEL runtime_converse path via CRIS (verified
+    2026-08-21) — governance requirements no longer force a family switch for
+    them. Returns the catalog key, or None for every other source (5.5/5.4 and
+    legacy have no runtime path, so their Converse candidates stay Claude)."""
+    sid = _primary_source_id(source).lower()
+    for marker, key in (("5.6-sol", "openai_gpt_5_6_sol"),
+                        ("5.6-terra", "openai_gpt_5_6_terra"),
+                        ("5.6-luna", "openai_gpt_5_6_luna")):
+        if marker in sid:
+            return key
+    return None
+
+
 def _converse_candidate_order(source):
     tier = _converse_tier_for_source(source)
-    return [tier] + [k for k in _CONVERSE_TIER_ORDER if k != tier]
+    order = [tier] + [k for k in _CONVERSE_TIER_ORDER if k != tier]
+    same = _same_model_runtime_key(source)
+    if same:
+        # Same model outranks any cross-family tier: keeping the model removes
+        # prompt-adaptation and behavior-delta risk entirely, and on Global CRIS
+        # it is also the cost-parity option.
+        order.insert(0, same)
+    return order
 
 
 def _catalog_model_for_path(catalog, path, detected_features=None, requirements=None,
@@ -697,8 +718,14 @@ def _decision_options(catalog, workload, region):
                     path_config["model_id"], path_config["requires_cris"], workload["requirements"]
                 ),
                 "requires_cris": path_config["requires_cris"],
-                "reason": "Uses Bedrock-native Converse request/response shapes and a Bedrock-native "
-                "model; requires rewriting the OpenAI integration.",
+                "reason": (
+                    "SAME-MODEL governance path: this GPT-5.6 target runs on bedrock-runtime via a "
+                    "CRIS id — Guardrails (Converse API only), invocation logging, and cost parity "
+                    "on Global CRIS (1.10x on Geo/In-Region pricing), without a model change."
+                    if model_key == _same_model_runtime_key(workload["source"])
+                    else "Uses Bedrock-native Converse request/response shapes and a Bedrock-native "
+                    "model; requires rewriting the OpenAI integration."
+                ),
             }
         )
     return options
@@ -811,12 +838,22 @@ def recommend_openai_workload(workload, region, catalog):
     if runtime_required:
         path = "runtime_converse"
         candidate_order = _converse_candidate_order(source)
-        tier = _converse_tier_for_source(source)
-        rationale_head = (
-            "Bedrock governance or multi-model requirements select runtime Converse; "
-            f"the source tier maps to {catalog['models'][tier]['display_name']} "
-            "(capability-evidence fallback across Claude tiers)."
-        )
+        same = _same_model_runtime_key(source)
+        if same:
+            rationale_head = (
+                "Bedrock governance or multi-model requirements select runtime Converse; "
+                f"the source model itself ({catalog['models'][same]['display_name']}) runs "
+                "there via a CRIS id (verified 2026-08-21), so the same-model candidate "
+                "leads, with the Claude tier as the cross-family fallback."
+            )
+        else:
+            tier = _converse_tier_for_source(source)
+            rationale_head = (
+                "Bedrock governance or multi-model requirements select runtime Converse; "
+                f"the source tier maps to {catalog['models'][tier]['display_name']} "
+                "(capability-evidence fallback across Claude tiers). GPT-5.5/5.4 sources "
+                "have no runtime path, so governance implies this family switch."
+            )
     else:
         path = "mantle_openai_responses"
         rationale_head = (
@@ -878,6 +915,23 @@ def recommend_openai_workload(workload, region, catalog):
     blocks = r_blocks + f_blocks
     tuning = r_tuning + f_tuning
     deltas = list(r_deltas)
+
+    if path == "runtime_converse" and path_config["requires_cris"] and invocation_model_id is None:
+        # GPT-5.6 on bedrock-runtime is CRIS-only — there is no in-region invocation
+        # form. A residency posture that forbids both Global and Geo CRIS makes the
+        # same-model governance path unusable; say so explicitly instead of shipping
+        # a recommendation with an unresolvable invocation id.
+        blocks.append(
+            _finding(
+                "cris_residency_unresolved",
+                "[BLOCKS]",
+                "This runtime path is CRIS-only, and the stated data-residency posture "
+                "permits neither Global nor Geo cross-region inference, so no invocation "
+                "id can be resolved.",
+                "Relax residency to Global or a Geo CRIS geography, supply an explicit "
+                "inference_profile_id, or take the Claude cross-family Converse path.",
+            )
+        )
 
     if path == "mantle_openai_responses" and surface == "chat_completions":
         deltas.extend(_chat_to_responses_deltas())

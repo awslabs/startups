@@ -14,7 +14,16 @@
     "anthropic.messages.create": "text_generation",
     "bedrock.invoke_model": "unknown",
     "cohere.embed": "embedding",
-    "cohere.generate": "text_generation"
+    "cohere.generate": "text_generation",
+    "documentai.process_document": "document_extraction",
+    "documentai.batch_process_documents": "document_extraction",
+    "vision.annotate_image": "image_analysis",
+    "vision.text_detection": "image_analysis",
+    "vision.label_detection": "image_analysis",
+    "vision.face_detection": "image_analysis",
+    "speech.recognize": "speech_transcription",
+    "speech.long_running_recognize": "speech_transcription",
+    "speech.streaming_recognize": "speech_transcription"
   },
   "structured_output_trio": [
     "openai.chat.completions.create",

@@ -41,4 +41,4 @@ launch cap is the decisive weakness for high-volume platforms.
 
 ## Serving & security notes
 
-Entry: ARM64 handler packaging + lifecycle hooks (/ready, /launch, /resume, /suspend, /terminate); event-source wiring as needed. IAM: execution role with `bedrock:InvokeModel` (model-bearing units only — a model-less unit omits it) + service-specific permissions. Networking: per-MicroVM URL over TLS; public service endpoints; VPC endpoints only if policy demands.
+Entry: ARM64 handler packaging + lifecycle hooks (/ready, /launch, /resume, /suspend, /terminate); event-source wiring as needed. IAM: execution role with `bedrock:InvokeModel` (model-bearing units only — a model-less unit omits it) + service-specific permissions. Networking: per-MicroVM URL over TLS; public service endpoints OR private connectivity via AWS PrivateLink VPC Endpoints (for MicroVM control-plane API calls and per-MicroVM HTTP endpoint connections), available in all regions where Lambda MicroVMs is available.

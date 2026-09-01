@@ -248,11 +248,33 @@ def test_agentic_workload_uses_trajectory_evaluation():
 
 # --- 11.5 Catalog and verification ----------------------------------------
 
+def test_context_requirement_beyond_every_catalog_window_requires_decision():
+    # 2M exceeds every cataloged window (GPT-5.6 is 1M as of 2026-08-21 — a 400K
+    # requirement now legitimately passes, which an earlier version of this test
+    # used as its probe value). This is the KNOWN-limit-too-small case; the
+    # unknown-limit invariant has its own probe below.
+    rec = _recommend(_workload(requirements={"min_context_tokens": 2000000}))
+    assert rec["decision_status"] == "decision_required"
+
+
 def test_unknown_limits_do_not_pass_hard_numeric_requirement():
-    rec = _recommend(_workload(requirements={"min_context_tokens": 400000}))
+    # Fail-closed invariant: an unknown catalog limit cannot satisfy a hard numeric
+    # need. output_token_ceiling is "unknown" on every entry as of 2026-08-21, so it
+    # probes the invariant the way min_context_tokens no longer can.
+    rec = _recommend(_workload(requirements={"expected_output_tokens": 100000}))
     assert rec["decision_status"] == "decision_required"
     assert "unverified_capacity" in _codes(rec["blocks"])
 
+
+def test_cris_only_path_with_unresolvable_residency_blocks_explicitly():
+    # GPT-5.6 on bedrock-runtime is CRIS-only. A residency posture permitting
+    # neither Global nor Geo CRIS must surface an explicit block, not a silent
+    # invocation_model_id: None.
+    rec = _recommend(_workload(
+        source={"model_ids": ["gpt-5.6-terra"], "api_surface": "responses"},
+        requirements={"governance": ["guardrails"], "data_residency": "in_region_required"},
+    ))
+    assert "cris_residency_unresolved" in _codes(rec["blocks"])
 
 def test_no_aws_account_leaves_probe_not_run_and_provisional():
     rec = _recommend()
@@ -558,38 +580,80 @@ def test_n04_logprobs_and_stop_not_declared_rejected():
 # --- Converse tier mapping (source OpenAI tier -> matching Claude tier) ----
 
 def test_tier_map_sol_source_maps_to_opus_on_converse():
+    # Verified 2026-08-21: GPT-5.6 runs on bedrock-runtime via CRIS, so a 5.6
+    # source with governance requirements keeps ITS OWN model — the same-model
+    # candidate outranks the Claude tier. (Before 2026-08-21 the docs said
+    # mantle-only, and this test asserted the Opus fallback.)
     rec = _recommend(
         _workload(source={"model_ids": ["gpt-5.6-sol"]},
                   requirements={"governance": ["guardrails"]})
     )
+    assert rec["primary_model"] == "openai.gpt-5.6-sol"
     assert rec["api_path"] == "runtime_converse"
-    assert rec["primary_model"] == "anthropic.claude-opus-4-8"
 
+
+def test_tier_map_sol_cross_family_fallback_is_opus():
+    # The Claude tier map is preserved as the cross-family option behind the
+    # same-model candidate.
+    from openai_model_recommendation import _converse_candidate_order
+    order = _converse_candidate_order({"model_ids": ["gpt-5.6-sol"]})
+    assert order[0] == "openai_gpt_5_6_sol"
+    assert order[1] == "anthropic_claude_opus_4_8"
 
 def test_tier_map_luna_source_maps_to_haiku_on_converse():
+    # Same-model-first (2026-08-21): Luna keeps Luna; Haiku is the cross-family
+    # fallback in the candidate order.
     rec = _recommend(
         _workload(source={"model_ids": ["gpt-5.6-luna"]},
                   requirements={"governance": ["guardrails"]})
     )
-    assert rec["primary_model"] == "anthropic.claude-haiku-4-5-20251001-v1:0"
-
+    assert rec["primary_model"] == "openai.gpt-5.6-luna"
+    from openai_model_recommendation import _converse_candidate_order
+    order = _converse_candidate_order({"model_ids": ["gpt-5.6-luna"]})
+    assert order[0] == "openai_gpt_5_6_luna"
+    assert order[1] == "anthropic_claude_haiku_4_5"
 
 def test_tier_map_terra_and_55_sources_map_to_sonnet_on_converse():
-    for src in ("gpt-5.6-terra", "gpt-5.5", "gpt-5.4"):
-        rec = _recommend(
-            _workload(source={"model_ids": [src]},
-                      requirements={"governance": ["guardrails"]})
-        )
-        assert rec["primary_model"] == "anthropic.claude-sonnet-5", src
-
+    # Terra (5.6) keeps itself — same-model runtime path exists. GPT-5.5 has NO
+    # runtime path (mantle-only, re-verified 2026-08-21), so its governance
+    # Converse target remains the Claude balanced tier.
+    rec_terra = _recommend(
+        _workload(source={"model_ids": ["gpt-5.6-terra"]},
+                  requirements={"governance": ["guardrails"]})
+    )
+    assert rec_terra["primary_model"] == "openai.gpt-5.6-terra"
+    rec_55 = _recommend(
+        _workload(source={"model_ids": ["gpt-5.5"]},
+                  requirements={"governance": ["guardrails"]})
+    )
+    assert rec_55["primary_model"] == "anthropic.claude-sonnet-5"
 
 def test_tier_map_falls_back_across_tiers_on_capability_evidence():
-    # Luna maps to Haiku, but Haiku has no reasoning evidence — the engine falls
-    # back to the next Claude tier that covers the requirement (Sonnet).
+    # The capability-evidence fallback mechanism: when the first candidate in the
+    # order lacks evidence for a critical feature, the engine advances to the next
+    # tier that covers it. Exercised with an explicit order because the Luna
+    # source no longer produces a Haiku-first order — its same-model candidate
+    # carries reasoning evidence and satisfies the requirement directly
+    # (2026-08-21 same-model-first change).
+    from model_recommendation import load_openai_catalog
+    from openai_model_recommendation import _catalog_model_for_path
+    catalog = load_openai_catalog()
+    hit, unmet = _catalog_model_for_path(
+        catalog, "runtime_converse", detected_features=[],
+        requirements={"critical_features": ["reasoning"]},
+        candidate_order=["anthropic_claude_haiku_4_5", "anthropic_claude_sonnet_5"],
+    )
+    assert hit is not None
+    assert hit[0] == "anthropic_claude_sonnet_5"
+
+
+def test_same_model_governance_still_recommended_end_to_end():
+    # A 5.6 source with governance + reasoning requirement lands on itself.
     rec = _recommend(
         _workload(source={"model_ids": ["gpt-5.6-luna"]},
                   requirements={"governance": ["guardrails"],
                                 "critical_features": ["reasoning"]})
     )
     assert rec["decision_status"] == "recommended"
-    assert rec["primary_model"] == "anthropic.claude-sonnet-5"
+    assert rec["primary_model"] == "openai.gpt-5.6-luna"
+    assert rec["api_path"] == "runtime_converse"

@@ -28,25 +28,35 @@ AgentCore services have different regional footprints. Always validate via `get_
 
 ---
 
-## Bedrock Mantle Throughput Limits (Shared Account)
+## Bedrock Mantle Throughput Limits
 
-Bedrock Mantle provides OpenAI-compatible endpoints on Bedrock. It runs on a **shared account limit of 10,000 RPM** across all Mantle users in a region — this is not a per-customer quota.
+Bedrock Mantle serves OpenAI-compatible and Anthropic-compatible APIs on Bedrock.
 
-**Risk table:**
+### OpenAI proprietary models (GPT-5.6 / 5.5 / 5.4) — TPM only, no RPM
 
-| Workload Volume        | Risk Level | Guidance                                                                                 |
-| ---------------------- | ---------- | ---------------------------------------------------------------------------------------- |
-| Low (< 100 RPM)        | Low        | Mantle is a good fit; shared limit is not a concern                                      |
-| Medium (100–1,000 RPM) | Medium     | Monitor for 429s at peak; have a fallback ready                                          |
-| High (> 1,000 RPM)     | High       | Use `bedrock-runtime` (Converse API) directly — not subject to the shared Mantle RPM cap |
+Inference on `bedrock-mantle` for these models is governed by **two per-model, per-region quotas: input tokens per minute and output tokens per minute. There is no requests-per-minute quota.** Exceeding a TPM quota returns HTTP 429. Cached input tokens read through prompt caching **do not count** against the input-TPM quota.
 
-**When to use `bedrock-runtime` instead of Mantle:**
+| Workload Volume | Risk Level | Guidance                                                                                           |
+| --------------- | ---------- | -------------------------------------------------------------------------------------------------- |
+| Low             | Low        | Default TPM quotas are ample                                                                       |
+| Medium          | Medium     | Monitor 429s against **token** throughput, not request rate; enable prompt caching                 |
+| High            | High       | Enable prompt caching first (cached input is exempt from input TPM), then request a quota increase |
 
-- Production workloads with sustained high request rates
-- Latency-sensitive workloads where shared-limit throttling is unacceptable
-- Workloads that need per-customer quota increases via Service Quotas
+**The `bedrock-runtime` fallback exists only for GPT-5.6.** GPT-5.5 and GPT-5.4 are `bedrock-mantle` only and in-region only — for them, "switch to `bedrock-runtime`" requires moving to a different model (Bedrock-native or `gpt-oss`), a model change with its own eval cost. GPT-5.6 Sol/Terra/Luna DO have a `bedrock-runtime` path via CRIS inference profiles (`us.`/`in.`/`global.` prefixed ids; the model cards recommend runtime for new applications) — a legitimate endpoint option with its own quota family, and on Global CRIS it is also the cost-parity option. Scaling levers on the mantle path, in order:
 
-**Source:** [AWS Bedrock Mantle scaling throughput best practices](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html)
+1. Prompt caching (GPT-5.6 only) — 90% off cached input and exempt from the input-TPM quota
+2. Exponential backoff with a bounded retry count (`max_retries` on the OpenAI SDK)
+3. Spreading load across minutes and ramping request rate gradually rather than bursting
+4. A Service Quotas increase for that model's input/output TPM in that region
+5. Only if the above are insufficient: change models, accepting the eval cost
+
+See `references/shared/openai-on-bedrock.md` for the endpoint, region matrix, and caching parameters.
+
+**Source:** [Get started with GPT-5.6 on Amazon Bedrock — Quotas and scaling](https://aws.amazon.com/blogs/machine-learning/get-started-with-openai-gpt-5-6-sol-terra-and-luna-on-amazon-bedrock/)
+
+### Other models on Mantle
+
+For non-OpenAI models served through Mantle, verify current quota dimensions and any shared-account limits in the [Mantle documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) before advising on throughput. Do not carry the OpenAI TPM-only model over to other providers without checking, and do not assume previously documented shared-RPM behavior still applies.
 
 ---
 
@@ -61,9 +71,10 @@ Claude models on Mantle have an additional **output TPM cap** that differs by mo
 
 **Impact for migration decisions:**
 
-- For Claude migrations at medium/high volume: the 2M output TPM cap on Claude 4.7+ is the binding constraint, not the 10K RPM limit
-- For gpt-oss migrations (OpenAI model architecture on Bedrock): check whether the target model is Claude 4.7+ and flag the output TPM cap in the design
-- When output-heavy workloads (long JSON, tool outputs, multi-step reasoning) are detected, flag this cap prominently and recommend `bedrock-runtime` for production
+- For Claude migrations at medium/high volume: the 2M output TPM cap on Claude 4.7+ is the binding constraint
+- For OpenAI proprietary GPT targets: this Claude cap does not apply. Their mantle constraint is the per-model input/output TPM quota described above; for GPT-5.6 the `bedrock-runtime`/CRIS path is an available alternative (its own quota family), while GPT-5.5/5.4 have no runtime path
+- For `gpt-oss` targets: these do run on `bedrock-runtime`, so standard account TPM limits and the Converse-path mitigations apply
+- When output-heavy workloads (long JSON, tool outputs, multi-step reasoning) are detected, flag the relevant cap prominently; recommend `bedrock-runtime` for production **only** when the target model actually has a `bedrock-runtime` path
 
 ---
 
