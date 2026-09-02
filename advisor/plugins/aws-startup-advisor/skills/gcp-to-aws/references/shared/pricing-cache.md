@@ -383,7 +383,7 @@ Serverless inference: $0.0000200 per second per GB memory.
 
 ## Bedrock Models (On-Demand)
 
-**Anthropic Claude (Standard on-demand)** figures below match **US East (N. Virginia)** on [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) as of cache refresh. **Recommend defaults (new migrations):** Claude Sonnet 5 (flagship), Claude Opus 4.8 (hardest reasoning), Claude Haiku 4.5 (cost/speed). Do not default to Claude Fable 5 (frontier). **Claude Fable 5** is the most expensive Anthropic model at $10/$50 per 1M tokens (Mythos-class). **Claude Opus 4.8** keeps the same $5/$25 rate as Opus 4.6/4.7. **Claude Sonnet 5** launched June 30 with introductory pricing of $2/$10 through Aug 31, 2026, then $3/$15 (same as Sonnet 4.6). **Claude Opus 4.7** lists the same headline on-demand input/output as **Opus 4.6** on that page; confirm **batch** availability per model (Opus 4.7 batch was **not** listed on the global cross-region table when this row was added). **Claude Opus 4.1** entered **Legacy** on Jul 8, 2026 (EOL Jan 8, 2027). **Batch**, **prompt cache** (5m / 1h write + cache read), and **geo / in-region cross-region** rows on that page can differ; e.g. **US East (Ohio)** cross-region inference for Claude Sonnet 4.6 is listed at **$3.30 / $16.50** per 1M input/output (≈10% above N. Virginia). Long-context SKUs **do not** all use the same multiplier: **Sonnet 4.6** and **Opus 4.6** long-context modes share the same on-demand rates as the non–long-context rows on the standard table; **Sonnet 4.5** and **Sonnet 4** long-context rows are priced higher on that same table.
+**Anthropic Claude (Standard on-demand)** figures below match **US East (N. Virginia)** on [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) as of cache refresh. **Recommend defaults (new migrations):** Claude Sonnet 5 (flagship), Claude Opus 4.8 (hardest reasoning), Claude Haiku 4.5 (cost/speed). Do not default to Claude Fable 5 (frontier). **Claude Fable 5** is the most expensive Anthropic model at $10/$50 per 1M tokens (Mythos-class). **Claude Opus 4.8** keeps the same $5/$25 rate as Opus 4.6/4.7. **Claude Sonnet 5** launched June 30 with introductory pricing of $2/$10 that ended Aug 31, 2026; it is now $3/$15 (same as Sonnet 4.6). **Claude Opus 4.7** lists the same headline on-demand input/output as **Opus 4.6** on that page; confirm **batch** availability per model (Opus 4.7 batch was **not** listed on the global cross-region table when this row was added). **Claude Opus 4.1** entered **Legacy** on Jul 8, 2026 (EOL Jan 8, 2027). **Batch**, **prompt cache** (5m / 1h write + cache read), and **geo / in-region cross-region** rows on that page can differ; e.g. **US East (Ohio)** cross-region inference for Claude Sonnet 4.6 is listed at **$3.30 / $16.50** per 1M input/output (≈10% above N. Virginia). Long-context SKUs **do not** all use the same multiplier: **Sonnet 4.6** and **Opus 4.6** long-context modes share the same on-demand rates as the non–long-context rows on the standard table; **Sonnet 4.5** and **Sonnet 4** long-context rows are priced higher on that same table.
 
 ### Multi-provider quick reference (per 1M tokens)
 
@@ -392,7 +392,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                       |
 | -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ------------------------------------------------------------ |
 | Claude Fable 5                   | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                       |
-| Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active (intro $2/$10 thru Aug 31, 2026; then $3/$15)         |
+| Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 3.00       | 15.00       | 1M      | flagship  | active ($3/$15 as of Sep 1, 2026; intro $2/$10 ended Aug 31) |
 | Claude Opus 4.8                  | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
 | Claude Sonnet 4.6                | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                       |
 | Claude Sonnet 4.6 — Long Context | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K+   | flagship  | active                                                       |
@@ -460,20 +460,24 @@ Per 1M tokens unless noted. See [Bedrock pricing](https://aws.amazon.com/bedrock
 
 > **Batch support verified 2026-09-02** against the
 > [supported Regions and models for batch inference](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html)
-> table: **Opus 4.6, Sonnet 4.6, Opus 4.5, Sonnet 4.5, and Haiku 4.5 are listed** (via cross-region inference
-> profiles; batch is 50% of on-demand per the pricing page, matching the rows below). **Fable 5, Sonnet 5, and
-> Opus 4.8 are NOT on that table** — their batch cells below are **unverified (†)**: do not build a batch-discount
+> table: **Opus 4.6, Sonnet 4.6, Opus 4.5, Sonnet 4.5, Sonnet 4.5 — LC, and Haiku 4.5 are listed** (via cross-region
+> inference profiles; batch is 50% of on-demand per the pricing page, matching the rows below). **Fable 5, Sonnet 5,
+> and Opus 4.8 are NOT on that table** — their batch cells below are **unverified (‡)**: do not build a batch-discount
 > TCO on them; price on-demand and note batch as a possible future saving pending the docs table listing them.
 > Prompt-cache columns are unaffected (caching support is independent of batch).
+> **Batch rate vs. cross-region inference (CRIS):** the confirmed rows show 50% of the **N. Virginia** on-demand
+> price. Where batch is only reachable through a CRIS profile that lists above N. Virginia (e.g. Sonnet 4.6 in US East
+> (Ohio) at ≈10% higher — see the on-demand section), the effective batch rate is 50% of that CRIS price, i.e. ≈10%
+> above the cells here. Re-derive from the profile's on-demand rate for a region-specific quote.
 > **Do not cross-check these rows against the AWS Pricing Calculator** — as of Sep 2026 the calculator carries no
 > batch metered IDs for Opus 4.6 / Sonnet 4.6 and collapses other batch/cache SKUs (known calculator defect, not a
 > pricing-page signal). The pricing page and the docs table above are the sources of truth.
 
 | Model                    | Batch in | Batch out | 5m cache write | 1h cache write | Cache read |
 | ------------------------ | -------- | --------- | -------------- | -------------- | ---------- |
-| Claude Fable 5           | 5.00 †   | 25.00 †   | 12.50          | 20.00          | 1.00       |
-| Claude Sonnet 5          | 1.00 †   | 5.00 †    | 2.50           | 4.00           | 0.20       |
-| Claude Opus 4.8          | 2.50 †   | 12.50 †   | 6.25           | 10.00          | 0.50       |
+| Claude Fable 5           | 5.00 ‡   | 25.00 ‡   | 12.50          | 20.00          | 1.00       |
+| Claude Sonnet 5          | 1.50 ‡   | 7.50 ‡    | 3.75           | 6.00           | 0.30       |
+| Claude Opus 4.8          | 2.50 ‡   | 12.50 ‡   | 6.25           | 10.00          | 0.50       |
 | Claude Sonnet 4.6 (+ LC) | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
 | Claude Opus 4.6 (+ LC)   | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
 | Claude Opus 4.5          | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
@@ -481,8 +485,10 @@ Per 1M tokens unless noted. See [Bedrock pricing](https://aws.amazon.com/bedrock
 | Claude Sonnet 4.5        | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
 | Claude Sonnet 4.5 — LC   | 3.00     | 11.25     | 7.50           | 12.00          | 0.60       |
 
-† Not listed on the batch-supported models table as of 2026-09-02 — rate is the standard 50%-of-on-demand
-projection, not a confirmed SKU. Treat as `unverified` in estimate output.
+‡ Not listed on the batch-supported models table as of 2026-09-02 — rate is the standard 50%-of-on-demand
+projection, not a confirmed SKU. Mark these batch cells `_unverified_` in estimate output; the `unverified` gate in
+`estimate-ai.md` (§ Pricing source caveat) treats any `_unverified_` row as blocking for a quoted figure — resolve
+from the Bedrock pricing page first.
 
 ### AI21 Labs
 

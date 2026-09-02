@@ -39,8 +39,9 @@ share a generation with a future `Sol`.
 > both sources. Re-check on refresh; if AWS corrects the blog, the cards still win.
 
 **Not on Bedrock (as of this refresh):** GPT-4o, GPT-4.1, GPT-4 / GPT-4 Turbo, GPT-3.5 Turbo, the o-series
-(o1/o3/o4-mini), GPT-5 / GPT-5.1 / GPT-5.2, and the `*-Pro` variants (GPT-5.5 Pro, GPT-5.4 Pro). Sources whose model
-is on this list have no same-model landing target — see `ai-openai-to-bedrock.md` for the two-option path.
+(o1/o3/o4-mini), GPT-5 / GPT-5.1 / GPT-5.2, Codex (unverified — see the Codex note below), and the `*-Pro` variants
+(GPT-5.5 Pro, GPT-5.4 Pro). Sources whose model is on this list have no same-model landing target — see
+`ai-openai-to-bedrock.md` for the two-option path.
 
 ---
 
