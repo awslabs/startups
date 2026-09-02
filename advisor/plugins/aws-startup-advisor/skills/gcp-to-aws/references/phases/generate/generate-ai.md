@@ -28,12 +28,16 @@ Check `preferences.json` → `ai_constraints.ai_framework` to determine the migr
 | Voice Platform (Vapi, Bland.ai)   | Check native Bedrock support, update dashboard                | Dashboard config  |
 | Framework (LangChain, LlamaIndex) | Swap provider import (e.g., `ChatBedrock` for `ChatVertexAI`) | 1-5 lines of code |
 
-**OpenAI SDK users via Mantle (env-var path — no code changes)** — `ai_framework` = `direct` AND `ai_source` = `openai` AND `migration_path` = `mantle`:
+**OpenAI SDK users via Mantle (config path for a Responses source; small reshape for a Chat Completions source)** — `ai_framework` = `direct` AND `ai_source` = `openai` AND `migration_path` **starts with** `mantle` (`mantle`, `mantle_openai_responses`):
 
-- Set `OPENAI_BASE_URL` and `OPENAI_API_KEY` environment variables
-- Update model string to Bedrock model ID
+- Point the client at `https://bedrock-mantle.{region}.api.aws/openai/v1` — note the `openai/v1` segment for proprietary GPT models; a bare `/v1` 404s
+- Swap the credential for a Bedrock API key or the auto-refreshing token provider — **not** the existing OpenAI key
+- Update the model string to the Bedrock model ID (`openai.gpt-*` for a same-model move)
+- Grant the `bedrock-mantle:*` actions; `bedrock:InvokeModel` does not authorize these models
+- **Config-only ONLY if the source already calls `responses.create`.** A Chat Completions source must reshape to Responses — small and mechanical, but it is a code change, so do not present this path as "no code changes" without checking the detected surface
 - Test in staging, validate responses
-- No SDK changes, no new dependencies, no provider adapter needed
+
+Match the `migration_path` prefix, not the exact string: Design writes the more specific `mantle_openai_responses` for a same-model OpenAI migration, and an equality test against `mantle` would misroute those runs into the adapter path below.
 
 **Direct SDK users (adapter path — the long pole)** — `ai_framework` = `direct` AND (`ai_source` != `openai` OR `migration_path` = `converse`):
 
@@ -51,17 +55,17 @@ Based on `ai-workload-profile.json` → `integration.pattern` and `integration.l
 
 **Migration patterns to include (matched to detected language and source):**
 
-| Source SDK         | Target                            | Key Change                                                                        |
-| ------------------ | --------------------------------- | --------------------------------------------------------------------------------- |
-| OpenAI SDK         | Mantle OpenAI-compat              | Set `OPENAI_BASE_URL` + `OPENAI_API_KEY` + model string (zero code changes)       |
-| Vertex AI (Python) | boto3 Bedrock Converse API        | `GenerativeModel.generate_content()` → `bedrock.converse()`                       |
-| Vertex AI (JS)     | @aws-sdk/client-bedrock-runtime   | `model.generateContent()` → `client.send(new ConverseCommand())`                  |
-| Vertex AI (Go)     | aws-sdk-go-v2 bedrockruntime      | `aiplatform` → `bedrockruntime.Converse()`                                        |
-| Vertex AI (Java)   | AWS SDK BedrockRuntimeClient      | `GenerativeModel` → `BedrockRuntimeClient.converse()`                             |
-| OpenAI SDK         | boto3 Bedrock Converse API        | `client.chat.completions.create()` → `bedrock.converse()` (if Mantle unavailable) |
-| LiteLLM            | LiteLLM config change             | `model="gpt-4o"` → `model="bedrock/anthropic.claude-sonnet-5"`                    |
-| LangChain          | langchain_aws                     | `ChatOpenAI`/`ChatVertexAI` → `ChatBedrock`                                       |
-| LlamaIndex         | llama_index.llms.bedrock_converse | `Vertex` → `BedrockConverse`                                                      |
+| Source SDK              | Target                            | Key Change                                                                                                                                                                                             |
+| ----------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| OpenAI SDK (same model) | Mantle Responses API              | Base URL → `.../openai/v1`, Bedrock token/API key (not an OpenAI key), `openai.gpt-*` model ID. Config-only **if** already on `responses.create`; a Chat Completions source must reshape to Responses. |
+| Vertex AI (Python)      | boto3 Bedrock Converse API        | `GenerativeModel.generate_content()` → `bedrock.converse()`                                                                                                                                            |
+| Vertex AI (JS)          | @aws-sdk/client-bedrock-runtime   | `model.generateContent()` → `client.send(new ConverseCommand())`                                                                                                                                       |
+| Vertex AI (Go)          | aws-sdk-go-v2 bedrockruntime      | `aiplatform` → `bedrockruntime.Converse()`                                                                                                                                                             |
+| Vertex AI (Java)        | AWS SDK BedrockRuntimeClient      | `GenerativeModel` → `BedrockRuntimeClient.converse()`                                                                                                                                                  |
+| OpenAI SDK              | boto3 Bedrock Converse API        | `client.chat.completions.create()` → `bedrock.converse()` (if Mantle unavailable)                                                                                                                      |
+| LiteLLM                 | LiteLLM config change             | `model="gpt-4o"` → `model="bedrock/anthropic.claude-sonnet-5"`, or keep the GPT family via the mantle endpoint when the source model is on Bedrock                                                     |
+| LangChain               | langchain_aws                     | `ChatOpenAI`/`ChatVertexAI` → `ChatBedrock`                                                                                                                                                            |
+| LlamaIndex              | llama_index.llms.bedrock_converse | `Vertex` → `BedrockConverse`                                                                                                                                                                           |
 
 For each detected language and pattern, generate before/after code examples using actual model IDs from `aws-design-ai.json`.
 

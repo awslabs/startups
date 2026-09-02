@@ -10,6 +10,60 @@ In the `detect_grep` recipes below, `<REPO>` is the repository path supplied in 
 
 ---
 
+## Same-model (mantle) deltas
+
+**Read this section INSTEAD of the parameter-surface sections below when the resolved target is a proprietary GPT model on `bedrock-mantle`** (`openai.gpt-5.6-sol` / `-terra` / `-luna`, `openai.gpt-5.5`, `openai.gpt-5.4`). The model is unchanged, so temperature ranges, penalty parameters, and stop-sequence limits are unchanged — do not raise those as deltas. The deltas here are about the API surface and the endpoint, not about model behavior.
+
+## chat-completions-to-responses
+
+- `resolution_kind`: `ux_choice`
+- Source (OpenAI): `client.chat.completions.create(...)`, `messages=[...]`, reads `choices[0].message.content`
+- Target (mantle GPT): `client.responses.create(...)`, `input=...`, reads `output_text`
+- Chat Completions support is **unverified** for these models — every AWS sample uses Responses, and no GPT model card lists Chat Completions as supported. Treat a Chat Completions source as requiring a reshape, and probe the target account before committing to either surface.
+
+### detect_grep
+
+```bash
+grep -rEn 'chat\.completions\.create' <REPO> --include="*.py" --include="*.js" --include="*.ts" | grep -v node_modules | grep -v __pycache__
+grep -rEn 'choices\[0\]\.(message|delta)' <REPO> --include="*.py" --include="*.js" --include="*.ts" | grep -v node_modules | grep -v __pycache__
+```
+
+`user_visible` classification: `true` when the response shape is surfaced to users or persisted (chat transcript rendering, stored conversation history, streaming to a UI); `false` for internal one-shot calls whose text is consumed programmatically.
+
+## reasoning-items-must-round-trip
+
+- `resolution_kind`: `impl_path`
+- These models reason before responding. In multi-turn and tool-calling flows the model's output items — which may include reasoning items — must be appended to the next request's `input`. Dropping them degrades multi-step and tool-use quality without raising an error, so this fails silently.
+- Detection: any Responses-API call that builds the next turn's `input` from message text alone rather than appending `response.output`.
+
+### detect_grep
+
+```bash
+grep -rEn 'responses\.create' <REPO> --include="*.py" --include="*.js" --include="*.ts" | grep -v node_modules | grep -v __pycache__
+grep -rEn 'function_call_output|tool_call' <REPO> --include="*.py" --include="*.js" --include="*.ts" | grep -v node_modules | grep -v __pycache__
+```
+
+## endpoint-path-and-credential
+
+- `resolution_kind`: `impl_path`
+- Base URL must be `https://bedrock-mantle.{region}.api.aws/openai/v1` — the `openai/v1` segment is required and differs from the `v1` path other mantle models use. A hardcoded `/v1` returns 404.
+- The API key must be a Bedrock API key or an auto-refreshing token provider, **not** an existing OpenAI key. A long-lived `OPENAI_API_KEY` read from the environment will fail authentication.
+- IAM must grant `bedrock-mantle:*` actions; `bedrock:InvokeModel` does not authorize these models.
+- Not user-visible — always `user_visible: false`, `resolution_kind: impl_path`. Apply without prompting.
+
+## prompt-caching-availability
+
+- `resolution_kind`: `impl_path`
+- Prompt caching is listed as supported on GPT-5.6 only. Do not emit caching configuration for `openai.gpt-5.5` or `openai.gpt-5.4`.
+
+---
+
+## Cross-family parameter-surface deltas
+
+Everything below applies when the target is **not** the same model — Claude, Nova, DeepSeek, or `gpt-oss`.
+
+---
+
 ## temperature-range-mismatch
 
 - `resolution_kind`: `ux_choice`
