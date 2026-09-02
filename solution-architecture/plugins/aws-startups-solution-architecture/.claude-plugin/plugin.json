@@ -1,0 +1,34 @@
+{
+  "name": "aws-startups-solution-architecture",
+  "displayName": "AWS Startups Solution Architecture",
+  "version": "0.1.0",
+  "description": "Technical AWS solutions for the problems startups get stuck on, from the AWS Startups Solution Architecture team. Multi-tenant SaaS isolation enforced in IAM rather than application code, and running a judgment agent such as an LLM reviewer inside a CI path. Startup here means the technical constraints are startup constraints: no dedicated platform or security team, a cost ceiling that is someone's runway, and a deadline that is a funding milestone. Draws all general-purpose AWS service depth from Agent Toolkit for AWS as an upstream dependency rather than restating it.",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "startups",
+    "startup",
+    "solution-architecture",
+    "multi-tenant",
+    "multitenant",
+    "tenant-isolation",
+    "saas",
+    "noisy-neighbor",
+    "per-tenant-cost",
+    "lean-team",
+    "runway"
+  ],
+  "skills": "./skills/",
+  "dependencies": [
+    {
+      "name": "aws-core",
+      "marketplace": "claude-plugins-official"
+    },
+    {
+      "name": "aws-agents",
+      "marketplace": "claude-plugins-official"
+    }
+  ]
+}
