@@ -2,12 +2,12 @@
 
 ## When to Use Strands (vs. Alternatives)
 
-| Situation                                    | Recommendation       | Why                                                                         |
-| -------------------------------------------- | -------------------- | --------------------------------------------------------------------------- |
-| Building first AI agent on AWS               | **Strands**          | Thinnest abstraction, least vendor lock-in, direct Bedrock integration      |
-| Already invested in LangChain/LangGraph      | Stay on LangChain    | Migration cost isn't worth it unless you're hitting LangChain-specific pain |
-| Need managed multi-agent orchestration       | Bedrock Agents       | If you don't want to manage containers and agent routing yourself           |
-| Simple single-call LLM feature (no tool use) | Direct `InvokeModel` | Strands adds overhead you don't need for prompt-in/text-out                 |
+| Situation                                    | Recommendation       | Why                                                                                                                                                                                                                |
+| -------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Building first AI agent on AWS               | **Strands**          | Thinnest abstraction, least vendor lock-in, direct Bedrock integration                                                                                                                                             |
+| Already invested in LangChain/LangGraph      | Stay on LangChain    | Migration cost isn't worth it unless you're hitting LangChain-specific pain                                                                                                                                        |
+| Need managed multi-agent orchestration       | AgentCore            | Managed runtime/memory/gateway without managing containers or agent routing yourself. (Classic Bedrock Agents is in maintenance mode and closed to new customers as of 2026-07-30 — not an option for new builds.) |
+| Simple single-call LLM feature (no tool use) | Direct `InvokeModel` | Strands adds overhead you don't need for prompt-in/text-out                                                                                                                                                        |
 
 ## TypeScript vs Python: Startup Perspective
 
