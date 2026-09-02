@@ -87,9 +87,9 @@ uv --version 2>/dev/null || echo "UV_MISSING"
 uvx --version 2>/dev/null || echo "UVX_MISSING"
 ```
 
-- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that live `awspricing` MCP estimates need [`uv` / `uvx`](https://docs.astral.sh/uv/). Continue Discover → Clarify → Design. At Estimate, use cached pricing and set `pricing_source: "cached_fallback"` until `uv`/`uvx` is available. **Do not hard-stop** an infrastructure migration for missing `uv`.
+- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that live `awspricing` MCP estimates need [`uv` / `uvx`](https://docs.astral.sh/uv/). Continue Discover → Clarify → Design. At Estimate, price from the cache and set `pricing_source` per the normal hierarchy in `shared/estimate/pricing-mode.md`: `"cached"` for services the cache covers (`"cached_stale"` if the cache is past its staleness threshold), and `"estimated"` / `"unavailable"` for services it doesn't — the MCP cannot be reached to fill the gap. Do not use `"cached_fallback"`; that value means the MCP was attempted and failed, and on this path the MCP was never attempted. **Do not hard-stop** an infrastructure migration for missing `uv`.
 - If both are present: note silently (no user nag) and proceed. Live pricing still depends on the `awspricing` MCP being configured.
-- **Python 3** is required later for `scripts/validate-migration-report.py` at Generate — if `python3` is missing, say so once at cold start as a soft warning (Generate can still be attempted; validation may be skipped per that script's docs).
+- **Python 3** is required later for `$PLUGIN_ROOT/scripts/validate-migration-report.py` at Generate — if `python3` is missing, say so once at cold start as a soft warning. Generate can still complete, but the validator must still be attempted and its exit code handled per `references/shared/validate-migration-report.md` — if it does not run, tell the user validation did not occur. Never report an unvalidated report as passing.
 
 ### Input Security
 
