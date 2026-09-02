@@ -214,7 +214,7 @@ resource "aws_iam_openid_connect_provider" "eks" {
 # AWS Load Balancer Controller
 resource "helm_release" "aws_lb_controller" {
   name       = "aws-load-balancer-controller"
-  repository = "https://aws.github.io/eks-charts"
+  repository = "https://github.com/aws/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
   version    = "1.8.0"
