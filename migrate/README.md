@@ -109,13 +109,13 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 
 **Infrastructure:**
 
-| Capability                 | Base LLM          | This Plugin                                                                                                                   |
-| -------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                       |
-| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts                      |
-| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                               |
-| Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill |
-| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                           |
+| Capability                 | Base LLM          | This Plugin                                                                                                                                                                                         |
+| -------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                                                                                             |
+| Security baseline          | Not included      | `baseline.tf` always emitted by both `gcp-to-aws` and `heroku-to-aws` Generate: GuardDuty, CloudTrail, IMDSv2, EBS encryption, budget alerts; ECR scan-on-push where ECR repositories are generated |
+| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                                                                                                     |
+| Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill                                                                       |
+| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                                                                                                 |
 
 **AI/Agentic:**
 

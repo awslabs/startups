@@ -188,7 +188,7 @@ Always emitted. The baseline applies account-wide security controls that should 
    - `aws_guardduty_detector.baseline` (defense-in-depth; `enable = true`, `finding_publishing_frequency = "FIFTEEN_MINUTES"`)
 
 6. **If `compliance` contains any of `soc2`, `pci`, `hipaa`, `fedramp`, append the compliance-conditional section**, wrapped in `########## Compliance-Conditional ##########` / `########## End Compliance-Conditional ##########` dividers:
-   - `aws_iam_role.config` + `aws_iam_role_policy_attachment` for the managed policy `AWSConfigRole`
+   - `aws_iam_role.config` + `aws_iam_role_policy_attachment` for the managed policy `arn:aws:iam::aws:policy/service-role/AWS_ConfigRole` (note the underscore — `AWSConfigRole` without it is a deprecated policy name and fails apply)
    - `aws_config_configuration_recorder.baseline` with `recording_group { all_supported = true, include_global_resource_types = true }`
    - `aws_config_delivery_channel.baseline` pointing at the Config S3 bucket
    - `aws_config_configuration_recorder_status.baseline` with `is_enabled = true`
