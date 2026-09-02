@@ -1,0 +1,268 @@
+name: AgentCore Reviewer
+
+# Advisory review of solution-architecture changes by the AgentCore reviewer
+# runtime. Judges the criteria a script cannot: whether a contribution is
+# genuinely startup-specific (criterion 1) and whether it overlaps Agent Toolkit
+# for AWS (criterion 2). See solution-architecture/CONTRIBUTING.md.
+#
+# The runtime fetches the diff itself through the GitHub API using its App
+# installation token, so this workflow sends only the coordinates of the pull
+# request. It deliberately does not check out the repository: reading a pull
+# request through the API rather than checking it out is what keeps an untrusted
+# branch from executing anything here.
+#
+# Not executing that content is only half of it. The runtime's prompt also treats
+# everything under review as data rather than as instructions addressed to it, since
+# a pull request can otherwise ask the reviewer to approve it. See the untrusted
+# content rules in skills/agentcore-patterns/references/git-code-reviewer-agent.md.
+# This job holds no write access to the pull request, so the review is published
+# under the App identity and steering the model cannot escalate past what that App
+# is permitted to do.
+#
+# The runtime publishes its own review to the pull request when `submit` is set,
+# using its GitHub App identity. That is why this job sends `submit: true`: the
+# review appears on the pull request the same way whether the runtime is invoked
+# from here or by hand, rather than only rendering in a workflow log.
+#
+# Advisory regardless. This job never fails the build on a verdict, and the review
+# is attributed to the bot rather than counting as a maintainer approval. Verdict
+# stability has not been established: four runs against one unchanged pull request
+# produced REQUEST_CHANGES, APPROVE, REQUEST_CHANGES, APPROVE. A gate that flips on
+# a rerun teaches contributors to ignore it. See
+# skills/agentcore-patterns/references/git-code-reviewer-agent.md.
+#
+# Fork pull requests receive no secrets, so the job self-skips rather than
+# failing with a confusing auth error. contribution-gate.yml covers forks.
+
+# No `workflow_dispatch` inputs on purpose. Checkov CKV_GHA_7 requires them to be
+# empty, since a dispatch input is a user-controlled parameter that can change what
+# the build acts on. To re-review a pull request, push to it or use `gh pr comment`
+# to re-trigger, rather than passing a PR number by hand.
+on:
+  pull_request:
+    paths:
+      - 'solution-architecture/**'
+
+permissions:
+  contents: none
+
+jobs:
+  review:
+    name: Advisory review
+    # Same-repo pull requests only; see the fork note above.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      # The runtime posts its review with its own GitHub App token, so this job
+      # needs no write access to the pull request. OIDC federation is all it uses.
+      id-token: write
+      # A commit status reporting what the reviewer actually did. The Actions check
+      # only reports whether this job ran, and is green whether a review was posted,
+      # the runtime was unreachable, or the job no-opped on missing configuration.
+      statuses: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      AWS_REGION: ${{ vars.AGENTCORE_REVIEWER_REGION || 'us-west-2' }}
+      RUNTIME_ARN: ${{ vars.AGENTCORE_REVIEWER_ARN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      # Posted first so the tip shows the reviewer has picked up this revision,
+      # rather than leaving several minutes of apparent silence.
+      - name: Signal review started
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state=pending \
+            -f context=agentcore-reviewer \
+            -f description="Reviewing this revision" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --silent
+
+      - name: Check configuration
+        id: config
+        run: |
+          set -euo pipefail
+          if [ -z "${RUNTIME_ARN:-}" ] || [ -z "${{ vars.AGENTCORE_REVIEWER_ROLE_ARN }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### AgentCore reviewer not configured"
+              echo ""
+              echo "Set the \`AGENTCORE_REVIEWER_ARN\` and \`AGENTCORE_REVIEWER_ROLE_ARN\`"
+              echo "repository variables. Until then this job no-ops."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials
+        if: steps.config.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          role-to-assume: ${{ vars.AGENTCORE_REVIEWER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: agentcore-reviewer-${{ github.run_id }}
+
+      - name: Invoke reviewer
+        if: steps.config.outputs.configured == 'true'
+        id: invoke
+        run: |
+          set -euo pipefail
+          # The runtime resolves owner, repo, and prNumber, pulls the diff itself,
+          # and with `submit` publishes the review to the pull request under its
+          # App identity.
+          cat > payload.json <<JSON
+          {
+            "owner": "${GITHUB_REPOSITORY%%/*}",
+            "repo": "${GITHUB_REPOSITORY##*/}",
+            "prNumber": ${PR_NUMBER},
+            "submit": true
+          }
+          JSON
+          cat payload.json
+
+          # Retried, because a transient failure otherwise leaves a revision with no
+          # review at all until someone pushes again. A 500 from the runtime did
+          # exactly that on this pull request, and the job still reported success.
+          #
+          # Accepted risk: if an attempt posts the review and then fails to return,
+          # a retry posts a second one. That is the better direction to fail, since
+          # the bot supersedes its own standing verdicts and a duplicate advisory
+          # comment is noise, while a silently unreviewed revision looks like a pass.
+          ATTEMPTS=3
+          INVOKE_RC=1
+          for attempt in $(seq 1 $ATTEMPTS); do
+            # A fresh session id per attempt. Reusing one pins the request to the
+            # warm container that just failed, which is how a retry ends up
+            # reproducing the same fault.
+            SESSION_ID="gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-a${attempt}-pr${PR_NUMBER}-review"
+            while [ ${#SESSION_ID} -lt 33 ]; do SESSION_ID="${SESSION_ID}x"; done
+
+            echo "attempt ${attempt}/${ATTEMPTS} (session ${SESSION_ID})"
+            set +e
+            # content-type is mandatory: without it the runtime returns HTTP 415
+            # before the agent runs.
+            aws bedrock-agentcore invoke-agent-runtime \
+              --region "$AWS_REGION" \
+              --agent-runtime-arn "$RUNTIME_ARN" \
+              --runtime-session-id "$SESSION_ID" \
+              --content-type application/json \
+              --accept application/json \
+              --payload "fileb://payload.json" \
+              response.json
+            INVOKE_RC=$?
+            set -e
+
+            [ $INVOKE_RC -eq 0 ] && break
+
+            if [ "$attempt" -lt "$ATTEMPTS" ]; then
+              BACKOFF=$((attempt * 30))
+              echo "attempt ${attempt} failed (exit ${INVOKE_RC}); retrying in ${BACKOFF}s"
+              sleep "$BACKOFF"
+            fi
+          done
+
+          if [ $INVOKE_RC -ne 0 ]; then
+            # An unreachable runtime must never read as a pass.
+            echo "reachable=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### AgentCore reviewer did not run"
+              echo ""
+              echo "\`invoke-agent-runtime\` failed $ATTEMPTS time(s), last exit $INVOKE_RC, so no verdict was produced."
+              echo "This is **not** an approval. Review criteria 1 and 2 by hand."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "reachable=true" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize the review
+        if: steps.config.outputs.configured == 'true' && steps.invoke.outputs.reachable == 'true'
+        run: |
+          set -euo pipefail
+          # The runtime posts the review itself. This step only reports what it
+          # did, and fails loudly if it could not publish, so a silent
+          # non-review is never mistaken for a clean pass.
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+
+          raw = open("response.json", encoding="utf-8", errors="replace").read().strip()
+          try:
+              data = json.loads(raw)
+          except json.JSONDecodeError:
+              print("### AgentCore reviewer: unparseable output\n")
+              print("No review was published. This is **not** an approval.\n")
+              print("```\n" + raw[:3000] + "\n```")
+              raise SystemExit(0)
+
+          if err := data.get("error"):
+              print("### AgentCore reviewer: error\n")
+              print(f"No verdict was produced: `{err}`\n")
+              print("This is **not** an approval.")
+              raise SystemExit(0)
+
+          verdict = data.get("verdict", "unknown")
+          submitted = data.get("submitted")
+          print("### AgentCore reviewer (advisory)\n")
+          print(
+              f"Verdict `{verdict}` over {data.get('filesReviewed', '?')} file(s), "
+              f"{len(data.get('findings') or [])} finding(s), "
+              f"{len(data.get('borderline') or [])} borderline.\n"
+          )
+          if submitted:
+              print("Published to the pull request as a review by the reviewer App.\n")
+          else:
+              print(
+                  "**Not published.** The runtime returned a verdict but could not post it,"
+                  " usually because its App installation lacks write access to this"
+                  " repository. Treat the criteria as unreviewed.\n"
+              )
+          print(
+              "> Advisory only: it does not approve on a maintainer's behalf and does not"
+              " block. Verdict stability is not established, so a rerun that disagrees is"
+              " expected rather than new information.\n"
+          )
+
+          axes = data.get("axes") or []
+          if axes:
+              print("| Axis | Stance | Note |")
+              print("| --- | --- | --- |")
+              for a in axes:
+                  if not isinstance(a, dict):
+                      continue
+                  note = str(a.get("note", "")).replace("|", "\\|").replace("\n", " ")[:300]
+                  print(f"| `{a.get('axis', '')}` | {a.get('stance', '')} | {note} |")
+              print()
+          PY
+
+      # Always runs. An unresolved pending status would sit on the tip forever, and
+      # would block the merge outright if this context were ever added to required
+      # checks. State is `success` in every outcome because the reviewer is
+      # advisory: the description carries what happened, and a judgment it cannot
+      # settle must not present as a failed check.
+      - name: Signal review finished
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CONFIGURED: ${{ steps.config.outputs.configured }}
+          REACHABLE: ${{ steps.invoke.outputs.reachable }}
+        run: |
+          set -euo pipefail
+          if [ "${CONFIGURED:-}" != "true" ]; then
+            DESC="Not configured, no review performed"
+          elif [ "${REACHABLE:-}" != "true" ]; then
+            DESC="Runtime unreachable, no verdict produced"
+          elif [ -f response.json ]; then
+            DESC="$(jq -r 'if .error then "Runtime returned an error, no verdict" else "\(.verdict // "unknown"): \(.findings//[]|length) finding(s), \(.borderline//[]|length) borderline, review \(if .submitted then "posted" else "not posted" end)" end' response.json 2>/dev/null || echo "Review returned unreadable output")"
+          else
+            DESC="Review did not complete"
+          fi
+          echo "status: ${DESC}"
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+            -f state=success \
+            -f context=agentcore-reviewer \
+            -f description="${DESC:0:139}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --silent

@@ -37,7 +37,7 @@ Read from prompt context (forwarded from llm2bedrock-code-analyzer, llm2bedrock-
   - `files_to_modify` — list of `"<file>: <change>"`. §10 iterates over this exact list.
   - `dependencies_to_replace` — list of `"<old-pkg> -> <new-pkg>"`. §12 applies these to the manifest.
   - `behavior_deltas` — list of parameter-surface differences. The user ALREADY confirmed each one at the orchestration checkpoint; §9 applies the confirmed decisions.
-  - `same_model_family` — `true` for Anthropic 1P → Bedrock Claude. Skip prompt adaptation in §10.
+  - `same_model_family` — `true` when the model itself is unchanged: Anthropic 1P → Bedrock Claude, or OpenAI → the same GPT model on Bedrock (`openai.gpt-5*`). Skip prompt adaptation in §10, and leave model parameters (`temperature`, penalties, stop sequences) untouched — they did not change.
   - `special_patterns` — `{streaming, function_calling, embeddings, vision}` booleans. Drives §8 examples to apply.
 - **From `llm2bedrock-prompt-evaluator`** (T2-4) — adapted prompts (if any) at `<repo>/.saws-migrate/eval-results/adapted_prompts.jsonl`. §10 step 2 injects these where applicable.
 - **`Confirmed behavior-delta decisions file (Read it):`** — a context line naming `<Phase results directory>/delta-decisions.json`. `Read` that file: a JSON array where each entry carries a behavior delta and the user's chosen resolution/option (`[]` = none). §9 applies these EXACTLY as decided.
@@ -152,26 +152,64 @@ If your context has a `Rewrite strategy: mantle` line, use the **Mantle express 
 
 The source SDK stays. Per client, change only three things:
 
-- **base_url** → `https://bedrock-mantle.<REGION>.api.aws/v1` (OpenAI-compatible SDKs) or `https://bedrock-mantle.<REGION>.api.aws/anthropic/v1` (Anthropic SDK).
+- **base_url** → depends on the target model family. Pick from this table; getting it wrong returns 404, not a helpful error:
+
+  | Target model                             | base_url                                               |
+  | ---------------------------------------- | ------------------------------------------------------ |
+  | Proprietary OpenAI GPT (`openai.gpt-5*`) | `https://bedrock-mantle.<REGION>.api.aws/openai/v1`    |
+  | Other OpenAI-compatible targets          | `https://bedrock-mantle.<REGION>.api.aws/v1`           |
+  | Anthropic SDK                            | `https://bedrock-mantle.<REGION>.api.aws/anthropic/v1` |
+
+  If your context has a `Mantle base path` line, use it verbatim — it is authoritative over this table.
 - **Credential** → a Bedrock bearer token, NOT the original provider key, read from the `AWS_BEARER_TOKEN_BEDROCK` env var. Do not leave the old `api_key=os.environ["OPENAI_API_KEY"]` line in place.
 - **Model ID** → the Bedrock model id from the `Mantle model map` context line (the `aws_model_id` from the migration plan).
 
-OpenAI SDK example:
+**When your context has `Same model: true`**, the target is the same model the app already used. Do NOT change model parameters (`temperature`, penalties, stop sequences) — they are unchanged, and §9 will not ask about them. Limit edits to base_url, credential, and model id, plus the Chat Completions → Responses reshape below if the source used Chat Completions.
+
+OpenAI SDK example — proprietary GPT target (note the `openai/v1` path):
 
 ```python
 # Before
 from openai import OpenAI
 client = OpenAI()  # api_key from OPENAI_API_KEY
 
-# After (Mantle — same SDK)
+# After (Mantle — same SDK, same model)
 import os
 from openai import OpenAI
 client = OpenAI(
-    base_url="https://bedrock-mantle.us-east-1.api.aws/v1",
+    base_url="https://bedrock-mantle.us-east-1.api.aws/openai/v1",
     api_key=os.environ["AWS_BEARER_TOKEN_BEDROCK"],
 )
-# model="gpt-4o" -> model="anthropic.claude-haiku-4-5"
+# model="gpt-5.5" -> model="openai.gpt-5.5"
 ```
+
+A bearer token read from the environment expires within 12 hours. When the target repo has a long-running process (a server, worker, or scheduled job rather than a short CLI run), prefer the auto-refreshing client and note the added dependency in `dependency_changes`:
+
+```python
+from aws_bedrock_token_generator import provide_token   # aws-bedrock-token-generator
+from openai import BedrockOpenAI                        # openai>=2.45.0
+
+region = "us-east-1"
+client = BedrockOpenAI(
+    aws_region=region,
+    bedrock_token_provider=lambda: provide_token(region=region),
+    max_retries=6,
+)
+```
+
+**Chat Completions → Responses (proprietary GPT targets only).** Chat Completions is unverified for these models; every AWS sample uses Responses. If the source calls `chat.completions.create`, reshape it — this is the one part of the Mantle lane that is not config-only:
+
+```python
+# Before
+r = client.chat.completions.create(model="gpt-5.5", messages=msgs, max_tokens=512)
+text = r.choices[0].message.content
+
+# After
+r = client.responses.create(model="openai.gpt-5.5", input=msgs, max_output_tokens=512, store=False)
+text = r.output_text
+```
+
+For multi-turn or tool-calling flows, append `r.output` to the next request's `input` — these models emit reasoning items that must round-trip, and dropping them degrades quality silently rather than raising an error.
 
 Anthropic SDK example:
 
@@ -189,7 +227,9 @@ client = anthropic.Anthropic(
 )
 ```
 
-Do NOT rewrite request/response parsing — the whole point of Mantle is that the source SDK's call and response shapes are preserved. After applying the three changes above, skip the Converse-specific guidance in the rest of §8 and the §9 behavior-delta application still applies normally.
+Do NOT rewrite request/response parsing — the whole point of Mantle is that the source SDK's call and response shapes are preserved. The single exception is the Chat Completions → Responses reshape above, which applies only to proprietary GPT targets. After applying the changes above, skip the Converse-specific guidance in the rest of §8; the §9 behavior-delta application still applies normally.
+
+**Converse for a proprietary GPT target is family-dependent.** GPT-5.5 / GPT-5.4 (`openai.gpt-5.5`, `openai.gpt-5.4`) have no `bedrock-runtime` surface — a boto3 `converse()` call against them fails at runtime; if your context pairs one with the Converse path, stop and report the contradiction. GPT-5.6 DOES have a `bedrock-runtime` path via CRIS ids (`us.`/`in.`/`global.` prefixed): when the plan says `migration_path: runtime_openai_cris`, a Converse or Responses rewrite against the CRIS id is valid (base URL `bedrock-runtime.{region}.amazonaws.com/openai/v1` for the OpenAI-compatible APIs; note Guardrails are Converse-only and prompt caching Responses-only on runtime). For a Responses-based source app, the mantle express lane above remains the default and smallest change.
 
 ### Converse rewrite (default)
 

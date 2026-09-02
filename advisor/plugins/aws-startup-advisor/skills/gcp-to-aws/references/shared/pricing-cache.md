@@ -389,54 +389,56 @@ Serverless inference: $0.0000200 per second per GB memory.
 
 See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Legacy models for new migrations.**
 
-| Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                               |
-| -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ---------------------------------------------------- |
-| Claude Fable 5                   | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                               |
-| Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active (intro $2/$10 thru Aug 31, 2026; then $3/$15) |
-| Claude Opus 4.8                  | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                               |
-| Claude Sonnet 4.6                | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                               |
-| Claude Sonnet 4.6 — Long Context | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K+   | flagship  | active                                               |
-| Claude Opus 4.6                  | anthropic.claude-opus-4-6-v1             | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                               |
-| Claude Opus 4.6 — Long Context   | anthropic.claude-opus-4-6-v1             | Anthropic | 5.00       | 25.00       | 200K+   | premium   | active                                               |
-| Claude Opus 4.5                  | —                                        | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                               |
-| Claude Sonnet 4.5                | —                                        | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                               |
-| Claude Sonnet 4.5 — Long Context | —                                        | Anthropic | 6.00       | 22.50       | 200K+   | flagship  | active                                               |
-| Claude Haiku 4.5                 | anthropic.claude-haiku-4-5-20251001-v1:0 | Anthropic | 1.00       | 5.00        | 200K    | fast      | active                                               |
-| Claude Opus 4.1                  | anthropic.claude-opus-4-1-20250805-v1:0  | Anthropic | 15.00      | 75.00       | 200K    | premium   | legacy (EOL Jan 8, 2027)                             |
-| Claude Sonnet 4                  | anthropic.claude-sonnet-4-20250514-v1:0  | Anthropic | 3.00       | 15.00       | 200K    | flagship  | excluded (EOL Oct 14, 2026)                          |
-| Llama 4 Maverick                 | meta.llama4-maverick-17b-instruct-v1:0   | Meta      | 0.24       | 0.97        | 1M      | mid       | active                                               |
-| Llama 4 Scout                    | meta.llama4-scout-17b-instruct-v1:0      | Meta      | 0.17       | 0.66        | 10M     | efficient | active                                               |
-| Llama 3.3 70B                    | meta.llama3-3-70b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | active                                               |
-| Llama 3.2 90B                    | meta.llama3-2-90b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | EOL (Jul 7, 2026)                                    |
-| Nova 2 Lite                      | amazon.nova-2-lite-v1:0                  | Amazon    | 0.33       | 2.75        | 1M      | mid       | active                                               |
-| Nova 2 Pro (Preview)             | amazon.nova-2-pro-v1:0                   | Amazon    | 1.375      | 11.00       | 1M      | flagship  | active                                               |
-| Nova Pro                         | amazon.nova-pro-v1:0                     | Amazon    | 0.80       | 3.20        | 300K    | mid       | active                                               |
-| Nova Pro (latency optimized)     | —                                        | Amazon    | 1.00       | 4.00        | 300K    | mid       | active                                               |
-| Nova Lite                        | amazon.nova-lite-v1:0                    | Amazon    | 0.06       | 0.24        | 300K    | fast      | active                                               |
-| Nova Micro                       | amazon.nova-micro-v1:0                   | Amazon    | 0.035      | 0.14        | 128K    | budget    | active                                               |
-| Nova Premier                     | amazon.nova-premier-v1:0                 | Amazon    | 2.50       | 12.50       | 1M      | reasoning | excluded (EOL Sep 14, 2026)                          |
-| Mistral Large 3                  | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                                               |
-| DeepSeek-R1                      | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                                               |
-| DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active (Sydney only)                                 |
-| gpt-oss-20b                      | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                                               |
-| gpt-oss-120b                     | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                                               |
-| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 4.00       | 20.00       | 1M      | flagship  | active (Mantle/Responses API only)                   |
-| GPT-5.6 Terra                    | openai.gpt-5.6-terra                     | OpenAI    | 2.20       | 13.20       | 1M      | mid       | active (Mantle/Responses API only)                   |
-| GPT-5.6 Luna                     | openai.gpt-5.6-luna                      | OpenAI    | 0.22       | 1.32        | 1M      | fast      | active (Mantle/Responses API only)                   |
-| Gemma 4 31B                      | google.gemma-4-31b                       | Google    | 0.14       | 0.40        | 256K    | mid       | active (Mantle only)                                 |
-| Gemma 4 26B-A4B                  | google.gemma-4-26b-a4b                   | Google    | 0.13       | 0.40        | 256K    | efficient | active (Mantle only)                                 |
-| Gemma 4 E2B                      | google.gemma-4-e2b                       | Google    | 0.04       | 0.08        | 128K    | budget    | active (Mantle only)                                 |
-| Gemma 3 4B IT                    | google.gemma-3-4b-it                     | Google    | 0.04       | 0.08        | 128K    | budget    | active                                               |
-| Gemma 3 12B IT                   | google.gemma-3-12b-it                    | Google    | 0.09       | 0.29        | 128K    | budget    | active                                               |
-| Gemma 3 27B IT                   | google.gemma-3-27b-it                    | Google    | 0.23       | 0.38        | 128K    | efficient | active                                               |
-| MiniMax M2                       | minimax.minimax-m2                       | MiniMax   | 0.30       | 1.20        | 1M      | mid       | active                                               |
-| MiniMax M2.1                     | minimax.minimax-m2.1                     | MiniMax   | 0.30       | 1.20        | 196K    | mid       | active                                               |
-| MiniMax M2.5                     | minimax.minimax-m2.5                     | MiniMax   | 0.30       | 1.20        | 196K    | mid       | active                                               |
-| Jamba 1.5 Large                  | ai21.jamba-1-5-large-v1:0                | AI21 Labs | 2.00       | 8.00        | —       | mid       | legacy (EOL Nov 26, 2026)                            |
-| Jamba 1.5 Mini                   | ai21.jamba-1-5-mini-v1:0                 | AI21 Labs | 0.20       | 0.40        | —       | efficient | legacy (EOL Nov 26, 2026)                            |
-| Jurassic-2 Mid                   | —                                        | AI21 Labs | 12.50      | 12.50       | —       | legacy    | legacy                                               |
-| Jurassic-2 Ultra                 | —                                        | AI21 Labs | 18.80      | 18.80       | —       | legacy    | legacy                                               |
-| Jamba-Instruct                   | —                                        | AI21 Labs | 0.50       | 0.70        | —       | mid       | active                                               |
+| Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                       |
+| -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ------------------------------------------------------------ |
+| Claude Fable 5                   | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                       |
+| Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active (intro $2/$10 thru Aug 31, 2026; then $3/$15)         |
+| Claude Opus 4.8                  | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
+| Claude Sonnet 4.6                | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                       |
+| Claude Sonnet 4.6 — Long Context | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K+   | flagship  | active                                                       |
+| Claude Opus 4.6                  | anthropic.claude-opus-4-6-v1             | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
+| Claude Opus 4.6 — Long Context   | anthropic.claude-opus-4-6-v1             | Anthropic | 5.00       | 25.00       | 200K+   | premium   | active                                                       |
+| Claude Opus 4.5                  | —                                        | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
+| Claude Sonnet 4.5                | —                                        | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                       |
+| Claude Sonnet 4.5 — Long Context | —                                        | Anthropic | 6.00       | 22.50       | 200K+   | flagship  | active                                                       |
+| Claude Haiku 4.5                 | anthropic.claude-haiku-4-5-20251001-v1:0 | Anthropic | 1.00       | 5.00        | 200K    | fast      | active                                                       |
+| Claude Opus 4.1                  | anthropic.claude-opus-4-1-20250805-v1:0  | Anthropic | 15.00      | 75.00       | 200K    | premium   | legacy (EOL Jan 8, 2027)                                     |
+| Claude Sonnet 4                  | anthropic.claude-sonnet-4-20250514-v1:0  | Anthropic | 3.00       | 15.00       | 200K    | flagship  | excluded (EOL Oct 14, 2026)                                  |
+| Llama 4 Maverick                 | meta.llama4-maverick-17b-instruct-v1:0   | Meta      | 0.24       | 0.97        | 1M      | mid       | active                                                       |
+| Llama 4 Scout                    | meta.llama4-scout-17b-instruct-v1:0      | Meta      | 0.17       | 0.66        | 10M     | efficient | active                                                       |
+| Llama 3.3 70B                    | meta.llama3-3-70b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | active                                                       |
+| Llama 3.2 90B                    | meta.llama3-2-90b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | EOL (Jul 7, 2026)                                            |
+| Nova 2 Lite                      | amazon.nova-2-lite-v1:0                  | Amazon    | 0.33       | 2.75        | 1M      | mid       | active                                                       |
+| Nova 2 Pro (Preview)             | amazon.nova-2-pro-v1:0                   | Amazon    | 1.375      | 11.00       | 1M      | flagship  | active                                                       |
+| Nova Pro                         | amazon.nova-pro-v1:0                     | Amazon    | 0.80       | 3.20        | 300K    | mid       | active                                                       |
+| Nova Pro (latency optimized)     | —                                        | Amazon    | 1.00       | 4.00        | 300K    | mid       | active                                                       |
+| Nova Lite                        | amazon.nova-lite-v1:0                    | Amazon    | 0.06       | 0.24        | 300K    | fast      | active                                                       |
+| Nova Micro                       | amazon.nova-micro-v1:0                   | Amazon    | 0.035      | 0.14        | 128K    | budget    | active                                                       |
+| Nova Premier                     | amazon.nova-premier-v1:0                 | Amazon    | 2.50       | 12.50       | 1M      | reasoning | excluded (EOL Sep 14, 2026)                                  |
+| Mistral Large 3                  | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                                                       |
+| DeepSeek-R1                      | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                                                       |
+| DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active (Sydney only)                                         |
+| gpt-oss-20b                      | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                                                       |
+| gpt-oss-120b                     | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                                                       |
+| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 4.40       | 22.00       | 272K    | frontier  | active (mantle in-region + runtime CRIS; 1M tier 8.80/33.00) |
+| GPT-5.6 Terra                    | openai.gpt-5.6-terra                     | OpenAI    | 2.20       | 13.20       | 272K    | flagship  | active (mantle in-region + runtime CRIS; 1M tier 4.40/19.80) |
+| GPT-5.6 Luna                     | openai.gpt-5.6-luna                      | OpenAI    | 0.22       | 1.32        | 272K    | fast      | active (mantle in-region + runtime CRIS; 1M tier 0.44/1.98)  |
+| GPT-5.5                          | openai.gpt-5.5                           | OpenAI    | 5.50       | 33.00       | 272K    | frontier  | active (mantle only; no 1M tier)                             |
+| GPT-5.4                          | openai.gpt-5.4                           | OpenAI    | 2.75       | 16.50       | 272K    | flagship  | active (mantle only; no 1M tier)                             |
+| Gemma 4 31B                      | google.gemma-4-31b                       | Google    | 0.14       | 0.40        | 256K    | mid       | active (Mantle only)                                         |
+| Gemma 4 26B-A4B                  | google.gemma-4-26b-a4b                   | Google    | 0.13       | 0.40        | 256K    | efficient | active (Mantle only)                                         |
+| Gemma 4 E2B                      | google.gemma-4-e2b                       | Google    | 0.04       | 0.08        | 128K    | budget    | active (Mantle only)                                         |
+| Gemma 3 4B IT                    | google.gemma-3-4b-it                     | Google    | 0.04       | 0.08        | 128K    | budget    | active                                                       |
+| Gemma 3 12B IT                   | google.gemma-3-12b-it                    | Google    | 0.09       | 0.29        | 128K    | budget    | active                                                       |
+| Gemma 3 27B IT                   | google.gemma-3-27b-it                    | Google    | 0.23       | 0.38        | 128K    | efficient | active                                                       |
+| MiniMax M2                       | minimax.minimax-m2                       | MiniMax   | 0.30       | 1.20        | 1M      | mid       | active                                                       |
+| MiniMax M2.1                     | minimax.minimax-m2.1                     | MiniMax   | 0.30       | 1.20        | 196K    | mid       | active                                                       |
+| MiniMax M2.5                     | minimax.minimax-m2.5                     | MiniMax   | 0.30       | 1.20        | 196K    | mid       | active                                                       |
+| Jamba 1.5 Large                  | ai21.jamba-1-5-large-v1:0                | AI21 Labs | 2.00       | 8.00        | —       | mid       | legacy (EOL Nov 26, 2026)                                    |
+| Jamba 1.5 Mini                   | ai21.jamba-1-5-mini-v1:0                 | AI21 Labs | 0.20       | 0.40        | —       | efficient | legacy (EOL Nov 26, 2026)                                    |
+| Jurassic-2 Mid                   | —                                        | AI21 Labs | 12.50      | 12.50       | —       | legacy    | legacy                                                       |
+| Jurassic-2 Ultra                 | —                                        | AI21 Labs | 18.80      | 18.80       | —       | legacy    | legacy                                                       |
+| Jamba-Instruct                   | —                                        | AI21 Labs | 0.50       | 0.70        | —       | mid       | active                                                       |
 
 ### Stability AI — Image Generation (per image, US East)
 
@@ -534,17 +536,45 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (DeepSeek)
 
 ### OpenAI on Bedrock (GPT-5.6 and gpt-oss)
 
-**Standard tier** per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (OpenAI).
+See `shared/openai-on-bedrock.md` for model IDs, endpoint paths, regions, quotas, and caching rules. **Bedrock
+in-region is priced at parity with OpenAI's _data residency_ tier — exactly 1.10x OpenAI's standard list price** — so
+a same-model migration costs about 10% MORE, not the same. Do not describe it as cost-neutral.
 
-**GPT-5.6 frontier models** (Sol / Terra / Luna, GA July 13, 2026) — served on the `bedrock-mantle` endpoint via the OpenAI Responses API path only (no Converse / bedrock-runtime, no geo/global inference profiles). In-region rates below reflect the July 30, 2026 price reduction (Luna −80%, Terra −20%) plus a subsequent Sol price reduction (20% lower input, 33.3% lower output, promotional through at least Nov 21, 2026), and are at parity with OpenAI's data-residency tier. Breakpoint pricing at 272K input tokens: >272K (up to 1M) is 2× input / 1.5× output.
+#### Proprietary GPT models — short context (272K), in-region
 
-| Model         | Region                                                                                         | Input $/1M (≤272K) | Output $/1M (≤272K) | Input $/1M (>272K) | Output $/1M (>272K) |
-| ------------- | ---------------------------------------------------------------------------------------------- | ------------------ | ------------------- | ------------------ | ------------------- |
-| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                                                                   | 4.00               | 20.00               | 8.00               | 36.00               |
-| GPT-5.6 Terra | US East (N. Virginia / Ohio), US West (Oregon), AWS GovCloud (US-West), AWS GovCloud (US-East) | 2.20               | 13.20               | 4.40               | 19.80               |
-| GPT-5.6 Luna  | US East (N. Virginia / Ohio), US West (Oregon), AWS GovCloud (US-West), AWS GovCloud (US-East) | 0.22               | 1.32                | 0.44               | 1.98                |
+Regions (mantle): us-east-1 / us-east-2 for all five; us-west-2 additionally carries Terra, Luna and GPT-5.4; AWS GovCloud us-gov-west-1 / us-gov-east-1 carry Terra and Luna, us-gov-west-1 also GPT-5.4 (at its own rate below). Rates reflect the July 30, 2026 reduction (Luna −80%, Terra −20%) and the Aug 21, 2026 Sol reduction (−20% input / −33% output, promotional through at least Nov 21, 2026).
 
-**gpt-oss open-weight models:**
+| Model         | Input $/1M | Output $/1M | Cache write $/1M | Cache read $/1M |
+| ------------- | ---------- | ----------- | ---------------- | --------------- |
+| GPT-5.6 Sol   | 4.40       | 22.00       | 5.50             | 0.44            |
+| GPT-5.6 Terra | 2.20       | 13.20       | 2.75             | 0.22            |
+| GPT-5.6 Luna  | 0.22       | 1.32        | 0.275            | 0.022           |
+| GPT-5.5       | 5.50       | 33.00       | —                | 0.55            |
+| GPT-5.4       | 2.75       | 16.50       | —                | 0.275           |
+
+#### Long context (1M) — GPT-5.6 only, 2.0x input / 1.5x output
+
+| Model         | Input $/1M | Output $/1M |
+| ------------- | ---------- | ----------- |
+| GPT-5.6 Sol   | 8.80       | 33.00       |
+| GPT-5.6 Terra | 4.40       | 19.80       |
+| GPT-5.6 Luna  | 0.44       | 1.98        |
+
+A workload above 272K context must be priced at the long-context tier. GPT-5.5 and GPT-5.4 have no such tier, so
+their usable window is 272K. Global CRIS is published at OpenAI's standard list price (cost parity, GPT-5.6 only —
+see `openai-on-bedrock.md`). GovCloud GPT-5.4 is 3.30 / 19.80.
+
+> **One source conflict.** These models are absent
+> from the AWS Price List API entirely: querying `AmazonBedrock` returns only `gpt-oss` and GPT OSS Safeguard, and
+> filtering on `GPT-5` or a `gpt-5` usage type returns zero rows (price-list publication 2026-08-04). The `awspricing`
+> MCP cannot price them, and an empty result is **not** evidence the model is unavailable. (An earlier revision also
+> flagged the AWS News Blog's Luna 0.20 / 1.20 as conflicting; it is the Global CRIS rate, not an error.)
+
+**Prompt caching (GPT-5.6 only):** cached input read at a 90% discount, cache write at 1.25x uncached input, minimum
+1,024-token prefix, up to 4 breakpoints, ≥30-minute retention. Cached input is exempt from the input-TPM quota.
+GPT-5.5 and GPT-5.4 do not list prompt caching support.
+
+#### Open-weight gpt-oss
 
 | Model        | Region                | Input $/1M | Output $/1M |
 | ------------ | --------------------- | ---------- | ----------- |
@@ -789,24 +819,34 @@ Prices per 1M tokens. Source: [ai.google.dev/gemini-api/docs/pricing](https://ai
 
 Prices per 1M tokens. GPT-5.5 and GPT-5.5 Pro use the same breakpoint pricing structure as GPT-5.4 at 272K input tokens. GPT-5.4 and GPT-5.4 Pro use **breakpoint pricing** at 272K input tokens: rates below are for <272K context; above 272K, input is 2x and output is 1.5x.
 
-| Model        | Input $/1M | Output $/1M | Context | Tier      |
-| ------------ | ---------- | ----------- | ------- | --------- |
-| GPT-5.5      | 5.00       | 30.00       | 1M      | flagship  |
-| GPT-5.5 Pro  | 30.00      | 180.00      | 1M      | premium   |
-| GPT-5.4      | 2.50       | 15.00       | 1.05M   | flagship  |
-| GPT-5.4 Mini | 0.75       | 4.50        | —       | fast      |
-| GPT-5.4 Nano | 0.20       | 1.25        | —       | budget    |
-| GPT-5.4 Pro  | 30.00      | 180.00      | 1.05M   | premium   |
-| GPT-5.2      | 1.75       | 14.00       | 200K    | flagship  |
-| GPT-5.1      | 1.25       | 10.00       | 200K    | flagship  |
-| GPT-5 Mini   | 0.25       | 2.00        | 200K    | fast      |
-| GPT-5 Nano   | 0.05       | 0.40        | 128K    | budget    |
-| GPT-4.1      | 2.00       | 8.00        | 1M      | flagship  |
-| GPT-4.1 Mini | 0.40       | 1.60        | 1M      | fast      |
-| GPT-4.1 Nano | 0.10       | 0.40        | 1M      | budget    |
-| GPT-4o       | 2.50       | 10.00       | 128K    | flagship  |
-| o3           | 2.00       | 8.00        | 200K    | reasoning |
-| o4-mini      | 1.10       | 4.40        | 200K    | reasoning |
+> **Tier note — these rows are OpenAI's STANDARD tier.** Bedrock in-region for the same models is priced at OpenAI's
+> _data residency_ tier, exactly 1.10x the figures below (see the **OpenAI on Bedrock** section above). So for
+> GPT-5.6 Sol / Terra / Luna, GPT-5.5 and GPT-5.4 a same-model move is a ~10% increase, not parity — compute it from
+> the Bedrock table, not by assuming these numbers carry over. The rows below are the right source-side baseline for
+> a customer on OpenAI standard, and remain the only figures available for models with **no** Bedrock equivalent
+> (GPT-5.x Pro, GPT-5.2/5.1, GPT-4.x, o-series).
+
+| Model         | Input $/1M   | Output $/1M  | Context | Tier      |
+| ------------- | ------------ | ------------ | ------- | --------- |
+| GPT-5.6 Sol   | _unverified_ | _unverified_ | 1M      | frontier  |
+| GPT-5.6 Terra | _unverified_ | _unverified_ | 1M      | flagship  |
+| GPT-5.6 Luna  | 0.20         | 1.20         | 1M      | fast      |
+| GPT-5.5       | 5.00         | 30.00        | 1M      | flagship  |
+| GPT-5.5 Pro   | 30.00        | 180.00       | 1M      | premium   |
+| GPT-5.4       | 2.50         | 15.00        | 1.05M   | flagship  |
+| GPT-5.4 Mini  | 0.75         | 4.50         | —       | fast      |
+| GPT-5.4 Nano  | 0.20         | 1.25         | —       | budget    |
+| GPT-5.4 Pro   | 30.00        | 180.00       | 1.05M   | premium   |
+| GPT-5.2       | 1.75         | 14.00        | 200K    | flagship  |
+| GPT-5.1       | 1.25         | 10.00        | 200K    | flagship  |
+| GPT-5 Mini    | 0.25         | 2.00         | 200K    | fast      |
+| GPT-5 Nano    | 0.05         | 0.40         | 128K    | budget    |
+| GPT-4.1       | 2.00         | 8.00         | 1M      | flagship  |
+| GPT-4.1 Mini  | 0.40         | 1.60         | 1M      | fast      |
+| GPT-4.1 Nano  | 0.10         | 0.40         | 1M      | budget    |
+| GPT-4o        | 2.50         | 10.00        | 128K    | flagship  |
+| o3            | 2.00         | 8.00         | 200K    | reasoning |
+| o4-mini       | 1.10         | 4.40         | 200K    | reasoning |
 
 ## Security Baseline
 

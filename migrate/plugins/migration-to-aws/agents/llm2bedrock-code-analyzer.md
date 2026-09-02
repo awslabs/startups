@@ -124,7 +124,11 @@ Determine:
 1. **Source provider** (the value emitted in `source_provider`): one of `openai` / `anthropic` (1P) / `google` (Gemini, including Vertex AI) / `cohere` / `custom` (OpenAI-compatible). §7.1.2 below distinguishes Vertex AI internally for §12 only — the public enum stays at these 5 values so downstream agents don't need to learn a new branch.
 2. **AI framework**: raw SDK / LangChain / LlamaIndex / Vercel AI SDK / custom
 3. **SDK version**: read from lockfile or manifest
-4. **Same model family**: defaults to `false`. Set `same_model_family: true` ONLY when ALL plan model mappings go from Anthropic 1P (direct `anthropic` SDK) to Bedrock Claude — in that case the prompt-adaptation step is skipped downstream. Mixed projects (e.g. chat=Anthropic→Claude AND embeddings=OpenAI→Cohere) → `false`.
+4. **Same model family**: defaults to `false`. Set `same_model_family: true` when ALL plan model mappings keep the model itself, which is now true in two cases:
+   - Anthropic 1P (direct `anthropic` SDK) → Bedrock Claude, and
+   - OpenAI → **the same OpenAI model on Bedrock**, i.e. every `aws_model_id` is a proprietary GPT model (`openai.gpt-5*`) matching its `source_model`.
+
+   In both cases the prompt-adaptation step is skipped downstream, because the model is unchanged. Mixed projects (e.g. chat=Anthropic→Claude AND embeddings=OpenAI→Cohere) → `false`. A GPT source mapped to Claude/Nova/`gpt-oss` is a model change → `false`.
 
 ## 7.1.1 Disambiguate `openai` vs OpenAI-compatible
 
@@ -240,6 +244,8 @@ If `source_provider ∈ {openai, google}` AND `same_model_family == false`, scan
 
 For any other source_provider (`anthropic`, `cohere`, `custom`) OR `same_model_family == true`, set `behavior_deltas: []` and skip the rest of this section.
 
+**Exception — OpenAI same-model on mantle.** When `source_provider == openai` AND `same_model_family == true` (every target is a proprietary `openai.gpt-5*` model), do NOT emit `behavior_deltas: []` wholesale. The model is unchanged, so the parameter-surface deltas (temperature range, penalties, stop sequences) genuinely do not apply — but the **API surface** can still change. Read only the "Same-model (mantle) deltas" section of the reference's `openai-to-bedrock.md` and emit those: Chat Completions → Responses, reasoning items round-tripping, endpoint path and credential, and prompt-caching availability. Skipping these would leave a `chat.completions.create` call pointed at a model that does not verifiably accept it.
+
 1. Read the `behavior-delta-detection` reference at the absolute path given in your
    context block's `behavior-delta-detection reference:` line. Call that file's directory
    `<BDD_DIR>` (strip the filename from that path).
@@ -308,7 +314,7 @@ find <REPO> -type f \( \( -name "*.json" -path "*langsmith*" \) -o \( -name "*.j
 
 - `cohere` / `custom` / `unknown` / empty — no stable HTTP contract callable with stdlib alone.
 - `errors` contains the EXACT substring `vertex AI auth detected (ADC, not API key)` (per §7.1.2) — Vertex AI uses ADC, not API keys; pasting a Gemini API key against Vertex would 401. Match the full phrase to avoid false hits from other `errors` entries that happen to contain "vertex".
-- `same_model_family == true` (Anthropic 1P → Bedrock Claude) — the evaluator skips quality scoring entirely, so a live baseline adds no value.
+- `same_model_family == true` (Anthropic 1P → Bedrock Claude, or OpenAI → the same GPT model on Bedrock) — the evaluator skips quality scoring entirely, so a live baseline adds no value. The source and target are the same model, so a baseline would be comparing it against itself.
 
 Set `source_baseline_available` from the `Source baseline available:` line in your context — the orchestration skill sets it to `true` when the user already supplied a key in Phase B3, `false` otherwise. Echo that value; do not hardcode either way (hardcoding `false` would clobber an already-collected key's signal for the evaluator downstream).
 

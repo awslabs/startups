@@ -271,7 +271,8 @@ first failing model) plus `failing_models` (all failing ids); per-model verdicts
 
 - `ok == false` + `reason: credentials` → show the detail (configure/refresh credentials), stop; user re-runs after fixing.
 - `ok == false` + `reason: model_access` → model access not enabled in the Bedrock console (NOT an IAM problem): point the user at the console Model access page for the failing models, stop; re-run B4 after they enable it.
-- `ok == false` + `reason: authz` → IAM denies `bedrock:InvokeModel`: tell user the IAM action to grant; stop.
+- `ok == false` + `reason: authz` → IAM denies inference. For a Converse/InvokeModel target the action to grant is `bedrock:InvokeModel`; for a mantle-only `openai.gpt-5*` target it is the `bedrock-mantle:*` set (see B4a). The `detail` names which. Tell the user the action to grant; stop.
+- `ok == false` + `reason: mantle_deps_missing` → the pinned scripts environment lacks `openai` / `aws-bedrock-token-generator`, so a mantle-only target could not be probed at all. This is an environment fault, not a Bedrock verdict: tell the user to re-sync (`uv sync --project $SCRIPTS`) and stop. Do NOT proceed — access was never verified.
 - `ok == false` + `reason: model_unavailable` → Read the `resolve-bedrock-model-id` reference at `$HELPERS/resolve-bedrock-model-id/resolve-bedrock-model-id.md` and follow its procedure with each ID from `failing_models` + region. AskUserQuestion with the candidates: "Use `<candidate>` (cross-region inference profile)" / "Paste a different model ID" / "Abort". On a choice, replace the ID in `$TARGET_MODELS` and re-run B4.
 - `ok == false` + any other `reason` → show `detail` and stop.
 - `ok == true` → proceed. Surface any `quota_warning`, and any model whose `reason` is
@@ -444,6 +445,16 @@ prior-phase file paths), then validate its output file:
 - `model_unresolvable` → user picks/pastes an ID → record it in
   `resolved_model_overrides`, fold it into the Target line
 - `source_key_auth` → user supplies a new key (re-run B3) or sets baseline unavailable
+- `authz` → IAM denies inference. The `detail` names the action set to grant:
+  `bedrock:InvokeModel*` for a Converse target, or the `bedrock-mantle:*` actions
+  (`CreateInference`, `CallWithBearerToken`) for a mantle-only `openai.gpt-5*` target.
+  User fixes IAM; nothing fingerprinted changes, so re-dispatch the blocked phase only.
+  Do NOT route this to `model_access` — the console Model access page is the wrong fix
+  for an IAM denial and vice versa.
+- `mantle_deps_missing` → the pinned scripts environment lacks `openai` /
+  `aws-bedrock-token-generator`, so a mantle target could not be probed at all. User
+  re-syncs (`uv sync --project $SCRIPTS`); re-dispatch the blocked phase only. Access was
+  never verified, so do not treat a previous pass as still valid.
 - `assess_output_missing` → re-run Phase A, then restart Phase C at C0
 
 After ANY resolution, re-run the C0 recipe (rebuild current-context, apply the invalidation
@@ -475,9 +486,15 @@ Below, AskUserQuestion:
 
 **Gate (a.5) — Rewrite strategy (from migration plan).** Read `migration_path` from
 `$MIGRATION_DIR/aws-design-ai.json` → `ai_architecture.code_migration.migration_path`.
-If the value is `"mantle"`, set `rewrite_strategy = "mantle"`. Otherwise (value is
-`"converse"`, `"gpt-oss"`, or the field is absent), set `rewrite_strategy = "converse"`.
+If the value **starts with** `"mantle"` (`"mantle"`, `"mantle_openai_responses"`), set
+`rewrite_strategy = "mantle"`. Otherwise (value is `"converse"`, `"gpt-oss"`, or the field is
+absent), set `rewrite_strategy = "converse"`.
 No user question needed — the decision was already made during the Assess/Design phase.
+
+Match on the prefix, not on equality: Design writes the more specific
+`"mantle_openai_responses"` for a same-model OpenAI migration, and an equality check against
+`"mantle"` would silently route those runs down the Converse path — rewriting working
+same-model code into a boto3 Converse client against a model that has no Converse surface.
 
 **Gate (b) — Behavior-delta resolution.** For each `analysis.behavior_deltas[]` with
 `user_visible == true`, AskUserQuestion with the options from the `behavior-delta-detection`
@@ -506,6 +523,14 @@ When `rewrite_strategy == "mantle"`, C5's context block ALSO includes:
   signal for the default Converse path)
 - `Mantle model map: <source-model> -> <bedrock-model-id>` — sourced from the plan's
   `ai_architecture.bedrock_models[]` entries (each `source_model` → `aws_model_id` pair).
+- `Mantle surface: responses` and `Mantle base path: /openai/v1` when any mapped
+  `aws_model_id` is a proprietary GPT model (`openai.gpt-5*`). These are served only on the
+  `/openai/v1` path via the Responses API — distinct from the `v1` path other mantle models
+  use — so the rewriter must not emit a `/v1` base URL or a Chat Completions call for them.
+  See `gcp-to-aws/references/shared/openai-on-bedrock.md`.
+- `Same model: true` when `bedrock_models[].model_change` is `false`. Signals the rewriter to
+  keep model parameters untouched and limit changes to the endpoint, credential, model id, and
+  (if the source used Chat Completions) the surface reshape.
 
 ### C7 — Render summary
 
