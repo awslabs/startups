@@ -240,8 +240,14 @@ days for automated abuse detection; retained inputs/outputs are stored and proce
 OpenAI unless the customer opts in. Prompts and completions are not used to train models. Calls run under the
 customer's IAM policies, inside their VPC, logged to CloudTrail, and in-region inference keeps data in-region.
 
-**Codex on Bedrock is GA** with pay-per-token pricing, inference through Bedrock, and usage counting toward AWS
-commitments — relevant when the source workload is a coding agent.
+**Codex on Bedrock: unverified — do not price it.** An earlier revision of this file stated Codex is GA on Bedrock
+with pay-per-token pricing. As of 2026-09-02, Codex does not appear on the
+[OpenAI model card index](https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards-openai.html), and no
+Codex rate exists on the Bedrock pricing page, in `pricing-cache.md`, or in `bedrock_pricing.py`'s static table.
+When the source workload is a coding agent, re-check the model card index first; if Codex is still absent, treat it
+as "a model not in the catalog above" (see the table in this section): plan a cross-family target (GPT-5.6 Sol /
+Terra are the coding-agent tier fits) and price that target — or report `pricing_source: "unverified"` with no
+dollar figure. Never attach a fabricated Codex rate to an estimate.
 
 ---
 

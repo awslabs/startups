@@ -458,17 +458,31 @@ Image editing services (inpaint, erase, upscale, etc.) are priced at $0.03–$0.
 
 Per 1M tokens unless noted. See [Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) for full regional and tier tables.
 
+> **Batch support verified 2026-09-02** against the
+> [supported Regions and models for batch inference](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html)
+> table: **Opus 4.6, Sonnet 4.6, Opus 4.5, Sonnet 4.5, and Haiku 4.5 are listed** (via cross-region inference
+> profiles; batch is 50% of on-demand per the pricing page, matching the rows below). **Fable 5, Sonnet 5, and
+> Opus 4.8 are NOT on that table** — their batch cells below are **unverified (†)**: do not build a batch-discount
+> TCO on them; price on-demand and note batch as a possible future saving pending the docs table listing them.
+> Prompt-cache columns are unaffected (caching support is independent of batch).
+> **Do not cross-check these rows against the AWS Pricing Calculator** — as of Sep 2026 the calculator carries no
+> batch metered IDs for Opus 4.6 / Sonnet 4.6 and collapses other batch/cache SKUs (known calculator defect, not a
+> pricing-page signal). The pricing page and the docs table above are the sources of truth.
+
 | Model                    | Batch in | Batch out | 5m cache write | 1h cache write | Cache read |
 | ------------------------ | -------- | --------- | -------------- | -------------- | ---------- |
-| Claude Fable 5           | 5.00     | 25.00     | 12.50          | 20.00          | 1.00       |
-| Claude Sonnet 5          | 1.00     | 5.00      | 2.50           | 4.00           | 0.20       |
-| Claude Opus 4.8          | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
+| Claude Fable 5           | 5.00 †   | 25.00 †   | 12.50          | 20.00          | 1.00       |
+| Claude Sonnet 5          | 1.00 †   | 5.00 †    | 2.50           | 4.00           | 0.20       |
+| Claude Opus 4.8          | 2.50 †   | 12.50 †   | 6.25           | 10.00          | 0.50       |
 | Claude Sonnet 4.6 (+ LC) | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
 | Claude Opus 4.6 (+ LC)   | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
 | Claude Opus 4.5          | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
 | Claude Haiku 4.5         | 0.50     | 2.50      | 1.25           | 2.00           | 0.10       |
 | Claude Sonnet 4.5        | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
 | Claude Sonnet 4.5 — LC   | 3.00     | 11.25     | 7.50           | 12.00          | 0.60       |
+
+† Not listed on the batch-supported models table as of 2026-09-02 — rate is the standard 50%-of-on-demand
+projection, not a confirmed SKU. Treat as `unverified` in estimate output.
 
 ### AI21 Labs
 
