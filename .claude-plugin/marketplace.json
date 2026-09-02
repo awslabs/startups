@@ -4,6 +4,9 @@
     "name": "Amazon Web Services"
   },
   "description": "AI-powered build and migrate guidance from AWS, built for startups at any stage.",
+  "allowCrossMarketplaceDependenciesOn": [
+    "claude-plugins-official"
+  ],
   "plugins": [
     {
       "name": "migration-to-aws",
@@ -16,6 +19,12 @@
       "source": "./advisor/plugins/aws-startup-advisor",
       "version": "2.0.0",
       "description": "Personalized AWS guidance built on patterns from 350,000+ startups—architecture, cost, security, and migration, now including the full migration toolkit. Build on AWS (day-one setup, security baselines, production architecture, cost optimization) and migrate to AWS from GCP or Heroku: infrastructure (Cloud Run/Dynos → Fargate, databases → RDS/Aurora), OpenAI/Gemini/Anthropic workloads to Amazon Bedrock, agentic systems (LangChain, CrewAI, AutoGen), and Temporal workers. Generates runnable Terraform, migration scripts, provider adapters, and deployment artifacts, with honest model-by-model pricing comparisons so you know exactly when Bedrock saves money and when it doesn't. Plus knowledge-base-for-startups (Activate FAQ, credits, offers, sample architectures, learn articles), prompt-library-for-startups (copy-paste prompts + installable agents), start-building-for-startups (interactive scaffolding), and agent-advisor (agent runtime selection). Includes AWS Activate credits eligibility and 60+ exclusive startup offers. Built by AWS Startup Solutions Architects, with multi-account, multi-region support."
+    },
+    {
+      "name": "aws-startups-solution-architecture",
+      "source": "./solution-architecture/plugins/aws-startups-solution-architecture",
+      "version": "0.1.0",
+      "description": "Technical AWS solutions for the problems startups get stuck on, from the AWS Startups Solution Architecture team. Multi-tenant SaaS isolation enforced in IAM rather than application code, and running a judgment agent such as an LLM reviewer inside a CI path. Draws all general-purpose AWS service depth from Agent Toolkit for AWS (aws-core, aws-agents) as upstream dependencies rather than restating it."
     }
   ]
 }
