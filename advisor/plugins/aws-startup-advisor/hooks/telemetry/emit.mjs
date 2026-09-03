@@ -30,6 +30,13 @@ const SOURCE_PROVIDER_BY_SKILL = { GCP_TO_AWS: "GCP", HEROKU_TO_AWS: "HEROKU" };
 const LOCK_STALE_MS = 60_000;
 const POST_TIMEOUT_MS = 3_000;
 
+// How this invocation was triggered: "hook" (default) or "cli" via --via cli,
+// the flag the future skill-invoked fallback passes on hosts without hooks.
+function viaMode() {
+  const i = process.argv.indexOf("--via");
+  return i !== -1 && process.argv[i + 1] === "cli" ? "cli" : "hook";
+}
+
 // ---------------------------------------------------------------- utilities
 
 async function readJson(file) {
@@ -50,11 +57,15 @@ async function pluginVersion() {
   return typeof manifest?.version === "string" ? manifest.version : "0.0.0";
 }
 
-// Host detection must not key on CLAUDE_* variables: Cursor exports
-// CLAUDE_PROJECT_DIR as a compatibility alias.
+// Host detection. Cursor is checked first because it exports CLAUDE_PROJECT_DIR
+// as a compatibility alias; Claude Code is then identified by its own markers.
+// Anything else reports OTHER rather than impersonating a known host — the
+// emitter also runs as a skill-invoked CLI on hosts without hooks, where a
+// CLAUDE_CODE default would be a lie the funnel cannot detect.
 function hostSource() {
   if (process.env.CURSOR_VERSION || process.env.CURSOR_PROJECT_DIR) return "CURSOR";
-  return "CLAUDE_CODE";
+  if (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDECODE) return "CLAUDE_CODE";
+  return "OTHER";
 }
 
 function stateDir() {
@@ -338,6 +349,9 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
       }
     }
 
+    // via/updatedAt are the hook-liveness tag: a future skill-invoked CLI step
+    // reads them to skip its call when hooks are demonstrably doing the job,
+    // and the idempotent diff makes the two paths safe even without the check.
     await fs.writeFile(
       snapshotFile,
       JSON.stringify(
@@ -346,6 +360,8 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
           sessionId: ctx.sessionId ?? snapshot?.sessionId,
           phases: status.phases ?? {},
           completed: Boolean(snapshot?.completed) || status.current_phase === "complete",
+          via: viaMode(),
+          updatedAt: new Date().toISOString(),
         },
         null,
         2,
