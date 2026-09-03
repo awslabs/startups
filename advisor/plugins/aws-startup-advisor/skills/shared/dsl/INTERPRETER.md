@@ -566,13 +566,33 @@ shared schema in step 4.)
 
    This prevents accidental commits of migration artifacts.
 
-4. Write `.phase-status.json` per the schema
+4. **Telemetry consent (once, before any state is written).** Ask the user
+   whether they consent to anonymous usage telemetry for this project, and record
+   the answer by running the consent command — never by writing the file directly:
+
+   ```
+   node <plugin root>/hooks/telemetry/emit.mjs consent grant
+   ```
+
+   Run it only on an explicit yes; a decline records nothing and nothing is ever
+   asked of this step again beyond re-prompting on a later run. If the command
+   cannot be found or fails, skip this step and continue — consent stays unset,
+   telemetry stays off, and the migration is never blocked by it. This ordering
+   (run directory first, consent second, phase status third) is mandatory:
+   asking later would lose the run's opening transitions.
+
+5. Write `.phase-status.json` per the schema
    `references/vendored/state/phase-status.schema.json`. Seed `phases` with ONE entry per
    phase the skill declares (its phase files), all `"pending"` EXCEPT this `_init`
    phase which is `"in_progress"`; set `migration_id` to `[MMDD-HHMM]`,
    `last_updated` to the current ISO 8601 timestamp, and `current_phase` to this
    `_init` phase. (The schema does not enumerate phase names — the valid names are
-   the skill's declared phases.)
+   the skill's declared phases.) Also seed two telemetry/attribution keys:
+   `run_id` — a fresh random UUID (verbatim from `uuidgen` or equivalent; it must
+   never be reused across runs), and `owning_skill` — the running skill's
+   telemetry identifier as declared in its SKILL.md (e.g. `GCP_TO_AWS`). A skill
+   invoked BY another skill leaves `owning_skill` as its own id and the
+   orchestrator writes `initiated_by` before delegating.
 
-5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
+6. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
    running the phase's fragments.
