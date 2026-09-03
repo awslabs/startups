@@ -8,7 +8,7 @@ Verify all pricing via AWS Pricing MCP or `references/shared/pricing-cache.md`.
 
 **Model lifecycle:** Before recommending any Bedrock model, check `references/shared/ai-model-lifecycle.md`. Do not recommend Legacy models as primary selections for new migrations. Legacy models are annotated below where they appear.
 
-**Recommend defaults (Jul 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to any Claude Fable / Mythos frontier model (Fable 5, Fable 5.1, and successors).
+**Recommend defaults (Sep 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to any Claude Fable / Mythos frontier model (Fable 5, Fable 5.1, and successors).
 
 ---
 
@@ -31,7 +31,7 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 **Migration case by tier:**
 
 - Gemini 3.5 Flash → Bedrock: **strong cost case** — Nova Lite is 94% cheaper; even Claude Sonnet 5 is close at $2/$10 vs $1.50/$9.00
-- Gemini 3.1 Pro → Bedrock: driven by AWS consolidation, agentic reliability, or ecosystem — NOT cost or general benchmarks
+- Gemini 3.1 Pro → Bedrock: driven by AWS consolidation, agentic reliability, or ecosystem; Sonnet 5 at $2/$10 adds a modest (~12%) cost edge, but the case is not cost-led and not general benchmarks
 - Gemini 3.1 Flash-Lite → Nova Lite/Micro: still 76-88% cheaper, strong cost case
 - Gemini 2.5 Pro → Bedrock: moderate case (older model)
 

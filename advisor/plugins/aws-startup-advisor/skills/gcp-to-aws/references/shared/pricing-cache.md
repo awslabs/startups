@@ -1,6 +1,6 @@
 # AWS Pricing Cache
 
-**Last updated:** 2026-09-03
+**Last updated:** 2026-08-24
 **Region:** us-east-1
 **Currency:** USD
 **Accuracy:** ±5-10% for infrastructure services (sourced from AWS Price List API), ±15-25% for AI models (sourced from public pricing pages)

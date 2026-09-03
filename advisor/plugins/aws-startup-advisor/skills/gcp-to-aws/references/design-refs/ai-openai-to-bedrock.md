@@ -11,7 +11,7 @@ caching rules, and pricing provenance. Read it before applying this file. Do not
 **Model lifecycle:** before recommending any Bedrock model, check `references/shared/ai-model-lifecycle.md`. Do not
 recommend Legacy models as primary selections for new migrations.
 
-**Recommend defaults (Jul 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to any Claude Fable / Mythos frontier model (Fable 5, Fable 5.1, and successors).
+**Recommend defaults (Sep 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to any Claude Fable / Mythos frontier model (Fable 5, Fable 5.1, and successors).
 
 ---
 
@@ -191,7 +191,7 @@ Used for Tier 1 Option B. Source prices are OpenAI's own; Bedrock prices are the
 | GPT-4                       | 30.00 / 60.00   | Claude Sonnet 5      | 2.00 / 10.00  | Bedrock 88% cheaper                      |
 | GPT-3.5 Turbo               | 0.50 / 1.50     | GPT-5.6 Luna         | 0.22 / 1.32   | Bedrock 30% cheaper + far better quality |
 
-For the rows where the source is cheaper (GPT-5.2, GPT-5.1/5, GPT-4.1, GPT-4o), note that these models are on a
+For the rows where the source is still cheaper (GPT-5.1/5, GPT-4.1), note that these models are on a
 vendor deprecation path anyway; Option A (GPT-5.6 on Bedrock) is usually the better framing than defending a stale
 model on price.
 
