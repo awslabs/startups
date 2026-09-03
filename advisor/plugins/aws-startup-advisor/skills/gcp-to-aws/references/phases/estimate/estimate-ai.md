@@ -123,7 +123,7 @@ Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, p
 
 **Non-cost benefits to present:** usage counting toward existing AWS commitments, IAM/VPC/PrivateLink/KMS/CloudTrail governance, in-region processing for data residency, prompt caching (Claude, and GPT-5.6 at 90% off cached input with cached tokens exempt from the input-TPM quota), model flexibility (100+ models), AWS ecosystem (Guardrails, Knowledge Bases, AgentCore), and — for a same-model move — the elimination of behavior-delta and prompt-regression risk.
 
-**Pricing source caveat for OpenAI models:** the AWS Price List API does not carry the proprietary GPT-5.x models, so the `awspricing` MCP returns no rows for them. An empty result is **not** evidence the model is unavailable or free. Use `shared/pricing-cache.md`, and treat rows marked `unverified` there as blocking for any quoted figure — resolve them from the Bedrock pricing page first. See `shared/openai-on-bedrock.md`.
+**Pricing source caveat (all providers):** a `pricing-cache.md` cell marked `_unverified_` is **blocking for any quoted figure, whatever the provider** — resolve it from the Bedrock pricing page or the model card before the row enters `model_comparison` or the ROI table; never substitute a guess or a same-tier sibling's rate. The most common cause is the AWS Price List API: it does not carry the proprietary GPT-5.x models (so the `awspricing` MCP returns no rows for them) and it lags new Anthropic frontier launches. An empty MCP result is **not** evidence the model is unavailable or free. See `shared/openai-on-bedrock.md`.
 
 **Note:** Human/professional-services one-time migration costs are intentionally out of scope for this advisor and excluded from ROI calculations.
 
