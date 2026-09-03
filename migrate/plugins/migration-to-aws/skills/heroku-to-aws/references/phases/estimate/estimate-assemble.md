@@ -102,7 +102,7 @@ After writing `estimation-infra.json`, present a concise summary to the user:
 4. **Per-service cost breakdown** (balanced tier, 1 line per service)
 5. **Migration complexity**: tier + timeline range
 6. **Monthly and annual savings** (or increase) vs Heroku per tier (if a baseline was determined)
-7. **Top 2-3 optimization opportunities** with savings potential
+7. **Cost optimization:** if `optimization_opportunities` is non-empty, list the top 2-3 with savings potential. If it is empty (per the vendored eligibility matrix, nothing in this design is RI/SP-eligible), say so in one line instead of skipping the line entirely: "No 1-year/3-year commitment product applies to this architecture." Either way, when any commitment product is mentioned, add: "Note: Activate credits don't cover RI/Savings Plan upfront costs."
 8. **Recommendation**: lead with `outcome_label` (or `path_label` when `outcome` is absent). List `conditions[]` when `conditional_go`. Close with 1–3 `would_flip_if[]` bullets when present. Keep `path_label` as the execution-shape line under the verdict.
 
 Keep under 25 lines. The user can ask for details or re-read `estimation-infra.json`.
