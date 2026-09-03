@@ -392,6 +392,8 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                       |
 | -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ------------------------------------------------------------ |
 | Claude Fable 5                   | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                       |
+| Claude Fable 5.1                 | anthropic.claude-fable-5-1               | Anthropic | TBD        | TBD         | TBD     | frontier  | active (GA on AWS)                                           |
+| Claude Mythos 5.1                | anthropic.claude-mythos-5-1              | Anthropic | TBD        | TBD         | TBD     | frontier  | limited access                                               |
 | Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active (intro $2/$10 thru Aug 31, 2026; then $3/$15)         |
 | Claude Opus 4.8                  | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
 | Claude Sonnet 4.6                | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                       |
