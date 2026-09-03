@@ -8,7 +8,7 @@ Verify all pricing via AWS Pricing MCP or `references/shared/pricing-cache.md`.
 
 **Model lifecycle:** Before recommending any Bedrock model, check `references/shared/ai-model-lifecycle.md`. Do not recommend Legacy models as primary selections for new migrations. Legacy models are annotated below where they appear.
 
-**Recommend defaults (Jul 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 intro pricing is **$2/$10 through Aug 31, 2026**, then $3/$15 — comparison tables below use the steady-state $3/$15 rate unless noted. Do not default to Claude Fable 5.
+**Recommend defaults (Jul 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to Claude Fable 5 or Fable 5.1.
 
 ---
 
@@ -18,7 +18,7 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 
 - Gemini 3.1 Pro leads 13/16 Google-reported benchmarks and 6/10 on the Artificial Analysis Intelligence Index
 - ARC-AGI-2: 77.1%, SWE-Bench: 80.6% (tied with Opus 4.6 at 80.8%)
-- Gemini 3.1 Pro costs $2/$12 per 1M tokens — less than half of Opus 4.6 ($5/$25), cheaper than Sonnet 5 ($3/$15)
+- Gemini 3.1 Pro costs $2/$12 per 1M tokens — less than half of Opus 4.6 ($5/$25), and slightly above Sonnet 5 ($2/$10, ~12% cheaper blended)
 - Gemini 3.5 Flash at $1.50/$9.00 is 5x more expensive than the old Gemini 2.5 Flash ($0.30/$2.50) — the Bedrock cost savings case is now much stronger for Flash-tier users
 
 **Where Bedrock still wins:**
@@ -30,7 +30,7 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 
 **Migration case by tier:**
 
-- Gemini 3.5 Flash → Bedrock: **strong cost case** — Nova Lite is 94% cheaper; even Claude Sonnet 5 is comparable at $3/$15 vs $1.50/$9.00
+- Gemini 3.5 Flash → Bedrock: **strong cost case** — Nova Lite is 94% cheaper; even Claude Sonnet 5 is close at $2/$10 vs $1.50/$9.00
 - Gemini 3.1 Pro → Bedrock: driven by AWS consolidation, agentic reliability, or ecosystem — NOT cost or general benchmarks
 - Gemini 3.1 Flash-Lite → Nova Lite/Micro: still 76-88% cheaper, strong cost case
 - Gemini 2.5 Pro → Bedrock: moderate case (older model)
@@ -157,7 +157,7 @@ Gemini Flash → **Nova Micro** (<200ms, text-only, cheapest), **Haiku 4.5** (<4
 
 | Gemini Model                    | Monthly | Best Bedrock Match             | Monthly | Difference |
 | ------------------------------- | ------- | ------------------------------ | ------- | ---------- |
-| Gemini 3.1 Pro Preview ($2/$12) | $1,200  | Claude Sonnet 5 ($3/$15)       | $1,575  | +24%       |
+| Gemini 3.1 Pro Preview ($2/$12) | $1,200  | Claude Sonnet 5 ($2/$10)       | $1,050  | -13%       |
 | Gemini 3.1 Pro Preview ($2/$12) | $1,200  | Claude Opus 4.8 ($5/$25)       | $2,625  | +54%       |
 | Gemini 3.1 Pro Preview ($2/$12) | $1,200  | Nova 2 Pro ($1.38/$11.00)      | $1,032  | -14%       |
 | Gemini 3 Pro ($0.50/$3.00)      | $300    | Llama 4 Maverick ($0.24/$0.97) | $109    | -64%       |
