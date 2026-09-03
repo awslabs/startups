@@ -4,13 +4,13 @@
 
 ## Compute Services
 
-| GCP Service         | Resource Type                    | Reference File | Typical AWS target                                                                              |
-| ------------------- | -------------------------------- | -------------- | ----------------------------------------------------------------------------------------------- |
-| Cloud Run           | `google_cloud_run_service`       | `compute.md`   | Fargate                                                                                         |
-| Cloud Functions     | `google_cloudfunctions_function` | `compute.md`   | Lambda                                                                                          |
-| Compute Engine (VM) | `google_compute_instance`        | `compute.md`   | EC2 or Fargate                                                                                  |
-| GKE                 | `google_container_cluster`       | `compute.md`   | EKS                                                                                             |
-| App Engine          | `google_app_engine_application`  | `compute.md`   | Elastic Beanstalk (default), Fargate, Lambda, or EKS (when `compute: "eks"` / Q5 = multi-cloud) |
+| GCP Service         | Resource Type                    | Reference File | Typical AWS target                                                                                                                                        |
+| ------------------- | -------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloud Run           | `google_cloud_run_service`       | `compute.md`   | Fargate                                                                                                                                                   |
+| Cloud Functions     | `google_cloudfunctions_function` | `compute.md`   | Lambda                                                                                                                                                    |
+| Compute Engine (VM) | `google_compute_instance`        | `compute.md`   | EC2 or Fargate                                                                                                                                            |
+| GKE                 | `google_container_cluster`       | `compute.md`   | EKS Auto Mode (default for AWS only; standard node groups or ECS Fargate via Q8)                                                                          |
+| App Engine          | `google_app_engine_application`  | `compute.md`   | Elastic Beanstalk (default), Fargate, Lambda, or EKS standard node groups (when `compute: "eks"` / Q5 = multi-cloud — Auto Mode not used for portability) |
 
 ## Database Services
 
