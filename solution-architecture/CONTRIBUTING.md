@@ -14,6 +14,27 @@ Do this first because criterion 2 below rejects more proposals than any other, a
 - What you checked for overlap: the specific upstream skills in `aws-core` and `aws-agents`, and the relevant AWS Startup Advisor content.
 - Why the answer differs from what a reviewer would find in those places.
 
+### What does not need an RFC
+
+The requirement is about content, because content is what the three criteria below
+judge. An RFC exists so a scope argument happens in an issue thread rather than after
+someone has written a skill. Where there is no scope argument to have, it buys nothing
+and should be skipped:
+
+- Fixing the enforcement tooling in `tools/`, including a check that passes something
+  it was written to catch.
+- Fixing the reviewer workflow in `.github/workflows/`.
+- Corrections to an existing skill or reference: a wrong command, a dead link, a
+  service that has since been sunset, wording that misstates what the skill does.
+- Editing this guide to say what it already means.
+
+Anything that adds a skill, an agent, a reference file, or new guidance needs an RFC,
+whatever its size. The test is not how large the change is. It is whether a maintainer
+could reasonably want to redirect it before the work happens.
+
+Say in the pull request description which of these applies. A fix that explains why it
+needed no RFC is easier to review than one that leaves a reader to work it out.
+
 ## The gate: all three criteria must pass
 
 A contribution is accepted only if it passes **all three**. Two out of three is a rejection, not a majority.
@@ -175,15 +196,19 @@ Then run the gate itself. CI runs exactly this on every PR touching `solution-ar
 node solution-architecture/tools/contribution-gate/check.mjs
 ```
 
-Across **every markdown file** in this folder, including reference files, it checks for uncaveated sunset-service references and prose style. The removed `aws-dev-toolkit` recommended App Mesh in `references/compute.md` and App Runner in `references/cost-comparison.md`, so reference files are where this problem has actually shown up rather than a hypothetical.
+Across **every markdown file** in this folder, including reference files, it reports mentions of sunset services and checks prose style. The removed `aws-dev-toolkit` recommended App Mesh in `references/compute.md` and App Runner in `references/cost-comparison.md`, so reference files are where this problem has actually shown up rather than a hypothetical.
 
 On `SKILL.md` specifically it additionally checks the `audience: startup` declaration, required frontmatter fields, banned naming, and reference files that no `SKILL.md` links to.
 
 It requires no credentials and no AWS access, so it also runs on pull requests from forks.
 
-**It does not decide criteria 1 and 2.** Whether a contribution is genuinely startup-specific, and whether it overlaps Agent Toolkit for AWS, are judgment calls that a script cannot settle. Those stay with reviewers, so a green gate means "nothing mechanically wrong," not "accepted."
+**It does not decide criteria 1, 2, or 3.** Whether a contribution is genuinely startup-specific, whether it overlaps Agent Toolkit for AWS, and whether a sunset-service mention recommends or warns are all judgment calls a script cannot settle. Those stay with reviewers, so a green gate means "nothing mechanically wrong," not "accepted."
 
-On sunset services the check is context-aware: warning against one or describing a migration off it passes, while recommending one as a forward-looking choice fails. If you get a false positive, phrase the line as the warning it presumably is rather than working around the check.
+On sunset services the script reports and does not judge. Every mention becomes a **note**, which prints in the output and never fails the build, and deciding whether the surrounding prose recommends the service or warns against it belongs to human and agent review under criterion 3.
+
+It used to try to tell the two apart with cue words, and got it wrong in both directions. Words like `legacy`, `retired`, and `deprecat` exempted a whole line however they were used, so "App Runner is a good fit for legacy workloads" passed as though it were a warning. Directional phrases exempted the wrong service, so "instead of Jenkins, use App Runner" read as a migration away from App Runner rather than a recommendation of it. Reporting every mention has no false negatives, and a note cannot block anyone, so the cost of noting a legitimate warning is one line of output.
+
+So do not phrase a line to satisfy the script. Write the warning you mean; the note is expected, and a reviewer reads it.
 
 ## Review
 

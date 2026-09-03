@@ -59,6 +59,13 @@ jobs:
           echo "Changed markdown files:"
           cat changed.txt
 
+      # The gate is an enforcement script, so a false negative in it is silent: nothing
+      # fails and nobody looks. It shipped a sunset check that passed three of the four
+      # phrasings it existed to catch, and no test would have let that through. Run the
+      # tests before trusting the gate's own verdict below.
+      - name: Test the gate itself
+        run: node --test solution-architecture/tools/contribution-gate/check.test.mjs
+
       - name: Run mechanical gate
         run: |
           set -euo pipefail

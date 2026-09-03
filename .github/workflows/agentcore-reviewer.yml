@@ -38,10 +38,46 @@ name: AgentCore Reviewer
 # empty, since a dispatch input is a user-controlled parameter that can change what
 # the build acts on. To re-review a pull request, push to it or use `gh pr comment`
 # to re-trigger, rather than passing a PR number by hand.
+# Triggered by the Build workflow finishing rather than by the pull request directly.
+#
+# A `pull_request` workflow triggered by a fork gets no secrets, no OIDC token, and a
+# read-only `GITHUB_TOKEN` whatever the `permissions:` block says. It therefore could not
+# assume a role, could not reach the runtime, and could not even post a status saying so.
+# The job carried `if: head.repo.full_name == github.repository` to skip forks, and a
+# skipped job runs none of its steps, `if: always()` included, because step-level
+# `always()` only survives earlier step failures inside a job that is already running. So
+# a fork pull request carried no `agentcore-reviewer` status at all: not a failure, not a
+# skip, absent. Against this file's own rule that an unreachable runtime must never read
+# as a pass, absent is worse, because a reader cannot tell "not reviewed" from "nothing
+# to say". External contributions are the case this folder's gate exists for, and they
+# were the case getting no criteria 1 and 2 review.
+#
+# `workflow_run` runs in the base repository's context, so credentials exist for fork
+# pull requests too. It is safe here only because the runtime fetches the diff itself
+# through the API and nothing is ever checked out: `pull_request_target` would grant the
+# same credentials, but checking out a fork head under them is the classic way to leak
+# them.
+#
+# Two consequences of `workflow_run` worth knowing before editing this file:
+#
+#   1. Only the copy on the default branch ever runs. Changes here cannot be exercised by
+#      a pull request, including the pull request that makes them, so verify against a
+#      branch merged to main.
+#   2. It supports no `paths:` filter, so the `solution-architecture/**` scope is applied
+#      inside the job instead. See "Resolve the pull request".
 on:
+  # Same-repo pull requests: every push, immediately. This is the path that matters day
+  # to day, it needs no indirection, and it is the only one that can be exercised by the
+  # pull request making the change, since `pull_request` runs the workflow file from the
+  # branch under review.
   pull_request:
     paths:
       - 'solution-architecture/**'
+  # Fork pull requests only. See the job condition: exactly one trigger handles any given
+  # pull request, so nothing is reviewed twice.
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
 
 permissions:
   contents: none
@@ -49,8 +85,24 @@ permissions:
 jobs:
   review:
     name: Advisory review
-    # Same-repo pull requests only; see the fork note above.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Only pull request builds. Build also runs on workflow_dispatch, which has no pull
+    # request to review.
+    # One review per push, and never two.
+    #
+    # `pull_request` handles same-repo branches. `workflow_run` handles forks only,
+    # because a `pull_request` run from a fork gets no secrets, no OIDC token, and a
+    # read-only token whatever `permissions:` says, so it cannot reach the runtime and
+    # cannot even post a status saying so. Without the fork half, a fork pull request
+    # carried no `agentcore-reviewer` status at all: not a failure, not a skip, absent.
+    #
+    # Excluding forks from the `pull_request` arm and same-repo branches from the
+    # `workflow_run` arm is what keeps a same-repo push from being reviewed twice.
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.head_repository.full_name != github.repository)
     permissions:
       # The runtime posts its review with its own GitHub App token, so this job
       # needs no write access to the pull request. OIDC federation is all it uses.
@@ -64,14 +116,77 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AGENTCORE_REVIEWER_REGION || 'us-west-2' }}
       RUNTIME_ARN: ${{ vars.AGENTCORE_REVIEWER_ARN }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      # The head sha is on the workflow_run payload. The pull request number is not,
+      # reliably, so it is resolved in the first step below.
+      HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.workflow_run.head_sha }}
+      # Present on a pull_request event, absent on workflow_run, which is what the
+      # resolve step below branches on.
+      PR_FROM_EVENT: ${{ github.event.pull_request.number }}
     steps:
+      # `workflow_run.pull_requests` is empty precisely when the head repository is a
+      # fork, which is the case this trigger exists to serve, so it cannot be used.
+      # Resolve from the head sha instead, and apply the path scope here since
+      # `workflow_run` accepts no `paths:` filter.
+      - name: Resolve the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # A pull_request event carries the number, and `paths:` has already applied the
+          # scope filter, so there is nothing to look up.
+          if [ -n "${PR_FROM_EVENT:-}" ]; then
+            echo "Pull request #${PR_FROM_EVENT} from the event payload."
+            echo "number=${PR_FROM_EVENT}" >> "$GITHUB_OUTPUT"
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # workflow_run. `workflow_run.pull_requests` is empty precisely when the head
+          # repository is a fork, which is the only case reaching this branch, so resolve
+          # from the head sha instead.
+          NUMBER="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+            --jq '[.[] | select(.state == "open")] | first | .number // empty')"
+
+          if [ -z "${NUMBER}" ]; then
+            echo "No open pull request for ${HEAD_SHA}; nothing to review."
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Resolved pull request #${NUMBER} for ${HEAD_SHA}"
+
+          # Stands in for `paths:`, which workflow_run does not support. Reviewing a pull
+          # request that touches nothing in scope would spend a model call to say nothing
+          # and post a status on changes this folder does not govern.
+          # Not piped into `grep -q`. Under `pipefail`, `grep -q` exits on the first
+          # match and SIGPIPEs the writer, and that 141 becomes the pipeline's status, so
+          # a match reads as a failure once output exceeds the pipe buffer. It works on
+          # small pull requests and breaks on large ones:
+          #
+          #   set -euo pipefail; seq 1 5       | grep -q '^1$'  -> matched
+          #   set -euo pipefail; seq 1 5000000 | grep -q '^1$'  -> missed
+          #
+          # The consequence ran in the dangerous direction: `relevant=false` on a pull
+          # request that did change files in scope, skipping the review and posting a
+          # green status positively asserting there was nothing to review. Since the
+          # status is `success` in every outcome by design, that description is the only
+          # signal a reader gets, so a false one is worse here than elsewhere.
+          FILES="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${NUMBER}/files?per_page=100" \
+            --jq '.[].filename')"
+          if grep -q '^solution-architecture/' <<<"$FILES"; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No solution-architecture/ changes; out of scope for this reviewer."
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "number=${NUMBER}" >> "$GITHUB_OUTPUT"
+
       # Posted first so the tip shows the reviewer has picked up this revision,
       # rather than leaving several minutes of apparent silence.
       - name: Signal review started
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           gh api "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
@@ -106,10 +221,26 @@ jobs:
           role-session-name: agentcore-reviewer-${{ github.run_id }}
 
       - name: Invoke reviewer
-        if: steps.config.outputs.configured == 'true'
+        # `relevant` is false when the resolve step found no open pull request, or none
+        # of the changed files are in scope. Without this the filter it computes was
+        # dead: it ran, decided, and nothing read the answer.
+        if: steps.config.outputs.configured == 'true' && steps.pr.outputs.relevant == 'true'
         id: invoke
+        env:
+          # Must be a step env, not a job env: a job-level `env` cannot reference the
+          # `steps` context. Dropping this from the job env without re-adding it here is
+          # what broke run 33553949835 with "PR_NUMBER: unbound variable" under `set -u`.
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           set -euo pipefail
+
+          # `set -u` catches an unset variable but not an empty one, and an empty value
+          # would build `"prNumber": ,` and fail as a confusing JSON parse error inside
+          # the runtime rather than here.
+          if [ -z "${PR_NUMBER:-}" ]; then
+            echo "PR_NUMBER resolved empty; refusing to invoke with a malformed payload." >&2
+            exit 1
+          fi
           # The runtime resolves owner, repo, and prNumber, pulls the diff itself,
           # and with `submit` publishes the review to the pull request under its
           # App identity.
@@ -245,13 +376,18 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           CONFIGURED: ${{ steps.config.outputs.configured }}
           REACHABLE: ${{ steps.invoke.outputs.reachable }}
+          RELEVANT: ${{ steps.pr.outputs.relevant }}
         run: |
           set -euo pipefail
           if [ "${CONFIGURED:-}" != "true" ]; then
             DESC="Not configured, no review performed"
+          elif [ "${RELEVANT:-}" != "true" ]; then
+            # Distinguished from unreachable on purpose. Reporting "runtime unreachable"
+            # for a pull request that simply changed nothing in scope would send someone
+            # to debug infrastructure that is working.
+            DESC="No solution-architecture/ changes, nothing to review"
           elif [ "${REACHABLE:-}" != "true" ]; then
             DESC="Runtime unreachable, no verdict produced"
           elif [ -f response.json ]; then
