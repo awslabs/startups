@@ -14,7 +14,7 @@ Point this plugin at your Heroku account (via your authenticated Heroku CLI, rea
 **For infrastructure migrations:**
 
 - **Maps your resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora, Dynos → Elastic Beanstalk, Heroku Postgres → RDS/Aurora, and more
-- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
+- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with account-wide security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration, secrets migration, and post-migration validation
 - **Estimates costs across three tiers** — Premium, Balanced, and Optimized — using real-time AWS pricing, compared against your current spend
@@ -208,6 +208,18 @@ The `agent-advisor` skill (bundled in this plugin) is the entry point for **runn
 See [skills/agent-advisor/SKILL.md](skills/agent-advisor/SKILL.md) for the full trigger list, phases, and gates.
 
 ## Requirements
+
+### First-session checklist
+
+Before a long Clarify interview, make sure these are available on the machine (skills also probe `uv`/`uvx` once on cold start):
+
+| Need                                                   | Why                                                                   | If missing                                                                                                                                                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent host (Claude Code / Cursor / Codex / Kiro, etc.) | Runs the skills                                                       | Install your agent                                                                                                                                                                      |
+| **Python 3**                                           | Terraform policy gate (gcp infra) + report validators at Generate     | gcp infra Generate cannot reach `POLICY_OK` — install before Generate                                                                                                                   |
+| **`uv` / `uvx`**                                       | Live `awspricing` MCP + llm-to-bedrock / agent-advisor scripts        | Infra Estimate degrades to **cached** rates and continues; `llm-to-bedrock` and `agent-advisor` **cannot run** without it. Install from [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
+| AWS CLI credentials                                    | Optional for some paths; needed for live AWS checks / Bedrock execute | Configure when those paths run                                                                                                                                                          |
+| At least one discovery input                           | Live `gcloud` / `heroku`, Terraform, app code, and/or billing         | Skill stops if nothing can produce artifacts                                                                                                                                            |
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials

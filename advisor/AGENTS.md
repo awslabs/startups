@@ -63,7 +63,7 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 
 ### `heroku-to-aws` — Heroku → AWS migration workflow
 
-- A DSL-driven SKILL.md running the same 6-phase backbone (Dynos → Fargate/Elastic Beanstalk, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK), with an optional what-if repricing workshop after Estimate.
+- A DSL-driven SKILL.md running the same 6-phase backbone (Dynos → Elastic Beanstalk by default; Fargate/EKS overrides, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK), with an optional what-if repricing workshop after Estimate.
 - Triggered by _"migrate from Heroku"_, _"Heroku to AWS"_, _"move off Heroku"_, etc.
 
 ### `llm-to-bedrock` — OpenAI/Gemini/Anthropic → Amazon Bedrock SDK rewrite

@@ -78,6 +78,31 @@ when deferred-advance sidebar resume applies (`INTERPRETER.md` § The
 interpreter loop step 2 — Estimate completed + `workshop` pending/in_progress
 must not re-run Estimate).
 
+**Session tooling check (once per cold start).** Before Discover on a cold start,
+probe tooling **once** — do not re-check every phase:
+
+```bash
+uv --version 2>/dev/null || echo "UV_MISSING"
+uvx --version 2>/dev/null || echo "UVX_MISSING"
+```
+
+- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that live `awspricing`
+  MCP estimates (and region dollar deltas in the what-if workshop) need
+  [`uv` / `uvx`](https://docs.astral.sh/uv/). Continue Discover → Clarify →
+  Design. At Estimate / workshop, price from the us-east-1 cache and set
+  `pricing_source` per the normal hierarchy in `shared/estimate/pricing-mode.md`:
+  `"cached"` (or `"cached_stale"` past the staleness threshold), then
+  `"estimated"` / `"unavailable"` for services the cache doesn't cover. Do not
+  use `"cached_fallback"`; the MCP was never attempted on this path. **Do not
+  hard-stop** an infrastructure migration for missing `uv`.
+- If both are present: proceed without nagging. Live pricing still depends on
+  the `awspricing` MCP being configured.
+- Soft-warn once if `python3` is missing (Heroku report validation at Generate
+  uses `$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py`). Generate can
+  still complete, but the validator must still be attempted and its exit code
+  handled per its docs — if it does not run, tell the user validation did not
+  occur. Never report an unvalidated report as passing.
+
 **Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
 Design, Estimate, or Generate even if the user asks — there is no exception for
 "quick" or "obvious" migrations. A `preferences.json` that was not produced by an
