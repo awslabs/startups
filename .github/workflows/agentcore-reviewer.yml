@@ -159,8 +159,22 @@ jobs:
           # Stands in for `paths:`, which workflow_run does not support. Reviewing a pull
           # request that touches nothing in scope would spend a model call to say nothing
           # and post a status on changes this folder does not govern.
-          if gh api "repos/${GITHUB_REPOSITORY}/pulls/${NUMBER}/files?per_page=100" \
-            --jq '.[].filename' | grep -q '^solution-architecture/'; then
+          # Not piped into `grep -q`. Under `pipefail`, `grep -q` exits on the first
+          # match and SIGPIPEs the writer, and that 141 becomes the pipeline's status, so
+          # a match reads as a failure once output exceeds the pipe buffer. It works on
+          # small pull requests and breaks on large ones:
+          #
+          #   set -euo pipefail; seq 1 5       | grep -q '^1$'  -> matched
+          #   set -euo pipefail; seq 1 5000000 | grep -q '^1$'  -> missed
+          #
+          # The consequence ran in the dangerous direction: `relevant=false` on a pull
+          # request that did change files in scope, skipping the review and posting a
+          # green status positively asserting there was nothing to review. Since the
+          # status is `success` in every outcome by design, that description is the only
+          # signal a reader gets, so a false one is worse here than elsewhere.
+          FILES="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${NUMBER}/files?per_page=100" \
+            --jq '.[].filename')"
+          if grep -q '^solution-architecture/' <<<"$FILES"; then
             echo "relevant=true" >> "$GITHUB_OUTPUT"
           else
             echo "No solution-architecture/ changes; out of scope for this reviewer."

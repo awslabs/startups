@@ -49,49 +49,83 @@ function run(markdown) {
   }
 }
 
-const flags = (markdown) => run(markdown).out.includes("[sunset-service]");
+/** True when the gate noted a sunset-service mention in this markdown. */
+const notes = (markdown) => run(markdown).out.includes("[sunset-service]");
 
-test("recommending a sunset service is caught however it is phrased", () => {
-  // Every one of these passed before the cue lists were split. `instead of`, `migrat`,
-  // and `avoid` were treated as warnings wherever they sat on the line, so the words
-  // that appear when recommending a service exempted the recommendation.
-  assert.ok(flags("Use App Runner instead of ECS for a simple container service."));
-  assert.ok(flags("Migrate to App Runner for the fastest path to production."));
-  assert.ok(flags("Prefer Cloud9 over a local IDE to avoid per-developer setup."));
-  assert.ok(flags("App Runner is a good default."));
+/** True when the gate failed the build. */
+const failed = (markdown) => run(markdown).flagged;
+
+test("every mention is noted, whatever the phrasing around it", () => {
+  // The script no longer tries to tell a recommendation from a warning. Three attempts
+  // with cue words failed in both directions: review found six phrasings that
+  // recommended a sunset service and passed, because words like `legacy`, `retired`,
+  // and `deprecat` exempted the whole line however they were used, and three where a
+  // directional phrase exempted the wrong service. Reporting every mention has no
+  // false negatives, and notes cannot block, so it has no costly false positives.
+  const recommendations = [
+    "Use App Runner instead of ECS for a simple container service.",
+    "Migrate to App Runner for the fastest path to production.",
+    "App Runner is a good default.",
+    // Previously exempted by a status word describing something else on the line.
+    "We removed the old build script, so use App Runner for the container.",
+    "App Runner is a good fit for legacy workloads you do not want to rewrite.",
+    "The retired v1 pipeline is gone; deploy with App Runner instead.",
+    "Deprecated tooling aside, App Runner is the fastest path to production.",
+    // Previously exempted because the directional phrase pointed at another service.
+    "Instead of Jenkins, use App Runner.",
+    "Migrate off Jenkins and onto App Runner.",
+    "Replace the Jenkins box with App Runner.",
+  ];
+  for (const line of recommendations) {
+    assert.ok(notes(line), `should note: ${line}`);
+  }
 });
 
-test("warning about a sunset service is still allowed", () => {
-  // The check must not fire on the prose it exists to encourage. A status word anywhere
-  // on the line is unambiguous; a directional phrase counts only before the name.
-  assert.ok(!flags("App Runner is deprecated, use ECS instead."));
-  assert.ok(!flags("Do not use App Runner for new services."));
-  assert.ok(!flags("Migrate away from Cloud9 before it is retired."));
-  assert.ok(!flags("Avoid Cloud9; it is closed to new customers."));
-  assert.ok(!flags("Replace App Mesh with ECS Service Connect."));
-  assert.ok(!flags("App Mesh is retired, so use ECS Service Connect."));
+test("warnings are noted too, and that is the point", () => {
+  // A warning is noted rather than exempted. Nothing is silently dropped, and because
+  // notes do not fail the build, noting a legitimate warning costs a reader one line.
+  for (const line of [
+    "App Runner is deprecated, use ECS instead.",
+    "Do not use App Runner for new services.",
+    "Migrate away from Cloud9 before it is retired.",
+    "Replace App Mesh with ECS Service Connect.",
+  ]) {
+    assert.ok(notes(line), `should note: ${line}`);
+    assert.equal(failed(line), false, `should not fail the build: ${line}`);
+  }
 });
 
-test("a directional phrase after the service name does not exempt it", () => {
-  // The line-scoped cue meant any cue word anywhere granted an exemption, so a
-  // recommendation followed by an unrelated "avoid" or "instead of" passed.
-  assert.ok(flags("Choose App Runner, and avoid managing servers yourself."));
-  assert.ok(flags("Pick Cloud9 rather than paying for per-seat IDE licences."));
+test("a note never fails the build", () => {
+  // The whole reason judgment could leave this script: it can report without blocking.
+  assert.equal(failed("App Runner is a good default."), false);
 });
 
-test("the gate reports the line number of the offending mention", () => {
+test("services that are not sunset are not noted", () => {
+  // Each verified against AWS docs rather than assumed, because a list like this rots
+  // in the direction that blocks correct advice and a reopening is announced quietly.
+  //
+  // CodeCommit: closed 2024-07-25, reopened 2025-11-25.
+  assert.ok(!notes("Use CodeCommit for a private Git repository close to your CI."));
+  // Elastic Beanstalk: the service is current. Only individual platform branches
+  // retire, and the AL2023 branches are supported.
+  assert.ok(!notes("Deploy the app with Elastic Beanstalk on an AL2023 platform."));
+});
+
+test("a renamed service is noted with what it is called now", () => {
+  // Only the "for SQL Applications" variant was discontinued. The service itself was
+  // renamed, so "this service is gone" would be wrong; the note says which is which.
+  const { out } = run("Stream with Kinesis Data Analytics.\n");
+  assert.match(out, /Managed Service for Apache Flink/);
+  assert.match(out, /for SQL Applications/);
+});
+
+test("the note carries the line number of the mention", () => {
   const { out } = run("Fine line.\n\nApp Runner is a good default.\n");
   assert.match(out, /L3/);
 });
 
-test("a service that came back is not flagged", () => {
-  // CodeCommit closed to new customers in July 2024 and reopened in November 2025.
-  // A stale entry in the list blocks correct advice, which is the opposite of the
-  // check's purpose, and a reopening is announced far more quietly than a closure.
-  assert.ok(!flags("Use CodeCommit for a private Git repository close to your CI."));
-});
-
-test("prose with no sunset service passes", () => {
-  const { flagged } = run("Use ECS with Fargate for a simple container service.\n");
+test("prose with no sunset service is neither noted nor failed", () => {
+  const { flagged, out } = run("Use ECS with Fargate for a simple container service.\n");
   assert.equal(flagged, false);
+  assert.ok(!out.includes("[sunset-service]"));
 });

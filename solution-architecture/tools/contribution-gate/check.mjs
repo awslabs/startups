@@ -27,8 +27,12 @@ const SUNSET = [
   { pattern: /\bS3 Select\b/gi, name: "S3 Select" },
   { pattern: /\bGlacier Select\b/gi, name: "Glacier Select" },
   { pattern: /\bIoT Analytics\b/gi, name: "AWS IoT Analytics" },
-  { pattern: /\bKinesis Data Analytics\b/gi, name: "Kinesis Data Analytics" },
-  { pattern: /\bElastic Beanstalk\b/gi, name: "Elastic Beanstalk" },
+  {
+    pattern: /\bKinesis Data Analytics\b/gi,
+    name:
+      "Kinesis Data Analytics (renamed to Amazon Managed Service for Apache Flink in 2023; " +
+      "the \"for SQL Applications\" variant was discontinued and its applications deleted from 2026-01-27)",
+  },
   { pattern: /\bAurora Serverless v1\b/gi, name: "Aurora Serverless v1" },
   { pattern: /\blaunch configuration/gi, name: "EC2 launch configurations" },
   { pattern: /\bCloud9\b/gi, name: "AWS Cloud9" },
@@ -42,26 +46,6 @@ const SUNSET = [
   // correct advice. This check is meant to stop bad recommendations, and a stale entry
   // makes it stop good ones. Last audited 2026-09-01.
 ];
-
-// Words saying the service itself is on the way out. Unambiguous wherever they sit
-// on the line, so they are matched line-wide.
-const SUNSET_STATUS_CUE =
-  /\b(deprecat|sunset|end of support|end-of-support|closed to new|no longer|retir|legacy|EOL|not for new|unsupported|removed|retired)/i;
-
-// Phrases framing the mention as moving away from the service. Unlike the status
-// words these are directional, so they only mean "warning" when they come BEFORE the
-// service name.
-//
-// The previous single list mixed both kinds and matched line-wide, which exempted the
-// phrasings a recommendation actually uses. Verified against the gate at the time:
-// "Use App Runner instead of ECS", "Migrate to App Runner", and "Prefer CodeCommit
-// over GitHub to avoid a third-party dependency" all passed, because `instead of`,
-// `migrat`, and `avoid` were treated as warnings wherever they appeared. Only the bare
-// "App Runner is a good default." was caught, leaving the check weakest on exactly the
-// case it exists for: the removed plugin's App Runner and App Mesh recommendations were
-// written as recommendations.
-const MOVING_AWAY_CUE =
-  /\b(do not|don't|never|avoid|stop|drop|remove[ds]?|replac\w*|migrat\w*\s+(off|away|from)|mov\w*\s+(off|away|from)|away from|off of|rather than|instead of)\b[^.]{0,40}$/i;
 
 // Frontmatter fields the official skill validator accepts. Notably `when_to_use`
 // is deprecated and `version` is rejected, so both are flagged here rather than
@@ -135,6 +119,27 @@ const add = (file, criterion, line, message) =>
   findings.push({ file, criterion, line, message });
 
 /**
+ * Observations reported without failing the build.
+ *
+ * A note is something a reader should look at and a script cannot settle. The sunset
+ * check is the only one here of that kind, because telling a recommendation from a
+ * warning is a judgment about meaning, and three attempts to do it with cue words all
+ * failed in both directions at once. Review recorded six phrasings that recommended a
+ * sunset service and passed, because words like `legacy`, `retired`, and `deprecat`
+ * exempted the whole line however they were used, and three more where a directional
+ * phrase such as "instead of Jenkins, use App Runner" exempted the service being
+ * recommended rather than the one being left.
+ *
+ * So the script now reports every mention and judges none of them. That has no false
+ * negatives, since nothing is exempted, and no false positives that can block, since
+ * notes do not fail. Deciding whether a mention recommends or warns belongs to the
+ * advisory reviewer, which reads the surrounding prose and owns the `staleness` axis.
+ */
+const notes = [];
+const note = (file, criterion, line, message) =>
+  notes.push({ file, criterion, line, message });
+
+/**
  * Collect every markdown file in scope.
  *
  * Sunset-service and style checks apply to ALL of them, because the historical
@@ -175,19 +180,12 @@ function checkAnyMarkdown(file) {
     let m;
     while ((m = pattern.exec(text)) !== null) {
       const lineNo = lineOf(text, m.index);
-      const line = lines[lineNo - 1] ?? "";
-
-      // Status words exempt the line wherever they appear. Directional phrases only
-      // exempt it when they precede the service name, so "use A instead of B" does not
-      // read as a warning about A.
-      const lineStart = text.lastIndexOf("\n", Math.max(0, m.index - 1)) + 1;
-      const before = text.slice(lineStart, m.index);
-      if (SUNSET_STATUS_CUE.test(line) || MOVING_AWAY_CUE.test(before)) continue;
-      add(
+      note(
         rel,
         "sunset-service",
         lineNo,
-        `References ${name} without a deprecation or migration caveat. Warning against it is fine; recommending it is not.`,
+        `Mentions ${name}. Warning against it is fine; recommending it is not. ` +
+          `This script only reports the mention, it does not judge the framing.`,
       );
     }
   }
@@ -351,28 +349,42 @@ function main() {
       `${skillCount} of them SKILL.md.\n`,
   );
 
+  /** Group by file, newest-shallowest first, for a readable report. */
+  const report = (items) => {
+    const byFile = new Map();
+    for (const f of items) {
+      if (!byFile.has(f.file)) byFile.set(f.file, []);
+      byFile.get(f.file).push(f);
+    }
+    for (const [file, fs] of [...byFile].sort(([a], [b]) => a.localeCompare(b))) {
+      console.log(`${file}`);
+      for (const f of fs.sort((a, b) => a.line - b.line)) {
+        console.log(`  L${f.line}  [${f.criterion}] ${f.message}`);
+      }
+      console.log("");
+    }
+  };
+
+  // Printed whether or not anything failed. A note that only appears on failure is a
+  // note nobody reads on the runs that matter.
+  if (notes.length > 0) {
+    console.log(`${notes.length} note(s), for a reader rather than the build:\n`);
+    report(notes);
+  }
+
   if (findings.length === 0) {
     console.log("All mechanical checks passed.");
     console.log(
       "\nNote: criteria 1 and 2 (startup-specific, no overlap with Agent Toolkit\n" +
         "for AWS) are judgment calls and are NOT decided here. They remain with\n" +
-        "human and agent review.",
+        "human and agent review. Whether a sunset-service mention above recommends\n" +
+        "the service or warns against it is the same kind of judgment, and is left\n" +
+        "to the advisory reviewer's staleness axis.",
     );
     return 0;
   }
 
-  const byFile = new Map();
-  for (const f of findings) {
-    if (!byFile.has(f.file)) byFile.set(f.file, []);
-    byFile.get(f.file).push(f);
-  }
-  for (const [file, fs] of [...byFile].sort(([a], [b]) => a.localeCompare(b))) {
-    console.log(`${file}`);
-    for (const f of fs.sort((a, b) => a.line - b.line)) {
-      console.log(`  L${f.line}  [${f.criterion}] ${f.message}`);
-    }
-    console.log("");
-  }
+  report(findings);
   console.log(`${findings.length} violation(s). See solution-architecture/CONTRIBUTING.md.`);
   return 1;
 }
