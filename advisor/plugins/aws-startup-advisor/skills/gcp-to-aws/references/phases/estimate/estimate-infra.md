@@ -489,6 +489,10 @@ Present applicable optimizations with estimated savings:
 
 **RI and Savings Plan / Reserved Capacity are mutually exclusive per workload** (RDS RI vs Database SP on the same instance; DynamoDB reserved capacity vs Database SP on the same table) — never present both as stacking on one resource.
 
+**AWS credits do not cover upfront commitment costs.** Promotional/Activate credits cannot be applied to the upfront cost of Reserved Instances or Savings Plans (Partial Upfront or All Upfront) — they only apply to the ongoing discounted hourly rate. State this once whenever this section is presented (chat summary or report), so a customer on Activate credits does not read "up to 66% off" as free.
+
+**If none of the design's services are RI/SP/Reserved-Capacity/Reserved-Nodes-eligible** (per `references/shared/ri-sp-eligibility.md`'s eligibility matrix — e.g. an AgentCore + S3 + Bedrock-on-demand-only design), do not omit this section. State plainly: "No 1-year/3-year commitment product applies to this architecture." When Bedrock is present, add: "Bedrock inference has a separate mechanism (Provisioned Throughput, 1- or 6-month commitment) — evaluate only above sustained high-volume, predictable traffic; it is not a Savings Plan or RI variant." `optimization_opportunities` may be an empty array in this case — do not fabricate an entry to avoid an empty list.
+
 For each applicable optimization:
 
 - **Compute Savings Plans:** emit percent range and post-migration timing; **omit `savings_monthly`** unless 30+ days of AWS usage data exist — do not size commitments from GCP Cloud Run or GKE billing alone (see below).
@@ -832,7 +836,7 @@ After writing `estimation-infra.json`, present a concise summary to the user:
 4. Per-service estimated monthly cost breakdown (balanced tier, 1 line per service)
 5. **If billing data available**: Estimated GCP data transfer egress fees. **If billing data NOT available**: "Data transfer cost estimates require GCP billing data."
 6. Estimated monthly and annual savings (or increase) vs GCP per tier
-7. Top 2-3 optimization opportunities with estimated savings amounts
+7. **Cost optimization:** if `optimization_opportunities` is non-empty, list the top 2-3 with estimated savings amounts. If it is empty (per the vendored eligibility matrix, nothing in this design is RI/SP-eligible), say so in one line instead of skipping the line entirely: "No 1-year/3-year commitment product applies to this architecture" (add the Bedrock Provisioned Throughput mention from Part 6 when Bedrock is present). Either way, when any commitment product is mentioned, add: "Note: Activate credits don't cover RI/Savings Plan upfront costs."
 8. **Recommendation:** `recommendation.outcome_label` first ("Go, with conditions"), then `path_label` as the execution shape, one-line ROI justification when present. **Multi-track stacks: add the per-track line** ("By track: compute+DB go; AI text go; AI image conditional — track only; analytics deferred"). When `conditional_go`: list `conditions[]` (track-prefixed where scoped). When `defer_for_evidence`: name the missing evidence and how to get it. Close with `would_flip_if[]` (1–3 bullets) so the user knows what to watch.
 
 **Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact. This applies to chat output, report tables, and summary lines.
