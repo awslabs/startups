@@ -42,12 +42,14 @@ assembler adds the cross-artifact checks that span multiple fragment outputs:
 
 The completion checks are declared in this phase's `_postconditions` frontmatter and
 enforced per `INTERPRETER.md` § Gate protocol: re-read the generated artifacts from
-disk, run the mechanical checks (`_check_file_exists` for the core terraform files +
-MIGRATION_GUIDE.md + README.md + migration-report.html) and the `_assert` judgment
-checks (valid provider / aws_region variable, a domain .tf beyond core, guide
-sections, report sections, conditional Postgres/ Redis migration scripts, conditional
-EKS terraform + kubernetes manifests, every service accounted for, no `{{VARIABLE}}`
-placeholders), then emit `GATE_FAIL` (STOP) or
+disk, run the mechanical checks (`_check_file_exists` for the core terraform files
+including `baseline.tf` + MIGRATION_GUIDE.md + README.md + migration-report.html)
+and the `_assert` judgment checks (valid provider / aws_region variable, a domain
+.tf beyond core, security-baseline resource inventory + compliance-conditional
+section + contact email variables, guide sections, report sections, conditional
+Postgres/ Redis migration scripts, conditional EKS terraform + kubernetes
+manifests, every service accounted for, no `{{VARIABLE}}` placeholders), then emit
+`GATE_FAIL` (STOP) or
 `HANDOFF_OK | phase=generate | artifacts=terraform/,MIGRATION_GUIDE.md,README.md,migration-report.html`.
 
 Optionally run
@@ -68,7 +70,7 @@ Output to user:
 Phase 5 of 6 complete (Generate). Optional remaining: Feedback.
 
 Artifacts produced:
-• terraform/ — [N] Terraform files for AWS infrastructure
+• terraform/ — [N] Terraform files for AWS infrastructure (includes baseline.tf, the account security baseline — MIGRATION_GUIDE.md Phase 1 covers its contact variables and how to opt out)
 • MIGRATION_GUIDE.md — Step-by-step migration procedure
 • README.md — Artifact listing and quick start
 • migration-report.html — Stakeholder summary (costs + what-if scenarios when present)

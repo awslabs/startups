@@ -19,7 +19,7 @@ This piece will show you where data ingestion, pre-labeling, the active learning
 
 ## Super.AI's Unstructured Data Processing Platform
 
-The super.AI platform helps customers to transform processes involving unstructured data such as images, videos, text, documents, and audio and automate them using a combination of AI, software, and humans. This [super.AI Product Image Categorization Demo](https://youtu.be/ZXZkebWfQ0k) shows how super.AI product image categorization can help retailers increase website conversations.
+The super.AI platform helps customers to transform processes involving unstructured data such as images, videos, text, documents, and audio and automate them using a combination of AI, software, and humans. This [super.AI Product Image Categorization Demo](https://www.youtube.com/watch?v=ZXZkebWfQ0k) shows how super.AI product image categorization can help retailers increase website conversations.
 
 ### Active Learning and Pre-Labels
 

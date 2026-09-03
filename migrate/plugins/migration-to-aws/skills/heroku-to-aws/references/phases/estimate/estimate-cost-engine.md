@@ -379,7 +379,18 @@ Present monthly and annual cost difference between Heroku baseline and each AWS 
 
 Present applicable optimizations with estimated savings. These are **incremental post-migration actions** beyond the Balanced on-demand baseline.
 
-The savings ranges + applicability come from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `optimization_savings_ranges` (keys: `compute_savings_plans`, `database_savings_plans`, `rds_reserved_instances`, `s3_intelligent_tiering`, `fargate_spot`, `ec2_spot`; each carries `savings_percent` / `target_services` / `timing`). Include ONLY opportunities relevant to the designed architecture (per each entry's `target_services` / `timing`).
+**Eligibility, the three-state rendering model, and the required caveats
+(baseline-before-committing, Activate credits, mutual exclusion) are defined
+in `references/vendored/estimate/ri-sp-eligibility.md`** (vendored from
+`skills/shared/estimate/ri-sp-eligibility.md`, kept byte-identical by
+`shared:sync`). Execute that file's eligibility matrix and rendering rules as
+part of this step — do not restate or fork the eligibility logic here. This
+section covers only the heroku-specific JSON entry shapes and gating
+thresholds.
+
+The savings ranges + `target_services` gating come from [`knowledge/estimate/estimate-defaults.json`](../../../knowledge/estimate/estimate-defaults.json) → `optimization_savings_ranges` (keys: `compute_savings_plans`, `database_savings_plans`, `rds_reserved_instances`, `dynamodb_reserved_capacity`, `elasticache_reserved_nodes`, `s3_intelligent_tiering`, `fargate_spot`, `ec2_spot`; each carries `savings_percent` / `target_services` / `timing`). Include ONLY opportunities relevant to the designed architecture (per each entry's `target_services` / `timing`), cross-checked against the vendored eligibility matrix — the JSON below is the entry SHAPE; the vendored file is the eligibility SOURCE OF TRUTH when the two ever disagree (e.g. on ElastiCache engine or deployment mode).
+
+**Always render this section**, even when nothing in the design qualifies for an RI or Savings Plan — per the vendored file's three-state model, state explicitly which state the design landed in rather than omitting the section.
 
 **Emit in `optimization_opportunities[]`:**
 
@@ -404,7 +415,13 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 }
 ```
 
-### Database Savings Plans (when RDS/Aurora in design, projected > $50/month)
+### Database Savings Plans (when RDS/Aurora, or DynamoDB in any capacity mode, or ElastiCache Valkey (node-based or serverless) is in design; projected > $50/month)
+
+**Eligibility check before emitting this entry (per the vendored eligibility matrix — this heading and these bullets must not contradict each other):**
+
+- **RDS/Aurora provisioned** — eligible. Mutually exclusive with RDS Reserved Instances on the same instance. **Aurora Serverless v2** — also Database-SP-eligible, with no RI equivalent (no RI product exists for serverless database capacity).
+- **DynamoDB — always Database-SP-eligible regardless of capacity mode** (on-demand, provisioned, or Standard-IA). **DynamoDB provisioned, Standard table class specifically** is also RI-eligible via DynamoDB reserved capacity (mutually exclusive with Database SP on the same capacity). **DynamoDB on-demand or Standard-IA** is Database-SP-eligible only; never emit an RI-style entry for on-demand or Standard-IA DynamoDB — AWS explicitly excludes both from reserved capacity.
+- **ElastiCache** — Database-SP-eligible **only when the target engine is Valkey**, in either node-based (provisioned) or serverless mode. `heroku-to-aws`'s default Redis mapping targets **Redis OSS**, which is Database-SP-**ineligible regardless of deployment mode** — check the Design phase's actual selected engine before including ElastiCache in this entry's `target_services`. For a confirmed Redis OSS or Memcached target on a **node-based** cluster, do not list ElastiCache here; instead surface an ElastiCache Reserved Nodes-only note. For a confirmed Redis OSS or Memcached target on **ElastiCache Serverless**, no commitment product of any kind applies — Reserved Nodes require a node-based cluster and do not exist for Serverless; state this plainly rather than falling back to the Reserved Nodes note.
 
 ```json
 {
@@ -417,7 +434,7 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
   "timing": "immediately post-migration or after instance right-sizing",
   "implementation_effort": "low",
   "prerequisite": "Confirm target instance class; omit savings_monthly when DB on-demand < $50/month",
-  "description": "Heroku Postgres runs 24/7 with predictable usage. Database Savings Plans offer flexibility to change engines/instances post-migration. Mutually exclusive with RDS RIs on same workload.",
+  "description": "Heroku Postgres runs 24/7 with predictable usage. Database Savings Plans offer flexibility to change engines/instances post-migration. Mutually exclusive with RDS RIs on same workload. Include DynamoDB and/or ElastiCache in target_services only per the eligibility check above (ElastiCache: Valkey target only).",
   "alternative": {
     "opportunity": "RDS Reserved Instances",
     "type": "rds_reserved_instances",
@@ -427,6 +444,28 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
   "references": [
     "https://aws.amazon.com/savingsplans/database-pricing/",
     "https://aws.amazon.com/rds/reserved-instances/"
+  ]
+}
+```
+
+### ElastiCache Reserved Nodes (when target engine is Redis OSS or Memcached AND the cluster is node-based/provisioned — Database-SP-ineligible, and Reserved Nodes require a node-based cluster)
+
+**Do not emit this entry for an ElastiCache Serverless target.** Reserved Nodes require creating a node-based cluster; ElastiCache Serverless has no node concept (billed in ECPUs + GB-hours) and cannot use Reserved Nodes regardless of engine. A Redis OSS/Memcached design on Serverless has **no commitment product of any kind** — state that plainly per the vendored file's "truly no commitment product" state, rather than emitting this entry.
+
+```json
+{
+  "opportunity": "ElastiCache Reserved Nodes",
+  "type": "elasticache_reserved_nodes",
+  "target_services": ["ElastiCache"],
+  "savings_percent": "30-55%",
+  "savings_monthly": null,
+  "commitment": "1-year or 3-year",
+  "timing": "post-migration (after usage baseline)",
+  "implementation_effort": "low",
+  "prerequisite": "Confirm node type and count are stable before committing; target cluster must be node-based (provisioned), not ElastiCache Serverless",
+  "description": "Database Savings Plans do not cover ElastiCache for Redis OSS or Memcached (Valkey-only) — Reserved Nodes are the commitment lever for this target engine on a node-based cluster. Does not apply to ElastiCache Serverless, which has no reservable nodes.",
+  "references": [
+    "https://aws.amazon.com/elasticache/pricing/"
   ]
 }
 ```
@@ -466,6 +505,8 @@ The savings ranges + applicability come from [`knowledge/estimate/estimate-defau
 ```
 
 Only include optimizations relevant to the designed architecture. Do not include EC2-specific optimizations if no Elastic Beanstalk/EC2 in design.
+
+**No eligible commitment product (per the vendored file's three-state model):** if the design contains nothing from the eligibility matrix's RI/SP-eligible or SP-only rows (e.g. an all-Lambda-equivalent or fully managed-service design with no Fargate/EB/EC2/RDS/Aurora/DynamoDB/ElastiCache), state this explicitly in the section rather than omitting it: "No 1-year/3-year commitment product applies to this architecture." Do not silently skip Part 6.
 
 ---
 
