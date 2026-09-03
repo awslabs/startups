@@ -1,6 +1,6 @@
 # AWS Pricing Cache
 
-**Last updated:** 2026-08-24
+**Last updated:** 2026-09-03
 **Region:** us-east-1
 **Currency:** USD
 **Accuracy:** ±5-10% for infrastructure services (sourced from AWS Price List API), ±15-25% for AI models (sourced from public pricing pages)
@@ -383,7 +383,7 @@ Serverless inference: $0.0000200 per second per GB memory.
 
 ## Bedrock Models (On-Demand)
 
-**Anthropic Claude (Standard on-demand)** figures below match **US East (N. Virginia)** on [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) as of cache refresh. **Recommend defaults (new migrations):** Claude Sonnet 5 (flagship), Claude Opus 4.8 (hardest reasoning), Claude Haiku 4.5 (cost/speed). Do not default to Claude Fable 5 (frontier). **Claude Fable 5** is the most expensive Anthropic model at $10/$50 per 1M tokens (Mythos-class). **Claude Opus 4.8** keeps the same $5/$25 rate as Opus 4.6/4.7. **Claude Sonnet 5** launched June 30 with introductory pricing of $2/$10 through Aug 31, 2026, then $3/$15 (same as Sonnet 4.6). **Claude Opus 4.7** lists the same headline on-demand input/output as **Opus 4.6** on that page; confirm **batch** availability per model (Opus 4.7 batch was **not** listed on the global cross-region table when this row was added). **Claude Opus 4.1** entered **Legacy** on Jul 8, 2026 (EOL Jan 8, 2027). **Batch**, **prompt cache** (5m / 1h write + cache read), and **geo / in-region cross-region** rows on that page can differ; e.g. **US East (Ohio)** cross-region inference for Claude Sonnet 4.6 is listed at **$3.30 / $16.50** per 1M input/output (≈10% above N. Virginia). Long-context SKUs **do not** all use the same multiplier: **Sonnet 4.6** and **Opus 4.6** long-context modes share the same on-demand rates as the non–long-context rows on the standard table; **Sonnet 4.5** and **Sonnet 4** long-context rows are priced higher on that same table.
+**Anthropic Claude (Standard on-demand)** figures below match **US East (N. Virginia)** on [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) as of cache refresh. **Recommend defaults (new migrations):** Claude Sonnet 5 (flagship), Claude Opus 4.8 (hardest reasoning), Claude Haiku 4.5 (cost/speed). Do not default to Claude Fable 5 or Fable 5.1 (frontier). **Claude Fable 5** and **Claude Fable 5.1** (GA Sep 1, 2026) are the most expensive Anthropic models at $10/$50 per 1M tokens (Mythos-class); 5.1's only rate difference is cache read at $0.25 (0.025x) vs $1.00. Both are Anthropic **Covered Models**: using them requires opting the account into the `aws_review` data-retention mode, and Fable 5.1 is served commercially only via `us.`/`global.` CRIS profiles (no in-region), with in-region access in AWS GovCloud (US) only. Claude Mythos 5.1 is a gated Preview for vetted cyber/bio research organizations and is not a migration target. **Claude Opus 4.8** keeps the same $5/$25 rate as Opus 4.6/4.7. **Claude Sonnet 5** launched June 30 with introductory pricing of $2/$10 through Aug 31, 2026, then $3/$15 (same as Sonnet 4.6). **Claude Opus 4.7** lists the same headline on-demand input/output as **Opus 4.6** on that page; confirm **batch** availability per model (Opus 4.7 batch was **not** listed on the global cross-region table when this row was added). **Claude Opus 4.1** entered **Legacy** on Jul 8, 2026 (EOL Jan 8, 2027). **Batch**, **prompt cache** (5m / 1h write + cache read), and **geo / in-region cross-region** rows on that page can differ; e.g. **US East (Ohio)** cross-region inference for Claude Sonnet 4.6 is listed at **$3.30 / $16.50** per 1M input/output (≈10% above N. Virginia). Long-context SKUs **do not** all use the same multiplier: **Sonnet 4.6** and **Opus 4.6** long-context modes share the same on-demand rates as the non–long-context rows on the standard table; **Sonnet 4.5** and **Sonnet 4** long-context rows are priced higher on that same table.
 
 ### Multi-provider quick reference (per 1M tokens)
 
@@ -392,8 +392,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                       |
 | -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ------------------------------------------------------------ |
 | Claude Fable 5                   | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                       |
-| Claude Fable 5.1                 | anthropic.claude-fable-5-1               | Anthropic | TBD        | TBD         | TBD     | frontier  | active (GA on AWS)                                           |
-| Claude Mythos 5.1                | anthropic.claude-mythos-5-1              | Anthropic | TBD        | TBD         | TBD     | frontier  | limited access                                               |
+| Claude Fable 5.1                 | anthropic.claude-fable-5-1               | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active (Covered Model; `aws_review` opt-in; CRIS)            |
 | Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active (intro $2/$10 thru Aug 31, 2026; then $3/$15)         |
 | Claude Opus 4.8                  | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
 | Claude Sonnet 4.6                | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                       |
@@ -463,6 +462,7 @@ Per 1M tokens unless noted. See [Bedrock pricing](https://aws.amazon.com/bedrock
 | Model                    | Batch in | Batch out | 5m cache write | 1h cache write | Cache read |
 | ------------------------ | -------- | --------- | -------------- | -------------- | ---------- |
 | Claude Fable 5           | 5.00     | 25.00     | 12.50          | 20.00          | 1.00       |
+| Claude Fable 5.1         | —        | —         | 12.50          | 20.00          | 0.25       |
 | Claude Sonnet 5          | 1.00     | 5.00      | 2.50           | 4.00           | 0.20       |
 | Claude Opus 4.8          | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
 | Claude Sonnet 4.6 (+ LC) | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
