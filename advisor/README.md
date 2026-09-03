@@ -36,7 +36,7 @@ The skills are designed to be cross-aware — `start-building-for-startups` cons
 
 ## MCP servers
 
-The migration skills depend on MCP servers, declared in `advisor/plugins/aws-startup-advisor/.mcp.json` and provisioned automatically when the plugin is installed:
+The migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-advisor`) use MCP servers, declared in `advisor/plugins/aws-startup-advisor/.mcp.json`, for live data. The skills run without them — pricing falls back to a bundled cache (±5-25% accuracy) and documentation lookups are skipped — but live pricing and current AWS docs need them configured:
 
 - **AWS Knowledge** (`awsknowledge`, HTTP) — current AWS documentation lookups.
 - **AWS Pricing** (`awspricing`, stdio via `uvx awslabs.aws-pricing-mcp-server`) — live pricing data for cost estimates. Requires [`uv`/`uvx`](https://docs.astral.sh/uv/) on the user's machine.
@@ -44,6 +44,57 @@ The migration skills depend on MCP servers, declared in `advisor/plugins/aws-sta
 - **Temporal Docs** (`temporal-docs`, HTTP) — Temporal documentation lookups for `agent-advisor`'s Temporal-worker flow.
 
 The knowledge-base, prompt-library, architect, and start-building skills do not require MCP servers.
+
+**These are provisioned automatically only via the Claude Code plugin path** (`/plugin install aws-startup-advisor@claude-plugins-official`), which reads `.mcp.json` at install time.
+
+**The `npx skills add` path below does not configure MCP servers.** The `npx skills` CLI only copies skill files into your agent's skills folder — it has no concept of `.mcp.json` and never touches MCP configuration. If you install this way (Kiro, Cursor, Codex, GitHub Copilot, and everything else in the supported-agent list below), the skills still work per the fallback behavior above, but you'll get live pricing and current AWS docs only after adding the servers yourself:
+
+<details>
+<summary>Kiro — add to `.kiro/settings/mcp.json` (workspace) or `~/.kiro/settings/mcp.json` (user)</summary>
+
+```json
+{
+  "mcpServers": {
+    "awsknowledge": { "type": "http", "url": "https://knowledge-mcp.global.api.aws" },
+    "awspricing": {
+      "command": "uvx",
+      "args": ["awslabs.aws-pricing-mcp-server@latest"],
+      "env": { "FASTMCP_LOG_LEVEL": "ERROR", "AWS_REGION": "us-east-1" }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Cursor — add to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global)</summary>
+
+Same `mcpServers` block as above.
+
+</details>
+
+<details>
+<summary>Codex — run `codex mcp add`, or edit `~/.codex/config.toml`</summary>
+
+```bash
+codex mcp add awsknowledge --url https://knowledge-mcp.global.api.aws
+codex mcp add awspricing -- uvx awslabs.aws-pricing-mcp-server@latest
+```
+
+</details>
+
+<details>
+<summary>Claude Code — if you installed via `npx skills add` instead of the plugin path</summary>
+
+```bash
+claude mcp add --transport http awsknowledge https://knowledge-mcp.global.api.aws
+claude mcp add awspricing -- uvx awslabs.aws-pricing-mcp-server@latest
+```
+
+</details>
+
+For any other agent, copy the `mcpServers` block from [`.mcp.json`](plugins/aws-startup-advisor/.mcp.json) into that agent's own MCP config file — consult your agent's MCP documentation for the exact path and format. This step is optional; skipping it does not block installation or use of any skill.
 
 ---
 
@@ -71,6 +122,8 @@ npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws
 
 `--skill '*'` selects every skill in the plugin; pair it with `--agent <agent>` to scope the installation to a single coding agent. The CLI writes each skill into the right per-agent folder; restart your agent afterward to pick them up.
 
+> **This command does not configure MCP servers.** The migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-advisor`) work without them — pricing falls back to cached rates — but see [MCP servers](#mcp-servers) above for how to add live pricing and AWS docs lookups manually.
+>
 > **If you omit `--agent`, the CLI shows an interactive picker.** Use the **space bar** to select your agent (e.g. Claude Code, Kiro), then press **Enter** to confirm. If you press Enter without selecting, nothing gets selected and the CLI falls back to writing the skills into `.agents/skills/` — which most agents won't discover, so your agent ends up empty-handed. Either select with space, or pass `--agent <agent>` explicitly to skip the picker.
 
 ### Examples
