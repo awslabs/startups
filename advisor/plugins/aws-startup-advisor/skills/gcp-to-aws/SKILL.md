@@ -372,7 +372,7 @@ When invoked, the agent **MUST follow this exact sequence**:
 8. **Feedback sidebar**: After a phase completes, check if feedback is due (see rules below). This runs **before** advancing to the next phase.
 
    - **After Discover** (if `phases.feedback` is `"pending"`): Output to user:
-     "Would you like to share quick feedback (5 optional questions + anonymized usage data) to help improve this tool? Your data never includes resource names, file paths, or account IDs.
+     "Would you like to share quick feedback (one quick chat question — two at most if you're still deciding — plus a short 5-question form in your browser + anonymized usage data) to help improve this tool? Your data never includes resource names, file paths, or account IDs.
      [A] Send feedback now
      [B] Wait until after the Estimate phase"
      - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it, then continue to Clarify.
@@ -386,7 +386,7 @@ When invoked, the agent **MUST follow this exact sequence**:
      return to the gate). Then, **after the gate resolves to A or C**, if
      `phases.feedback` is `"pending"`:
      - **After gate C** (continuing to Generate), use the standard form:
-       "Would you like to share quick feedback now? (5 optional questions + anonymized usage data)
+       "Would you like to share quick feedback now? (one quick chat question — two at most if you're still deciding — plus a short 5-question form in your browser + anonymized usage data)
        [A] Yes, share feedback
        [B] No thanks"
      - **After gate A** (user said they're done), fold a one-line short form into the closing message instead of a separate prompt: "…everything is saved and I'll pick up from here. Quick feedback before you go? [Yes] [No]" — the user just said they're done; don't make feedback feel like another phase.
