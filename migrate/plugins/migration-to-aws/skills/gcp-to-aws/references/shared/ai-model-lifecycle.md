@@ -130,7 +130,7 @@ The multi-provider quick reference table includes a `Status` column:
 | `excluded (EOL YYYY-MM-DD)` | ≤90 days from EOL. Kept for existing users but must not be selected for new migrations.                                                                                                                                                                                                                                                     |
 | `restricted (<reason>)`     | Access-restricted: a Covered Model that needs an account-level data-retention opt-in (`aws_review` or `provider_data_share`), or a gated preview. Never `recommended_model` / `backup_model`, never a default; offer only on explicit user request, with the requirement stated. Claude Fable 5 / 5.1 and the Mythos line carry this value. |
 
-When refreshing the cache, recompute `days_to_eol` and update the Status column from the [model lifecycle page](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html).
+When refreshing the cache, recompute `days_to_eol` and refresh the `active` / `legacy` / `excluded` values from the [model lifecycle page](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html). **Preserve an existing `restricted (…)` value** — that page publishes only active / legacy / EOL and does not track access gating, so it can never produce `restricted`; change or remove a `restricted` value only when the model card's access requirement itself changed (data-retention mode, gated preview status).
 
 ### Mapping Guides (`ai-openai-to-bedrock.md`, `ai-gemini-to-bedrock.md`)
 
