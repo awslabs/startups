@@ -17,10 +17,10 @@ output lives in the JSON artifacts.
 ## Decision-mode specifics
 
 - **Artifacts available:** discovery + `preferences.json` + `aws-design*.json` + `estimation-*.json` (+ `migration-preview.json`, `scenarios/` when present). `generation-*.json` and `terraform/` do NOT exist. Sections that prefer Generate artifacts carry an inline **_Decision mode:_** override next to the full-mode rule (decision-summary item 4, Sections 2b, 3 footnote, 4, 6, 7) — **those inline overrides are the authoritative decision-mode law**; when a section has no override, its rule applies unchanged in both modes.
-- **HTML shell:** same `<head>` (charset, viewport, inline CSS) and CSS specification as the full report (see `generate-artifacts-report.md` Step 3), title "GCP to AWS Migration Assessment — Decision Report". Body contains ONLY the `executive-summary` div with the exec sections and TOC (TOC links only to sections present; `nav.toc` carries `id="toc"` and every section `<h2>` ends with the `↑ contents` toplink per the nav-aids CSS spec). Opening order follows the hero-is-the-thesis rule: `decision-summary` first, TOC after it. Required section IDs in decision mode: `decision-summary`, `exec-assumptions`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks` (+ conditional `exec-share`, `exec-tco`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios` per their triggers).
+- **HTML shell:** same `<head>` (charset, viewport, inline CSS) and CSS specification as the full report (see `generate-artifacts-report.md` Step 3), title "GCP to AWS Migration Assessment — Decision Report". Body contains ONLY the `executive-summary` div with the exec sections and TOC (TOC links only to sections present; `nav.toc` carries `id="toc"` and every section `<h2>` ends with the `↑ contents` toplink per the nav-aids CSS spec). Opening order follows the hero-is-the-thesis rule: `decision-summary` first, TOC after it. Required section IDs in decision mode: `decision-summary`, `exec-assumptions`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks` (+ conditional `exec-share`, `exec-tco`, `exec-architecture`, `exec-security-teaser`, `exec-optimization`, `what-if-scenarios` per their triggers).
 - **CTA footer (required, after the last section):** `<section id="decision-cta">` — "**Ready to execute?** Say \"generate the Terraform and migration scripts\" and I'll produce the full execution pack (Terraform, migration scripts, rollback runbook, fill-in checklist) from this same analysis." Plus one line: "This decision report was generated without execution artifacts; the full migration report replaces it if you proceed."
 - **`DECISION.md` (required twin):** same content as the HTML, as plain Markdown (Slack/GitHub-friendly): verdict headline, cost table, migrate-if/stay-if lists, timeline band, top risks, assumptions, CTA line. No HTML tags.
-- **Validation:** run `scripts/validate-migration-report.py $MIGRATION_DIR/decision-report.html --mode decision [--estimation-infra ...] [--estimation-ai ...]` and fix failures before presenting.
+- **Validation:** run `scripts/validate-migration-report.py $MIGRATION_DIR/decision-report.html --mode decision [--estimation-infra ...] [--estimation-ai ...] [--aws-design ...]` and fix failures before presenting. Pass the estimation (and design) files when they exist so the Cost Optimization gate can fire.
 - All content rules below apply unchanged: baseline-quality badge + not-comparable rule, cost labeling ("Est."), readability (no artifact filenames in exec sections, no "Section N" headings, ordered action lists), Activate wording rules.
 
 ---
@@ -215,7 +215,48 @@ remind that discovery inventory is frozen
 and generated Terraform matches the **active** scenario only.
 5. TOC: link `#what-if-scenarios` only when rendered. Place this section in the
 executive flow immediately after `exec-costs` (before security teaser /
-timeline).
+timeline). When `exec-optimization` is also rendered, place it after
+`exec-costs` and before `what-if-scenarios`.
+
+**Section 3c — Cost Optimization (`exec-optimization`, REQUIRED when any
+`estimation-*.json` has a non-empty `optimization_opportunities[]`):**
+
+This is a **standalone executive section**. A table buried only under
+Appendix B / `appendix-costs` does **not** satisfy the gate — that is how
+Savings Plans and Reserved Instances were dropped from generated reports.
+
+Place immediately after `exec-costs` (and before `what-if-scenarios` /
+`exec-architecture` / security teaser). Add `#exec-optimization` to the TOC
+when rendered.
+
+Render two things:
+
+1. **Posture comparison table** (Balanced on-demand vs applicable commitments
+   vs Optimized as a floor). Columns such as: Posture, Est. monthly, vs
+   Balanced, What you commit to. Savings Plans and Reserved Instances are
+   incremental to the **Balanced on-demand** baseline. **Do not** add those
+   savings on top of the Optimized tier — Optimized already embeds
+   illustrative reservation / Spot assumptions. State that caveat in the
+   section when Optimized is shown. Database Savings Plans and RDS Reserved
+   Instances are mutually exclusive on the same database workload.
+2. **Which commitment fits** — a short list from the opportunity rows
+   (Compute Savings Plans, Database Savings Plans, Reserved Instances /
+   reserved capacity / reserved nodes, plus non-commitment rows such as
+   Fargate Spot or S3 Intelligent-Tiering when present).
+
+_Full mode:_ the line-level opportunity table (Optimization, Target,
+Monthly savings / Est. savings, Commitment, Effort) lives in a dedicated
+`<section id="appendix-optimization">` immediately after `appendix-costs`.
+`exec-optimization` links down to it. Do not leave that table as an `<h3>`
+inside `appendix-costs`.
+
+_Decision mode:_ there are no appendices. Include the opportunity-table
+columns in `exec-optimization` itself (or a compact version of the same
+rows). Do **not** emit `appendix-optimization`.
+
+Source: `estimation-infra.json` / `estimation-ai.json` →
+`optimization_opportunities`. Eligibility of which commitment product
+applies is `references/shared/ri-sp-eligibility.md`.
 
 **Section 4 — Security & Cost Guardrails (teaser — full table in Appendix G):**
 
