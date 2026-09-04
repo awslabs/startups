@@ -148,6 +148,8 @@ heroku-to-aws/
 │   │
 │   └── shared/                                 # heroku-to-aws's own shared references
 │           ├── README.md                       # what lives here + pointers to plugin-neutral shared data
+│           ├── application-source-contract.schema.json # future source-review request/findings contract
+│           ├── application-source-contract.md  # contract semantics + retained-field purpose review
 │           ├── heroku-pricing-cache.md          # Heroku plan pricing (source-side baseline)
 │           ├── schema-discover-heroku.md        # heroku-resource-inventory.json schema
 │           └── schema-workshop-scenarios.md     # scenarios/ + preferences.workshop contract
