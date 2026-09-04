@@ -137,6 +137,14 @@ of ownership." When the infrastructure baseline is inventory-derived or
 standing-charges-only, show "Not comparable" in the combined GCP cell and
 never sum it with a user-stated AI midpoint.
 
+If `estimation-ai.json` → `optimization_opportunities` contains a
+`provisioned_throughput` entry, add one footnote: "Provisioned Throughput
+(a Bedrock-specific commitment option) uses no-commit, 1-month, or 6-month
+terms — not the 1-year/3-year Reserved Instance or Savings Plan terms shown
+elsewhere in this report." This is the first place a reader sees the combined
+run rate — do not rely on the full report's appendix alone to make this
+distinction.
+
 Source: `estimation-infra.json`, `estimation-ai.json`
 
 **Section 1 — Current Stack Overview:**
