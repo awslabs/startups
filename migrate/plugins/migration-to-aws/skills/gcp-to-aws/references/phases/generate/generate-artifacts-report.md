@@ -116,7 +116,17 @@ Source: estimation artifact cost_comparison
 
 **Optimization opportunities table** with columns: Optimization, Target Services, Monthly Savings, Commitment, Effort.
 
-Merge infra (`estimation-infra.json`) and AI (`estimation-ai.json`) optimization rows when both exist.
+Merge infra (`estimation-infra.json`) and AI (`estimation-ai.json`) optimization rows when both exist. **The two sources use different field names for the same rendered column** — apply this key map, do not assume the field names match:
+
+| Column          | Infra key (`estimation-infra.json`)                          | AI key (`estimation-ai.json`) |
+| --------------- | ------------------------------------------------------------ | ----------------------------- |
+| Optimization    | `opportunity`                                                | `opportunity`                 |
+| Target Services | `target_services`                                            | `target_services`             |
+| Monthly Savings | `savings_monthly` (fall back to `savings_percent` when null) | `potential_savings_monthly`   |
+| Commitment      | `commitment`                                                 | `commitment`                  |
+| Effort          | `implementation_effort`                                      | `implementation_effort`       |
+
+**Do not render the infra-side Activate-credits caveat next to AI-side rows.** That caveat applies only to RI/Savings Plan upfront costs; none of the AI-side optimizations (including Provisioned Throughput, which is billed hourly with no upfront fee) have an upfront cost for it to apply to. If any AI-side row is `type: provisioned_throughput`, its Commitment cell should read the exact wording from that row's JSON (`"no-commit, 1-month, or 6-month"`) — never the infra-side "1-year or 3-year" vocabulary.
 
 Source: estimation artifact optimization_opportunities
 
@@ -181,17 +191,20 @@ Show this section when `aws-design-ai.json` → `ai_architecture.honest_assessme
 
 **Only include if `generation-ai.json` exists in `$MIGRATION_DIR/` (AI track ran).**
 
-After migration is validated and stable, three optimization levers are available (typical ranges from plugin guidance — validate against your traffic):
+After migration is validated and stable, four optimization levers are available (figures below are AWS's own published numbers where available — see `estimate-ai.md` Part 6, which is the source of truth for these; do not restate different figures here):
 
-| Optimization               | Estimated savings        | When to apply                                    | Prerequisite                                                             |
-| -------------------------- | ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------ |
-| Intelligent Prompt Routing | 10–30%                   | After 2+ weeks of production traffic             | Same model family in multiple tiers (e.g., Claude Sonnet + Haiku)        |
-| Prompt caching             | 20–50% on eligible calls | When prompts have long repeated context          | Minimum ~1K–4K tokens cacheable prefix; per-model minimums and TTL apply |
-| Model distillation         | Up to ~75%               | After 30+ days of stable, high-volume production | Stable prompts, evaluation dataset, sufficient call volume               |
+| Optimization               | Estimated savings                                                 | When to apply                                      | Prerequisite                                                             |
+| -------------------------- | ----------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| Intelligent Prompt Routing | Up to 30% (AWS-published)                                         | After 2+ weeks of production traffic               | Same model family in multiple tiers (e.g., Claude Sonnet + Haiku)        |
+| Prompt caching             | Up to 90% (AWS-published), workload- and cache-hit-rate dependent | When prompts have long repeated context            | Minimum ~1K–4K tokens cacheable prefix; per-model minimums and TTL apply |
+| Multi-model tiered routing | 60–87% (plugin estimate)                                          | High/very-high volume, `tiered_strategy` in design | Same model family available in 2+ cost tiers at design time              |
+| Model distillation         | Up to ~75%                                                        | After 30+ days of stable, high-volume production   | Stable prompts, evaluation dataset, sufficient call volume               |
+
+**Intelligent Prompt Routing vs. Multi-model tiered routing are two distinct mechanisms, not the same lever under two names:** Intelligent Prompt Routing is Bedrock's own automatic per-request router (AWS product feature, "up to 30%" is AWS's published ceiling); Multi-model tiered routing is this plugin's design-time pattern of manually splitting traffic across model tiers ("60-87%" is this plugin's own estimate for that pattern, not an AWS-published figure). Do not merge these into one row.
 
 These are not migration steps — they are post-migration optimizations. Do not block migration on these. Surface as a "Month 2–3" roadmap item.
 
-**Prompt caching caveat:** Caching only helps for long, repeated context windows. Evaluate actual prompt patterns before assuming savings.
+**Prompt caching caveat:** Caching only helps for long, repeated context windows, and the "up to 90%" figure is a ceiling — actual savings depend on cache hit rate and how much of the prompt is cacheable. Evaluate actual prompt patterns before assuming savings.
 
 **Full detail:** Open `ai-workload-profile.json` in this directory.
 

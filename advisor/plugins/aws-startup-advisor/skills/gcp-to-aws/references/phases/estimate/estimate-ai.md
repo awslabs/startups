@@ -131,20 +131,71 @@ Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, p
 
 ## Part 6: Cost Optimization Opportunities
 
-Present applicable optimizations with estimated savings:
+Present applicable optimizations with estimated savings. **Every entry requires a `type`** (stricter than the infra side, where `type` is optional — see `references/shared/ri-sp-eligibility.md` § Consumers) so a Provisioned Throughput row can never silently inherit RI/SP-style commitment language by copy-paste. `commitment` and `target_services` are also required on every entry, for parity with the infra-side render columns consumed by `generate-artifacts-report.md` Appendix B (see that file's key-map table for how the differently-named savings fields on each side map to the same rendered column).
 
-| Optimization               | Savings | Applies When                                        |
-| -------------------------- | ------- | --------------------------------------------------- |
-| Model downsizing / tiering | 60-87%  | High volume, premium model selected                 |
-| Prompt caching (Claude)    | ~30%    | Repeated system prompts                             |
-| Batch API                  | 50%     | Non-real-time workloads (`ai_latency = "flexible"`) |
-| Provisioned throughput     | Varies  | Token volume > 100M/month, predictable traffic      |
-| Input token reduction      | 10-30%  | Prompt optimization, shorter context                |
-| Multi-model tiered routing | 60-87%  | High/very-high volume, `tiered_strategy` in design  |
+**Do not attach the infra-side Activate-credits caveat to any row in this table.** That caveat (`references/shared/ri-sp-eligibility.md` § Required caveats item 2) exists because RIs/Savings Plans have an upfront cost credits can't cover. None of these six AI-side levers have an upfront cost — five are `commitment: "none"` free optimizations, and Provisioned Throughput is billed hourly with no upfront fee. Applying that sentence here would be incorrect, not just redundant.
+
+| Optimization               | `type`                       | Savings                                                               | `commitment`                                                                           | Applies When                                                      |
+| -------------------------- | ---------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Model downsizing / tiering | `model_tiering`              | 60-87%                                                                | `"none"`                                                                               | High volume, premium model selected                               |
+| Prompt caching (Claude)    | `prompt_caching`             | up to 90% (workload- and cache-hit-rate dependent — see caveat below) | `"none"`                                                                               | Repeated system prompts, long cacheable context                   |
+| Batch API                  | `batch_api`                  | 50%                                                                   | `"none"`                                                                               | Non-real-time workloads (`ai_latency = "flexible"`)               |
+| Intelligent Prompt Routing | `intelligent_prompt_routing` | up to 30%                                                             | `"none"`                                                                               | Same model family available in 2+ tiers, latency-tolerant routing |
+| Provisioned throughput     | `provisioned_throughput`     | Varies                                                                | no-commit, 1-month, or 6-month (never "1-year or 3-year" — see `ri-sp-eligibility.md`) | Token volume > 100M/month, predictable traffic                    |
+| Input token reduction      | `input_token_reduction`      | 10-30%                                                                | `"none"`                                                                               | Prompt optimization, shorter context                              |
+| Multi-model tiered routing | `multi_model_routing`        | 60-87%                                                                | `"none"`                                                                               | High/very-high volume, `tiered_strategy` in design                |
+
+**`target_services` is `["Bedrock"]` for all seven entries** — every AI-side optimization applies to Bedrock inference specifically, unlike the infra side where target services genuinely differ per optimization.
+
+**Prompt caching vs. Intelligent Prompt Routing vs. Multi-model tiered routing — these are three distinct mechanisms, do not merge or confuse them:**
+
+- **Prompt caching** reduces cost on _repeated_ input tokens within the _same_ model, via Bedrock's cache-read pricing. AWS's own published figure is "up to 90%" (verified via `docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html` and the GA announcement) — this is a ceiling figure driven by cache hit rate and how much of the prompt is cacheable, not a typical realistic number. Do not use the previous `~30%` estimate found elsewhere in this codebase; that figure was never sourced from AWS and has been corrected.
+- **Intelligent Prompt Routing** is Bedrock's own automatic per-request router between two models in the same family, based on predicted response quality. AWS's own published figure is "up to 30%" (verified via `aws.amazon.com/bedrock/intelligent-prompt-routing/`). This is a **separate row from Multi-model tiered routing** below — do not collapse the two into one entry.
+- **Multi-model tiered routing** is this plugin's own design-time optimization: manually splitting traffic across model tiers by workload type (e.g. simple queries to a cheap model, complex queries to a premium model), driven by `tiered_strategy` in the design artifact. This is not an AWS product feature with a published percentage — the 60-87% figure is this plugin's own estimate for that specific design pattern, distinct from Bedrock's automatic Intelligent Prompt Routing.
 
 For each applicable optimization, calculate before/after monthly cost and show an `optimized_projection` (best-case monthly with all optimizations).
 
-**Post-migration optimization (do not surface during migration):** Model distillation — training a smaller, faster student model from a larger teacher model — can reduce inference costs up to ~75% for high-volume, stable workloads. Requires production traffic, labeled examples, and a teacher/student eval loop. Mention in the estimate summary as: "Once you have 2–4 weeks of Bedrock production traffic, consider model distillation to further reduce costs. See docs.aws.amazon.com/bedrock/latest/userguide/model-distillation.html." Do not recommend distillation before the startup has migrated and validated their workload.
+**Post-migration optimization (do not surface during migration):** Model distillation — training a smaller, faster student model from a larger teacher model — can reduce inference costs up to ~75% for high-volume, stable workloads. Requires production traffic, labeled examples, and a teacher/student eval loop. Mention in the estimate summary as: "Once you have 2–4 weeks of Bedrock production traffic, consider model distillation to further reduce costs. See docs.aws.amazon.com/bedrock/latest/userguide/model-distillation.html." Do not recommend distillation before the startup has migrated and validated their workload. Model distillation is a genuinely different mechanism from model downsizing/tiering above — downsizing picks a cheaper _existing_ model up front, distillation trains a _new, custom_ smaller model post-migration from observed production traffic. Both are legitimate, non-overlapping levers.
+
+**Emit template — one example per `type`:**
+
+```json
+{
+  "opportunity": "Prompt caching",
+  "type": "prompt_caching",
+  "target_services": ["Bedrock"],
+  "potential_savings_monthly": null,
+  "commitment": "none",
+  "implementation_effort": "low",
+  "description": "Repeated system prompts or long shared context qualify for cache-read pricing. AWS's published figure is up to 90% cost reduction on cached tokens — actual savings depend on cache hit rate and how much of the prompt is cacheable."
+}
+```
+
+```json
+{
+  "opportunity": "Intelligent Prompt Routing",
+  "type": "intelligent_prompt_routing",
+  "target_services": ["Bedrock"],
+  "potential_savings_monthly": null,
+  "commitment": "none",
+  "implementation_effort": "low",
+  "description": "Bedrock's automatic per-request router between two models in the same family. AWS's published figure is up to 30% cost reduction without compromising accuracy."
+}
+```
+
+```json
+{
+  "opportunity": "Provisioned Throughput",
+  "type": "provisioned_throughput",
+  "target_services": ["Bedrock"],
+  "potential_savings_monthly": null,
+  "commitment": "no-commit, 1-month, or 6-month",
+  "implementation_effort": "medium",
+  "description": "For sustained, predictable high-volume traffic (>100M tokens/month). Distinct from Reserved Instances/Savings Plans — no 1-year or 3-year term exists for this product. Billed hourly, no upfront fee."
+}
+```
+
+The remaining four types (`model_tiering`, `batch_api`, `input_token_reduction`, `multi_model_routing`) follow the same shape with `"commitment": "none"`.
 
 ---
 
@@ -191,24 +242,24 @@ Write `estimation-ai.json` to `$MIGRATION_DIR/`.
 
 **Schema — top-level fields:**
 
-| Field                           | Type   | Description                                                                                                                     |
-| ------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `phase`                         | string | `"estimate"`                                                                                                                    |
-| `timestamp`                     | string | ISO 8601                                                                                                                        |
-| `pricing_source`                | string | `"cached"` or `"live"`                                                                                                          |
-| `accuracy_confidence`           | string | `"±5-10%"` or `"±15-25%"`                                                                                                       |
-| `current_costs`                 | object | `source`, `gcp_monthly_ai_spend`, `services[]`                                                                                  |
-| `token_volume`                  | object | `source`, `monthly_input_tokens`, `monthly_output_tokens`, ratio                                                                |
-| `model_comparison`              | array  | All viable models: `model`, `monthly_cost`, `vs_current`, `quality`, `capabilities_match`, `missing_capabilities[]`             |
-| `recommended_model`             | object | `model`, `monthly_cost`, `breakdown` (input/output/embeddings), `rationale`                                                     |
-| `backup_model`                  | object | `model`, `monthly_cost`, `rationale`                                                                                            |
-| `embeddings`                    | object | `model`, `monthly_cost`, `monthly_tokens`, `note` (if applicable)                                                               |
-| `cost_comparison`               | object | `current_gcp_monthly`, `projected_bedrock_monthly`, `monthly_difference`, `annual_difference`, `percent_change`                 |
-| `migration_cost_considerations` | object | `categories[]` (always `[]`), `complexity_factors[]` (technical integration only), `note` (must state human/pro costs excluded) |
-| `roi_analysis`                  | object | `monthly_cost_delta`, `annual_cost_delta`, `justification`, `non_cost_benefits[]`                                               |
-| `optimization_opportunities`    | array  | `opportunity`, `potential_savings_monthly`, `implementation_effort`, `description`                                              |
-| `optimized_projection`          | object | `monthly_with_optimizations`, `vs_current`, `note`                                                                              |
-| `recommendation`                | object | `path`, `path_label`, `migrate_if`, `stay_if`, `confidence`, `rationale` (see Part 7)                                           |
+| Field                           | Type   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `phase`                         | string | `"estimate"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `timestamp`                     | string | ISO 8601                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `pricing_source`                | string | `"cached"` or `"live"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `accuracy_confidence`           | string | `"±5-10%"` or `"±15-25%"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `current_costs`                 | object | `source`, `gcp_monthly_ai_spend`, `services[]`                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `token_volume`                  | object | `source`, `monthly_input_tokens`, `monthly_output_tokens`, ratio                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `model_comparison`              | array  | All viable models: `model`, `monthly_cost`, `vs_current`, `quality`, `capabilities_match`, `missing_capabilities[]`                                                                                                                                                                                                                                                                                                                                                                              |
+| `recommended_model`             | object | `model`, `monthly_cost`, `breakdown` (input/output/embeddings), `rationale`                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `backup_model`                  | object | `model`, `monthly_cost`, `rationale`                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `embeddings`                    | object | `model`, `monthly_cost`, `monthly_tokens`, `note` (if applicable)                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `cost_comparison`               | object | `current_gcp_monthly`, `projected_bedrock_monthly`, `monthly_difference`, `annual_difference`, `percent_change`                                                                                                                                                                                                                                                                                                                                                                                  |
+| `migration_cost_considerations` | object | `categories[]` (always `[]`), `complexity_factors[]` (technical integration only), `note` (must state human/pro costs excluded)                                                                                                                                                                                                                                                                                                                                                                  |
+| `roi_analysis`                  | object | `monthly_cost_delta`, `annual_cost_delta`, `justification`, `non_cost_benefits[]`                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `optimization_opportunities`    | array  | `opportunity`, `type` (**required** — one of `model_tiering`, `prompt_caching`, `batch_api`, `intelligent_prompt_routing`, `provisioned_throughput`, `input_token_reduction`, `multi_model_routing`), `target_services` (always `["Bedrock"]`), `commitment` (`"none"` for all except `provisioned_throughput`, which uses the exact vocabulary from `references/shared/ri-sp-eligibility.md` — never "1-year" or "3-year"), `potential_savings_monthly`, `implementation_effort`, `description` |
+| `optimized_projection`          | object | `monthly_with_optimizations`, `vs_current`, `note`                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `recommendation`                | object | `path`, `path_label`, `migrate_if`, `stay_if`, `confidence`, `rationale` (see Part 7)                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 All cost values are numbers, not strings. Output must be valid JSON.
 
@@ -224,6 +275,9 @@ All cost values are numbers, not strings. Output must be valid JSON.
 - [ ] `recommended_model.rationale` references user's priority, preference, and volume
 - [ ] `roi_analysis` is honest — if migration increases cost, says so
 - [ ] `optimization_opportunities` only includes strategies relevant to user's workload
+- [ ] Every `optimization_opportunities[]` entry has `type`, `commitment`, and `target_services` — none are omitted
+- [ ] The `provisioned_throughput` entry's `commitment` is `"no-commit, 1-month, or 6-month"` (or equivalent exact wording from `references/shared/ri-sp-eligibility.md`) — never `"1-year"` or `"3-year"`
+- [ ] No `optimization_opportunities[]` entry carries the infra-side Activate-credits caveat sentence — none of these six levers have an upfront cost for that caveat to apply to
 - [ ] No compute, database, storage, or networking costs (those belong in `estimate-infra.md`)
 - [ ] `migration_cost_considerations.categories` is `[]` — no human one-time migration costs presented
 
@@ -244,7 +298,7 @@ After writing `estimation-ai.json`, present under 25 lines:
 3. Model comparison table: model name, estimated monthly cost, vs source provider %, capabilities match
 4. Recommended model with estimated monthly cost breakdown
 5. If migration increases cost: flag honestly with non-cost justification
-6. Top 2-3 optimization opportunities with potential estimated monthly savings
+6. Top 2-3 optimization opportunities with potential estimated monthly savings. If Provisioned Throughput is among the top entries shown, state its commitment terms explicitly: "no-commit, 1-month, or 6-month" — never imply a 1-year or 3-year term. Do not attach the "Activate credits don't cover upfront RI/SP costs" caveat here — none of these AI-side optimizations have an upfront cost.
 7. Optimized projection
 
 **Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact.
