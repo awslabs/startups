@@ -111,9 +111,10 @@ and required caveats, not the JSON schema or dollar formulas.
 
 **AI-track note (`estimate-ai.md`):** this file's Bedrock row is the source of
 truth for the Provisioned Throughput `type` value and commitment vocabulary.
-The other AI-side optimizations (prompt caching, model tiering, batch API,
-input token reduction, multi-model routing) are not AWS commitment products —
-they carry `commitment: "none"` and are outside this file's eligibility
-matrix, which covers only RI/SP-style commitment products. Do not add them to
-the matrix above; this file's scope is commitment-product eligibility, not a
-general catalog of every Bedrock cost lever.
+The other six AI-side optimizations (prompt caching, model tiering, batch API,
+input token reduction, multi-model routing, intelligent prompt routing) are
+not AWS commitment products — they carry `commitment: "none"` and are outside
+this file's eligibility matrix, which covers only RI/SP-style commitment
+products. Do not add them to the matrix above; this file's scope is
+commitment-product eligibility, not a general catalog of every Bedrock cost
+lever.
