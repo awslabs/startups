@@ -371,19 +371,19 @@ Write the complete HTML to `$MIGRATION_DIR/migration-report.html`.
 
 The output MUST include these `id` attributes (content from Steps 1–2; gates check **presence only**):
 
-| Section ID           | Content                                |
-| -------------------- | -------------------------------------- |
-| `decision-summary`   | Section 0 — Migration Decision Summary |
-| `exec-services`      | Primary services summary               |
-| `exec-costs`         | Cost comparison headline / tier table  |
-| `exec-optimization`  | Cost Optimization (SP / RI) — required when `optimization_opportunities[]` is non-empty |
-| `exec-timeline`      | Migration shape (stages + drivers)     |
-| `exec-risks`         | Top risks                              |
-| `appendix-services`  | Appendix A                             |
-| `appendix-costs`     | Appendix B                             |
+| Section ID              | Content                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| `decision-summary`      | Section 0 — Migration Decision Summary                                                           |
+| `exec-services`         | Primary services summary                                                                         |
+| `exec-costs`            | Cost comparison headline / tier table                                                            |
+| `exec-optimization`     | Cost Optimization (SP / RI) — required when `optimization_opportunities[]` is non-empty          |
+| `exec-timeline`         | Migration shape (stages + drivers)                                                               |
+| `exec-risks`            | Top risks                                                                                        |
+| `appendix-services`     | Appendix A                                                                                       |
+| `appendix-costs`        | Appendix B                                                                                       |
 | `appendix-optimization` | Savings Plans / RI opportunity table — required when `optimization_opportunities[]` is non-empty |
-| `appendix-steps`     | Appendix C                             |
-| `appendix-artifacts` | Appendix E                             |
+| `appendix-steps`        | Appendix C                                                                                       |
+| `appendix-artifacts`    | Appendix E                                                                                       |
 
 Conditional IDs (include when their trigger applies): `exec-share`, `exec-tco`, `exec-architecture`, `exec-security-teaser`, `exec-optimization`, `what-if-scenarios`, `appendix-ai`, `appendix-config`, `appendix-security`, `appendix-security-gap`, `appendix-assumptions`, `appendix-optimization`, `appendix-glossary`.
 
