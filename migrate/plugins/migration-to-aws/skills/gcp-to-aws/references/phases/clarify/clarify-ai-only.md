@@ -186,7 +186,7 @@ _Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` **wi
 | Source        | Baseline Recommendation        | Pricing Context                    |
 | ------------- | ------------------------------ | ---------------------------------- |
 | Gemini Flash  | Claude Haiku 4.5 ($1/$5)       | Strong savings                     |
-| Gemini Pro    | Claude Sonnet 5 ($3/$15)       | Comparable tier                    |
+| Gemini Pro    | Claude Sonnet 5 ($2/$10)       | Comparable tier, slightly cheaper  |
 | GPT-5.6 (any) | **Same model on Bedrock**      | ~10% over OpenAI std (DR tier)     |
 | GPT-5.5       | **Same model on Bedrock**      | ~10% over OpenAI std (DR tier)     |
 | GPT-5.4       | **Same model on Bedrock**      | ~10% over OpenAI std (DR tier)     |
