@@ -1,11 +1,18 @@
 ---
 name: llm-to-bedrock
-description: "Use when the user wants to migrate code that calls OpenAI, Gemini/Google AI, or the Anthropic API to Amazon Bedrock — a pure model/SDK rewrite. End-to-end: assesses the codebase, then rewrites SDK calls, evaluates output quality against Bedrock, and delivers a ready-to-merge git branch. Not for: agent runtime selection, agentic architecture decisions, or agent migration planning — use agent-advisor for those. Not for standalone Bedrock cost estimates or infrastructure-only migration. The Assess phase is handled by this plugin's own gcp-to-aws skill."
+description: "Use when the user wants to migrate code that calls OpenAI, Gemini/Google AI, or the Anthropic API to Amazon Bedrock — a pure model/SDK rewrite. End-to-end: assesses the codebase, then rewrites SDK calls, evaluates output quality against Bedrock, and delivers a ready-to-merge git branch. Not for: agent runtime selection, agentic architecture decisions, or agent migration planning — use agent-advisor for those. Not for standalone Bedrock cost estimates or infrastructure-only migration. REQUIRES the gcp-to-aws skill installed alongside this one — Assess is delegated entirely to it via a cross-skill invocation, with no standalone fallback if gcp-to-aws is absent."
 ---
 
 # Migrate to Bedrock (Assess + Execute)
 
 Single-command AI migration: OpenAI / Gemini / Anthropic → Amazon Bedrock.
+
+**Requires the `gcp-to-aws` skill installed alongside this one.** This skill has no
+standalone Assess implementation — Phase A below delegates Assess entirely to `gcp-to-aws`
+via a cross-skill invocation, and there is no fallback path that performs Assess itself if
+`gcp-to-aws` is missing. The normal `/plugin install migration-to-aws@startups` (or Codex/
+Cursor equivalent) installs both together; this only matters if `gcp-to-aws` was removed or
+excluded afterward (e.g. a partial local-development symlink).
 
 The skill base directory is given in the "Base directory for this skill: X" line the harness
 emits at load time. Call it `<SKILL_BASE>`. Derived paths:
@@ -24,6 +31,46 @@ uv --version 2>/dev/null || echo "MISSING"
 ```
 
 If missing: "Install uv first — see the official install guide: https://docs.astral.sh/uv/getting-started/installation/ (e.g. `brew install uv` or `pipx install uv`)". Stop.
+
+### 0b. Check that the gcp-to-aws sibling skill is installed
+
+Phase A below delegates the entire Assess step to the `gcp-to-aws` skill via the Skill tool —
+there is no Assess logic in this skill to fall back to. Check for it now, before promising the
+user an Assess phase this deployment cannot run:
+
+```bash
+[ -f "<SKILL_BASE>/../gcp-to-aws/SKILL.md" ] && echo GCP_TO_AWS_PRESENT || echo GCP_TO_AWS_MISSING
+```
+
+This checks the sibling directory relative to `<SKILL_BASE>` (defined above), which works
+under this plugin's normal install layout as well as a local-development symlink into
+`~/.cursor/plugins/local/migration-to-aws`.
+
+- `GCP_TO_AWS_PRESENT` → proceed to Step 1.
+- `GCP_TO_AWS_MISSING` → **stop here — do not proceed.** Tell the user:
+
+  > "This migration needs the `gcp-to-aws` skill installed alongside this one — it handles
+  > code scanning, AI-workload detection, and Bedrock model design; I can't do that part myself
+  > without it. Re-install this plugin with `/plugin install migration-to-aws@startups`
+  > (or the Codex/Cursor equivalent) so both skills come together, then ask me to migrate
+  > again."
+
+  **Do not** perform the Assess phase yourself as a workaround — Phase A below is explicit that
+  Assess logic lives only in `gcp-to-aws`; re-implementing it here would drift out of sync with
+  that skill's Discover/Clarify/Design logic over time. There is no standalone Assess for this
+  skill — this check exists to fail fast and clearly, not to unlock alternate behavior.
+
+**Separately, invoking `gcp-to-aws` at all in Phase A requires your agent to support the
+Skill tool** (cross-skill invocation by name). This is confirmed for Claude Code; it has not
+been verified across every agent this plugin installs into (Cursor, Codex, etc.) — if you're
+on one of those and this fails, that is the likely cause. If the Skill tool call in Phase A's
+A1 step fails or no such mechanism exists on your agent, this skill still has no fallback:
+tell the user plainly that this agent cannot chain into `gcp-to-aws` automatically, and ask
+them to invoke `gcp-to-aws` themselves directly (e.g. "migrate my AI workload to AWS") to run
+Discover through Generate, then come back to this skill once its `generate` phase is
+`completed` (checked in A2) to continue with the SDK rewrite. This is a manual two-step
+workaround for a missing agent capability, not an automated fallback — do not present it to
+the user as this skill "handling it."
 
 ---
 
