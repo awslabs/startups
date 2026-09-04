@@ -197,6 +197,7 @@
         <li><a href="#exec-tco">Estimated AWS Monthly Run Rate</a></li>
         <li><a href="#exec-services">Current Stack Overview</a></li>
         <li><a href="#exec-costs">Infrastructure Cost Comparison</a></li>
+        <li><a href="#exec-optimization">Cost Optimization</a></li>
         <li><a href="#exec-architecture">Architecture Overview</a></li>
         <li><a href="#exec-security-teaser">Security Posture</a></li>
         <li><a href="#exec-timeline">Migration Shape</a></li>
@@ -208,6 +209,7 @@
       <ul class="toc-appendix">
         <li><a href="#appendix-services">Appendix A — Service Recommendations</a></li>
         <li><a href="#appendix-costs">Appendix B — Cost Estimates</a></li>
+        <li><a href="#appendix-optimization">Appendix B.1 — Savings Plans and Reserved Instances</a></li>
         <li><a href="#appendix-steps">Appendix C — Migration Steps &amp; Rollback</a></li>
         <li><a href="#appendix-ai">Appendix D — AI Migration</a></li>
         <li><a href="#appendix-config">Your Configuration Choices</a></li>
@@ -351,6 +353,53 @@
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <section id="exec-optimization">
+      <h2>Cost Optimization</h2>
+      <p>Generated Terraform is <strong>Balanced on-demand</strong> (Est. $112/mo).
+         Savings Plans and Reserved Instances are account-level purchases after you
+         have a usage baseline. Do not add these rows on top of the Optimized tier
+         (Est. $82/mo) — that tier already embeds illustrative Spot and 1-year
+         Savings Plan assumptions.</p>
+      <table>
+        <caption>How the estimated monthly run rate changes if this stack takes a commitment. Figures are incremental to Balanced on-demand.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Posture</th>
+            <th scope="col">Est. monthly</th>
+            <th scope="col">vs Balanced</th>
+            <th scope="col">What you commit to</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Balanced on-demand (this Terraform)</td>
+            <td>Est. $112</td>
+            <td>—</td>
+            <td>No term commitment. Pay list hourly rates.</td>
+          </tr>
+          <tr>
+            <td>Compute Savings Plan (1-year, no upfront)</td>
+            <td>Est. $100</td>
+            <td>−$12</td>
+            <td>Covers Fargate after 30–90 days of Cost Explorer data.</td>
+          </tr>
+          <tr>
+            <td>Database Savings Plan (1-year, no upfront)</td>
+            <td>Est. ~20% off RDS</td>
+            <td>Typical ~20% on provisioned RDS</td>
+            <td>Mutually exclusive with RDS Reserved Instances on the same workload.</td>
+          </tr>
+          <tr>
+            <td>Optimized composite (illustrative bound)</td>
+            <td>Est. $82</td>
+            <td>−$30</td>
+            <td>Already includes Spot and 1-year Savings Plan assumptions. Use as a floor, not a sum of extra discounts.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Line-level targets are in <a href="#appendix-optimization">Savings Plans and Reserved Instances</a>.</p>
     </section>
 
     <!-- ARCHITECTURE -->
@@ -672,20 +721,8 @@
         </tbody>
       </table>
       <p>Tier totals (Premium / Balanced / Optimized) and annual differences are in the
-         <a href="#exec-costs">Infrastructure Cost Comparison</a> above.</p>
-
-      <h3>Optimization opportunities</h3>
-      <table>
-        <caption>Estimated cost savings available post-migration, infra and AI combined.</caption>
-        <thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
-        <tbody>
-          <tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td><td>1-year no-upfront</td><td>Low (post-migration)</td></tr>
-          <tr><td>S3 Infrequent Access</td><td>S3 build artifacts</td><td>$1/mo (38%)</td><td>None</td><td>Low</td></tr>
-          <tr><td>Fargate Spot</td><td>Fargate dev/staging</td><td>$8/mo (70%)</td><td>None</td><td>Medium</td></tr>
-          <tr><td>Model downsizing (AI)</td><td>Bedrock text</td><td>$766/mo</td><td>None</td><td>Low (after A/B test)</td></tr>
-          <tr><td>Prompt caching (Claude)</td><td>Bedrock</td><td>$54/mo</td><td>None</td><td>Low</td></tr>
-        </tbody>
-      </table>
+         <a href="#exec-costs">Infrastructure Cost Comparison</a> above.
+         Commitment discounts are in <a href="#appendix-optimization">Savings Plans and Reserved Instances</a>.</p>
 
       <h3>Non-cost benefits (from ROI analysis)</h3>
       <ul class="compact">
@@ -695,6 +732,24 @@
         <li>30+ Bedrock models without multi-vendor API keys; Guardrails and Knowledge Bases for future Retrieval-Augmented Generation (RAG)</li>
         <li>Vendor diversification away from single-cloud GCP dependency</li>
       </ul>
+    </section>
+
+    <section id="appendix-optimization">
+      <h2>Savings Plans and Reserved Instances</h2>
+      <p>Incremental to Balanced on-demand (Est. $112/mo). Do not add these savings
+         onto Optimized (Est. $82/mo) — that tier already embeds reservation and Spot assumptions.</p>
+      <table>
+        <caption>Estimated cost savings available post-migration, infra and AI combined.</caption>
+        <thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+        <tbody>
+          <tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td><td>1-year no-upfront</td><td>Low (post-migration)</td></tr>
+          <tr><td>Database Savings Plans</td><td>RDS</td><td>~20%</td><td>1-year no-upfront</td><td>Low</td></tr>
+          <tr><td>S3 Infrequent Access</td><td>S3 build artifacts</td><td>$1/mo (38%)</td><td>None</td><td>Low</td></tr>
+          <tr><td>Fargate Spot</td><td>Fargate dev/staging</td><td>$8/mo (70%)</td><td>None</td><td>Medium</td></tr>
+          <tr><td>Model downsizing (AI)</td><td>Bedrock text</td><td>$766/mo</td><td>None</td><td>Low (after A/B test)</td></tr>
+          <tr><td>Prompt caching (Claude)</td><td>Bedrock</td><td>$54/mo</td><td>None</td><td>Low</td></tr>
+        </tbody>
+      </table>
     </section>
 
     <section id="appendix-steps">

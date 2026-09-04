@@ -22,10 +22,11 @@ readability checks that matter for this report live inside this script.
 python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   "$MIGRATION_DIR/migration-report.html" \
   --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
-  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json" \
+  --aws-design "$MIGRATION_DIR/aws-design.json"
 ```
 
-Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Flags:
+Pass `--estimation-infra` / `--estimation-ai` / `--aws-design` only when those files exist. Flags:
 
 - `--migration-dir "$MIGRATION_DIR"` — enables **fixture-bleed detection** on real runs (the reference canary ID must not appear, and the report's migration ID must match the run folder). Omit it when validating the reference fixture itself.
 - `--no-require-toc` — skip the TOC requirement (for minimal test fixtures only).
@@ -94,6 +95,7 @@ decision reports.
 | 22 | Whole-stack stay language          | The decision summary uses “Stay entirely if”; ambiguous “Stay if” headings and `badge-verdict-*` pills are rejected                                                                                                                                                                           |
 | 23 | Leadership brief                   | When an estimation artifact is passed, `exec-share` contains a static, copy-ready `share-card` without scripts or controls                                                                                                                                                                    |
 | 24 | Accessibility semantics            | Normal generated reports declare document language, contain exactly one `<h1>`, caption every table, scope table headers, and give every figure an image role, accessible name, and text alternative                                                                                          |
+| 25 | Cost Optimization section          | If `optimization_opportunities[]` is non-empty: exactly one `exec-optimization` (TOC-linked) comparing Balanced on-demand vs Savings Plans / RI, plus (full mode only) a standalone `appendix-optimization` table with Optimization / Target / Monthly savings / Commitment / Effort columns. A table buried only in `appendix-costs` fails. Do not add SP/RI savings on top of Optimized. If RDS/Aurora/Fargate/Lambda is in `--aws-design` or opportunity targets, the section must include a Savings Plans or Reserved Instances row |
 
 Checks 10, 11, and 15 scan the `<body>` with `<style>` stripped, so CSS class names (e.g. `.rubric`) and selectors never trip them. The same readability scan rejects customer-facing "TCO" because modeled cloud charges do not include staffing or operating labor. Check 15 scopes to executive-flow sections only — appendices may carry artifact filenames and resource IDs by design. Disable checks 10, 11, and 15 with `--no-readability` only for non-customer fixtures. Check 14 is inert without `--migration-dir`, so validating the reference fixture (which legitimately contains the canary ID) never self-trips. Checks 16–17 apply whenever the corresponding sections/headings exist.
 
@@ -107,7 +109,9 @@ Checks 10, 11, and 15 scan the `<body>` with `<style>` stripped, so CSS class na
 | `exec-tco`              | Both `estimation-infra.json` and `estimation-ai.json` exist                                                    |
 | `exec-architecture`     | `aws-design.json` with clusters exists                                                                         |
 | `exec-security-teaser`  | `estimation-infra.json` has `security_baseline` breakdown (compact summary; full table in `appendix-security`) |
+| `exec-optimization`     | `optimization_opportunities[]` is non-empty — **required** when that trigger holds (standalone section, not a table only in Appendix B) |
 | `what-if-scenarios`     | `scenarios/index.json` has ≥2 scenarios (baseline + workshop variant) — **required** when that trigger holds   |
+| `appendix-optimization` | Same trigger as `exec-optimization` — full mode only; decision mode forbids appendices                         |
 | `appendix-ai`           | `estimation-ai.json` or `aws-design-ai.json` exists                                                            |
 | `appendix-config`       | `preferences.json` exists — question/answer/consequence table from `prompt` and `design_consequence` fields    |
 | `appendix-security`     | Full security capabilities table (rendered in the appendix)                                                    |

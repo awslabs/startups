@@ -85,5 +85,41 @@
       "aws_monthly": 112,
       "percent_change": "-32%"
     }
-  }
+  },
+  "optimization_opportunities": [
+    {
+      "opportunity": "Compute Savings Plans",
+      "type": "compute_savings_plan",
+      "target_services": ["Fargate"],
+      "savings_percent": "20–40%",
+      "commitment": "1-year no-upfront",
+      "implementation_effort": "Low (post-migration)",
+      "description": "Commit Fargate usage after 30–90 days of Cost Explorer data."
+    },
+    {
+      "opportunity": "Database Savings Plans",
+      "type": "database_savings_plan",
+      "target_services": ["RDS"],
+      "savings_percent": "~20%",
+      "commitment": "1-year no-upfront",
+      "implementation_effort": "Low",
+      "description": "Covers provisioned RDS. Mutually exclusive with RDS Reserved Instances on the same workload."
+    },
+    {
+      "opportunity": "S3 Infrequent Access",
+      "target_services": ["S3"],
+      "savings_percent": "38%",
+      "savings_monthly": 1,
+      "commitment": "None",
+      "implementation_effort": "Low"
+    },
+    {
+      "opportunity": "Fargate Spot",
+      "target_services": ["Fargate"],
+      "savings_percent": "70%",
+      "savings_monthly": 8,
+      "commitment": "None",
+      "implementation_effort": "Medium"
+    }
+  ]
 }

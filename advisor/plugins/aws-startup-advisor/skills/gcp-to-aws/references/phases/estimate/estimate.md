@@ -193,6 +193,8 @@ commit." Suggest at most one.
      per that file's decision-mode rules (no appendices, no Terraform, CTA
      footer). Validate with
      `python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" "$MIGRATION_DIR/decision-report.html" --mode decision`
+     and pass `--estimation-infra` / `--estimation-ai` / `--aws-design` when
+     those files exist so the Cost Optimization gate can fire
      (absolute paths — cwd must not be load-bearing) and fix failures before
      presenting.
   2. Set `run_mode: "decide"` and `current_phase: "complete"` in
