@@ -22,6 +22,7 @@ For typical migrations (Claude, Llama, Nova, Mistral, DeepSeek, Gemma, OpenAI gp
 - **Excluded** (≤90 days to EOL): omit entirely from `model_comparison`, `recommended_model`, and `backup_model`.
 - **Legacy** (>90 days to EOL): include in `model_comparison` with `(Legacy — EOL YYYY-MM-DD)` annotation. Do not select as `recommended_model` unless no Active alternative exists.
 - **Active**: no restrictions.
+- **Restricted** (`restricted (…)` in the `pricing-cache.md` Status column — Covered Models such as Claude Fable 5 / 5.1, gated previews such as Claude Mythos): never `recommended_model` or `backup_model`. Include in `model_comparison` only when the user explicitly asked for a frontier model, annotated with the data-retention opt-in it requires.
 
 ## Prerequisites
 
@@ -123,7 +124,7 @@ Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, p
 
 **Non-cost benefits to present:** usage counting toward existing AWS commitments, IAM/VPC/PrivateLink/KMS/CloudTrail governance, in-region processing for data residency, prompt caching (Claude, and GPT-5.6 at 90% off cached input with cached tokens exempt from the input-TPM quota), model flexibility (100+ models), AWS ecosystem (Guardrails, Knowledge Bases, AgentCore), and — for a same-model move — the elimination of behavior-delta and prompt-regression risk.
 
-**Pricing source caveat for OpenAI models:** the AWS Price List API does not carry the proprietary GPT-5.x models, so the `awspricing` MCP returns no rows for them. An empty result is **not** evidence the model is unavailable or free. Use `shared/pricing-cache.md`, and treat rows marked `unverified` there as blocking for any quoted figure — resolve them from the Bedrock pricing page first. See `shared/openai-on-bedrock.md`.
+**Pricing source caveat (all providers):** a `pricing-cache.md` cell marked `_unverified_` is **blocking for any quoted figure, whatever the provider** — resolve it from the Bedrock pricing page or the model card before the row enters `model_comparison` or the ROI table; never substitute a guess or a same-tier sibling's rate. The most common cause is the AWS Price List API: it does not carry the proprietary GPT-5.x models (so the `awspricing` MCP returns no rows for them) and it lags new Anthropic frontier launches. An empty MCP result is **not** evidence the model is unavailable or free. See `shared/openai-on-bedrock.md`.
 
 **Note:** Human/professional-services one-time migration costs are intentionally out of scope for this advisor and excluded from ROI calculations.
 
@@ -220,6 +221,7 @@ All cost values are numbers, not strings. Output must be valid JSON.
 - [ ] `model_comparison` includes ALL viable Bedrock models, not just recommended
 - [ ] Legacy models in `model_comparison` are annotated with EOL dates (per `shared/ai-model-lifecycle.md`)
 - [ ] `recommended_model` is an Active model (not Legacy) unless no Active alternative exists
+- [ ] Neither `recommended_model` nor `backup_model` carries a `restricted (…)` Status in `shared/pricing-cache.md`
 - [ ] Every model has `capabilities_match` checked against `ai_capabilities_required`
 - [ ] `recommended_model.rationale` references user's priority, preference, and volume
 - [ ] `roi_analysis` is honest — if migration increases cost, says so
