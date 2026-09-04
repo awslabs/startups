@@ -356,27 +356,30 @@ Sum the dev-tier line items to get `aws_monthly_range_usd.low`. Multiply by 1.5 
 
 The table above is a **development-tier stub**. Quoting that sum as "AWS cost" when Terraform authored production sizes is a trust failure (users compare it to their real bill and quit).
 
-**Before writing any dollar range**, scan PRIMARY resource `config` (and node-pool config when the primary is GKE). Fire the gate if **any** row matches. Record every match (cap the stored list at 5).
+**Before writing any dollar range**, scan inventory `config` for **every** resource whose `type` is in the table below — **including SECONDARY**. `google_compute_instance_template`, `google_compute_*_instance_group_manager`, and `google_dataflow_job` are not Priority-1 PRIMARY types; if you only scan PRIMARY, those rows are dead letter.
 
-| Resource type                                              | Preview default being compared       | Fire if any authored field is true                                                                                                                          |
-| ---------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `google_cloud_run_v2_service` / `google_cloud_run_service` | 0.5 vCPU, 1 GB, 1 instance           | `min_instance_count` > 1; parsed CPU **> 1** vCPU (`8000m` = 8, `4000m` = 4, bare `2` = 2); memory **> 2Gi** (`16Gi`, `8Gi`)                                |
-| `google_sql_database_instance`                             | `db.t4g.micro`, 20 GB, single-AZ     | `disk_size_gb` > 20; `availability_type` is `REGIONAL`; `tier` is not `db-f1-micro` or `db-g1-small`; `master_instance_name` is set (replica); `count` > 1  |
-| `google_redis_instance`                                    | `cache.t4g.micro` (~1 GB), single-AZ | `memory_size_gb` > 1; `tier` contains `HA` or is `STANDARD` / `STANDARD_HA`                                                                                 |
-| `google_container_cluster` / `google_container_node_pool`  | 2× `t4g.small`                       | `machine_type` present and does **not** match `*micro*` or `*small*`; `initial_node_count`, `min_node_count`, or `gke_node_count` > 2; `max_node_count` > 2 |
-| `google_compute_instance`                                  | `t4g.small`                          | `machine_type` present and does **not** match `*micro*` or `*small*`                                                                                        |
-| `google_filestore_instance`                                | 10 GB                                | `capacity_gb` > 10                                                                                                                                          |
-| `google_spanner_instance`                                  | 0.5–1 ACU                            | `num_nodes` > 1; `processing_units` > 100                                                                                                                   |
+Fire the gate if **any** row matches. Record every match, then keep at most 5 signals in this **fixed type order** (do not pick by “largest deviation” — units are not comparable): Cloud SQL → Redis → GKE / node pool → Cloud Run → Dataflow → instance template / MIG → others (GCE instance, Filestore, Spanner). Within a type, keep inventory order.
+
+| Resource type                                                                            | Preview default being compared       | Fire if any authored field is true                                                                                                                          |
+| ---------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `google_cloud_run_v2_service` / `google_cloud_run_service`                               | 0.5 vCPU, 1 GB, 1 instance           | `min_instance_count` > 1; parsed CPU **> 1** vCPU (`8000m` = 8, `4000m` = 4, bare `2` = 2); memory **> 2Gi** (`16Gi`, `8Gi`)                                |
+| `google_sql_database_instance`                                                           | `db.t4g.micro`, 20 GB, single-AZ     | `disk_size_gb` > 20; `availability_type` is `REGIONAL`; `tier` is not `db-f1-micro` or `db-g1-small`; `master_instance_name` is set (replica); `count` > 1  |
+| `google_redis_instance`                                                                  | `cache.t4g.micro` (~1 GB), single-AZ | `memory_size_gb` > 1; `tier` contains `HA` or is `STANDARD` / `STANDARD_HA`                                                                                 |
+| `google_container_cluster` / `google_container_node_pool`                                | 2× `t4g.small`                       | `machine_type` present and does **not** match `*micro*` or `*small*`; `initial_node_count`, `min_node_count`, or `gke_node_count` > 2; `max_node_count` > 2 |
+| `google_dataflow_job`                                                                    | not stubbed (omitted service)        | **any presence** of this type fires (this is a missing stub line, not a size miss). Prefer recording `max_workers` / `machine_type` when set                |
+| `google_compute_instance_template`                                                       | `t4g.small`                          | `machine_type` present and does **not** match `*micro*` or `*small*`                                                                                        |
+| `google_compute_instance_group_manager` / `google_compute_region_instance_group_manager` | 1 instance                           | `target_size` > 2; or a linked `google_compute_region_autoscaler` / `google_compute_autoscaler` has `min_replicas` > 2                                      |
+| `google_compute_instance`                                                                | `t4g.small`                          | `machine_type` present and does **not** match `*micro*` or `*small*`                                                                                        |
+| `google_filestore_instance`                                                              | 10 GB                                | `capacity_gb` > 10                                                                                                                                          |
+| `google_spanner_instance`                                                                | 0.5–1 ACU                            | `num_nodes` > 1; `processing_units` > 100                                                                                                                   |
 
 If the gate fires:
 
 1. **Do not** compute or store the stub sum. A suppressed quote must never appear as `aws_monthly_range_usd.low` / `.high`.
 2. Set `cost_preview.aws_monthly_range_usd` to `null`.
-3. Set `cost_preview.quote_suppressed` to `true`.
-4. Set `cost_preview.quote_suppressed_reason` to `"authored_sizes_exceed_preview_defaults"`.
-5. Set `cost_preview.authored_size_signals` to an array of short strings (`address: field=value`, max 5).
-6. Set `cost_preview.disclaimer` to: `"Discover does not quote a monthly AWS range when Terraform sizes exceed the preview's hardcoded development defaults. Estimate after Clarify prices the authored (or user-confirmed) sizes."`
-7. Still set `gcp_monthly_usd` from billing when present (that number is real). Never invent GCP spend.
+3. Set `cost_preview.quote_suppressed` to `true`, `quote_suppressed_reason` to `"authored_sizes_exceed_preview_defaults"`, and `authored_size_signals` to the ordered list from above (`address: field=value`, max 5).
+4. Set `cost_preview.disclaimer` to: `"Discover does not quote a monthly AWS range when Terraform sizes exceed the preview's hardcoded development defaults. Estimate after Clarify prices the authored (or user-confirmed) sizes."`
+5. Still set `gcp_monthly_usd` from billing when present (that number is real). Never invent GCP spend.
 
 If the gate does **not** fire, keep the existing stub-range behavior (`quote_suppressed: false` or omit the new fields).
 
@@ -454,7 +457,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
 - `cost_preview` is `null` if neither IaC nor billing data was available
 - `cost_preview.gcp_monthly_usd` is `null` if no billing data (IaC-only run)
 - `cost_preview.aws_monthly_range_usd` is `null` when `quote_suppressed` is `true` (authored-size gate). Do not write a stub low/high "for later."
-- `cost_preview.quote_suppressed` / `quote_suppressed_reason` / `authored_size_signals` are required when the authored-size gate fired; omit them when it did not
+- `cost_preview.quote_suppressed` / `quote_suppressed_reason` / `authored_size_signals` / `disclaimer` are required when the authored-size gate fired; omit the first three when it did not. When suppressed, `disclaimer` is the gate sentence in step 4 (not the stub “dev-tier ±30%” line). When not suppressed, `disclaimer` stays the existing stub sentence.
 - `ai_detected` is `true` if `ai-workload-profile.json` exists
 - `services_summary` lists only PRIMARY resources, deduplicated by `gcp_type`
 - `eligible_for_clarify_fast_path` is `false` whenever `ai_detected == true`, regardless of infra complexity
