@@ -22,6 +22,7 @@ For typical migrations (Claude, Llama, Nova, Mistral, DeepSeek, Gemma, OpenAI gp
 - **Excluded** (≤90 days to EOL): omit entirely from `model_comparison`, `recommended_model`, and `backup_model`.
 - **Legacy** (>90 days to EOL): include in `model_comparison` with `(Legacy — EOL YYYY-MM-DD)` annotation. Do not select as `recommended_model` unless no Active alternative exists.
 - **Active**: no restrictions.
+- **Restricted** (`restricted (…)` in the `pricing-cache.md` Status column — Covered Models such as Claude Fable 5 / 5.1, gated previews such as Claude Mythos): never `recommended_model` or `backup_model`. Include in `model_comparison` only when the user explicitly asked for a frontier model, annotated with the data-retention opt-in it requires.
 
 ## Prerequisites
 
@@ -220,6 +221,7 @@ All cost values are numbers, not strings. Output must be valid JSON.
 - [ ] `model_comparison` includes ALL viable Bedrock models, not just recommended
 - [ ] Legacy models in `model_comparison` are annotated with EOL dates (per `shared/ai-model-lifecycle.md`)
 - [ ] `recommended_model` is an Active model (not Legacy) unless no Active alternative exists
+- [ ] Neither `recommended_model` nor `backup_model` carries a `restricted (…)` Status in `shared/pricing-cache.md`
 - [ ] Every model has `capabilities_match` checked against `ai_capabilities_required`
 - [ ] `recommended_model.rationale` references user's priority, preference, and volume
 - [ ] `roi_analysis` is honest — if migration increases cost, says so
