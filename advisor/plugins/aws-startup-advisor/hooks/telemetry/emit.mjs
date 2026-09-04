@@ -13,9 +13,10 @@
 // and a run with no declared owner emits nothing.
 //
 // Fail-open: every path exits 0 and surfaces nothing to the customer. The one
-// deliberate exception to "the snapshot advances regardless" is a missing
-// endpoint: with no endpoint configured nothing was attempted, so the snapshot
-// is left alone and the run is reported in full once an endpoint exists.
+// deliberate exception to "the snapshot advances regardless" is a disabled
+// endpoint (AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT set to empty): nothing was
+// attempted, so the snapshot is left alone and the run is reported in full
+// once sending is re-enabled.
 
 import { promises as fs } from "node:fs";
 import { existsSync, mkdirSync, rmdirSync, statSync } from "node:fs";
@@ -29,6 +30,20 @@ const MIGRATION_SKILLS = new Set(["GCP_TO_AWS", "HEROKU_TO_AWS", "LLM_TO_BEDROCK
 const SOURCE_PROVIDER_BY_SKILL = { GCP_TO_AWS: "GCP", HEROKU_TO_AWS: "HEROKU" };
 const LOCK_STALE_MS = 60_000;
 const POST_TIMEOUT_MS = 3_000;
+
+// Production endpoint, compiled in so a shipped plugin needs no user setup.
+// AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT overrides it (beta and personal
+// stacks follow BLEND's ${region}.${env}.startup-advisor-extension domain
+// scheme); setting the variable to an empty string disables sending entirely,
+// and in that inert state snapshots are never advanced, so nothing is lost.
+const DEFAULT_ENDPOINT =
+  "https://us-east-1.prod.startup-advisor-extension.saws.activate.aws.dev/v1/plugin-telemetry-event";
+
+function resolveEndpoint() {
+  const env = process.env.AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT;
+  if (env === undefined) return DEFAULT_ENDPOINT;
+  return env === "" ? null : env;
+}
 
 // How this invocation was triggered: "hook" (default) or "cli" via --via cli,
 // the flag the future skill-invoked fallback passes on hosts without hooks.
@@ -156,7 +171,7 @@ async function runConsentCommand(action) {
             consentFile: file,
             stateDir: stateDir(),
             installId: install?.installId ?? "not yet minted",
-            endpointConfigured: Boolean(process.env.AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT),
+            endpoint: resolveEndpoint() ?? "disabled",
           },
           null,
           2,
@@ -385,8 +400,8 @@ async function main() {
   if (process.env.DO_NOT_TRACK === "1") return;
   if (process.env.AWS_STARTUP_ADVISOR_TELEMETRY === "0") return;
 
-  const endpoint = process.env.AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT;
-  if (!endpoint) return; // nothing attempted, snapshots untouched — see header
+  const endpoint = resolveEndpoint();
+  if (!endpoint) return; // explicitly disabled: nothing attempted, snapshots untouched
 
   const sessionEndMode = args.includes("--session-end");
   const payload = await readStdin();

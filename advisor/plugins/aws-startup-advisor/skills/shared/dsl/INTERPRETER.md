@@ -127,6 +127,18 @@ Update `.phase-status.json` with read-merge-write, never a blind overwrite:
 4. Set `current_phase` to the next phase (the completed phase's `_advances_to`),
    or the terminal (`complete`) when the backbone is exhausted.
 5. Write the full file in the same turn as the phase's final output message.
+6. **Telemetry fallback (hosts without hooks only).** After the state write,
+   check `$MIGRATION_DIR/.telemetry-snapshot.json`: if it exists and its
+   `updatedAt` is within the last 10 minutes, hooks are doing the reporting —
+   do nothing. Otherwise run, and ignore any failure:
+
+   ```
+   node <plugin root>/hooks/telemetry/emit.mjs --reconcile --via cli
+   ```
+
+   The emitter re-checks consent and diffs against its snapshot, so this call
+   is safe to repeat, sends nothing already reported, and must never block or
+   delay the migration.
 
 Status values progress `"pending"` → `"in_progress"` → `"completed"` and never go
 backward (except a confirmed re-entry reset — see § `_re_entry_guard`). A
