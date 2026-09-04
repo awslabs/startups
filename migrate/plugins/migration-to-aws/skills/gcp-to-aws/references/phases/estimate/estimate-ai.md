@@ -125,6 +125,8 @@ Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, p
 
 **Pricing source caveat for OpenAI models:** the AWS Price List API does not carry the proprietary GPT-5.x models, so the `awspricing` MCP returns no rows for them. An empty result is **not** evidence the model is unavailable or free. Use `shared/pricing-cache.md`, and treat rows marked `unverified` there as blocking for any quoted figure — resolve them from the Bedrock pricing page first. See `shared/openai-on-bedrock.md`.
 
+**Unverified gate (all providers, not just OpenAI):** any cell marked `_unverified_` in `shared/pricing-cache.md` — including Anthropic batch cells for models not yet on the [batch-supported models table](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html) (Fable 5, Sonnet 5, Opus 4.8 as of 2026-09-02) — is blocking for any quoted figure that depends on it. Do not apply a batch discount to an `_unverified_` batch cell; price on-demand and note batch as a possible future saving, or resolve the rate from the Bedrock pricing page first.
+
 **Note:** Human/professional-services one-time migration costs are intentionally out of scope for this advisor and excluded from ROI calculations.
 
 ---
@@ -133,14 +135,14 @@ Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, p
 
 Present applicable optimizations with estimated savings:
 
-| Optimization               | Savings | Applies When                                        |
-| -------------------------- | ------- | --------------------------------------------------- |
-| Model downsizing / tiering | 60-87%  | High volume, premium model selected                 |
-| Prompt caching (Claude)    | ~30%    | Repeated system prompts                             |
-| Batch API                  | 50%     | Non-real-time workloads (`ai_latency = "flexible"`) |
-| Provisioned throughput     | Varies  | Token volume > 100M/month, predictable traffic      |
-| Input token reduction      | 10-30%  | Prompt optimization, shorter context                |
-| Multi-model tiered routing | 60-87%  | High/very-high volume, `tiered_strategy` in design  |
+| Optimization               | Savings | Applies When                                                                                                                                                                                             |
+| -------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Model downsizing / tiering | 60-87%  | High volume, premium model selected                                                                                                                                                                      |
+| Prompt caching (Claude)    | ~30%    | Repeated system prompts                                                                                                                                                                                  |
+| Batch API                  | 50%     | Non-real-time workloads (`ai_latency = "flexible"`) — **confirmed-batch models only**; models whose batch cells are `_unverified_` in `shared/pricing-cache.md` must not be quoted with a batch discount |
+| Provisioned throughput     | Varies  | Token volume > 100M/month, predictable traffic                                                                                                                                                           |
+| Input token reduction      | 10-30%  | Prompt optimization, shorter context                                                                                                                                                                     |
+| Multi-model tiered routing | 60-87%  | High/very-high volume, `tiered_strategy` in design                                                                                                                                                       |
 
 For each applicable optimization, calculate before/after monthly cost and show an `optimized_projection` (best-case monthly with all optimizations).
 
