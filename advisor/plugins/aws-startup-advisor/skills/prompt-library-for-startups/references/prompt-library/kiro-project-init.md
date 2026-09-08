@@ -487,7 +487,7 @@ COST_ALERT_THRESHOLD=500
 
 ## Prerequisites
 
-1. **uv**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+1. **uv**: install per the official guide (https://docs.astral.sh/uv/getting-started/installation/), e.g. `brew install uv` or `pipx install uv`
 2. **Python 3.10+**: `uv python install 3.10`
 3. **AWS CLI**: Configured
 4. **Node.js**: [version]

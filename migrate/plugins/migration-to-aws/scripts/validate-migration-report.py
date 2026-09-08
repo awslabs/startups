@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 import sys
+from html import unescape
 from pathlib import Path
 
 # Plugin root: migrate/plugins/migration-to-aws/
@@ -41,7 +42,21 @@ REQUIRED_SECTION_IDS = [
     "appendix-artifacts",
 ]
 
+# Decision mode (decision-report.html rendered at the post-Estimate Decision
+# gate, choice A): executive sections + CTA only — appendices are forbidden
+# because no Generate artifacts exist yet.
+DECISION_REQUIRED_SECTION_IDS = [
+    "decision-summary",
+    "exec-assumptions",
+    "exec-services",
+    "exec-costs",
+    "exec-timeline",
+    "exec-risks",
+    "decision-cta",
+]
+
 OPTIONAL_SECTION_IDS = [
+    "exec-share",
     "exec-tco",
     "exec-architecture",
     "exec-security-teaser",
@@ -51,6 +66,7 @@ OPTIONAL_SECTION_IDS = [
     "appendix-security",
     "appendix-security-gap",
     "appendix-assumptions",
+    "appendix-glossary",
 ]
 
 FORBIDDEN_PATTERNS = [
@@ -64,9 +80,25 @@ FORBIDDEN_PATTERNS = [
 # "Section 0/1b" heading fails the report instead of silently shipping.
 READABILITY_PATTERNS = [
     (
+        r"(?<![-_])\bTCO\b|Total\s+Cost\s+of\s+Ownership",
+        'misleading ownership-cost label ("TCO") — use "estimated AWS monthly '
+        'run rate"; the report does not price staffing or operating labor',
+    ),
+    (
         r"Rubric:",
         'internal scoring trace ("Rubric:") — drop it or gate behind a '
         '<details> "Why this mapping?" block',
+    ),
+    (
+        r"\d+\s*(?:–|-|to)\s*\d+\s*(?:engineering\s+|effort\s+)?hours\b",
+        "effort-hours range — the plugin has no calibrated effort data and "
+        "hour figures get pasted into budgets; communicate time as stage "
+        "sequence + duration drivers (migration-complexity.md § Provenance)",
+    ),
+    (
+        r"(?<!uncalibrated\):\s)(?<!uncalibrated\): )\b\d+\s*(?:–|-|to)\s*\d+\+?\s*weeks\b",
+        'bare week-range estimate — durations are uncalibrated; either drop it '
+        'or label it "Legacy planning heuristic (uncalibrated): N–M weeks"',
     ),
     (
         r"Section\s+0\b",
@@ -78,6 +110,68 @@ READABILITY_PATTERNS = [
         'numbered "Section N —" heading — drop numeric prefixes from headings; '
         "let the table of contents carry structure",
     ),
+    (
+        r"\b(?:very|significantly|extremely|vastly)\b",
+        "vague intensifier (very/significantly/extremely/vastly) — quantify the "
+        'claim from artifact data instead ("-32% ($497/mo lower)"), or drop it',
+    ),
+    (
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b",
+        "slash-format date (N/N/YYYY reads differently across locales) — use "
+        "ISO YYYY-MM-DD for all dates",
+    ),
+]
+
+# Visual readability contract for generated reports. This intentionally checks
+# structural CSS capabilities rather than pixel-perfect declarations: agents
+# may refine colors and spacing, but they must not regress to unboxed prose on
+# a plain white page or uneven inline-block metric cards.
+VISUAL_CONTRACT_CHECKS = [
+    (
+        r"body\s*\{[^}]*background\s*:\s*(?:var\([^)]*\)|#f6f8fa)",
+        "body must use a contrasting page background",
+    ),
+    (
+        r"\.(?:report|container)\s*\{[^}]*max-width\s*:",
+        "report shell must constrain line length with max-width",
+    ),
+    (
+        r"section\s*\{[^}]*background\s*:[^;}]+;?[^}]*border\s*:[^;}]+;?"
+        r"[^}]*border-radius\s*:",
+        "sections must render as bordered surface cards",
+    ),
+    (
+        r"\.metrics\s*\{[^}]*display\s*:\s*grid[^}]*grid-template-columns\s*:",
+        "executive metrics must use a responsive CSS grid",
+    ),
+    (
+        r"\.metric\s*\{[^}]*border\s*:[^;}]+;?[^}]*border-radius\s*:",
+        "metric cards must have a bordered card treatment",
+    ),
+    (
+        r"\.verdict\s*\{[^}]*background\s*:[^;}]+;?[^}]*border\s*:",
+        "recommendation must have a visually distinct callout treatment",
+    ),
+    (
+        r"\.savings\s*\{[^}]*color\s*:",
+        "supported savings values must have a reusable visual treatment",
+    ),
+    (
+        r"\.appendix-header\s*\{",
+        "full/decision shared shell must define an appendix divider",
+    ),
+    (
+        r":focus-visible\s*\{",
+        "keyboard focus must be visibly styled",
+    ),
+    (
+        r"@media\s*\([^)]*max-width\s*:\s*700px[^)]*\)",
+        "mobile readability breakpoint (700px) is required",
+    ),
+    (
+        r"@media\s+print\s*\{",
+        "print-specific styling is required",
+    ),
 ]
 
 # Executive-flow sections must speak the reader's language, not the system's.
@@ -86,6 +180,7 @@ READABILITY_PATTERNS = [
 # unless --no-readability.)
 EXEC_SECTION_IDS = (
     "decision-summary",
+    "exec-share",
     "exec-tco",
     "exec-services",
     "exec-costs",
@@ -152,10 +247,12 @@ def _section_id_counts(html: str) -> dict[str, int]:
     return counts
 
 
-def _validate_required_sections(html: str) -> list[str]:
+def _validate_required_sections(
+    html: str, required_ids: list[str] | None = None
+) -> list[str]:
     errors: list[str] = []
     counts = _section_id_counts(html)
-    for section_id in REQUIRED_SECTION_IDS:
+    for section_id in required_ids if required_ids is not None else REQUIRED_SECTION_IDS:
         n = counts.get(section_id, 0)
         if n == 0:
             errors.append(f'missing required <section id="{section_id}">')
@@ -175,7 +272,9 @@ def _toc_hrefs(html: str) -> list[str]:
     return re.findall(r'href="#([^"]+)"', nav_match.group(1), re.IGNORECASE)
 
 
-def _validate_toc(html: str) -> list[str]:
+def _validate_toc(html: str, required_ids: list[str] | None = None) -> list[str]:
+    if required_ids is None:
+        required_ids = REQUIRED_SECTION_IDS
     errors: list[str] = []
     hrefs = _toc_hrefs(html)
     if not hrefs:
@@ -187,13 +286,33 @@ def _validate_toc(html: str) -> list[str]:
             errors.append(f'TOC broken link href="#{href}" — no matching <section id="{href}">')
 
     # Every required section must be linked from the TOC.
-    for section_id in REQUIRED_SECTION_IDS:
+    for section_id in required_ids:
         if section_id in section_ids and section_id not in hrefs and hrefs:
             errors.append(
                 f'TOC missing link to required section id="{section_id}" '
                 f'(add <a href="#{section_id}">)'
             )
     return errors
+
+
+def _validate_decision_first(html: str) -> list[str]:
+    """The verdict is the report thesis and must precede navigation."""
+    decision = re.search(
+        r'<section\b[^>]*\bid=["\']decision-summary["\']',
+        html,
+        re.IGNORECASE,
+    )
+    toc = re.search(
+        r'<nav\b[^>]*\bclass=["\'][^"\']*\btoc\b[^"\']*["\']',
+        html,
+        re.IGNORECASE,
+    )
+    if decision and toc and decision.start() > toc.start():
+        return [
+            "decision-summary must appear before the table of contents "
+            "(show the report thesis before navigation)"
+        ]
+    return []
 
 
 def _count_table_rows(section_html: str) -> int:
@@ -280,6 +399,23 @@ def _validate_readability(html: str) -> list[str]:
     return errors
 
 
+def _validate_visual_contract(html: str) -> list[str]:
+    """Validate the shared report shell's minimum visual readability contract."""
+    style_blocks = re.findall(
+        r"<style\b[^>]*>(.*?)</style>",
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if not style_blocks:
+        return ["visual readability: missing inline <style> report shell"]
+    css = "\n".join(style_blocks)
+    errors: list[str] = []
+    for pattern, label in VISUAL_CONTRACT_CHECKS:
+        if not re.search(pattern, css, re.DOTALL | re.IGNORECASE):
+            errors.append(f"visual readability: {label}")
+    return errors
+
+
 def _validate_exec_vocabulary(html: str) -> list[str]:
     """Executive-flow sections must name what the reader controls, not how the
     system is built. Artifact filenames (*.json) and Terraform resource IDs
@@ -346,6 +482,88 @@ def _validate_action_lists(html: str) -> list[str]:
     return errors
 
 
+def _validate_decision_language(
+    html: str, estimation_infra: dict | None
+) -> list[str]:
+    """Keep whole-stack decisions distinct from track-scoped holds."""
+    summary = _section_html(html, "decision-summary") or ""
+    errors: list[str] = []
+    recommendation = (estimation_infra or {}).get("recommendation") or {}
+    has_stay_reasons = bool(recommendation.get("stay_if"))
+    expected_heading_count = len(
+        re.findall(
+            r"<h[1-6][^>]*>\s*Stay\s+entirely\s+if\s*</h[1-6]>",
+            summary,
+            re.I,
+        )
+    )
+    if has_stay_reasons and expected_heading_count != 1:
+        errors.append(
+            "decision-summary has recommendation.stay_if reasons and must contain "
+            'exactly one "Stay entirely if" heading '
+            f"(found {expected_heading_count})"
+        )
+    elif re.search(r"<h[1-6][^>]*>\s*Stay\s+if\s*</h[1-6]>", summary, re.I):
+        errors.append(
+            'decision-summary heading "Stay if" is ambiguous — use '
+            '"Stay entirely if" for whole-stack reasons'
+        )
+    if re.search(r'class=["\'][^"\']*\bbadge-verdict-', summary, re.I):
+        errors.append(
+            "decision-summary must use a typography-first verdict headline and "
+            "plain-text metadata, not badge-verdict-* pills"
+        )
+    return errors
+
+
+def _validate_share_section(
+    html: str,
+    estimation_infra: dict | None,
+    estimation_ai: dict | None,
+) -> list[str]:
+    """A copy-ready leadership brief is required when estimates are available."""
+    if estimation_infra is None and estimation_ai is None:
+        return []
+    section = _section_html(html, "exec-share")
+    if section is None:
+        return [
+            "monthly estimation artifacts exist but no <section id=\"exec-share\"> "
+            "copy-ready leadership brief was rendered"
+        ]
+    errors: list[str] = []
+    card = re.search(
+        r'<(?P<tag>div|aside)\b[^>]*class=["\'][^"\']*\bshare-card\b[^"\']*["\'][^>]*>'
+        r"(?P<body>.*?)</(?P=tag)>",
+        section,
+        re.I | re.DOTALL,
+    )
+    if not card:
+        errors.append('exec-share must contain a class="share-card" decision brief')
+        return errors
+    paragraphs = re.findall(
+        r"<p\b[^>]*>(.*?)</p>", card.group("body"), re.I | re.DOTALL
+    )
+    if len(paragraphs) != 1:
+        errors.append(
+            "exec-share share-card must contain exactly one standalone <p> "
+            f"(found {len(paragraphs)})"
+        )
+    else:
+        text = unescape(re.sub(r"<[^>]+>", " ", paragraphs[0]))
+        word_count = len(re.findall(r"\b[\w'-]+\b", text))
+        if word_count < 20:
+            errors.append(
+                "exec-share share-card paragraph must contain a substantive "
+                f"copy-ready brief of at least 20 words (found {word_count})"
+            )
+    if re.search(r"<(?:button|script|input|textarea)\b", section, re.I):
+        errors.append(
+            "exec-share must be a static copy-ready paragraph without buttons, "
+            "scripts, or editable controls"
+        )
+    return errors
+
+
 def _validate_appendix_config(html: str) -> list[str]:
     """When appendix-config is present, require provenance columns."""
     section = _section_html(html, "appendix-config")
@@ -376,18 +594,98 @@ def _validate_appendix_config(html: str) -> list[str]:
 
 def _validate_verdict(html: str, estimation_infra: dict | None) -> list[str]:
     """When a recommendation block exists, the decision summary must state a
-    one-sentence verdict (class="verdict" or 'Recommendation:' text), not only badges."""
+    one-sentence verdict in a visually distinct class="verdict" callout."""
     if not estimation_infra or not estimation_infra.get("recommendation"):
         return []
     summary = _section_html(html, "decision-summary") or ""
     if re.search(r'class="[^"]*\bverdict\b[^"]*"', summary, re.IGNORECASE):
         return []
-    if re.search(r"Recommendation:", summary):
-        return []
     return [
         "recommendation block exists but decision-summary has no verdict banner "
-        '(add an element with class="verdict" or a "Recommendation:" sentence)'
+        '(wrap the one-sentence recommendation in class="verdict")'
     ]
+
+
+def _validate_activate_link(html: str) -> list[str]:
+    """Keep the Activate action attached to its executive-summary benefit."""
+    summary = _section_html(html, "decision-summary") or ""
+    if not re.search(r"AWS\s+Activate|Activate\s+(?:Founders|Portfolio|credits)", summary, re.I):
+        return []
+    if re.search(
+        r'href=["\']https://aws\.amazon\.com/startups/credits/?["\']',
+        summary,
+        re.IGNORECASE,
+    ):
+        return []
+    return [
+        "decision-summary mentions AWS Activate but has no clickable official "
+        "apply link (https://aws.amazon.com/startups/credits/)"
+    ]
+
+
+def _validate_glossary_table(html: str) -> list[str]:
+    """Full reports present terms and meanings in a scannable two-column table."""
+    section = _section_html(html, "appendix-glossary")
+    if section is None:
+        return [
+            'full report must include a dedicated <section id="appendix-glossary">'
+        ]
+    match = re.search(
+        r'<table\b[^>]*class=["\'][^"\']*\bglossary-table\b[^"\']*["\'][^>]*>'
+        r"(.*?)</table>",
+        section,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if not match:
+        return [
+            'full report glossary must use <table class="glossary-table"> '
+            "with distinct Term and Meaning cells"
+        ]
+    table = match.group(1)
+    header = re.search(r"<thead\b[^>]*>(.*?)</thead>", table, re.DOTALL | re.I)
+    if not header or not re.search(r">\s*Term\s*<", header.group(1), re.I) or not re.search(
+        r">\s*Meaning\s*<", header.group(1), re.I
+    ):
+        return ['glossary-table must have "Term" and "Meaning" column headers']
+    if _count_table_rows(f"<table>{table}</table>") < 3:
+        return ["glossary-table must contain at least 3 term-definition rows"]
+    return []
+
+
+def _validate_accessibility(html: str) -> list[str]:
+    """Dependency-free checks for high-value WCAG-oriented HTML semantics."""
+    errors: list[str] = []
+    if not re.search(r"<html\b[^>]*\blang=[\"'][a-z]{2}(?:-[A-Za-z0-9]+)?[\"']", html, re.I):
+        errors.append('accessibility: <html> must declare a valid lang attribute')
+
+    body = re.sub(r"<style\b.*?</style>", "", html, flags=re.I | re.S)
+    if len(re.findall(r"<h1\b", body, re.I)) != 1:
+        errors.append("accessibility: report must contain exactly one <h1>")
+
+    for index, table_match in enumerate(re.finditer(r"<table\b[^>]*>.*?</table>", body, re.I | re.S), 1):
+        table = table_match.group(0)
+        if not re.search(r"<caption\b", table, re.I):
+            errors.append(f"accessibility: table {index} must include a <caption>")
+        for th in re.findall(r"<th\b[^>]*>", table, re.I):
+            if not re.search(r"\bscope=[\"'](?:col|row)[\"']", th, re.I):
+                errors.append(
+                    f'accessibility: table {index} header cells must declare scope="col" or scope="row"'
+                )
+                break
+
+    for index, figure_match in enumerate(
+        re.finditer(r"<figure\b[^>]*>.*?</figure>", body, re.I | re.S), 1
+    ):
+        figure = figure_match.group(0)
+        opening = re.match(r"<figure\b[^>]*>", figure, re.I)
+        opening_tag = opening.group(0) if opening else ""
+        if not re.search(r'\brole=["\']img["\']', opening_tag, re.I):
+            errors.append(f'accessibility: figure {index} must declare role="img"')
+        if not re.search(r'\baria-label=["\'][^"\']+["\']', opening_tag, re.I):
+            errors.append(f"accessibility: figure {index} must have an aria-label")
+        if not re.search(r"<figcaption\b", figure, re.I):
+            errors.append(f"accessibility: figure {index} must include a <figcaption>")
+    return errors
 
 
 def _validate_fixture_bleed(html: str, migration_dir: Path | None) -> list[str]:
@@ -427,15 +725,28 @@ def validate_report(
     require_toc: bool = True,
     check_readability: bool = True,
     migration_dir: Path | None = None,
+    mode: str = "full",
 ) -> list[str]:
     errors: list[str] = []
 
-    errors.extend(_validate_required_sections(html))
+    required_ids = DECISION_REQUIRED_SECTION_IDS if mode == "decision" else REQUIRED_SECTION_IDS
+    errors.extend(_validate_required_sections(html, required_ids))
+
+    if mode == "decision":
+        # No Generate artifacts exist at decision time: appendices are forbidden.
+        counts = _section_id_counts(html)
+        for sid in counts:
+            if sid.startswith("appendix-"):
+                errors.append(
+                    f'decision mode forbids <section id="{sid}"> — the decision report '
+                    "has no appendices; the full migration report (Generate) carries them"
+                )
 
     if require_toc:
         if not _toc_hrefs(html):
             errors.append('missing <nav class="toc"> with href="#section-id" links')
-        errors.extend(_validate_toc(html))
+        errors.extend(_validate_toc(html, required_ids))
+        errors.extend(_validate_decision_first(html))
 
     for pattern, label in FORBIDDEN_PATTERNS:
         if re.search(pattern, html, re.IGNORECASE):
@@ -444,6 +755,17 @@ def validate_report(
     if check_readability:
         errors.extend(_validate_readability(html))
         errors.extend(_validate_exec_vocabulary(html))
+        errors.extend(_validate_decision_language(html, estimation_infra))
+        # Normal generated reports require a TOC. Use the same signal to
+        # enforce the visual shell while preserving --no-require-toc as the
+        # lightweight escape hatch for deliberately minimal unit fixtures.
+        if require_toc:
+            errors.extend(_validate_visual_contract(html))
+    # Accessibility semantics are independent of prose/readability checks.
+    # --no-require-toc remains the deliberate escape hatch for minimal unit
+    # fixtures, but --no-readability must never disable HTML accessibility.
+    if require_toc:
+        errors.extend(_validate_accessibility(html))
 
     for section_id, min_depth in MIN_CONTENT_DEPTH.items():
         section = _section_html(html, section_id)
@@ -473,13 +795,15 @@ def validate_report(
         if not ok:
             errors.append(msg)
 
-    # Combined TCO required only when BOTH estimate artifacts exist (not AI-only runs)
+    # Combined AWS monthly run-rate section required only when BOTH estimate
+    # artifacts exist (not AI-only runs). exec-tco is a legacy structural ID.
     if estimation_infra is not None and estimation_ai is not None:
         counts = _section_id_counts(html)
         if counts.get("exec-tco", 0) != 1:
             errors.append(
                 "when both estimation-infra.json and estimation-ai.json exist, "
-                'include exactly one <section id="exec-tco"> with combined infra+AI TCO'
+                'include exactly one <section id="exec-tco"> with the combined '
+                "infra+AI estimated AWS monthly run rate"
             )
 
     # Security teaser must exist in the exec flow when a baseline is estimated.
@@ -487,6 +811,11 @@ def validate_report(
 
     # Decision summary must state a one-sentence verdict when a recommendation exists.
     errors.extend(_validate_verdict(html, estimation_infra))
+    errors.extend(_validate_activate_link(html))
+    if require_toc:
+        errors.extend(_validate_share_section(html, estimation_infra, estimation_ai))
+    if mode == "full" and require_toc:
+        errors.extend(_validate_glossary_table(html))
 
     # Ordered action lists and configuration provenance (when sections present).
     errors.extend(_validate_action_lists(html))
@@ -536,7 +865,14 @@ def main() -> int:
     parser.add_argument(
         "--no-readability",
         action="store_true",
-        help="Skip customer-facing readability checks (Rubric:/Section N)",
+        help="Skip customer-facing readability checks (Rubric:/Section N/intensifiers/dates)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["full", "decision"],
+        default="full",
+        help="full = migration-report.html (default); decision = decision-report.html "
+        "written at the post-Estimate Decision gate (exec sections + CTA, no appendices)",
     )
     args = parser.parse_args()
 
@@ -561,6 +897,7 @@ def main() -> int:
         require_toc=not args.no_require_toc,
         check_readability=not args.no_readability,
         migration_dir=args.migration_dir,
+        mode=args.mode,
     )
     if errors:
         print("REPORT_FAIL | migration-report.html", file=sys.stderr)
@@ -570,10 +907,14 @@ def main() -> int:
 
     counts = _section_id_counts(html)
     optional_present = [sid for sid in OPTIONAL_SECTION_IDS if counts.get(sid, 0) >= 1]
+    required_count = len(
+        DECISION_REQUIRED_SECTION_IDS if args.mode == "decision" else REQUIRED_SECTION_IDS
+    )
+    mode_tag = "" if args.mode == "full" else f"mode={args.mode} | "
     print(
-        "REPORT_OK | structure=complete | sections="
-        + str(len(REQUIRED_SECTION_IDS))
-        + f"/{len(REQUIRED_SECTION_IDS)}"
+        f"REPORT_OK | {mode_tag}structure=complete | sections="
+        + str(required_count)
+        + f"/{required_count}"
         + (f" | optional={','.join(optional_present)}" if optional_present else "")
         + " | note=verify dollar figures against estimation JSON before sign-off"
     )

@@ -278,7 +278,7 @@ Example Usage:
    b. Review the Quick Cloud Cost Optimization guide for early-stage startups to set up budgets, monitor spend, and turn off unused resources
 1. Install the AWS CLI
    a. Download and install the AWS CLI for your operating system.
-1. Configure AgentCore MCP https://awslabs.github.io/mcp/servers/amazon-bedrock-agentcore-mcp-server in your AI tool (e.g. Kiro-CLI)
+1. Configure AgentCore MCP https://github.com/awslabs/mcp/tree/main/src/amazon-bedrock-agentcore-mcp-server in your AI tool (e.g. Kiro-CLI)
 1. Enter a working folder. Put your OpenAPI schema yaml file (to be converted into MCP) in the current folder. Also put the API implementation code files in the same folder as well (to be hosted in AWS Lambda function)
 1. Copy the prompt
    a. Click "Copy Prompt" to copy the prompt into your clipboard.

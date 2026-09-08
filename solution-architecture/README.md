@@ -1,47 +1,27 @@
 # Solution Architecture
 
-Plugins and tools from the AWS Startups Solution Architecture team for building, migrating, and reviewing architectures on AWS.
+Startup-specific plugins and tools from the AWS Startups Solution Architecture team.
 
 ## Plugins
 
-- **[`aws-dev-toolkit`](plugins/aws-dev-toolkit/)** — A toolkit for building, migrating, and performing architecture reviews on AWS. Ships **35 skills**, **11 sub-agents**, and **3 MCP servers**. Most skills activate automatically from context: review an architecture against the Well-Architected Framework, debug a failing CloudFormation stack, compare ECS vs EKS, scaffold CDK/Terraform/SAM/CloudFormation projects, or optimize an AWS bill. Deep service skills cover Lambda, EC2, ECS, EKS, S3, DynamoDB, API Gateway, CloudFront, IAM, networking, messaging, observability, Step Functions, RDS/Aurora, IoT, MLOps, Bedrock, and AgentCore, plus GCP/Azure and App Runner migration paths.
+- **[`aws-startups-solution-architecture`](plugins/aws-startups-solution-architecture/)**. Technical AWS solutions for the problems startups get stuck on: multi-tenant SaaS isolation enforced in IAM rather than application code, and running a judgment agent such as an LLM reviewer inside a CI path. Draws all general-purpose AWS service depth from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws) as an upstream dependency rather than restating it.
 
-See the [plugin README](plugins/aws-dev-toolkit/README.md) for the full skill, agent, and MCP server catalog.
+  Currently two exemplar skills, deliberately. The plugin is scaffolding for Startup SAs to contribute the technical patterns they solve repeatedly; see [what to contribute](plugins/aws-startups-solution-architecture/README.md#what-to-contribute) for the verified gap list.
 
-## MCP servers
+## Where aws-dev-toolkit went
 
-`aws-dev-toolkit` bundles three MCP servers, declared in [`plugins/aws-dev-toolkit/.mcp.json`](plugins/aws-dev-toolkit/.mcp.json) and provisioned automatically when the plugin is installed:
+`aws-dev-toolkit` was removed. Its skills and agents were overwhelmingly general-purpose AWS engineering guidance, which Agent Toolkit for AWS now owns, and that overlap is why it was deprecated. Nothing was ported.
 
-- **AWS IaC** (`awsiac`, stdio via `uvx awslabs.aws-iac-mcp-server`) — CloudFormation/CDK/Terraform validation and security scanning.
-- **AWS Knowledge** (`awsknowledge`, HTTP) — AWS documentation search, recommendations, and regional availability.
-- **AWS Pricing** (`awspricing`, stdio via `uvx awslabs.aws-pricing-mcp-server`) — service pricing data, cost reports, and IaC cost analysis.
+- **Startup-specific guidance:** install AWS Startup Advisor with `/plugin install aws-startup-advisor@claude-plugins-official`, or see [`advisor/`](../advisor/).
+- **General-purpose AWS guidance:** use Agent Toolkit for AWS with `aws configure agent-toolkit` (requires AWS CLI 2.35+).
 
-The stdio servers require [`uv`/`uvx`](https://docs.astral.sh/uv/) on the user's machine.
+Existing `aws-dev-toolkit` installs continue to function but receive no updates.
 
-## Install
+## Contributing
 
-### Claude Code
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the content gate that applies to this folder, and the [root CONTRIBUTING guide](../CONTRIBUTING.md) for the RFC process, code of conduct, and licensing.
 
-```bash
-# Add the marketplace
-/plugin marketplace add awslabs/startups
-
-# Install the plugin
-/plugin install aws-dev-toolkit@startups-for-aws
-```
-
-Or load locally during development:
-
-```bash
-claude --plugin-dir ./solution-architecture/plugins/aws-dev-toolkit
-```
-
-## Prerequisites
-
-- [Claude Code](https://code.claude.com)
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) (for MCP servers via `uvx`)
-- AWS CLI configured with appropriate credentials
-- (Optional) `checkov`, `cfn-nag`, `tfsec` for security scanning
+Contributions here must pass all three criteria: startup-specific rather than general-purpose AWS guidance, no overlap with Agent Toolkit for AWS, and no reference to deprecated or sunset AWS services. The gate exists so this folder does not re-create the overlap that led to the previous plugin's removal.
 
 ## License
 

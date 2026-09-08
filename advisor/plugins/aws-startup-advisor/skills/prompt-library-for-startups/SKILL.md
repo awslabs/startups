@@ -1,6 +1,6 @@
 ---
 name: prompt-library-for-startups
-description: "AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent, Bedrock Model Availability Agent, AWS DB Advisor). Use when the user asks for a prompt to do X on AWS, wants an installable agent for multi-account / cost monitoring / quota management / Bedrock model availability / database selection, or asks how to use AWS prompts. For migration intent (GCP to AWS, OpenAI/Gemini to Bedrock), route to the migration-to-aws skill. Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
+description: "AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent, Bedrock Model Availability Agent, AWS DB Advisor). Use when the user asks for a prompt to do X on AWS, wants an installable agent for multi-account / cost monitoring / quota management / Bedrock model availability / database selection, or asks how to use AWS prompts. For migration intent (GCP to AWS, OpenAI/Gemini to Bedrock), route to the migration skills in this plugin (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`). Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
 ---
 
 # AWS Startups Prompt & Agent Library
@@ -32,7 +32,7 @@ When the user asks for a prompt:
 3. Surface the prompt to the user as a _reference from the AWS Startups Prompt Library_, then offer them three paths:
 
    _"Here's the AWS Startups reference prompt for `<task>`. I can:_
-   _- **execute it as-is** against your setup,_
+   _- **run it** against your setup (I'll show you each command before executing),_
    _- **adapt it** to your specific requirements (different region, services, language, etc.), or_
    _- you can **copy it** as a starting point._
 
@@ -52,7 +52,7 @@ The **Downloadable agents** section of `references/prompt-library.md` lists **in
 
 When the user's intent matches one of these — _"set up multi-account"_, _"prevent bill shock"_, _"audit service quotas"_, _"which Bedrock model / region"_, _"which database should I use"_ — recommend the matching agent **by title and use-case**, then hand over the GitHub repo / install link from the index file. Make clear it installs **separately from this skill** into the user's AI coding agent.
 
-For migration intent — _"help me migrate to AWS"_, _"GCP to AWS"_, _"move off OpenAI to Bedrock"_ — route to the **`migration-to-aws`** skill in the `aws-startup-advisor` plugin.
+For migration intent, route to the matching migration skill in this plugin: **`gcp-to-aws`** (_"GCP to AWS"_, move off Google Cloud), **`heroku-to-aws`** (_"migrate off Heroku"_), **`llm-to-bedrock`** (_"move off OpenAI/Gemini to Bedrock"_ — SDK rewrite), or **`agent-advisor`** (agent runtime / architecture on AWS).
 
 ## Routing hints — common queries → which entry
 
@@ -72,7 +72,7 @@ For migration intent — _"help me migrate to AWS"_, _"GCP to AWS"_, _"move off 
 | _"Migrate Elasticsearch to OpenSearch"_              | `elasticsearch-to-opensearch-migration.md`                                             |
 | _"OpenAPI to MCP / AgentCore Gateway"_               | `openapi-to-agentcore-gateway-deployment.md`                                           |
 | _"Deploy a GitHub repo to AWS"_                      | `deploy-github-repo.md`                                                                |
-| _"Help me migrate workloads to AWS"_                 | `migration-to-aws` skill (sibling in this plugin)                                      |
+| _"Help me migrate workloads to AWS"_                 | `gcp-to-aws` / `heroku-to-aws` / `llm-to-bedrock` skills (siblings in this plugin)     |
 | _"Set up multi-account on AWS Organizations"_        | Downloadable: Multi-Account Transition Advisor                                         |
 | _"Stop bill shock / detect cost spikes proactively"_ | Downloadable: AWS Bill Shock Preventer                                                 |
 | _"Manage / request service quotas"_                  | Downloadable: Service Quota Agent                                                      |

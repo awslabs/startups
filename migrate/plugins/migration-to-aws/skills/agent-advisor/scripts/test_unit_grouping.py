@@ -3,6 +3,7 @@
 The grouping judgment (in-process agents merge; cross-process split) is prose,
 so these tests pin the load-bearing sentences the same way the temporal locks do.
 """
+import json
 import pathlib
 import re
 
@@ -121,65 +122,24 @@ def test_migration_plan_unit_correlation_overlay():
         "collapse invariant: single-unit runs skip the overlay"
 
 
-def test_migration_plan_reconciles_model_and_backwrites_recommendation():
-    # Live-test 0715 finding: the plan's per-unit model (e.g. gpt-4o-mini -> Nova Lite)
-    # can differ from the advisor's design.json model, and the POC (plan-backed) used the
-    # plan's model while recommendation.md still said the old one -> report/POC contradiction.
-    # Fix: migration-plan Step 3.5 reconciles (plan wins) AND back-writes the recommendation.
+def test_migration_plan_validates_advisor_model_contract_without_reselection():
     plan = _norm(pathlib.Path(__file__).parent.parent
                  / "references" / "phases" / "migration-plan" / "migration-plan.md")
-    # A dedicated reconciliation step exists.
-    assert re.search(r"Reconcile the model", plan) or "model_refined_by_plan" in plan, \
-        "migration-plan must have a model reconciliation step"
-    # Plan wins over the advisor's baseline model.
-    assert re.search(r"plan(?:'s)?.{0,40}(wins|model wins)", plan, re.IGNORECASE), \
-        "reconciliation must state the plan's per-unit model wins"
-    # design.json is updated with the plan's model.
-    assert re.search(r"[Uu]pdate `?design\.json`?", plan) and "model_recommendation" in plan, \
-        "reconciliation must update design.json.units[].model_recommendation"
-    assert "model_refined_by_plan" in plan, \
-        "reconciliation must mark the refined unit auditable"
-    # The recommendation report/doc is back-written so it does not contradict the POC.
-    assert re.search(r"[Bb]ack-write", plan) and \
-        "recommendation.md" in plan and "recommendation-report.html" in plan, \
-        "reconciliation must back-write recommendation.md AND recommendation-report.html"
-    # It is a targeted edit, not a full re-render, and other sections stay untouched.
-    assert re.search(r"NOT a re-render|not a re-render|targeted", plan), \
-        "back-write must be a targeted edit, not a full report re-render"
-    # Re-run 0715 finding: the model can appear in MORE THAN ONE place per file
-    # (table row, Mermaid diagram node, ASCII overview). The first fix only replaced the
-    # table row, leaving the diagram + ASCII list stale. Enforce every-occurrence replacement.
-    assert re.search(r"EVERY occurrence|every occurrence|more than one place|MORE THAN ONE",
-                     plan), \
-        "back-write must replace every occurrence, not just the first"
-    # The load-bearing surfaces must be named so the model doesn't leave a stale copy behind.
-    assert "Mermaid" in plan or "mermaid" in plan, \
-        "back-write must call out the Mermaid diagram node labels as a surface to update"
-    assert re.search(r"ASCII|plain-text|unit list", plan), \
-        "back-write must call out the ASCII/plain-text overview as a surface to update"
-    # A grep-after-editing check catches leftover stale ids.
-    assert re.search(r"re-grep|grep .{0,40}(old|OLD)|zero hits", plan), \
-        "back-write must re-grep for the old model id and expect zero hits for the unit"
-    # 3rd-pass 0715 finding: roll-up/summary sentences ("all three agents -> Sonnet") were
-    # missed because they collapse every unit into one model. Enforce covering them.
-    assert re.search(r"roll-up|summary statement|collapse ALL units|blanket", plan,
-                     re.IGNORECASE), \
-        "back-write must call out roll-up/summary statements that collapse all units into one model"
-    assert re.search(r"executive summary|exec summary", plan, re.IGNORECASE) and \
-        re.search(r"across all three|all agents|every unit|all units", plan, re.IGNORECASE), \
-        "back-write must name the exec-summary + blanket phrases as easily-missed surfaces"
-    # model_refined_by_plan must be a unit-level key (sibling of model_recommendation),
-    # not nested inside it (the first fix left it unset because placement was ambiguous).
-    assert re.search(r"model_refined_by_plan.{0,120}(sibling|top-level|ON THE UNIT|NOT inside)",
-                     plan, re.IGNORECASE | re.DOTALL), \
-        "model_refined_by_plan must be specified as a unit-level sibling key, not nested"
-    # The reconciliation is a cross-phase write (migration-plan edits design.json +
-    # recommendation, which it declares as _input, not _produces). Make it visible in the
-    # frontmatter contract as a _postcondition so the DSL records the side effect.
+
+    assert re.search(r"Validate the advisor model/path contract", plan), \
+        "migration-plan must validate the advisor's per-workload model/path contract"
+    assert "advisor wins" in plan.lower(), \
+        "the advisor must remain the model-selection authority"
+    assert "plan_model_mismatch" in plan and "_halt_and_inform" in plan, \
+        "a plan mismatch must be visible and blocking"
+    assert re.search(r"do not rewrite `design\.json`", plan, re.IGNORECASE), \
+        "migration-plan must not silently replace the confirmed advisor decision"
+    assert "model-recommendation-input.json" in plan and \
+        "model_recommendation.py" in plan, \
+        "mismatch resolution must return to the deterministic Model Recommend phase"
     frontmatter = plan.split("---", 2)[1] if plan.count("---") >= 2 else ""
-    assert "model_refined_by_plan" in frontmatter and \
-        re.search(r"reconciliation|reconcil", frontmatter, re.IGNORECASE), \
-        "migration-plan _postconditions must assert the Step 3.5 model reconciliation is settled"
+    assert re.search(r"model contract validation", frontmatter, re.IGNORECASE), \
+        "migration-plan postconditions must enforce contract validation"
 
 
 def test_unit_trigger_vocabulary():
@@ -274,9 +234,9 @@ def test_estimate_eks_not_hardcoded_fargate():
         "temporal polling tier must apply the node-aware EKS rule, not a flat 'tens of $/mo'"
     # Codex round-11 #1: serverless_workers is a legal temporal verdict but had no polling-tier
     # cost path — must define one (pre-release → MCP rate or qualitative fallback, not fabricated).
-    assert re.search(r"serverless_workers.{0,300}(qualitative|PRE-RELEASE|awspricing|unverified)",
+    assert re.search(r"serverless_workers.{0,300}(qualitative|Public Preview|awspricing|unverified)",
                      tw, re.IGNORECASE | re.DOTALL), \
-        "temporal polling tier must define a serverless_workers path (pre-release/qualitative fallback)"
+        "temporal polling tier must define a serverless_workers path (Public Preview/qualitative fallback)"
     # Codex round-11 #2: must NOT assert execution-tier dominance unconditionally — compare the
     # two computed bands (a GPU/high-node polling fleet or low Activity volume can flip it).
     assert not re.search(r"execution tier\s+dominates(?![^.]*compar)", tw, re.IGNORECASE), \
@@ -667,20 +627,59 @@ def test_report_contract_round14_fixes():
         "the Assessment-inputs Source must look up the layered provenance by scope"
 
 
+def _run_score_units(answers):
+    import subprocess  # nosec B404 — test-only, fixed args
+    import sys
+    import tempfile
+
+    script = pathlib.Path(__file__).parent / "score_units.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        # No context-signals.json in this dir — mirrors a skipped-Discover run.
+        answers_path = pathlib.Path(tmp) / "answers.json"
+        answers_path.write_text(json.dumps(answers), encoding="utf-8")
+        proc = subprocess.run(  # nosec B603 — test-only, fixed args
+            [sys.executable, str(script), str(answers_path)],
+            capture_output=True, text=True, check=True,
+        )
+    return json.loads(proc.stdout)
+
+
+_SCORING_ANSWERS = {
+    "entry_point": "build_scratch",
+    "primary_unit": "solo",
+    "system": {"ops_preference": "minimal", "existing_cluster": "none",
+               "multi_cloud": "no", "platform_fit": "none"},
+    "units": {
+        "solo": {"workload_class": "agent_session", "session_duration": "15min_to_8hr",
+                 "traffic_pattern": "steady", "session_state": "stateful",
+                 "isolation": "nice_to_have", "memory_needs": "session_only",
+                 "multi_agent": "no", "framework": "langgraph", "idle_resume": "none",
+                 "compute_tier": "light", "launch_concurrency": "moderate",
+                 "deployment_preference": "framework", "compliance": [],
+                 "model_priority": "balanced", "region": "single"},
+        "cron": {"workload_class": "batch"},
+    },
+}
+
+
 def test_scoring_command_importable_and_wraps_units():
-    # Codex round-15 P1: the Clarify scoring command must be runnable — scoring importable via
-    # PYTHONPATH — and must WRAP results under {"units": {...}} (downstream reads .units[id]),
-    # not emit a bare {unit_id: result} map.
+    # Codex round-15 P1, retargeted from the former inline interpreter one-liner to the
+    # committed score_units.py: the Clarify scoring command must be runnable and must WRAP
+    # results under {"units": {...}} (downstream reads .units[id]), not emit a bare
+    # {unit_id: result} map.
     clarify = _norm(pathlib.Path(__file__).parent.parent
                     / "references" / "phases" / "clarify" / "clarify.md")
-    assert re.search(r"PYTHONPATH=", clarify), \
-        "scoring command must put scripts dir on PYTHONPATH so `import scoring` works"
-    assert re.search(r"json\.dumps\(\s*\{?\s*['\"]units['\"]", clarify) or \
-        re.search(r"\{'units': units\}|\{\"units\": units\}", clarify), \
-        "scoring command must wrap per-unit results under a top-level 'units' key"
+    assert re.search(r'score_units\.py"\s+"\$RUN_DIR/answers\.json"', clarify), \
+        "clarify must invoke the committed score_units.py with answers.json as an argument"
+    assert "python -c" not in clarify, \
+        "clarify must not inline scoring code — committed scripts only (skills.sh RCE flag)"
+    out = _run_score_units(_SCORING_ANSWERS)
+    assert set(out["units"].keys()) == {"solo"}, \
+        "results must be wrapped under a top-level 'units' key, agent_session units only"
     # single-unit collapse: primary unit's result must also be mirrored to the top level.
-    assert re.search(r"primary|mirror", clarify, re.IGNORECASE), \
-        "scoring command must mirror the primary unit's result to the top level for legacy readers"
+    for key, value in out["units"]["solo"].items():
+        assert out.get(key) == value, \
+            f"primary unit's '{key}' must be mirrored to the top level for legacy readers"
 
 
 def test_build_diagram_single_unit_design_renders_from_unit():
@@ -692,7 +691,7 @@ def test_build_diagram_single_unit_design_renders_from_unit():
             "id": "solo", "workload_class": "agent_session",
             "verdict": "agentcore", "effective_runtime": "agentcore",
             "deployment_model": "harness",
-            "model_recommendation": {"model": "claude_sonnet_4_6"},
+            "model_recommendation": {"model": "claude_sonnet_5"},
             "agentcore_services": ["memory"],
         }],
         "platform": {"mode": "split", "runtime": None, "interconnect": "in_process"},
@@ -701,7 +700,7 @@ def test_build_diagram_single_unit_design_renders_from_unit():
     out = build_diagram.build_diagram({"units": {"solo": {}}}, {}, design=design)
     assert "AgentCore Runtime" in out["mermaid"], \
         "single-unit design must render the unit's effective_runtime, not None"
-    assert "claude_sonnet_4_6" in out["mermaid"], \
+    assert "claude_sonnet_5" in out["mermaid"], \
         "single-unit design must render the unit's model, not 'unknown'"
 
 
@@ -742,23 +741,25 @@ def test_runner_up_excludes_the_winner():
 
 
 def test_scoring_reads_only_answers_json():
-    # Codex round-17 P1: scoring must NOT open context-signals.json (absent on skipped-Discover
-    # runs — build_scratch / no-path). workload_class is persisted into answers.json.units[id]
-    # (Step 4), and entry_point read from .phase-status.json — answers.json is always present.
+    # Codex round-17 P1, retargeted to the committed score_units.py: scoring must NOT open
+    # context-signals.json (absent on skipped-Discover runs — build_scratch / no-path).
+    # workload_class is persisted into answers.json.units[id] (Step 4), and entry_point read
+    # from .phase-status.json — answers.json is always present.
     clarify = _norm(pathlib.Path(__file__).parent.parent
                     / "references" / "phases" / "clarify" / "clarify.md")
-    # the executed python (inside `uv run python -c "..."`) must not open context-signals.json
-    m = re.search(r'uv run python -c "(.*?)"\s*>\s*\$RUN_DIR/scoring-result\.json',
-                  clarify, re.DOTALL)
-    assert m, "clarify must have the scoring python invocation"
-    assert "context-signals.json" not in m.group(1), \
+    src = (pathlib.Path(__file__).parent / "score_units.py").read_text(encoding="utf-8")
+    assert "context-signals.json" not in src, \
         "the executed scoring code must not open context-signals.json (absent on skipped-Discover)"
-    assert "open('$RUN_DIR/answers.json')" in m.group(1), \
-        "scoring must read answers.json (always present)"
+    assert "sys.argv[1]" in src, \
+        "scoring must read answers.json from argv (always present), never a hardcoded path"
+    # behavioral: runs to completion in a directory that has ONLY answers.json
+    out = _run_score_units(_SCORING_ANSWERS)
+    assert "cron" not in out["units"], \
+        "the filter must read workload_class from the answers.json unit entry (batch excluded)"
     # workload_class is persisted into answers.json units + filtered from there
     assert re.search(r'"workload_class":\s*"<class>"', clarify), \
         "answers.json units[] must persist workload_class (Step 4 schema)"
-    assert "info.get('workload_class') == 'agent_session'" in clarify, \
+    assert 'info.get("workload_class") == "agent_session"' in src, \
         "the filter must read workload_class from the answers.json unit entry"
     # entry_point sourced from .phase-status.json, not context-signals.json
     assert re.search(r"entry_point.{0,80}\.phase-status\.json", clarify, re.DOTALL), \
@@ -822,7 +823,9 @@ def test_scoring_result_schema_scored_only():
     V = jsonschema.Draft7Validator(schema)
     _unit = {"verdict": "ecs", "scores": {"ecs": 10}, "eliminated": {},
              "deployment_model": None, "agentcore_services": [],
-             "model_recommendation": {"model": "m", "reasoning": "r"}}
+             "model_recommendation": {"model": "m", "reasoning": "r"},
+             "deferred_verification_requirements": [],
+             "recommendation_status": "final"}
     scored = {**_unit, "assumptions_used": [], "warnings": [], "units": {"solo": _unit}}
     assert V.is_valid(scored), "scored shape (wrapped, non-empty units) must validate"
     assert not V.is_valid({**scored, "units": {}}), "empty units must be rejected"
@@ -945,14 +948,14 @@ def test_build_diagram_preserves_authoritative_empty_services():
         "units": [{
             "id": "solo", "workload_class": "agent_session",
             "verdict": "ecs", "effective_runtime": "ecs",
-            "model_recommendation": {"model": "claude_sonnet_4_6"},
+            "model_recommendation": {"model": "claude_sonnet_5"},
             "agentcore_services": [],  # authoritative: user declined all
         }],
         "platform": {"mode": "split", "runtime": None, "interconnect": "in_process"},
     }
     # result carries scoring defaults that must NOT leak in when the unit says [].
     result = {"verdict": "ecs", "agentcore_services": ["identity", "observability"],
-              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+              "model_recommendation": {"model": "claude_sonnet_5"}}
     out = build_diagram.build_diagram(result, {}, design=design)
     assert "Identity" not in out["mermaid"] and "Observability" not in out["mermaid"], \
         "an authoritative empty agentcore_services must not fall back to scoring defaults"
@@ -1072,6 +1075,8 @@ def test_schema_validates_each_units_value():
     bare = {"verdict": "ecs", "scores": {"ecs": 10}, "eliminated": {},
             "deployment_model": None, "agentcore_services": [],
             "model_recommendation": {"model": "m", "reasoning": "r"},
+             "deferred_verification_requirements": [],
+             "recommendation_status": "final",
             "assumptions_used": [], "warnings": []}
     assert V.is_valid({**bare, "units": {"solo": bare}}), "valid per-unit value must validate"
     assert not V.is_valid({**bare, "units": {"broken": {}}}), \

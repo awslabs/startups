@@ -96,7 +96,99 @@ for (const c of caches) {
 if (caches.length === 0) console.log("pricing staleness: no pricing caches found");
 else if (staleCount > 0) {
   console.log(`pricing staleness: ${staleCount}/${caches.length} cache(s) stale or unassessable`);
-  if (strict) process.exit(1);
 } else {
   console.log(`pricing staleness: OK (${caches.length} cache(s) fresh)`);
 }
+
+// ---------------------------------------------------------------------------
+// Drift check: bedrock_pricing.py's STATIC_FALLBACK vs the markdown rate card.
+//
+// WHY: the two hold the SAME facts in different units — STATIC_FALLBACK is
+// per-1K USD, the cache table is per-1M USD — with nothing keeping them in sync.
+// A row was silently copied from Opus 4.1's legacy $15/$75 onto Opus 4.8 ($5/$25),
+// making every Opus 4.8 estimate 3x too high. STATIC_FALLBACK is consulted FIRST
+// in lookup() (before the PriceList API), so a wrong row is the primary source,
+// not a last resort. This asserts per-1K == per-1M / 1000 for every shared model.
+// ---------------------------------------------------------------------------
+
+const FALLBACK_TABLE = join(SKILLS, "llm-to-bedrock/scripts/bedrock_pricing.py");
+const RATE_CARD = join(SKILLS, "gcp-to-aws/references/shared/pricing-cache.md");
+
+/** Reduce a Bedrock model id to its comparable base: drop the region/inference-profile
+ * prefix, the `:N` and `-vN` version suffixes, and the `-YYYYMMDD` date stamp. */
+function baseModelId(id: string): string {
+  return id
+    .trim()
+    .replace(/^(us|eu|apac|global)\./, "")
+    .replace(/:\d+$/, "")
+    .replace(/-v\d+$/, "")
+    .replace(/-\d{8}$/, "");
+}
+
+const near = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+
+let driftCount = 0;
+if (!existsSync(FALLBACK_TABLE) || !existsSync(RATE_CARD)) {
+  console.log(`pricing drift: SKIPPED — ${FALLBACK_TABLE} or ${RATE_CARD} not found`);
+} else {
+  // Rate card: `| Name | model-id | Provider | input $/1M | output $/1M | ... |`.
+  // A base id appearing twice with DIFFERENT rates (e.g. a long-context variant) is
+  // ambiguous — record it and skip rather than assert against an arbitrary row.
+  const card = new Map<string, { input: number; output: number }>();
+  const ambiguous = new Set<string>();
+  for (const line of readFileSync(RATE_CARD, "utf8").split("\n")) {
+    const m = line.match(/^\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|/);
+    if (!m) continue;
+    const id = m[2].trim();
+    const input = Number(m[4].trim());
+    const output = Number(m[5].trim());
+    if (!/^[a-z0-9]+\.[a-z0-9.\-:]+$/.test(id) || !Number.isFinite(input) || !Number.isFinite(output)) continue;
+    const base = baseModelId(id);
+    const prev = card.get(base);
+    if (prev && !(near(prev.input, input) && near(prev.output, output))) ambiguous.add(base);
+    else card.set(base, { input, output });
+  }
+
+  // STATIC_FALLBACK: `"model-id": {"input_per_1k_usd": N, "output_per_1k_usd": N},`
+  const block = readFileSync(FALLBACK_TABLE, "utf8").match(/STATIC_FALLBACK\s*=\s*\{([\s\S]*?)\n\}/);
+  const rows = [
+    ...(block?.[1] ?? "").matchAll(
+      /"([^"]+)":\s*\{"input_per_1k_usd":\s*([0-9.eE+-]+),\s*"output_per_1k_usd":\s*([0-9.eE+-]+)\}/g,
+    ),
+  ];
+
+  if (rows.length === 0) {
+    console.log(`pricing drift: NO ROWS PARSED  ${FALLBACK_TABLE} — cannot verify against the rate card`);
+    driftCount++;
+  }
+
+  let checked = 0;
+  for (const [, modelId, inRaw, outRaw] of rows) {
+    const base = baseModelId(modelId);
+    if (ambiguous.has(base)) {
+      console.log(`pricing drift: ambiguous  ${modelId} — rate card lists conflicting rates for ${base}, skipped`);
+      continue;
+    }
+    const expected = card.get(base);
+    if (!expected) {
+      console.log(`pricing drift: UNVERIFIED  ${modelId} — no row for ${base} in ${RATE_CARD}`);
+      driftCount++;
+      continue;
+    }
+    checked++;
+    const wantIn = expected.input / 1000;
+    const wantOut = expected.output / 1000;
+    if (!near(Number(inRaw), wantIn) || !near(Number(outRaw), wantOut)) {
+      console.log(
+        `pricing drift: MISMATCH  ${modelId} — STATIC_FALLBACK has ${inRaw}/${outRaw} per 1K, ` +
+          `rate card says ${expected.input}/${expected.output} per 1M (= ${wantIn}/${wantOut} per 1K)`,
+      );
+      driftCount++;
+    }
+  }
+
+  if (driftCount === 0) console.log(`pricing drift: OK (${checked} STATIC_FALLBACK row(s) match the rate card)`);
+  else console.log(`pricing drift: ${driftCount} row(s) mismatched or unverified against ${RATE_CARD}`);
+}
+
+if (strict && (staleCount > 0 || driftCount > 0)) process.exit(1);

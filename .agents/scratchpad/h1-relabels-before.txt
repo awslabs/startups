@@ -1,0 +1,20 @@
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:39:# Terraform) handed off to the migration skill. AgentCore, Lambda MicroVMs, and
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:41:# Runtimes that hand the compute layer to the migration skill (their service cards say so):
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:74:    the migration skill — i.e. is in HANDOFF_RUNTIMES. Mirrors the single-unit path's handoff node so
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:75:    a multi-unit ECS/EKS/Fargate/Batch system shows the same 'configured by the migration skill'
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:123:        lines.append('    handoff["Compute configured by the migration skill"]')
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:149:        lines.append("Note: compute configured by the migration skill")
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:292:    # HANDOFF_RUNTIME (ecs/eks/fargate/batch) has its compute configured by the migration skill.
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:295:        lines.append('    handoff["Compute configured by the migration skill"]')
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:378:    # any unit on a HANDOFF_RUNTIME has its compute configured by the migration skill.
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts/build_diagram.py:382:        lines.append("Note: compute configured by the migration skill — " +
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/decision-refs/batch.md:36:Hands off to the source-platform migration skill (`gcp-to-aws` or `heroku-to-aws`) for compute-layer config.
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/decision-refs/ecs.md:27:Hands off to the source-platform migration skill (`gcp-to-aws` or `heroku-to-aws`) for compute-layer config.
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/decision-refs/eks.md:27:Hands off to the source-platform migration skill (`gcp-to-aws` or `heroku-to-aws`) for compute-layer config.
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/decision-refs/lambda.md:27:Hands off to the source-platform migration skill (`gcp-to-aws` or `heroku-to-aws`) for compute-layer config.
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/phases/design/design.md:323:primary unit's winning runtime. These runtimes hand the compute layer to the source-platform migration skill — `gcp-to-aws` or `heroku-to-aws` (their
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/phases/estimate/estimate.md:39:reaches here. Magnitude only — NOT precise estimation (that's the migration skills' job). Mirrors
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/phases/estimate/estimate.md:40:the migration skills' pricing pattern.
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/phases/estimate/estimate.md:48:## Step 2 — Pricing source (layered, same as the migration skills)
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/phases/estimate/estimate.md:181:> the migration skills, which also estimate in-skill). It is the one output that is NOT
+advisor/plugins/aws-startup-advisor/skills/agent-advisor/references/phases/estimate/estimate.md:286:  "note": "Order-of-magnitude only. For a precise estimate use the migration skills (gcp-to-aws or heroku-to-aws)."

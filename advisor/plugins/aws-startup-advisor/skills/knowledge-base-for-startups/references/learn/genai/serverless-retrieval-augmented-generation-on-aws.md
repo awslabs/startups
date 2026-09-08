@@ -5,13 +5,13 @@ title: "Serverless Retrieval Augmented Generation (RAG) on AWS"
 
 ## Serverless Retrieval Augmented Generation (RAG) on AWS
 
-In the evolving landscape of generative AI, integrating external, up-to-date information into large language models (LLMs) presents a significant advancement. In this post, we're going to build up to a truly serverless [Retrieval Augmented Generation](https://bit.ly/3XS0X04) (RAG) solution, facilitating the creation of applications that produce more accurate and contextually relevant responses. Our goal is to help you create your GenAI powered application as fast as possible, keeping an eye on your costs, and making sure you don't pay for compute you're not using.
+In the evolving landscape of generative AI, integrating external, up-to-date information into large language models (LLMs) presents a significant advancement. In this post, we're going to build up to a truly serverless [Retrieval Augmented Generation](https://arxiv.org/abs/2005.11401) (RAG) solution, facilitating the creation of applications that produce more accurate and contextually relevant responses. Our goal is to help you create your GenAI powered application as fast as possible, keeping an eye on your costs, and making sure you don't pay for compute you're not using.
 
 ## Serverless RAG: an overview
 
 Serverless RAG combines the advanced language processing capabilities of foundational models with the agility and cost-effectiveness of serverless architecture. This integration allows for the dynamic retrieval of information from external sources—be it databases, the internet, or custom knowledge bases—enabling the generation of content that is not only accurate and contextually rich but also up-to-date with the latest information.
 
-Amazon Bedrock simplifies the deployment of serverless RAG applications, offering developers the tools to create, manage, and scale their GenAI projects without the need for extensive infrastructure management. In addition to that, developers can harness the power of AWS services like Lambda and S3, alongside innovative open-source vector databases such as [LanceDB](https://bit.ly/serverless-rag-lancedb), to build responsive and cost-effective AI-driven solutions.
+Amazon Bedrock simplifies the deployment of serverless RAG applications, offering developers the tools to create, manage, and scale their GenAI projects without the need for extensive infrastructure management. In addition to that, developers can harness the power of AWS services like Lambda and S3, alongside innovative open-source vector databases such as [LanceDB](https://lancedb.com/), to build responsive and cost-effective AI-driven solutions.
 
 ## Ingesting documents
 
@@ -21,9 +21,9 @@ The journey to your serverless RAG solution involves several key steps, each tai
 
 The process starts with the ingestion of documents into a serverless architecture, where event-driven mechanisms trigger the extraction and processing of textual content to generate embeddings. These embeddings, created using models like Amazon Titan, transform the content into numerical vectors that machines can easily understand and process.
 
-Storing these vectors in [LanceDB](https://bit.ly/serverless-rag-lancedb), a serverless vector database backed by Amazon S3, facilitates efficient retrieval and management, ensuring that only relevant information is used to augment the LLM's responses. This approach not only enhances the accuracy and relevance of generated content but also significantly reduces operational costs by leveraging a pay-for-what-you-use model.
+Storing these vectors in [LanceDB](https://lancedb.com/), a serverless vector database backed by Amazon S3, facilitates efficient retrieval and management, ensuring that only relevant information is used to augment the LLM's responses. This approach not only enhances the accuracy and relevance of generated content but also significantly reduces operational costs by leveraging a pay-for-what-you-use model.
 
-Have a look at the code [here](https://bit.ly/serverless-rag-embedding).
+Have a look at the code [here](https://github.com/giusedroid/serverless-embeddings-lancedb-bedrock).
 
 ## What are embeddings?
 
@@ -49,7 +49,7 @@ Users can forward their input to our Inference function via Lambda URL. This is 
 
 A known limitation of this inference system is cold-starting-up our vector database within a new Lambda function. Since LanceDB references a database stored in S3, when a new Lambda execution environment is created - we have to load in the database to be able to make our vector searches. This only happens when you're scaling up or nobody has asked a question in awhile, which means it's a rather small trade-off for the cost-savings of a fully serverless architecture.
 
-Have a look at the code [here](https://bit.ly/shafkevi-lambda-bedrock-s3-streaming-rag).
+Have a look at the code [here](https://github.com/shafkevi/lambda-bedrock-s3-streaming-rag).
 
 ## Navigating the Economics of Serverless RAG
 
@@ -83,9 +83,8 @@ Amazon Bedrock's support for serverless RAG opens up new avenues for innovation 
 
 ## Resources
 
-- [Ingestion Pipeline Code Repository](https://bit.ly/serverless-rag-embedding)
-- [Streaming Inference using Amazon Bedrock Code Repository](https://bit.ly/shafkevi-lambda-bedrock-s3-streaming-rag)
-- [Watch the talk on AWS Innovate](https://bit.ly/49U4BeA)
+- [Ingestion Pipeline Code Repository](https://github.com/giusedroid/serverless-embeddings-lancedb-bedrock)
+- [Streaming Inference using Amazon Bedrock Code Repository](https://github.com/shafkevi/lambda-bedrock-s3-streaming-rag)
 
 ---
 

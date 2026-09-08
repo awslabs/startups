@@ -1,6 +1,6 @@
 ---
 name: start-building-for-startups
-description: "Interactive discovery + implementation workflow that gathers requirements through picker-based questions (intent, scope, constraints, preferences), scans the codebase for what it can already infer, then writes an AWS architectural scaffold and implementation directly into the project. Use when the user wants to build a new app, scaffold a project, or expand/refactor an existing one on AWS — anything that calls for a structured discovery flow followed by code changes, not a one-off lookup. Do not use for: factual lookups about AWS Activate / programs / credits, requests for a single copy-paste prompt, or non-AWS architectural work."
+description: "Interactive discovery + implementation workflow that gathers requirements through picker-based questions (intent, scope, constraints, preferences), scans the codebase for what it can already infer, then writes an AWS architectural scaffold and implementation directly into the project. Use when the user wants to build a new app, scaffold a project, or expand/refactor an existing one on AWS — anything that calls for a structured discovery flow followed by code changes, not a one-off lookup. Do not use for: factual lookups about AWS Activate / programs / credits, requests for a single copy-paste prompt, non-AWS architectural work, architecture advice/recommendations without code changes (see architect-for-startups), a new idea centered on an AI agent — runtime selection, agentic architecture, or an agent POC (see agent-advisor), or migrating an existing GCP/Heroku workload or an LLM SDK rewrite (see gcp-to-aws / heroku-to-aws / llm-to-bedrock)."
 ---
 
 ## Instruction - Discovery and Implementation
@@ -111,13 +111,13 @@ If I skip or say 'I don't know,' move on - never re-ask the same topic.
 
 If possible you should present the questions to me in a format where I can select my response using arrow keys rather than typing and entering A, B, C, D, etc.
 
-### **Companion Skills — `knowledge-base-for-startups`, `prompt-library-for-startups`, and `migration-to-aws`**
+### **Companion Skills — `knowledge-base-for-startups`, `prompt-library-for-startups`, and the migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-advisor`)**
 
 Three sibling skills are available alongside this workflow. Treat them as lookups you consult mid-flow — never let them take over the conversation. After consulting any, return to your discovery `AskUserQuestion` flow, planning, or implementation depending on where you were before.
 
 - **`knowledge-base-for-startups`** — AWS Startups knowledge base. Vetted sample architectures (`build.md`), hundreds of technical learn articles (`learn.md`) on patterns like generative AI, cost optimization, security, real-world startup case studies, plus the Activate FAQ / credits guide / programs / offers. Consult this when you need to ground an architecture recommendation in an AWS-curated reference (e.g. RAG on Bedrock, real-time analytics, multi-tenant SaaS, agentic AI), or when the user asks an Activate-membership question mid-flow.
 - **`prompt-library-for-startups`** — AWS-curated copy-paste prompts plus downloadable installable agents. Consult this when a starter prompt would meaningfully accelerate the implementation phase — e.g. when the user asks for "an MVP", "a RAG chatbot", "a security baseline", "a Well-Architected review" — or when their intent matches a downloadable agent (multi-account transition, bill shock, service quota). When you find a matching prompt, surface it as a reference and offer to **execute / adapt / copy** it; let the user decide before acting.
-- **`migration-to-aws`** — structured GCP-to-AWS migration workflow (also OpenAI / Gemini → Amazon Bedrock and agentic-framework migrations). Hand off to this skill when the user's intent is migrating existing workloads off another cloud or AI provider, rather than building something new.
+- **Migration skills** — `gcp-to-aws` and `heroku-to-aws` (structured infrastructure migration off Google Cloud / Heroku), `llm-to-bedrock` (OpenAI / Gemini → Amazon Bedrock SDK rewrite), and `agent-advisor` (agent runtime + architecture selection on AWS). Hand off to the matching skill when the user's intent is migrating existing workloads off another cloud or AI provider, rather than building something new.
 
 If both apply (e.g. "how do I start with RAG on Bedrock?" → learn article in `knowledge-base-for-startups` + starter prompt in `prompt-library-for-startups`), invoke both.
 

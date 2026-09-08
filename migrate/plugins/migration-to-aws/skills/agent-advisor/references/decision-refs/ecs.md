@@ -10,7 +10,10 @@ Container experience, steady continuous traffic, custom compute, sessions up to/
 
 ## Hard limits
 
-None that eliminate it for agents (GPU and >8h are where it wins vs AgentCore).
+None that eliminate it for agents. GPU and >8h are now contested with AgentCore
+Instances (14-day sessions, GPU, EC2 choice) — ECS's remaining edges are truly
+always-on services (no 14-day session ceiling), an existing container platform,
+and full control of the scaling/networking stack.
 
 ## Six dimensions
 

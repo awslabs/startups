@@ -1,10 +1,10 @@
-team: AWS MASH
-resolver_group: aws-mash
+team: AWS BLEND
+resolver_group: aws-blend
 cti:
   category: AWS
   type: Activate
-  item: MASH - General Support
+  item: Blend - General Support
 contacts:
-  primary: aws-mash
-  oncall: aws-mash-oc-primary
+  primary: aws-blend
+  oncall: aws-distill-oc-primary
 github_team: "@awslabs/startups-advisor"

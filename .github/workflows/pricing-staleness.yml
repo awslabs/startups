@@ -1,4 +1,4 @@
-# Scheduled freshness gate for the migration-to-aws pricing caches.
+# Scheduled freshness gate for the migration-to-aws and aws-startup-advisor pricing caches.
 #
 # The estimate phases price from vendored caches whose freshness contracts
 # (_meta.last_updated + staleness_days, or a "Last updated" line with a
@@ -27,5 +27,10 @@ jobs:
         with:
           node-version: 24
       # Zero-dep TS tool (Node 24 native type-stripping) — no install step.
-      - name: Check pricing cache freshness (strict)
+      # Two separate steps so a stale cache in one plugin doesn't mask the other
+      # (default shell is `bash -e`; a failing first command would skip the second
+      # in a single run block). Each plugin's caches get their own strict gate.
+      - name: Check migration-to-aws pricing cache freshness (strict)
         run: node migrate/plugins/migration-to-aws/tools/pricing-staleness.ts --strict
+      - name: Check aws-startup-advisor pricing cache freshness (strict)
+        run: node advisor/plugins/aws-startup-advisor/tools/pricing-staleness.ts advisor/plugins/aws-startup-advisor --strict

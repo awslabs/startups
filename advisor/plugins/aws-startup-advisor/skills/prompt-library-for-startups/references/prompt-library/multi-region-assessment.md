@@ -1063,7 +1063,7 @@ Prerequisites:
 - Active AWS account
 - AWS CLI configured with credentials
 - Kiro-CLI - https://kiro.dev/docs/cli/
-- AWS Well-Architected Security Assessment Tool MCP Server - https://awslabs.github.io/mcp/servers/well-architected-security-mcp-server
+- AWS Well-Architected Security Assessment Tool MCP Server - https://github.com/awslabs/mcp/tree/main/src/well-architected-security-mcp-server
 
 Use case examples:
 
@@ -1268,5 +1268,5 @@ Do not skip, consolidate, or summarize any active regions.
 - Active AWS account
 - AWS CLI configured with credentials
 - Kiro-CLI - [https://kiro.dev/docs/cli/](https://kiro.dev/docs/cli/)
-- AWS Well-Architected Security Assessment Tool MCP Server - [https://awslabs.github.io/mcp/servers/well-architected-security-mcp-server](https://awslabs.github.io/mcp/servers/well-architected-security-mcp-server)
+- AWS Well-Architected Security Assessment Tool MCP Server - [https://github.com/awslabs/mcp/tree/main/src/well-architected-security-mcp-server](https://github.com/awslabs/mcp/tree/main/src/well-architected-security-mcp-server)
 ```

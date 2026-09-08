@@ -1,11 +1,18 @@
 ---
 name: llm-to-bedrock
-description: "Use when the user wants to migrate code that calls OpenAI, Gemini/Google AI, or the Anthropic API to Amazon Bedrock — a pure model/SDK rewrite. End-to-end: assesses the codebase, then rewrites SDK calls, evaluates output quality against Bedrock, and delivers a ready-to-merge git branch. Not for: agent runtime selection, agentic architecture decisions, or agent migration planning — use agent-advisor for those. Not for standalone Bedrock cost estimates or infrastructure-only migration. The Assess phase is handled by this plugin's own gcp-to-aws skill."
+description: "Use when the user wants to migrate code that calls OpenAI, Gemini/Google AI, or the Anthropic API to Amazon Bedrock — a pure model/SDK rewrite. End-to-end: assesses the codebase, then rewrites SDK calls, evaluates output quality against Bedrock, and delivers a ready-to-merge git branch. Not for: agent runtime selection, agentic architecture decisions, or agent migration planning — use agent-advisor for those. Not for standalone Bedrock cost estimates or infrastructure-only migration. REQUIRES the gcp-to-aws skill installed alongside this one — Assess is delegated entirely to it via a cross-skill invocation, with no standalone fallback if gcp-to-aws is absent."
 ---
 
 # Migrate to Bedrock (Assess + Execute)
 
 Single-command AI migration: OpenAI / Gemini / Anthropic → Amazon Bedrock.
+
+**Requires the `gcp-to-aws` skill installed alongside this one.** This skill has no
+standalone Assess implementation — Phase A below delegates Assess entirely to `gcp-to-aws`
+via a cross-skill invocation, and there is no fallback path that performs Assess itself if
+`gcp-to-aws` is missing. The normal `/plugin install migration-to-aws@startups` (or Codex/
+Cursor equivalent) installs both together; this only matters if `gcp-to-aws` was removed or
+excluded afterward (e.g. a partial local-development symlink).
 
 The skill base directory is given in the "Base directory for this skill: X" line the harness
 emits at load time. Call it `<SKILL_BASE>`. Derived paths:
@@ -23,7 +30,47 @@ emits at load time. Call it `<SKILL_BASE>`. Derived paths:
 uv --version 2>/dev/null || echo "MISSING"
 ```
 
-If missing: "Install uv first: `curl -LsSf https://astral.sh/uv/install.sh | sh`". Stop.
+If missing: "Install uv first — see the official install guide: https://docs.astral.sh/uv/getting-started/installation/ (e.g. `brew install uv` or `pipx install uv`)". Stop.
+
+### 0b. Check that the gcp-to-aws sibling skill is installed
+
+Phase A below delegates the entire Assess step to the `gcp-to-aws` skill via the Skill tool —
+there is no Assess logic in this skill to fall back to. Check for it now, before promising the
+user an Assess phase this deployment cannot run:
+
+```bash
+[ -f "<SKILL_BASE>/../gcp-to-aws/SKILL.md" ] && echo GCP_TO_AWS_PRESENT || echo GCP_TO_AWS_MISSING
+```
+
+This checks the sibling directory relative to `<SKILL_BASE>` (defined above), which works
+under this plugin's normal install layout as well as a local-development symlink into
+`~/.cursor/plugins/local/migration-to-aws`.
+
+- `GCP_TO_AWS_PRESENT` → proceed to Step 1.
+- `GCP_TO_AWS_MISSING` → **stop here — do not proceed.** Tell the user:
+
+  > "This migration needs the `gcp-to-aws` skill installed alongside this one — it handles
+  > code scanning, AI-workload detection, and Bedrock model design; I can't do that part myself
+  > without it. Re-install this plugin with `/plugin install migration-to-aws@startups`
+  > (or the Codex/Cursor equivalent) so both skills come together, then ask me to migrate
+  > again."
+
+  **Do not** perform the Assess phase yourself as a workaround — Phase A below is explicit that
+  Assess logic lives only in `gcp-to-aws`; re-implementing it here would drift out of sync with
+  that skill's Discover/Clarify/Design logic over time. There is no standalone Assess for this
+  skill — this check exists to fail fast and clearly, not to unlock alternate behavior.
+
+**Separately, invoking `gcp-to-aws` at all in Phase A requires your agent to support the
+Skill tool** (cross-skill invocation by name). This is confirmed for Claude Code; it has not
+been verified across every agent this plugin installs into (Cursor, Codex, etc.) — if you're
+on one of those and this fails, that is the likely cause. If the Skill tool call in Phase A's
+A1 step fails or no such mechanism exists on your agent, this skill still has no fallback:
+tell the user plainly that this agent cannot chain into `gcp-to-aws` automatically, and ask
+them to invoke `gcp-to-aws` themselves directly (e.g. "migrate my AI workload to AWS") to run
+Discover through Generate, then come back to this skill once its `generate` phase is
+`completed` (checked in A2) to continue with the SDK rewrite. This is a manual two-step
+workaround for a missing agent capability, not an automated fallback — do not present it to
+the user as this skill "handling it."
 
 ---
 
@@ -74,7 +121,7 @@ Call the **Skill** tool with skill name `migration-to-aws:gcp-to-aws`.
 
 Before invoking, tell the user:
 
-> "I'm now invoking the migration-to-aws Assess skill to discover your AI workloads and design
+> "I'm now invoking the gcp-to-aws Assess skill to discover your AI workloads and design
 > the Bedrock migration. It will ask you some questions — please answer them. (Don't be
 > confused by the skill's `gcp-to-aws` name — it also covers pure AI/LLM migrations with no
 > GCP or infrastructure component, which is how it's being used here.)"
@@ -88,7 +135,11 @@ and Generate phases. The source code to scan is at `$REPO`.
 - Source code is at `$REPO` — when the skill asks for GCP sources or scans for files, point it there
 - This is an AI/LLM workload migration — the AI path is the goal
 - Unless Terraform/IaC files are actually present in `$REPO`, skip IaC discovery
-- Unless the user offers billing data, skip billing discovery
+- Unless the user offers billing data, skip billing discovery. If the source provider is
+  OpenAI, the skill may instead offer its OpenAI Admin API usage discovery
+  (`discover-openai-api.md` — read-only, consent-gated, needs an Admin key with
+  **Usage** set to **Read**); accepting it gives Estimate real spend and token volumes without
+  manual CSV exports
 
 ### A2 — Wait for Assess completion
 
@@ -195,38 +246,64 @@ skill's parser expects — a bare key without the `NAME=` prefix will NOT be par
 - `anthropic` → `ANTHROPIC_API_KEY`
 - `google` / `gemini` → `GEMINI_API_KEY`
 
+**The key must never enter this conversation (HARD RULE).** Do not ask the user to paste the
+key in chat, and never echo, cat, or interpolate its VALUE into any command, question, or
+output — the agent only ever handles the file path. If the user pastes a key into the chat
+unprompted, do not use it: tell them it is now part of the transcript, recommend rotating it,
+and continue with one of the paths below.
+
+First check whether the key is already present in the shell environment (each Bash call
+initializes from the user's profile, so a profile-exported key is visible to every call).
+POSIX-safe — `printenv` works in bash and zsh alike (`${!VAR}` indirection is bash-only and
+zsh errors on it). This prints presence only, never the value:
+
+```bash
+[ -n "$(printenv "$KEY_ENV_VAR")" ] && echo ENV_KEY_PRESENT || echo ENV_KEY_ABSENT
+```
+
 **AskUserQuestion:** "Do you have an API key for the source model (e.g. OpenAI key for GPT-4o)?
 Providing it enables side-by-side quality comparison. Without it, evaluation uses absolute scoring only."
 
-Options:
+Options (offer the first only on `ENV_KEY_PRESENT`):
 
-- **Yes — I'll paste my key** → warn first: "Note: the key will pass through this chat
-  transcript. If you prefer, choose 'I'll write it to a file myself' instead." Then a second
-  AskUserQuestion to collect it (free-text via Other). Then write it in `KEY=VALUE` form:
-
-  ```bash
-  printf "%s=%s\n" "$KEY_ENV_VAR" "<key>" > "$REPO/.saws-migrate/.source-provider-env" && chmod 600 "$REPO/.saws-migrate/.source-provider-env"
-  ```
-
-  Verify the format before proceeding (catches a stray paste without the prefix):
+- **Use the `$KEY_ENV_VAR` already in my environment** → materialize env var to file in one
+  command — the value never appears in the transcript:
 
   ```bash
-  grep -qE '^(OPENAI|ANTHROPIC|GEMINI)_API_KEY=.+' "$REPO/.saws-migrate/.source-provider-env" && echo KEY_FORMAT_OK || echo KEY_FORMAT_BAD
+  printf '%s=%s\n' "$KEY_ENV_VAR" "$(printenv "$KEY_ENV_VAR")" > "$REPO/.saws-migrate/.source-provider-env" && chmod 600 "$REPO/.saws-migrate/.source-provider-env"
   ```
 
-  On `KEY_FORMAT_BAD`, rewrite the file (do not echo its contents). Then set
-  `sourceBaselineAvailable = true`, `sourceKeyRef = "$REPO/.saws-migrate/.source-provider-env"`.
-- **I'll write it to a file myself** → tell the user to create
-  `$REPO/.saws-migrate/.source-provider-env` containing a single `$KEY_ENV_VAR=...` line,
-  then run the same `grep -qE` format check above (it never prints the key).
-  Set the same flags as above.
+  Then run the format check below and set `sourceBaselineAvailable = true`,
+  `sourceKeyRef = "$REPO/.saws-migrate/.source-provider-env"`.
+- **I'll write it to a file myself** → give the user this command to run in THEIR OWN terminal
+  (not through the agent; in Claude Code an `!` prefix runs it in-session) — `read -rs` collects
+  the key without echoing it:
+
+  ```bash
+  read -rs k && printf '%s=%s\n' "<KEY_ENV_VAR>" "$k" > "<REPO>/.saws-migrate/.source-provider-env" && chmod 600 "<REPO>/.saws-migrate/.source-provider-env" && unset k
+  ```
+
+  Substitute the literal env-var name and repo path when presenting it (those are not secrets).
+  Then run the format check below and set the same flags as above.
 - **Skip** → `sourceBaselineAvailable = false`, `sourceKeyRef = ""`.
+
+Whichever path wrote the file, verify the format (never prints the key; catches a value
+written without the `NAME=` prefix, which the baseline parser would silently miss):
+
+```bash
+grep -qE '^(OPENAI|ANTHROPIC|GEMINI)_API_KEY=.+' "$REPO/.saws-migrate/.source-provider-env" && echo KEY_FORMAT_OK || echo KEY_FORMAT_BAD
+```
+
+On `KEY_FORMAT_BAD`, have the same path that wrote the file rewrite it (do not echo its
+contents).
 
 (`.saws-migrate/` is already self-ignoring from the first command above; the rewriter
 re-asserts this before any commit as a second layer.)
 
-**IMPORTANT:** Do NOT use `export` or environment variables for the key. They do not persist
-across Bash tool calls or into workflow subagents. Write to the file path above.
+**IMPORTANT:** The file is the handoff mechanism — do NOT rely on `export` to carry the key
+into later steps. Shell state set in one Bash call does not persist into other calls or into
+workflow subagents; only a profile-exported variable (the `ENV_KEY_PRESENT` path above) is
+reliably visible, and even that must be materialized to the file for the baseline runner.
 
 ### B4 — Bedrock preflight
 
@@ -241,7 +318,8 @@ first failing model) plus `failing_models` (all failing ids); per-model verdicts
 
 - `ok == false` + `reason: credentials` → show the detail (configure/refresh credentials), stop; user re-runs after fixing.
 - `ok == false` + `reason: model_access` → model access not enabled in the Bedrock console (NOT an IAM problem): point the user at the console Model access page for the failing models, stop; re-run B4 after they enable it.
-- `ok == false` + `reason: authz` → IAM denies `bedrock:InvokeModel`: tell user the IAM action to grant; stop.
+- `ok == false` + `reason: authz` → IAM denies inference. For a Converse/InvokeModel target the action to grant is `bedrock:InvokeModel`; for a mantle-only `openai.gpt-5*` target it is the `bedrock-mantle:*` set (see B4a). The `detail` names which. Tell the user the action to grant; stop.
+- `ok == false` + `reason: mantle_deps_missing` → the pinned scripts environment lacks `openai` / `aws-bedrock-token-generator`, so a mantle-only target could not be probed at all. This is an environment fault, not a Bedrock verdict: tell the user to re-sync (`uv sync --project $SCRIPTS`) and stop. Do NOT proceed — access was never verified.
 - `ok == false` + `reason: model_unavailable` → Read the `resolve-bedrock-model-id` reference at `$HELPERS/resolve-bedrock-model-id/resolve-bedrock-model-id.md` and follow its procedure with each ID from `failing_models` + region. AskUserQuestion with the candidates: "Use `<candidate>` (cross-region inference profile)" / "Paste a different model ID" / "Abort". On a choice, replace the ID in `$TARGET_MODELS` and re-run B4.
 - `ok == false` + any other `reason` → show `detail` and stop.
 - `ok == true` → proceed. Surface any `quota_warning`, and any model whose `reason` is
@@ -414,6 +492,16 @@ prior-phase file paths), then validate its output file:
 - `model_unresolvable` → user picks/pastes an ID → record it in
   `resolved_model_overrides`, fold it into the Target line
 - `source_key_auth` → user supplies a new key (re-run B3) or sets baseline unavailable
+- `authz` → IAM denies inference. The `detail` names the action set to grant:
+  `bedrock:InvokeModel*` for a Converse target, or the `bedrock-mantle:*` actions
+  (`CreateInference`, `CallWithBearerToken`) for a mantle-only `openai.gpt-5*` target.
+  User fixes IAM; nothing fingerprinted changes, so re-dispatch the blocked phase only.
+  Do NOT route this to `model_access` — the console Model access page is the wrong fix
+  for an IAM denial and vice versa.
+- `mantle_deps_missing` → the pinned scripts environment lacks `openai` /
+  `aws-bedrock-token-generator`, so a mantle target could not be probed at all. User
+  re-syncs (`uv sync --project $SCRIPTS`); re-dispatch the blocked phase only. Access was
+  never verified, so do not treat a previous pass as still valid.
 - `assess_output_missing` → re-run Phase A, then restart Phase C at C0
 
 After ANY resolution, re-run the C0 recipe (rebuild current-context, apply the invalidation
@@ -445,9 +533,15 @@ Below, AskUserQuestion:
 
 **Gate (a.5) — Rewrite strategy (from migration plan).** Read `migration_path` from
 `$MIGRATION_DIR/aws-design-ai.json` → `ai_architecture.code_migration.migration_path`.
-If the value is `"mantle"`, set `rewrite_strategy = "mantle"`. Otherwise (value is
-`"converse"`, `"gpt-oss"`, or the field is absent), set `rewrite_strategy = "converse"`.
+If the value **starts with** `"mantle"` (`"mantle"`, `"mantle_openai_responses"`), set
+`rewrite_strategy = "mantle"`. Otherwise (value is `"converse"`, `"gpt-oss"`, or the field is
+absent), set `rewrite_strategy = "converse"`.
 No user question needed — the decision was already made during the Assess/Design phase.
+
+Match on the prefix, not on equality: Design writes the more specific
+`"mantle_openai_responses"` for a same-model OpenAI migration, and an equality check against
+`"mantle"` would silently route those runs down the Converse path — rewriting working
+same-model code into a boto3 Converse client against a model that has no Converse surface.
 
 **Gate (b) — Behavior-delta resolution.** For each `analysis.behavior_deltas[]` with
 `user_visible == true`, AskUserQuestion with the options from the `behavior-delta-detection`
@@ -476,6 +570,14 @@ When `rewrite_strategy == "mantle"`, C5's context block ALSO includes:
   signal for the default Converse path)
 - `Mantle model map: <source-model> -> <bedrock-model-id>` — sourced from the plan's
   `ai_architecture.bedrock_models[]` entries (each `source_model` → `aws_model_id` pair).
+- `Mantle surface: responses` and `Mantle base path: /openai/v1` when any mapped
+  `aws_model_id` is a proprietary GPT model (`openai.gpt-5*`). These are served only on the
+  `/openai/v1` path via the Responses API — distinct from the `v1` path other mantle models
+  use — so the rewriter must not emit a `/v1` base URL or a Chat Completions call for them.
+  See `gcp-to-aws/references/shared/openai-on-bedrock.md`.
+- `Same model: true` when `bedrock_models[].model_change` is `false`. Signals the rewriter to
+  keep model parameters untouched and limit changes to the endpoint, credential, model id, and
+  (if the source used Chat Completions) the surface reshape.
 
 ### C7 — Render summary
 
@@ -491,7 +593,7 @@ user's own pre-existing branch and deleting it would destroy their work):
 
 > To discard: `git checkout <your original branch>`, `git branch -D <rewrite.branch_name>`,
 > `git tag -d saws-migrate-baseline`, and `rm -rf .saws-migrate .migration` removes all
-> migration artifacts (including the API key file — also consider rotating the key you pasted).
+> migration artifacts (including the API key file).
 
 ---
 

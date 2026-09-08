@@ -16,3 +16,8 @@ skip-path:
   # drift vs the canned gcloud captures is the test — sanitizing it to satisfy
   # Checkov would change the source-provider state the fixture exists to model.
   - migrate/plugins/migration-to-aws/fixtures/gcp-live-capture/workspace-terraform
+  # Same fixtures, consolidated into the aws-startup-advisor plugin (the migration
+  # skills were merged in). Identical rationale — intentionally non-compliant test
+  # data that is never deployed.
+  - advisor/plugins/aws-startup-advisor/skills/tf-best-practices/fixtures/terraform-policy
+  - advisor/plugins/aws-startup-advisor/fixtures/gcp-live-capture/workspace-terraform

@@ -14,7 +14,7 @@ RUNTIME_LABELS = {
     "lambda": "AWS Lambda",
     "batch": "AWS Batch",
     "fargate": "AWS Fargate",
-    "serverless_workers": "Temporal Serverless Workers (PRE-RELEASE)",
+    "serverless_workers": "Temporal Serverless Workers (Public Preview)",
     "none": "No viable runtime",
 }
 

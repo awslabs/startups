@@ -12,6 +12,7 @@ dprint.json              @awslabs/startups-admins
 **/OWNERS.yml            @awslabs/startups-admins
 **/.claude-plugin/       @awslabs/startups-admins
 **/.cursor-plugin/       @awslabs/startups-admins
+**/.codex-plugin/        @awslabs/startups-admins
 **/SKILL.md              @awslabs/startups-admins
 
 # Team folders

@@ -4,7 +4,7 @@ AI agent skills for migrating workloads to AWS, built for [Claude Code](https://
 
 ## What This Does
 
-Point this plugin at your Heroku account (via your authenticated Heroku CLI, read-only and consent-gated), your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+Point this plugin at your GCP project or Heroku account, your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
 
 **Supported migration sources:**
 
@@ -69,8 +69,6 @@ After installation, just describe what you want to migrate:
 
 GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor writes a `.agent-advisor/<session>/` directory. Both land in the current working directory with all artifacts.
 
-**Live Heroku discovery — how it works:** No Terraform or exports needed. If `heroku login` works in your terminal, just ask — the agent requests your consent, then inventories your account using read-only list/info CLI commands. It captures app names, dyno types, add-on plans and prices, domains, pipelines, and config var **key names only**. It never reads config var values, credentials, or your API token, and never runs a command that creates, changes, or deletes anything. If you also have `heroku_*` Terraform, the agent cross-checks it against your live account and reports drift.
-
 **Live GCP discovery — how it works:** No Terraform or exports needed. If `gcloud auth login` works in your terminal, just ask — the agent confirms the target project and requests your consent, then inventories it using read-only list/describe commands. It captures resource names, types, regions, sizing, network topology, and env var **names only** — never env var values, secret values, database contents, or access tokens, and never a command that creates, changes, or deletes anything. If you also have Terraform, the agent cross-checks it against your live project and reports drift. (AI/agentic detection still needs your application code.)
 
 **Live Heroku discovery — how it works:** No Terraform or exports needed. If `heroku login` works in your terminal, just ask — the agent requests your consent, then inventories your account using read-only list/info CLI commands. It captures app names, dyno types, add-on plans and prices, domains, pipelines, and config var **key names only**. It never reads config var values, credentials, or your API token, and never runs a command that creates, changes, or deletes anything. If you also have `heroku_*` Terraform, the agent cross-checks it against your live account and reports drift.
@@ -111,13 +109,13 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 
 **Infrastructure:**
 
-| Capability                 | Base LLM          | This Plugin                                                                                                                   |
-| -------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                       |
-| Security baseline          | Not included      | `baseline.tf` always emitted: GuardDuty, CloudTrail, IMDSv2, ECR scanning, EBS encryption, budget alerts                      |
-| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                               |
-| Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill |
-| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                           |
+| Capability                 | Base LLM          | This Plugin                                                                                                                                                                                         |
+| -------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Terraform generation       | Generic templates | Your actual GCP config translated — instance classes, storage sizes, region, VPC CIDRs, security groups                                                                                             |
+| Security baseline          | Not included      | `baseline.tf` always emitted by both `gcp-to-aws` and `heroku-to-aws` Generate: GuardDuty, CloudTrail, IMDSv2, EBS encryption, budget alerts; ECR scan-on-push where ECR repositories are generated |
+| Database migration tooling | "Use DMS"         | Selects pg_dump / pgcopydb / DMS based on your actual database size; generates the right script                                                                                                     |
+| Cost estimation            | Stale guesses     | Estimated monthly costs across three tiers (Premium/Balanced/Optimized) using live AWS Pricing API, compared to your GCP bill                                                                       |
+| Migration plan             | Generic checklist | Phased timeline with Go/No-Go gates, rollback procedures, and data integrity checks                                                                                                                 |
 
 **AI/Agentic:**
 

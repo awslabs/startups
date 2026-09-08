@@ -1,0 +1,92 @@
+name: Contribution Gate
+
+# Mechanical half of the solution-architecture contribution gate
+# (solution-architecture/CONTRIBUTING.md).
+#
+# Deliberately requires no credentials and no AWS access, so it runs on pull
+# requests from forks. External contributions are the case the gate exists for,
+# and fork PRs receive no secrets, so anything requiring AWS auth cannot gate
+# them. The AgentCore reviewer that judges criteria 1 and 2 is a separate
+# workflow, since it needs credentials and therefore a different trigger model.
+
+on:
+  pull_request:
+    paths:
+      - 'solution-architecture/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: none
+
+jobs:
+  mechanical-checks:
+    name: Mechanical checks
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v6.0.0
+        with:
+          node-version: '24'
+
+      - name: Determine changed markdown files
+        id: changed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${BASE_SHA:-}" ] && [ -n "${HEAD_SHA:-}" ]; then
+            # Compare against the merge base so unrelated commits on main do
+            # not appear as changes in this PR.
+            MERGE_BASE="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+            # All markdown, not just SKILL.md: sunset-service and style checks
+            # apply to reference files too, which is where these have
+            # historically appeared.
+            git diff --name-only --diff-filter=d "$MERGE_BASE" "$HEAD_SHA" \
+              -- 'solution-architecture/**/*.md' > changed.txt || true
+          else
+            # workflow_dispatch: no PR context, so check everything in scope.
+            : > changed.txt
+          fi
+          echo "count=$(wc -l < changed.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          echo "Changed markdown files:"
+          cat changed.txt
+
+      - name: Run mechanical gate
+        run: |
+          set -euo pipefail
+          # With no changed skill files (or on workflow_dispatch), scan the
+          # whole folder rather than silently passing on an empty list.
+          # `xargs -a` is GNU-only; redirect stdin instead so the same command
+          # works when a contributor runs this locally on macOS.
+          if [ -s changed.txt ]; then
+            xargs node solution-architecture/tools/contribution-gate/check.mjs < changed.txt
+          else
+            node solution-architecture/tools/contribution-gate/check.mjs
+          fi
+
+      - name: Judgment criteria reminder
+        if: success()
+        run: |
+          {
+            echo "### Contribution gate: mechanical checks passed"
+            echo ""
+            echo "This job checks only what is decidable from file contents."
+            echo "Across every markdown file in \`solution-architecture/\`, including"
+            echo "reference files: uncaveated sunset-service references and prose style."
+            echo "On \`SKILL.md\` specifically: the \`audience: startup\` declaration,"
+            echo "required frontmatter fields, banned naming, and unlinked reference files."
+            echo ""
+            echo "**Criteria 1 and 2 are not decided here.** Whether a contribution is"
+            echo "genuinely startup-specific, and whether it overlaps Agent Toolkit for"
+            echo "AWS, are judgment calls that remain with reviewers."
+            echo ""
+            echo "See \`solution-architecture/CONTRIBUTING.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"

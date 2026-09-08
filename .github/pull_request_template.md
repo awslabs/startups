@@ -20,6 +20,7 @@
 
 - [ ] `advisor/`
 - [ ] `migrate/`
+- [ ] `solution-architecture/`
 - [ ] Other: ___
 
 ## Checklist

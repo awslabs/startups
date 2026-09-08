@@ -39,3 +39,12 @@ Thumbs.db
 
 # Migration artifacts (generated at runtime by plugins)
 .migration/
+
+# Sensitive keys. Broad on purpose: a GitHub App private key converted to
+# PKCS#8 usually lands under a different name than the downloaded file, so
+# matching only *private-key.pem leaves the converted copy unignored.
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx

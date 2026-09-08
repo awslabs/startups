@@ -28,12 +28,18 @@
 - The workshop is a sidebar: it NEVER becomes `current_phase`. Entry sets
   `phases.workshop: "in_progress"`; `current_phase` stays at `"estimate"`
   until exit/decline.
-- Exit to Generate (assembler): `phases.workshop: "completed"`,
-  `current_phase: "generate"`. Decline at the Estimate offer: same, without
-  requiring `scenarios/`.
+- Exit (assembler): `phases.workshop: "completed"`. Skills WITHOUT a
+  post-Estimate decision gate advance `current_phase` to `"generate"`. Skills
+  that DEFINE a decision gate re-present that gate — **never** auto-advance to
+  Generate (the gate sets the next state from the user's choice). Decline at
+  the offer: same, without requiring `scenarios/`.
 - Warm-start rule: `current_phase == "estimate"` AND
   `phases.estimate == "completed"` AND `phases.workshop == "pending"` →
   present the workshop offer; NEVER recompute Estimate.
+- The hold-Generate rule above is DECLARED, not just prose: the workshop
+  phase's frontmatter carries `_gates: generate` (INTERPRETER.md § `_gates`),
+  so Generate must not start while `phases.workshop` is unresolved. Declining
+  resolves the sidebar (`"completed"`) and lifts the gate.
 - If Generate (or later) is already `completed`, apply the Estimate re-entry
   guard (confirm → reset downstream to pending) before any refresh.
 
