@@ -32,8 +32,8 @@ const LOCK_STALE_MS = 60_000;
 const POST_TIMEOUT_MS = 3_000;
 
 // Production endpoint, compiled in so a shipped plugin needs no user setup.
-// AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT overrides it (beta and personal
-// stacks follow BLEND's ${region}.${env}.startup-advisor-extension domain
+// AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT overrides it (non-production stages
+// follow the service's ${region}.${env}.startup-advisor-extension domain
 // scheme); setting the variable to an empty string disables sending entirely,
 // and in that inert state snapshots are never advanced, so nothing is lost.
 const DEFAULT_ENDPOINT =

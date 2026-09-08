@@ -19,9 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs"],
-            "async": true
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs\"",
+            "timeout": 10
           }
         ]
       }
@@ -31,8 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs", "--reconcile"],
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs\" --reconcile",
             "timeout": 30
           }
         ]
@@ -43,8 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs", "--session-end"],
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs\" --session-end",
             "timeout": 10
           }
         ]
