@@ -51,11 +51,11 @@ service count.
 Write a **self-contained** HTML file to `$MIGRATION_DIR/migration-report.html`
 (inline CSS only). Required section IDs:
 
-| Section ID         | Content                                                                                                                                                                                                                                |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `decision-summary` | Typography-first verdict (see below), cost one-liner, next action                                                                                                                                                                      |
-| `exec-costs`       | Heroku-vs-AWS side-by-side when a Heroku baseline exists (`current_costs.source != "unavailable"`); otherwise the AWS three-tier table with a one-line note that no Heroku baseline was available. Estimated monthly; Balanced primary |
-| `next-steps`       | Ordered list pointing to `MIGRATION_GUIDE.md` phases (not a procedure dump)                                                                                                                                                            |
+| Section ID         | Content                                                                                                                                                                                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `decision-summary` | Typography-first verdict (see below), cost one-liner, next action                                                                                                                                                                                                                            |
+| `exec-costs`       | Heroku-vs-AWS side-by-side when a Heroku baseline exists (`current_costs.source != "unavailable"`); otherwise the AWS three-tier table with a one-line note that no Heroku baseline was available. Estimated monthly; Balanced primary                                                       |
+| `next-steps`       | Ordered list pointing to `MIGRATION_GUIDE.md` phases (not a procedure dump). Include one bullet noting the Terraform ships with `baseline.tf` (account security baseline — GuardDuty, CloudTrail, budget alerts) and that three contact emails must be set in tfvars before `terraform plan` |
 
 ### `decision-summary` content (REQUIRED)
 

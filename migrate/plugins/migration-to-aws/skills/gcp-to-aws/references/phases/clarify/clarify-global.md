@@ -15,10 +15,10 @@ Present questions with a conversational tone and brief context explaining why ea
 > I need to understand your user base to recommend the right AWS region and CDN strategy.
 > (This question is about where your **users** are — latency and placement. If you have **data residency** obligations, GDPR or similar, that's handled by the compliance question, not this one.)
 >
-> A) Single region (e.g., US-only, EU-only)
-> B) Multi-region (2–3 regions, e.g., US + EU)
-> C) Global (users worldwide, latency critical)
-> D) I don't know
+> 1. Single region (e.g., US-only, EU-only)
+> 2. Multi-region (2–3 regions, e.g., US + EU)
+> 3. Global (users worldwide, latency critical)
+> 4. I don't know
 
 | Answer        | Recommendation Impact                                                                                                                                                                                                                     |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,13 +29,13 @@ Present questions with a conversational tone and brief context explaining why ea
 Interpret:
 
 ```
-A -> target_region: "<closest AWS region to GCP region in inventory>"
-B -> target_region: "<closest AWS region>", replication: "cross-region"
-C -> target_region: "<closest AWS region>", replication: "cross-region", cdn: "required"
-D -> same as default (A)
+1 -> target_region: "<closest AWS region to GCP region in inventory>"
+2 -> target_region: "<closest AWS region>", replication: "cross-region"
+3 -> target_region: "<closest AWS region>", replication: "cross-region", cdn: "required"
+4 -> same as default (1)
 ```
 
-Default: A — single region, closest AWS region to GCP region in inventory.
+Default: 1 — single region, closest AWS region to GCP region in inventory.
 
 ---
 
@@ -45,14 +45,14 @@ Default: A — single region, closest AWS region to GCP region in inventory.
 
 > Compliance requirements determine which AWS services, regions, and configurations are available to you. This gates the entire architecture.
 >
-> A) None — No specific compliance requirements
-> B) SOC 2 / ISO 27001 — Security and availability standards
-> C) PCI DSS — Payment card data handling
-> D) HIPAA — Healthcare data
-> E) FedRAMP / Government — Federal compliance
-> F) GDPR / Data residency — EU data sovereignty requirements
-> G) CCPA / CPRA — California Consumer Privacy Act / California Privacy Rights Act
-> H) I don't know
+> 1. None — No specific compliance requirements
+> 2. SOC 2 / ISO 27001 — Security and availability standards
+> 3. PCI DSS — Payment card data handling
+> 4. HIPAA — Healthcare data
+> 5. FedRAMP / Government — Federal compliance
+> 6. GDPR / Data residency — EU data sovereignty requirements
+> 7. CCPA / CPRA — California Consumer Privacy Act / California Privacy Rights Act
+> 8. I don't know
 >
 > _(Multiple selections allowed)_
 
@@ -69,17 +69,17 @@ Default: A — single region, closest AWS region to GCP region in inventory.
 Interpret:
 
 ```
-A -> (no constraint written — user explicitly confirmed no requirements; full service catalog, any region)
-B -> compliance: ["soc2"] — CloudTrail, Config, Security Hub enabled; encryption at rest required
-C -> compliance: ["pci"] — Dedicated VPC, WAF required, strict segmentation
-D -> compliance: ["hipaa"] — BAA-eligible services only, encryption mandatory, us-east-1/us-west-2 preferred
-E -> compliance: ["fedramp"] — GovCloud regions required (us-gov-east-1, us-gov-west-1)
-F -> compliance: ["gdpr"] — EU regions required (eu-west-1, eu-central-1), data residency constraints
-G -> compliance: ["ccpa"] — CCPA/CPRA: logging, retention, consumer-request readiness; document data flows; align region/subprocessor choices with legal review
-H -> compliance: ["unknown"] — not confirmed; verify with compliance team before production
+1 -> (no constraint written — user explicitly confirmed no requirements; full service catalog, any region)
+2 -> compliance: ["soc2"] — CloudTrail, Config, Security Hub enabled; encryption at rest required
+3 -> compliance: ["pci"] — Dedicated VPC, WAF required, strict segmentation
+4 -> compliance: ["hipaa"] — BAA-eligible services only, encryption mandatory, us-east-1/us-west-2 preferred
+5 -> compliance: ["fedramp"] — GovCloud regions required (us-gov-east-1, us-gov-west-1)
+6 -> compliance: ["gdpr"] — EU regions required (eu-west-1, eu-central-1), data residency constraints
+7 -> compliance: ["ccpa"] — CCPA/CPRA: logging, retention, consumer-request readiness; document data flows; align region/subprocessor choices with legal review
+8 -> compliance: ["unknown"] — not confirmed; verify with compliance team before production
 ```
 
-**Defaulted / "I don't know" semantics:** When Q2 resolves without an explicit user selection — answer H, or "use defaults for the rest" — write `compliance: ["unknown"]` (`chosen_by: "user"` for H, `"default"` with `source: "default:Q2"` for defaults). Never silently record "no requirements". Downstream, `["unknown"]` behaves exactly like "none" for architecture and service selection (no speculative BAA-only stack), but it triggers the report's compliance caveat and counts as unverified in decision confidence.
+**Defaulted / "I don't know" semantics:** When Q2 resolves without an explicit user selection — answer 8, or "use defaults for the rest" — write `compliance: ["unknown"]` (`chosen_by: "user"` for 8, `"default"` with `source: "default:Q2"` for defaults). Never silently record "no requirements". Downstream, `["unknown"]` behaves exactly like "none" for architecture and service selection (no speculative BAA-only stack), but it triggers the report's compliance caveat and counts as unverified in decision confidence.
 
 Default: `compliance: ["unknown"]` — unconfirmed, with report caveat (only reachable via "use defaults for the rest"; Q2 is otherwise always asked).
 
@@ -101,12 +101,12 @@ Default: `compliance: ["unknown"]` — unconfirmed, with report caveat (only rea
 
 > Total GCP spend helps me estimate AWS credits eligibility and provides a cost baseline for the migration plan.
 >
-> A) < $1,000/month
-> B) $1,000–$5,000/month
-> C) $5,000–$20,000/month
-> D) $20,000–$100,000/month
-> E) > $100,000/month
-> F) I don't know
+> 1. < $1,000/month
+> 2. $1,000–$5,000/month
+> 3. $5,000–$20,000/month
+> 4. $20,000–$100,000/month
+> 5. $100,000/month
+> 6. I don't know
 
 **Billing enrichment (when Q3 is not skipped):** If `billing-profile.json` exists but extraction was skipped due to ambiguity, show:
 
@@ -123,15 +123,15 @@ Default: `compliance: ["unknown"]` — unconfirmed, with report caveat (only rea
 Interpret:
 
 ```
-A -> gcp_monthly_spend: "<$1K" — entry-tier funding review; conservative cost assumptions
-B -> gcp_monthly_spend: "$1K-$5K" — funding review; mid-range cost assumptions
-C -> gcp_monthly_spend: "$5K-$20K" — funding review; reserved pricing recommendations
-D -> gcp_monthly_spend: "$20K-$100K" — funding/support review; savings commitment analysis
-E -> gcp_monthly_spend: ">$100K" — enterprise program/support review
-F -> same as default (B)
+1 -> gcp_monthly_spend: "<$1K" — entry-tier funding review; conservative cost assumptions
+2 -> gcp_monthly_spend: "$1K-$5K" — funding review; mid-range cost assumptions
+3 -> gcp_monthly_spend: "$5K-$20K" — funding review; reserved pricing recommendations
+4 -> gcp_monthly_spend: "$20K-$100K" — funding/support review; savings commitment analysis
+5 -> gcp_monthly_spend: ">$100K" — enterprise program/support review
+6 -> same as default (2)
 ```
 
-Default: B — `gcp_monthly_spend: "$1K-$5K"`.
+Default: 2 — `gcp_monthly_spend: "$1K-$5K"`.
 
 ---
 
@@ -143,12 +143,12 @@ Default: B — `gcp_monthly_spend: "$1K-$5K"`.
 
 > Your billing data shows active Committed Use Discounts (~[effective_discount_percent]% effective discount). CUD timing affects migration ROI — commitment fees continue regardless of usage until the term expires.
 >
-> A) Yes, and they expire within 6 months
-> B) Yes, and they expire in 6–12 months
-> C) Yes, and they have more than 12 months remaining
-> D) Yes, but I'm not sure when they expire
-> E) No active CUDs / I don't know
-> F) I plan to let them expire and not renew
+> 1. Yes, and they expire within 6 months
+> 2. Yes, and they expire in 6–12 months
+> 3. Yes, and they have more than 12 months remaining
+> 4. Yes, but I'm not sure when they expire
+> 5. No active CUDs / I don't know
+> 6. I plan to let them expire and not renew
 
 | Answer                        | Recommendation Impact                                                                                                 |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -162,15 +162,15 @@ Default: B — `gcp_monthly_spend: "$1K-$5K"`.
 Interpret:
 
 ```
-A -> cud_status: "expiring_soon" — Align migration with CUD expiration
-B -> cud_status: "expiring_medium" — Phased migration acceptable; some overlap cost
-C -> cud_status: "long_remaining" — Factor overlap into ROI; justify with operational benefits
-D -> cud_status: "unknown_expiry" — Recommend checking GCP console
-E -> cud_status: "none" — No constraint
-F -> cud_status: "not_renewing" — Align migration completion with expiration
+1 -> cud_status: "expiring_soon" — Align migration with CUD expiration
+2 -> cud_status: "expiring_medium" — Phased migration acceptable; some overlap cost
+3 -> cud_status: "long_remaining" — Factor overlap into ROI; justify with operational benefits
+4 -> cud_status: "unknown_expiry" — Recommend checking GCP console
+5 -> cud_status: "none" — No constraint
+6 -> cud_status: "not_renewing" — Align migration completion with expiration
 ```
 
-Default: E — `cud_status: "none"` (no constraint on migration timing).
+Default: 5 — `cud_status: "none"` (no constraint on migration timing).
 
 If `billing-profile.json` does not exist or `commitments.has_active_cuds == false`, **skip this question entirely**.
 
@@ -190,9 +190,9 @@ Activate package selection is owned by **Q27** (`startup_program_status`) when C
 
 > Multi-cloud portability is an immediate decision point — if required, Kubernetes (EKS) is the only portable abstraction, and we can skip several compute questions.
 >
-> A) Yes, multi-cloud required
-> B) No, AWS-only is acceptable
-> C) I don't know
+> 1. Yes, multi-cloud required
+> 2. No, AWS-only is acceptable
+> 3. I don't know
 
 | Answer                    | Recommendation Impact                                                                                                |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -202,12 +202,12 @@ Activate package selection is owned by **Q27** (`startup_program_status`) when C
 Interpret:
 
 ```
-A -> compute: "eks" — Immediate EKS recommendation. EARLY EXIT: skip Q8.
-B -> (no constraint written — full compute decision tree continues)
-C -> same as default (B) — assume AWS-only
+1 -> compute: "eks" — Immediate EKS recommendation. EARLY EXIT: skip Q8.
+2 -> (no constraint written — full compute decision tree continues)
+3 -> same as default (2) — assume AWS-only
 ```
 
-Default: B — no constraint, evaluate full compute options.
+Default: 2 — no constraint, evaluate full compute options.
 
 ---
 
@@ -235,11 +235,11 @@ Default: B — no constraint, evaluate full compute options.
 
 > Availability requirements drive database engine selection, deployment topology, and whether multi-AZ is mandatory.
 >
-> A) INCONVENIENT — Users can wait, brief outages tolerable (5–30 min)
-> B) SIGNIFICANT ISSUE — Customers frustrated, revenue loss
-> C) MISSION-CRITICAL — Cannot tolerate outages, SLA violations
-> D) CATASTROPHIC — Regulatory, safety, or major financial consequences per minute of downtime
-> E) I don't know
+> 1. INCONVENIENT — Users can wait, brief outages tolerable (5–30 min)
+> 2. SIGNIFICANT ISSUE — Customers frustrated, revenue loss
+> 3. MISSION-CRITICAL — Cannot tolerate outages, SLA violations
+> 4. CATASTROPHIC — Regulatory, safety, or major financial consequences per minute of downtime
+> 5. I don't know
 
 | Answer            | Recommendation Impact                                                                                                                                                                                                                                  |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -251,15 +251,15 @@ Default: B — no constraint, evaluate full compute options.
 Interpret:
 
 ```
-A -> availability: "single-az" — Single-AZ RDS acceptable, standard deployment
-B -> availability: "multi-az" — Multi-AZ RDS required, ALB with health checks, auto-scaling
-C -> availability: "multi-az-ha" — Aurora Multi-AZ, multi-AZ mandatory, Route 53 health checks
-D -> IF Q1 = C (Global): availability: "multi-region" — Aurora Global Database + active-active multi-region + Route 53 failover
-     IF Q1 = A or B: availability: "multi-az-ha" — Aurora Multi-AZ with aggressive RTO/RPO (global infra not warranted without global users)
-E -> same as default (B) — assume multi-AZ for safety
+1 -> availability: "single-az" — Single-AZ RDS acceptable, standard deployment
+2 -> availability: "multi-az" — Multi-AZ RDS required, ALB with health checks, auto-scaling
+3 -> availability: "multi-az-ha" — Aurora Multi-AZ, multi-AZ mandatory, Route 53 health checks
+4 -> IF Q1 = 3 (Global): availability: "multi-region" — Aurora Global Database + active-active multi-region + Route 53 failover
+     IF Q1 = 1 or 2: availability: "multi-az-ha" — Aurora Multi-AZ with aggressive RTO/RPO (global infra not warranted without global users)
+5 -> same as default (2) — assume multi-AZ for safety
 ```
 
-Default: B — `availability: "multi-az"`.
+Default: 2 — `availability: "multi-az"`.
 
 ---
 
@@ -277,11 +277,11 @@ Default: B — `availability: "multi-az"`.
 
 > The maintenance window determines your migration cutover strategy and which database migration tooling we recommend. Zero-downtime migrations require significantly more complex infrastructure.
 >
-> A) Yes — weekly maintenance window (e.g., Sunday 2–4am)
-> B) Yes — monthly maintenance window only
-> C) No — zero downtime required, must use blue/green or rolling deployment
-> D) Flexible — we can schedule one if needed
-> E) I don't know
+> 1. Yes — weekly maintenance window (e.g., Sunday 2–4am)
+> 2. Yes — monthly maintenance window only
+> 3. No — zero downtime required, must use blue/green or rolling deployment
+> 4. Flexible — we can schedule one if needed
+> 5. I don't know
 
 | Answer         | Recommendation Impact                                                                                                                                                                                                                                       |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -293,11 +293,11 @@ Default: B — `availability: "multi-az"`.
 Interpret:
 
 ```
-A -> cutover_strategy: "maintenance-window-weekly" — pg_dump/pg_restore or pgcopydb recommended; standard cutover with DNS switchover
-B -> cutover_strategy: "maintenance-window-monthly" — pg_dump/pg_restore or pgcopydb recommended; blue/green for app layer
-C -> cutover_strategy: "zero-downtime" — AWS DMS required for live DB replication; blue/green deployment; Route 53 weighted routing
-D -> cutover_strategy: "flexible" — Recommend scheduling weekly window for pg_dump approach; DMS fallback
-E -> same as default (D) — assume flexible
+1 -> cutover_strategy: "maintenance-window-weekly" — pg_dump/pg_restore or pgcopydb recommended; standard cutover with DNS switchover
+2 -> cutover_strategy: "maintenance-window-monthly" — pg_dump/pg_restore or pgcopydb recommended; blue/green for app layer
+3 -> cutover_strategy: "zero-downtime" — AWS DMS required for live DB replication; blue/green deployment; Route 53 weighted routing
+4 -> cutover_strategy: "flexible" — Recommend scheduling weekly window for pg_dump approach; DMS fallback
+5 -> same as default (4) — assume flexible
 ```
 
-Default: D — `cutover_strategy: "flexible"`.
+Default: 4 — `cutover_strategy: "flexible"`.

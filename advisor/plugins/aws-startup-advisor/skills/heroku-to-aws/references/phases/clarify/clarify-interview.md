@@ -25,11 +25,11 @@ Check `$MIGRATION_DIR/` for existing state:
 
 > "I found existing migration preferences from a previous run. Would you like to:"
 >
-> A) Re-use these preferences and skip questions
-> B) Start fresh and re-answer all questions
+> 1. Re-use these preferences and skip questions
+> 2. Start fresh and re-answer all questions
 
-- If A: Skip to Validation Checklist with the existing `preferences.json`.
-- If B: Delete `preferences.json`, continue to Step 1.
+- If 1: Skip to Validation Checklist with the existing `preferences.json`.
+- If 2: Delete `preferences.json`, continue to Step 1.
 
 **Case 2 — No prior state**: Continue to Step 1.
 
@@ -294,25 +294,25 @@ Re-prompt Q9b until valid input is provided.
 
 > Which AWS region should your infrastructure be deployed to?
 >
-> A) us-east-1 (N. Virginia) — lowest latency to East Coast, most services available
-> B) us-west-2 (Oregon) — West Coast, good general-purpose choice
-> C) eu-west-1 (Ireland) — Europe, good for EU-based users
-> D) eu-central-1 (Frankfurt) — Central Europe, German data residency
-> E) ap-southeast-1 (Singapore) — Asia-Pacific
-> F) ap-northeast-1 (Tokyo) — Japan
-> G) Other — specify a valid AWS region code
+> 1. us-east-1 (N. Virginia) — lowest latency to East Coast, most services available
+> 2. us-west-2 (Oregon) — West Coast, good general-purpose choice
+> 3. eu-west-1 (Ireland) — Europe, good for EU-based users
+> 4. eu-central-1 (Frankfurt) — Central Europe, German data residency
+> 5. ap-southeast-1 (Singapore) — Asia-Pacific
+> 6. ap-northeast-1 (Tokyo) — Japan
+> 7. Other — specify a valid AWS region code
 
 **Interpret:**
 
-- A → `target_region: "us-east-1"`
-- B → `target_region: "us-west-2"`
-- C → `target_region: "eu-west-1"`
-- D → `target_region: "eu-central-1"`
-- E → `target_region: "ap-southeast-1"`
-- F → `target_region: "ap-northeast-1"`
-- G → validate user-provided region code; `target_region: "<user value>"`
+- 1 → `target_region: "us-east-1"`
+- 2 → `target_region: "us-west-2"`
+- 3 → `target_region: "eu-west-1"`
+- 4 → `target_region: "eu-central-1"`
+- 5 → `target_region: "ap-southeast-1"`
+- 6 → `target_region: "ap-northeast-1"`
+- 7 → validate user-provided region code; `target_region: "<user value>"`
 
-**Default:** A → `target_region: "us-east-1"`
+**Default:** 1 → `target_region: "us-east-1"`
 
 **Valid options:** Any valid AWS region code (e.g., `us-east-1`, `eu-west-1`, `ap-southeast-2`). Reject non-existent region codes.
 
@@ -322,21 +322,21 @@ Re-prompt Q9b until valid input is provided.
 
 > Do you need to meet any compliance frameworks?
 >
-> A) None — no specific compliance requirements
-> B) SOC 2 — service organization controls
-> C) HIPAA — healthcare data protection
-> D) PCI DSS — payment card data
-> E) Multiple — specify which ones
+> 1. None — no specific compliance requirements
+> 2. SOC 2 — service organization controls
+> 3. HIPAA — healthcare data protection
+> 4. PCI DSS — payment card data
+> 5. Multiple — specify which ones
 
 **Interpret:**
 
-- A → `compliance: "none"`
-- B → `compliance: "soc2"`
-- C → `compliance: "hipaa"`
-- D → `compliance: "pci"`
-- E → `compliance: [user-specified array]`
+- 1 → `compliance: "none"`
+- 2 → `compliance: "soc2"`
+- 3 → `compliance: "hipaa"`
+- 4 → `compliance: "pci"`
+- 5 → `compliance: [user-specified array]`
 
-**Default:** A → `compliance: "none"`
+**Default:** 1 → `compliance: "none"`
 
 **Design impact:** HIPAA → BAA-eligible services only; PCI → encryption at rest and in transit mandatory; SOC 2 → audit logging required.
 
@@ -346,19 +346,19 @@ Re-prompt Q9b until valid input is provided.
 
 > What availability level does your production workload need?
 >
-> A) Single-AZ — development/staging, cost-optimized (no redundancy)
-> B) Multi-AZ — production standard (automatic failover within a region)
-> C) Multi-AZ HA — mission-critical (Aurora, enhanced monitoring, aggressive failover)
-> D) Multi-Region — catastrophic tolerance (global distribution, highest cost)
+> 1. Single-AZ — development/staging, cost-optimized (no redundancy)
+> 2. Multi-AZ — production standard (automatic failover within a region)
+> 3. Multi-AZ HA — mission-critical (Aurora, enhanced monitoring, aggressive failover)
+> 4. Multi-Region — catastrophic tolerance (global distribution, highest cost)
 
 **Interpret:**
 
-- A → `availability: "single-az"`
-- B → `availability: "multi-az"`
-- C → `availability: "multi-az-ha"`
-- D → `availability: "multi-region"`
+- 1 → `availability: "single-az"`
+- 2 → `availability: "multi-az"`
+- 3 → `availability: "multi-az-ha"`
+- 4 → `availability: "multi-region"`
 
-**Default:** B → `availability: "multi-az"`
+**Default:** 2 → `availability: "multi-az"`
 
 **Design impact:**
 
@@ -372,19 +372,19 @@ Re-prompt Q9b until valid input is provided.
 
 > When should AWS perform maintenance operations (patches, minor upgrades)?
 >
-> A) Weekday off-hours (Tue–Thu, 02:00–06:00 UTC)
-> B) Weekend early morning (Sat–Sun, 02:00–06:00 UTC)
-> C) Sunday pre-dawn (Sun 03:00–05:00 UTC) — recommended
-> D) Flexible — no preference, use AWS defaults
+> 1. Weekday off-hours (Tue–Thu, 02:00–06:00 UTC)
+> 2. Weekend early morning (Sat–Sun, 02:00–06:00 UTC)
+> 3. Sunday pre-dawn (Sun 03:00–05:00 UTC) — recommended
+> 4. Flexible — no preference, use AWS defaults
 
 **Interpret:**
 
-- A → `maintenance_window: {"day": "tuesday-thursday", "hour_utc": 3}`
-- B → `maintenance_window: {"day": "saturday-sunday", "hour_utc": 3}`
-- C → `maintenance_window: {"day": "sunday", "hour_utc": 4}`
-- D → `maintenance_window: "flexible"`
+- 1 → `maintenance_window: {"day": "tuesday-thursday", "hour_utc": 3}`
+- 2 → `maintenance_window: {"day": "saturday-sunday", "hour_utc": 3}`
+- 3 → `maintenance_window: {"day": "sunday", "hour_utc": 4}`
+- 4 → `maintenance_window: "flexible"`
 
-**Default:** D → `maintenance_window: "flexible"`
+**Default:** 4 → `maintenance_window: "flexible"`
 
 ---
 
@@ -392,19 +392,19 @@ Re-prompt Q9b until valid input is provided.
 
 > What should the primary environment be called in AWS resource naming and tags?
 >
-> A) production
-> B) prod
-> C) live
-> D) Other — specify
+> 1. production
+> 2. prod
+> 3. live
+> 4. Other — specify
 
 **Interpret:**
 
-- A → `environment_naming: "production"`
-- B → `environment_naming: "prod"`
-- C → `environment_naming: "live"`
-- D → `environment_naming: "<user value>"`
+- 1 → `environment_naming: "production"`
+- 2 → `environment_naming: "prod"`
+- 3 → `environment_naming: "live"`
+- 4 → `environment_naming: "<user value>"`
 
-**Default:** A → `environment_naming: "production"`
+**Default:** 1 → `environment_naming: "production"`
 
 ---
 
@@ -414,19 +414,19 @@ Re-prompt Q9b until valid input is provided.
 >
 > How would you like to sequence the migration?
 >
-> A) Full cutover — migrate database and application together in one maintenance window (simpler, single downtime event)
-> B) Database first — migrate the database to AWS now, keep the app on Heroku temporarily while you prepare the compute migration (requires a target exit date)
+> 1. Full cutover — migrate database and application together in one maintenance window (simpler, single downtime event)
+> 2. Database first — migrate the database to AWS now, keep the app on Heroku temporarily while you prepare the compute migration (requires a target exit date)
 >
-> ⚠️ Option B requires network access from Heroku to your AWS database during the transition period, granted to a bounded allowlist of addresses (never the open internet) with TLS enforced first. If your app runs in a Private Space, that means VPC peering or the space's stable outbound IPs; on the Common Runtime it means a static-egress proxy add-on. Access is revoked once the app migrates off Heroku.
+> ⚠️ Option 2 requires network access from Heroku to your AWS database during the transition period, granted to a bounded allowlist of addresses (never the open internet) with TLS enforced first. If your app runs in a Private Space, that means VPC peering or the space's stable outbound IPs; on the Common Runtime it means a static-egress proxy add-on. Access is revoked once the app migrates off Heroku.
 
 **Interpret:**
 
-- A → `migration_approach: "full_cutover"`
-- B → `migration_approach: "interim_cutover_data_first"`
+- 1 → `migration_approach: "full_cutover"`
+- 2 → `migration_approach: "interim_cutover_data_first"`
 
-**Default:** A → `migration_approach: "full_cutover"`
+**Default:** 1 → `migration_approach: "full_cutover"`
 
-**If user selects B:**
+**If user selects 2:**
 
 1. Ask follow-up: "What's your target date to complete the app migration off Heroku? (YYYY-MM-DD format)"
 2. Validate ISO 8601 date format. If invalid, re-prompt.
@@ -434,7 +434,7 @@ Re-prompt Q9b until valid input is provided.
 4. Set `interim_cutover: true`
 5. Set `ktlo_warning: "Heroku is in sustaining engineering. Hybrid operation should be bounded to weeks, not quarters."`
 
-**Design impact:** Option B → MIGRATION_GUIDE.md includes the "Interim Database Exposure" section (TLS prerequisite gate, then a scoped CIDR allowlist applied via Terraform) and a "Platform Risk" callout.
+**Design impact:** Option 2 → MIGRATION_GUIDE.md includes the "Interim Database Exposure" section (TLS prerequisite gate, then a scoped CIDR allowlist applied via Terraform) and a "Platform Risk" callout.
 
 ---
 
@@ -468,23 +468,23 @@ Re-prompt Q9b until valid input is provided.
 >
 > Which compute target plan should we use?
 >
-> A) Use this recommendation — EB default with per-formation Fargate overrides where needed (default)
-> B) Use Elastic Beanstalk for all EB-compatible formations; keep system-forced Fargate overrides for scaled non-web workers
-> C) Use ECS Fargate for all dyno formations
-> D) Use EKS — team has Kubernetes expertise and wants full K8s control
-> E) EKS acceptable — team can operate K8s, prefers managed node groups to reduce burden
-> F) Set per-formation targets manually
+> 1. Use this recommendation — EB default with per-formation Fargate overrides where needed (default)
+> 2. Use Elastic Beanstalk for all EB-compatible formations; keep system-forced Fargate overrides for scaled non-web workers
+> 3. Use ECS Fargate for all dyno formations
+> 4. Use EKS — team has Kubernetes expertise and wants full K8s control
+> 5. EKS acceptable — team can operate K8s, prefers managed node groups to reduce burden
+> 6. Set per-formation targets manually
 
 **Interpret:**
 
-- A → `design_constraints.compute_target: { "default": "elastic_beanstalk", "overrides": [<system_forced Fargate overrides>], "chosen_by": "system_recommended", "recommendation": { "value": "elastic_beanstalk|mixed", "confidence": "high|medium|low", "reasons": [<summary reasons>] } }`
-- B → same as A, but `chosen_by: "user"` and `recommendation.reasons` MUST include "user selected EB for all EB-compatible formations". Scaled non-web `quantity > 1` formations remain `system_forced` Fargate overrides.
-- C → `design_constraints.compute_target: { "default": "ecs-fargate", "overrides": [], "chosen_by": "user", "recommendation": { "value": "ecs-fargate", "confidence": "high", "reasons": ["user selected direct managed containers for all dyno formations"] } }`
-- D → `design_constraints.compute_target: { "default": "eks-managed", "overrides": [], "chosen_by": "user", "recommendation": { "value": "eks-managed", "confidence": "high", "reasons": ["user selected Kubernetes control"] } }`
-- E → `design_constraints.compute_target: { "default": "eks-or-ecs", "overrides": [], "chosen_by": "user", "recommendation": { "value": "eks-or-ecs", "confidence": "medium", "reasons": ["user can operate Kubernetes but prefers managed node groups"] } }`
-- F → ask a short follow-up listing each formation and write `overrides[]` for user-selected deviations from the default. Do not allow EB for scaled non-web formations unless the user first changes the Heroku quantity to 1 or accepts a manual non-generated exception; generated artifacts must keep those formations on Fargate.
+- 1 → `design_constraints.compute_target: { "default": "elastic_beanstalk", "overrides": [<system_forced Fargate overrides>], "chosen_by": "system_recommended", "recommendation": { "value": "elastic_beanstalk|mixed", "confidence": "high|medium|low", "reasons": [<summary reasons>] } }`
+- 2 → same as 1, but `chosen_by: "user"` and `recommendation.reasons` MUST include "user selected EB for all EB-compatible formations". Scaled non-web `quantity > 1` formations remain `system_forced` Fargate overrides.
+- 3 → `design_constraints.compute_target: { "default": "ecs-fargate", "overrides": [], "chosen_by": "user", "recommendation": { "value": "ecs-fargate", "confidence": "high", "reasons": ["user selected direct managed containers for all dyno formations"] } }`
+- 4 → `design_constraints.compute_target: { "default": "eks-managed", "overrides": [], "chosen_by": "user", "recommendation": { "value": "eks-managed", "confidence": "high", "reasons": ["user selected Kubernetes control"] } }`
+- 5 → `design_constraints.compute_target: { "default": "eks-or-ecs", "overrides": [], "chosen_by": "user", "recommendation": { "value": "eks-or-ecs", "confidence": "medium", "reasons": ["user can operate Kubernetes but prefers managed node groups"] } }`
+- 6 → ask a short follow-up listing each formation and write `overrides[]` for user-selected deviations from the default. Do not allow EB for scaled non-web formations unless the user first changes the Heroku quantity to 1 or accepts a manual non-generated exception; generated artifacts must keep those formations on Fargate.
 
-**Default:** A — use the computed recommendation. "I don't know" maps to A, not to a blind EB-only default.
+**Default:** 1 — use the computed recommendation. "I don't know" maps to 1, not to a blind EB-only default.
 
 **Design impact:** Design resolves each formation from `compute_target.default` plus matching `overrides[]`. EB-compatible web dynos map to LoadBalanced EB environments. EB-compatible persistent non-web dynos with `quantity == 1` map to SingleInstance WebServer environments. Persistent non-web dynos with `quantity > 1` map to Fargate to preserve horizontal worker count. `"ecs-fargate"` maps formations to Fargate services. `"eks-managed"` or `"eks-or-ecs"` maps formations to EKS Deployments. Non-formation resources (Postgres, Redis, Kafka, add-ons) are unaffected.
 
@@ -496,17 +496,17 @@ Re-prompt Q9b until valid input is provided.
 >
 > How do you want to deploy code changes to Elastic Beanstalk?
 >
-> A) GitHub Actions — deploy from your existing workflow using OIDC role assumption, no AWS-managed pipeline (default)
-> B) AWS CodePipeline — AWS-managed pipeline triggered on GitHub push; requires one-time GitHub connection authorization in the AWS console
-> C) Manual CLI — no automated pipeline; deploy via the EB/AWS CLI as documented in `MIGRATION_GUIDE.md`
+> 1. GitHub Actions — deploy from your existing workflow using OIDC role assumption, no AWS-managed pipeline (default)
+> 2. AWS CodePipeline — AWS-managed pipeline triggered on GitHub push; requires one-time GitHub connection authorization in the AWS console
+> 3. Manual CLI — no automated pipeline; deploy via the EB/AWS CLI as documented in `MIGRATION_GUIDE.md`
 
 **Interpret:**
 
-- A → `design_constraints.eb_deploy_method: { "value": "github_actions", "chosen_by": "user" }`
-- B → `design_constraints.eb_deploy_method: { "value": "codepipeline", "chosen_by": "user" }`
-- C → `design_constraints.eb_deploy_method: { "value": "manual", "chosen_by": "user" }`
+- 1 → `design_constraints.eb_deploy_method: { "value": "github_actions", "chosen_by": "user" }`
+- 2 → `design_constraints.eb_deploy_method: { "value": "codepipeline", "chosen_by": "user" }`
+- 3 → `design_constraints.eb_deploy_method: { "value": "manual", "chosen_by": "user" }`
 
-**Default:** A → `design_constraints.eb_deploy_method: { "value": "github_actions", "chosen_by": "default" }`
+**Default:** 1 → `design_constraints.eb_deploy_method: { "value": "github_actions", "chosen_by": "default" }`
 
 **Generate impact:** `"github_actions"` emits `.github/workflows/deploy-eb.yml`; `"codepipeline"` emits `terraform/pipeline.tf`; `"manual"` emits neither automation artifact and keeps the CLI path in `MIGRATION_GUIDE.md`.
 
@@ -520,19 +520,19 @@ Re-prompt Q9b until valid input is provided.
 >
 > For your PostgreSQL database(s), what high-availability configuration do you want on AWS?
 >
-> A) Single-AZ — matches typical Heroku standard plans, lowest cost
-> B) Multi-AZ — automatic failover to standby replica (RDS Multi-AZ)
-> C) Multi-AZ HA — Aurora with read replicas and fast failover
-> D) Match global availability posture — use same tier as Q3 answer
+> 1. Single-AZ — matches typical Heroku standard plans, lowest cost
+> 2. Multi-AZ — automatic failover to standby replica (RDS Multi-AZ)
+> 3. Multi-AZ HA — Aurora with read replicas and fast failover
+> 4. Match global availability posture — use same tier as Q3 answer
 
 **Interpret:**
 
-- A → `database_ha: "single-az"`
-- B → `database_ha: "multi-az"`
-- C → `database_ha: "multi-az-ha"`
-- D → `database_ha: <value from Q3 availability>`
+- 1 → `database_ha: "single-az"`
+- 2 → `database_ha: "multi-az"`
+- 3 → `database_ha: "multi-az-ha"`
+- 4 → `database_ha: <value from Q3 availability>`
 
-**Default:** D → matches Q3 availability answer
+**Default:** 4 → matches Q3 availability answer
 
 **Design impact:**
 
@@ -547,17 +547,17 @@ Re-prompt Q9b until valid input is provided.
 >
 > How do you want to phase the migration?
 >
-> A) Full cutover — migrate database and application together in one maintenance window
-> B) Data-first (interim cutover) — migrate database to AWS first, keep application on Heroku temporarily while you containerize and prepare compute migration
+> 1. Full cutover — migrate database and application together in one maintenance window
+> 2. Data-first (interim cutover) — migrate database to AWS first, keep application on Heroku temporarily while you containerize and prepare compute migration
 >
-> ⚠️ Note: Option B requires interim network access from Heroku to your RDS instance, granted to a bounded allowlist of addresses (never the open internet) with TLS enforced first — via Private Space VPC peering or stable outbound IPs, or a static-egress proxy add-on on the Common Runtime. Heroku is in sustaining engineering — hybrid operation should be bounded to weeks, not quarters.
+> ⚠️ Note: Option 2 requires interim network access from Heroku to your RDS instance, granted to a bounded allowlist of addresses (never the open internet) with TLS enforced first — via Private Space VPC peering or stable outbound IPs, or a static-egress proxy add-on on the Common Runtime. Heroku is in sustaining engineering — hybrid operation should be bounded to weeks, not quarters.
 
 **Interpret:**
 
-- A → `migration_approach: "full_cutover"`
-- B → `migration_approach: "interim_cutover_data_first"` — also triggers follow-up for target exit date
+- 1 → `migration_approach: "full_cutover"`
+- 2 → `migration_approach: "interim_cutover_data_first"` — also triggers follow-up for target exit date
 
-**If B selected, immediately ask:**
+**If 2 selected, immediately ask:**
 
 > When do you plan to complete the full migration (move compute off Heroku)?
 > Please provide a target date (YYYY-MM-DD format).
@@ -566,9 +566,9 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 **On valid date:** Set `target_exit_date: "<date>"`, `interim_cutover: true`, `ktlo_warning: "Heroku is in sustaining engineering. Hybrid operation should be bounded to weeks, not quarters."`
 
-**Default:** A → `migration_approach: "full_cutover"`
+**Default:** 1 → `migration_approach: "full_cutover"`
 
-**Design impact:** Option B triggers the interim database exposure section in MIGRATION_GUIDE.md (TLS prerequisite gate, then a scoped CIDR allowlist applied via Terraform), a Platform Risk callout, and post-migration lockdown emphasis.
+**Design impact:** Option 2 triggers the interim database exposure section in MIGRATION_GUIDE.md (TLS prerequisite gate, then a scoped CIDR allowlist applied via Terraform), a Platform Risk callout, and post-migration lockdown emphasis.
 
 ---
 
@@ -581,26 +581,26 @@ Validate: must be valid ISO 8601 date, must be in the future.
 > Estimated database size from your plan: ~[derive from postgres plan table max storage]
 > (If you know your actual database size, tell me and I'll adjust the recommendation.)
 >
-> A) pg_dump / pg_restore — simplest method, requires application downtime during migration (recommended for databases under ~10GB)
-> B) AWS DMS (Database Migration Service) — bulk migration with shorter downtime window for large databases (recommended for databases over ~10GB)
-> ⚠️ Note: DMS cannot do continuous replication with Heroku Postgres (Heroku does not grant the REPLICATION role). This is a one-time bulk copy with a final cutover window.
-> C) Bucardo — trigger-based replication for near-zero downtime (requires additional EC2 infrastructure)
-> D) WAL-G — WAL-based replication for minimal downtime on large databases (requires additional EC2 infrastructure)
+> 1. pg_dump / pg_restore — simplest method, requires application downtime during migration (recommended for databases under ~10GB)
+> 2. AWS DMS (Database Migration Service) — bulk migration with shorter downtime window for large databases (recommended for databases over ~10GB)
+>    ⚠️ Note: DMS cannot do continuous replication with Heroku Postgres (Heroku does not grant the REPLICATION role). This is a one-time bulk copy with a final cutover window.
+> 3. Bucardo — trigger-based replication for near-zero downtime (requires additional EC2 infrastructure)
+> 4. WAL-G — WAL-based replication for minimal downtime on large databases (requires additional EC2 infrastructure)
 
 **Interpret:**
 
-- A → `migration_method: "pg_dump_restore"`
-- B → `migration_method: "dms"`
-- C → `migration_method: "bucardo"`
-- D → `migration_method: "wal_g"`
+- 1 → `migration_method: "pg_dump_restore"`
+- 2 → `migration_method: "dms"`
+- 3 → `migration_method: "bucardo"`
+- 4 → `migration_method: "wal_g"`
 
-**Default:** A → `migration_method: "pg_dump_restore"`
+**Default:** 1 → `migration_method: "pg_dump_restore"`
 
 **Size-based recommendation logic:**
 
-- If estimated DB size < 10GB → recommend A (pg_dump_restore)
-- If estimated DB size ≥ 10GB and user accepts brief downtime → recommend B (dms)
-- If user requires near-zero downtime regardless of size → recommend C or D
+- If estimated DB size < 10GB → recommend 1 (pg_dump_restore)
+- If estimated DB size ≥ 10GB and user accepts brief downtime → recommend 2 (dms)
+- If user requires near-zero downtime regardless of size → recommend 3 or 4
 
 **Estimating size:** Use the postgres plan table's maximum storage capacity for the detected plan tier as the estimated size. **Note: This is an upper-bound estimate — your actual database may be much smaller than the plan allows.** If your actual data is well below the plan maximum (e.g., 2 GB actual on a 64 GB plan), override downward to get a more appropriate method recommendation. If user provides actual size, use that instead and record `source: "user_override"` for the size estimate.
 
@@ -614,15 +614,15 @@ Validate: must be valid ISO 8601 date, must be in the future.
 >
 > Should your Redis cluster on AWS include Multi-AZ with automatic failover?
 >
-> A) Yes — Multi-AZ with automatic failover (higher availability, ~2x cost)
-> B) No — single-node, no replication (matches Heroku mini/premium-0 without HA)
+> 1. Yes — Multi-AZ with automatic failover (higher availability, ~2x cost)
+> 2. No — single-node, no replication (matches Heroku mini/premium-0 without HA)
 
 **Interpret:**
 
-- A → `redis_ha: true`
-- B → `redis_ha: false`
+- 1 → `redis_ha: true`
+- 2 → `redis_ha: false`
 
-**Default:** A → `redis_ha: true` (if source plan has HA enabled), otherwise B → `redis_ha: false`
+**Default:** 1 → `redis_ha: true` (if source plan has HA enabled), otherwise 2 → `redis_ha: false`
 
 ---
 
@@ -632,23 +632,23 @@ Validate: must be valid ISO 8601 date, must be in the future.
 >
 > How long should Kafka messages be retained on AWS MSK?
 >
-> A) 1 day — minimal retention, lowest storage cost
-> B) 3 days — short-term replay
-> C) 7 days — standard retention (matches Heroku default)
-> D) 14 days — extended replay window
-> E) 30 days — long retention for analytics/audit
-> F) Custom — specify number of days
+> 1. 1 day — minimal retention, lowest storage cost
+> 2. 3 days — short-term replay
+> 3. 7 days — standard retention (matches Heroku default)
+> 4. 14 days — extended replay window
+> 5. 30 days — long retention for analytics/audit
+> 6. Custom — specify number of days
 
 **Interpret:**
 
-- A → `kafka_retention_days: 1`
-- B → `kafka_retention_days: 3`
-- C → `kafka_retention_days: 7`
-- D → `kafka_retention_days: 14`
-- E → `kafka_retention_days: 30`
-- F → `kafka_retention_days: <user value>` (validate: integer 1–365)
+- 1 → `kafka_retention_days: 1`
+- 2 → `kafka_retention_days: 3`
+- 3 → `kafka_retention_days: 7`
+- 4 → `kafka_retention_days: 14`
+- 5 → `kafka_retention_days: 30`
+- 6 → `kafka_retention_days: <user value>` (validate: integer 1–365)
 
-**Default:** C → `kafka_retention_days: 7`
+**Default:** 3 → `kafka_retention_days: 7`
 
 ---
 
@@ -694,15 +694,15 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > How do you want to manage DNS for your migrated services?
 >
-> A) Route 53 — migrate DNS to AWS for full integration (health checks, failover routing)
-> B) External DNS — keep current DNS provider, update records manually during cutover
+> 1. Route 53 — migrate DNS to AWS for full integration (health checks, failover routing)
+> 2. External DNS — keep current DNS provider, update records manually during cutover
 
 **Interpret:**
 
-- A → `dns_strategy: "route53"`
-- B → `dns_strategy: "external"`
+- 1 → `dns_strategy: "route53"`
+- 2 → `dns_strategy: "external"`
 
-**Default:** A → `dns_strategy: "route53"`
+**Default:** 1 → `dns_strategy: "route53"`
 
 ---
 
@@ -716,19 +716,19 @@ Validate: must be valid ISO 8601 date, must be in the future.
 >
 > What's your compute migration intent for these Fir workloads?
 >
-> A) Exit Heroku entirely — re-platform all Fir workloads to AWS (ECS/Fargate, standard containers)
-> B) Self-managed EKS/ECS — move to Kubernetes or ECS on AWS with your own orchestration
+> 1. Exit Heroku entirely — re-platform all Fir workloads to AWS (ECS/Fargate, standard containers)
+> 2. Self-managed EKS/ECS — move to Kubernetes or ECS on AWS with your own orchestration
 
 **Interpret:**
 
-- A → `fir_intent: "exit_heroku"`
-- B → `fir_intent: "self_managed_eks_ecs"`
+- 1 → `fir_intent: "exit_heroku"`
+- 2 → `fir_intent: "self_managed_eks_ecs"`
 
-**Default:** A → `fir_intent: "exit_heroku"`
+**Default:** 1 → `fir_intent: "exit_heroku"`
 
 **Note:** Cutover timing (full vs data-first) is handled by the migration_approach question (Q5b), not this question. This question only determines the compute destination for Fir workloads.
 
-**Design impact:** Both options result in full Fir workload migration to AWS. Option B indicates the user wants to manage their own Kubernetes/ECS orchestration rather than using the skill's standard Fargate mapping.
+**Design impact:** Both options result in full Fir workload migration to AWS. Option 2 indicates the user wants to manage their own Kubernetes/ECS orchestration rather than using the skill's standard Fargate mapping.
 
 ---
 
@@ -736,19 +736,19 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > Is your application already containerized (has a Dockerfile)?
 >
-> A) Yes — Dockerfile exists, ready for AWS compute deployment
-> B) No — uses Heroku buildpacks only, no Dockerfile yet
-> C) Partial — some services have Dockerfiles, others use buildpacks
+> 1. Yes — Dockerfile exists, ready for AWS compute deployment
+> 2. No — uses Heroku buildpacks only, no Dockerfile yet
+> 3. Partial — some services have Dockerfiles, others use buildpacks
 
 **Interpret:**
 
-- A → `containerization_status: "containerized"`
-- B → `containerization_status: "buildpack_only"`
-- C → `containerization_status: "partial"`
+- 1 → `containerization_status: "containerized"`
+- 2 → `containerization_status: "buildpack_only"`
+- 3 → `containerization_status: "partial"`
 
-**Default:** B → `containerization_status: "buildpack_only"`
+**Default:** 2 → `containerization_status: "buildpack_only"`
 
-**Design impact:** Options B and C trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings. EB and Fargate Docker paths both require a Dockerfile/source bundle; EKS also requires containerization.
+**Design impact:** Options 2 and 3 trigger a "Containerization Prerequisites" section in the MIGRATION_GUIDE.md with Procfile→Dockerfile guidance for common buildpacks (Ruby, Node.js, Python, Go, Java). Does not change design mappings. EB and Fargate Docker paths both require a Dockerfile/source bundle; EKS also requires containerization.
 
 ---
 
@@ -756,15 +756,15 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > Where should container images be stored for your containerized workloads?
 >
-> A) Amazon ECR — fully integrated with ECS/Fargate override paths, no cross-account config needed
-> B) Existing registry — you already have a container registry (Docker Hub, GitHub Container Registry, etc.)
+> 1. Amazon ECR — fully integrated with ECS/Fargate override paths, no cross-account config needed
+> 2. Existing registry — you already have a container registry (Docker Hub, GitHub Container Registry, etc.)
 
 **Interpret:**
 
-- A → `container_registry: "ecr"`
-- B → `container_registry: "external"`
+- 1 → `container_registry: "ecr"`
+- 2 → `container_registry: "external"`
 
-**Default:** A → `container_registry: "ecr"`
+**Default:** 1 → `container_registry: "ecr"`
 
 ---
 
@@ -772,23 +772,23 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > How long should application logs be retained in CloudWatch Logs?
 >
-> A) 7 days — short retention, lowest cost
-> B) 14 days — standard short-term
-> C) 30 days — typical production retention
-> D) 90 days — extended for debugging and compliance
-> E) 365 days — long-term compliance/audit
-> F) Custom — specify number of days
+> 1. 7 days — short retention, lowest cost
+> 2. 14 days — standard short-term
+> 3. 30 days — typical production retention
+> 4. 90 days — extended for debugging and compliance
+> 5. 365 days — long-term compliance/audit
+> 6. Custom — specify number of days
 
 **Interpret:**
 
-- A → `log_retention_days: 7`
-- B → `log_retention_days: 14`
-- C → `log_retention_days: 30`
-- D → `log_retention_days: 90`
-- E → `log_retention_days: 365`
-- F → `log_retention_days: <user value>` (validate: integer 1–3653)
+- 1 → `log_retention_days: 7`
+- 2 → `log_retention_days: 14`
+- 3 → `log_retention_days: 30`
+- 4 → `log_retention_days: 90`
+- 5 → `log_retention_days: 365`
+- 6 → `log_retention_days: <user value>` (validate: integer 1–3653)
 
-**Default:** C → `log_retention_days: 30`
+**Default:** 3 → `log_retention_days: 30`
 
 ---
 
@@ -796,19 +796,19 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > How do you want to handle alerting and on-call notifications?
 >
-> A) CloudWatch Alarms + SNS — native AWS alerting (email, SMS, Lambda triggers)
-> B) PagerDuty — integrate with existing PagerDuty setup
-> C) OpsGenie — integrate with existing OpsGenie setup
-> D) None for now — I'll configure alerting later
+> 1. CloudWatch Alarms + SNS — native AWS alerting (email, SMS, Lambda triggers)
+> 2. PagerDuty — integrate with existing PagerDuty setup
+> 3. OpsGenie — integrate with existing OpsGenie setup
+> 4. None for now — I'll configure alerting later
 
 **Interpret:**
 
-- A → `alerting: "cloudwatch"`
-- B → `alerting: "pagerduty"`
-- C → `alerting: "opsgenie"`
-- D → `alerting: "none"`
+- 1 → `alerting: "cloudwatch"`
+- 2 → `alerting: "pagerduty"`
+- 3 → `alerting: "opsgenie"`
+- 4 → `alerting: "none"`
 
-**Default:** A → `alerting: "cloudwatch"`
+**Default:** 1 → `alerting: "cloudwatch"`
 
 ---
 
@@ -816,17 +816,17 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 > How aggressively should we optimize for cost vs. operational safety?
 >
-> A) Conservative — match current capacity closely, prioritize stability over savings
-> B) Balanced — reasonable right-sizing with safety margins (recommended)
-> C) Aggressive — minimize cost, accept tighter margins and potential scaling events
+> 1. Conservative — match current capacity closely, prioritize stability over savings
+> 2. Balanced — reasonable right-sizing with safety margins (recommended)
+> 3. Aggressive — minimize cost, accept tighter margins and potential scaling events
 
 **Interpret:**
 
-- A → `cost_optimization: "conservative"`
-- B → `cost_optimization: "balanced"`
-- C → `cost_optimization: "aggressive"`
+- 1 → `cost_optimization: "conservative"`
+- 2 → `cost_optimization: "balanced"`
+- 3 → `cost_optimization: "aggressive"`
 
-**Default:** B → `cost_optimization: "balanced"`
+**Default:** 2 → `cost_optimization: "balanced"`
 
 ---
 
@@ -834,27 +834,27 @@ Validate: must be valid ISO 8601 date, must be in the future.
 
 | Question                  | Default                                 | Constraint                                                                                                  |
 | ------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Q1 — Region               | A (us-east-1)                           | `target_region: "us-east-1"`                                                                                |
-| Q2 — Compliance           | A (none)                                | `compliance: "none"`                                                                                        |
-| Q3 — Availability         | B (multi-az)                            | `availability: "multi-az"`                                                                                  |
-| Q4 — Maintenance          | D (flexible)                            | `maintenance_window: "flexible"`                                                                            |
-| Q5 — Env naming           | A (production)                          | `environment_naming: "production"`                                                                          |
-| Q6 — Database HA          | D (match Q3)                            | `database_ha: <Q3 value>`                                                                                   |
-| Q6b — Migration approach  | A (full cutover)                        | `migration_approach: "full_cutover"`                                                                        |
-| Q6c — DB migration method | A (pg_dump)                             | `migration_method: "pg_dump_restore"`                                                                       |
-| Q7 — Redis HA             | A (yes)                                 | `redis_ha: true`                                                                                            |
-| Q8 — Kafka retention      | C (7 days)                              | `kafka_retention_days: 7`                                                                                   |
+| Q1 — Region               | 1 (us-east-1)                           | `target_region: "us-east-1"`                                                                                |
+| Q2 — Compliance           | 1 (none)                                | `compliance: "none"`                                                                                        |
+| Q3 — Availability         | 2 (multi-az)                            | `availability: "multi-az"`                                                                                  |
+| Q4 — Maintenance          | 4 (flexible)                            | `maintenance_window: "flexible"`                                                                            |
+| Q5 — Env naming           | 1 (production)                          | `environment_naming: "production"`                                                                          |
+| Q6 — Database HA          | 4 (match Q3)                            | `database_ha: <Q3 value>`                                                                                   |
+| Q6b — Migration approach  | 1 (full cutover)                        | `migration_approach: "full_cutover"`                                                                        |
+| Q6c — DB migration method | 1 (pg_dump)                             | `migration_method: "pg_dump_restore"`                                                                       |
+| Q7 — Redis HA             | 1 (yes)                                 | `redis_ha: true`                                                                                            |
+| Q8 — Kafka retention      | 3 (7 days)                              | `kafka_retention_days: 7`                                                                                   |
 | Q9 — Subnet IDs           | _(no default — must ask if applicable)_ | —                                                                                                           |
 | Q9b — VPC ID              | _(no default — must ask if applicable)_ | —                                                                                                           |
-| Q10 — DNS                 | A (Route 53)                            | `dns_strategy: "route53"`                                                                                   |
-| Q11 — Fir intent          | A (exit Heroku)                         | `fir_intent: "exit_heroku"`                                                                                 |
-| Q12b — Containerization   | B (buildpack_only)                      | `containerization_status: "buildpack_only"`                                                                 |
-| Q12c — Compute target     | A (use computed recommendation)         | `design_constraints.compute_target.default: "elastic_beanstalk"` plus any `system_forced` Fargate overrides |
-| Q12d — EB deploy method   | A (GitHub Actions)                      | `eb_deploy_method: "github_actions"` when resolved compute plan includes EB                                 |
-| Q12 — Registry            | A (ECR)                                 | `container_registry: "ecr"`                                                                                 |
-| Q13 — Log retention       | C (30 days)                             | `log_retention_days: 30`                                                                                    |
-| Q14 — Alerting            | A (CloudWatch)                          | `alerting: "cloudwatch"`                                                                                    |
-| Q15 — Cost optimization   | B (balanced)                            | `cost_optimization: "balanced"`                                                                             |
+| Q10 — DNS                 | 1 (Route 53)                            | `dns_strategy: "route53"`                                                                                   |
+| Q11 — Fir intent          | 1 (exit Heroku)                         | `fir_intent: "exit_heroku"`                                                                                 |
+| Q12b — Containerization   | 2 (buildpack_only)                      | `containerization_status: "buildpack_only"`                                                                 |
+| Q12c — Compute target     | 1 (use computed recommendation)         | `design_constraints.compute_target.default: "elastic_beanstalk"` plus any `system_forced` Fargate overrides |
+| Q12d — EB deploy method   | 1 (GitHub Actions)                      | `eb_deploy_method: "github_actions"` when resolved compute plan includes EB                                 |
+| Q12 — Registry            | 1 (ECR)                                 | `container_registry: "ecr"`                                                                                 |
+| Q13 — Log retention       | 3 (30 days)                             | `log_retention_days: 30`                                                                                    |
+| Q14 — Alerting            | 1 (CloudWatch)                          | `alerting: "cloudwatch"`                                                                                    |
+| Q15 — Cost optimization   | 2 (balanced)                            | `cost_optimization: "balanced"`                                                                             |
 
 **Important:** Q9 and Q9b have no default — they are only asked when Private Space peering exists and required data is missing. If they fire, they must be answered (the system cannot proceed without subnet/VPC information for existing VPC references).
 

@@ -24,6 +24,7 @@ _assemble:
   _file: phases/generate/generate-assemble.md
 _produces:
   - terraform/main.tf
+  - terraform/baseline.tf
   - terraform/variables.tf
   - terraform/outputs.tf
   - terraform/security.tf
@@ -47,9 +48,15 @@ _preconditions:
   - _validate_json: [aws-design.json, estimation-infra.json, preferences.json, heroku-resource-inventory.json]
     _on_failure: _unrecoverable
 _postconditions:
-  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json]
+  - _check_file_exists: [terraform/main.tf, terraform/baseline.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json]
     _on_failure: _halt_and_inform
   - _assert: "terraform/main.tf has valid provider configuration; terraform/variables.tf declares at least an aws_region variable"
+    _on_failure: _halt_and_inform
+  - _assert: "terraform/baseline.tf contains a locals block with cloudtrail_retention_days set to a positive integer, plus aws_account_alternate_contact resources for each of operations, billing, and security, aws_iam_account_password_policy, aws_s3_account_public_access_block, aws_ebs_encryption_by_default, aws_accessanalyzer_analyzer, aws_ec2_instance_metadata_defaults, aws_cloudtrail with its log bucket, aws_budgets_budget, and aws_guardduty_detector"
+    _on_failure: _halt_and_inform
+  - _assert: "terraform/baseline.tf has the Compliance-Conditional section (aws_config_* recorder/delivery/status, aws_securityhub_account, FSBP standards subscription) exactly when the normalized preferences compliance array contains soc2, pci, hipaa, or fedramp; a PCI DSS standards subscription exists only when it contains pci; no NIST 800-53 standards subscription exists regardless of compliance values"
+    _on_failure: _halt_and_inform
+  - _assert: "terraform/variables.tf declares operations_email, billing_email, and security_email with no defaults and placeholder-rejecting validation blocks, and terraform/terraform.tfvars.example lists all three with TODO placeholders"
     _on_failure: _halt_and_inform
   - _assert: "at least one domain .tf file exists beyond the core files"
     _on_failure: _halt_and_inform

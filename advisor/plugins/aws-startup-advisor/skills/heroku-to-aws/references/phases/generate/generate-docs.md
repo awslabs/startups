@@ -162,6 +162,41 @@ For detailed guidance, see your Procfile process types and match each to a Docke
 
 Apply the generated Terraform configurations to create AWS resources:
 
+The `terraform/` directory includes `baseline.tf`, an account-wide security
+baseline (account alternate contacts, IAM password policy, S3 account public
+access block, EBS default encryption, IAM Access Analyzer, IMDSv2 account
+default, CloudTrail with its log bucket, a monthly AWS Budget with alerts, and
+GuardDuty — plus AWS Config and Security Hub when compliance frameworks were
+declared).
+
+**Security baseline contacts.** Before `terraform plan` can succeed, set the
+three baseline contact variables in `terraform/terraform.tfvars` to real
+inboxes:
+
+```hcl
+operations_email = "ops@yourcompany.com"
+billing_email    = "billing@yourcompany.com"   # also receives budget alerts
+security_email   = "security@yourcompany.com"
+```
+
+The alternate-contact phone numbers ship as placeholders — update them in
+`baseline.tf` (or post-apply) with real numbers.
+
+To skip the security baseline entirely, do BOTH of the following before
+`terraform plan` (the contact variables have no defaults, so deleting only the
+file still leaves plan failing on three unused required variables):
+
+1. Delete `terraform/baseline.tf`.
+2. Remove (or comment out) the `operations_email`, `billing_email`, and
+   `security_email` variable blocks in `terraform/variables.tf`, and their
+   entries in `terraform.tfvars` / `terraform.tfvars.example`.
+
+To skip only the compliance-conditional section (Config + Security Hub),
+delete the block between `########## Compliance-Conditional ##########` and
+`########## End Compliance-Conditional ##########` in `baseline.tf`. If your
+AWS account already has a CloudTrail trail, a Config recorder, or Security Hub
+enabled, review the collision-warning comments in `baseline.tf` before apply.
+
 {{IF has_beanstalk_web}}
 
 Each Elastic Beanstalk web configuration is not ready to plan until you provide
@@ -919,7 +954,8 @@ This directory contains all artifacts needed to migrate your Heroku application(
 |------|---------|
 | `terraform/` | Terraform configurations for all AWS infrastructure |
 | `terraform/main.tf` | Provider configuration and module declarations |
-| `terraform/variables.tf` | Input variables (region, VPC, naming) |
+| `terraform/baseline.tf` | Account-wide security baseline (contacts, CloudTrail, GuardDuty, budget alerts; Config + Security Hub when compliance declared). Opt-out steps in MIGRATION_GUIDE.md Phase 1 |
+| `terraform/variables.tf` | Input variables (region, VPC, naming, baseline contact emails) |
 | `terraform/outputs.tf` | Output values (endpoints, ARNs, DNS names) |
 {{IF has_beanstalk}}
 | `terraform/beanstalk.tf` | Elastic Beanstalk applications and environments |

@@ -105,23 +105,23 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 
 **Auto-detect signals** — scan IaC and application code before asking:
 
-- No AI framework imports, raw HTTP calls to OpenAI/Gemini endpoints → A
-- LiteLLM imports or config files → B
-- OpenRouter base URL in code/config → B
-- PortKey, Helicone, Martian SDK imports → B
-- Kong AI Gateway, Apigee AI config files → B
-- Custom proxy class wrapping the AI client → B
-- LangChain/LangGraph imports → C
-- LangChain/LlamaIndex with provider-agnostic model config → C
-- CrewAI imports, `Crew` and `Agent` class definitions → D
-- AutoGen imports, `ConversableAgent` patterns → D
-- Custom multi-agent loop with dispatcher logic → D
-- OpenAI Agents SDK / Swarm imports → E
-- Custom while-loop agent with tool-call parsing → E
-- `mcp.server` / `mcp.client` imports, MCP config JSON files → F
-- A2A protocol config or SDK imports → F
-- Vapi, Bland.ai, Retell SDK imports → G
-- Nova Sonic / Nova 2 Sonic or Whisper integration in code → G
+- No AI framework imports, raw HTTP calls to OpenAI/Gemini endpoints → 1
+- LiteLLM imports or config files → 2
+- OpenRouter base URL in code/config → 2
+- PortKey, Helicone, Martian SDK imports → 2
+- Kong AI Gateway, Apigee AI config files → 2
+- Custom proxy class wrapping the AI client → 2
+- LangChain/LangGraph imports → 3
+- LangChain/LlamaIndex with provider-agnostic model config → 3
+- CrewAI imports, `Crew` and `Agent` class definitions → 4
+- AutoGen imports, `ConversableAgent` patterns → 4
+- Custom multi-agent loop with dispatcher logic → 4
+- OpenAI Agents SDK / Swarm imports → 5
+- Custom while-loop agent with tool-call parsing → 5
+- `mcp.server` / `mcp.client` imports, MCP config JSON files → 6
+- A2A protocol config or SDK imports → 6
+- Vapi, Bland.ai, Retell SDK imports → 7
+- Nova Sonic / Nova 2 Sonic or Whisper integration in code → 7
 
 _Skip when:_ Auto-detection fully resolves the framework(s). Use detected value(s) with `chosen_by: "extracted"`.
 
@@ -137,25 +137,25 @@ Accept → record detected value(s) with `chosen_by: "user"` (confirmed). Edit �
 
 > How your AI calls reach the model determines migration effort. Gateway users can often migrate by changing a single config line.
 >
-> A) No framework — direct API calls to OpenAI/Gemini
-> B) LLM router/gateway (LiteLLM, OpenRouter, PortKey, Kong, Apigee)
-> C) LangChain / LangGraph
-> D) Multi-agent framework (CrewAI, AutoGen, custom)
-> E) OpenAI Agents SDK / custom agent loop
-> F) MCP servers or A2A protocol
-> G) Voice/conversational agent platform (Vapi, Retell, Bland.ai)
+> 1. No framework — direct API calls to OpenAI/Gemini
+> 2. LLM router/gateway (LiteLLM, OpenRouter, PortKey, Kong, Apigee)
+> 3. LangChain / LangGraph
+> 4. Multi-agent framework (CrewAI, AutoGen, custom)
+> 5. OpenAI Agents SDK / custom agent loop
+> 6. MCP servers or A2A protocol
+> 7. Voice/conversational agent platform (Vapi, Retell, Bland.ai)
 >
 > _(Multiple selections allowed)_
 
 | Answer                             | Recommendation Impact                                                                                     | Migration Effort  | Timeline                                             |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------- |
-| A) No framework — direct API calls | Swap SDK calls to Bedrock SDK; evaluate AgentCore (Harness) if planning agentic                           | Low               | 1–3 weeks depending on call sites                    |
-| B) LLM router/gateway              | Add Bedrock as provider in gateway config; no app code changes; verify SigV4 auth                         | Minimal           | Hours to 1–3 days                                    |
-| C) LangChain / LangGraph           | Provider swap via `ChatBedrock`; chains/graphs/tools preserved; validate tool schemas                     | Low               | 1–3 days; 1 week if complex graphs                   |
-| D) Multi-agent framework           | Path 1: Keep framework, swap LLM provider (lower effort). Path 2: Migrate to Bedrock multi-agent (deeper) | Medium            | Path 1: 3–5 days; Path 2: 2–4 weeks                  |
-| E) OpenAI Agents SDK               | Highest effort; tightly coupled to OpenAI API; recommend AgentCore (Harness, or Runtime for code loops)   | High              | 2–4 weeks                                            |
-| F) MCP / A2A                       | AgentCore supports MCP natively (Gateway exposes tools as MCP); A2A interop; recommend AgentCore          | Low–Medium        | 3–5 days MCP; 1–2 weeks A2A                          |
-| G) Voice platform                  | If platform supports Bedrock natively → config change; otherwise evaluate Nova 2 Sonic                    | Minimal to Medium | Hours if native; 2–3 weeks if Nova 2 Sonic migration |
+| 1) No framework — direct API calls | Swap SDK calls to Bedrock SDK; evaluate AgentCore (Harness) if planning agentic                           | Low               | 1–3 weeks depending on call sites                    |
+| 2) LLM router/gateway              | Add Bedrock as provider in gateway config; no app code changes; verify SigV4 auth                         | Minimal           | Hours to 1–3 days                                    |
+| 3) LangChain / LangGraph           | Provider swap via `ChatBedrock`; chains/graphs/tools preserved; validate tool schemas                     | Low               | 1–3 days; 1 week if complex graphs                   |
+| 4) Multi-agent framework           | Path 1: Keep framework, swap LLM provider (lower effort). Path 2: Migrate to Bedrock multi-agent (deeper) | Medium            | Path 1: 3–5 days; Path 2: 2–4 weeks                  |
+| 5) OpenAI Agents SDK               | Highest effort; tightly coupled to OpenAI API; recommend AgentCore (Harness, or Runtime for code loops)   | High              | 2–4 weeks                                            |
+| 6) MCP / A2A                       | AgentCore supports MCP natively (Gateway exposes tools as MCP); A2A interop; recommend AgentCore          | Low–Medium        | 3–5 days MCP; 1–2 weeks A2A                          |
+| 7) Voice platform                  | If platform supports Bedrock natively → config change; otherwise evaluate Nova 2 Sonic                    | Minimal to Medium | Hours if native; 2–3 weeks if Nova 2 Sonic migration |
 
 > **Never recommend classic Bedrock Agents (`bedrock-agent`) as a migration target.** It is in maintenance mode and closed to new customers as of July 30, 2026 ([AWS announcement](https://aws.amazon.com/about-aws/whats-new/2026/06/aws-service-availability/)). Agentic targets are AgentCore Harness (config-based, default) or AgentCore Runtime (code-defined loops) — consistent with Q23–Q26.
 
@@ -163,15 +163,15 @@ Accept → record detected value(s) with `chosen_by: "user"` (confirmed). Edit �
 
 | Combination                          | Approach                                                                                               |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| A only                               | Simplest path — direct SDK migration                                                                   |
-| B only                               | Quick win — gateway config change, skip SDK migration steps                                            |
-| B + any other                        | Gateway swap is the quick win; assess framework migration as separate workstream                       |
-| C + A                                | Two workstreams: LangChain provider swap (fast) + direct call migration (slower)                       |
-| D + F                                | Complex — multi-agent with MCP tooling; recommend AgentCore to unify orchestration and tools           |
-| E + anything                         | E is the long pole; plan timeline around Agents SDK migration; other layers may be quick wins          |
-| Multiple frameworks (C+D, C+E, etc.) | Assess independently; prioritize by traffic volume or business criticality; consolidate post-migration |
+| 1 only                               | Simplest path — direct SDK migration                                                                   |
+| 2 only                               | Quick win — gateway config change, skip SDK migration steps                                            |
+| 2 + any other                        | Gateway swap is the quick win; assess framework migration as separate workstream                       |
+| 3 + 1                                | Two workstreams: LangChain provider swap (fast) + direct call migration (slower)                       |
+| 4 + 6                                | Complex — multi-agent with MCP tooling; recommend AgentCore to unify orchestration and tools           |
+| 5 + anything                         | 5 is the long pole; plan timeline around Agents SDK migration; other layers may be quick wins          |
+| Multiple frameworks (3+4, 3+5, etc.) | Assess independently; prioritize by traffic volume or business criticality; consolidate post-migration |
 
-If answer includes B and no other selections, skip or abbreviate SDK migration steps. If answer is A only, proceed with standard model migration flow.
+If answer includes 2 and no other selections, skip or abbreviate SDK migration steps. If answer is 1 only, proceed with standard model migration flow.
 
 Interpret → `ai_framework` array (multiple selections → array of all selected values). Default: auto-detect from code, fallback `["direct"]`.
 
@@ -181,11 +181,11 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 
 **Personalize the wording:** substitute the detected provider names from `ai-workload-profile.json` → `models[].provider` when available (e.g. "on OpenAI" or "on OpenAI and Gemini, per your detected usage"). Do not assume providers the profile did not detect.
 
-> A) < $500/month
-> B) $500–$2,000/month
-> C) $2,000–$10,000/month
-> D) > $10,000/month
-> E) I don't know
+> 1. < $500/month
+> 2. $500–$2,000/month
+> 3. $2,000–$10,000/month
+> 4. $10,000/month
+> 5. I don't know
 
 | Answer               | Recommendation Impact                                                                                                                                                                                      |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -197,7 +197,7 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 
 **Do not map spend bands to AWS Activate Founders vs Portfolio.** Funding stage is not inferable from monthly AI spend — ask **Q27** instead.
 
-Interpret → `ai_monthly_spend`. Default: B → `"$500-$2K"`.
+Interpret → `ai_monthly_spend`. Default: 2 → `"$500-$2K"`.
 
 ---
 
@@ -205,12 +205,12 @@ Interpret → `ai_monthly_spend`. Default: B → `"$500-$2K"`.
 
 Present with concrete anchors: Quality = legal analysis/code gen; Speed = autocomplete/live chat; Cost = classification/tagging at scale; Specialized = specific feature (→ Q17); Balanced = all-rounder.
 
-> A) Best quality/reasoning — accuracy matters most, willing to pay more
-> B) Fastest speed — response time is the primary constraint
-> C) Lowest cost — high volume, budget tight, good-enough quality at scale
-> D) Specialized capability — rely on a specific feature (covered in Q17)
-> E) Balanced — no single dimension dominates
-> F) I don't know
+> 1. Best quality/reasoning — accuracy matters most, willing to pay more
+> 2. Fastest speed — response time is the primary constraint
+> 3. Lowest cost — high volume, budget tight, good-enough quality at scale
+> 4. Specialized capability — rely on a specific feature (covered in Q17)
+> 5. Balanced — no single dimension dominates
+> 6. I don't know
 
 | Answer                 | Recommendation Impact                                                                                                                                                                                                                                |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -220,22 +220,22 @@ Present with concrete anchors: Quality = legal analysis/code gen; Speed = autoco
 | Specialized capability | Deferred to Q17 to determine which model                                                                                                                                                                                                             |
 | Balanced               | Claude Sonnet 5 as default balanced recommendation                                                                                                                                                                                                   |
 
-Interpret → `ai_priority`. Default: E → `"balanced"`.
+Interpret → `ai_priority`. Default: 5 → `"balanced"`.
 
 ---
 
 ## Q17 — What is your MOST CRITICAL specialized AI feature?
 
-> A) Function calling / Tool use
-> B) Ultra-long context (> 300K tokens)
-> C) Extended thinking / Chain-of-thought
-> D) Prompt caching
-> E) RAG optimization
-> F) Agentic workflows
-> G) Real-time speed (< 500ms)
-> H) Multimodal with image generation
-> I) Real-time conversational speech
-> J) None — standard features are sufficient
+> 1. Function calling / Tool use
+> 2. Ultra-long context (> 300K tokens)
+> 3. Extended thinking / Chain-of-thought
+> 4. Prompt caching
+> 5. RAG optimization
+> 6. Agentic workflows
+> 7. Real-time speed (< 500ms)
+> 8. Multimodal with image generation
+> 9. Real-time conversational speech
+> 10. None — standard features are sufficient
 
 | Answer                               | Recommendation Impact                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -250,7 +250,7 @@ Interpret → `ai_priority`. Default: E → `"balanced"`.
 | Real-time conversational speech      | Amazon Nova 2 Sonic recommended for speech-to-speech; latency guidance included                                                                                                                                                                                                                                                                                                    |
 | None                                 | Default recommendation from Q16 priority stands                                                                                                                                                                                                                                                                                                                                    |
 
-Interpret → `ai_critical_feature`. Default: J → no override.
+Interpret → `ai_critical_feature`. Default: 10 → no override.
 
 ---
 
@@ -258,9 +258,9 @@ Interpret → `ai_critical_feature`. Default: J → no override.
 
 **Volume half auto-resolves:** If `openai-usage-profile.json` exists with non-zero usage AND `metadata.partial_window` is `false` (a partial window is not a monthly volume — ask normally in that case), derive the volume tier from Σ `usage_by_model[].input_tokens + output_tokens` (< 1M → `"low"`, 1–10M → `"medium"`, > 10M → `"high"`) and ask ONLY the cost-tolerance half ("Your usage data shows [tier] volume. Is budget tight enough to prioritize cost control over model quality? [Y/N]"). Record `ai_token_volume` from the data (`chosen_by: "extracted"`, `source: "openai-usage-profile:usage_by_model"`), not the answer.
 
-> A) Low volume + quality priority — small-scale, quality matters most
-> B) Medium volume + balanced — moderate production use, balanced approach
-> C) High volume + cost critical — high scale, budget is tight, need cost control
+> 1. Low volume + quality priority — small-scale, quality matters most
+> 2. Medium volume + balanced — moderate production use, balanced approach
+> 3. High volume + cost critical — high scale, budget is tight, need cost control
 
 | Answer                        | Recommendation Impact                                                                                         |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -268,7 +268,7 @@ Interpret → `ai_critical_feature`. Default: J → no override.
 | Medium volume + balanced      | On-demand Claude Sonnet or Haiku depending on Q16; Savings Plans analysis                                     |
 | High volume + cost critical   | **Provisioned throughput strongly recommended**; Claude Haiku or Nova Micro; prompt caching analysis included |
 
-Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`. Default: A → `"low"`.
+Interpret → `ai_token_volume`: 1 → `"low"`, 2 → `"medium"`, 3 → `"high"`. Default: 1 → `"low"`.
 
 ---
 
@@ -292,26 +292,26 @@ Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special
 
 **Same-model availability outranks Q16.** When Q19 identifies a model that is available on Bedrock (GPT-5.6 Sol / Terra / Luna, GPT-5.5, GPT-5.4 — see `references/shared/openai-on-bedrock.md`), the recommendation is that same model, and a `balanced`/unset Q16 must not move it to another family. `Q16 = cost` adds a cheaper alternative alongside it rather than replacing it. Only a Q17 hard feature override the source model cannot serve displaces it.
 
-> A) Gemini 3.5 Flash (GA — current flagship Flash model)
-> B) Gemini 3.5 Flash Thinking (thinking budget enabled)
-> C) Gemini 3.1 Pro
-> D) Gemini 3.1 Flash-Lite (high-volume, low-cost)
-> E) Gemini 2.5 Flash (standard, no thinking budget)
-> F) Gemini 2.5 Flash Thinking (thinking budget enabled — variable output pricing)
-> G) Gemini 2.5 Pro
-> H) Gemini 3 Pro / 3.1 Pro Preview
-> I) Gemini Flash (2.0 Flash) or Gemini Flash 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
-> J) Gemini Pro 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
-> K) GPT-3.5 Turbo
-> L) GPT-4 / GPT-4 Turbo
-> M) GPT-4o
-> N) GPT-5.4 / GPT-5.4 Mini / GPT-5.4 Nano
-> O) GPT-5 / GPT-5.x (older)
-> P) GPT-5.5 / GPT-5.5 Pro
-> Q) o-series (o1, o3)
-> R) GPT-5.6 Sol / Terra / Luna
-> S) Other / Multiple models
-> T) I don't know
+> 1. Gemini 3.5 Flash (GA — current flagship Flash model)
+> 2. Gemini 3.5 Flash Thinking (thinking budget enabled)
+> 3. Gemini 3.1 Pro
+> 4. Gemini 3.1 Flash-Lite (high-volume, low-cost)
+> 5. Gemini 2.5 Flash (standard, no thinking budget)
+> 6. Gemini 2.5 Flash Thinking (thinking budget enabled — variable output pricing)
+> 7. Gemini 2.5 Pro
+> 8. Gemini 3 Pro / 3.1 Pro Preview
+> 9. Gemini Flash (2.0 Flash) or Gemini Flash 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
+> 10. Gemini Pro 1.5 _(EOL Sep 2025 — flag for source model upgrade)_
+> 11. GPT-3.5 Turbo
+> 12. GPT-4 / GPT-4 Turbo
+> 13. GPT-4o
+> 14. GPT-5.4 / GPT-5.4 Mini / GPT-5.4 Nano
+> 15. GPT-5 / GPT-5.x (older)
+> 16. GPT-5.5 / GPT-5.5 Pro
+> 17. o-series (o1, o3)
+> 18. GPT-5.6 Sol / Terra / Luna
+> 19. Other / Multiple models
+> 20. I don't know
 
 | Source Model                   | Baseline Bedrock Recommendation                                                                                                                                                 | Pricing Context                                                                                                                                                                                                                                                                            |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -359,9 +359,9 @@ Interpret → `ai_model_baseline`. Default: auto-detect from code, fallback Q16 
 
 _Skip when:_ Modalities fully resolved from `capabilities_summary`. Use detected value with `chosen_by: "extracted"`.
 
-> A) Text only
-> B) Vision required — model must process images
-> C) Audio/Video inputs needed
+> 1. Text only
+> 2. Vision required — model must process images
+> 3. Audio/Video inputs needed
 
 | Answer             | Recommendation Impact                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
@@ -369,7 +369,7 @@ _Skip when:_ Modalities fully resolved from `capabilities_summary`. Use detected
 | Vision required    | Claude Sonnet or Haiku (both support multimodal vision); Nova Micro excluded (text-only)                               |
 | Audio/Video inputs | Amazon Nova 2 Sonic (audio); Nova Reel v1 for video (Legacy — EOL Sep 30, 2026); Claude excluded for audio/video input |
 
-Interpret → `ai_vision`. Default: A → no constraint.
+Interpret → `ai_vision`. Default: 1 → no constraint.
 
 ---
 
@@ -377,9 +377,9 @@ Interpret → `ai_vision`. Default: A → no constraint.
 
 Present with concrete anchors: Critical = autocomplete/live chat/real-time transcription; Important = chat assistant/search augmentation; Flexible = report generation/batch analysis.
 
-> A) Critical (< 500ms) — users staring at a loading spinner
-> B) Important (< 2s) — quick response expected, brief pause acceptable
-> C) Flexible (2–10s) — users can wait, background/async acceptable
+> 1. Critical (< 500ms) — users staring at a loading spinner
+> 2. Important (< 2s) — quick response expected, brief pause acceptable
+> 3. Flexible (2–10s) — users can wait, background/async acceptable
 
 | Answer             | Recommendation Impact                                                                             |
 | ------------------ | ------------------------------------------------------------------------------------------------- |
@@ -387,7 +387,7 @@ Present with concrete anchors: Critical = autocomplete/live chat/real-time trans
 | Important (< 2s)   | Claude Sonnet 5 with streaming; standard on-demand acceptable                                     |
 | Flexible (2–10s)   | Any model; batch inference considered for cost savings at high volume                             |
 
-Interpret → `ai_latency`. Default: B → `"important"`.
+Interpret → `ai_latency`. Default: 2 → `"important"`.
 
 ---
 
@@ -395,9 +395,9 @@ Interpret → `ai_latency`. Default: B → `"important"`.
 
 Present with concrete examples: Simple = classify/extract/summarize; Moderate = analyze+JSON/few-shot; Complex = multi-turn reasoning/tool use/agentic.
 
-> A) Simple (classification, short summaries, extraction)
-> B) Moderate (analysis, structured content, few-shot)
-> C) Complex (multi-step reasoning, tool use, agentic workflows)
+> 1. Simple (classification, short summaries, extraction)
+> 2. Moderate (analysis, structured content, few-shot)
+> 3. Complex (multi-step reasoning, tool use, agentic workflows)
 
 | Answer   | Recommendation Impact                                                                     |
 | -------- | ----------------------------------------------------------------------------------------- |
@@ -405,7 +405,7 @@ Present with concrete examples: Simple = classify/extract/summarize; Moderate = 
 | Moderate | Claude Sonnet 5 recommended; Haiku may suffice with prompt engineering                    |
 | Complex  | Claude Sonnet 5 required; extended thinking considered; Claude Opus 4.8 for hardest tasks |
 
-Interpret → `ai_complexity`. Default: B → `"moderate"`.
+Interpret → `ai_complexity`. Default: 2 → `"moderate"`.
 
 ---
 
@@ -435,42 +435,42 @@ Before presenting Category G questions, show:
 
 **Auto-detect signals** — recommend default based on `agentic_profile.framework`:
 
-- `gateway_type` is `"llm_router"` and evidence is **LiteLLM** → Default to **A (retarget)**. Already abstracted from the model provider — migration is a config change (swap model IDs), not a code rewrite. Set `migration_approach: "retarget"` automatically and skip Q23 unless the user explicitly asks to evaluate Harness or Strands.
-- `gateway_type` is `"llm_router"` and evidence is **OpenRouter** → Default to **A (retarget)** only when the underlying model is an OpenAI model with a Mantle target (same-model Mantle move, per `design-ai.md`'s OpenRouter guidance). Otherwise surface the full option set — an OpenRouter → Mantle move changes the base URL, credential type, and model-ID format, so it is not the same one-line change LiteLLM users get. Set `migration_approach: "retarget"` with `chosen_by: "extracted"` only in the Mantle-eligible case; otherwise ask Q23.
-- `langgraph`, `crewai`, `autogen` → Default to A (retarget). These frameworks support Bedrock as a model provider with minimal code changes.
+- `gateway_type` is `"llm_router"` and evidence is **LiteLLM** → Default to **1 (retarget)**. Already abstracted from the model provider — migration is a config change (swap model IDs), not a code rewrite. Set `migration_approach: "retarget"` automatically and skip Q23 unless the user explicitly asks to evaluate Harness or Strands.
+- `gateway_type` is `"llm_router"` and evidence is **OpenRouter** → Default to **1 (retarget)** only when the underlying model is an OpenAI model with a Mantle target (same-model Mantle move, per `design-ai.md`'s OpenRouter guidance). Otherwise surface the full option set — an OpenRouter → Mantle move changes the base URL, credential type, and model-ID format, so it is not the same one-line change LiteLLM users get. Set `migration_approach: "retarget"` with `chosen_by: "extracted"` only in the Mantle-eligible case; otherwise ask Q23.
+- `langgraph`, `crewai`, `autogen` → Default to 1 (retarget). These frameworks support Bedrock as a model provider with minimal code changes.
 - `openai_agents` → Surface all options. OpenAI Agents SDK is tightly coupled to OpenAI API; retarget is harder. Note partial retarget (HTTP-compatible routing to Bedrock) as a bridge.
-- `strands` → Already AWS-native. Recommend B (Harness) for managed deployment or note "already on target framework."
+- `strands` → Already AWS-native. Recommend 2 (Harness) for managed deployment or note "already on target framework."
 - `custom` → Surface all options. Custom loops vary widely in complexity.
 
 _Skip when:_ Auto-detection fully resolves AND user has no preference signal. Use detected default with `chosen_by: "extracted"`.
 
 > Your agent system can migrate to AWS in different ways, each with different effort and risk:
 >
-> A) **Retarget** — Keep your current framework ([framework name]), swap the model layer to Bedrock. Fastest path, lowest risk. Your orchestration code stays the same.
-> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(GA — all commercial regions where AgentCore is available)_
-> C) **Strands native** — Rewrite orchestration using AWS Strands SDK on AgentCore. Most AWS-integrated, highest effort. Best for teams wanting full AWS-native multi-agent capabilities.
-> D) **I'm not sure** — Help me decide based on my workload.
+> 1. **Retarget** — Keep your current framework ([framework name]), swap the model layer to Bedrock. Fastest path, lowest risk. Your orchestration code stays the same.
+> 2. **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(GA — all commercial regions where AgentCore is available)_
+> 3. **Strands native** — Rewrite orchestration using AWS Strands SDK on AgentCore. Most AWS-integrated, highest effort. Best for teams wanting full AWS-native multi-agent capabilities.
+> 4. **I'm not sure** — Help me decide based on my workload.
 
 | Answer               | When it fits                                                                                                                               | Effort range                                                     | Risk                           |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------------ |
-| A) Retarget          | Working system, team knows the framework, need to ship fast. LangGraph/CrewAI/AutoGen with Bedrock model provider support.                 | 1–3 weeks depending on agent count, tool count, test coverage    | Low — orchestration unchanged  |
-| B) AgentCore Harness | Simple single-agent, OpenAI Assistants migration, want managed runtime, or incremental migration (run existing models on AWS infra first). | 3–10 days depending on tool complexity and memory requirements   | Low — config-based, reversible |
-| C) Strands native    | OpenAI Agents SDK or custom loops where retarget doesn't work well, multi-agent systems, team willing to refactor for AWS-native benefits. | 2–6 weeks depending on agent count, graph complexity, tool count | Medium — orchestration rewrite |
-| D) Undecided         | —                                                                                                                                          | —                                                                | —                              |
+| 1) Retarget          | Working system, team knows the framework, need to ship fast. LangGraph/CrewAI/AutoGen with Bedrock model provider support.                 | 1–3 weeks depending on agent count, tool count, test coverage    | Low — orchestration unchanged  |
+| 2) AgentCore Harness | Simple single-agent, OpenAI Assistants migration, want managed runtime, or incremental migration (run existing models on AWS infra first). | 3–10 days depending on tool complexity and memory requirements   | Low — config-based, reversible |
+| 3) Strands native    | OpenAI Agents SDK or custom loops where retarget doesn't work well, multi-agent systems, team willing to refactor for AWS-native benefits. | 2–6 weeks depending on agent count, graph complexity, tool count | Medium — orchestration rewrite |
+| 4) Undecided         | —                                                                                                                                          | —                                                                | —                              |
 
-**For OpenAI Agents SDK users:** Note that a partial retarget (HTTP-compatible routing to Bedrock while keeping OpenAI SDK orchestration) is a valid short-lived bridge before committing to B or C. This is not a fourth path — it's a Phase 0 step within B or C.
+**For OpenAI Agents SDK users:** Note that a partial retarget (HTTP-compatible routing to Bedrock while keeping OpenAI SDK orchestration) is a valid short-lived bridge before committing to 2 or 3. This is not a fourth path — it's a Phase 0 step within 2 or 3.
 
-**If answer is D:** Recommend A (retarget) as default for LangGraph/CrewAI/AutoGen users. Recommend B (Harness) for OpenAI Assistants or simple single-agent patterns. Recommend C (Strands) only if user explicitly wants AWS-native multi-agent and accepts refactor cost.
+**If answer is 4:** Recommend 1 (retarget) as default for LangGraph/CrewAI/AutoGen users. Recommend 2 (Harness) for OpenAI Assistants or simple single-agent patterns. Recommend 3 (Strands) only if user explicitly wants AWS-native multi-agent and accepts refactor cost.
 
-Interpret → `ai_constraints.agentic.migration_approach`: A → `"retarget"`, B → `"harness"`, C → `"strands"`, D → `"undecided"` (treated as `"retarget"` in Design unless overridden). Default: auto-detect based on framework.
+Interpret → `ai_constraints.agentic.migration_approach`: 1 → `"retarget"`, 2 → `"harness"`, 3 → `"strands"`, 4 → `"undecided"` (treated as `"retarget"` in Design unless overridden). Default: auto-detect based on framework.
 
 ---
 
 ## Q24 — Do your agents need to remember context across sessions?
 
-> A) No — each request is independent, no memory needed
-> B) Within a session — conversation history during a single interaction, but fresh start each time
-> C) Across sessions — remember user preferences, past interactions, accumulated knowledge between separate conversations
+> 1. No — each request is independent, no memory needed
+> 2. Within a session — conversation history during a single interaction, but fresh start each time
+> 3. Across sessions — remember user preferences, past interactions, accumulated knowledge between separate conversations
 
 | Answer          | Recommendation Impact                                                                                                                                                                                                                                           |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -478,16 +478,16 @@ Interpret → `ai_constraints.agentic.migration_approach`: A → `"retarget"`, B
 | Within session  | AgentCore Harness sessions are stateful by default (microVM per session). No additional config needed for Harness path. For retarget path: existing framework memory (e.g., LangGraph checkpointer) continues to work.                                          |
 | Across sessions | AgentCore Memory service recommended. Persists knowledge, user preferences, and interaction history across sessions. For retarget path: evaluate existing memory backend migration (Redis → ElastiCache, Postgres → RDS, vector store → OpenSearch Serverless). |
 
-Interpret → `ai_constraints.agentic.memory_requirement`: A → `"none"`, B → `"session"`, C → `"cross_session"`. Default: B → `"session"`.
+Interpret → `ai_constraints.agentic.memory_requirement`: 1 → `"none"`, 2 → `"session"`, 3 → `"cross_session"`. Default: 2 → `"session"`.
 
 ---
 
 ## Q25 — How long do your agent tasks typically run?
 
-> A) Quick (< 30 seconds) — simple tool calls, single-turn responses
-> B) Medium (30 seconds – 5 minutes) — multi-step reasoning, several tool calls
-> C) Long (5 minutes – 1 hour) — complex research, multi-agent collaboration, iterative refinement
-> D) Very long (1+ hours) — extended autonomous work, large-scale data processing
+> 1. Quick (< 30 seconds) — simple tool calls, single-turn responses
+> 2. Medium (30 seconds – 5 minutes) — multi-step reasoning, several tool calls
+> 3. Long (5 minutes – 1 hour) — complex research, multi-agent collaboration, iterative refinement
+> 4. Very long (1+ hours) — extended autonomous work, large-scale data processing
 
 | Answer    | Recommendation Impact                                                                                                                                                    |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -496,15 +496,15 @@ Interpret → `ai_constraints.agentic.memory_requirement`: A → `"none"`, B →
 | Long      | AgentCore Runtime strongly recommended (supports up to 8-hour sessions). Serverless alternatives (Lambda) will timeout.                                                  |
 | Very long | AgentCore Runtime required (8-hour max session). If tasks exceed 8 hours: recommend breaking into sub-tasks with session chaining, or evaluate custom compute (ECS/EKS). |
 
-Interpret → `ai_constraints.agentic.task_duration`: A → `"quick"`, B → `"medium"`, C → `"long"`, D → `"very_long"`. Default: B → `"medium"`.
+Interpret → `ai_constraints.agentic.task_duration`: 1 → `"quick"`, 2 → `"medium"`, 3 → `"long"`, 4 → `"very_long"`. Default: 2 → `"medium"`.
 
 ---
 
 ## Q26 — Do you want to migrate incrementally?
 
-> A) Yes — run my existing models (OpenAI/Gemini) on AWS infrastructure first, then swap to Bedrock models later when I'm confident
-> B) No — do a full model swap to Bedrock in one go
-> C) I'm not sure
+> 1. Yes — run my existing models (OpenAI/Gemini) on AWS infrastructure first, then swap to Bedrock models later when I'm confident
+> 2. No — do a full model swap to Bedrock in one go
+> 3. I'm not sure
 
 | Answer            | Recommendation Impact                                                                                                                                                                                                                                                |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -512,7 +512,7 @@ Interpret → `ai_constraints.agentic.task_duration`: A → `"quick"`, B → `"m
 | No (full swap)    | Standard migration: swap model layer directly to Bedrock. Faster to complete but higher risk per deployment.                                                                                                                                                         |
 | Not sure          | Default to incremental if using Harness path (it's free — multi-model switching is built in). Default to full swap if retarget path with LangChain/LangGraph (simpler to test with framework's built-in model switching).                                            |
 
-Interpret → `ai_constraints.agentic.incremental_migration`: A → `true`, B → `false`, C → auto-select based on `migration_approach`. Default: `true` for Harness path, `false` for retarget path.
+Interpret → `ai_constraints.agentic.incremental_migration`: 1 → `true`, 2 → `false`, 3 → auto-select based on `migration_approach`. Default: `true` for Harness path, `false` for retarget path.
 
 ---
 
@@ -520,12 +520,12 @@ Interpret → `ai_constraints.agentic.incremental_migration`: A → `true`, B �
 
 | Combination                             | Design Impact                                                                    |
 | --------------------------------------- | -------------------------------------------------------------------------------- |
-| A (retarget) + C (cross-session memory) | Retarget model layer + migrate memory backend to AWS (Redis → ElastiCache, etc.) |
-| B (harness) + A (no memory)             | Simplest Harness config — model + tools + prompt, no memory setup                |
-| B (harness) + C (cross-session memory)  | Harness + AgentCore Memory service                                               |
-| B (harness) + D (very long tasks)       | Flag: 8-hour session limit. Recommend task decomposition or session chaining.    |
-| C (strands) + C (cross-session memory)  | Strands SessionManager + AgentCore Memory                                        |
-| Any + A (incremental)                   | Include incremental migration script in Generate artifacts                       |
+| 1 (retarget) + 3 (cross-session memory) | Retarget model layer + migrate memory backend to AWS (Redis → ElastiCache, etc.) |
+| 2 (harness) + 1 (no memory)             | Simplest Harness config — model + tools + prompt, no memory setup                |
+| 2 (harness) + 3 (cross-session memory)  | Harness + AgentCore Memory service                                               |
+| 2 (harness) + 4 (very long tasks)       | Flag: 8-hour session limit. Recommend task decomposition or session chaining.    |
+| 3 (strands) + 3 (cross-session memory)  | Strands SessionManager + AgentCore Memory                                        |
+| Any + 1 (incremental)                   | Include incremental migration script in Generate artifacts                       |
 
 ---
 
@@ -545,10 +545,10 @@ _Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). **Q
 
 > AWS Activate credits offset Bedrock costs during and after migration — including Claude, Llama, and Nova models. Eligible startups can get $5K–$200K depending on funding stage.
 >
-> A) Yes — already have AWS Activate credits
-> B) No — haven't applied yet (self-funded or pre-VC)
-> C) No — VC/accelerator-backed but haven't applied
-> D) I don't know
+> 1. Yes — already have AWS Activate credits
+> 2. No — haven't applied yet (self-funded or pre-VC)
+> 3. No — VC/accelerator-backed but haven't applied
+> 4. I don't know
 
 | Answer                     | Recommendation Impact                                                                                                                                          |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -561,7 +561,7 @@ If `ai_monthly_spend` is `">$10K"`: also flag **AWS Credits for AI Startups** ($
 
 If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`: also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort — adjacent cohort program, distinct from the credits-hub funnel): aws.amazon.com/startups/generative-ai/accelerator
 
-Interpret → `startup_program_status`: A → `"has_credits"`, B → `"eligible_founders"`, C → `"eligible_portfolio"`, D → `"unknown"`. Default: D → `"unknown"`.
+Interpret → `startup_program_status`: 1 → `"has_credits"`, 2 → `"eligible_founders"`, 3 → `"eligible_portfolio"`, 4 → `"unknown"`. Default: 4 → `"unknown"`.
 
 ---
 

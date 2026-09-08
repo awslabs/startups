@@ -21,4 +21,5 @@ CI enforces that these copies are byte-identical to the canonical source
 | `state/phase-status.schema.json`        | `skills/shared/state/phase-status.schema.json`        |
 | `estimate/complexity-tiers.json`        | `skills/shared/estimate/complexity-tiers.json`        |
 | `estimate/estimation-infra.schema.json` | `skills/shared/estimate/estimation-infra.schema.json` |
+| `estimate/ri-sp-eligibility.md`         | `skills/shared/estimate/ri-sp-eligibility.md`         |
 | `pricing/aws-infra-pricing.json`        | `skills/shared/pricing/aws-infra-pricing.json`        |
