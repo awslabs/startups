@@ -114,8 +114,8 @@
       <p class="verdict-meta">Confidence: Medium — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.</p>
 
       <div class="verdict">
-        <strong>Recommendation:</strong> Migrate, phased in dependency order — long pole is the database cutover, with a parallel AI track; estimated monthly savings of ~$503/month
-        (-35%) combined infrastructure + AI, with BigQuery analytics deferred to a
+        <strong>Recommendation:</strong> Migrate, phased in dependency order — long pole is the database cutover, with a parallel AI track; estimated monthly savings of ~$763/month
+        (-54%) combined infrastructure + AI, with BigQuery analytics deferred to a
         specialist engagement. Eligible for up to $5K
         <a href="https://aws.amazon.com/startups/credits/">AWS Activate credits</a>.
       </div>
@@ -128,8 +128,8 @@
         </div>
         <div class="metric metric-hero">
           <span>Combined AWS run rate (Balanced)</span>
-          <strong class="savings">-35%</strong>
-          <small>Est. $912/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
+          <strong class="savings">-54%</strong>
+          <small>Est. $652/mo AWS vs $1,415/mo GCP (excl. BigQuery)</small>
         </div>
         <div class="metric">
           <span>Migration shape</span>
@@ -138,8 +138,8 @@
         </div>
         <div class="metric">
           <span>AI projection</span>
-          <strong class="savings">-36%</strong>
-          <small>Est. ~$800/mo Bedrock vs $1,250/mo GCP AI</small>
+          <strong class="savings">-57%</strong>
+          <small>Est. ~$540/mo Bedrock vs $1,250/mo GCP AI</small>
         </div>
       </div>
 
@@ -159,7 +159,7 @@
       <h3>Migrate if</h3>
       <ul class="compact">
         <li>You want unified AWS operations for containers, database, and Bedrock AI</li>
-        <li>Estimated combined cloud-service savings (~$503/month) and AWS Activate credits offset the cost of migrating</li>
+        <li>Estimated combined cloud-service savings (~$763/month) and AWS Activate credits offset the cost of migrating</li>
         <li>You can engage AWS account team for BigQuery analytics in parallel</li>
       </ul>
 
@@ -223,7 +223,7 @@
       <p>The one-paragraph version, ready to forward:</p>
       <div class="share-card">
         <p><strong>SF Beach to AWS:</strong> Go, with conditions. The estimated
-        AWS monthly run rate is $912 for infrastructure and AI, compared with a
+        AWS monthly run rate is $652 for infrastructure and AI, compared with a
         comparable $1,415 GCP baseline, excluding BigQuery on both sides. The
         migration is phased in dependency order; the database cutover is the
         binding duration driver and the AI track runs in parallel. Before
@@ -255,28 +255,28 @@
             <td>$165</td>
             <td>$112</td>
             <td>$82</td>
-            <td class="savings">-$47</td>
+            <td class="savings">-$53</td>
           </tr>
           <tr>
             <td>AI / ML workloads</td>
             <td>$1,250</td>
-            <td>$800</td>
+            <td>$540</td>
             <td>$34*</td>
-            <td class="savings">-$450</td>
+            <td class="savings">-$710</td>
           </tr>
           <tr>
             <td><strong>Total (excl. BigQuery)</strong></td>
             <td><strong>$1,415</strong></td>
-            <td><strong>$912</strong></td>
+            <td><strong>$652</strong></td>
             <td><strong>$116*</strong></td>
-            <td class="savings"><strong>-$503 (-35%)</strong></td>
+            <td class="savings"><strong>-$763 (-54%)</strong></td>
           </tr>
           <tr>
             <td>Annual (Balanced)</td>
             <td>$16,980</td>
-            <td>$10,944</td>
+            <td>$7,824</td>
             <td>&mdash;</td>
-            <td class="savings">-$6,036</td>
+            <td class="savings">-$9,156</td>
           </tr>
         </tbody>
       </table>
@@ -463,7 +463,7 @@
           <tr><td>Database replication lag at cutover</td><td>Medium</td><td>DMS with lag monitoring; maintenance window cutover</td></tr>
           <tr><td>Public S3 bucket security</td><td>Medium</td><td>Add CloudFront with Origin Access Identity (OAI); restrict direct S3 public access post-migration</td></tr>
           <tr><td>Subjective image quality (Imagen &rarr; Nova Canvas)</td><td>Medium</td><td>Human eval before cutover; feature-flag rollback</td></tr>
-          <tr><td>Claude cost vs Nova Lite if quality bar lower</td><td>Medium</td><td>A/B test; model downsizing saves ~$766/mo if Nova Lite sufficient</td></tr>
+          <tr><td>Claude cost vs Nova Lite if quality bar lower</td><td>Medium</td><td>A/B test; model downsizing saves ~$506/mo if Nova Lite sufficient</td></tr>
         </tbody>
       </table>
     </section>
@@ -682,8 +682,8 @@
           <tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td><td>1-year no-upfront</td><td>Low (post-migration)</td></tr>
           <tr><td>S3 Infrequent Access</td><td>S3 build artifacts</td><td>$1/mo (38%)</td><td>None</td><td>Low</td></tr>
           <tr><td>Fargate Spot</td><td>Fargate dev/staging</td><td>$8/mo (70%)</td><td>None</td><td>Medium</td></tr>
-          <tr><td>Model downsizing (AI)</td><td>Bedrock text</td><td>$766/mo</td><td>None</td><td>Low (after A/B test)</td></tr>
-          <tr><td>Prompt caching (Claude)</td><td>Bedrock</td><td>$54/mo</td><td>None</td><td>Low</td></tr>
+          <tr><td>Model downsizing (AI)</td><td>Bedrock text</td><td>$506/mo</td><td>None</td><td>Low (after A/B test)</td></tr>
+          <tr><td>Prompt caching (Claude)</td><td>Bedrock</td><td>Workload-dependent; measure cache hits and writes</td><td>None</td><td>Low</td></tr>
         </tbody>
       </table>
 
@@ -774,7 +774,7 @@ terraform apply</pre>
         <caption>Bedrock model options vs current GCP AI spend ($1,250/mo).</caption>
         <thead><tr><th scope="col">Bedrock model</th><th scope="col">Monthly est.</th><th scope="col">vs GCP ($1,250/mo)</th><th scope="col">Quality</th><th scope="col">Notes</th></tr></thead>
         <tbody>
-          <tr><td><strong>Claude Sonnet 5 (recommended)</strong></td><td>$780</td><td class="savings">-38%</td><td>High</td><td>Quality priority (Q16); selected target</td></tr>
+          <tr><td><strong>Claude Sonnet 5 (recommended)</strong></td><td>$520</td><td class="savings">-58%</td><td>High</td><td>Quality priority (Q16); selected target</td></tr>
           <tr><td>Claude Haiku 4.5</td><td>$260</td><td class="savings">-79%</td><td>Medium-High</td><td>Balance of cost and quality</td></tr>
           <tr><td>Nova Lite v1</td><td>$14</td><td class="savings">-99%</td><td>Medium</td><td>Backup if A/B test passes quality bar</td></tr>
         </tbody>
@@ -785,10 +785,10 @@ terraform apply</pre>
         <caption>Monthly token volume and cost for the recommended model.</caption>
         <thead><tr><th scope="col">Component</th><th scope="col">Volume</th><th scope="col">Cost</th></tr></thead>
         <tbody>
-          <tr><td>Input tokens</td><td>60,000,000 / month</td><td>$180</td></tr>
-          <tr><td>Output tokens</td><td>40,000,000 / month</td><td>$600</td></tr>
+          <tr><td>Input tokens</td><td>60,000,000 / month</td><td>$120</td></tr>
+          <tr><td>Output tokens</td><td>40,000,000 / month</td><td>$400</td></tr>
           <tr><td>Images (Nova Canvas)</td><td>500 / month</td><td>$20</td></tr>
-          <tr><td><strong>Total (design target)</strong></td><td>&mdash;</td><td><strong>$800 projected</strong></td></tr>
+          <tr><td><strong>Total (design target)</strong></td><td>&mdash;</td><td><strong>$540 projected</strong></td></tr>
         </tbody>
       </table>
 
