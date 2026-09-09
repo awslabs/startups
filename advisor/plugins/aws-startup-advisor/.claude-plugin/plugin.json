@@ -45,6 +45,8 @@
     "durable-execution",
     "anthropic",
     "claude",
+    "claude-platform-on-aws",
+    "claude-platform-evaluation",
     "gcp-to-aws",
     "cloud-run",
     "cloud-sql",

@@ -12,7 +12,7 @@ You don't get generic advice — you get deliverables: a costed migration plan w
 
 ## What's inside
 
-Nine sibling skills, grouped by the job they do:
+Ten sibling skills, grouped by the job they do:
 
 **Migrate to AWS**
 
@@ -23,6 +23,7 @@ Nine sibling skills, grouped by the job they do:
 
 **Build AI agents on AWS**
 
+- **`claude-platform-evaluation`** — choose among the Anthropic API, Claude Platform on AWS, and Claude on Amazon Bedrock from operating constraints, capability dependencies, and the smallest useful validation test.
 - **`agent-advisor`** — Pick an AWS runtime for AI agents (AgentCore vs ECS/EKS/Lambda vs Lambda MicroVMs), generate a full migration plan for existing agent workloads, and optionally build a deployable POC. Also covers Temporal workers. Runtime recommendations and design-backed POCs work standalone; the full migration-plan step additionally needs `gcp-to-aws` installed alongside it, and degrades gracefully (skipped, not broken) if it's missing.
 
 **Start and grow on AWS**
@@ -43,7 +44,7 @@ The migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-ad
 - **AWS Pricing Calculator** (`aws-pricing-calculator`, stdio via `npx sample-aws-pricing-calculator-mcp`) — builds shareable AWS Pricing Calculator estimates.
 - **Temporal Docs** (`temporal-docs`, HTTP) — Temporal documentation lookups for `agent-advisor`'s Temporal-worker flow.
 
-The knowledge-base, prompt-library, architect, and start-building skills do not require MCP servers.
+The knowledge-base, prompt-library, architect, start-building, and Claude platform evaluation skills do not require MCP servers.
 
 **These are provisioned automatically only via the Claude Code plugin path** (`/plugin install aws-startup-advisor@claude-plugins-official`), which reads `.mcp.json` at install time.
 
@@ -108,7 +109,7 @@ Install as a registered plugin in one command — no Node.js required:
 /plugin install aws-startup-advisor@claude-plugins-official
 ```
 
-This installs all 9 skills and registers the plugin in the Claude Code directory.
+This installs all 10 skills and registers the plugin in the Claude Code directory.
 
 ### All other agents (Kiro, Cursor, Codex, Copilot, etc.)
 
@@ -162,6 +163,9 @@ npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws
 
 # Just the Heroku migration workflow
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill heroku-to-aws --agent <agent>
+
+# Just the Claude access-path evaluation
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill claude-platform-evaluation --agent <agent>
 ```
 
 **Cross-skill dependencies — install these together, not standalone:**
@@ -209,20 +213,21 @@ Full list of supported agents: [vercel-labs/skills — Supported Agents](https:/
 
 Once installed, ask your agent:
 
-| Prompt                                                          | Skill that handles it                                                                                           |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| _"Do AWS Activate Credits expire?"_                             | `knowledge-base-for-startups` → `references/faq.md`                                                             |
-| _"Find startups articles on cost optimization for early stage"_ | `knowledge-base-for-startups` → `references/learn.md` index → an article file                                   |
-| _"What partner offers help with observability?"_                | `knowledge-base-for-startups` → `references/offers.md` index                                                    |
-| _"Show me a sample architecture for RAG on Bedrock"_            | `knowledge-base-for-startups` → `references/build.md`                                                           |
-| _"Give me a prompt for an MVP on AWS"_                          | `prompt-library-for-startups` → `awsome-mvp-builder.md`                                                         |
-| _"Prompt for a RAG chatbot using Claude on Bedrock"_            | `prompt-library-for-startups` → `rag-chatbot-with-claude.md`                                                    |
-| _"Help me migrate workloads from GCP to AWS"_                   | `gcp-to-aws` → 6-phase migration workflow                                                                       |
-| _"Migrate my Heroku app to AWS"_                                | `heroku-to-aws` → 6-phase migration workflow                                                                    |
-| _"Move my OpenAI app to Amazon Bedrock"_                        | `llm-to-bedrock` → SDK rewrite + eval + branch (with `gcp-to-aws` installed for Assess)                         |
-| _"Which runtime should I use for my AI agent?"_                 | `agent-advisor` → runtime scoring + recommendation                                                              |
-| _"Help me build a SaaS app on AWS"_                             | `start-building-for-startups` → discovery workflow → scaffolded code                                            |
-| _"How do I start with RAG?"_                                    | `knowledge-base-for-startups` (learn article) + `prompt-library-for-startups` (starter prompt) — boundary query |
+| Prompt                                                                   | Skill that handles it                                                                                           |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| _"Do AWS Activate Credits expire?"_                                      | `knowledge-base-for-startups` → `references/faq.md`                                                             |
+| _"Find startups articles on cost optimization for early stage"_          | `knowledge-base-for-startups` → `references/learn.md` index → an article file                                   |
+| _"What partner offers help with observability?"_                         | `knowledge-base-for-startups` → `references/offers.md` index                                                    |
+| _"Show me a sample architecture for RAG on Bedrock"_                     | `knowledge-base-for-startups` → `references/build.md`                                                           |
+| _"Give me a prompt for an MVP on AWS"_                                   | `prompt-library-for-startups` → `awsome-mvp-builder.md`                                                         |
+| _"Prompt for a RAG chatbot using Claude on Bedrock"_                     | `prompt-library-for-startups` → `rag-chatbot-with-claude.md`                                                    |
+| _"Help me migrate workloads from GCP to AWS"_                            | `gcp-to-aws` → 6-phase migration workflow                                                                       |
+| _"Migrate my Heroku app to AWS"_                                         | `heroku-to-aws` → 6-phase migration workflow                                                                    |
+| _"Move my OpenAI app to Amazon Bedrock"_                                 | `llm-to-bedrock` → SDK rewrite + eval + branch (with `gcp-to-aws` installed for Assess)                         |
+| _"Should we use the Anthropic API, Claude Platform on AWS, or Bedrock?"_ | `claude-platform-evaluation` → qualification + smallest useful validation test                                  |
+| _"Which runtime should I use for my AI agent?"_                          | `agent-advisor` → runtime scoring + recommendation                                                              |
+| _"Help me build a SaaS app on AWS"_                                      | `start-building-for-startups` → discovery workflow → scaffolded code                                            |
+| _"How do I start with RAG?"_                                             | `knowledge-base-for-startups` (learn article) + `prompt-library-for-startups` (starter prompt) — boundary query |
 
 ---
 
@@ -237,5 +242,6 @@ npx skills remove gcp-to-aws --agent <agent>
 npx skills remove heroku-to-aws --agent <agent>
 npx skills remove llm-to-bedrock --agent <agent>
 npx skills remove agent-advisor --agent <agent>
+npx skills remove claude-platform-evaluation --agent <agent>
 npx skills remove tf-best-practices --agent <agent>
 ```
