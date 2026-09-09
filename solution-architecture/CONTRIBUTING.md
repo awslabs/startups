@@ -72,7 +72,7 @@ Do not use the word "toolkit" in a plugin, skill, or agent name in this folder.
 
 ### 3. No deprecated or sunset AWS services
 
-Contributions must not reference, recommend, or depend on AWS services that are deprecated, sunset, or closed to new customers.
+Contributions must not recommend or depend on AWS services that are deprecated, sunset, or closed to new customers.
 
 Naming a sunset service in order to warn against it, or to describe a migration away from it, is fine. Recommending one as a forward-looking choice is not. Verify current status against AWS documentation rather than from model memory, which reproduces retired service names and deprecated constructs from stale training data.
 
@@ -214,6 +214,6 @@ So do not phrase a line to satisfy the script. Write the warning you mean; the n
 
 A pull request here needs approval from the Solution Architecture team. Changes to `marketplace.json`, any `SKILL.md`, or a plugin manifest additionally need admin approval. See [CODEOWNERS](../.github/CODEOWNERS) for the current routing.
 
-Automated checks run on every pull request that touches this folder, and passing them is necessary rather than sufficient. They decide nothing about criteria 1 and 2, so a green run means only that nothing mechanically wrong was found.
+Automated checks run on every pull request that touches this folder, and passing them is necessary rather than sufficient. They decide nothing about criteria 1, 2, or 3, so a green run means only that nothing mechanically wrong was found.
 
-An automated reviewer that comments on criteria 1 and 2 is in development. Treat its output as advice: it does not approve on the team's behalf, and a human still decides.
+An automated reviewer comments on criteria 1 and 2, and on whether a sunset-service mention recommends or warns under criterion 3. Treat its output as advice: it does not approve on the team's behalf, and a human still decides.

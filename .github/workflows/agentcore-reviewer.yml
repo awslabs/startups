@@ -31,15 +31,14 @@ name: AgentCore Reviewer
 # a rerun teaches contributors to ignore it. See
 # skills/agentcore-patterns/references/git-code-reviewer-agent.md.
 #
-# Fork pull requests receive no secrets, so the job self-skips rather than
-# failing with a confusing auth error. contribution-gate.yml covers forks.
+# Fork pull requests are handled by the `pull_request_target` arm below, because a fork
+# `pull_request` run receives no secrets. The two arms partition on head repository so
+# nothing is reviewed twice. contribution-gate.yml covers forks independently.
 
-# No `workflow_dispatch` inputs on purpose. Checkov CKV_GHA_7 requires them to be
-# empty, since a dispatch input is a user-controlled parameter that can change what
-# the build acts on. To re-review a pull request, push to it or use `gh pr comment`
-# to re-trigger, rather than passing a PR number by hand.
-# Triggered by the Build workflow finishing rather than by the pull request directly.
-#
+# Deliberately no `workflow_dispatch`. A dispatch input is a user-controlled parameter
+# that can change what the run acts on, which Checkov CKV_GHA_7 also flags, and it would
+# be a second path into a credentialed job. Re-review by pushing to the pull request:
+# neither trigger fires on a comment, so there is no comment command.
 # A `pull_request` workflow triggered by a fork gets no secrets, no OIDC token, and a
 # read-only `GITHUB_TOKEN` whatever the `permissions:` block says. It therefore could not
 # assume a role, could not reach the runtime, and could not even post a status saying so.
@@ -263,7 +262,8 @@ jobs:
               echo "### AgentCore reviewer did not run"
               echo ""
               echo "\`invoke-agent-runtime\` failed $ATTEMPTS time(s), last exit $INVOKE_RC, so no verdict was produced."
-              echo "This is **not** an approval. Review criteria 1 and 2 by hand."
+              echo "This is **not** an approval. Review criteria 1 and 2 by hand, and the"
+            echo "sunset-service notes the contribution gate reported under criterion 3."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi

@@ -49,6 +49,23 @@ function run(markdown) {
   }
 }
 
+/** Like `run`, but the caller names the fixture, for path-handling tests. */
+function runNamed(name, markdown) {
+  const dir = mkdtempSync(join(tmpdir(), "gate-"));
+  const rel = join("solution-architecture", name);
+  mkdirSync(join(dir, "solution-architecture"), { recursive: true });
+  writeFileSync(join(dir, rel), markdown);
+  try {
+    return { flagged: false, out: execFileSync("node", [CHECK], {
+      cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
+    }) };
+  } catch (error) {
+    return { flagged: true, out: `${error.stdout ?? ""}${error.stderr ?? ""}` };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 /** True when the gate noted a sunset-service mention in this markdown. */
 const notes = (markdown) => run(markdown).out.includes("[sunset-service]");
 
@@ -139,9 +156,69 @@ test("a note is emitted as a workflow annotation, not only to stdout", () => {
   // accident on a single-line fixture.
   const { out } = run("Fine.\n\nApp Runner is a good default.\n");
   assert.match(out, /^::warning file=.*line=3,title=sunset-service::/m);
-  // Commas and newlines would terminate the annotation's parameter list.
   const line = out.split("\n").find((l) => l.startsWith("::warning"));
-  assert.equal(line.split("::")[2].includes(","), false);
+
+  // Properties are comma-delimited, so `file=` and `line=` must be single-valued and the
+  // property segment must carry no stray comma beyond the delimiters.
+  const parsed = /^::warning (?<properties>.*?)::(?<data>.*)$/s.exec(line);
+  assert.ok(parsed, `annotation did not parse: ${line}`);
+  const { properties, data } = parsed.groups;
+  assert.match(properties, /^file=[^,]+,line=\d+,title=[^,]+$/);
+
+  // A comma is legal in the DATA segment and is deliberately NOT encoded. An earlier
+  // version replaced every comma with a semicolon, which was testing an over-aggressive
+  // escape rather than GitHub's spec: only `%`, CR, and LF need encoding in data.
+  assert.ok(data.includes(","), "data segment should keep its literal comma");
+});
+
+test("a hostile filename cannot inject a workflow command", () => {
+  // This gate runs on fork pull requests and git permits newlines, commas, colons, and
+  // percent signs in a path. An unencoded path let a contributor emit
+  // `::stop-commands::`, which makes Actions ignore every workflow command after it, so
+  // one crafted filename silently discarded the annotations for every other file.
+  const hostile = "aaa\n::stop-commands::deadbeef\nzz";
+  const { out } = runNamed(`${hostile}.md`, "Cloud9 is here.\n");
+
+  const commandLines = out.split("\n").filter((l) => l.startsWith("::"));
+  assert.equal(commandLines.length, 1, `expected one command line, got:\n${out}`);
+  assert.match(commandLines[0], /^::warning file=/);
+  // Encoded, so the payload is inert text inside the property.
+  assert.match(commandLines[0], /%0A%3A%3Astop-commands%3A%3Adeadbeef%0A/);
+  assert.equal(out.includes("\n::stop-commands::"), false);
+});
+
+test("a comma or colon in a path is encoded so the annotation still anchors", () => {
+  const { out } = runNamed("a,b:c%d.md", "App Runner is here.\n");
+  const line = out.split("\n").find((l) => l.startsWith("::warning"));
+  assert.match(line, /file=solution-architecture\/a%2Cb%3Ac%25d\.md,line=1,/);
+});
+
+test("a real violation still fails the build", () => {
+  // Mutation check. Every other use of `failed()` asserts false, so flipping the script's
+  // final `return 1` to `return 0` left all tests green: the entire enforcing half had no
+  // coverage. An em dash is the cheapest violation to assert on.
+  assert.equal(failed("A sentence with an em dash \u2014 right here.\n"), true);
+});
+
+test("supplied paths that all get filtered out is an error, not a pass", () => {
+  // Bare `xargs` word-splits, so a changed path containing a space arrived as fragments
+  // that failed `existsSync` and vanished. "Every argument discarded" was then reported
+  // the same as "nothing to check", shipping the violation behind a green check.
+  const dir = mkdtempSync(join(tmpdir(), "gate-"));
+  mkdirSync(join(dir, "solution-architecture"), { recursive: true });
+  try {
+    execFileSync("node", [CHECK, "solution-architecture/does-not-exist.md"], {
+      cwd: dir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    assert.fail("expected a non-zero exit");
+  } catch (error) {
+    assert.equal(error.status, 2);
+    assert.match(`${error.stderr}`, /none survived filtering/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("annotations are emitted for every note, not just the first", () => {

@@ -50,7 +50,7 @@ jobs:
             # apply to reference files too, which is where these have
             # historically appeared.
             git diff --name-only --diff-filter=d "$MERGE_BASE" "$HEAD_SHA" \
-              -- 'solution-architecture/**/*.md' > changed.txt || true
+              -- 'solution-architecture/*.md' 'solution-architecture/**/*.md' > changed.txt || true
           else
             # workflow_dispatch: no PR context, so check everything in scope.
             : > changed.txt
@@ -74,7 +74,7 @@ jobs:
           # `xargs -a` is GNU-only; redirect stdin instead so the same command
           # works when a contributor runs this locally on macOS.
           if [ -s changed.txt ]; then
-            xargs node solution-architecture/tools/contribution-gate/check.mjs < changed.txt
+            tr '\n' '\0' < changed.txt | xargs -0 node solution-architecture/tools/contribution-gate/check.mjs
           else
             node solution-architecture/tools/contribution-gate/check.mjs
           fi

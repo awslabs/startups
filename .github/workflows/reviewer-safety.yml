@@ -1,29 +1,52 @@
 name: Reviewer Safety
 
-# Asserts the two invariants that make `agentcore-reviewer.yml` safe to run on
-# `pull_request_target`. That trigger hands base-repository credentials to a job whose
-# inputs a contributor controls, which is acceptable only while both of these hold:
+# Asserts the invariants that let `agentcore-reviewer.yml` run on `pull_request_target`.
+# That trigger hands base-repository credentials to a job whose inputs a contributor
+# controls, which is acceptable only while both of these hold:
 #
-#   1. No checkout. Contributor code is never fetched into the credentialed runner; the
-#      runtime reads the diff through the API instead.
-#   2. No fork-controlled text in a shell. Only `head.sha` and `number` are used, a hex
-#      string and an integer. A title, body, branch name, or login interpolated into a
-#      `run:` block would be script injection with credentials attached.
+#   1. Contributor code is never fetched into the credentialed runner. The runtime reads
+#      the diff through the API instead.
+#   2. No fork-controlled value reaches a shell.
 #
 # Losing either is a credential exposure rather than a broken build, and it would read as
 # an ordinary edit in review, so the invariants are asserted rather than left to a comment.
 #
-# This lives in its own workflow rather than in the contribution gate for two reasons,
-# both raised on awslabs/startups#259:
+# The assertion is an ALLOWLIST over the parsed YAML, in `tools/reviewer_guard.py`, not a
+# search for bad patterns. The first version was two greps; adversarial review wrote
+# sixteen hostile workflows against it and fifteen passed, while the one it rejected was
+# the safe `env:`-indirection pattern its own error message recommended. `uses:
+# "actions/checkout@v4"` beat an anchored pattern, a folded scalar beat it again, and
+# `${{ format('{0}', ...title) }}` beat a `[^}]*` class that cannot cross the `}` in
+# `{0}`. Indirection beat it wholesale: a local composite action, a reusable workflow, or
+# `gh pr checkout` in a `run:` body all fetch fork code with no `actions/checkout` at all.
+# Enumerating bad YAML is unwinnable, so the guard enumerates good YAML and anything
+# unrecognised fails closed. Those sixteen files are kept as fixtures and the guard is
+# re-proved against them on every run.
 #
-#   - The contribution gate is filtered on `paths: solution-architecture/**`, so a pull
-#     request touching only `.github/workflows/` never triggered it. The guard could not
-#     fire on the exact change class it exists to catch, and CONTRIBUTING lists that class
-#     as RFC-exempt, so nothing else covered it either. This workflow has no path filter.
-#   - The gate checks out the pull request head, so on a fork it read the fork's copy of
-#     the reviewer workflow while the base copy is what `pull_request_target` executes. A
-#     passing assert therefore said nothing about the file that runs, which is worse than
-#     no assert. This reads the base ref's copy through the API and never checks out.
+# This is its own workflow rather than a step in the contribution gate, and it checks two
+# refs. Both were raised on awslabs/startups#259:
+#
+#   - The gate is filtered on `paths: solution-architecture/**`, so a pull request
+#     touching only `.github/workflows/` never triggered it: the guard could not fire on
+#     the change class it exists to catch, and CONTRIBUTING lists that class as
+#     RFC-exempt. This workflow has no path filter.
+#   - Checking one ref answers the wrong question. The head copy is what this pull request
+#     proposes, so it must be checked or nothing blocks the change that removes an
+#     invariant. The default branch copy is what a fork's `pull_request_target` run
+#     actually loads, so it is checked for drift. Reading the head as data is safe because
+#     nothing in it is executed.
+# KNOWN LIMIT, recorded rather than papered over. This workflow runs on `pull_request`,
+# so its own definition comes from the pull request's merge ref: a change to THIS file is
+# checked by the changed copy. Editing `TARGET`, appending `exit 0`, or deleting the file
+# all report green. Two things outside this file are what actually close it, and both must
+# stay in place:
+#
+#   - `.github/CODEOWNERS` routes `/.github/` to the admins team, so any edit here needs
+#     their review.
+#   - This check should be marked required in branch protection, so deleting the workflow
+#     registers as a missing required check rather than as silence.
+#
+# A self-check inside the file cannot fix this, because the attacker edits the checker.
 on:
   pull_request:
   workflow_dispatch: {}
@@ -41,71 +64,68 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Assert the reviewer stays safe under pull_request_target
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      # Both refs, because they answer different questions and the previous version
+      # answered neither well.
+      #
+      # HEAD gates this pull request: it is the copy being proposed, so a change that adds
+      # a checkout or a fork-controlled interpolation fails here rather than after merge.
+      # Reading the head as DATA is safe; nothing from it is executed.
+      #
+      # The DEFAULT BRANCH is what a fork's `pull_request_target` run actually loads, per
+      # GitHub's events reference, so it is checked for drift. `base.ref` would be wrong
+      # for any pull request targeting a non-default branch.
+      - name: Fetch the default branch copy of the reviewer workflow
         env:
           GH_TOKEN: ${{ github.token }}
-          # The base ref, never the head. The head copy is contributor-controlled and is
-          # not the file that runs.
-          BASE_REF: ${{ github.event.pull_request.base.ref || github.ref_name }}
-          TARGET: .github/workflows/agentcore-reviewer.yml
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
+          mkdir -p .guard
+          # `// empty` so a missing key yields an empty file the guard rejects, rather
+          # than jq printing the string "null" and base64 decoding it to 3 bytes of
+          # garbage that a size check would accept.
+          gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/agentcore-reviewer.yml" \
+            -f ref="${DEFAULT_BRANCH}" --jq '.content // empty' \
+            | base64 -d > .guard/default-branch-reviewer.yml
+          echo "Fetched the ${DEFAULT_BRANCH} copy, $(wc -c < .guard/default-branch-reviewer.yml) bytes."
 
-          # Fetched rather than checked out, so this reads the copy that will actually
-          # execute on a fork pull request.
-          if ! gh api "repos/${GITHUB_REPOSITORY}/contents/${TARGET}?ref=${BASE_REF}" \
-            --jq '.content' | base64 -d > reviewer.yml; then
-            echo "::error::Could not read ${TARGET} at ${BASE_REF}. The safety assert cannot run, so this fails rather than passing vacuously." >&2
-            exit 1
-          fi
+      - name: Assert the reviewer stays safe under pull_request_target
+        run: |
+          set -euo pipefail
+          python3 .github/workflows/tools/reviewer_guard.py \
+            .github/workflows/agentcore-reviewer.yml \
+            .guard/default-branch-reviewer.yml
+          {
+            echo "### Reviewer workflow invariants"
+            echo ""
+            echo "Both the proposed copy and the default branch copy satisfy the allowlist:"
+            echo "every \`uses:\` is pinned and permitted, every \`\${{ }}\` expression is"
+            echo "permitted, and no shell fetches the pull request."
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          # A missing or empty file must fail, not silently satisfy the checks below.
-          # `grep` exits 2 when it cannot read a file, which is indistinguishable from
-          # exit 1 (no match) when used as an `if` condition, so the previous version of
-          # this assert printed "invariants hold" and exited 0 on a rename or a move.
-          if [ ! -s reviewer.yml ]; then
-            echo "::error::${TARGET} at ${BASE_REF} is missing or empty; the reviewer safety assert cannot run." >&2
-            exit 1
-          fi
-
-          fail=0
-
-          # Exit codes are tested explicitly rather than through `if grep`, so that a
-          # future exit 2 cannot be swallowed as "no match".
-          set +e
-          grep -nE '^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*actions/checkout' reviewer.yml
-          checkout=$?
-          grep -nE '\$\{\{[^}]*(pull_request\.(title|body)|head\.ref|head_ref|\.user\.login)[^}]*\}\}' reviewer.yml
-          forktext=$?
-          set -e
-
-          for name in checkout forktext; do
-            eval "code=\$$name"
-            if [ "$code" -eq 2 ]; then
-              echo "::error::grep could not read reviewer.yml while checking ${name}; refusing to report success." >&2
-              fail=1
+      # Proves the guard still rejects what it is for. A guard that only ever passes is
+      # indistinguishable from one that is broken, which is how its predecessor shipped
+      # while 15 of 16 hostile workflows walked through it.
+      - name: Prove the guard rejects known bypasses
+        run: |
+          set -euo pipefail
+          failures=0
+          for fixture in .github/workflows/tools/reviewer-guard-fixtures/*.yml; do
+            case "$(basename "$fixture")" in
+              base_copy.yml) continue ;;  # the deliberately safe baseline
+            esac
+            if python3 .github/workflows/tools/reviewer_guard.py "$fixture" >/dev/null 2>&1; then
+              echo "::error::guard accepted known-bad fixture $fixture" >&2
+              failures=$((failures + 1))
             fi
           done
-
-          if [ "$checkout" -eq 0 ]; then
-            echo "::error file=${TARGET}::actions/checkout in a pull_request_target workflow. Contributor code must never be checked out into a credentialed runner." >&2
-            fail=1
+          if ! python3 .github/workflows/tools/reviewer_guard.py \
+            .github/workflows/tools/reviewer-guard-fixtures/base_copy.yml >/dev/null 2>&1; then
+            echo "::error::guard rejected the safe baseline fixture" >&2
+            failures=$((failures + 1))
           fi
-
-          if [ "$forktext" -eq 0 ]; then
-            echo "::error file=${TARGET}::Fork-controlled text interpolated into the reviewer workflow. Pass it through env and quote it, or do not use it: this is script injection with credentials attached." >&2
-            fail=1
-          fi
-
-          if [ "$fail" -eq 0 ]; then
-            echo "Invariants hold at ${BASE_REF}: no checkout, no fork-controlled interpolation."
-            {
-              echo "### Reviewer workflow invariants"
-              echo ""
-              echo "Checked \`${TARGET}\` at \`${BASE_REF}\`, the copy that executes on fork pull requests."
-              echo ""
-              echo "- No \`actions/checkout\`"
-              echo "- No fork-controlled text interpolated into a shell"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-          exit "$fail"
+          [ "$failures" -eq 0 ] && echo "Guard rejects every known bypass and accepts the safe baseline."
+          exit "$failures"

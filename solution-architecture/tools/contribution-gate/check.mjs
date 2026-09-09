@@ -12,18 +12,19 @@
 //
 // Exit 0 = pass, 1 = violations found, 2 = harness error.
 
-import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const REPO_ROOT = process.cwd();
 const SCOPE_DIR = "solution-architecture";
 
 // Services that are sunset, closed to new customers, or end-of-support.
-// Mentioning one to warn against it or migrate off it is allowed, so each
-// match is checked for a nearby warning cue before it is reported.
+// Every match is reported as a note. Nothing is exempted and nothing fails; telling a
+// recommendation from a warning is a judgment, so it belongs to review. See the `notes`
+// docstring below.
 const SUNSET = [
-  { pattern: /\bApp Mesh\b/gi, name: "AWS App Mesh" },
-  { pattern: /\bApp Runner\b/gi, name: "AWS App Runner" },
+  { pattern: /\bApp\s?Mesh\b/gi, name: "AWS App Mesh" },
+  { pattern: /\bApp\s?Runners?\b/gi, name: "AWS App Runner" },
   { pattern: /\bS3 Select\b/gi, name: "S3 Select" },
   { pattern: /\bGlacier Select\b/gi, name: "Glacier Select" },
   { pattern: /\bIoT Analytics\b/gi, name: "AWS IoT Analytics" },
@@ -34,9 +35,14 @@ const SUNSET = [
       "the \"for SQL Applications\" variant was discontinued and its applications deleted from 2026-01-27)",
   },
   { pattern: /\bAurora Serverless v1\b/gi, name: "Aurora Serverless v1" },
-  { pattern: /\blaunch configuration/gi, name: "EC2 launch configurations" },
+  // Scoped to Auto Scaling, plus the API and CloudFormation forms. The bare phrase
+  // matched any prose about a launch config file, while the actually dead spellings
+  // escaped, so it was noisy and under-matching at the same time.
+  {
+    pattern: /\b(Auto Scaling launch configurations?|CreateLaunchConfiguration|AWS::AutoScaling::LaunchConfiguration)\b/g,
+    name: "EC2 launch configurations (blocked for accounts created on or after 2024-10-01; use launch templates)",
+  },
   { pattern: /\bCloud9\b/gi, name: "AWS Cloud9" },
-  { pattern: /\bSimpleDB\b/gi, name: "Amazon SimpleDB" },
   // AWS CodeCommit was here and has been removed. It closed to new customers on
   // 2024-07-25 and REOPENED on 2025-11-25, so recommending it is fine again and
   // flagging it was a false positive. See the CodeCommit user guide document history.
@@ -119,6 +125,29 @@ const add = (file, criterion, line, message) =>
   findings.push({ file, criterion, line, message });
 
 /**
+ * Collapse anything that could start a new log line.
+ *
+ * Applies to values that reach human-readable output as well as to workflow commands,
+ * because Actions parses commands per line: text at column 0 is a command wherever it
+ * came from.
+ */
+const oneLine = (value) => String(value).replace(/[\r\n]+/g, " ");
+
+/**
+ * GitHub's escaping for workflow-command data and properties.
+ *
+ * Actions parses `::warning file=X,line=N::MSG` positionally, so an unencoded delimiter
+ * in any interpolated value changes the command's meaning rather than its text. The
+ * property set is stricter than the data set because `:` and `,` terminate a property.
+ * See "Setting an error message" in the workflow-commands documentation.
+ */
+const encodeData = (value) =>
+  String(value).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+
+const encodeProperty = (value) =>
+  encodeData(value).replace(/:/g, "%3A").replace(/,/g, "%2C");
+
+/**
  * Observations reported without failing the build.
  *
  * A note is something a reader should look at and a script cannot settle. The sunset
@@ -136,8 +165,14 @@ const add = (file, criterion, line, message) =>
  * advisory reviewer, which reads the surrounding prose and owns the `staleness` axis.
  */
 const notes = [];
-const note = (file, criterion, line, message) =>
+const seenNotes = new Set();
+/** Deduplicated: the message is per service, so repeats on one line say nothing new. */
+const note = (file, criterion, line, message) => {
+  const key = `${file}|${line}|${criterion}|${message}`;
+  if (seenNotes.has(key)) return;
+  seenNotes.add(key);
   notes.push({ file, criterion, line, message });
+};
 
 /**
  * Collect every markdown file in scope.
@@ -152,7 +187,10 @@ function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     if (entry === "node_modules" || entry.startsWith(".")) continue;
     const full = join(dir, entry);
-    const st = statSync(full);
+    // `lstatSync`, and symlinks skipped: a dangling or looping symlink named *.md made
+    // `statSync` throw, which aborted the whole scan with zero files checked.
+    const st = lstatSync(full);
+    if (st.isSymbolicLink()) continue;
     if (st.isDirectory()) walk(full, out);
     else if (entry.endsWith(".md")) out.push(full);
   }
@@ -191,8 +229,7 @@ function checkAnyMarkdown(file) {
   }
 
   // --- em/en dashes -------------------------------------------------------
-  const dash = text.match(/[—–]/);
-  if (dash) {
+  for (const dash of text.matchAll(/[—–]/g)) {
     add(
       rel,
       "style",
@@ -209,7 +246,9 @@ function checkAnyMarkdown(file) {
  * contract, so requiring `audience:` on them would be wrong.
  */
 function checkSkillManifest(file) {
-  const text = readFileSync(file, "utf8");
+  // BOM stripped: `/^---/` is anchored at string start, so a leading \uFEFF made
+  // correct frontmatter report as absent.
+  const text = readFileSync(file, "utf8").replace(/^\uFEFF/, "");
   const rel = relative(REPO_ROOT, file);
 
   const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -248,7 +287,22 @@ function checkSkillManifest(file) {
     // Hard limit enforced by the official validator; over it, text is truncated.
     const desc = front.match(/^description:\s*(?:"([\s\S]*?)"|'([\s\S]*?)'|(.+))\s*$/m);
     if (desc) {
-      const value = (desc[1] ?? desc[2] ?? desc[3] ?? "").trim();
+      let value = (desc[1] ?? desc[2] ?? desc[3] ?? "").trim();
+
+      // A block scalar (`>` or `|`) puts the text on the following indented lines, so
+      // matching one line captured just the indicator and the length check passed on a
+      // 3,600-character description. That is the style most likely used for a long one,
+      // which is exactly what this limit exists to catch.
+      if (/^[>|][-+0-9]*$/.test(value)) {
+        const after = front.slice(desc.index + desc[0].length).split("\n");
+        const body = [];
+        for (const line of after) {
+          if (line.trim() === "") { body.push(""); continue; }
+          if (!/^\s/.test(line)) break; // dedent ends the scalar
+          body.push(line.trim());
+        }
+        value = body.join(" ").trim();
+      }
       if (value.length > DESCRIPTION_MAX) {
         add(
           rel,
@@ -264,7 +318,7 @@ function checkSkillManifest(file) {
   // A plugin whose premise is deference is worthless if its pointers are wrong.
   const inRepo = resolvableSkillTargets();
   const upstream = declaredDependencyPlugins();
-  for (const m of text.matchAll(/Skill\(\s*"([^"]+)"\s*\)/g)) {
+  for (const m of text.matchAll(/Skill\(\s*"([^"\r\n]+)"\s*\)/g)) {
     const target = m[1];
     if (!target.includes(":")) continue; // bare skill name, not a plugin pointer
     const [plugin, skill] = target.split(":");
@@ -327,13 +381,28 @@ function main() {
   if (args.length > 0) {
     files = args
       .filter((f) => f.endsWith(".md"))
-      .filter((f) => f.startsWith(SCOPE_DIR))
+      .map((f) => f.replace(/^\.\//, ""))
+      .filter((f) => f === SCOPE_DIR || f.startsWith(`${SCOPE_DIR}/`))
       .filter((f) => existsSync(f)); // skip deletions
   } else {
     files = existsSync(SCOPE_DIR) ? walk(SCOPE_DIR) : [];
   }
 
   if (files.length === 0) {
+    if (args.length > 0) {
+      // Arguments were supplied and every one was discarded, which is not the same as
+      // having nothing to check. A path containing a space arrives word-split from bare
+      // `xargs`, so the fragments fail `existsSync` and disappear. Reporting success
+      // there ships the violation behind a green check.
+      console.error(
+        `contribution-gate: ${args.length} path(s) were supplied and none survived ` +
+          `filtering, so nothing was checked. Paths must be in ${SCOPE_DIR}/, end in .md, ` +
+          `and exist. A path containing a space arrives split when passed through bare ` +
+          `xargs; use git diff -z with xargs -0.`,
+      );
+      for (const a of args) console.error(`  supplied: ${oneLine(a)}`);
+      return 2;
+    }
     console.log("contribution-gate: no in-scope markdown files to check.");
     return 0;
   }
@@ -357,9 +426,14 @@ function main() {
       byFile.get(f.file).push(f);
     }
     for (const [file, fs] of [...byFile].sort(([a], [b]) => a.localeCompare(b))) {
-      console.log(`${file}`);
+      // Sanitised even though this is prose rather than a workflow command. A path or a
+      // finding message containing a newline would put attacker-chosen text at column 0
+      // of the log, where Actions parses workflow commands. That is how a hostile
+      // filename smuggled `::stop-commands::` into this report and disabled every
+      // annotation emitted after it, including annotations for other files.
+      console.log(oneLine(file));
       for (const f of fs.sort((a, b) => a.line - b.line)) {
-        console.log(`  L${f.line}  [${f.criterion}] ${f.message}`);
+        console.log(`  L${f.line}  [${oneLine(f.criterion)}] ${oneLine(f.message)}`);
       }
       console.log("");
     }
@@ -379,9 +453,20 @@ function main() {
     report(notes);
 
     for (const n of notes) {
-      // Newlines and commas would terminate the annotation's parameter list.
-      const message = n.message.replace(/[\r\n]+/g, " ").replace(/,/g, ";");
-      console.log(`::warning file=${n.file},line=${n.line},title=${n.criterion}::${message}`);
+      // Every interpolated value is encoded, not just the message.
+      //
+      // The message is a constant, so escaping only it was escaping the safe half. The
+      // FILE PATH is the untrusted input: this gate runs on fork pull requests, and git
+      // permits commas, colons, percent signs, and newlines in a path. A contributor
+      // could name a file so that the annotation carried `::stop-commands::`, which makes
+      // Actions ignore every workflow command after it, silently discarding the
+      // annotations for every other file in the run. Encoding the path closes that, and
+      // also fixes the duller cases where a comma or colon in a name truncated the
+      // annotation so it anchored to nothing.
+      console.log(
+        `::warning file=${encodeProperty(n.file)},line=${encodeProperty(n.line)},` +
+          `title=${encodeProperty(n.criterion)}::${encodeData(n.message)}`,
+      );
     }
 
     // A step summary survives log collapse and is visible without expanding anything.
@@ -394,7 +479,13 @@ function main() {
         "against it is left to review; see criterion 3 in",
         "`solution-architecture/CONTRIBUTING.md`.",
         "",
-        ...notes.map((n) => `- \`${n.file}:${n.line}\` [${n.criterion}] ${n.message}`),
+        // Backticks and newlines in a path would break out of the code span and could
+        // inject markdown headings into the summary. Same untrusted input as above.
+        ...notes.map(
+          (n) =>
+            `- \`${String(n.file).replace(/[`\r\n]/g, "")}:${n.line}\` ` +
+            `[${n.criterion}] ${n.message}`,
+        ),
         "",
       ];
       try {
