@@ -329,8 +329,6 @@ canonical keys from `schema-discover-iac.md`:
   when `autopilot.enabled == true`, `false` otherwise (a cluster reporting node
   pools with `autopilot.enabled` absent/false is Standard mode). This drives the
   Clarify Q8 default and the `compute.md` GKE rubric (Autopilot → EKS Auto Mode).
-- `config.node_machine_type` — from the primary `nodePools[].config.machineType`
-  when present (Standard clusters). Omit for Autopilot.
 
 ## Step 4: Infer Edges from Resolved Config
 
