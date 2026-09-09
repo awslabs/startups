@@ -12,7 +12,7 @@
 //
 // Exit 0 = pass, 1 = violations found, 2 = harness error.
 
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const REPO_ROOT = process.cwd();
@@ -367,9 +367,42 @@ function main() {
 
   // Printed whether or not anything failed. A note that only appears on failure is a
   // note nobody reads on the runs that matter.
+  //
+  // Emitted as `::warning` workflow commands as well, because stdout alone was
+  // indistinguishable from silence: a green check with notes buried in collapsed log
+  // output reads as "clean", while the summary claimed criterion 3 had been checked. An
+  // annotation puts each mention on the line in the Files changed view, which is where a
+  // contributor is already looking. Harmless outside Actions, where it is just a line of
+  // text, so no branch on CI detection.
   if (notes.length > 0) {
     console.log(`${notes.length} note(s), for a reader rather than the build:\n`);
     report(notes);
+
+    for (const n of notes) {
+      // Newlines and commas would terminate the annotation's parameter list.
+      const message = n.message.replace(/[\r\n]+/g, " ").replace(/,/g, ";");
+      console.log(`::warning file=${n.file},line=${n.line},title=${n.criterion}::${message}`);
+    }
+
+    // A step summary survives log collapse and is visible without expanding anything.
+    const summaryPath = process.env["GITHUB_STEP_SUMMARY"];
+    if (summaryPath) {
+      const lines = [
+        `### Contribution gate: ${notes.length} note(s)`,
+        "",
+        "Reported, not enforced. Whether a mention recommends a sunset service or warns",
+        "against it is left to review; see criterion 3 in",
+        "`solution-architecture/CONTRIBUTING.md`.",
+        "",
+        ...notes.map((n) => `- \`${n.file}:${n.line}\` [${n.criterion}] ${n.message}`),
+        "",
+      ];
+      try {
+        appendFileSync(summaryPath, `${lines.join("\n")}\n`);
+      } catch {
+        // A summary is a nicety. Never fail the gate because it could not be written.
+      }
+    }
   }
 
   if (findings.length === 0) {

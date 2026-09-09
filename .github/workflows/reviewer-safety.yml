@@ -1,0 +1,111 @@
+name: Reviewer Safety
+
+# Asserts the two invariants that make `agentcore-reviewer.yml` safe to run on
+# `pull_request_target`. That trigger hands base-repository credentials to a job whose
+# inputs a contributor controls, which is acceptable only while both of these hold:
+#
+#   1. No checkout. Contributor code is never fetched into the credentialed runner; the
+#      runtime reads the diff through the API instead.
+#   2. No fork-controlled text in a shell. Only `head.sha` and `number` are used, a hex
+#      string and an integer. A title, body, branch name, or login interpolated into a
+#      `run:` block would be script injection with credentials attached.
+#
+# Losing either is a credential exposure rather than a broken build, and it would read as
+# an ordinary edit in review, so the invariants are asserted rather than left to a comment.
+#
+# This lives in its own workflow rather than in the contribution gate for two reasons,
+# both raised on awslabs/startups#259:
+#
+#   - The contribution gate is filtered on `paths: solution-architecture/**`, so a pull
+#     request touching only `.github/workflows/` never triggered it. The guard could not
+#     fire on the exact change class it exists to catch, and CONTRIBUTING lists that class
+#     as RFC-exempt, so nothing else covered it either. This workflow has no path filter.
+#   - The gate checks out the pull request head, so on a fork it read the fork's copy of
+#     the reviewer workflow while the base copy is what `pull_request_target` executes. A
+#     passing assert therefore said nothing about the file that runs, which is worse than
+#     no assert. This reads the base ref's copy through the API and never checks out.
+on:
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reviewer-safety-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  assert:
+    name: Reviewer workflow invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Assert the reviewer stays safe under pull_request_target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # The base ref, never the head. The head copy is contributor-controlled and is
+          # not the file that runs.
+          BASE_REF: ${{ github.event.pull_request.base.ref || github.ref_name }}
+          TARGET: .github/workflows/agentcore-reviewer.yml
+        run: |
+          set -euo pipefail
+
+          # Fetched rather than checked out, so this reads the copy that will actually
+          # execute on a fork pull request.
+          if ! gh api "repos/${GITHUB_REPOSITORY}/contents/${TARGET}?ref=${BASE_REF}" \
+            --jq '.content' | base64 -d > reviewer.yml; then
+            echo "::error::Could not read ${TARGET} at ${BASE_REF}. The safety assert cannot run, so this fails rather than passing vacuously." >&2
+            exit 1
+          fi
+
+          # A missing or empty file must fail, not silently satisfy the checks below.
+          # `grep` exits 2 when it cannot read a file, which is indistinguishable from
+          # exit 1 (no match) when used as an `if` condition, so the previous version of
+          # this assert printed "invariants hold" and exited 0 on a rename or a move.
+          if [ ! -s reviewer.yml ]; then
+            echo "::error::${TARGET} at ${BASE_REF} is missing or empty; the reviewer safety assert cannot run." >&2
+            exit 1
+          fi
+
+          fail=0
+
+          # Exit codes are tested explicitly rather than through `if grep`, so that a
+          # future exit 2 cannot be swallowed as "no match".
+          set +e
+          grep -nE '^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*actions/checkout' reviewer.yml
+          checkout=$?
+          grep -nE '\$\{\{[^}]*(pull_request\.(title|body)|head\.ref|head_ref|\.user\.login)[^}]*\}\}' reviewer.yml
+          forktext=$?
+          set -e
+
+          for name in checkout forktext; do
+            eval "code=\$$name"
+            if [ "$code" -eq 2 ]; then
+              echo "::error::grep could not read reviewer.yml while checking ${name}; refusing to report success." >&2
+              fail=1
+            fi
+          done
+
+          if [ "$checkout" -eq 0 ]; then
+            echo "::error file=${TARGET}::actions/checkout in a pull_request_target workflow. Contributor code must never be checked out into a credentialed runner." >&2
+            fail=1
+          fi
+
+          if [ "$forktext" -eq 0 ]; then
+            echo "::error file=${TARGET}::Fork-controlled text interpolated into the reviewer workflow. Pass it through env and quote it, or do not use it: this is script injection with credentials attached." >&2
+            fail=1
+          fi
+
+          if [ "$fail" -eq 0 ]; then
+            echo "Invariants hold at ${BASE_REF}: no checkout, no fork-controlled interpolation."
+            {
+              echo "### Reviewer workflow invariants"
+              echo ""
+              echo "Checked \`${TARGET}\` at \`${BASE_REF}\`, the copy that executes on fork pull requests."
+              echo ""
+              echo "- No \`actions/checkout\`"
+              echo "- No fork-controlled text interpolated into a shell"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$fail"

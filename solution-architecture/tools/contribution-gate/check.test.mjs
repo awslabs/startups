@@ -129,3 +129,22 @@ test("prose with no sunset service is neither noted nor failed", () => {
   assert.equal(flagged, false);
   assert.ok(!out.includes("[sunset-service]"));
 });
+
+test("a note is emitted as a workflow annotation, not only to stdout", () => {
+  // Review on awslabs/startups#259: notes printed to the stdout of a passing step are
+  // indistinguishable from silence. A green check with notes in collapsed log output
+  // reads as "clean" to a contributor, while the summary claimed criterion 3 had been
+  // checked. An annotation puts the note on the line in the Files changed view.
+  // Three lines, so the asserted line number proves the anchor rather than matching by
+  // accident on a single-line fixture.
+  const { out } = run("Fine.\n\nApp Runner is a good default.\n");
+  assert.match(out, /^::warning file=.*line=3,title=sunset-service::/m);
+  // Commas and newlines would terminate the annotation's parameter list.
+  const line = out.split("\n").find((l) => l.startsWith("::warning"));
+  assert.equal(line.split("::")[2].includes(","), false);
+});
+
+test("annotations are emitted for every note, not just the first", () => {
+  const { out } = run("Use App Runner today.\n\nCloud9 is fine too.\n");
+  assert.equal(out.split("\n").filter((l) => l.startsWith("::warning")).length, 2);
+});

@@ -104,6 +104,14 @@ on:
 permissions:
   contents: none
 
+# Bounds what an unapproved fork run can cost. `pull_request_target` fires on every push
+# without a maintainer gate, so a push storm would otherwise fan out one runtime
+# invocation per push. Superseding in-flight runs also means the status on a pull request
+# reflects its newest revision rather than whichever run happened to finish last.
+concurrency:
+  group: agentcore-reviewer-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   review:
     name: Advisory review
