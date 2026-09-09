@@ -377,7 +377,7 @@ If the gate fires:
 
 1. **Do not** compute or store the stub sum. A suppressed quote must never appear as `aws_monthly_range_usd.low` / `.high`.
 2. Set `cost_preview.aws_monthly_range_usd` to `null`.
-3. Set `cost_preview.quote_suppressed` to `true`, `quote_suppressed_reason` to `"authored_sizes_exceed_preview_defaults"`, and `authored_size_signals` to the ordered list from above (`address: field=value`, max 5).
+3. Set `cost_preview.quote_suppressed` to `true`, `quote_suppressed_reason` to `"authored_sizes_exceed_preview_defaults"`, and `authored_size_signals` to the ordered list from above (`"address: field value"` format, max 5).
 4. Set `cost_preview.disclaimer` to: `"Discover does not quote a monthly AWS range when Terraform sizes exceed the preview's hardcoded development defaults. Estimate after Clarify prices the authored (or user-confirmed) sizes."`
 5. Still set `gcp_monthly_usd` from billing when present (that number is real). Never invent GCP spend.
 
@@ -448,6 +448,46 @@ Write `$MIGRATION_DIR/migration-preview.json`:
   "key_decisions_ahead": [
     "Target region and deployment model (Fargate vs EKS)",
     "Cutover window"
+  ]
+}
+```
+
+**Suppressed-quote example** (authored-size gate fired — use this shape when `quote_suppressed` is `true`):
+
+```json
+{
+  "preview_version": 1,
+  "computed_at": "<ISO timestamp>",
+  "primary_resource_count": 5,
+  "complexity_signal": "likely_complex",
+  "eligible_for_clarify_fast_path": false,
+  "eligible_for_clarify_simple_path": false,
+  "ai_complexity_signal": null,
+  "services_summary": [
+    { "gcp_type": "google_sql_database_instance", "typical_aws_target": "RDS" },
+    { "gcp_type": "google_redis_instance", "typical_aws_target": "ElastiCache" },
+    { "gcp_type": "google_container_cluster", "typical_aws_target": "EKS" },
+    { "gcp_type": "google_cloud_run_v2_service", "typical_aws_target": "Fargate" }
+  ],
+  "cost_preview": {
+    "gcp_monthly_usd": 44000.00,
+    "aws_monthly_range_usd": null,
+    "quote_suppressed": true,
+    "quote_suppressed_reason": "authored_sizes_exceed_preview_defaults",
+    "authored_size_signals": [
+      "google_sql_database_instance.main: tier db-custom-32-122880",
+      "google_sql_database_instance.main: availability_type REGIONAL",
+      "google_redis_instance.cache: memory_size_gb 100",
+      "google_container_cluster.primary: machine_type e2-standard-16",
+      "google_cloud_run_v2_service.api: min_instance_count 50"
+    ],
+    "disclaimer": "Discover does not quote a monthly AWS range when Terraform sizes exceed the preview's hardcoded development defaults. Estimate after Clarify prices the authored (or user-confirmed) sizes."
+  },
+  "duration_hint": "phased migration — high complexity; confirm after Clarify",
+  "ai_detected": false,
+  "key_decisions_ahead": [
+    "Confirm production DB size and HA requirements before Design",
+    "Target region and deployment model"
   ]
 }
 ```
