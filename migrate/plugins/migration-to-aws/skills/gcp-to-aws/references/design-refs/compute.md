@@ -88,7 +88,7 @@ Apply in order; first match wins:
    - If `kubernetes = "eks-standard"` → **EKS with managed node groups** (user explicitly wants node control)
    - If `kubernetes = "ecs-fargate"` → Fargate (user chose to drop Kubernetes)
    - If `kubernetes` is **absent** → **EKS Auto Mode** for GKE sources (do not default to Fargate; GKE signals Kubernetes adoption). Non-GKE containers (Cloud Run) map to Fargate via their own fast-path.
-   - If `cost_sensitivity` present and high → still keep Auto Mode for GKE (lowest-ops K8s); the management fee is modest vs the ops savings — do not silently drop to Fargate against a K8s preference
+   - If `cost_sensitivity` present and high → still keep Auto Mode for GKE (lowest-ops K8s); a stated Kubernetes preference outranks the cost signal — do not silently drop to Fargate against it. The estimate surfaces the EKS control-plane fee and the Auto Mode management fee as explicit line items (`estimate-infra.md` → Compute (EKS Auto Mode)), so the user can weigh that cost trade rather than having its magnitude assumed here.
 4. **Feature Parity**: Does GCP config require AWS-unsupported features?
    - Example: GCP auto-scaling to zero + cold-start-sensitive → Fargate (not Lambda)
 5. **Cluster Context**: Are other resources in this cluster using EKS/EC2/Fargate?
