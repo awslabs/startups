@@ -114,18 +114,18 @@ jobs:
           set -euo pipefail
           failures=0
           for fixture in .github/workflows/tools/reviewer-guard-fixtures/*.yml; do
-            case "$(basename "$fixture")" in
-              base_copy.yml) continue ;;  # the deliberately safe baseline
-            esac
             if python3 .github/workflows/tools/reviewer_guard.py "$fixture" >/dev/null 2>&1; then
               echo "::error::guard accepted known-bad fixture $fixture" >&2
               failures=$((failures + 1))
             fi
           done
+          # The positive control is the real workflow, not a synthetic baseline. Once shell
+          # bodies are pinned by hash, only the actual reviewer can pass, so a fixture that
+          # merely looks safe is correctly rejected too and cannot serve as the control.
           if ! python3 .github/workflows/tools/reviewer_guard.py \
-            .github/workflows/tools/reviewer-guard-fixtures/base_copy.yml >/dev/null 2>&1; then
-            echo "::error::guard rejected the safe baseline fixture" >&2
+            .github/workflows/agentcore-reviewer.yml >/dev/null 2>&1; then
+            echo "::error::guard rejected the real reviewer workflow; the allowlist and the workflow have drifted apart" >&2
             failures=$((failures + 1))
           fi
-          [ "$failures" -eq 0 ] && echo "Guard rejects every known bypass and accepts the safe baseline."
+          [ "$failures" -eq 0 ] && echo "Guard rejects every known bypass and accepts the real workflow."
           exit "$failures"

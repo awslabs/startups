@@ -43,6 +43,8 @@ from __future__ import annotations
 import re
 import sys
 
+import hashlib
+
 try:
     import yaml
 except ImportError:  # pragma: no cover
@@ -99,6 +101,80 @@ EXPRESSION = re.compile(r"\$\{\{(.+?)\}\}", re.DOTALL)
 # about one action.
 SELF_FETCH = re.compile(r"\b(gh\s+pr\s+checkout|git\s+clone|git\s+fetch|git\s+checkout)\b")
 
+class StrictLoader(yaml.SafeLoader):
+    """Rejects duplicate mapping keys.
+
+    `safe_load` keeps the last of a duplicated key, so a step could carry both
+    `uses: actions/checkout@v4` and an allowlisted `uses:` and the guard would examine
+    only the second. A control that provably ignores bytes present in the file must fail
+    rather than guess which parser wins.
+    """
+
+
+def _no_duplicate_keys(loader, node, deep=False):
+    seen = set()
+    for key_node, _ in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in seen:
+            raise yaml.YAMLError(
+                f"duplicate key {key!r} at line {key_node.start_mark.line + 1}"
+            )
+        seen.add(key)
+    return yaml.SafeLoader.construct_mapping(loader, node, deep=deep)
+
+
+StrictLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_duplicate_keys
+)
+
+# Shell bodies the credentialed job may run, pinned by sha256 of the normalised text.
+#
+# This replaced a four-pattern search for `git clone|git fetch|git checkout|gh pr
+# checkout`, which was the one denylist left inside an allowlist guard and was doing the
+# load-bearing work for invariant 1. Adversarial review missed ten of twelve fetch
+# spellings against it. Two needed no cleverness at all: `git -c protocol.version=2 fetch`
+# and `git -C . checkout` defeat `\bgit\s+fetch\b` purely because the words are not
+# adjacent, and a backslash-newline between `git` and `clone` defeats `\s+`. The headline
+# bypass was a twelve-line step that reads as an ordinary caching optimisation:
+#
+#     gh api "repos/${GITHUB_REPOSITORY}/tarball/${HEAD_SHA}" > contribution.tgz
+#     tar xzf contribution.tgz -C contribution --strip-components=1
+#     make -C contribution/solution-architecture prepare
+#
+# No `uses:`, no matched pattern, contributor code executing with credentials.
+#
+# Pinning by hash is the only form that closes that class, and it closes invariant 2's
+# non-expression channel at the same time: `$GITHUB_HEAD_REF` and `$GITHUB_EVENT_PATH`
+# hand fork-controlled text to a shell with no `${{ }}` anywhere, so no expression
+# allowlist can see them.
+#
+# The cost is deliberate. Any edit to a shell body fails until the hash is updated, and
+# that hash change is the review artifact. Regenerate with:
+#     python3 .github/workflows/tools/reviewer_guard.py --hashes <workflow.yml>
+ALLOWED_RUN_SHA256 = {
+    "1d556cc9a31779bafb63600b5129316af0dc0d988486898052f66700b0366717": "Signal review started",
+    "8bc2bf945242477da317013e698de9698d16a1ffa5205be70661e0e675a96b8b": "Check configuration",
+    "4dcb13dcf74779237af1e7f4c2b1cac3f05d35e823bc48e50c617dd9b69a9cfd": "Invoke reviewer",
+    "944f7318c9a42c5060b8319c042a237d09cda40ecf96c5513f245e8578804294": "Summarize the review",
+    "81ab29eb4c6b17f33dc1087fc1dff4e432b62ef674a3b6ea6ece7753b05afc08": "Signal review finished",
+}
+
+# Keys permitted at job and step level. `container:`, `services:`, and
+# `defaults.run.shell` all execute code and the guard previously had no concept of any of
+# them: a one-line `container:` with a hostile `--entrypoint` passed clean. Enumerating
+# permitted keys closes those and whatever GitHub adds next.
+ALLOWED_JOB_KEYS = {
+    "name", "if", "needs", "permissions", "runs-on", "timeout-minutes", "env",
+    "concurrency", "steps", "outputs",
+}
+ALLOWED_STEP_KEYS = {"name", "id", "if", "uses", "with", "env", "run", "working-directory"}
+
+
+def normalise_run(body: str) -> str:
+    """Trailing whitespace and surrounding blank lines are not semantic."""
+    return "\n".join(line.rstrip() for line in body.strip().splitlines())
+
+
 findings: list[str] = []
 
 
@@ -109,7 +185,16 @@ def operands(expression: str) -> list[str]:
     whole condition to match one allowlist entry would reject it.
     """
     parts = re.split(r"&&|\|\|", expression)
-    return [p.strip(" ()!\t\n") for p in parts if p.strip(" ()!\t\n")]
+    out = []
+    for part in parts:
+        # Parentheses are stripped only when they wrap the whole operand, so `always()`
+        # survives as `always()` rather than becoming an unmatchable `always`.
+        part = part.strip(" !\t\n")
+        while part.startswith("(") and part.endswith(")") and part.count("(") == part.count(")"):
+            part = part[1:-1].strip(" !\t\n")
+        if part:
+            out.append(part)
+    return out
 
 
 def check_expressions(text: str, where: str, *, allow_comparison: bool) -> None:
@@ -144,7 +229,18 @@ def walk(node: object, path: str, in_if: bool) -> None:
         for key, value in node.items():
             here = f"{path}.{key}" if path else str(key)
 
-            if key == "uses" and isinstance(value, str):
+            # A non-string `uses:` or `run:` was silently skipped, so `uses:
+            # ["actions/checkout@v4"]` and a list-valued `run:` passed clean. In a guard
+            # whose premise is that anything unrecognised fails, an unexpected type is a
+            # finding rather than a reason to stop looking.
+            if key in ("uses", "run") and not isinstance(value, str):
+                findings.append(
+                    f"{here}: `{key}` is {type(value).__name__} rather than a string; "
+                    "refusing to interpret it."
+                )
+                continue
+
+            if key == "uses":
                 action = value.strip()
                 if action not in ALLOWED_USES:
                     findings.append(
@@ -154,16 +250,91 @@ def walk(node: object, path: str, in_if: bool) -> None:
                     )
                 continue
 
-            if key == "run" and isinstance(value, str):
-                hit = SELF_FETCH.search(value)
-                if hit:
+            if key == "run":
+                digest = hashlib.sha256(normalise_run(value).encode()).hexdigest()
+                if digest not in ALLOWED_RUN_SHA256:
                     findings.append(
-                        f"{here}: the shell fetches the pull request (`{hit.group(0)}`). "
-                        "Contributor code must never enter this runner; the runtime reads "
-                        "the diff through the API."
+                        f"{here}: shell body is not allowlisted (sha256 {digest}). Every "
+                        "script this credentialed job runs is pinned, because a denylist of "
+                        "fetch commands missed ten of twelve spellings and could not see "
+                        "fork data arriving through $GITHUB_HEAD_REF or $GITHUB_EVENT_PATH "
+                        "at all. If this change is intended, add the hash with "
+                        "`reviewer_guard.py --hashes` and let the hash change be reviewed."
+                    )
+                continue
+
+            # `if:` is a scalar in GitHub's schema. Checking it directly, rather than
+            # propagating a flag down the subtree, stops a nested `run:` from inheriting
+            # permission to contain a comparison against a fork-controlled field.
+            if key == "if" and isinstance(value, str):
+                check_expressions(value, here, allow_comparison=True)
+                continue
+
+            walk(value, here, in_if)
+
+
+def check_structure(doc: dict, path: str) -> None:
+    """Keys and settings the guard requires, rather than merely tolerates.
+
+    Everything above answers "was something bad added". These answer "was something
+    load-bearing removed", which the guard previously did not ask at all: deleting the
+    `paths:` filter and the two-arm `if:` partition, and setting `permissions: write-all`,
+    all passed clean.
+    """
+    triggers = doc.get(True, doc.get("on"))
+    if not isinstance(triggers, dict) or "pull_request_target" not in triggers:
+        return  # not a credentialed fork-arm workflow; nothing here applies
+
+    ptt = triggers.get("pull_request_target") or {}
+    if not isinstance(ptt, dict) or not ptt.get("paths"):
+        findings.append(
+            f"{path}: `pull_request_target` has no `paths:` filter, so every pull request "
+            "in the repository would start a credentialed run."
+        )
+
+    for job_id, job in doc["jobs"].items():
+        if not isinstance(job, dict):
+            findings.append(f"{path}: job `{job_id}` is not a mapping.")
+            continue
+        where = f"{path}: jobs.{job_id}"
+
+        for key in job:
+            if key not in ALLOWED_JOB_KEYS:
+                findings.append(
+                    f"{where}.{key}: job key not allowlisted. `container:`, `services:`, and "
+                    "`defaults.run.shell` all execute code, so unknown keys fail closed."
+                )
+
+        for i, step in enumerate(job.get("steps") or []):
+            if not isinstance(step, dict):
+                findings.append(f"{where}.steps[{i}]: not a mapping.")
+                continue
+            for key in step:
+                if key not in ALLOWED_STEP_KEYS:
+                    findings.append(f"{where}.steps[{i}].{key}: step key not allowlisted.")
+
+        perms = job.get("permissions")
+        if not isinstance(perms, dict):
+            findings.append(
+                f"{where}.permissions: must be an explicit mapping. `write-all`, or "
+                "inheriting the default, gives a credentialed fork run far more than it needs."
+            )
+        else:
+            for scope, level in perms.items():
+                if scope not in ("id-token", "statuses") and level != "none":
+                    findings.append(
+                        f"{where}.permissions.{scope}: `{level}` is more than this job needs. "
+                        "Only `id-token` and `statuses` are permitted; the runtime posts its "
+                        "review with its own App token."
                     )
 
-            walk(value, here, True if key == "if" else in_if)
+        condition = str(job.get("if") or "")
+        if "head.repo.full_name" not in condition:
+            findings.append(
+                f"{where}.if: does not partition on `head.repo.full_name`. Without it the two "
+                "trigger arms overlap and a same-repo push is reviewed twice, or a fork run "
+                "takes the arm meant for same-repo branches."
+            )
 
 
 def load(path: str) -> dict | None:
@@ -185,7 +356,7 @@ def load(path: str) -> dict | None:
         return None
 
     try:
-        doc = yaml.safe_load(text)
+        doc = yaml.load(text, Loader=StrictLoader)
     except yaml.YAMLError as error:
         first = str(error).splitlines()[0]
         print(f"::error::{path}: not valid YAML ({first}); refusing to report success.", file=sys.stderr)
@@ -204,7 +375,24 @@ def load(path: str) -> dict | None:
     return doc
 
 
+def print_hashes(paths: list[str]) -> int:
+    for path in paths:
+        doc = load(path)
+        if doc is None:
+            return 1
+        for job_id, job in doc["jobs"].items():
+            for i, step in enumerate(job.get("steps") or []):
+                body = step.get("run") if isinstance(step, dict) else None
+                if isinstance(body, str):
+                    digest = hashlib.sha256(normalise_run(body).encode()).hexdigest()
+                    name = step.get("name", f"jobs.{job_id}.steps[{i}]")
+                    print(f'    "{digest}": "{name}",')
+    return 0
+
+
 def main(argv: list[str]) -> int:
+    if argv and argv[0] == "--hashes":
+        return print_hashes(argv[1:])
     if not argv:
         print("usage: reviewer_guard.py <workflow.yml> [...]", file=sys.stderr)
         return 2
@@ -214,6 +402,7 @@ def main(argv: list[str]) -> int:
         if doc is None:
             return 1
         walk(doc, "", False)
+        check_structure(doc, path)
 
     if findings:
         for f in findings:
