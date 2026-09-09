@@ -175,8 +175,24 @@ function consentGrantedFor(runDir) {
   return readJson(consentFileFor(runDir))?.consent === "granted";
 }
 
+// The skills routinely cd into .migration/<id>/ to work with relative paths, so
+// the consent command must find the migration root from anywhere inside the
+// project, not only from its root.
+function findMigrationRoot(startDir) {
+  let dir = path.resolve(startDir);
+  for (let depth = 0; depth < 6; depth++) {
+    if (path.basename(dir) === ".migration") return dir;
+    const candidate = path.join(dir, ".migration");
+    if (existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return path.resolve(".migration"); // nothing found: report against cwd
+}
+
 function runConsentCommand(action) {
-  const migrationRoot = path.resolve(".migration");
+  const migrationRoot = findMigrationRoot(process.cwd());
   const file = path.join(migrationRoot, "telemetry.json");
   const record = readJson(file);
   const write = (consent) => {
@@ -485,6 +501,7 @@ function buildRequest(event, ctx) {
   const migrationActivity = {
     eventName: event.eventName,
     skill: ctx.skill,
+    ...(ctx.initiatingSkill ? { initiatingSkill: ctx.initiatingSkill } : {}),
     runId: ctx.runId,
     ...(ctx.sessionId ? { sessionId: ctx.sessionId } : {}),
     ...(event.phase ? { phase: event.phase } : {}),
@@ -557,6 +574,9 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     const ctx = {
       runDir,
       skill,
+      // Only a known migration skill may be named as the invoker; anything else
+      // is dropped rather than risk rejecting the whole event.
+      initiatingSkill: MIGRATION_SKILLS.has(status.initiated_by) ? status.initiated_by : undefined,
       runId,
       sessionId: UUID_RE.test(sessionId) ? sessionId : undefined,
       installId: getInstallId(),
@@ -615,8 +635,11 @@ async function main() {
     return;
   }
 
+  // Start discovery at the directory that owns the .migration tree, so an
+  // edit deep inside a run's artifacts still resolves to its run.
+  const marker = editedPath ? editedPath.indexOf(`${path.sep}.migration${path.sep}`) : -1;
   const startDir =
-    (editedPath ? path.dirname(editedPath) : undefined) ??
+    (marker !== -1 ? editedPath.slice(0, marker) : undefined) ??
     payload?.cwd ??
     payload?.workspace_roots?.[0] ??
     process.cwd();

@@ -29,12 +29,12 @@
     "owning_skill": {
       "type": "string",
       "pattern": "^[A-Z][A-Z0-9_]*$",
-      "description": "Telemetry identifier of the skill that owns this run (the skill directory name in upper case, e.g. GCP_TO_AWS), written at _init. Telemetry attributes events to this key; a run without it emits nothing."
+      "description": "Telemetry identifier of the skill that owns this run (the skill directory name in upper case with hyphens as underscores, e.g. GCP_TO_AWS), written at _init. Telemetry attributes events to this key; a run without it emits nothing."
     },
     "initiated_by": {
       "type": "string",
       "pattern": "^[A-Z][A-Z0-9_]*$",
-      "description": "Identifier of the skill that invoked this run, when another skill did (e.g. LLM_TO_BEDROCK delegating to GCP_TO_AWS). Optional; not included in emitted events."
+      "description": "Identifier of the skill that invoked this run, when another skill did (e.g. LLM_TO_BEDROCK delegating to GCP_TO_AWS). Optional; sent as initiatingSkill when it names a migration skill."
     },
     "phases": {
       "type": "object",

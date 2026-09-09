@@ -612,7 +612,8 @@ step, the telemetry keys in step 5, and the fallback in § update protocol.)
       stays unset, telemetry stays off, and the migration is never blocked by it.
 
    2. Run `node "$EMIT" consent get`. Anything other than `unset` means this
-      project already has a decision: do not ask again, continue to step 5.
+      project already has a decision: do not ask again and skip the rest of this
+      consent step.
 
    3. On `unset`, ask once, verbatim:
 
