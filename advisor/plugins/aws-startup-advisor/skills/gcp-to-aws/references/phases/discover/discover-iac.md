@@ -57,6 +57,14 @@ Sensitive key patterns to redact (case-insensitive): `password`, `passwd`, `secr
    - `config.tier` — from Terraform `settings.tier` (e.g. `db-f1-micro`).
    - `config.database_version` — from Terraform `database_version` (e.g. `POSTGRES_15`).
 
+   **Cloud Run normalization (`google_cloud_run_v2_service` / `google_cloud_run_service`)** — the discover-preview.md authored-size gate compares a single `min_instance_count`, but v1 and v2 express it differently. Write the canonical field at the top level of `config` regardless of which form is present:
+   - `config.min_instance_count` — from `scaling.min_instance_count` (v2), OR from whichever v1 annotation is present: `template.metadata.annotations["autoscaling.knative.dev/minScale"]` or `metadata.annotations["run.googleapis.com/minScale"]` (parse the annotation's string value to an integer). Omit when none of these are set — do not guess.
+
+   **GKE node pool normalization (`google_container_cluster` / `google_container_node_pool`)** — a pool sizes itself via a fixed count OR one of two mutually exclusive autoscaling forms. Capture whichever is present into `config` under its own name (do not collapse them into one field — the preview gate compares all of them):
+   - `config.node_count` / `config.initial_node_count` — from the matching top-level Terraform attribute, when present.
+   - `config.min_node_count` / `config.max_node_count` — from `autoscaling.min_node_count` / `autoscaling.max_node_count` (per-zone form), when present.
+   - `config.total_min_node_count` / `config.total_max_node_count` — from `autoscaling.total_min_node_count` / `autoscaling.total_max_node_count` (cluster-wide form), when present.
+
 4. Also extract provider and backend configuration (for region detection)
 5. Report total resources found to user (e.g., "Parsed 50 GCP resources from 12 Terraform files")
 
