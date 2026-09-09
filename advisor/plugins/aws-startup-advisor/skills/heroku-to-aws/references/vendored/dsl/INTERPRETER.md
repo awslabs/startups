@@ -127,13 +127,15 @@ Update `.phase-status.json` with read-merge-write, never a blind overwrite:
 4. Set `current_phase` to the next phase (the completed phase's `_advances_to`),
    or the terminal (`complete`) when the backbone is exhausted.
 5. Write the full file in the same turn as the phase's final output message.
-6. **Telemetry fallback (hosts without hooks only).** After the state write,
-   check `$MIGRATION_DIR/.telemetry-snapshot.json`: if it exists and its
-   `updatedAt` is within the last 10 minutes, hooks are doing the reporting —
-   do nothing. Otherwise run, and ignore any failure:
+6. **Telemetry fallback (hosts without hooks; default run root only).** After the state write,
+   check `$MIGRATION_DIR/.telemetry-snapshot.json`: if it exists, its `via` is
+   `"hook"`, and its `updatedAt` is within the last 10 minutes, a hook reported
+   recently and will report this transition too: do nothing. Otherwise locate
+   the emitter exactly as in § `_init` step 4 (the `$EMIT` search; skip if none
+   is found), run, and ignore any failure:
 
    ```
-   node <plugin root>/hooks/telemetry/emit.mjs --reconcile --via cli
+   node "$EMIT" --reconcile --via cli
    ```
 
    The emitter re-checks consent and diffs against its snapshot, so this call
@@ -550,7 +552,9 @@ cold start that begins a migration.
 (Paths below use the default run root `.migration/` — substitute the skill's
 declared run root (§ Skill bindings). A skill that declares its own state shape
 writes `.phase-status.json` per its SKILL.md's state-file section instead of the
-shared schema in step 4.)
+shared schema in step 4. Telemetry covers only runs under the literal default
+root `.migration/`: a skill that declares its own run root skips the consent
+step, the telemetry keys in step 5, and the fallback in § update protocol.)
 
 1. Check for an existing `.migration/` directory at the project root.
    - **If existing runs are found:** list them with their phase status and ask:
@@ -578,20 +582,55 @@ shared schema in step 4.)
 
    This prevents accidental commits of migration artifacts.
 
-4. **Telemetry consent (once, before any state is written).** Ask the user
-   whether they consent to anonymous usage telemetry for this project, and record
-   the answer by running the consent command — never by writing the file directly:
+4. **Telemetry consent (default run root only; once, before any state is
+   written).** Skip this step if the skill declares its own run root: nothing is
+   ever reported for such runs, so there is nothing to consent to. Otherwise:
 
-   ```
-   node <plugin root>/hooks/telemetry/emit.mjs consent grant
-   ```
+   1. Locate the emitter. `CLAUDE_PLUGIN_ROOT` is set by Claude Code only, so
+      other hosts fall through to the search; `find -L` because a local install
+      is often a symlink, and the wildcard after the plugin name because a
+      marketplace install interposes a version directory.
 
-   Run it only on an explicit yes; a decline records nothing and nothing is ever
-   asked of this step again beyond re-prompting on a later run. If the command
-   cannot be found or fails, skip this step and continue — consent stays unset,
-   telemetry stays off, and the migration is never blocked by it. This ordering
-   (run directory first, consent second, phase status third) is mandatory:
-   asking later would lose the run's opening transitions.
+      ```bash
+      EMIT="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/hooks/telemetry/emit.mjs}"
+      if [ ! -f "$EMIT" ]; then
+        for base in "$HOME/.cursor/plugins" "$HOME/.claude/plugins"; do
+          [ -d "$base" ] || continue
+          EMIT=$(find -L "$base" -maxdepth 8 -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' 2>/dev/null | head -1)
+          [ -n "$EMIT" ] && break
+        done
+      fi
+      if [ ! -f "$EMIT" ]; then
+        HOMEDIR=$(cd -P "$HOME" 2>/dev/null && pwd)
+        EMIT=$(find "${HOMEDIR:-$HOME}" -maxdepth 10 \
+          \( -name node_modules -o -name Library -o -name .git -o -name .Trash -o -name .cache \) -prune -o \
+          -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' -print 2>/dev/null | head -1)
+      fi
+      ```
+
+      If no emitter is found, skip this step entirely and continue: consent
+      stays unset, telemetry stays off, and the migration is never blocked by it.
+
+   2. Run `node "$EMIT" consent get`. Anything other than `unset` means this
+      project already has a decision: do not ask again, continue to step 5.
+
+   3. On `unset`, ask once, verbatim:
+
+      > Before we start: may I share anonymous progress data about this migration
+      > with AWS — which phases complete, the size band of your estate, and whether
+      > it includes a database or AI? It never includes your code, file paths,
+      > resource names, project or app names, or exact costs. It's optional, this
+      > migration works exactly the same either way, and you can change your mind
+      > at any time.
+
+   4. Record the answer with the command, never by writing the file yourself:
+      yes → `node "$EMIT" consent grant`; no → `node "$EMIT" consent revoke`.
+      A decline is recorded locally and nothing is ever sent for it; treat "no"
+      as final. Acknowledge in one line and move on. Do not re-ask, do not argue,
+      do not repeat the offer later in the run.
+
+   This ordering (run directory first, consent second, phase status third) is
+   mandatory: asking later would lose the run's opening transitions.
 
 5. Write `.phase-status.json` per the schema
    `references/vendored/state/phase-status.schema.json`. Seed `phases` with ONE entry per
@@ -599,12 +638,14 @@ shared schema in step 4.)
    phase which is `"in_progress"`; set `migration_id` to `[MMDD-HHMM]`,
    `last_updated` to the current ISO 8601 timestamp, and `current_phase` to this
    `_init` phase. (The schema does not enumerate phase names — the valid names are
-   the skill's declared phases.) Also seed two telemetry/attribution keys:
+   the skill's declared phases.) Under the default run root only, also seed two
+   telemetry/attribution keys:
    `run_id` — a fresh random UUID (verbatim from `uuidgen` or equivalent; it must
    never be reused across runs), and `owning_skill` — the running skill's
-   telemetry identifier as declared in its SKILL.md (e.g. `GCP_TO_AWS`). A skill
-   invoked BY another skill leaves `owning_skill` as its own id and the
-   orchestrator writes `initiated_by` before delegating.
+   directory name in upper case with hyphens replaced by underscores
+   (`gcp-to-aws` → `GCP_TO_AWS`). A skill invoked by another skill still records
+   its own id as `owning_skill`; `initiated_by` (the invoking skill's id) is
+   optional and may be left unset.
 
 6. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
    running the phase's fragments.

@@ -1,5 +1,5 @@
 {
-  "description": "Ambient startup context — shapes all responses with a startup lens. Telemetry hooks are consent-gated and read only the migration skills' own state files; attribution comes from the owning_skill key each run declares on disk, so no per-skill arguments are needed.",
+  "description": "Ambient startup context — shapes all responses with a startup lens. Telemetry hooks are consent-gated and read only the migration skills' own state files; each run names its owning skill on disk.",
   "hooks": {
     "SessionStart": [
       {
@@ -19,8 +19,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs\"",
-            "timeout": 10
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs"
+            ],
+            "async": true
           }
         ]
       }
@@ -30,7 +33,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs\" --reconcile",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs",
+              "--reconcile"
+            ],
             "timeout": 30
           }
         ]
@@ -41,7 +48,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs\" --session-end",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs",
+              "--session-end"
+            ],
             "timeout": 10
           }
         ]

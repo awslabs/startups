@@ -24,17 +24,17 @@
     "run_id": {
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "description": "Random UUID minted once at _init and never changed — stable across pause/resume, unlike migration_id it carries no timestamp. The join key for telemetry events and the plan-import (handoff) attribution."
+      "description": "Random UUID minted once at _init and never changed. Stable across pause/resume and, unlike migration_id, carries no timestamp. The join key for this run's telemetry events."
     },
     "owning_skill": {
       "type": "string",
       "pattern": "^[A-Z][A-Z0-9_]*$",
-      "description": "Telemetry identifier of the skill that owns this run (e.g. GCP_TO_AWS), written at _init. Telemetry attributes events to this key rather than to any argument; a run without it emits nothing."
+      "description": "Telemetry identifier of the skill that owns this run (the skill directory name in upper case, e.g. GCP_TO_AWS), written at _init. Telemetry attributes events to this key; a run without it emits nothing."
     },
     "initiated_by": {
       "type": "string",
       "pattern": "^[A-Z][A-Z0-9_]*$",
-      "description": "Set only when another skill orchestrated this run (e.g. LLM_TO_BEDROCK delegating to GCP_TO_AWS), written by the orchestrator before delegating, so an orchestrated run does not inflate the orchestrator's own funnel."
+      "description": "Identifier of the skill that invoked this run, when another skill did (e.g. LLM_TO_BEDROCK delegating to GCP_TO_AWS). Optional; not included in emitted events."
     },
     "phases": {
       "type": "object",
