@@ -248,16 +248,16 @@ Record all extracted values in `metadata.inventory_clarifications` where applica
 
 ### Category Firing Rules
 
-| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                                                                                                            |
-| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q3.5 (CUDs), Q4 (skipped), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance)                                                                           |
-| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                                                                                                     |
-| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE, App Engine)   | `clarify-compute.md`  | Q7b (compute model), Q8 (K8s sentiment), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
-| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                                                                                               |
-| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                                                                                            |
-| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                                                                                                              |
-| **G**    | Agentic            | `agentic_profile.is_agentic == true`                                           | `clarify-ai.md`       | Q23–Q26                                                                                                                                                                                              |
-| **H**    | Startup Programs   | Fires with Category F                                                          | `clarify-ai.md`       | Q27                                                                                                                                                                                                  |
+| Category | Name               | Firing Rule                                                                    | Reference File        | Questions                                                                                                                                                                                                |
+| -------- | ------------------ | ------------------------------------------------------------------------------ | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A**    | Global/Strategic   | **Always fires**                                                               | `clarify-global.md`   | Q1 (location), Q2 (compliance), Q3 (GCP spend), Q3.5 (CUDs), Q4 (skipped), Q5 (multi-cloud), Q6 (uptime), Q7 (maintenance)                                                                               |
+| **B**    | Configuration Gaps | `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist | `clarify-compute.md`  | Cloud SQL HA, Cloud Run count, Memorystore memory, Functions gen                                                                                                                                         |
+| **C**    | Compute Model      | Compute resources present (Cloud Run, Cloud Functions, GKE, GCE, App Engine)   | `clarify-compute.md`  | Q7b (compute model), Q8 (Kubernetes on AWS), Q9 (WebSocket), Q10 (Cloud Run traffic), Q11 (Cloud Run spend), Q11b (Graviton/ARM64 — see decision table; auto-defaults `cpu_architecture` when not asked) |
+| **D**    | Database Model     | Database resources present (Cloud SQL, Spanner, Memorystore)                   | `clarify-database.md` | Q12 (DB traffic pattern), Q13 (DB I/O), Q13b (DB size)                                                                                                                                                   |
+| **E**    | Migration Posture  | **Disabled by default** — requires explicit user opt-in                        | _(inline below)_      | HA upgrades, right-sizing                                                                                                                                                                                |
+| **F**    | AI/Bedrock         | `ai-workload-profile.json` exists                                              | `clarify-ai.md`       | Q14–Q22                                                                                                                                                                                                  |
+| **G**    | Agentic            | `agentic_profile.is_agentic == true`                                           | `clarify-ai.md`       | Q23–Q26                                                                                                                                                                                                  |
+| **H**    | Startup Programs   | Fires with Category F                                                          | `clarify-ai.md`       | Q27                                                                                                                                                                                                      |
 
 **If no IaC, billing data, or code is available** (empty discovery): only Category A is active. All service-specific categories are skipped.
 
@@ -651,11 +651,11 @@ If `preferences-draft.json` exists, use it as the base — merge in the final an
       "question_id": "Q7b"
     },
     "kubernetes": {
-      "value": "ecs-fargate",
+      "value": "eks-auto",
       "chosen_by": "default",
       "source": "default:Q8",
-      "prompt": "How do you feel about Kubernetes? (default applied)",
-      "design_consequence": "Assuming Fargate → no Kubernetes to operate",
+      "prompt": "How do you want to run your Kubernetes workloads on AWS? (default applied)",
+      "design_consequence": "Assuming EKS Auto Mode → keep Kubernetes, AWS operates the nodes",
       "question_id": "Q8"
     },
     "cpu_architecture": {
