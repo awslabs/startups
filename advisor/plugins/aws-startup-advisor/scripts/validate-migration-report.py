@@ -12,7 +12,7 @@ Usage:
       --estimation-ai estimation-ai.json
 
 Script location: this file lives at
-  migrate/plugins/migration-to-aws/scripts/validate-migration-report.py
+  advisor/plugins/aws-startup-advisor/scripts/validate-migration-report.py
 Agents should invoke it via Path(__file__) resolution or:
   python3 "$(dirname ...)/scripts/validate-migration-report.py" ...
 """
@@ -26,7 +26,7 @@ import sys
 from html import unescape
 from pathlib import Path
 
-# Plugin root: migrate/plugins/migration-to-aws/
+# Plugin root: advisor/plugins/aws-startup-advisor/
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
 REQUIRED_SECTION_IDS = [
@@ -564,17 +564,55 @@ def _opp_blob(item: dict) -> str:
 
 
 def _has_optimization_columns(section: str) -> bool:
-    header = re.search(r"<thead\b.*?</thead>", section, re.DOTALL | re.IGNORECASE)
-    if not header:
-        return False
-    text = unescape(re.sub(r"<[^>]+>", " ", header.group(0))).lower()
-    return (
-        "optimization" in text
-        and "target" in text
-        and "commitment" in text
-        and "effort" in text
-        and "saving" in text
-    )
+    """True if ANY <thead> in the section has the required columns.
+
+    Section 3c allows a decision-mode exec-optimization to render a posture
+    comparison table *and* the opportunity table in the same section. Only
+    the opportunity table needs these columns — checking just the first
+    <thead> rejects a valid report whenever the posture table (which has its
+    own, different columns) happens to come first.
+    """
+    headers = re.findall(r"<thead\b[^>]*>(.*?)</thead>", section, re.DOTALL | re.IGNORECASE)
+    for header in headers:
+        text = unescape(re.sub(r"<[^>]+>", " ", header)).lower()
+        if (
+            "optimization" in text
+            and "target" in text
+            and "commitment" in text
+            and "effort" in text
+            and "saving" in text
+        ):
+            return True
+    return False
+
+
+def _table_rows_text(section: str) -> str:
+    """Plain text from every <tbody> in a section — data rows only.
+
+    Headings, explanatory prose, and links can legitimately say "Savings
+    Plans and Reserved Instances" while the actual commitment-discount rows
+    were removed. Presence checks for a specific product must look at
+    rendered data, not surrounding copy.
+    """
+    bodies = re.findall(r"<tbody\b[^>]*>(.*?)</tbody>", section, re.DOTALL | re.IGNORECASE)
+    if not bodies:
+        return ""
+    return unescape(re.sub(r"<[^>]+>", " ", " ".join(bodies)))
+
+
+def _opp_classification_blob(item: dict) -> str:
+    """Text used ONLY to classify an opportunity as a Savings Plan / RI product.
+
+    Deliberately excludes `description` and `target_services`: description is
+    explanatory prose that can state a product does NOT apply (e.g. "Database
+    Savings Plans do not cover ElastiCache for Redis OSS or Memcached"), which
+    would otherwise get matched as evidence the artifact contains that
+    product. Classification uses only the structured `opportunity` name and
+    `type` (underscores normalized to spaces so `elasticache_reserved_nodes`
+    matches the same regex as "ElastiCache Reserved Nodes").
+    """
+    type_text = str(item.get("type") or "").replace("_", " ")
+    return f"{item.get('opportunity') or ''} {type_text}"
 
 
 def _design_has_commitment_eligible(aws_design: dict | None) -> bool:
@@ -669,20 +707,27 @@ def _validate_optimization_sections(
                 "on top of the Optimized tier"
             )
 
-    has_sp_opp = any(_SP_RE.search(_opp_blob(item)) for item in opportunities)
-    has_ri_opp = any(_RI_RE.search(_opp_blob(item)) for item in opportunities)
-    combined = f"{exec_html}\n{appendix_html}"
+    # Classify using only the structured opportunity name/type — never
+    # `description`, which can state a product does NOT apply (see
+    # _opp_classification_blob docstring).
+    has_sp_opp = any(_SP_RE.search(_opp_classification_blob(item)) for item in opportunities)
+    has_ri_opp = any(_RI_RE.search(_opp_classification_blob(item)) for item in opportunities)
 
-    if has_sp_opp and not _SP_RE.search(combined):
+    # Presence in the report must be a rendered data row, not a heading,
+    # caveat paragraph, or link that merely names the product.
+    combined_rows = f"{_table_rows_text(exec_html)}\n{_table_rows_text(appendix_html)}"
+
+    if has_sp_opp and not _SP_RE.search(combined_rows):
         errors.append(
             "optimization_opportunities include a Savings Plan but exec-optimization / "
-            "appendix-optimization do not mention Savings Plans"
+            "appendix-optimization have no Savings Plans data row (heading/caveat text "
+            "does not satisfy this gate)"
         )
-    if has_ri_opp and not _RI_RE.search(combined):
+    if has_ri_opp and not _RI_RE.search(combined_rows):
         errors.append(
             "optimization_opportunities include a Reserved Instance (or reserved "
-            "capacity/nodes) but exec-optimization / appendix-optimization do not "
-            "mention Reserved Instances"
+            "capacity/nodes) but exec-optimization / appendix-optimization have no "
+            "Reserved Instances data row (heading/caveat text does not satisfy this gate)"
         )
     if (
         not has_sp_opp
@@ -691,12 +736,12 @@ def _validate_optimization_sections(
             _design_has_commitment_eligible(aws_design)
             or _opportunities_target_commitment_eligible(opportunities)
         )
-        and not (_SP_RE.search(combined) or _RI_RE.search(combined))
+        and not (_SP_RE.search(combined_rows) or _RI_RE.search(combined_rows))
     ):
         errors.append(
             "RDS, Aurora, Fargate, or Lambda is in the design (or opportunity targets) "
             "but the Cost Optimization section has no Savings Plans or Reserved "
-            "Instances row"
+            "Instances data row"
         )
 
     return errors

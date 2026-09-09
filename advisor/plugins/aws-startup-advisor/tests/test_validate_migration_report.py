@@ -1062,3 +1062,145 @@ def test_decision_mode_requires_exec_optimization_not_appendix(tmp_path: Path) -
     code, out = run_validator(path, est, require_toc=False, mode="decision")
     assert code == 1, out
     assert "forbids" in out and "appendix-optimization" in out
+
+
+# ---------------------------------------------------------------------------
+# Review follow-up regressions (PR #277 round 2)
+# ---------------------------------------------------------------------------
+
+POSTURE_TABLE = """
+<table>
+<caption>Posture comparison</caption>
+<thead><tr><th scope="col">Posture</th><th scope="col">Est. monthly</th><th scope="col">vs Balanced</th><th scope="col">What you commit to</th></tr></thead>
+<tbody><tr><td>Balanced on-demand</td><td>Est. $150</td><td>—</td><td>No term commitment.</td></tr></tbody>
+</table>
+"""
+
+
+def test_decision_mode_posture_table_before_opportunity_table_passes(tmp_path: Path) -> None:
+    """exec-optimization may render the posture table before the opportunity table.
+
+    _has_optimization_columns previously inspected only the section's first
+    <thead>. A decision-mode report that puts the (differently-columned)
+    posture table first was wrongly rejected even though the opportunity
+    table right after it has every required column.
+    """
+    section_with_posture_first = (
+        '\n<section id="exec-optimization">\n<h2>Cost Optimization</h2>\n'
+        + POSTURE_TABLE
+        + '<table>\n<caption>Commitment options</caption>\n'
+        '<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th>'
+        '<th scope="col">Est. savings</th><th scope="col">Commitment</th>'
+        '<th scope="col">Effort</th></tr></thead>\n'
+        "<tbody><tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td>"
+        "<td>1-year</td><td>Low</td></tr></tbody>\n</table>\n"
+        "<p>Balanced on-demand baseline. Do not add these savings on top of "
+        "Optimized — already embeds reservation assumptions.</p>\n</section>\n"
+    )
+    html = DECISION_PASS.replace("</body>", section_with_posture_first + "</body>", 1)
+    path = tmp_path / "decision-report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [{"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]}],
+    )
+    code, out = run_validator(path, est, require_toc=False, mode="decision")
+    assert code == 0, out
+
+
+def test_optimization_gate_requires_data_row_not_just_heading_text(tmp_path: Path) -> None:
+    """Removing every commitment-discount data row must fail, even if the
+    heading/caveat prose still names Savings Plans and Reserved Instances.
+    """
+    section_no_rows = """
+<section id="exec-optimization">
+<h2>Cost Optimization</h2>
+<p>Savings Plans and Reserved Instances are incremental to Balanced on-demand. Do not add these on top of Optimized — already embeds reservation assumptions.</p>
+<table>
+<caption>Commitment options</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>S3 Intelligent-Tiering</td><td>S3</td><td>38%</td><td>None</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    appendix_no_rows = """
+<section id="appendix-optimization">
+<h2>Savings Plans and Reserved Instances</h2>
+<table>
+<caption>Opportunity table</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Monthly savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>S3 Intelligent-Tiering</td><td>S3</td><td>38%</td><td>None</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    html = MINIMAL_PASS.replace(
+        "</body>", section_no_rows + appendix_no_rows + "</body>", 1
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [
+            {"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]},
+            {"opportunity": "Database Savings Plans", "target_services": ["RDS"]},
+        ],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 1, out
+    assert "Savings Plans" in out
+    assert "data row" in out
+
+
+def test_negative_description_does_not_misclassify_opportunity_as_savings_plan(
+    tmp_path: Path,
+) -> None:
+    """An opportunity whose `description` states a Savings Plan does NOT
+    apply (the ElastiCache Reserved Nodes template from estimate-infra.md)
+    must not be classified as a Savings Plan opportunity. A report that
+    renders only the Reserved Nodes row — with no "Savings Plan" text
+    anywhere, including headings — must pass without being told it is
+    missing a Savings Plans mention.
+    """
+    section = """
+<section id="exec-optimization">
+<h2>Cost Optimization</h2>
+<p>Incremental to Balanced on-demand. Do not add these savings on top of Optimized — already embeds reservation assumptions.</p>
+<table>
+<caption>Commitment options</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>ElastiCache Reserved Nodes</td><td>ElastiCache</td><td>30-55%</td><td>1-year</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    appendix = """
+<section id="appendix-optimization">
+<h2>Reserved Nodes and Other Commitments</h2>
+<table>
+<caption>Opportunity table</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Monthly savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>ElastiCache Reserved Nodes</td><td>ElastiCache</td><td>30-55%</td><td>1-year</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    html = MINIMAL_PASS.replace("</body>", section + appendix + "</body>", 1)
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    assert "Savings Plan" not in html
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [
+            {
+                "opportunity": "ElastiCache Reserved Nodes",
+                "type": "elasticache_reserved_nodes",
+                "target_services": ["ElastiCache"],
+                "savings_percent": "30-55%",
+                "description": (
+                    "Database Savings Plans do not cover ElastiCache for Redis OSS "
+                    "or Memcached — Reserved Nodes are the commitment lever for "
+                    "this target engine on a node-based cluster."
+                ),
+            }
+        ],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 0, out

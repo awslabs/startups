@@ -37,7 +37,7 @@ The executive summary is the first thing visible when opening the report. Design
 
 **Target length:** approximately 2–4 printed pages for executive summary. _Full mode only:_ **Do NOT truncate appendices** to fit page count — appendices may be long.
 
-**Anti-stub rule (mandatory; the appendix clauses apply in full mode only):** every rendered section MUST carry real artifact data as HTML tables and prose. **Forbidden:** sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html`.
+**Anti-stub rule (mandatory; the appendix clauses apply in full mode only):** every rendered section MUST carry real artifact data as HTML tables and prose. **Forbidden:** sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `advisor/plugins/aws-startup-advisor/fixtures/migration-report-reference.html`.
 
 **Section 0 — Migration Decision Summary (REQUIRED):**
 
