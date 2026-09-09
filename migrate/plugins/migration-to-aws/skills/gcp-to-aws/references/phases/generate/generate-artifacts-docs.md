@@ -124,6 +124,8 @@ Generate the following section:
 - Run A/B Comparison: `python ai-migration/test_comparison.py --quick`, review results, verify quality >= 90%
 - Gradual Rollout: shadow mode, 10% traffic, scale to 100%, disable Vertex AI after 48 hours stable
 
+If `generation-ai.json` → `migration_plan.phases[].activities` includes an AgentCore memory-ingestion activity, add an **AgentCore Memory** subsection preserving its API choice, rationale, application integration point, IAM requirements, and extraction-verification steps. Preserve the distinction between accepted ingestion and completed extraction, and whether raw short-term events remain retrievable. Omit this subsection when no memory-ingestion activity is present.
+
 #### IF billing-only track ran (generation-billing.json exists)
 
 Generate the following section:
