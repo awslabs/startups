@@ -600,6 +600,46 @@ def _table_rows_text(section: str) -> str:
     return unescape(re.sub(r"<[^>]+>", " ", " ".join(bodies)))
 
 
+def _thead_has_optimization_columns(thead_html: str) -> bool:
+    """True if this <thead> is the opportunity table's header (not the posture table)."""
+    text = unescape(re.sub(r"<[^>]+>", " ", thead_html)).lower()
+    return (
+        "optimization" in text
+        and "target" in text
+        and "commitment" in text
+        and "effort" in text
+        and "saving" in text
+    )
+
+
+def _opportunity_table_optimization_cells(section: str) -> list[str]:
+    """First-column (Optimization) text of each data row in the *opportunity* table.
+
+    A Section 3c optimization section can carry two tables: a posture
+    comparison (Balanced / Savings Plan / Optimized rows, whose cells and
+    caveats name "Savings Plan") and the line-level opportunity table (the
+    one with Optimization / Target / Commitment / Effort columns). Presence of
+    a product must be proven by an opportunity row, so this isolates the
+    table whose <thead> matches the required columns and returns the
+    Optimization cell (first <td>) of every <tbody> data row. Posture rows,
+    heading prose, and Optimized-tier caveats are therefore never counted, and
+    an empty opportunity <tbody> yields no cells.
+    """
+    cells: list[str] = []
+    for table in re.findall(r"<table\b[^>]*>(.*?)</table>", section, re.DOTALL | re.IGNORECASE):
+        thead = re.search(r"<thead\b[^>]*>(.*?)</thead>", table, re.DOTALL | re.IGNORECASE)
+        if not thead or not _thead_has_optimization_columns(thead.group(1)):
+            continue
+        for body in re.findall(r"<tbody\b[^>]*>(.*?)</tbody>", table, re.DOTALL | re.IGNORECASE):
+            for row in re.findall(r"<tr\b[^>]*>(.*?)</tr>", body, re.DOTALL | re.IGNORECASE):
+                first_cell = re.search(
+                    r"<t[dh]\b[^>]*>(.*?)</t[dh]>", row, re.DOTALL | re.IGNORECASE
+                )
+                if first_cell:
+                    cells.append(unescape(re.sub(r"<[^>]+>", " ", first_cell.group(1))).strip())
+    return cells
+
+
 def _opp_classification_blob(item: dict) -> str:
     """Text used ONLY to classify an opportunity as a Savings Plan / RI product.
 
@@ -713,21 +753,30 @@ def _validate_optimization_sections(
     has_sp_opp = any(_SP_RE.search(_opp_classification_blob(item)) for item in opportunities)
     has_ri_opp = any(_RI_RE.search(_opp_classification_blob(item)) for item in opportunities)
 
-    # Presence in the report must be a rendered data row, not a heading,
-    # caveat paragraph, or link that merely names the product.
-    combined_rows = f"{_table_rows_text(exec_html)}\n{_table_rows_text(appendix_html)}"
+    # Presence in the report must be a rendered opportunity row, not a
+    # heading, a caveat paragraph, or a posture-comparison row that merely
+    # names the product. Bind the check to the opportunity table (identified
+    # by its required columns) and read only its Optimization cells, so an
+    # empty opportunity <tbody> or an Optimized-tier caveat cannot substitute
+    # for an actual Savings Plan / RI option row. The opportunity table lives
+    # in appendix-optimization (full mode) or exec-optimization (decision mode).
+    opp_cells = _opportunity_table_optimization_cells(appendix_html) + (
+        _opportunity_table_optimization_cells(exec_html)
+    )
+    opp_row_text = "\n".join(opp_cells)
 
-    if has_sp_opp and not _SP_RE.search(combined_rows):
+    if has_sp_opp and not _SP_RE.search(opp_row_text):
         errors.append(
-            "optimization_opportunities include a Savings Plan but exec-optimization / "
-            "appendix-optimization have no Savings Plans data row (heading/caveat text "
-            "does not satisfy this gate)"
+            "optimization_opportunities include a Savings Plan but the opportunity "
+            "table (appendix-optimization / exec-optimization) has no Savings Plans "
+            "data row — a heading, caveat, or posture-comparison row does not satisfy this gate"
         )
-    if has_ri_opp and not _RI_RE.search(combined_rows):
+    if has_ri_opp and not _RI_RE.search(opp_row_text):
         errors.append(
             "optimization_opportunities include a Reserved Instance (or reserved "
-            "capacity/nodes) but exec-optimization / appendix-optimization have no "
-            "Reserved Instances data row (heading/caveat text does not satisfy this gate)"
+            "capacity/nodes) but the opportunity table (appendix-optimization / "
+            "exec-optimization) has no Reserved Instances data row — a heading, caveat, "
+            "or posture-comparison row does not satisfy this gate"
         )
     if (
         not has_sp_opp
@@ -736,12 +785,11 @@ def _validate_optimization_sections(
             _design_has_commitment_eligible(aws_design)
             or _opportunities_target_commitment_eligible(opportunities)
         )
-        and not (_SP_RE.search(combined_rows) or _RI_RE.search(combined_rows))
+        and not (_SP_RE.search(opp_row_text) or _RI_RE.search(opp_row_text))
     ):
         errors.append(
             "RDS, Aurora, Fargate, or Lambda is in the design (or opportunity targets) "
-            "but the Cost Optimization section has no Savings Plans or Reserved "
-            "Instances data row"
+            "but the opportunity table has no Savings Plans or Reserved Instances row"
         )
 
     return errors

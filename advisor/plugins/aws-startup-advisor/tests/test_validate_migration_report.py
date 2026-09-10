@@ -1204,3 +1204,67 @@ def test_negative_description_does_not_misclassify_opportunity_as_savings_plan(
     )
     code, out = run_validator(path, est, require_toc=False)
     assert code == 0, out
+
+
+def _reference_report_html() -> str:
+    return FIXTURE.read_text(encoding="utf-8")
+
+
+def _replace_section_tbody(html: str, section_id: str, new_tbody_inner: str) -> str:
+    """Replace the first <tbody> inside the named section only."""
+    section_re = re.compile(
+        rf'(<section\b[^>]*\bid="{re.escape(section_id)}"[^>]*>)(.*?)(</section>)',
+        re.DOTALL | re.IGNORECASE,
+    )
+    match = section_re.search(html)
+    assert match, f"section {section_id} not found in reference report"
+    body = re.sub(
+        r"<tbody\b[^>]*>.*?</tbody>",
+        f"<tbody>{new_tbody_inner}</tbody>",
+        match.group(2),
+        count=1,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    return html[: match.start()] + match.group(1) + body + match.group(3) + html[match.end() :]
+
+
+def test_empty_appendix_opportunity_table_fails_even_with_exec_posture_rows(
+    tmp_path: Path,
+) -> None:
+    """Variant 1 (reviewer): emptying only the appendix-optimization <tbody>
+    must fail, even though the exec-optimization posture table still names
+    Savings Plans in its cells. The presence check binds to the opportunity
+    table's data rows, so the posture table cannot substitute for it.
+    """
+    html = _replace_section_tbody(_reference_report_html(), "appendix-optimization", "")
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "Savings Plans" in out
+
+
+def test_removing_savings_plan_option_rows_fails_despite_posture_caveat(
+    tmp_path: Path,
+) -> None:
+    """Variant 2 (reviewer): removing the actual Compute/Database Savings Plan
+    opportunity rows from both optimization sections must fail, even though the
+    Optimized posture row's caveat ("already embeds ... 1-year Savings Plan
+    assumptions") still names the product. Only opportunity-table rows count.
+    """
+    html = _reference_report_html()
+    # Drop the Savings Plan opportunity rows from the appendix opportunity table,
+    # leaving the remaining (non-SP) opportunity rows and the exec posture table.
+    html = re.sub(
+        r"<tr>\s*<td>(?:Compute|Database) Savings Plans</td>.*?</tr>\s*",
+        "",
+        html,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    assert "Compute Savings Plans</td>" not in html
+    assert "Database Savings Plans</td>" not in html
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "Savings Plans" in out
