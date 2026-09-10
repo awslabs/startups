@@ -89,12 +89,14 @@ uvx --version 2>/dev/null || echo "UVX_MISSING"
 - If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that live `awspricing`
   MCP estimates (and region dollar deltas in the what-if workshop) need
   [`uv` / `uvx`](https://docs.astral.sh/uv/). Continue Discover → Clarify →
-  Design. At Estimate / workshop, price from the us-east-1 cache and set
-  `pricing_source` per the normal hierarchy in `shared/estimate/pricing-mode.md`:
-  `"cached"` (or `"cached_stale"` past the staleness threshold), then
-  `"estimated"` / `"unavailable"` for services the cache doesn't cover. Do not
-  use `"cached_fallback"`; the MCP was never attempted on this path. **Do not
-  hard-stop** an infrastructure migration for missing `uv`.
+  Design. At Estimate / workshop, price from the us-east-1 cache and set each
+  service's `pricing_source.status` per the hierarchy in
+  `references/vendored/estimate/pricing-mode.md` — `"cached"` for services the
+  cache covers (`"cached_stale"` past the staleness threshold per Step 0a), and
+  the row 4/5 buckets (`"estimated"` / `"unavailable"`) for services it doesn't.
+  Do not use `"cached_fallback"`; that value is reserved for "MCP attempted and
+  failed", and the MCP was never attempted on this path. **Do not hard-stop** an
+  infrastructure migration for missing `uv`.
 - If both are present: proceed without nagging. Live pricing still depends on
   the `awspricing` MCP being configured.
 - Soft-warn once if `python3` is missing (Heroku report validation at Generate
