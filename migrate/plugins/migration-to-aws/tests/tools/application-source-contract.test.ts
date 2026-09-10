@@ -360,9 +360,14 @@ function recordsByQuestion(findings: JsonObject): Map<string, JsonObject[]> {
 function validateSemantics(reviewRequest: JsonObject, answer: JsonObject): string[] {
   const errors: string[] = [];
   const requested = reviewRequest.requested_questions as string[];
-  const requestedSet = new Set(requested);
   const rawFindings = answer.findings as Json[];
   const findingNames = rawFindings.map((raw) => object(raw).question as string);
+  const presentQuestions = new Set(
+    rawFindings
+      .map(object)
+      .filter((finding) => finding.status === 'PRESENT')
+      .map((finding) => finding.question as string),
+  );
   for (const question of requested) {
     if (findingNames.filter((name) => name === question).length !== 1) errors.push(`expected one finding for ${question}`);
   }
@@ -371,7 +376,7 @@ function validateSemantics(reviewRequest: JsonObject, answer: JsonObject): strin
   }
   for (const raw of rawFindings) {
     const finding = object(raw);
-    const limitations = finding.limitations as JsonObject[];
+    const limitations = (finding.limitations ?? []) as JsonObject[];
     if (finding.status === 'UNKNOWN' && limitations.length === 0) errors.push(`${String(finding.question)}: UNKNOWN needs a limitation`);
     if (
       finding.status === 'ABSENT_WITHIN_REVIEWED_SCOPE'
@@ -406,7 +411,7 @@ function validateSemantics(reviewRequest: JsonObject, answer: JsonObject): strin
     for (const record of questionRecords) {
       for (const key of ['component_id', 'caller_component_id']) {
         if (
-          requestedSet.has('runtime_framework')
+          presentQuestions.has('runtime_framework')
           && typeof record[key] === 'string'
           && !components.has(record[key])
         ) errors.push(`${question}: broken ${key}`);
@@ -415,14 +420,14 @@ function validateSemantics(reviewRequest: JsonObject, answer: JsonObject): strin
         const references = typeof record[key] === 'string' ? [record[key]] : (record[key] ?? []) as Json[];
         for (const reference of references) {
           if (
-            requestedSet.has('process_commands')
+            presentQuestions.has('process_commands')
             && typeof reference === 'string'
             && !processes.has(reference)
           ) errors.push(`${question}: broken ${key}`);
         }
       }
       if (
-        requestedSet.has('network_listeners')
+        presentQuestions.has('network_listeners')
         && typeof record.listener_id === 'string'
         && !listeners.has(record.listener_id)
       ) errors.push(`${question}: broken listener_id`);
@@ -433,7 +438,7 @@ function validateSemantics(reviewRequest: JsonObject, answer: JsonObject): strin
         errors.push(`${question}: broken inventory_addon_id`);
       }
       if (
-        requestedSet.has('external_services')
+        presentQuestions.has('external_services')
         && record.reference_kind === 'DEPENDENCY'
         && !dependencies.has(record.reference_id as string)
       ) {
@@ -497,6 +502,21 @@ describe('application-source contract', () => {
     assert.match(validateSemantics(reviewRequest, answer).join('\n'), /UNKNOWN needs a limitation/);
   });
 
+  it('does not throw when malformed findings omit limitations', () => {
+    for (const status of ['UNKNOWN', 'ABSENT_WITHIN_REVIEWED_SCOPE'] as const) {
+      const reviewRequest = request(['runtime_framework']);
+      const answer = presentFindings(['runtime_framework']);
+      const finding = object((answer.findings as Json[])[0]);
+      finding.status = status;
+      finding.value = null;
+      delete finding.limitations;
+
+      assert.ok(validate(schema, answer).length > 0);
+      const errors = validateSemantics(reviewRequest, answer);
+      if (status === 'UNKNOWN') assert.match(errors.join('\n'), /UNKNOWN needs a limitation/);
+    }
+  });
+
   it('rejects undeclared, value-bearing, malformed, and unbounded request data', () => {
     for (const mutate of [
       (sample: JsonObject) => sample.secret = 'no',
@@ -511,6 +531,27 @@ describe('application-source contract', () => {
       mutate(sample);
       assert.ok(validate(schema, sample).length > 0);
     }
+  });
+
+  it('accepts up to 256 configuration names and records per question', () => {
+    const reviewRequest = request(['runtime_settings']);
+    object(reviewRequest.context).configuration_names = Array.from(
+      { length: 256 },
+      (_, index) => `SETTING_${index}`,
+    );
+    assertJsonEqual(validate(schema, reviewRequest), []);
+    (object(reviewRequest.context).configuration_names as Json[]).push('SETTING_256');
+    assert.ok(validate(schema, reviewRequest).length > 0);
+
+    const answer = presentFindings(['runtime_settings']);
+    const finding = object((answer.findings as Json[])[0]);
+    finding.value = Array.from(
+      { length: 256 },
+      (_, index) => ({ ...object(values.runtime_settings[0]), setting_name: `SETTING_${index}` }),
+    );
+    assertJsonEqual(validate(schema, answer), []);
+    (finding.value as Json[]).push({ ...object(values.runtime_settings[0]), setting_name: 'SETTING_256' });
+    assert.ok(validate(schema, answer).length > 0);
   });
 
   it('rejects malformed findings, values, and source locations', () => {
@@ -584,6 +625,27 @@ describe('application-source contract', () => {
     ] as const) {
       const reviewRequest = request([question]);
       const answer = presentFindings([question]);
+      assertJsonEqual(validate(schema, answer), []);
+      assertJsonEqual(validateSemantics(reviewRequest, answer), []);
+    }
+  });
+
+  it('accepts references when the requested defining finding is not PRESENT', () => {
+    for (const [definingQuestion, referencingQuestion] of [
+      ['runtime_framework', 'process_commands'],
+      ['process_commands', 'network_listeners'],
+      ['network_listeners', 'health_routes'],
+      ['external_services', 'potential_private_endpoints'],
+    ] as const) {
+      const reviewRequest = request([definingQuestion, referencingQuestion]);
+      const answer = presentFindings([referencingQuestion]);
+      (answer.findings as Json[]).unshift({
+        question: definingQuestion,
+        status: 'UNKNOWN',
+        value: null,
+        limitations: [{ kind: 'OTHER', detail: 'Source did not establish this answer.' }],
+      });
+
       assertJsonEqual(validate(schema, answer), []);
       assertJsonEqual(validateSemantics(reviewRequest, answer), []);
     }

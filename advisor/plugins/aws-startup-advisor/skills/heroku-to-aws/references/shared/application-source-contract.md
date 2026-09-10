@@ -21,6 +21,9 @@ Heroku process and configuration names provide non-secret inventory context, not
 Source review may discover additional names; those differences must be retained for later drift or
 missing-configuration assessment rather than rejected.
 
+Configuration-name context and each typed record array are capped at 256 entries. Callers must
+report an exceeded bound rather than silently truncating the submitted information.
+
 ## Field-Purpose Review
 
 The field set was trimmed before implementation. Shared component/process/listener/dependency/
