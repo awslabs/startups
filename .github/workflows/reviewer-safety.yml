@@ -89,13 +89,29 @@ jobs:
       # The DEFAULT BRANCH is what a fork's `pull_request_target` run actually loads, per
       # GitHub's events reference, so it is checked for drift. `base.ref` would be wrong
       # for any pull request targeting a non-default branch.
+      # The drift check is meaningful only once the guard exists on the default branch.
+      # Before this lands, the default branch's reviewer workflow predates the allowlist,
+      # so its shell bodies are legitimately unpinned and the guard rejects it. That is
+      # expected during bootstrap and is not a violation: judging main's copy against a
+      # branch's allowlist compares two things that are supposed to differ.
       - name: Fetch the default branch copy of the reviewer workflow
+        id: drift
         env:
           GH_TOKEN: ${{ github.token }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           mkdir -p .guard
+
+          if ! gh api \
+            "repos/${GITHUB_REPOSITORY}/contents/tools/reviewer-guard/reviewer_guard.py" \
+            -f ref="${DEFAULT_BRANCH}" --jq '.sha' >/dev/null 2>&1; then
+            echo "The guard is not on ${DEFAULT_BRANCH} yet, so there is no allowlist there"
+            echo "to drift from. Checking the proposed copy only."
+            echo "check=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           # `// empty` so a missing key yields an empty file the guard rejects, rather
           # than jq printing the string "null" and base64 decoding it to 3 bytes of
           # garbage that a size check would accept.
@@ -103,19 +119,56 @@ jobs:
             -f ref="${DEFAULT_BRANCH}" --jq '.content // empty' \
             | base64 -d > .guard/default-branch-reviewer.yml
           echo "Fetched the ${DEFAULT_BRANCH} copy, $(wc -c < .guard/default-branch-reviewer.yml) bytes."
+          echo "check=true" >> "$GITHUB_OUTPUT"
 
-      - name: Assert the reviewer stays safe under pull_request_target
+      # This workflow shipped INVALID and failed on every commit, reporting as its own
+      # filename rather than its `name:` because GitHub could not parse it, with zero jobs
+      # and no logs. The cause was `\${{ }}` in a `run:` body: a backslash does not escape
+      # an Actions expression, so GitHub saw an empty expression and rejected the file. It
+      # was invisible in `statusCheckRollup`, so the pull request read as green.
+      #
+      # actionlint catches exactly that, at the right line and column. Shellcheck is off so
+      # this validates Actions syntax repo-wide without failing on unrelated shell style in
+      # workflows this branch does not own.
+      - name: Validate every workflow parses as Actions
+        env:
+          # Pinned version and checksum rather than the upstream install script, which
+          # would be fetched from a moving ref and piped into a shell.
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
         run: |
           set -euo pipefail
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum -c -
+          tar xzf "$archive" actionlint
+          ./actionlint -shellcheck= .github/workflows/*.yml
+
+      - name: Assert the reviewer stays safe under pull_request_target
+        env:
+          CHECK_DRIFT: ${{ steps.drift.outputs.check }}
+        run: |
+          set -euo pipefail
+
+          # The proposed copy is always checked. This is the one that gates the pull
+          # request: a change adding a checkout or a fork-controlled interpolation fails
+          # here rather than after merge.
           python3 tools/reviewer-guard/reviewer_guard.py \
-            .github/workflows/agentcore-reviewer.yml \
-            .guard/default-branch-reviewer.yml
+            .github/workflows/agentcore-reviewer.yml
+
+          if [ "${CHECK_DRIFT}" = "true" ]; then
+            python3 tools/reviewer-guard/reviewer_guard.py \
+              .guard/default-branch-reviewer.yml
+          fi
           {
             echo "### Reviewer workflow invariants"
             echo ""
-            echo "Both the proposed copy and the default branch copy satisfy the allowlist:"
-            echo "every \`uses:\` is pinned and permitted, every \`\${{ }}\` expression is"
-            echo "permitted, and no shell fetches the pull request."
+            echo "The proposed copy satisfies the allowlist, and the default branch copy too"
+            echo "once the guard exists there:"
+            echo "every \`uses:\` is pinned and permitted, every workflow expression is"
+            echo "permitted, every shell body is pinned by hash, and the trigger and"
+            echo "permissions assertions hold."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Proves the guard still rejects what it is for. A guard that only ever passes is
