@@ -14,21 +14,21 @@ Check `$MIGRATION_DIR/` for existing state:
 
 > "I found existing migration preferences from a previous run. Would you like to:"
 >
-> A) Re-use these preferences and skip questions
-> B) Start fresh and re-answer all questions
+> 1. Re-use these preferences and skip questions
+> 2. Start fresh and re-answer all questions
 
-- If A: skip to Step 3 (Validation), proceed with existing file.
-- If B: delete `preferences.json`, continue to Step 1.
+- If 1: skip to Step 3 (Validation), proceed with existing file.
+- If 2: delete `preferences.json`, continue to Step 1.
 
 **Case 2 — Draft preferences exist** (`preferences-draft.json` present, no `preferences.json`):
 
 > "I found a partial set of answers from a previous session (1 of 2 batches completed). Would you like to:"
 >
-> A) Resume from where you left off — I'll pick up the remaining questions
-> B) Start fresh and re-answer all questions
+> 1. Resume from where you left off — I'll pick up the remaining questions
+> 2. Start fresh and re-answer all questions
 
-- If A: load the draft, skip Batch 1 in Step 2, present Batch 2 directly.
-- If B: delete `preferences-draft.json`, continue to Step 1.
+- If 1: load the draft, skip Batch 1 in Step 2, present Batch 2 directly.
+- If 2: delete `preferences-draft.json`, continue to Step 1.
 
 **Case 3 — No prior state**: Continue to Step 1.
 
@@ -110,11 +110,11 @@ Let's start with your AI strategy and current setup.
 
 Same decision logic, auto-detect signals, and interpretation as Q14 in `clarify-ai.md`.
 
-Auto-detect: No framework → A, LiteLLM/OpenRouter/Kong/Apigee → B, LangChain/LangGraph → C, CrewAI/AutoGen → D, OpenAI Agents SDK → E, MCP/A2A → F, Vapi/Bland.ai/Retell → G.
+Auto-detect: No framework → 1, LiteLLM/OpenRouter/Kong/Apigee → 2, LangChain/LangGraph → 3, CrewAI/AutoGen → 4, OpenAI Agents SDK → 5, MCP/A2A → 6, Vapi/Bland.ai/Retell → 7.
 
-_Skip when:_ `integration.pattern`, `integration.gateway_type`, and `integration.frameworks` together give a definitive answer — including a definitive no-framework signal (`pattern: "direct_api"` with empty `frameworks` and null `gateway_type` → A). Use extracted values with `chosen_by: "extracted"` and do not present this question. Ask only when the signals are missing or contradict each other.
+_Skip when:_ `integration.pattern`, `integration.gateway_type`, and `integration.frameworks` together give a definitive answer — including a definitive no-framework signal (`pattern: "direct_api"` with empty `frameworks` and null `gateway_type` → 1). Use extracted values with `chosen_by: "extracted"` and do not present this question. Ask only when the signals are missing or contradict each other.
 
-> A) No framework — direct API calls | B) LLM router/gateway | C) LangChain / LangGraph | D) Multi-agent framework | E) OpenAI Agents SDK | F) MCP/A2A | G) Voice platform
+> 1\) No framework — direct API calls | 2\) LLM router/gateway | 3\) LangChain / LangGraph | 4\) Multi-agent framework | 5\) OpenAI Agents SDK | 6\) MCP/A2A | 7\) Voice platform
 
 Interpret → `ai_framework` array. Default: auto-detect, fallback `["direct"]`.
 
@@ -124,7 +124,7 @@ Compliance gates Bedrock regions, models, and logging **even though your infrast
 
 > Even with infrastructure staying on GCP, your prompts and completions will be processed on AWS. Compliance requirements determine which Bedrock regions, models, and configurations are available.
 >
-> A) None | B) SOC 2 / ISO 27001 | C) PCI DSS | D) HIPAA | E) FedRAMP / Government | F) GDPR / Data residency | G) CCPA / CPRA | H) I don't know
+> 1\) None | 2\) SOC 2 / ISO 27001 | 3\) PCI DSS | 4\) HIPAA | 5\) FedRAMP / Government | 6\) GDPR / Data residency | 7\) CCPA / CPRA | 8\) I don't know
 >
 > _(Multiple selections allowed)_
 
@@ -138,11 +138,11 @@ Compliance gates Bedrock regions, models, and logging **even though your infrast
 | GDPR              | EU Bedrock regions (eu-west-1, eu-central-1); **geographic (`eu.`) inference profiles only — `global.` profiles route outside the EU boundary**; document cross-border transfer from GCP EU                                     |
 | CCPA / CPRA       | Prompt/completion retention policy; deletion workflow for logged content; CloudTrail audit logging                                                                                                                              |
 
-Interpret → `design_constraints.compliance` array (same format as the full flow). An explicit user answer of A records `["none"]` with `chosen_by: "user"`. **Skip/default records `["unknown"]`** (never a silent "none" — full-flow Q2 semantics: behaves like "none" for service selection) with `chosen_by: "default"`, `source: "default:Q1.5"` — and append the caveat "Compliance requirements were not confirmed by the user" to `metadata.report_caveats[]` (create the array if absent) so downstream reports surface it. Cross-check with Q4: a GDPR answer constrains the target region jointly with cross-cloud latency.
+Interpret → `design_constraints.compliance` array (same format as the full flow). An explicit user answer of 1 records `["none"]` with `chosen_by: "user"`. **Skip/default records `["unknown"]`** (never a silent "none" — full-flow Q2 semantics: behaves like "none" for service selection) with `chosen_by: "default"`, `source: "default:Q1.5"` — and append the caveat "Compliance requirements were not confirmed by the user" to `metadata.report_caveats[]` (create the array if absent) so downstream reports surface it. Cross-check with Q4: a GDPR answer constrains the target region jointly with cross-cloud latency.
 
 ## Q2 — What matters most for your AI application?
 
-> A) Best quality/reasoning | B) Fastest speed | C) Lowest cost | D) Specialized capability (→ Q10) | E) Balanced | F) I don't know
+> 1\) Best quality/reasoning | 2\) Fastest speed | 3\) Lowest cost | 4\) Specialized capability (→ Q10\) | 5\) Balanced | 6\) I don't know
 
 | Answer   | Model Impact                                        |
 | -------- | --------------------------------------------------- |
@@ -152,19 +152,19 @@ Interpret → `design_constraints.compliance` array (same format as the full flo
 | Special  | Deferred to Q10                                     |
 | Balanced | Claude Sonnet 5                                     |
 
-Interpret → `ai_priority`. Default: E → `"balanced"`.
+Interpret → `ai_priority`. Default: 5 → `"balanced"`.
 
 ## Q3 — Monthly AI spend on OpenAI or Gemini?
 
-> A) < $500 | B) $500–$2K | C) $2K–$10K | D) > $10K | E) Don't know
+> 1\) < $500 | 2\) $500–$2K | 3\) $2K–$10K | 4\) > $10K | 5\) Don't know
 
-Interpret → `ai_monthly_spend`. Default: B → `"$500-$2K"`.
+Interpret → `ai_monthly_spend`. Default: 2 → `"$500-$2K"`.
 
 ## Q4 — Cross-cloud API call concerns
 
 Unique to AI-only: infrastructure stays on GCP while AI calls route to AWS.
 
-> A) Latency critical — AI in hot path | B) Latency acceptable — async/users can wait | C) Concerned about egress costs | D) Want to test first — parallel running
+> 1\) Latency critical — AI in hot path | 2\) Latency acceptable — async/users can wait | 3\) Concerned about egress costs | 4\) Want to test first — parallel running
 
 | Answer           | Impact                                         |
 | ---------------- | ---------------------------------------------- |
@@ -173,7 +173,7 @@ Unique to AI-only: infrastructure stays on GCP while AI calls route to AWS.
 | Egress concerned | PrivateLink; egress cost analysis              |
 | Test first       | Phased migration; parallel running guidance    |
 
-Interpret → `cross_cloud`. Default: B → `"latency-acceptable"`.
+Interpret → `cross_cloud`. Default: 2 → `"latency-acceptable"`.
 
 ## Q5 — Current model in use?
 
@@ -181,7 +181,7 @@ Establishes baseline Bedrock recommendation. Override hierarchy: Q10 special fea
 
 _Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` **with confidence ≥ 0.8** (the same threshold as full-flow Q19) — auto-detect with `chosen_by: "extracted"` and do not present this question. The detected models are already shown in the Step 1 summary. Below 0.8, present the question with the detected model(s) offered as the suggested answer. With 2+ detected models, record `ai_model_baseline` as an array (one entry per model).
 
-> A) Gemini Flash | B) Gemini Pro | C) GPT-3.5 Turbo | D) GPT-4/4 Turbo | E) GPT-4o | F) GPT-5.4/Mini/Nano | F2) GPT-5.6 Sol/Terra/Luna | G) GPT-5/5.x (older) | H) GPT-5.5/Pro | I) o-series | J) Claude (Anthropic SDK) | K) Other/Multiple | L) Don't know
+> 1\) Gemini Flash | 2\) Gemini Pro | 3\) GPT-3.5 Turbo | 4\) GPT-4/4 Turbo | 5\) GPT-4o | 6\) GPT-5.4/Mini/Nano | 7\) GPT-5.6 Sol/Terra/Luna | 8\) GPT-5/5.x (older) | 9\) GPT-5.5/Pro | 10\) o-series | 11\) Claude (Anthropic SDK) | 12\) Other/Multiple | 13\) Don't know
 
 | Source        | Baseline Recommendation        | Pricing Context                    |
 | ------------- | ------------------------------ | ---------------------------------- |
@@ -249,7 +249,7 @@ You can answer each, skip individual ones, or say "use defaults for the rest."
 
 _Skip when:_ `integration.capabilities_summary` in `ai-workload-profile.json` has definitive values for `vision` AND (`speech_to_text` or `text_to_speech`) — derive from capabilities with `chosen_by: "extracted"` and do not present this question. Only ask if capabilities are unknown or ambiguous (all false with no evidence either way).
 
-> A) Text only | B) Vision required | C) Audio/Video inputs
+> 1\) Text only | 2\) Vision required | 3\) Audio/Video inputs
 
 | Answer      | Impact                                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------------------------------- |
@@ -257,13 +257,13 @@ _Skip when:_ `integration.capabilities_summary` in `ai-workload-profile.json` ha
 | Vision      | Claude Sonnet or Haiku (both support multimodal vision); Nova Micro excluded (text-only)                        |
 | Audio/Video | Nova 2 Sonic (audio); Nova Reel v1 for video (Legacy — EOL Sep 30, 2026); Claude excluded for audio/video input |
 
-Interpret → `ai_vision`. Default: A → no constraint.
+Interpret → `ai_vision`. Default: 1 → no constraint.
 
 ## Q7 — Monthly AI usage volume
 
 **Auto-resolve (skip the question):** If `openai-usage-profile.json` exists with non-zero usage, compute total monthly tokens = Σ `usage_by_model[].input_tokens + output_tokens`, map to the tiers below (< 1M → `"low"`, 1–10M → `"medium"`, 10–100M → `"high"`, > 100M → `"very_high"`), record the extraction (`chosen_by: "extracted"`, `source: "openai-usage-profile:usage_by_model"`), and tell the user: "Resolved from your OpenAI usage data: [N tokens/month → tier]." Ask Q7 only if the profile is absent or `partial_window` makes the volume unreliable.
 
-> A) < 1M tokens | B) 1–10M | C) 10–100M | D) > 100M | E) Don't know
+> 1\) < 1M tokens | 2\) 1–10M | 3\) 10–100M | 4\) > 100M | 5\) Don't know
 
 | Answer    | Impact                                             |
 | --------- | -------------------------------------------------- |
@@ -272,13 +272,13 @@ Interpret → `ai_vision`. Default: A → no constraint.
 | High      | Provisioned throughput analysis; prompt caching    |
 | Very high | Provisioned throughput required; capacity planning |
 
-Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`, D → `"very_high"`. Default: B → `"medium"`.
+Interpret → `ai_token_volume`: 1 → `"low"`, 2 → `"medium"`, 3 → `"high"`, 4 → `"very_high"`. Default: 2 → `"medium"`.
 
 ## Q8 — Response speed importance
 
 Present with concrete anchors: Critical = autocomplete/live chat; Important = chat assistant; Flexible = reports/batch.
 
-> A) Critical (< 500ms) | B) Important (< 2s) | C) Flexible (2–10s)
+> 1\) Critical (< 500ms) | 2\) Important (< 2s) | 3\) Flexible (2–10s)
 
 | Answer    | Impact                                                       |
 | --------- | ------------------------------------------------------------ |
@@ -286,13 +286,13 @@ Present with concrete anchors: Critical = autocomplete/live chat; Important = ch
 | Important | Sonnet 5 with streaming; standard on-demand                  |
 | Flexible  | Any model; batch inference for cost savings                  |
 
-Interpret → `ai_latency`. Default: B → `"important"`.
+Interpret → `ai_latency`. Default: 2 → `"important"`.
 
 ## Q9 — AI task complexity
 
 Present with concrete examples: Simple = classify/extract/summarize; Moderate = analyze+JSON/few-shot; Complex = multi-turn reasoning/tool use/agentic.
 
-> A) Simple | B) Moderate | C) Complex
+> 1\) Simple | 2\) Moderate | 3\) Complex
 
 | Answer   | Impact                                                                |
 | -------- | --------------------------------------------------------------------- |
@@ -300,15 +300,15 @@ Present with concrete examples: Simple = classify/extract/summarize; Moderate = 
 | Moderate | Sonnet 5 recommended; Haiku may suffice with prompt engineering       |
 | Complex  | Sonnet 5 required; extended thinking considered; Opus 4.8 for hardest |
 
-Interpret → `ai_complexity`. Default: B → `"moderate"`.
+Interpret → `ai_complexity`. Default: 2 → `"moderate"`.
 
 ## Q10 — Specialized features needed
 
 Same decision logic as Q17 in `clarify-ai.md`.
 
-> A) Function calling | B) Ultra-long context (> 300K) | C) Extended thinking | D) Prompt caching | E) RAG optimization | F) Agentic workflows | G) Real-time speed | H) Image generation | I) Conversational speech | J) None
+> 1\) Function calling | 2\) Ultra-long context (> 300K) | 3\) Extended thinking | 4\) Prompt caching | 5\) RAG optimization | 6\) Agentic workflows | 7\) Real-time speed | 8\) Image generation | 9\) Conversational speech | 10\) None
 
-Interpret → `ai_critical_feature`. Default: J → no override.
+Interpret → `ai_critical_feature`. Default: 10 → no override.
 
 ## Q11 — Have you applied for AWS Activate credits?
 
@@ -318,10 +318,10 @@ Same rationale, eligibility rules, and answer semantics as Q27 in `clarify-ai.md
 
 > AWS Activate credits offset Bedrock costs during and after migration — including Claude, Llama, and Nova models. Eligible startups can get $5K–$200K depending on funding stage.
 >
-> A) Yes — already have AWS Activate credits
-> B) No — haven't applied yet (self-funded or pre-VC)
-> C) No — VC/accelerator-backed but haven't applied
-> D) I don't know
+> 1. Yes — already have AWS Activate credits
+> 2. No — haven't applied yet (self-funded or pre-VC)
+> 3. No — VC/accelerator-backed but haven't applied
+> 4. I don't know
 
 | Answer                     | Recommendation Impact                                                                                                 |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -330,9 +330,9 @@ Same rationale, eligibility rules, and answer semantics as Q27 in `clarify-ai.md
 | No — VC/accelerator-backed | Flag **AWS Activate Portfolio** (up to $200,000): requires Activate Provider Org ID from your VC/accelerator          |
 | Don't know                 | Surface both tiers; recommend checking with investors/accelerator for Org ID                                          |
 
-Escalations (adapted to AI-only signals): if `ai_monthly_spend` is `">$10K"`, also flag **AWS Credits for AI Startups** ($200,000+, invite-only — contact your AWS Account Manager). If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND the workload is agentic (Q1 includes D/E/F or Q10 = F), also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort): aws.amazon.com/startups/generative-ai/accelerator
+Escalations (adapted to AI-only signals): if `ai_monthly_spend` is `">$10K"`, also flag **AWS Credits for AI Startups** ($200,000+, invite-only — contact your AWS Account Manager). If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND the workload is agentic (Q1 includes 4/5/6 or Q10 = 6), also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort): aws.amazon.com/startups/generative-ai/accelerator
 
-Interpret → `startup_program_status`: A → `"has_credits"`, B → `"eligible_founders"`, C → `"eligible_portfolio"`, D → `"unknown"`. Default: D → `"unknown"` — downstream artifacts must use neutral Activate copy (both tiers, no "your status: eligible_*").
+Interpret → `startup_program_status`: 1 → `"has_credits"`, 2 → `"eligible_founders"`, 3 → `"eligible_portfolio"`, 4 → `"unknown"`. Default: 4 → `"unknown"` — downstream artifacts must use neutral Activate copy (both tiers, no "your status: eligible_*").
 
 ### Batch 2 Complete
 

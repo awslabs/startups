@@ -37,7 +37,7 @@ _Fire when:_ Compute resources present (Cloud Run, Cloud Functions, GKE, GCE, Ap
 
 ## Q7b — What compute operational model do you prefer for your App Engine workloads?
 
-_Fire when:_ App Engine present in inventory (`google_app_engine_application`) AND Q5 != A (multi-cloud). Skip when: no App Engine in inventory, or Q5 = A (multi-cloud already resolved compute to EKS — App Engine routes to EKS, overriding the EB default; same portability override as Q8).
+_Fire when:_ App Engine present in inventory (`google_app_engine_application`) AND Q5 != 1 (multi-cloud). Skip when: no App Engine in inventory, or Q5 = 1 (multi-cloud already resolved compute to EKS — App Engine routes to EKS, overriding the EB default; same portability override as Q8).
 
 **Rationale:** GCP App Engine is a PaaS that can map to different AWS compute targets depending on whether the user wants to preserve the managed platform model (Elastic Beanstalk), switch to direct container control (Fargate/ECS), or go serverless (Lambda). This drives the fundamental routing decision for App Engine resources.
 
@@ -45,10 +45,10 @@ Note: This question does NOT affect Cloud Run resources. Cloud Run maps to Farga
 
 > Your App Engine setup uses a managed platform (you provide code, Google manages everything else). On AWS, you have a few options for these workloads:
 >
-> A) Managed platform — I provide code, AWS manages everything else (like App Engine today)
-> B) Container orchestration — I want direct control over containers and scaling
-> C) Serverless — Event-driven functions, scale-to-zero, stateless
-> D) I don't know — recommend the best fit
+> 1. Managed platform — I provide code, AWS manages everything else (like App Engine today)
+> 2. Container orchestration — I want direct control over containers and scaling
+> 3. Serverless — Event-driven functions, scale-to-zero, stateless
+> 4. I don't know — recommend the best fit
 
 | Answer            | Recommendation Impact                                                              |
 | ----------------- | ---------------------------------------------------------------------------------- |
@@ -60,13 +60,13 @@ Note: This question does NOT affect Cloud Run resources. Cloud Run maps to Farga
 Interpret:
 
 ```
-A -> compute_model: "managed_platform" — Elastic Beanstalk recommended
-B -> compute_model: "container_orchestration" — ECS Fargate recommended
-C -> compute_model: "serverless" — Lambda recommended
-D -> same as default (A)
+1 -> compute_model: "managed_platform" — Elastic Beanstalk recommended
+2 -> compute_model: "container_orchestration" — ECS Fargate recommended
+3 -> compute_model: "serverless" — Lambda recommended
+4 -> same as default (1)
 ```
 
-**Default:** **A** (`compute_model: "managed_platform"`). App Engine is PaaS; Elastic Beanstalk is the closest AWS equivalent. Users who skip or say "I don't know" get the PaaS-to-PaaS path.
+**Default:** **1** (`compute_model: "managed_platform"`). App Engine is PaaS; Elastic Beanstalk is the closest AWS equivalent. Users who skip or say "I don't know" get the PaaS-to-PaaS path.
 
 _Note: If Q5=Yes (multi-cloud), this question is skipped — `compute: "eks"` is already decided and App Engine routes to EKS, overriding the EB default (mirrors Q8)._
 
@@ -74,7 +74,7 @@ _Note: If Q5=Yes (multi-cloud), this question is skipped — `compute: "eks"` is
 
 ## Q8 — How do you want to run your Kubernetes workloads on AWS?
 
-_Fire when:_ GKE cluster present AND Q5 != A (multi-cloud). Skip when: Q5 = A (already resolved to EKS Standard Cluster) or no GKE in inventory.
+_Fire when:_ GKE cluster present AND Q5 != 1 (multi-cloud). Skip when: Q5 = 1 (already resolved to EKS Standard Cluster) or no GKE in inventory.
 
 **Rationale:** You are already on GKE, so the starting assumption is that you keep Kubernetes — the default AWS target is **EKS Auto Mode**, where AWS provisions, scales, patches, and operates the nodes for you (the same hands-off model as GKE Autopilot, and the approach AWS recommends going forward). Q8 confirms that default and offers two explicit off-ramps: manage the nodes yourself (standard EKS), or drop Kubernetes entirely (ECS Fargate). This is subjective and cannot be inferred from IaC.
 
@@ -92,12 +92,12 @@ _Fire when:_ GKE cluster present AND Q5 != A (multi-cloud). Skip when: Q5 = A (a
 
 > Your workloads run on Kubernetes today (GKE). How would you like to run them on AWS?
 >
-> A) Keep Kubernetes, fully managed — EKS Auto Mode (AWS runs the nodes, like GKE Autopilot)
-> B) Keep Kubernetes, manage the nodes yourself — EKS with managed node groups (standard cluster)
-> C) Move off Kubernetes — simpler managed containers (ECS Fargate)
-> D) I don't know
+> 1) Keep Kubernetes, fully managed — EKS Auto Mode (AWS runs the nodes, like GKE Autopilot)
+> 2) Keep Kubernetes, manage the nodes yourself — EKS with managed node groups (standard cluster)
+> 3) Move off Kubernetes — simpler managed containers (ECS Fargate)
+> 4) I don't know
 >
-> _If you're unsure, we default to A — the closest match to how you run today and the lowest-ops way to keep Kubernetes._
+> _If you're unsure, we default to 1 — the closest match to how you run today and the lowest-ops way to keep Kubernetes._
 
 | Answer                        | Recommendation Impact                                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -110,13 +110,13 @@ _Note: If Q5=Yes (multi-cloud), this question is skipped and EKS Standard Cluste
 Interpret:
 
 ```
-A -> kubernetes: "eks-auto" — EKS Auto Mode (default managed Kubernetes; AWS operates the nodes)
-B -> kubernetes: "eks-standard" — EKS with managed node groups (explicit standard-cluster opt-out)
-C -> kubernetes: "ecs-fargate" — ECS Fargate, drop Kubernetes
-D -> same as default (A)
+1 -> kubernetes: "eks-auto" — EKS Auto Mode (default managed Kubernetes; AWS operates the nodes)
+2 -> kubernetes: "eks-standard" — EKS with managed node groups (explicit standard-cluster opt-out)
+3 -> kubernetes: "ecs-fargate" — ECS Fargate, drop Kubernetes
+4 -> same as default (A)
 ```
 
-**Default:** **A** (`kubernetes: "eks-auto"`). GKE usage signals Kubernetes adoption, and EKS Auto Mode is the low-ops, AWS-recommended way to keep it — so teams that answer D ("I don't know") or skip the question land on Auto Mode, not off Kubernetes. Standard node groups (B) and ECS Fargate (C) remain available via explicit answers. When `config.autopilot_enabled: true`, the default is an especially strong match (Autopilot → Auto Mode is the closest cross-cloud equivalent).
+**Default:** **1** (`kubernetes: "eks-auto"`). GKE usage signals Kubernetes adoption, and EKS Auto Mode is the low-ops, AWS-recommended way to keep it — so teams that answer 4 ("I don't know") or skip the question land on Auto Mode, not off Kubernetes. Standard node groups (2) and ECS Fargate (3) remain available via explicit answers. When `config.autopilot_enabled: true`, the default is an especially strong match (Autopilot → Auto Mode is the closest cross-cloud equivalent).
 
 _Note: Q8 fires only when a `google_container_cluster` is present. Non-GKE containerized workloads (Cloud Run, Cloud Functions) are unaffected — they map to Fargate/Lambda via their own deterministic fast-path regardless of this answer._
 
@@ -132,9 +132,9 @@ _Fire when:_ Compute resources present AND WebSocket usage cannot be determined 
 
 > WebSocket support affects load balancer configuration. This confirms whether ALB WebSocket configuration is needed in the migration templates.
 >
-> A) Yes — Real-time features, WebSockets, persistent connections
-> B) No — Standard HTTP/HTTPS only
-> C) I don't know
+> 1. Yes — Real-time features, WebSockets, persistent connections
+> 2. No — Standard HTTP/HTTPS only
+> 3. I don't know
 
 | Answer                  | Recommendation Impact                                                         |
 | ----------------------- | ----------------------------------------------------------------------------- |
@@ -144,12 +144,12 @@ _Fire when:_ Compute resources present AND WebSocket usage cannot be determined 
 Interpret:
 
 ```
-A -> websocket: "required" — ALB with WebSocket support, ECS Fargate or EKS required
-B -> (no constraint written)
-C -> same as default (B) — assume no WebSocket; can be reconfigured later
+1 -> websocket: "required" — ALB with WebSocket support, ECS Fargate or EKS required
+2 -> (no constraint written)
+3 -> same as default (2) — assume no WebSocket; can be reconfigured later
 ```
 
-Default: B — no constraint.
+Default: 2 — no constraint.
 
 ---
 
@@ -163,11 +163,11 @@ _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 
 > Cloud Run's scale-to-zero is its primary cost advantage. Understanding your traffic pattern helps me determine whether migrating Cloud Run to AWS makes financial sense.
 >
-> A) Business hours only (9am–5pm weekdays, ~40 hrs/week)
-> B) Active most of the day (16–20 hours, ~120 hrs/week)
-> C) Constant 24/7 traffic (~168 hrs/week)
-> D) N/A — We don't use Cloud Run
-> E) I don't know
+> 1. Business hours only (9am–5pm weekdays, ~40 hrs/week)
+> 2. Active most of the day (16–20 hours, ~120 hrs/week)
+> 3. Constant 24/7 traffic (~168 hrs/week)
+> 4. N/A — We don't use Cloud Run
+> 5. I don't know
 
 | Answer              | Recommendation Impact                                                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -178,14 +178,14 @@ _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 Interpret:
 
 ```
-A -> cloud_run_traffic_pattern: "business-hours" — AWS likely 40-50% MORE expensive; flag cost increase
-B -> cloud_run_traffic_pattern: "most-of-day" — Moderate cost difference; present both options
-C -> cloud_run_traffic_pattern: "constant-24-7" — AWS costs similar or cheaper; ECS Fargate recommended
-D -> (no constraint written — Cloud Run not used)
-E -> same as default (C) — assume constant traffic for conservative estimate
+1 -> cloud_run_traffic_pattern: "business-hours" — AWS likely 40-50% MORE expensive; flag cost increase
+2 -> cloud_run_traffic_pattern: "most-of-day" — Moderate cost difference; present both options
+3 -> cloud_run_traffic_pattern: "constant-24-7" — AWS costs similar or cheaper; ECS Fargate recommended
+4 -> (no constraint written — Cloud Run not used)
+5 -> same as default (3) — assume constant traffic for conservative estimate
 ```
 
-Default: C — `cloud_run_traffic_pattern: "constant-24-7"`.
+Default: 3 — `cloud_run_traffic_pattern: "constant-24-7"`.
 
 ---
 
@@ -197,12 +197,12 @@ _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 
 > Absolute Cloud Run spend determines whether the migration math makes financial sense regardless of traffic pattern.
 >
-> A) < $100/month
-> B) $100–$500/month
-> C) $500–$1,500/month
-> D) > $1,500/month
-> E) N/A — We don't use Cloud Run
-> F) I don't know
+> 1. < $100/month
+> 2. $100–$500/month
+> 3. $500–$1,500/month
+> 4. $1,500/month
+> 5. N/A — We don't use Cloud Run
+> 6. I don't know
 
 | Answer            | Recommendation Impact                                                            |
 | ----------------- | -------------------------------------------------------------------------------- |
@@ -214,15 +214,15 @@ _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 Interpret:
 
 ```
-A -> cloud_run_monthly_spend: "<$100" — Recommend staying on Cloud Run; migration cost exceeds savings
-B -> cloud_run_monthly_spend: "$100-$500" — Present cost comparison; migration may make sense if consolidating
-C -> cloud_run_monthly_spend: "$500-$1500" — Fixed-cost AWS options attractive (ECS Fargate reserved)
-D -> cloud_run_monthly_spend: ">$1500" — Strong case for ECS Fargate with Savings Plans
-E -> (no constraint written)
-F -> same as default (B)
+1 -> cloud_run_monthly_spend: "<$100" — Recommend staying on Cloud Run; migration cost exceeds savings
+2 -> cloud_run_monthly_spend: "$100-$500" — Present cost comparison; migration may make sense if consolidating
+3 -> cloud_run_monthly_spend: "$500-$1500" — Fixed-cost AWS options attractive (ECS Fargate reserved)
+4 -> cloud_run_monthly_spend: ">$1500" — Strong case for ECS Fargate with Savings Plans
+5 -> (no constraint written)
+6 -> same as default (2)
 ```
 
-Default: B — `cloud_run_monthly_spend: "$100-$500"`.
+Default: 2 — `cloud_run_monthly_spend: "$100-$500"`.
 
 ---
 
@@ -247,9 +247,9 @@ _Applies when:_ Compute resources are present in the inventory. (If no compute r
 
 > Some of your services have ARM64 compatibility considerations. Graviton (ARM64) instances are ~15–20% cheaper per hour. Your [language] workloads appear compatible; [service X] has [caveat]. How would you like to proceed?
 >
-> A) Yes — target Graviton for all eligible services (recommended)
-> B) No — stay on x86 for everything
-> C) Let me decide per-service (Graviton where ready, x86 for flagged services)
+> 1. Yes — target Graviton for all eligible services (recommended)
+> 2. No — stay on x86 for everything
+> 3. Let me decide per-service (Graviton where ready, x86 for flagged services)
 
 | Answer             | Recommendation Impact                                                                  |
 | ------------------ | -------------------------------------------------------------------------------------- |
@@ -260,9 +260,9 @@ _Applies when:_ Compute resources are present in the inventory. (If no compute r
 Interpret:
 
 ```
-A -> cpu_architecture: {"value": "graviton", "chosen_by": "user"}
-B -> cpu_architecture: {"value": "x86", "chosen_by": "user"}
-C -> cpu_architecture: {"value": "mixed", "chosen_by": "user"}
+1 -> cpu_architecture: {"value": "graviton", "chosen_by": "user"}
+2 -> cpu_architecture: {"value": "x86", "chosen_by": "user"}
+3 -> cpu_architecture: {"value": "mixed", "chosen_by": "user"}
 ```
 
 Default (if skipped/unsure): `{"value": "graviton", "chosen_by": "default"}` when all-ready; otherwise `{"value": "mixed", "chosen_by": "default"}`. See `references/shared/graviton.md` and `references/shared/schema-graviton.md`.

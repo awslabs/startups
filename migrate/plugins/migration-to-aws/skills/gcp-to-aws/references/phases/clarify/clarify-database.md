@@ -44,12 +44,12 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 
 > Understanding your database traffic pattern helps me recommend the right sizing on AWS — within the RDS or Aurora family Q6 already selected.
 >
-> A) Steady, predictable load — consistent volume, no major spikes
-> B) Read-heavy with occasional write spikes — mostly reads, periodic write bursts
-> C) Write-heavy or globally distributed writes — high write throughput or multi-region writes
-> D) Rapidly growing — doubling every few months
-> E) N/A — We don't use Cloud SQL
-> F) I don't know
+> 1. Steady, predictable load — consistent volume, no major spikes
+> 2. Read-heavy with occasional write spikes — mostly reads, periodic write bursts
+> 3. Write-heavy or globally distributed writes — high write throughput or multi-region writes
+> 4. Rapidly growing — doubling every few months
+> 5. N/A — We don't use Cloud SQL
+> 6. I don't know
 
 | Answer                              | When Q6 = Inconvenient or Significant Issue (**RDS** path)                    | When Q6 = Mission-Critical or Catastrophic (**Aurora** path)                     |
 | ----------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -61,15 +61,15 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 Interpret:
 
 ```
-A -> database_traffic: "steady"
-B -> database_traffic: "read-heavy"
-C -> database_traffic: "write-heavy-global"
-D -> database_traffic: "rapidly-growing"
-E -> (no constraint written)
-F -> same as default (A)
+1 -> database_traffic: "steady"
+2 -> database_traffic: "read-heavy"
+3 -> database_traffic: "write-heavy-global"
+4 -> database_traffic: "rapidly-growing"
+5 -> (no constraint written)
+6 -> same as default (1)
 ```
 
-Default: A — `database_traffic: "steady"`.
+Default: 1 — `database_traffic: "steady"`.
 
 ---
 
@@ -81,11 +81,11 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 
 **Rationale:** On AWS, storage and I/O billing differ between RDS and Aurora. This captures how disk-heavy the workload is. **Q6 still governs RDS vs Aurora** — this question only selects storage/I/O options within that family.
 
-> A) Low (< 1,000 IOPS) — Mostly reads, infrequent writes
-> B) Medium (1,000–10,000 IOPS) — Balanced workload
-> C) High (> 10,000 IOPS) — Write-heavy, high transactions
-> D) N/A — We don't use Cloud SQL
-> E) I don't know
+> 1. Low (< 1,000 IOPS) — Mostly reads, infrequent writes
+> 2. Medium (1,000–10,000 IOPS) — Balanced workload
+> 3. High (> 10,000 IOPS) — Write-heavy, high transactions
+> 4. N/A — We don't use Cloud SQL
+> 5. I don't know
 
 | Answer                     | When Q6 = Inconvenient or Significant Issue (**RDS** path) | When Q6 = Mission-Critical or Catastrophic (**Aurora** path) |
 | -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
@@ -96,14 +96,14 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 Interpret:
 
 ```
-A -> db_io_workload: "low"
-B -> db_io_workload: "medium"
-C -> db_io_workload: "high"
-D -> (no constraint written)
-E -> same as default (B)
+1 -> db_io_workload: "low"
+2 -> db_io_workload: "medium"
+3 -> db_io_workload: "high"
+4 -> (no constraint written)
+5 -> same as default (2)
 ```
 
-Default: B — `db_io_workload: "medium"`.
+Default: 2 — `db_io_workload: "medium"`.
 
 ---
 
@@ -128,11 +128,11 @@ If multiple instances disagree, ask Q13b. Record raw GB in `metadata.inventory_c
 
 > Database size determines which migration tool we recommend — this directly affects your migration window length and risk.
 >
-> A) < 10 GB — small, pg_dump/pg_restore completes in minutes
-> B) 10 GB – 100 GB — medium, pgcopydb recommended for parallel copy
-> C) 100 GB – 500 GB — large, pgcopydb required; plan for multi-hour window
-> D) > 500 GB — very large, AWS DMS strongly recommended regardless of window
-> E) I don't know
+> 1. < 10 GB — small, pg_dump/pg_restore completes in minutes
+> 2. 10 GB – 100 GB — medium, pgcopydb recommended for parallel copy
+> 3. 100 GB – 500 GB — large, pgcopydb required; plan for multi-hour window
+> 4. 500 GB — very large, AWS DMS strongly recommended regardless of window
+> 5. I don't know
 
 | Answer          | Tooling Recommendation                                                                                                                                                        |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -145,11 +145,11 @@ If multiple instances disagree, ask Q13b. Record raw GB in `metadata.inventory_c
 Interpret:
 
 ```
-A -> design_constraints.db_size: { value: "<10GB", chosen_by: "user" } — pg_dump/pg_restore recommended
-B -> design_constraints.db_size: { value: "10-100GB", chosen_by: "user" } — pgcopydb recommended
-C -> design_constraints.db_size: { value: "100-500GB", chosen_by: "user" } — pgcopydb required; flag extended window
-D -> design_constraints.db_size: { value: ">500GB", chosen_by: "user" } — AWS DMS strongly recommended; flag in migration plan
-E -> design_constraints.db_size: { value: "unknown", chosen_by: "default" } — default to pgcopydb; flag for verification
+1 -> design_constraints.db_size: { value: "<10GB", chosen_by: "user" } — pg_dump/pg_restore recommended
+2 -> design_constraints.db_size: { value: "10-100GB", chosen_by: "user" } — pgcopydb recommended
+3 -> design_constraints.db_size: { value: "100-500GB", chosen_by: "user" } — pgcopydb required; flag extended window
+4 -> design_constraints.db_size: { value: ">500GB", chosen_by: "user" } — AWS DMS strongly recommended; flag in migration plan
+5 -> design_constraints.db_size: { value: "unknown", chosen_by: "default" } — default to pgcopydb; flag for verification
 ```
 
-Default: E — `design_constraints.db_size: { value: "unknown", chosen_by: "default" }` (default to pgcopydb; safer than pg_dump at unknown scale).
+Default: 5 — `design_constraints.db_size: { value: "unknown", chosen_by: "default" }` (default to pgcopydb; safer than pg_dump at unknown scale).

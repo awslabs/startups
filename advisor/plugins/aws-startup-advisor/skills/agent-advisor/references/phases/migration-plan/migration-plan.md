@@ -37,15 +37,38 @@ boundary. Everything runs inside the current agent-advisor session, so Steps 5�
 
 gcp-to-aws files are **read-only**: this phase never edits them.
 
-## Step -1 — Engine presence check (ATX capability gate)
+## Path definitions (resolve first, before any other step)
+
+```
+$GCP_BASE = ${CLAUDE_PLUGIN_ROOT}/skills/gcp-to-aws
+```
+
+**If `${CLAUDE_PLUGIN_ROOT}` does not resolve** (a literal `${CLAUDE_PLUGIN_ROOT}` string
+showing up in a path error, or some Cursor/Codex/other-agent builds) — this happens under a
+single-skill or `npx skills add` install, where there is no shared plugin root at all — fall
+back to locating `gcp-to-aws` as a sibling of this skill's own installed directory: this
+SKILL.md's own containing folder is named `agent-advisor` under any install layout, so
+`gcp-to-aws` — when installed — sits at the same level as that folder:
+
+```
+$GCP_BASE = <the directory containing this skill's own "agent-advisor" folder>/gcp-to-aws
+```
+
+This formula resolves correctly under both layouts because it only depends on `gcp-to-aws`
+being installed as a sibling of `agent-advisor` — which install path put it there is
+irrelevant, only the folder structure matters.
+
+## Step -1 — Engine presence check (capability gate)
 
 This phase is the ONLY place in this skill that reads a **sibling** skill, so it is the only
 place that can fail when the skill is deployed on its own. In the full plugin the engine is
-always installed. In a standalone bundle — the ATX Custom transformation built by
-`tools/atx-bundle/build.ts`, which ships this skill and nothing else — it is absent.
+always installed. It can be absent in two cases: a standalone bundle (the ATX Custom
+transformation built by `tools/atx-bundle/build.ts`, which ships this skill and nothing else),
+or a partial `npx skills add` install that installed `agent-advisor` without also installing
+`gcp-to-aws`.
 
-Before resolving any path below, check whether `$GCP_BASE/references/phases/design/design.md`
-exists (`$GCP_BASE` is defined in the next section). **If it does not:**
+With `$GCP_BASE` resolved per the section above, check whether
+`$GCP_BASE/references/phases/design/design.md` exists. **If it does not:**
 
 1. Read-merge-write `$RUN_DIR/.phase-status.json`: set `phases.migration_plan =
    "not_applicable"` AND `migration_plan_unavailable = "engine_absent"`, then advance
@@ -57,7 +80,9 @@ exists (`$GCP_BASE` is defined in the next section). **If it does not:**
    `gcp-to-aws` engine, which this deployment does not bundle. Everything through the
    recommendation (runtime verdict, deployment model, service set, model + API path, cost
    magnitude, and the generated documents) is unaffected — only the migration plan stage is
-   unavailable here. If they need the plan, point them at the `gcp-to-aws` skill in this plugin.
+   unavailable here. If they installed via `npx skills add`, tell them to also install
+   `gcp-to-aws` (same `--agent`/scope) and restart their agent to get the plan; otherwise point
+   them at the `gcp-to-aws` skill in this plugin.
 3. **Still offer Gate 2** — a missing plan does not remove the POC. Ask it exactly as Step 6
    below does (same wording, same `phases.poc = "in_progress"` persistence before poc.md loads),
    but say the POC will be **design-backed** (built from `design.json`, labelled "not
@@ -68,12 +93,6 @@ exists (`$GCP_BASE` is defined in the next section). **If it does not:**
    are satisfied by the `not_applicable` resolution exactly as they are for an idea-only migrate.
 
 Only continue past this point when the engine is present.
-
-## Path definitions (resolve first, before any other step)
-
-```
-$GCP_BASE = ${CLAUDE_PLUGIN_ROOT}/skills/gcp-to-aws
-```
 
 **IMPORTANT — relative path resolution table:** gcp-to-aws
 instruction files use several relative path prefixes. Resolve each as follows (the only path
