@@ -9,10 +9,12 @@ controls. It is acceptable only while both of these hold:
 
 ## Why this is an allowlist, and why it is not grep
 
-The first version of this guard was two greps for bad patterns. Adversarial review wrote
-sixteen hostile workflows against it: fifteen passed, and the one it rejected was the
-safe `env:`-indirection pattern its own error message recommended. The bypasses were not
-exotic:
+This guard has been broken twice and rewritten twice; the fixture corpus in
+`fixtures/` is the record of both rounds, and every file in it must stay rejected.
+
+Round one, against two greps for bad patterns: sixteen hostile workflows were written and
+fifteen passed, while the one rejected was the safe `env:`-indirection pattern its own
+error message recommended. The bypasses were not exotic:
 
   - `uses: "actions/checkout@v4"` defeated an anchored `uses:[[:space:]]*actions/checkout`.
   - A folded scalar (`uses: >-` then the value on the next line) defeated it again.
@@ -24,6 +26,14 @@ exotic:
   - Fields a denylist has to remember were simply absent: `head.label`,
     `head.repo.description`, bracket spellings like `head['ref']`, and
     `toJSON(github.event)`, which embeds the title and body wholesale.
+
+Round two, against the first allowlist version: it still fell to a step that reads as an
+ordinary caching optimisation, because one denylist had been left inside an allowlist
+guard. `SELF_FETCH` searched four fetch spellings and missed ten of twelve tested, and it
+could not see `$GITHUB_HEAD_REF` or `$GITHUB_EVENT_PATH` at all, which carry
+fork-controlled text to a shell with no `${{ }}` anywhere. Shell bodies are now pinned by
+sha256, which is why no fetch pattern appears in this file: enumerating fetch commands is
+the same losing game as enumerating bad YAML.
 
 Enumerating bad YAML is unwinnable, so this enumerates good YAML. Anything not
 explicitly permitted fails, so new syntax, new fields, and new spellings fail closed.
@@ -96,11 +106,6 @@ COMPARISON = re.compile(r"^[A-Za-z0-9_.'\"\[\]\-]+(==|!=)[A-Za-z0-9_.'\"\[\]\-]+
 
 EXPRESSION = re.compile(r"\$\{\{(.+?)\}\}", re.DOTALL)
 
-# A `run:` body can fetch the pull request with no `uses:` at all, which the previous
-# guard missed entirely. Invariant 1 is about contributor code reaching the runner, not
-# about one action.
-SELF_FETCH = re.compile(r"\b(gh\s+pr\s+checkout|git\s+clone|git\s+fetch|git\s+checkout)\b")
-
 class StrictLoader(yaml.SafeLoader):
     """Rejects duplicate mapping keys.
 
@@ -150,7 +155,7 @@ StrictLoader.add_constructor(
 #
 # The cost is deliberate. Any edit to a shell body fails until the hash is updated, and
 # that hash change is the review artifact. Regenerate with:
-#     python3 .github/workflows/tools/reviewer_guard.py --hashes <workflow.yml>
+#     python3 tools/reviewer-guard/reviewer_guard.py --hashes <workflow.yml>
 ALLOWED_RUN_SHA256 = {
     "1d556cc9a31779bafb63600b5129316af0dc0d988486898052f66700b0366717": "Signal review started",
     "8bc2bf945242477da317013e698de9698d16a1ffa5205be70661e0e675a96b8b": "Check configuration",

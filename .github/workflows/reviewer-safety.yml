@@ -11,14 +11,20 @@ name: Reviewer Safety
 # Losing either is a credential exposure rather than a broken build, and it would read as
 # an ordinary edit in review, so the invariants are asserted rather than left to a comment.
 #
-# The assertion is an ALLOWLIST over the parsed YAML, in `tools/reviewer-guard/reviewer_guard.py`, not a
-# search for bad patterns. The first version was two greps; adversarial review wrote
-# sixteen hostile workflows against it and fifteen passed, while the one it rejected was
-# the safe `env:`-indirection pattern its own error message recommended. `uses:
-# "actions/checkout@v4"` beat an anchored pattern, a folded scalar beat it again, and
-# `${{ format('{0}', ...title) }}` beat a `[^}]*` class that cannot cross the `}` in
-# `{0}`. Indirection beat it wholesale: a local composite action, a reusable workflow, or
-# `gh pr checkout` in a `run:` body all fetch fork code with no `actions/checkout` at all.
+# The assertion is an ALLOWLIST over the parsed YAML, in
+# `tools/reviewer-guard/reviewer_guard.py`, not a search for bad patterns. It has been
+# broken twice and rewritten twice, and the fixture corpus is the record of both rounds.
+#
+# Round one, two greps: sixteen hostile workflows, fifteen passed, and the one rejected was
+# the safe `env:`-indirection pattern its own error message recommended.
+# `uses: "actions/checkout@v4"` beat an anchored pattern, a folded scalar beat it again,
+# and `${{ format('{0}', ...title) }}` beat a `[^}]*` class that cannot cross the `}` in
+# `{0}`. Indirection beat it wholesale.
+#
+# Round two, the first allowlist: one denylist had been left inside it, so a step reading
+# as an ordinary caching optimisation still passed. Shell bodies are now pinned by sha256,
+# so any edit to a script fails until the hash is updated and that hash change is the
+# review artifact.
 # Enumerating bad YAML is unwinnable, so the guard enumerates good YAML and anything
 # unrecognised fails closed. Every hostile file is kept as a fixture and the guard is
 # re-proved against all of them on every run.
