@@ -112,6 +112,7 @@
 <a href="#exec-share">Share With Your CFO</a>
 <a href="#exec-services">Current Stack</a>
 <a href="#exec-costs">Cost Comparison</a>
+<a href="#exec-optimization">Cost Optimization</a>
 <a href="#exec-timeline">Timeline</a>
 <a href="#exec-risks">Top Risks</a>
 <a href="#exec-assumptions">What This Assessment Rests On</a>
@@ -132,6 +133,18 @@
 <table><caption>Estimated monthly costs</caption><thead><tr><th scope="col">Tier</th><th scope="col" class="num">Est. Monthly AWS</th></tr></thead>
 <tbody><tr><td>Premium</td><td class="num">Est. $212/mo</td></tr><tr><td><strong>Balanced</strong> (compare GCP to this row first)</td><td class="num"><strong>Est. $155/mo</strong></td></tr><tr><td>Optimized</td><td class="num">Est. $118/mo</td></tr></tbody></table>
 <p><span class="chip-warn">⚠ not comparable</span> Your GCP baseline: estimated from resource configs (±20–30%, standing charges only). Your stated spend band ($1K–$5K/mo) measures your whole bill and is not directly comparable to the AWS figure above.</p>
+</section>
+<section id="exec-optimization">
+<h2>Cost Optimization <a class="toplink" href="#toc">↑ contents</a></h2>
+<p>Savings Plans and Reserved Instances are incremental to the Balanced on-demand baseline (Est. $155/mo). Do not add those savings on top of Optimized (Est. $118/mo) — that tier already embeds reservation assumptions.</p>
+<table>
+<caption>Post-migration commitment options vs Balanced on-demand.</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody>
+<tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td><td>1-year no-upfront</td><td>Low</td></tr>
+<tr><td>Database Savings Plans</td><td>RDS</td><td>~20%</td><td>1-year no-upfront</td><td>Low</td></tr>
+</tbody>
+</table>
 </section>
 <section id="exec-timeline">
 <h2>Timeline <a class="toplink" href="#toc">↑ contents</a></h2>
