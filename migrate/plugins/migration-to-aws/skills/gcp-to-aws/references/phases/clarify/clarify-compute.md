@@ -80,11 +80,11 @@ _Fire when:_ GKE cluster present AND Q5 != 1 (multi-cloud). Skip when: Q5 = 1 (a
 
 **Autopilot context (read `config.autopilot_enabled` on the `google_container_cluster` from `gcp-resource-inventory.json`):**
 
-- **Autopilot cluster** (`autopilot_enabled: true`) → your cluster is already fully node-managed, so EKS Auto Mode (A) is the 1:1 equivalent and stays the default. Present the options neutrally and record the Autopilot→Auto Mode fit in the rationale — do not steer the question toward A. Standard node groups (B) are a step _backward_ in operational model here; surface it only if the user asks.
-- **Standard cluster** (`autopilot_enabled: false`) → you manage node pools today. Keep A as the default, but give B (standard managed node groups) equal footing when presenting options, since it preserves your current node-management model.
-- **Unknown** (flag absent) → A remains the default; present B and C as equal alternatives.
+- **Autopilot cluster** (`autopilot_enabled: true`) → your cluster is already fully node-managed, so EKS Auto Mode (1) is the 1:1 equivalent and stays the default. Present the options neutrally and record the Autopilot→Auto Mode fit in the rationale — do not steer the question toward 1. Standard node groups (2) are a step _backward_ in operational model here; surface it only if the user asks.
+- **Standard cluster** (`autopilot_enabled: false`) → you manage node pools today. Keep 1 as the default, but give 2 (standard managed node groups) equal footing when presenting options, since it preserves your current node-management model.
+- **Unknown** (flag absent) → 1 remains the default; present 2 and 3 as equal alternatives.
 
-**Context for user:** Frame the question practically and **neutrally — present all options (A/B/C) before stating the default, so an unsure user makes an actual choice rather than passively confirming a lead-in recommendation.** The default is noted last, after the options:
+**Context for user:** Frame the question practically and **neutrally — present all options (1/2/3) before stating the default, so an unsure user makes an actual choice rather than passively confirming a lead-in recommendation.** The default is noted last, after the options:
 
 - **Fully-managed Kubernetes** — keep Kubernetes and your manifests/Helm charts, but let AWS run the nodes (autoscaling, patching, right-sizing). Closest match to GKE Autopilot.
 - **Self-managed nodes** — keep Kubernetes and take direct control of the node groups (instance types, node pools, upgrades). A standard EKS cluster.

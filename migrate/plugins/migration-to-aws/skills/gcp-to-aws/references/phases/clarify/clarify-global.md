@@ -204,7 +204,7 @@ Interpret:
 ```
 1 -> compute: "eks" — Immediate EKS Standard Cluster recommendation (kubernetes: "eks-standard"). EKS Auto Mode is NOT used for multi-cloud — its node management is AWS-specific and defeats portability; a standard EKS cluster is the portable target. EARLY EXIT: skip Q8.
 2 -> (no constraint written — full compute decision tree continues)
-3 -> same as default (B) — assume AWS-only
+3 -> same as default (2) — assume AWS-only
 ```
 
 Default: 2 — no constraint, evaluate full compute options.
