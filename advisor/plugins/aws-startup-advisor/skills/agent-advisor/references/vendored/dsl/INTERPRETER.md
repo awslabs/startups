@@ -539,8 +539,8 @@ cold start that begins a migration.
 declared run root (§ Skill bindings). A skill that declares its own state shape
 writes `.phase-status.json` per its SKILL.md's state-file section instead of the
 shared schema in step 4. Telemetry covers only runs under the literal default
-root `.migration/`: a skill that declares its own run root skips the consent
-step, the telemetry keys in step 5, and the fallback in § update protocol.)
+root `.migration/`: a skill that declares its own run root skips the telemetry
+keys in step 4.)
 
 1. Check for an existing `.migration/` directory at the project root.
    - **If existing runs are found:** list them with their phase status and ask:

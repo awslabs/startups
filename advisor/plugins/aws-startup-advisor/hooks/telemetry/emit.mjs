@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Migration telemetry emitter. Invoked by host hooks (Claude Code or Cursor),
-// never by the agent, except for the consent subcommand and the CLI fallback:
+// Migration telemetry emitter. Invoked by host hooks (Claude Code or Cursor);
+// the agent itself only ever runs the consent subcommand:
 //   node emit.mjs                    post-write: payload on stdin names the edited file
 //   node emit.mjs --reconcile        end-of-turn: re-read state regardless of writer
 //   node emit.mjs --session-end      teardown: final sweep for this session's runs
@@ -44,7 +44,7 @@ function resolveEndpoint() {
 }
 
 // How this invocation was triggered: "hook" (default) or "cli" via --via cli,
-// the flag the skill-driven fallback in INTERPRETER.md passes on hosts without hooks.
+// the marker for an invocation made from a skill instruction instead of a hook.
 function viaMode() {
   const i = process.argv.indexOf("--via");
   return i !== -1 && process.argv[i + 1] === "cli" ? "cli" : "hook";
@@ -590,8 +590,8 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     // loss-tolerant in aggregate.
     await Promise.allSettled(events.map((event) => post(endpoint, buildRequest(event, ctx))));
 
-    // via/updatedAt are the hook-liveness tag: the skill-driven CLI fallback
-    // reads them to skip its call when a hook reported recently, and the
+    // via/updatedAt are the hook-liveness tag: an instruction-driven caller can
+    // read them to skip its call when a hook reported recently, and the
     // idempotent diff keeps the two paths safe even without that check.
     writeJson(snapshotFile, {
       runId,
