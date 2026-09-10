@@ -33,7 +33,7 @@ exposure rather than a broken build.
 The YAML tree is parsed rather than pattern-matched, so quoting, folded scalars, and key
 order cannot change the answer.
 
-Usage: reviewer_guard.py <workflow.yml> [...]
+Usage: tools/reviewer-guard/reviewer_guard.py <workflow.yml> [...]
 Exit 0 when every file satisfies the invariants, 1 on a violation or an unusable file,
 2 on a usage error.
 """
@@ -356,7 +356,13 @@ def load(path: str) -> dict | None:
         return None
 
     try:
-        doc = yaml.load(text, Loader=StrictLoader)
+        # B506 is suppressed below, and the reason matters: StrictLoader subclasses
+        # SafeLoader and only adds duplicate-key rejection, so it constructs plain types
+        # and no arbitrary objects. `safe_load` cannot be used because it accepts no
+        # Loader, and dropping the loader would restore the duplicate-key bypass this
+        # exists to close. Keep the annotation bare: bandit reads anything after `nosec`
+        # as a list of test ids, so prose on that line becomes invented test names.
+        doc = yaml.load(text, Loader=StrictLoader)  # nosec B506
     except yaml.YAMLError as error:
         first = str(error).splitlines()[0]
         print(f"::error::{path}: not valid YAML ({first}); refusing to report success.", file=sys.stderr)

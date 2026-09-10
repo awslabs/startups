@@ -11,7 +11,7 @@ name: Reviewer Safety
 # Losing either is a credential exposure rather than a broken build, and it would read as
 # an ordinary edit in review, so the invariants are asserted rather than left to a comment.
 #
-# The assertion is an ALLOWLIST over the parsed YAML, in `tools/reviewer_guard.py`, not a
+# The assertion is an ALLOWLIST over the parsed YAML, in `tools/reviewer-guard/reviewer_guard.py`, not a
 # search for bad patterns. The first version was two greps; adversarial review wrote
 # sixteen hostile workflows against it and fifteen passed, while the one it rejected was
 # the safe `env:`-indirection pattern its own error message recommended. `uses:
@@ -20,8 +20,14 @@ name: Reviewer Safety
 # `{0}`. Indirection beat it wholesale: a local composite action, a reusable workflow, or
 # `gh pr checkout` in a `run:` body all fetch fork code with no `actions/checkout` at all.
 # Enumerating bad YAML is unwinnable, so the guard enumerates good YAML and anything
-# unrecognised fails closed. Those sixteen files are kept as fixtures and the guard is
-# re-proved against them on every run.
+# unrecognised fails closed. Every hostile file is kept as a fixture and the guard is
+# re-proved against all of them on every run.
+#
+# The guard and its fixtures live in `tools/reviewer-guard/`, deliberately outside
+# `.github/workflows/`, and the fixtures carry a `.yml.fixture` extension. They are hostile
+# workflows by construction, so while they sat under `.github/workflows/` every workflow
+# scanner in CI read them as real pipelines and failed on exactly the shell injection and
+# `curl`-with-secrets they are built to contain.
 #
 # This is its own workflow rather than a step in the contribution gate, and it checks two
 # refs. Both were raised on awslabs/startups#259:
@@ -95,7 +101,7 @@ jobs:
       - name: Assert the reviewer stays safe under pull_request_target
         run: |
           set -euo pipefail
-          python3 .github/workflows/tools/reviewer_guard.py \
+          python3 tools/reviewer-guard/reviewer_guard.py \
             .github/workflows/agentcore-reviewer.yml \
             .guard/default-branch-reviewer.yml
           {
@@ -113,8 +119,8 @@ jobs:
         run: |
           set -euo pipefail
           failures=0
-          for fixture in .github/workflows/tools/reviewer-guard-fixtures/*.yml; do
-            if python3 .github/workflows/tools/reviewer_guard.py "$fixture" >/dev/null 2>&1; then
+          for fixture in tools/reviewer-guard/fixtures/*.yml.fixture; do
+            if python3 tools/reviewer-guard/reviewer_guard.py "$fixture" >/dev/null 2>&1; then
               echo "::error::guard accepted known-bad fixture $fixture" >&2
               failures=$((failures + 1))
             fi
@@ -122,7 +128,7 @@ jobs:
           # The positive control is the real workflow, not a synthetic baseline. Once shell
           # bodies are pinned by hash, only the actual reviewer can pass, so a fixture that
           # merely looks safe is correctly rejected too and cannot serve as the control.
-          if ! python3 .github/workflows/tools/reviewer_guard.py \
+          if ! python3 tools/reviewer-guard/reviewer_guard.py \
             .github/workflows/agentcore-reviewer.yml >/dev/null 2>&1; then
             echo "::error::guard rejected the real reviewer workflow; the allowlist and the workflow have drifted apart" >&2
             failures=$((failures + 1))
