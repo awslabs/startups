@@ -190,11 +190,21 @@ claude plugin marketplace remove startups-for-aws
 
 A passing `validate` does not prove dependencies resolve. Cross-marketplace dependency errors only surface at install time.
 
-Then run the gate itself. CI runs exactly this on every PR touching `solution-architecture/`:
+Then run the gate itself, over the whole folder:
 
 ```bash
 node solution-architecture/tools/contribution-gate/check.mjs
 ```
+
+CI runs the same script but passes only the markdown files your PR changed, so it is stricter locally than in CI: a pre-existing violation elsewhere in the folder fails the bare command above and does not fail your PR. To check exactly what CI will check:
+
+```bash
+git diff -z --name-only --diff-filter=d "$(git merge-base origin/main HEAD)" HEAD \
+  -- 'solution-architecture/*.md' 'solution-architecture/**/*.md' \
+  | xargs -0 node solution-architecture/tools/contribution-gate/check.mjs
+```
+
+With no changed markdown that falls through to a whole-folder scan, which is what CI does too.
 
 Across **every markdown file** in this folder, including reference files, it reports mentions of sunset services and checks prose style. The removed `aws-dev-toolkit` recommended App Mesh in `references/compute.md` and App Runner in `references/cost-comparison.md`, so reference files are where this problem has actually shown up rather than a hypothetical.
 

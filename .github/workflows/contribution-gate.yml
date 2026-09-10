@@ -35,8 +35,9 @@ jobs:
         with:
           node-version: '24'
 
+      # No `id:` and no outputs. This step set a `count=` output that nothing ever read;
+      # the gate step below branches on `[ -s changed.txt ]` instead.
       - name: Determine changed markdown files
-        id: changed
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -49,15 +50,23 @@ jobs:
             # All markdown, not just SKILL.md: sunset-service and style checks
             # apply to reference files too, which is where these have
             # historically appeared.
-            git diff --name-only --diff-filter=d "$MERGE_BASE" "$HEAD_SHA" \
+            # `-z` produces NUL-separated paths VERBATIM. Without it git C-quotes any
+            # path containing a special character, so a filename with a newline arrived as
+            # the literal string `"solution-architecture/a\nb.md"`, quotes and backslash
+            # included, which failed `existsSync` in the gate and was silently dropped. If
+            # it was the only changed path the gate exited 2 and was loud, but alongside any
+            # other markdown change the file went unchecked behind a green gate. The gate
+            # runs on fork pull requests and git permits newlines in paths, so this is the
+            # input side of the injection case the gate already tests for on the output
+            # side. check.mjs names this exact fix in its own error text.
+            git diff -z --name-only --diff-filter=d "$MERGE_BASE" "$HEAD_SHA" \
               -- 'solution-architecture/*.md' 'solution-architecture/**/*.md' > changed.txt || true
           else
             # workflow_dispatch: no PR context, so check everything in scope.
             : > changed.txt
           fi
-          echo "count=$(wc -l < changed.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
           echo "Changed markdown files:"
-          cat changed.txt
+          tr '\0' '\n' < changed.txt
 
       # The gate is an enforcement script, so a false negative in it is silent: nothing
       # fails and nobody looks. It shipped a sunset check that passed three of the four
@@ -71,10 +80,11 @@ jobs:
           set -euo pipefail
           # With no changed skill files (or on workflow_dispatch), scan the
           # whole folder rather than silently passing on an empty list.
-          # `xargs -a` is GNU-only; redirect stdin instead so the same command
-          # works when a contributor runs this locally on macOS.
+          # `changed.txt` is already NUL-separated from `git diff -z`, so `xargs -0`
+          # reads it directly. `xargs -a` is GNU-only; redirect stdin instead so the
+          # same command works when a contributor runs this locally on macOS.
           if [ -s changed.txt ]; then
-            tr '\n' '\0' < changed.txt | xargs -0 node solution-architecture/tools/contribution-gate/check.mjs
+            xargs -0 node solution-architecture/tools/contribution-gate/check.mjs < changed.txt
           else
             node solution-architecture/tools/contribution-gate/check.mjs
           fi

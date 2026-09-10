@@ -216,18 +216,25 @@ def check_expressions(text: str, where: str, *, allow_comparison: bool) -> None:
             )
 
 
-def walk(node: object, path: str, in_if: bool) -> None:
-    """Walk the parsed tree. Text position is not meaningful; structure is."""
+def walk(node: object, path: str) -> None:
+    """Walk the parsed tree. Text position is not meaningful; structure is.
+
+    No `in_if` parameter: `if:` is handled where it is found, below, so nothing
+    inherits permission to hold a comparison. An earlier version threaded that
+    permission down the recursion and it was dead the moment the `if:` handler
+    started terminating the branch itself, which left a parameter that read as
+    load-bearing while always being false.
+    """
     if node is None:
         return
 
     if isinstance(node, (str, int, float, bool)):
-        check_expressions(node, path or "<root>", allow_comparison=in_if)
+        check_expressions(node, path or "<root>", allow_comparison=False)
         return
 
     if isinstance(node, list):
         for i, item in enumerate(node):
-            walk(item, f"{path}[{i}]", in_if)
+            walk(item, f"{path}[{i}]")
         return
 
     if isinstance(node, dict):
@@ -275,7 +282,7 @@ def walk(node: object, path: str, in_if: bool) -> None:
                 check_expressions(value, here, allow_comparison=True)
                 continue
 
-            walk(value, here, in_if)
+            walk(value, here)
 
 
 def check_structure(doc: dict, path: str) -> None:
@@ -412,7 +419,7 @@ def main(argv: list[str]) -> int:
         doc = load(path)
         if doc is None:
             return 1
-        walk(doc, "", False)
+        walk(doc, "")
         check_structure(doc, path)
 
     if findings:
@@ -421,10 +428,17 @@ def main(argv: list[str]) -> int:
         print(f"\n{len(findings)} violation(s) of the reviewer safety invariants.", file=sys.stderr)
         return 1
 
+    # Says only what was actually checked. The previous wording claimed every `${{ }}`
+    # expression was allowlisted, but `walk` returns at `run:` after pinning the body, so
+    # expressions INSIDE a shell body are never passed to `check_expressions`. That is not
+    # a hole, because the hash covers the whole body including any expression in it, but a
+    # guard that overstates its own coverage teaches the next reader to trust the wrong
+    # thing.
     print(
         f"Reviewer safety invariants hold across {len(argv)} file(s): every `uses:` is "
-        "allowlisted, every `${{ }}` expression is allowlisted, and no shell fetches the "
-        "pull request."
+        "allowlisted, every `${{ }}` expression outside a shell body is allowlisted, "
+        "every shell body is pinned by sha256, and the trigger, permissions, and "
+        "head-repository partition are present."
     )
     return 0
 

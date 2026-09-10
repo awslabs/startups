@@ -25,6 +25,7 @@ name: Reviewer Safety
 # as an ordinary caching optimisation still passed. Shell bodies are now pinned by sha256,
 # so any edit to a script fails until the hash is updated and that hash change is the
 # review artifact.
+#
 # Enumerating bad YAML is unwinnable, so the guard enumerates good YAML and anything
 # unrecognised fails closed. Every hostile file is kept as a fixture and the guard is
 # re-proved against all of them on every run.
@@ -47,14 +48,18 @@ name: Reviewer Safety
 #     invariant. The default branch copy is what a fork's `pull_request_target` run
 #     actually loads, so it is checked for drift. Reading the head as data is safe because
 #     nothing in it is executed.
+#
 # KNOWN LIMIT, recorded rather than papered over. This workflow runs on `pull_request`,
 # so its own definition comes from the pull request's merge ref: a change to THIS file is
 # checked by the changed copy. Editing `TARGET`, appending `exit 0`, or deleting the file
 # all report green. Two things outside this file are what actually close it, and both must
 # stay in place:
 #
-#   - `.github/CODEOWNERS` routes `/.github/` to the admins team, so any edit here needs
-#     their review.
+#   - `.github/CODEOWNERS` routes BOTH `/.github/` and `/tools/` to the admins team, so an
+#     edit to this workflow or to the allowlist it enforces needs their review. Both paths
+#     matter: moving the guard to `tools/` briefly took the allowlist out of admin review
+#     while this comment still claimed otherwise, and editing the allowlist is as powerful
+#     as editing the workflow.
 #   - This check should be marked required in branch protection, so deleting the workflow
 #     registers as a missing required check rather than as silence.
 #
@@ -89,11 +94,16 @@ jobs:
       # The DEFAULT BRANCH is what a fork's `pull_request_target` run actually loads, per
       # GitHub's events reference, so it is checked for drift. `base.ref` would be wrong
       # for any pull request targeting a non-default branch.
-      # The drift check is meaningful only once the guard exists on the default branch.
-      # Before this lands, the default branch's reviewer workflow predates the allowlist,
-      # so its shell bodies are legitimately unpinned and the guard rejects it. That is
-      # expected during bootstrap and is not a violation: judging main's copy against a
-      # branch's allowlist compares two things that are supposed to differ.
+      #
+      # Two reasons the default-branch result is reported rather than enforced, both of
+      # which come from judging one branch's file against another branch's allowlist:
+      #
+      #   - Bootstrap. Until this lands, the default branch's reviewer workflow predates the
+      #     allowlist, so its shell bodies are legitimately unpinned. This step probes for
+      #     the guard's existence there and skips the comparison when it is absent.
+      #   - Steady state. Any pull request that re-pins a shell body makes the default
+      #     branch's copy fail by construction, until the merge lands. See the assertion
+      #     step below for why enforcing that has no honest green path.
       - name: Fetch the default branch copy of the reviewer workflow
         id: drift
         env:
@@ -145,45 +155,89 @@ jobs:
           tar xzf "$archive" actionlint
           ./actionlint -shellcheck= .github/workflows/*.yml
 
+      # The two refs are checked SEPARATELY and only the head copy can fail the build.
+      #
+      # The head copy is what this pull request proposes, so it is fatal: that is the
+      # assertion that stops an invariant being removed.
+      #
+      # The default branch copy is REPORTED, not enforced, because a green build there is
+      # impossible to sustain. Any pull request that legitimately edits a `run:` body must
+      # swap that body's hash in `ALLOWED_RUN_SHA256`, and from that moment until the merge
+      # lands the default branch's copy is judged against an allowlist it predates, so it
+      # fails. Enforcing it would leave one green path: pin the old hash AND the new one
+      # across the transition, which means deliberately carrying the orphan hash the design
+      # exists to forbid. Reporting keeps the signal (a post-merge divergence is visible in
+      # the summary) without creating a rule whose only compliant move is to weaken the
+      # allowlist.
       - name: Assert the reviewer stays safe under pull_request_target
         env:
           CHECK_DRIFT: ${{ steps.drift.outputs.check }}
         run: |
           set -euo pipefail
 
-          # The proposed copy is always checked. This is the one that gates the pull
-          # request: a change adding a checkout or a fork-controlled interpolation fails
-          # here rather than after merge.
+          # Fatal: this is the copy under review.
           python3 tools/reviewer-guard/reviewer_guard.py \
             .github/workflows/agentcore-reviewer.yml
 
+          drift_note="not checked (the guard is not on the default branch yet)"
           if [ "${CHECK_DRIFT}" = "true" ]; then
-            python3 tools/reviewer-guard/reviewer_guard.py \
-              .guard/default-branch-reviewer.yml
+            if python3 tools/reviewer-guard/reviewer_guard.py \
+              .guard/default-branch-reviewer.yml; then
+              drift_note="satisfies this branch's allowlist"
+            else
+              drift_note="does NOT satisfy this branch's allowlist, which is expected while
+          this pull request re-pins a shell body, and is a real finding otherwise"
+              echo "::warning title=reviewer-guard drift::The default branch copy of" \
+                "agentcore-reviewer.yml does not satisfy this branch's allowlist. Expected" \
+                "if this pull request re-pins a shell body; investigate if it does not."
+            fi
           fi
+
           {
             echo "### Reviewer workflow invariants"
             echo ""
-            echo "The proposed copy satisfies the allowlist, and the default branch copy too"
-            echo "once the guard exists there:"
-            echo "every \`uses:\` is pinned and permitted, every workflow expression is"
-            echo "permitted, every shell body is pinned by hash, and the trigger and"
-            echo "permissions assertions hold."
+            echo "**Proposed copy (enforced):** every \`uses:\` is pinned and permitted,"
+            echo "every workflow expression outside a shell body is permitted, every shell"
+            echo "body is pinned by sha256, and the trigger, permissions, and"
+            echo "head-repository partition are present."
+            echo ""
+            echo "**Default branch copy (reported, not enforced):** ${drift_note}."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Proves the guard still rejects what it is for. A guard that only ever passes is
       # indistinguishable from one that is broken, which is how its predecessor shipped
       # while 15 of 16 hostile workflows walked through it.
+      #
+      # Every fixture must be REJECTED, including the one named
+      # `negative_control_plain_workflow`, which is a benign workflow rather than an attack.
+      # It is here because once shell bodies are pinned by hash, "benign" is no longer
+      # sufficient: a workflow that merely looks safe is correctly rejected too. It was
+      # called `base_copy` while it served as a positive control, which read as an accusation
+      # in this step's error message.
       - name: Prove the guard rejects known bypasses
+        env:
+          # The corpus is the record of both review rounds, so it may grow but must never
+          # shrink. Without a floor the loop counts only fixtures the guard ACCEPTED, so an
+          # empty or deleted `fixtures/` directory yields `failures=0` and this step prints
+          # its success message while proving nothing. Raise this when adding fixtures.
+          FIXTURE_FLOOR: 31
         run: |
           set -euo pipefail
           failures=0
+          checked=0
           for fixture in tools/reviewer-guard/fixtures/*.yml.fixture; do
+            checked=$((checked + 1))
             if python3 tools/reviewer-guard/reviewer_guard.py "$fixture" >/dev/null 2>&1; then
               echo "::error::guard accepted known-bad fixture $fixture" >&2
               failures=$((failures + 1))
             fi
           done
+          echo "Checked ${checked} fixture(s) against a floor of ${FIXTURE_FLOOR}."
+          if [ "$checked" -lt "$FIXTURE_FLOOR" ]; then
+            echo "::error::the fixture corpus shrank: ${checked} present, ${FIXTURE_FLOOR}" \
+              "expected. Deleting fixtures silently disarms this proof." >&2
+            failures=$((failures + 1))
+          fi
           # The positive control is the real workflow, not a synthetic baseline. Once shell
           # bodies are pinned by hash, only the actual reviewer can pass, so a fixture that
           # merely looks safe is correctly rejected too and cannot serve as the control.

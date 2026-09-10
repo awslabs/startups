@@ -39,7 +39,12 @@ const SUNSET = [
   // matched any prose about a launch config file, while the actually dead spellings
   // escaped, so it was noisy and under-matching at the same time.
   {
-    pattern: /\b(Auto Scaling launch configurations?|CreateLaunchConfiguration|AWS::AutoScaling::LaunchConfiguration)\b/g,
+    pattern: /\bAuto Scaling launch configurations?\b/gi,
+    name: "EC2 launch configurations (blocked for accounts created on or after 2024-10-01; use launch templates)",
+  },
+  {
+    // Identifiers, so the casing is exact and `/i` would only add false positives.
+    pattern: /\b(CreateLaunchConfiguration|AWS::AutoScaling::LaunchConfiguration)\b/g,
     name: "EC2 launch configurations (blocked for accounts created on or after 2024-10-01; use launch templates)",
   },
   { pattern: /\bCloud9\b/gi, name: "AWS Cloud9" },
@@ -120,6 +125,10 @@ function declaredDependencyPlugins() {
   return deps;
 }
 
+/** Memo cells for the two plugin-tree walks above. Filled on first use. */
+let skillTargetCache;
+let dependencyPluginCache;
+
 const findings = [];
 const add = (file, criterion, line, message) =>
   findings.push({ file, criterion, line, message });
@@ -146,6 +155,19 @@ const encodeData = (value) =>
 
 const encodeProperty = (value) =>
   encodeData(value).replace(/:/g, "%3A").replace(/,/g, "%2C");
+
+/**
+ * `encodeData` plus the backtick, for values interpolated into the step summary.
+ *
+ * The summary renders as markdown inside a code span, so a backtick in a path would close
+ * the span and let the rest of the filename render as markdown. `encodeData` alone does not
+ * cover it, because GitHub's workflow-command escaping has no reason to. Encoding rather
+ * than stripping, so the reported filename stays faithful: an earlier version stripped both
+ * backticks and newlines, which was inert but silently misreported the path.
+ *
+ * `%` is already encoded to `%25` by `encodeData`, so `%60` here is unambiguous.
+ */
+const encodeSummary = (value) => encodeData(value).replace(/`/g, "%60");
 
 /**
  * Observations reported without failing the build.
@@ -316,8 +338,12 @@ function checkSkillManifest(file) {
 
   // --- invocable upstream pointers ----------------------------------------
   // A plugin whose premise is deference is worthless if its pointers are wrong.
-  const inRepo = resolvableSkillTargets();
-  const upstream = declaredDependencyPlugins();
+  //
+  // Memoised, not called per file: both of these `readdirSync` the three plugin roots, and
+  // this function runs once per SKILL.md. Lazy rather than hoisted to module scope, so a
+  // run with no SKILL.md in it does not walk the tree at all.
+  const inRepo = (skillTargetCache ??= resolvableSkillTargets());
+  const upstream = (dependencyPluginCache ??= declaredDependencyPlugins());
   for (const m of text.matchAll(/Skill\(\s*"([^"\r\n]+)"\s*\)/g)) {
     const target = m[1];
     if (!target.includes(":")) continue; // bare skill name, not a plugin pointer
@@ -418,7 +444,7 @@ function main() {
       `${skillCount} of them SKILL.md.\n`,
   );
 
-  /** Group by file, newest-shallowest first, for a readable report. */
+  /** Group by file, then by path, for a readable report. */
   const report = (items) => {
     const byFile = new Map();
     for (const f of items) {
@@ -439,61 +465,74 @@ function main() {
     }
   };
 
+  /**
+   * Emit one workflow annotation per item, so it lands on the line in Files changed.
+   *
+   * stdout alone was indistinguishable from silence: a green check with notes buried in
+   * collapsed log output reads as "clean", while the summary claimed criterion 3 had been
+   * checked. That argument applies at least as strongly to VIOLATIONS, which is why this
+   * is shared rather than living in the notes branch: a contributor seeing a red X should
+   * not have to expand collapsed logs to learn which file and line.
+   *
+   * Harmless outside Actions, where it is just a line of text, so no branch on CI
+   * detection.
+   *
+   * Every interpolated value is encoded, not just the message. The message is a constant,
+   * so escaping only it was escaping the safe half. The FILE PATH is the untrusted input:
+   * this gate runs on fork pull requests, and git permits commas, colons, percent signs,
+   * and newlines in a path. A contributor could name a file so that the annotation carried
+   * `::stop-commands::`, which makes Actions ignore every workflow command after it,
+   * silently discarding the annotations for every other file in the run. Encoding the path
+   * closes that, and also fixes the duller cases where a comma or colon in a name
+   * truncated the annotation so it anchored to nothing.
+   */
+  const annotate = (items, level) => {
+    for (const item of items) {
+      console.log(
+        `::${level} file=${encodeProperty(item.file)},line=${encodeProperty(item.line)},` +
+          `title=${encodeProperty(item.criterion)}::${encodeData(item.message)}`,
+      );
+    }
+  };
+
+  /** A step summary survives log collapse and is visible without expanding anything. */
+  const summarise = (heading, blurb, items) => {
+    const summaryPath = process.env["GITHUB_STEP_SUMMARY"];
+    if (!summaryPath) return;
+    const lines = [
+      heading,
+      "",
+      ...blurb,
+      "",
+      // One shared encoder rather than a second, divergent sanitiser. Stripping backticks
+      // and newlines also kept the summary inert, but it silently misreported the filename,
+      // and having two escaping rules for one untrusted value is how the next emitter gets
+      // the weaker one.
+      ...items.map(
+        (item) =>
+          `- \`${encodeSummary(item.file)}:${item.line}\` ` +
+          `[${encodeSummary(item.criterion)}] ${encodeSummary(item.message)}`,
+      ),
+      "",
+    ];
+    try {
+      appendFileSync(summaryPath, `${lines.join("\n")}\n`);
+    } catch {
+      // A summary is a nicety. Never fail the gate because it could not be written.
+    }
+  };
+
   // Printed whether or not anything failed. A note that only appears on failure is a
   // note nobody reads on the runs that matter.
-  //
-  // Emitted as `::warning` workflow commands as well, because stdout alone was
-  // indistinguishable from silence: a green check with notes buried in collapsed log
-  // output reads as "clean", while the summary claimed criterion 3 had been checked. An
-  // annotation puts each mention on the line in the Files changed view, which is where a
-  // contributor is already looking. Harmless outside Actions, where it is just a line of
-  // text, so no branch on CI detection.
   if (notes.length > 0) {
     console.log(`${notes.length} note(s), for a reader rather than the build:\n`);
     report(notes);
-
-    for (const n of notes) {
-      // Every interpolated value is encoded, not just the message.
-      //
-      // The message is a constant, so escaping only it was escaping the safe half. The
-      // FILE PATH is the untrusted input: this gate runs on fork pull requests, and git
-      // permits commas, colons, percent signs, and newlines in a path. A contributor
-      // could name a file so that the annotation carried `::stop-commands::`, which makes
-      // Actions ignore every workflow command after it, silently discarding the
-      // annotations for every other file in the run. Encoding the path closes that, and
-      // also fixes the duller cases where a comma or colon in a name truncated the
-      // annotation so it anchored to nothing.
-      console.log(
-        `::warning file=${encodeProperty(n.file)},line=${encodeProperty(n.line)},` +
-          `title=${encodeProperty(n.criterion)}::${encodeData(n.message)}`,
-      );
-    }
-
-    // A step summary survives log collapse and is visible without expanding anything.
-    const summaryPath = process.env["GITHUB_STEP_SUMMARY"];
-    if (summaryPath) {
-      const lines = [
-        `### Contribution gate: ${notes.length} note(s)`,
-        "",
-        "Reported, not enforced. Whether a mention recommends a sunset service or warns",
-        "against it is left to review; see criterion 3 in",
-        "`solution-architecture/CONTRIBUTING.md`.",
-        "",
-        // Backticks and newlines in a path would break out of the code span and could
-        // inject markdown headings into the summary. Same untrusted input as above.
-        ...notes.map(
-          (n) =>
-            `- \`${String(n.file).replace(/[`\r\n]/g, "")}:${n.line}\` ` +
-            `[${n.criterion}] ${n.message}`,
-        ),
-        "",
-      ];
-      try {
-        appendFileSync(summaryPath, `${lines.join("\n")}\n`);
-      } catch {
-        // A summary is a nicety. Never fail the gate because it could not be written.
-      }
-    }
+    annotate(notes, "warning");
+    summarise(`### Contribution gate: ${notes.length} note(s)`, [
+      "Reported, not enforced. Whether a mention recommends a sunset service or warns",
+      "against it is left to review; see criterion 3 in",
+      "`solution-architecture/CONTRIBUTING.md`.",
+    ], notes);
   }
 
   if (findings.length === 0) {
@@ -509,6 +548,10 @@ function main() {
   }
 
   report(findings);
+  annotate(findings, "error");
+  summarise(`### Contribution gate: ${findings.length} violation(s)`, [
+    "These fail the build. See `solution-architecture/CONTRIBUTING.md`.",
+  ], findings);
   console.log(`${findings.length} violation(s). See solution-architecture/CONTRIBUTING.md.`);
   return 1;
 }
@@ -516,6 +559,6 @@ function main() {
 try {
   process.exit(main());
 } catch (err) {
-  console.error(`contribution-gate: harness error: ${err.message}`);
+  console.error(`contribution-gate: harness error: ${oneLine(err.message)}`);
   process.exit(2);
 }

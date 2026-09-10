@@ -20,7 +20,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,22 +49,43 @@ function run(markdown) {
   }
 }
 
-/** Like `run`, but the caller names the fixture, for path-handling tests. */
-function runNamed(name, markdown) {
+/**
+ * Like `run`, but the caller names the fixture, for path-handling tests.
+ *
+ * Returns the output only. Both call sites ignored the `flagged` half, and a destructured
+ * value nobody reads invites the next reader to assume it is asserted somewhere.
+ */
+function runNamed(name, markdown, { summary = false } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "gate-"));
   const rel = join("solution-architecture", name);
   mkdirSync(join(dir, "solution-architecture"), { recursive: true });
   writeFileSync(join(dir, rel), markdown);
+  const summaryPath = join(dir, "summary.md");
   try {
-    return { flagged: false, out: execFileSync("node", [CHECK], {
-      cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-    }) };
+    return execFileSync("node", [CHECK], {
+      cwd: dir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: summary ? { ...process.env, GITHUB_STEP_SUMMARY: summaryPath } : process.env,
+    });
   } catch (error) {
-    return { flagged: true, out: `${error.stdout ?? ""}${error.stderr ?? ""}` };
+    return `${error.stdout ?? ""}${error.stderr ?? ""}`;
   } finally {
+    if (summary) {
+      // Read before the directory goes away, and hand it back on a marker the tests can
+      // split on, so one helper covers both emitters.
+      try {
+        lastSummary = readFileSync(summaryPath, "utf8");
+      } catch {
+        lastSummary = "";
+      }
+    }
     rmSync(dir, { recursive: true, force: true });
   }
 }
+
+/** Contents of `GITHUB_STEP_SUMMARY` after the most recent `runNamed(..., {summary:true})`. */
+let lastSummary = "";
 
 /** True when the gate noted a sunset-service mention in this markdown. */
 const notes = (markdown) => run(markdown).out.includes("[sunset-service]");
@@ -177,7 +198,7 @@ test("a hostile filename cannot inject a workflow command", () => {
   // `::stop-commands::`, which makes Actions ignore every workflow command after it, so
   // one crafted filename silently discarded the annotations for every other file.
   const hostile = "aaa\n::stop-commands::deadbeef\nzz";
-  const { out } = runNamed(`${hostile}.md`, "Cloud9 is here.\n");
+  const out = runNamed(`${hostile}.md`, "Cloud9 is here.\n");
 
   const commandLines = out.split("\n").filter((l) => l.startsWith("::"));
   assert.equal(commandLines.length, 1, `expected one command line, got:\n${out}`);
@@ -188,7 +209,7 @@ test("a hostile filename cannot inject a workflow command", () => {
 });
 
 test("a comma or colon in a path is encoded so the annotation still anchors", () => {
-  const { out } = runNamed("a,b:c%d.md", "App Runner is here.\n");
+  const out = runNamed("a,b:c%d.md", "App Runner is here.\n");
   const line = out.split("\n").find((l) => l.startsWith("::warning"));
   assert.match(line, /file=solution-architecture\/a%2Cb%3Ac%25d\.md,line=1,/);
 });
@@ -224,4 +245,59 @@ test("supplied paths that all get filtered out is an error, not a pass", () => {
 test("annotations are emitted for every note, not just the first", () => {
   const { out } = run("Use App Runner today.\n\nCloud9 is fine too.\n");
   assert.equal(out.split("\n").filter((l) => l.startsWith("::warning")).length, 2);
+});
+
+test("a violation is annotated too, not only the notes that cannot block", () => {
+  // Review on awslabs/startups#259: the notes path emitted annotations AND a step summary,
+  // justified by "stdout alone was indistinguishable from silence". Violations got neither,
+  // so a contributor saw a red X and had to expand collapsed logs to find the file and
+  // line. The fix that was applied to the half that cannot block had skipped the half that
+  // does.
+  const { out } = run("Fine.\n\nAn em dash — right here.\n");
+  const line = out.split("\n").find((l) => l.startsWith("::error"));
+  assert.ok(line, `expected an ::error annotation, got:\n${out}`);
+  assert.match(line, /^::error file=solution-architecture\/fixture\.md,line=3,title=style::/);
+});
+
+test("a violation writes a step summary, which is where a red check is read", () => {
+  runNamed("bad.md", "An em dash — right here.\n", { summary: true });
+  assert.match(lastSummary, /### Contribution gate: 1 violation\(s\)/);
+  assert.match(lastSummary, /`solution-architecture\/bad\.md:1`/);
+  assert.match(lastSummary, /\[style\]/);
+});
+
+test("a hostile filename cannot inject markdown into the step summary", () => {
+  // The summary used a second, divergent sanitiser: it stripped backticks and newlines
+  // while the annotations encoded them. Stripping was inert but silently misreported the
+  // filename, and two escaping rules for one untrusted value is how the next emitter gets
+  // the weaker one. Both now encode.
+  //
+  // A heading needs to be at column 0, and a code span needs a bare backtick to close it,
+  // so those are the two characters asserted on. `#` itself is left alone: encoding it
+  // would be theatre once the newline cannot survive.
+  const hostile = "aaa\n# INJECTED HEADING\nzz`x";
+  runNamed(`${hostile}.md`, "Cloud9 is here.\n", { summary: true });
+
+  assert.ok(lastSummary.length > 0, "expected a summary to be written");
+  assert.match(lastSummary, /%0A# INJECTED HEADING%0A/);
+  // The gate's own `### Contribution gate` heading is legitimate, so assert on the
+  // payload's heading specifically rather than on any line starting with `#`.
+  assert.equal(
+    lastSummary.split("\n").some((l) => l.startsWith("# INJECTED")),
+    false,
+    `payload reached column 0:\n${lastSummary}`,
+  );
+  // The backtick is encoded, so the filename cannot close its own code span.
+  assert.match(lastSummary, /zz%60x\.md/);
+  assert.equal(lastSummary.split("\n").filter((l) => l.startsWith("- `")).length, 1);
+});
+
+test("lowercase prose about launch configurations is still noted", () => {
+  // Scoping this entry to Auto Scaling correctly dropped the bare-phrase false positives,
+  // but it also switched the whole alternation to `/g`, so the prose form stopped matching
+  // lowercase while every other entry in SUNSET stayed `/gi`. The identifiers keep `/g`
+  // because their casing is exact.
+  assert.ok(notes("Do not use auto scaling launch configurations for new groups."));
+  assert.ok(notes("Replace CreateLaunchConfiguration with CreateLaunchTemplate."));
+  assert.ok(notes("The AWS::AutoScaling::LaunchConfiguration resource is blocked."));
 });
