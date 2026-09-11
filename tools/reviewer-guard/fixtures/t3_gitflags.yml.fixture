@@ -1,0 +1,17 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - run: |
+          git init .
+          git -c protocol.version=2 fetch origin "refs/pull/${PR_NUMBER}/head"
+          git -C . checkout FETCH_HEAD
+          git submodule update --init --remote
+          gh repo clone "${GITHUB_REPOSITORY}" work
+          hub checkout "${PR_NUMBER}"
+          ./work/setup.sh

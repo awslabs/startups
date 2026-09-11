@@ -1,0 +1,8 @@
+jobs:
+  review:
+    steps:
+      - name: safe pattern per the guard's own error message
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "$TITLE" > /tmp/t

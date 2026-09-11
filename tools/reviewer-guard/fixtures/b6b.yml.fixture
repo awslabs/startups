@@ -1,0 +1,7 @@
+on:
+  pull_request_target:
+jobs:
+  review:
+    steps:
+      - name: ${{ format('{0}', github.event.pull_request.title) }}
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
