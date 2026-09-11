@@ -1,0 +1,16 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - id: meta
+        run: |
+          T=$(gh pr view "$PR_NUMBER" --json title --jq .title)
+          echo "title=$T" >> "$GITHUB_OUTPUT"
+      - run: |
+          aws s3 cp report.txt "s3://bucket/${{ steps.meta.outputs.title }}"

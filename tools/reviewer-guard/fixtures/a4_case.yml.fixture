@@ -1,0 +1,4 @@
+jobs:
+  review:
+    steps:
+      - uses: Actions/Checkout@v4

@@ -1,0 +1,19 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions: {id-token: write, statuses: write}
+    steps:
+      - name: Build the reviewer prompt
+        id: prompt
+        run: |
+          set -euo pipefail
+          TITLE=$(jq -r .pull_request.title "$GITHUB_EVENT_PATH")
+          BODY=$(jq -r .pull_request.body "$GITHUB_EVENT_PATH")
+          eval "printf '%s' $TITLE"
+          echo "T=$TITLE" >> "$GITHUB_ENV"
+          echo "b=$BODY" >> "$GITHUB_OUTPUT"
+      - name: Use it
+        run: echo "${{ env.T }} ${{ steps.prompt.outputs.b }}"
