@@ -64,7 +64,7 @@ The AgentCore CLI (`agentcore init` → `agentcore deploy`) is fast for prototyp
 
 Only adopt AgentCore for these specific capabilities when you actually need them:
 
-1. **Cedar policy enforcement on tool calls** — building authorization logic per-tool is error-prone
+1. **Cedar policy enforcement on tool calls and Memory access** — building authorization logic per-tool (or per-memory-operation) is error-prone; AgentCore now also supports FGAC for Memory via Gateway + Cedar policies
 2. **Managed OAuth token lifecycle** — refresh tokens, secret rotation, multi-provider
 3. **Cross-session memory with automatic summarization** — LTM extraction is non-trivial to build
 4. **Built-in observability (OTel → X-Ray/CloudWatch)** — saves 1-2 weeks of instrumentation work
