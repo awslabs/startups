@@ -72,6 +72,11 @@ rules below.
 
 ## Step R1 — Section spec
 
+Set `MANAGED_ALTERNATIVES_HTML` to the HTML rendered from recommendation.md §5's
+"Managed alternatives (awareness only)" subsection, excluding its heading. Preserve the product
+names, beta status, requirement conflicts, data-boundary caveats, and source links. Use an empty
+string when the subsection is absent.
+
 The v3 report mirrors the reference HTML structure (report-v3-reference-multi-agent.html)
 exactly:
 
@@ -87,6 +92,8 @@ exactly:
   - considered-and-rejected; each unit with a non-null `model_recommendation` additionally
     gets the **"Why this model" card** — rationale visible, full model/migration detail in a
     collapsed `<details>`, all values from `unit.model_recommendation`)
+- After the §3 unit cards, include the managed-alternatives awareness note when present. It has
+  no scores and does not add a numbered top-level section.
 - **§4 Target architecture** (figure w/ per-unit entry points from `trigger` + figcap; **4.1
   component detail** table [Entry point from trigger / Compute / Model access / Supporting
   services]; **4.2 Security & networking** table [from the runtime cards' Serving & security
@@ -385,6 +392,11 @@ that element entirely (use `display:none` or omit the HTML block).
   </div>
 </div>
 {{ END FOR }}
+
+{{ IF MANAGED_ALTERNATIVES_HTML }}
+<h3>Managed alternatives (awareness only)</h3>
+<div class="callout">{{ MANAGED_ALTERNATIVES_HTML }}</div>
+{{ END IF }}
 
 <!-- ═══ 4. TARGET ARCHITECTURE ═══ -->
 <h2><span class="no">4.</span>Target architecture</h2>
