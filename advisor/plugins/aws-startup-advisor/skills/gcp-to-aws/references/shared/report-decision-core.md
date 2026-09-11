@@ -37,7 +37,7 @@ The executive summary is the first thing visible when opening the report. Design
 
 **Target length:** approximately 2–4 printed pages for executive summary. _Full mode only:_ **Do NOT truncate appendices** to fit page count — appendices may be long.
 
-**Anti-stub rule (mandatory; the appendix clauses apply in full mode only):** every rendered section MUST carry real artifact data as HTML tables and prose. **Forbidden:** sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `advisor/plugins/aws-startup-advisor/fixtures/migration-report-reference.html`.
+**Anti-stub rule (mandatory; the appendix clauses apply in full mode only):** every rendered section MUST carry real artifact data as HTML tables and prose. **Forbidden:** sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html`.
 
 **Section 0 — Migration Decision Summary (REQUIRED):**
 
@@ -136,6 +136,14 @@ Add one sentence: "This is an estimated cloud-service run rate, not total cost
 of ownership." When the infrastructure baseline is inventory-derived or
 standing-charges-only, show "Not comparable" in the combined GCP cell and
 never sum it with a user-stated AI midpoint.
+
+If `estimation-ai.json` → `optimization_opportunities` contains a
+`provisioned_throughput` entry, add one footnote: "Provisioned Throughput
+(a Bedrock-specific commitment option) uses no-commit, 1-month, or 6-month
+terms — not the 1-year/3-year Reserved Instance or Savings Plan terms shown
+elsewhere in this report." This is the first place a reader sees the combined
+run rate — do not rely on the full report's appendix alone to make this
+distinction.
 
 Source: `estimation-infra.json`, `estimation-ai.json`
 
