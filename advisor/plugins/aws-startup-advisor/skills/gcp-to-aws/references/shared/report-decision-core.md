@@ -17,10 +17,10 @@ output lives in the JSON artifacts.
 ## Decision-mode specifics
 
 - **Artifacts available:** discovery + `preferences.json` + `aws-design*.json` + `estimation-*.json` (+ `migration-preview.json`, `scenarios/` when present). `generation-*.json` and `terraform/` do NOT exist. Sections that prefer Generate artifacts carry an inline **_Decision mode:_** override next to the full-mode rule (decision-summary item 4, Sections 2b, 3 footnote, 4, 6, 7) — **those inline overrides are the authoritative decision-mode law**; when a section has no override, its rule applies unchanged in both modes.
-- **HTML shell:** same `<head>` (charset, viewport, inline CSS) and CSS specification as the full report (see `generate-artifacts-report.md` Step 3), title "GCP to AWS Migration Assessment — Decision Report". Body contains ONLY the `executive-summary` div with the exec sections and TOC (TOC links only to sections present; `nav.toc` carries `id="toc"` and every section `<h2>` ends with the `↑ contents` toplink per the nav-aids CSS spec). Opening order follows the hero-is-the-thesis rule: `decision-summary` first, TOC after it. Required section IDs in decision mode: `decision-summary`, `exec-assumptions`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks` (+ conditional `exec-share`, `exec-tco`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios` per their triggers).
+- **HTML shell:** same `<head>` (charset, viewport, inline CSS) and CSS specification as the full report (see `generate-artifacts-report.md` Step 3), title "GCP to AWS Migration Assessment — Decision Report". Body contains ONLY the `executive-summary` div with the exec sections and TOC (TOC links only to sections present; `nav.toc` carries `id="toc"` and every section `<h2>` ends with the `↑ contents` toplink per the nav-aids CSS spec). Opening order follows the hero-is-the-thesis rule: `decision-summary` first, TOC after it. Required section IDs in decision mode: `decision-summary`, `exec-assumptions`, `exec-services`, `exec-costs`, `exec-timeline`, `exec-risks` (+ conditional `exec-share`, `exec-tco`, `exec-architecture`, `exec-security-teaser`, `exec-optimization`, `what-if-scenarios` per their triggers).
 - **CTA footer (required, after the last section):** `<section id="decision-cta">` — "**Ready to execute?** Say \"generate the Terraform and migration scripts\" and I'll produce the full execution pack (Terraform, migration scripts, rollback runbook, fill-in checklist) from this same analysis." Plus one line: "This decision report was generated without execution artifacts; the full migration report replaces it if you proceed."
 - **`DECISION.md` (required twin):** same content as the HTML, as plain Markdown (Slack/GitHub-friendly): verdict headline, cost table, migrate-if/stay-if lists, timeline band, top risks, assumptions, CTA line. No HTML tags.
-- **Validation:** run `scripts/validate-migration-report.py $MIGRATION_DIR/decision-report.html --mode decision [--estimation-infra ...] [--estimation-ai ...]` and fix failures before presenting.
+- **Validation:** run `scripts/validate-migration-report.py $MIGRATION_DIR/decision-report.html --mode decision [--estimation-infra ...] [--estimation-ai ...] [--aws-design ...]` and fix failures before presenting. Pass the estimation (and design) files when they exist so the Cost Optimization gate can fire.
 - All content rules below apply unchanged: baseline-quality badge + not-comparable rule, cost labeling ("Est."), readability (no artifact filenames in exec sections, no "Section N" headings, ordered action lists), Activate wording rules.
 
 ---
@@ -37,7 +37,7 @@ The executive summary is the first thing visible when opening the report. Design
 
 **Target length:** approximately 2–4 printed pages for executive summary. _Full mode only:_ **Do NOT truncate appendices** to fit page count — appendices may be long.
 
-**Anti-stub rule (mandatory; the appendix clauses apply in full mode only):** every rendered section MUST carry real artifact data as HTML tables and prose. **Forbidden:** sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `advisor/plugins/aws-startup-advisor/fixtures/migration-report-reference.html`.
+**Anti-stub rule (mandatory; the appendix clauses apply in full mode only):** every rendered section MUST carry real artifact data as HTML tables and prose. **Forbidden:** sections that only say "see `estimation-infra.json`" or list JSON filenames without numeric costs, service mappings, or migration phases. Reference fixture: `migrate/plugins/migration-to-aws/fixtures/migration-report-reference.html`.
 
 **Section 0 — Migration Decision Summary (REQUIRED):**
 
@@ -60,7 +60,7 @@ Content when `recommendation` block exists:
    1a. **Per-track disposition line (required when `recommendation.track_outcomes` exists):** one line under the verdict metadata, plain names, one clause per track — e.g. "By track: Compute + database: **go**. AI text: **go**. AI image: **conditional** — keeps the current provider via the adapter until the quality eval passes; does not gate the rest. Analytics: **deferred** — specialist track, parallel." Render the track note verbatim. **Never render a track-scoped condition as a whole-stack stay reason**: the Stay-if list holds only entries the artifact scoped to the whole stack; track-prefixed conditions render in the conditions checklist and the track line. Omit silently for single-track or pre-extension artifacts.
    1b. **Confidence pointer:** one line under the verdict block — `Confidence: [confidence] — full basis in <a href="#exec-assumptions">What This Assessment Rests On</a>.` The full assumptions panel lives at the **end** of the executive summary (see Section 8 below), not here.
 2. **Complexity:** from `migration-preview.json` → `complexity_signal` ("Simple", "Moderate", "Complex") — colored badge
-3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists: show labeled "Early estimate (±30%) — full analysis not yet run."
+3. **Cost headline:** from `estimation-infra.json` → `cost_comparison.option_b_balanced` vs GCP baseline, OR legacy `comparison.aws_balanced_monthly_usd` vs `comparison.gcp_monthly_usd`. Do NOT use `migration-preview.json` → `cost_preview` when estimation artifact exists (preview is superseded). If only preview exists **and** `cost_preview.quote_suppressed` is true: do **not** render a dollar headline or "Early estimate (±30%)" — render "AWS monthly cost withheld at Discover — authored Terraform sizes exceed preview defaults. Run Estimate after Clarify." If only preview exists and the quote was **not** suppressed: show labeled "Early estimate (±30%) — full analysis not yet run."
 4. **Timeline:** week counts are never rendered in either mode — the plugin has no calibrated duration data (`shared/migration-complexity.md` § Provenance). _Full mode:_ approach + the binding duration driver from `generation-infra.json` → `migration_plan.duration_drivers[]` (e.g. "Phased, in dependency order — long pole: database cutover"). _Decision mode:_ `migration-preview.json` → `duration_hint` (path-shape phrasing) when present, else the tier's driver summary from `shared/migration-complexity.md`; label it "**if you execute**". **Legacy artifacts:** when an old artifact carries `total_weeks` or `timeline_hint` week ranges, render only with the visible label "Legacy planning heuristic (uncalibrated): N weeks" — never bare. In neither mode use `recommendation.next_steps` as timeline — those are action items, not duration.
 5. **Migrate if / Stay entirely if:** from `recommendation.migrate_if` and `recommendation.stay_if`. Render as two compact lists. The customer-facing second heading is **"Stay entirely if"** so a track-scoped hold (for example, keeping image generation on the current provider) cannot be mistaken for a recommendation to abandon the whole migration. The `stay_if` list contains whole-stack reasons only. For BigQuery/deferred analytics: **do not** frame specialist engagement as a reason to stay on GCP unless the user must cut over analytics in the **same window** as app infra. Prefer migrate-if bullets that mention parallel specialist planning. When track-scoped caveats exist, add one muted sentence after the lists explaining which track can remain on the source platform without blocking the rest.
 6. **Key decisions ahead:** from `migration-preview.json` → `key_decisions_ahead` — **ordered list** (`<ol class="compact">`), not bullets. Each item is one concrete decision the reader must make next.
@@ -136,6 +136,14 @@ Add one sentence: "This is an estimated cloud-service run rate, not total cost
 of ownership." When the infrastructure baseline is inventory-derived or
 standing-charges-only, show "Not comparable" in the combined GCP cell and
 never sum it with a user-stated AI midpoint.
+
+If `estimation-ai.json` → `optimization_opportunities` contains a
+`provisioned_throughput` entry, add one footnote: "Provisioned Throughput
+(a Bedrock-specific commitment option) uses no-commit, 1-month, or 6-month
+terms — not the 1-year/3-year Reserved Instance or Savings Plan terms shown
+elsewhere in this report." This is the first place a reader sees the combined
+run rate — do not rely on the full report's appendix alone to make this
+distinction.
 
 Source: `estimation-infra.json`, `estimation-ai.json`
 
@@ -215,7 +223,48 @@ remind that discovery inventory is frozen
 and generated Terraform matches the **active** scenario only.
 5. TOC: link `#what-if-scenarios` only when rendered. Place this section in the
 executive flow immediately after `exec-costs` (before security teaser /
-timeline).
+timeline). When `exec-optimization` is also rendered, place it after
+`exec-costs` and before `what-if-scenarios`.
+
+**Section 3c — Cost Optimization (`exec-optimization`, REQUIRED when any
+`estimation-*.json` has a non-empty `optimization_opportunities[]`):**
+
+This is a **standalone executive section**. A table buried only under
+Appendix B / `appendix-costs` does **not** satisfy the gate — that is how
+Savings Plans and Reserved Instances were dropped from generated reports.
+
+Place immediately after `exec-costs` (and before `what-if-scenarios` /
+`exec-architecture` / security teaser). Add `#exec-optimization` to the TOC
+when rendered.
+
+Render two things:
+
+1. **Posture comparison table** (Balanced on-demand vs applicable commitments
+   vs Optimized as a floor). Columns such as: Posture, Est. monthly, vs
+   Balanced, What you commit to. Savings Plans and Reserved Instances are
+   incremental to the **Balanced on-demand** baseline. **Do not** add those
+   savings on top of the Optimized tier — Optimized already embeds
+   illustrative reservation / Spot assumptions. State that caveat in the
+   section when Optimized is shown. Database Savings Plans and RDS Reserved
+   Instances are mutually exclusive on the same database workload.
+2. **Which commitment fits** — a short list from the opportunity rows
+   (Compute Savings Plans, Database Savings Plans, Reserved Instances /
+   reserved capacity / reserved nodes, plus non-commitment rows such as
+   Fargate Spot or S3 Intelligent-Tiering when present).
+
+_Full mode:_ the line-level opportunity table (Optimization, Target,
+Monthly savings / Est. savings, Commitment, Effort) lives in a dedicated
+`<section id="appendix-optimization">` immediately after `appendix-costs`.
+`exec-optimization` links down to it. Do not leave that table as an `<h3>`
+inside `appendix-costs`.
+
+_Decision mode:_ there are no appendices. Include the opportunity-table
+columns in `exec-optimization` itself (or a compact version of the same
+rows). Do **not** emit `appendix-optimization`.
+
+Source: `estimation-infra.json` / `estimation-ai.json` →
+`optimization_opportunities`. Eligibility of which commitment product
+applies is `references/shared/ri-sp-eligibility.md`.
 
 **Section 4 — Security & Cost Guardrails (teaser — full table in Appendix G):**
 

