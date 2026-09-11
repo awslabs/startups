@@ -391,7 +391,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 
 | Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                       |
 | -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ------------------------------------------------------------ |
-| Claude Fable 5                   | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                       |
+| Claude Fable 5.1                 | anthropic.claude-fable-5-1               | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                       |
 | Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active (intro $2/$10 thru Aug 31, 2026; then $3/$15)         |
 | Claude Opus 4.8                  | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
 | Claude Sonnet 4.6                | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                       |
@@ -460,7 +460,7 @@ Per 1M tokens unless noted. See [Bedrock pricing](https://aws.amazon.com/bedrock
 
 | Model                    | Batch in | Batch out | 5m cache write | 1h cache write | Cache read |
 | ------------------------ | -------- | --------- | -------------- | -------------- | ---------- |
-| Claude Fable 5           | 5.00     | 25.00     | 12.50          | 20.00          | 1.00       |
+| Claude Fable 5.1         | 5.00     | 25.00     | 12.50          | 20.00          | 0.25       |
 | Claude Sonnet 5          | 1.00     | 5.00      | 2.50           | 4.00           | 0.20       |
 | Claude Opus 4.8          | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
 | Claude Sonnet 4.6 (+ LC) | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
