@@ -48,6 +48,16 @@ Map discovered elements to Harness configuration:
 | `memory_requirement: "cross_session"`               | AgentCore Memory service                                                   | Configure memory persistence across sessions                        |
 | `memory_requirement: "none"`                        | No memory config needed                                                    | Stateless invocations                                               |
 
+**Long-term memory ingestion (`cross_session` only):**
+
+Add `agentic_design.memory_ingestion` to `aws-design-ai.json` with `api` (`"IngestData"` or `"CreateEvent"`) and `rationale` (why the workload needs that path). Omit this object for `none` or `session`. This is an application ingestion decision, not a Harness configuration property.
+
+- Choose `IngestData` when only extracted long-term records are needed and raw interactions do not need to be stored as AgentCore events, including when the application already retains them elsewhere.
+- Choose `CreateEvent` when raw interactions must remain retrievable as AgentCore short-term events or support event branching. If this requirement is unknown, confirm it before selecting an API.
+- `IngestData` uses the memory's configured long-term extraction strategies; successful submission means accepted, and records become available after processing.
+
+Source: [Ingest content into long-term memory](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/long-term-ingest-data.html).
+
 **Tool mapping decision:**
 
 ```
@@ -151,6 +161,7 @@ After the standard model comparison summary from `design-ai.md`, add:
 > - Approach: Config-based agent deployment on AgentCore
 > - Tools mapped: [count] tools → [types breakdown]
 > - Memory: [session/cross-session/none]
+> - Memory ingestion (cross_session only): [memory_ingestion.api] — [memory_ingestion.rationale]
 > - Incremental migration: [yes/no]
 > - Regional availability: [available/preview in target region]
 > - Estimated effort: [range] depending on [drivers from guardrails]
