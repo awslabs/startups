@@ -68,6 +68,7 @@ run = [
   "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts",
   "node --test advisor/plugins/aws-startup-advisor/tests/tools/frontmatter-validator.test.ts",
   "node --test tests/heroku-eb-runtime-settings.test.ts",
+  "node --test tests/agent-managed-alternatives.test.ts",
 ]
 
 [tasks."lint:model-ids"]
