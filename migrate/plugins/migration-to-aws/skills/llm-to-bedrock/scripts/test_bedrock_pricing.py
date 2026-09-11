@@ -50,7 +50,7 @@ def test_static_fallback_opus_4_8_rate_is_5_and_25_per_1m():
 
 
 def test_static_fallback_partial_match():
-    # us.anthropic.claude-sonnet-5 (no version suffix) should match intro rates
+    # us.anthropic.claude-sonnet-5 (no version suffix) should match the $2/$10 rate (launch rate, made standard Sep 1, 2026)
     out = bp._static_fallback("us.anthropic.claude-sonnet-5")
     assert out is not None
     assert out["available"] is True
