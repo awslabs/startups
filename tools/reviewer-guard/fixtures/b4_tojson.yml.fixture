@@ -1,0 +1,8 @@
+jobs:
+  review:
+    steps:
+      - run: |
+          cat <<'PAYLOAD' > event.json
+          ${{ toJSON(github.event.pull_request) }}
+          PAYLOAD
+      - run: echo "${{ toJSON(github.event) }}"
