@@ -21,7 +21,7 @@ python3 scripts/validate-migration-report.py \
   --estimation-ai fixtures/estimation-ai-reference.json
 ```
 
-`estimation-*-reference.json` are trimmed snapshots aligned with the HTML fixture. Together they exercise security-baseline cross-checks, the security teaser, the verdict banner, and combined AWS monthly run-rate (`exec-tco`, legacy ID) requirements.
+`estimation-*-reference.json` are trimmed snapshots aligned with the HTML fixture. Together they exercise security-baseline cross-checks, the security teaser, the verdict banner, combined AWS monthly run-rate (`exec-tco`, legacy ID), and the dedicated Cost Optimization sections (`exec-optimization` / `appendix-optimization`) required when `optimization_opportunities[]` is non-empty.
 
 ## Regression stub
 

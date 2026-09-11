@@ -60,12 +60,14 @@ OPTIONAL_SECTION_IDS = [
     "exec-tco",
     "exec-architecture",
     "exec-security-teaser",
+    "exec-optimization",
     "what-if-scenarios",
     "appendix-ai",
     "appendix-config",
     "appendix-security",
     "appendix-security-gap",
     "appendix-assumptions",
+    "appendix-optimization",
     "appendix-glossary",
 ]
 
@@ -186,6 +188,7 @@ EXEC_SECTION_IDS = (
     "exec-costs",
     "exec-architecture",
     "exec-security-teaser",
+    "exec-optimization",
     "what-if-scenarios",
     "exec-timeline",
     "exec-risks",
@@ -516,6 +519,282 @@ def _validate_decision_language(
     return errors
 
 
+OPTIMIZATION_EXEC_ID = "exec-optimization"
+OPTIMIZATION_APPENDIX_ID = "appendix-optimization"
+_SP_RE = re.compile(r"savings\s*plans?", re.I)
+_RI_RE = re.compile(r"reserved\s+(?:instances?|capacity|nodes?)", re.I)
+_COMMITMENT_SERVICE_RE = re.compile(
+    r"\b(?:rds|aurora|fargate|lambda|elasticache|dynamodb|ec2)\b", re.I
+)
+_NON_STACK_RE = re.compile(
+    r"(?:not\s+additive|do\s+not\s+add|already\s+embed|already\s+includes|"
+    r"not\s+a\s+sum|already\s+assume)",
+    re.I,
+)
+
+
+def _optimization_opportunities(
+    estimation_infra: dict | None,
+    estimation_ai: dict | None,
+) -> list[dict]:
+    rows: list[dict] = []
+    for artifact in (estimation_infra, estimation_ai):
+        if not artifact:
+            continue
+        for item in artifact.get("optimization_opportunities") or []:
+            if isinstance(item, dict):
+                rows.append(item)
+    return rows
+
+
+def _opp_blob(item: dict) -> str:
+    targets = item.get("target_services")
+    if isinstance(targets, list):
+        target_text = " ".join(str(t) for t in targets)
+    else:
+        target_text = str(targets or "")
+    return " ".join(
+        [
+            str(item.get("opportunity") or ""),
+            str(item.get("type") or ""),
+            str(item.get("description") or ""),
+            target_text,
+        ]
+    )
+
+
+def _has_optimization_columns(section: str) -> bool:
+    """True if ANY <thead> in the section has the required columns.
+
+    Section 3c allows a decision-mode exec-optimization to render a posture
+    comparison table *and* the opportunity table in the same section. Only
+    the opportunity table needs these columns — checking just the first
+    <thead> rejects a valid report whenever the posture table (which has its
+    own, different columns) happens to come first.
+    """
+    headers = re.findall(r"<thead\b[^>]*>(.*?)</thead>", section, re.DOTALL | re.IGNORECASE)
+    for header in headers:
+        text = unescape(re.sub(r"<[^>]+>", " ", header)).lower()
+        if (
+            "optimization" in text
+            and "target" in text
+            and "commitment" in text
+            and "effort" in text
+            and "saving" in text
+        ):
+            return True
+    return False
+
+
+def _table_rows_text(section: str) -> str:
+    """Plain text from every <tbody> in a section — data rows only.
+
+    Headings, explanatory prose, and links can legitimately say "Savings
+    Plans and Reserved Instances" while the actual commitment-discount rows
+    were removed. Presence checks for a specific product must look at
+    rendered data, not surrounding copy.
+    """
+    bodies = re.findall(r"<tbody\b[^>]*>(.*?)</tbody>", section, re.DOTALL | re.IGNORECASE)
+    if not bodies:
+        return ""
+    return unescape(re.sub(r"<[^>]+>", " ", " ".join(bodies)))
+
+
+def _thead_has_optimization_columns(thead_html: str) -> bool:
+    """True if this <thead> is the opportunity table's header (not the posture table)."""
+    text = unescape(re.sub(r"<[^>]+>", " ", thead_html)).lower()
+    return (
+        "optimization" in text
+        and "target" in text
+        and "commitment" in text
+        and "effort" in text
+        and "saving" in text
+    )
+
+
+def _opportunity_table_optimization_cells(section: str) -> list[str]:
+    """First-column (Optimization) text of each data row in the *opportunity* table.
+
+    A Section 3c optimization section can carry two tables: a posture
+    comparison (Balanced / Savings Plan / Optimized rows, whose cells and
+    caveats name "Savings Plan") and the line-level opportunity table (the
+    one with Optimization / Target / Commitment / Effort columns). Presence of
+    a product must be proven by an opportunity row, so this isolates the
+    table whose <thead> matches the required columns and returns the
+    Optimization cell (first <td>) of every <tbody> data row. Posture rows,
+    heading prose, and Optimized-tier caveats are therefore never counted, and
+    an empty opportunity <tbody> yields no cells.
+    """
+    cells: list[str] = []
+    for table in re.findall(r"<table\b[^>]*>(.*?)</table>", section, re.DOTALL | re.IGNORECASE):
+        thead = re.search(r"<thead\b[^>]*>(.*?)</thead>", table, re.DOTALL | re.IGNORECASE)
+        if not thead or not _thead_has_optimization_columns(thead.group(1)):
+            continue
+        for body in re.findall(r"<tbody\b[^>]*>(.*?)</tbody>", table, re.DOTALL | re.IGNORECASE):
+            for row in re.findall(r"<tr\b[^>]*>(.*?)</tr>", body, re.DOTALL | re.IGNORECASE):
+                first_cell = re.search(
+                    r"<t[dh]\b[^>]*>(.*?)</t[dh]>", row, re.DOTALL | re.IGNORECASE
+                )
+                if first_cell:
+                    cells.append(unescape(re.sub(r"<[^>]+>", " ", first_cell.group(1))).strip())
+    return cells
+
+
+def _opp_classification_blob(item: dict) -> str:
+    """Text used ONLY to classify an opportunity as a Savings Plan / RI product.
+
+    Deliberately excludes `description` and `target_services`: description is
+    explanatory prose that can state a product does NOT apply (e.g. "Database
+    Savings Plans do not cover ElastiCache for Redis OSS or Memcached"), which
+    would otherwise get matched as evidence the artifact contains that
+    product. Classification uses only the structured `opportunity` name and
+    `type` (underscores normalized to spaces so `elasticache_reserved_nodes`
+    matches the same regex as "ElastiCache Reserved Nodes").
+    """
+    type_text = str(item.get("type") or "").replace("_", " ")
+    return f"{item.get('opportunity') or ''} {type_text}"
+
+
+def _design_has_commitment_eligible(aws_design: dict | None) -> bool:
+    if not aws_design:
+        return False
+    return bool(_COMMITMENT_SERVICE_RE.search(json.dumps(aws_design)))
+
+
+def _opportunities_target_commitment_eligible(opportunities: list[dict]) -> bool:
+    return any(_COMMITMENT_SERVICE_RE.search(_opp_blob(item)) for item in opportunities)
+
+
+def _validate_optimization_sections(
+    html: str,
+    estimation_infra: dict | None,
+    estimation_ai: dict | None,
+    aws_design: dict | None,
+    *,
+    mode: str,
+    require_toc: bool,
+) -> list[str]:
+    """Dedicated Cost Optimization section is required when Estimate emitted rows.
+
+    A table buried only under appendix-costs is not enough — that is how
+    Savings Plans / RI content was dropped from generated reports.
+    """
+    opportunities = _optimization_opportunities(estimation_infra, estimation_ai)
+    if not opportunities:
+        return []
+
+    errors: list[str] = []
+    counts = _section_id_counts(html)
+    exec_n = counts.get(OPTIMIZATION_EXEC_ID, 0)
+    appendix_n = counts.get(OPTIMIZATION_APPENDIX_ID, 0)
+
+    if exec_n == 0:
+        errors.append(
+            "optimization_opportunities exist but no "
+            f'<section id="{OPTIMIZATION_EXEC_ID}"> — render a standalone Cost '
+            "Optimization section (Balanced on-demand vs Savings Plans / Reserved "
+            "Instances). A table buried only in appendix-costs does not satisfy this gate"
+        )
+    elif exec_n > 1:
+        errors.append(f'duplicate <section id="{OPTIMIZATION_EXEC_ID}"> ({exec_n} occurrences)')
+
+    if mode == "full":
+        if appendix_n == 0:
+            errors.append(
+                "optimization_opportunities exist but no "
+                f'<section id="{OPTIMIZATION_APPENDIX_ID}"> — the opportunity table '
+                "must be its own appendix section, not only a subsection of appendix-costs"
+            )
+        elif appendix_n > 1:
+            errors.append(
+                f'duplicate <section id="{OPTIMIZATION_APPENDIX_ID}"> ({appendix_n} occurrences)'
+            )
+
+    if require_toc:
+        hrefs = _toc_hrefs(html)
+        if hrefs:
+            if exec_n and OPTIMIZATION_EXEC_ID not in hrefs:
+                errors.append(
+                    f'TOC missing link to required section id="{OPTIMIZATION_EXEC_ID}" '
+                    f'(add <a href="#{OPTIMIZATION_EXEC_ID}">)'
+                )
+            if mode == "full" and appendix_n and OPTIMIZATION_APPENDIX_ID not in hrefs:
+                errors.append(
+                    f'TOC missing link to required section id="{OPTIMIZATION_APPENDIX_ID}" '
+                    f'(add <a href="#{OPTIMIZATION_APPENDIX_ID}">)'
+                )
+
+    exec_html = _section_html(html, OPTIMIZATION_EXEC_ID) or ""
+    appendix_html = _section_html(html, OPTIMIZATION_APPENDIX_ID) or ""
+    table_scope = appendix_html if mode == "full" else exec_html
+    if table_scope and not _has_optimization_columns(table_scope):
+        where = OPTIMIZATION_APPENDIX_ID if mode == "full" else OPTIMIZATION_EXEC_ID
+        errors.append(
+            f"{where} table must include Optimization, Target, Monthly savings "
+            "(or Est. savings), Commitment, and Effort columns"
+        )
+
+    if exec_html:
+        if not re.search(r"balanced", exec_html, re.I):
+            errors.append(
+                "exec-optimization must compare commitment savings to the Balanced "
+                "on-demand baseline"
+            )
+        if re.search(r"optimized", exec_html, re.I) and not _NON_STACK_RE.search(exec_html):
+            errors.append(
+                "exec-optimization mentions Optimized but does not warn that Savings "
+                "Plans / RI savings are incremental to Balanced and must not be added "
+                "on top of the Optimized tier"
+            )
+
+    # Classify using only the structured opportunity name/type — never
+    # `description`, which can state a product does NOT apply (see
+    # _opp_classification_blob docstring).
+    has_sp_opp = any(_SP_RE.search(_opp_classification_blob(item)) for item in opportunities)
+    has_ri_opp = any(_RI_RE.search(_opp_classification_blob(item)) for item in opportunities)
+
+    # Presence in the report must be a rendered opportunity row, not a
+    # heading, a caveat paragraph, or a posture-comparison row that merely
+    # names the product. Bind the check to the opportunity table (identified
+    # by its required columns) and read only its Optimization cells, so an
+    # empty opportunity <tbody> or an Optimized-tier caveat cannot substitute
+    # for an actual Savings Plan / RI option row. The opportunity table lives
+    # in appendix-optimization (full mode) or exec-optimization (decision mode).
+    opp_cells = _opportunity_table_optimization_cells(appendix_html) + (
+        _opportunity_table_optimization_cells(exec_html)
+    )
+    opp_row_text = "\n".join(opp_cells)
+
+    if has_sp_opp and not _SP_RE.search(opp_row_text):
+        errors.append(
+            "optimization_opportunities include a Savings Plan but the opportunity "
+            "table (appendix-optimization / exec-optimization) has no Savings Plans "
+            "data row — a heading, caveat, or posture-comparison row does not satisfy this gate"
+        )
+    if has_ri_opp and not _RI_RE.search(opp_row_text):
+        errors.append(
+            "optimization_opportunities include a Reserved Instance (or reserved "
+            "capacity/nodes) but the opportunity table (appendix-optimization / "
+            "exec-optimization) has no Reserved Instances data row — a heading, caveat, "
+            "or posture-comparison row does not satisfy this gate"
+        )
+    if (
+        not has_sp_opp
+        and not has_ri_opp
+        and (
+            _design_has_commitment_eligible(aws_design)
+            or _opportunities_target_commitment_eligible(opportunities)
+        )
+        and not (_SP_RE.search(opp_row_text) or _RI_RE.search(opp_row_text))
+    ):
+        errors.append(
+            "RDS, Aurora, Fargate, or Lambda is in the design (or opportunity targets) "
+            "but the opportunity table has no Savings Plans or Reserved Instances row"
+        )
+
+    return errors
+
+
 def _validate_share_section(
     html: str,
     estimation_infra: dict | None,
@@ -721,6 +1000,7 @@ def validate_report(
     html: str,
     estimation_infra: dict | None = None,
     estimation_ai: dict | None = None,
+    aws_design: dict | None = None,
     *,
     require_toc: bool = True,
     check_readability: bool = True,
@@ -821,6 +1101,18 @@ def validate_report(
     errors.extend(_validate_action_lists(html))
     errors.extend(_validate_appendix_config(html))
 
+    # Dedicated Cost Optimization section when Estimate emitted opportunities.
+    errors.extend(
+        _validate_optimization_sections(
+            html,
+            estimation_infra,
+            estimation_ai,
+            aws_design,
+            mode=mode,
+            require_toc=require_toc,
+        )
+    )
+
     # Catch verbatim copies of the reference fixture into a real run.
     errors.extend(_validate_fixture_bleed(html, migration_dir))
 
@@ -849,6 +1141,14 @@ def main() -> int:
     parser.add_argument("report_path", type=Path, help="Path to migration-report.html")
     parser.add_argument("--estimation-infra", type=Path, default=None)
     parser.add_argument("--estimation-ai", type=Path, default=None)
+    parser.add_argument(
+        "--aws-design",
+        type=Path,
+        default=None,
+        help="aws-design.json. When RDS/Aurora/Fargate/Lambda is in the design, "
+        "the Cost Optimization section must include a Savings Plan or Reserved "
+        "Instance row if optimization_opportunities exist.",
+    )
     parser.add_argument(
         "--migration-dir",
         type=Path,
@@ -890,10 +1190,15 @@ def main() -> int:
     if args.estimation_ai and args.estimation_ai.is_file():
         estimation_ai = json.loads(args.estimation_ai.read_text(encoding="utf-8"))
 
+    aws_design = None
+    if args.aws_design and args.aws_design.is_file():
+        aws_design = json.loads(args.aws_design.read_text(encoding="utf-8"))
+
     errors = validate_report(
         html,
         estimation_infra,
         estimation_ai,
+        aws_design,
         require_toc=not args.no_require_toc,
         check_readability=not args.no_readability,
         migration_dir=args.migration_dir,
