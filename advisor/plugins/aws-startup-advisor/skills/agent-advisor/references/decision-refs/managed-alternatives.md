@@ -11,6 +11,8 @@ Surface these as awareness with tradeoffs when the user is committed to a single
 
 ## Bedrock Managed Agents (OpenAI-committed)
 
+## OpenAI Agents API (public beta)
+
 - Available in us-east-1 and expanding.
 - If the customer needs model flexibility, governance, or code export → AgentCore wins.
 
