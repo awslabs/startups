@@ -21,6 +21,21 @@
       "type": "string",
       "description": "The phase to run next: a declared phase name, or the 'complete' terminal. Optional but recommended; when present it is authoritative for phase selection."
     },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Random UUID minted once at _init and never changed. Stable across pause/resume and, unlike migration_id, carries no timestamp. The join key for this run's telemetry events."
+    },
+    "owning_skill": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "description": "Telemetry identifier of the skill that owns this run (the skill directory name in upper case with hyphens as underscores, e.g. GCP_TO_AWS), written at _init. Telemetry attributes events to this key; a run without it emits nothing."
+    },
+    "initiated_by": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "description": "Identifier of the skill that invoked this run, when another skill did (e.g. LLM_TO_BEDROCK delegating to GCP_TO_AWS). Optional; sent as initiatingSkill when it names a migration skill."
+    },
     "phases": {
       "type": "object",
       "description": "One entry per phase the skill declares (backbone and sidebar). Keys are the skill's phase names — this schema does not enumerate them.",
