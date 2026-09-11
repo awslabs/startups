@@ -108,6 +108,7 @@ After selecting a Bedrock model for each workload:
 2. If the model is in the **exclusion zone** (≤90 days to EOL) or EOL: reject it. Use the Active replacement.
 3. If the model is Legacy but >90 days from EOL: replace with Active replacement if one exists. If no Active replacement exists, note the EOL date and recommend the user plan a follow-up migration.
 4. If Active: proceed normally.
+5. If `restricted` (Covered Model or gated preview — see the Status table below): do not select it as a default or as `recommended_model` / `backup_model`; name it only when the user explicitly asks for a frontier model, together with its access requirement.
 
 ### Estimate Phase (`estimate-ai.md`)
 
@@ -116,23 +117,26 @@ When building the model comparison table:
 - **Exclusion zone models**: omit entirely from `model_comparison`. Do not include in `recommended_model` or `backup_model`.
 - **Legacy (>90 days)**: include with `(Legacy — EOL YYYY-MM-DD)` annotation. Never use as `recommended_model` if an Active alternative exists.
 - **Active**: no restrictions.
+- **Restricted** (`restricted (…)` in the pricing-cache Status column): never `recommended_model` or `backup_model`, never a default in a mapping guide. Include in `model_comparison` only when the user explicitly asks about frontier / Covered Models, annotated with the access requirement.
 
 ### Pricing Cache (`pricing-cache.md`)
 
 The multi-provider quick reference table includes a `Status` column:
 
-| Status value                | Meaning                                                                                 |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| `active`                    | No restrictions                                                                         |
-| `legacy (EOL YYYY-MM-DD)`   | Legacy, >90 days from EOL. Listed for reference, annotated.                             |
-| `excluded (EOL YYYY-MM-DD)` | ≤90 days from EOL. Kept for existing users but must not be selected for new migrations. |
+| Status value                | Meaning                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `active`                    | No restrictions                                                                                                                                                                                                                                                                                                                             |
+| `legacy (EOL YYYY-MM-DD)`   | Legacy, >90 days from EOL. Listed for reference, annotated.                                                                                                                                                                                                                                                                                 |
+| `excluded (EOL YYYY-MM-DD)` | ≤90 days from EOL. Kept for existing users but must not be selected for new migrations.                                                                                                                                                                                                                                                     |
+| `restricted (<reason>)`     | Access-restricted: a Covered Model that needs an account-level data-retention opt-in (`aws_review` or `provider_data_share`), or a gated preview. Never `recommended_model` / `backup_model`, never a default; offer only on explicit user request, with the requirement stated. Claude Fable 5 / 5.1 and the Mythos line carry this value. |
 
-When refreshing the cache, recompute `days_to_eol` and update the Status column from the [model lifecycle page](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html).
+When refreshing the cache, recompute `days_to_eol` and refresh the `active` / `legacy` / `excluded` values from the [model lifecycle page](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html). **Preserve an existing `restricted (…)` value** — that page publishes only active / legacy / EOL and does not track access gating, so it can never produce `restricted`; change or remove a `restricted` value only when the model card's access requirement itself changed (data-retention mode, gated preview status).
 
 ### Mapping Guides (`ai-openai-to-bedrock.md`, `ai-gemini-to-bedrock.md`)
 
 - "Best Bedrock Match" columns must only contain Active models.
 - Exclusion-zone models must not appear in any recommendation row.
+- `restricted` models never appear as a default match; they may be named only as an explicit opt-in alternative with the access requirement stated.
 - Legacy models (>90 days) may appear in notes or legacy-source mapping rows but never as the primary recommendation.
 
 ---
