@@ -126,10 +126,11 @@ After the report is written, run the post-write validator:
 python3 migrate/plugins/migration-to-aws/scripts/validate-migration-report.py \
   "$MIGRATION_DIR/migration-report.html" \
   --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
-  --estimation-ai "$MIGRATION_DIR/estimation-ai.json"
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json" \
+  --aws-design "$MIGRATION_DIR/aws-design.json"
 ```
 
-Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resolve the script from the plugin root (`$PLUGIN_ROOT/scripts/validate-migration-report.py` in an installed copy).
+Pass `--estimation-infra` / `--estimation-ai` / `--aws-design` only when those files exist. Resolve the script from the plugin root (`$PLUGIN_ROOT/scripts/validate-migration-report.py` in an installed copy).
 
 **`REPORT_OK | structure=complete`** means required sections, TOC links, and appendix depth checks passed. It does **not** verify that every dollar figure matches the JSON — review numerics before executive sign-off. See [fixtures/README.md](fixtures/README.md) for the reference HTML + estimation JSON contract.
 
