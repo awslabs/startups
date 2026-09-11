@@ -43,7 +43,7 @@ An always-on service is still a better ECS/EKS fit — Instances sessions end at
 
 ## Six dimensions
 
-- Identity: built-in (free), OAuth via enhanced Identity
+- Identity: built-in (free), OAuth via enhanced Identity — now includes a managed consent portal per Gateway, eliminating custom OAuth callback infrastructure for 3LO flows with third-party tools
 - Observability: auto OTEL traces
 - Guardrails: Bedrock Guardrails + Policy (Cedar) for high-risk actions
 - Scaling: 5,000 concurrent sessions, 25 TPS launch (adjustable)
