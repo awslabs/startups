@@ -57,6 +57,9 @@ Sensitive key patterns to redact (case-insensitive): `password`, `passwd`, `secr
    - `config.tier` — from Terraform `settings.tier` (e.g. `db-f1-micro`).
    - `config.database_version` — from Terraform `database_version` (e.g. `POSTGRES_15`).
 
+   **GKE normalization (`google_container_cluster`)** — Clarify's Q8 default and the `compute.md` GKE rubric read these, so write them with canonical names at the top level of `config`:
+   - `config.autopilot_enabled` — boolean, from Terraform `enable_autopilot`. Write `true` when `enable_autopilot = true`; write `false` when the attribute is absent or explicitly `false` (a `google_container_cluster` without `enable_autopilot` is a Standard cluster). This is the signal that routes GKE Autopilot → EKS Auto Mode by default.
+
 4. Also extract provider and backend configuration (for region detection)
 5. Report total resources found to user (e.g., "Parsed 50 GCP resources from 12 Terraform files")
 
