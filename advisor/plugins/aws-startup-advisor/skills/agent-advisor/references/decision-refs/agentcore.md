@@ -58,7 +58,7 @@ An always-on service is still a better ECS/EKS fit — Instances sessions end at
 
 - Payments: for agents that pay / transact on a user's behalf — surface only for
   transactional / high-risk-action workloads.
-- Registry: agent/tool discovery and multi-agent orchestration — surface only for multi-agent setups.
+- Registry: agent/tool discovery and multi-agent orchestration — surface only for multi-agent setups. Note: AWS Agent Registry (GA) is now a distinct, centralized discovery/governance catalog for agents, tools, skills, MCP servers, and custom resources across the org, accessible via console/CLI/SDK/MCP and integrated with Bedrock AgentCore, Amazon Quick, and Kiro IDE — this is separate from (and complements) AgentCore's own internal registry-style discovery/orchestration feature.
 
 ## Tradeoffs
 
