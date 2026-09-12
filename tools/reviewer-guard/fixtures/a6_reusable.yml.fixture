@@ -1,0 +1,4 @@
+jobs:
+  review:
+    uses: ./.github/workflows/inner-checkout.yml
+    secrets: inherit

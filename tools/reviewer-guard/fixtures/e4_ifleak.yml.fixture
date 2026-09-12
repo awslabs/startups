@@ -1,0 +1,14 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if:
+      # `if` with a mapping value: every descendant inherits allow_comparison=True
+      cond:
+        - run: echo "${{ github.event.pull_request.title == 'x' }}"
+        - run: echo "${{ github.event.pull_request.head.ref=='y' }}"
+    steps:
+      - if: github.event.pull_request.title == 'x'
+        run: echo ok
