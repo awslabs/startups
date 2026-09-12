@@ -1,0 +1,60 @@
+default_agent: nova_realtime_agentcore
+agents:
+  nova_realtime_agentcore:
+    name: nova_realtime_agentcore
+    entrypoint: /Users/njlbalaj/Documents/Projects/ai-interview-agent/src/agentcore/nova_realtime_agentcore.py
+    deployment_type: container
+    runtime_type: null
+    platform: linux/arm64
+    container_runtime: none
+    source_path: /Users/njlbalaj/Documents/Projects/ai-interview-agent/src/agentcore
+    aws:
+      execution_role: arn:aws:iam::458818293319:role/AmazonBedrockAgentCoreSDKRuntime-us-east-1-35fcf4b512
+      execution_role_auto_create: false
+      account: '458818293319'
+      region: us-east-1
+      ecr_repository: 458818293319.dkr.ecr.us-east-1.amazonaws.com/bedrock-agentcore-nova_realtime_agentcore
+      ecr_auto_create: false
+      s3_path: null
+      s3_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+        network_mode_config: null
+      protocol_configuration:
+        server_protocol: HTTP
+      observability:
+        enabled: true
+      lifecycle_configuration:
+        idle_runtime_session_timeout: null
+        max_lifetime: null
+    bedrock_agentcore:
+      agent_id: nova_realtime_agentcore-OM1tW86pRg
+      agent_arn: arn:aws:bedrock-agentcore:us-east-1:458818293319:runtime/nova_realtime_agentcore-OM1tW86pRg
+      agent_session_id: 0156d071-4adc-4cd9-94a9-b94d79a2f4c6
+    codebuild:
+      project_name: bedrock-agentcore-nova_realtime_agentcore-builder
+      execution_role: arn:aws:iam::458818293319:role/AmazonBedrockAgentCoreSDKCodeBuild-us-east-1-35fcf4b512
+      source_bucket: bedrock-agentcore-codebuild-sources-458818293319-us-east-1
+    memory:
+      mode: STM_AND_LTM
+      memory_id: nova_realtime_agentcore_mem-NMIvaLCjpm
+      memory_arn: null
+      memory_name: nova_realtime_agentcore_memory
+      event_expiry_days: 30
+      first_invoke_memory_check_done: false
+      was_created_by_toolkit: false
+    identity:
+      credential_providers: []
+      workload: null
+    aws_jwt:
+      enabled: false
+      audiences: []
+      signing_algorithm: ES384
+      issuer_url: null
+      duration_seconds: 300
+    authorizer_configuration: null
+    request_header_configuration: null
+    oauth_configuration: null
+    api_key_env_var_name: null
+    api_key_credential_provider_name: null
+    is_generated_by_agentcore_create: false

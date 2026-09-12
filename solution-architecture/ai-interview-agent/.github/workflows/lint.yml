@@ -1,0 +1,75 @@
+name: Lint
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  lint-ui:
+    name: Lint UI (ESLint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: src/ui/package-lock.json
+
+      - run: npm ci
+
+      - name: Run ESLint
+        run: |
+          npx eslint --ext .js,.jsx,.ts,.tsx . --format stylish --output-file eslint-report.txt || true
+          npx eslint --ext .js,.jsx,.ts,.tsx . --format json --output-file eslint-report.json || true
+          cat eslint-report.txt
+
+      - name: Upload ESLint Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report
+          path: |
+            src/ui/eslint-report.*
+          retention-days: 30
+
+  lint-python:
+    name: Lint Python (flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: pip install flake8
+
+      - name: Run flake8
+        run: |
+          flake8 src/agentcore/ src/web/ src/lambda/evaluate_interview.py \
+            --max-line-length 120 \
+            --exclude=__pycache__,venv,venvagentcore,.eggs,*.egg \
+            --format=default \
+            --output-file=flake8-report.txt || true
+          cat flake8-report.txt
+
+      - name: Upload flake8 Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flake8-report
+          path: flake8-report.txt
+          retention-days: 30
