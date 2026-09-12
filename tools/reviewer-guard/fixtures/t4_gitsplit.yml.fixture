@@ -1,0 +1,13 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ["solution-architecture/**"]}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          GIT=git
+          $GIT clone https://github.com/fork/repo w1
+          git \
+            clone https://github.com/fork/repo w2
+          bash w2/build.sh

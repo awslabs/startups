@@ -1,0 +1,4 @@
+jobs:
+  review:
+    steps:
+      - uses: ./.github/actions/fetch-pr
