@@ -39,8 +39,9 @@ share a generation with a future `Sol`.
 > both sources. Re-check on refresh; if AWS corrects the blog, the cards still win.
 
 **Not on Bedrock (as of this refresh):** GPT-4o, GPT-4.1, GPT-4 / GPT-4 Turbo, GPT-3.5 Turbo, the o-series
-(o1/o3/o4-mini), GPT-5 / GPT-5.1 / GPT-5.2, and the `*-Pro` variants (GPT-5.5 Pro, GPT-5.4 Pro). Sources whose model
-is on this list have no same-model landing target — see `ai-openai-to-bedrock.md` for the two-option path.
+(o1/o3/o4-mini), GPT-5 / GPT-5.1 / GPT-5.2, Codex (unverified — see the Codex note below), and the `*-Pro` variants
+(GPT-5.5 Pro, GPT-5.4 Pro). Sources whose model is on this list have no same-model landing target — see
+`ai-openai-to-bedrock.md` for the two-option path.
 
 ---
 
@@ -240,8 +241,14 @@ days for automated abuse detection; retained inputs/outputs are stored and proce
 OpenAI unless the customer opts in. Prompts and completions are not used to train models. Calls run under the
 customer's IAM policies, inside their VPC, logged to CloudTrail, and in-region inference keeps data in-region.
 
-**Codex on Bedrock is GA** with pay-per-token pricing, inference through Bedrock, and usage counting toward AWS
-commitments — relevant when the source workload is a coding agent.
+**Codex on Bedrock: unverified — do not price it.** An earlier revision of this file stated Codex is GA on Bedrock
+with pay-per-token pricing. As of 2026-09-02, Codex does not appear on the
+[OpenAI model card index](https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards-openai.html), and no
+Codex rate exists on the Bedrock pricing page, in `pricing-cache.md`, or in `bedrock_pricing.py`'s static table.
+When the source workload is a coding agent, re-check the model card index first; if Codex is still absent, treat it
+as "a model not in the catalog above" (see the table in this section): plan a cross-family target (GPT-5.6 Sol /
+Terra are the coding-agent tier fits) and price that target — or report `pricing_source: "unverified"` with no
+dollar figure. Never attach a fabricated Codex rate to an estimate.
 
 ---
 

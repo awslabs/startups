@@ -180,13 +180,13 @@ Treat model mapping as compatibility-guided, not 1:1 parity. Before cutover, req
 
 **Apply user preference overrides from `ai_constraints`:**
 
-| Preference                | Override                                          |
-| ------------------------- | ------------------------------------------------- |
-| `ai_priority = "cost"`    | Prefer "Winner" column; flag if source is cheaper |
-| `ai_priority = "quality"` | Prefer Claude Sonnet/Opus regardless of cost      |
-| `ai_priority = "speed"`   | Prefer Claude Sonnet (fastest integration)        |
-| `ai_latency = "critical"` | Prefer smaller/faster models (Haiku, Nova Lite)   |
-| `ai_latency = "flexible"` | Any model; flag Batch API for 50% savings         |
+| Preference                | Override                                                                                                                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai_priority = "cost"`    | Prefer "Winner" column; flag if source is cheaper                                                                                                                                |
+| `ai_priority = "quality"` | Prefer Claude Sonnet/Opus regardless of cost                                                                                                                                     |
+| `ai_priority = "speed"`   | Prefer Claude Sonnet (fastest integration)                                                                                                                                       |
+| `ai_latency = "critical"` | Prefer smaller/faster models (Haiku, Nova Lite)                                                                                                                                  |
+| `ai_latency = "flexible"` | Any model; flag Batch API for 50% savings — but only for confirmed-batch models (skip the discount for models whose batch cells are `_unverified_` in `shared/pricing-cache.md`) |
 
 **Stay-or-migrate assessment per model:**
 

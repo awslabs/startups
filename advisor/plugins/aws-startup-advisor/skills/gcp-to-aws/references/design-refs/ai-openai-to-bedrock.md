@@ -237,25 +237,25 @@ rather than dismissing it. For a long-context (>272K) workload the gap is much w
 
 ## Feature Migration
 
-| OpenAI Feature                             | Bedrock Equivalent                                         | Notes                                                                                                |
-| ------------------------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| OpenAI SDK (direct)                        | Same model on mantle Responses API                         | Base URL + credential + model ID change; see `shared/openai-on-bedrock.md` for the `/openai/v1` path |
-| Responses API                              | Mantle Responses API                                       | Closest to a drop-in; still verify the path and model ID                                             |
-| Chat Completions                           | Reshape to Responses                                       | Unverified for GPT-5.x — probe before committing                                                     |
-| Function calling                           | Supported on GPT-5.x via mantle; Claude tools via Converse | Same-model keeps tool semantics identical                                                            |
-| Reasoning effort                           | `reasoning={"effort": ...}` on mantle                      | `none` / `low` / `medium` / `high` / `xhigh` / `max`                                                 |
-| Prompt caching                             | GPT-5.6 only (90% off cached input)                        | Not listed for GPT-5.5 / 5.4; Claude has its own caching                                             |
-| Streaming                                  | Supported                                                  | Verify per surface                                                                                   |
-| Vision                                     | GPT-5.x (image input) or Claude / Llama 4                  | Same-model preserves behavior                                                                        |
-| JSON mode                                  | Claude (excellent), Nova Pro (good)                        | Most models via prompt                                                                               |
-| Embeddings (ada-002, `text-embedding-3-*`) | Titan Embeddings v2                                        | No OpenAI embedding model on Bedrock; must re-embed all documents                                    |
-| DALL-E / gpt-image                         | Stability AI                                               | Nova Canvas v1 is Legacy; see `ai-model-lifecycle.md`                                                |
-| Whisper (STT)                              | Amazon Transcribe                                          | Different service, API, and pricing model                                                            |
-| TTS                                        | Amazon Polly / Nova 2 Sonic                                | Different pricing model                                                                              |
-| Assistants API                             | See decision tree below                                    | Path depends on which features are used                                                              |
-| Realtime API                               | No equivalent                                              | Stay on OpenAI for this                                                                              |
-| Codex                                      | Codex on Bedrock (GA)                                      | Pay-per-token, inference through Bedrock, counts toward AWS commitments                              |
-| Guardrails / KB / invocation logging       | Bedrock-native model or gpt-oss                            | Not available through the mantle GPT path                                                            |
+| OpenAI Feature                             | Bedrock Equivalent                                          | Notes                                                                                                |
+| ------------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| OpenAI SDK (direct)                        | Same model on mantle Responses API                          | Base URL + credential + model ID change; see `shared/openai-on-bedrock.md` for the `/openai/v1` path |
+| Responses API                              | Mantle Responses API                                        | Closest to a drop-in; still verify the path and model ID                                             |
+| Chat Completions                           | Reshape to Responses                                        | Unverified for GPT-5.x — probe before committing                                                     |
+| Function calling                           | Supported on GPT-5.x via mantle; Claude tools via Converse  | Same-model keeps tool semantics identical                                                            |
+| Reasoning effort                           | `reasoning={"effort": ...}` on mantle                       | `none` / `low` / `medium` / `high` / `xhigh` / `max`                                                 |
+| Prompt caching                             | GPT-5.6 only (90% off cached input)                         | Not listed for GPT-5.5 / 5.4; Claude has its own caching                                             |
+| Streaming                                  | Supported                                                   | Verify per surface                                                                                   |
+| Vision                                     | GPT-5.x (image input) or Claude / Llama 4                   | Same-model preserves behavior                                                                        |
+| JSON mode                                  | Claude (excellent), Nova Pro (good)                         | Most models via prompt                                                                               |
+| Embeddings (ada-002, `text-embedding-3-*`) | Titan Embeddings v2                                         | No OpenAI embedding model on Bedrock; must re-embed all documents                                    |
+| DALL-E / gpt-image                         | Stability AI                                                | Nova Canvas v1 is Legacy; see `ai-model-lifecycle.md`                                                |
+| Whisper (STT)                              | Amazon Transcribe                                           | Different service, API, and pricing model                                                            |
+| TTS                                        | Amazon Polly / Nova 2 Sonic                                 | Different pricing model                                                                              |
+| Assistants API                             | See decision tree below                                     | Path depends on which features are used                                                              |
+| Realtime API                               | No equivalent                                               | Stay on OpenAI for this                                                                              |
+| Codex                                      | Not verified on Bedrock — see `shared/openai-on-bedrock.md` | Do not price; re-check the OpenAI model card index first                                             |
+| Guardrails / KB / invocation logging       | Bedrock-native model or gpt-oss                             | Not available through the mantle GPT path                                                            |
 
 ---
 
