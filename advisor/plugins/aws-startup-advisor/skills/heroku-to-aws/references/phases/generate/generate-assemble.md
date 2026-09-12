@@ -50,13 +50,28 @@ section + contact email variables, guide sections, report sections, conditional
 Postgres/ Redis migration scripts, conditional EKS terraform + kubernetes
 manifests, every service accounted for, no `{{VARIABLE}}` placeholders), then emit
 `GATE_FAIL` (STOP) or
-`HANDOFF_OK | phase=generate | artifacts=terraform/,MIGRATION_GUIDE.md,README.md,migration-report.html`.
+`HANDOFF_OK | phase=generate | artifacts=terraform/,MIGRATION_GUIDE.md,README.md,migration-report.html,validation-report.json`.
 
 Optionally run
 `python3 "$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py" \
   "$MIGRATION_DIR/migration-report.html" --migration-dir "$MIGRATION_DIR"`
 and treat exit `1` as `GATE_FAIL` for the report (repair HTML; do not delete
 Terraform/docs).
+
+The Terraform **policy gate** is not optional, and it is enforced by `generate.md`
+`_postconditions` — a **read-only** gate the interpreter runs in the **main window**
+(`INTERPRETER.md` § `_exec` step 4). The policy checker run, the budget-3 `.tf`
+fix-and-retry loop, and the verdict merge all happen **before** this gate, in
+`generate.md`'s "Finish Generate in the main window (policy reconcile)" step — that is
+where `terraform/` may be edited. By the time the gate runs, the retry budget is already
+spent. The gate only does `_validate_json` + assert `policy_status == "POLICY_OK"`.
+If `validation-report.json` is missing/invalid or its reconciled `policy_status` is
+`"POLICY_FAIL"` (or `not_run`), the gate emits `GATE_FAIL`. Per `INTERPRETER.md`
+§ `_postconditions`, this assembler does **not** modify `.tf` files, edit the verdict, or
+advance — it halts and surfaces the residual violations. Recovery is a **human edit of the
+named `.tf` sites followed by a targeted re-run of `validate-terraform-policy.py`**, not a
+full Generate re-run: re-dispatching Generate re-authors `terraform/` from scratch under the
+shell-less `rw` worker and would wipe any manual fixes.
 
 ---
 

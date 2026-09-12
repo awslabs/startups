@@ -12,6 +12,7 @@ _contributes:
   - .github/workflows/deploy-eb.yml
   - terraform/.gitignore
   - terraform/terraform.tfvars.example
+  - validation-report.json
 ---
 
 # Generate Phase: Terraform Configuration Generation
@@ -68,6 +69,21 @@ Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only 
 | CloudWatch Logs                    | `compute.tf`                                                                                                    |
 
 **Unmapped services:** If `aws-design.json` contains a `service_id` with an `aws_service` value that has no Terraform resource mapping in this file (e.g., CloudWatch + X-Ray composite, Amazon SES, Amazon SNS), **skip** that resource and record a warning in `generation-warnings.json` (which is ALWAYS written — see Step 10 — with an empty `warnings` array when nothing is skipped). Do NOT halt generation.
+
+---
+
+## Step 0: Apply AWS authoring posture (before writing any `.tf`)
+
+**Before generating any Terraform, invoke the `tf-best-practices` skill for its authoring posture** — it is the single source of truth for "what good AWS Terraform looks like." Treat it as a **black box**: pass the caller context below and emit Terraform that satisfies every rule it returns. Do **not** reach into its files or re-specify its rules here — it evolves independently.
+
+> Invoke the **`tf-best-practices`** skill, telling it you are **about to author `terraform/`** (the pre-generation context).
+
+**Pass the caller context** (heroku-to-aws supplies these; the skill reads none of our artifacts):
+
+- **`compliance`** — the normalized compliance array (see Step 1.5 item 0 for the scalar/absent/`"none"`/`"unknown"` normalization). Empty ⇒ no compliance-conditional hardening.
+- **`aws_config` values** — instance classes, CPU/memory, storage, engine versions from each service's `aws_config` in `aws-design.json`. The posture constrains the shape, not the numbers.
+
+The Elastic Beanstalk / Fargate / RDS / ElastiCache / MSK wiring in the steps below is heroku-to-aws's source glue (value population + EB `setting` blocks); the _security posture_ on those resources is owned by the skill. Following the posture makes the Step 12 policy gate pass by construction.
 
 ---
 
@@ -2223,6 +2239,35 @@ After all files are written:
 6. **Security baseline**: `baseline.tf` exists and contains the full always-on resource list from Step 1.5 (three `aws_account_alternate_contact`, password policy, S3 account PAB, EBS default encryption, Access Analyzer, IMDSv2 account default, CloudTrail + log bucket, budget, GuardDuty); its `locals.cloudtrail_retention_days` is a positive integer; the compliance-conditional section is present exactly when the normalized `compliance` array contains soc2/pci/hipaa/fedramp; the three contact email variables are declared without defaults and with placeholder-rejecting validation blocks
 7. **Elastic Beanstalk web runtime inputs**: For every EB web service, verify its per-app `eb_application_port_<app>_web` and `eb_health_check_path_<app>_web` variables are declared without defaults, include the required validation blocks, and are referenced directly by that app's `PORT` and `HealthCheckPath` settings. Verify non-web EB services do not require these variables. Do not report an EB web configuration as ready to plan until the customer has supplied both values for every web app.
 
-**Note:** Full `terraform validate` requires `terraform init` (provider download). The generated configuration SHOULD pass `terraform validate` when run with network access. If validation cannot run (no Terraform binary, no network), log a note but do NOT block generation.
+8. **Write a best-effort `validation-report.json` (execution is NOT this fragment's job).**
+   Under `_exec._agent: rw` this fragment runs in a dispatched worker with **file-only I/O and
+   no shell** (`INTERPRETER.md` § capability tiers — `rw` deliberately excludes Bash), so it
+   **cannot** run `terraform fmt/init/validate` or `validate-terraform-policy.py`. It records a
+   report the main-window **"Finish Generate" step** then reconciles authoritatively (the
+   read-only `_postconditions` gate only reads it):
+   - Author `terraform/` to satisfy the Step 0 posture (that is what makes the policy check pass
+     by construction); the worker does not self-certify it.
+   - Write `$MIGRATION_DIR/validation-report.json` in the **v2 envelope**
+     (`references/terraform-validation.md` § Report Schema) with `"$schema": "validation-report/v2"`.
+     Because the worker cannot run the checker, it sets `"status": "passed_degraded_offline"`,
+     `"offline_fallback_used": true`, and `"policy_status": "not_run"` — a placeholder the
+     main-window "Finish Generate" step overwrites (never the gate). It MUST NOT invent
+     `policy_status: "POLICY_OK"`.
+
+**The policy checker + `.tf` fix-and-retry run in the MAIN window, not here.** This fragment
+(the dispatched worker) has no shell, so it only writes the best-effort report above. The
+interpreter finishes the work in the main window — running the checker, applying the budget-3
+`fix_hint` loop to `terraform/`, and merging the verdict — in the `generate.md` **"Finish Generate
+in the main window (policy reconcile)"** step, which runs **after the worker returns and before**
+the read-only `_postconditions` gate. That step keeps `status: "passed_degraded_offline"` (it runs
+only the policy stage, never `terraform fmt/init/validate`) and only updates `policy_status` /
+`policy_violations[]`. A residual `POLICY_FAIL` then fails the gate's `_assert`. On an inline-only
+host the whole phase runs in the main window anyway, so the same finish step applies.
+
+> Scope note: `validate-terraform-policy.py` inspects standalone `aws_lb_listener` blocks. An
+> Elastic Beanstalk **LoadBalanced** environment's ALB is provisioned by EB from
+> `aws_elastic_beanstalk_environment` `setting` blocks, which the static checker does not read —
+> so a pure-EB design passes the ALB rules vacuously (there is no standalone listener to inspect).
+> That is a known limitation, not a bypass: EB TLS/listener posture is authoring-only here.
 
 When all files are written, control returns to `generate.md` (then the phase assembler `generate-assemble.md`), which runs the phase completion handoff gate per its `_postconditions`.
