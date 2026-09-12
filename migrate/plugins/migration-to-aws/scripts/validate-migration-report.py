@@ -871,6 +871,125 @@ def _validate_appendix_config(html: str) -> list[str]:
     return errors
 
 
+def _normalize_money(text: str) -> str | None:
+    """Reduce a rendered money string to a bare integer-dollar string for exact
+    comparison against the JSON. '$1,415/mo' -> '1415'; '$112' -> '112'. Returns
+    None when no dollar amount is present. Cents are truncated (the artifacts
+    store whole-dollar monthly figures)."""
+    m = re.search(r"\$\s*([0-9][0-9,]*)(?:\.[0-9]+)?", text)
+    if not m:
+        return None
+    return m.group(1).replace(",", "")
+
+
+# Which estimation-infra.json figure each data-cost-key anchor must equal. The
+# validator asserts every figure the emitter tagged with a data-cost-key anchor
+# (generate-artifacts-report.md); an untagged *illustrative* figure is never guessed
+# at. Required keys are the exception: a required figure whose JSON value exists must
+# BE anchored when exec-costs is present (see _REQUIRED_COST_KEYS) — a missing anchor
+# there is a FAIL, not a skip.
+_COST_ANCHORS = {
+    "aws_monthly_balanced": ("projected_costs", "aws_monthly_balanced"),
+    "aws_monthly_premium": ("projected_costs", "aws_monthly_premium"),
+    "aws_monthly_optimized": ("projected_costs", "aws_monthly_optimized"),
+    "current_monthly": ("current_costs", "gcp_monthly"),
+}
+
+# Keys whose figure is load-bearing: when its JSON value exists AND the report has
+# an exec-costs section, the anchor MUST be present (a missing anchor is a FAIL, not
+# a skip — otherwise an un-anchored wrong figure passes, which is the bug P1-C exists
+# to catch). Premium/optimized are optional (skip when absent).
+_REQUIRED_COST_KEYS = ("aws_monthly_balanced", "current_monthly")
+
+# Capture the anchor key and the inner HTML up to the element's close tag, so a figure
+# wrapped in nested markup (<span data-cost-key=...><strong>$112</strong></span>) is
+# read, not just a bare text node.
+_ANCHOR_RE = re.compile(
+    r'data-cost-key=["\']([a-z_]+)["\'][^>]*>(.*?)</',
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _dig(d: dict, path: tuple[str, ...]):
+    cur = d
+    for key in path:
+        if not isinstance(cur, dict) or key not in cur:
+            return None
+        cur = cur[key]
+    return cur
+
+
+def _validate_cost_figures(
+    html: str, estimation_infra: dict | None, *, require_anchors: bool = True
+) -> list[str]:
+    """Assert the report's cost figures match estimation-infra.json (P1-C).
+
+    Fail direction:
+    - No estimation-infra.json / not a dict -> skip (fail open on absence).
+    - A REQUIRED key (aws_monthly_balanced, current_monthly) whose JSON value is
+      present, when exec-costs exists, MUST carry a data-cost-key anchor -> a
+      missing anchor FAILs (an un-anchored wrong figure must not pass).
+    - Anchor present + JSON value present but rendered dollars differ -> FAIL.
+    - Anchored element with a real JSON value but no $ amount rendered -> FAIL.
+    - Non-numeric / non-whole-dollar JSON value -> FAIL (named), never a crash.
+    - Unknown anchor key, or an optional key's absent JSON value -> skip.
+    """
+    if not isinstance(estimation_infra, dict):
+        return []
+    errors: list[str] = []
+    seen_keys: set[str] = set()
+
+    for match in _ANCHOR_RE.finditer(html):
+        key = match.group(1).lower()
+        path = _COST_ANCHORS.get(key)
+        if path is None:
+            continue  # unknown anchor key -> not ours to assert
+        seen_keys.add(key)
+        expected = _dig(estimation_infra, path)
+        if expected is None:
+            continue  # the JSON does not carry this figure -> nothing to assert
+        try:
+            expected_dollars = str(int(expected))
+        except (TypeError, ValueError):
+            errors.append(
+                f'estimation-infra.json {".".join(path)} is not a whole-dollar '
+                f"number: {expected!r}"
+            )
+            continue
+        rendered = _normalize_money(re.sub(r"<[^>]+>", "", match.group(2)))
+        if rendered is None:
+            errors.append(
+                f'data-cost-key="{key}" element renders no dollar amount '
+                f"(expected ${expected_dollars} from {'.'.join(path)})"
+            )
+            continue
+        if expected_dollars != rendered:
+            errors.append(
+                f'cost figure mismatch: data-cost-key="{key}" renders '
+                f'"${rendered}" but estimation-infra.json {".".join(path)} = '
+                f"${expected_dollars}"
+            )
+
+    # Required figures must be anchored when their JSON value exists and the report
+    # has an exec-costs section to carry them. Gated on require_anchors so deliberately
+    # minimal unit fixtures (run with --no-require-toc) are not forced to anchor; the
+    # mismatch / no-$ / non-numeric checks above always run.
+    if require_anchors and _section_id_counts(html).get("exec-costs", 0) >= 1:
+        for key in _REQUIRED_COST_KEYS:
+            if key in seen_keys:
+                continue
+            path = _COST_ANCHORS[key]
+            if _dig(estimation_infra, path) is None:
+                continue  # JSON does not carry it -> nothing to require
+            errors.append(
+                f'missing data-cost-key="{key}" anchor in the report; cannot '
+                f"confirm the rendered figure matches estimation-infra.json "
+                f'{".".join(path)} (wrap that figure in '
+                f'<span data-cost-key="{key}">...</span>)'
+            )
+    return errors
+
+
 def _validate_verdict(html: str, estimation_infra: dict | None) -> list[str]:
     """When a recommendation block exists, the decision summary must state a
     one-sentence verdict in a visually distinct class="verdict" callout."""
@@ -1091,6 +1210,9 @@ def validate_report(
 
     # Decision summary must state a one-sentence verdict when a recommendation exists.
     errors.extend(_validate_verdict(html, estimation_infra))
+    errors.extend(
+        _validate_cost_figures(html, estimation_infra, require_anchors=require_toc)
+    )
     errors.extend(_validate_activate_link(html))
     if require_toc:
         errors.extend(_validate_share_section(html, estimation_infra, estimation_ai))

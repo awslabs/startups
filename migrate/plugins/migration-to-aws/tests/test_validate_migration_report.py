@@ -1268,3 +1268,138 @@ def test_removing_savings_plan_option_rows_fails_despite_posture_caveat(
     code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
     assert code == 1, out
     assert "Savings Plans" in out
+
+
+def test_cost_figure_mismatch_fails(tmp_path: Path) -> None:
+    # P1-C: a data-cost-key-anchored figure that disagrees with estimation-infra.json fails.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="aws_monthly_balanced">$112/mo</span>',
+        '<span data-cost-key="aws_monthly_balanced">$999/mo</span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+    assert "aws_monthly_balanced" in out
+
+
+def test_cost_figure_match_passes(tmp_path: Path) -> None:
+    # The unmodified reference anchors ($112 balanced, $165 current) match the JSON.
+    code, out = run_validator(FIXTURE, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "cost figure mismatch" not in out
+
+
+def test_cost_figure_skipped_without_estimation(tmp_path: Path) -> None:
+    # No estimation-infra.json -> the numeric cross-check is skipped (fail open on absence);
+    # a wrong anchored figure is not flagged when there is nothing to compare against.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="aws_monthly_balanced">$112/mo</span>',
+        '<span data-cost-key="aws_monthly_balanced">$999/mo</span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, estimation_infra=None, estimation_ai=FIXTURE_EST_AI)
+    assert code == 0, out  # skip means a clean pass, not merely the absence of a mismatch line
+    assert "cost figure mismatch" not in out
+
+
+def test_cost_figure_current_monthly_mismatch_fails(tmp_path: Path) -> None:
+    # The other required GCP key: current_monthly -> current_costs.gcp_monthly.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="current_monthly">$165/mo</span>',
+        '<span data-cost-key="current_monthly">$777/mo</span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+    assert "current_monthly" in out
+
+
+def test_missing_required_balanced_anchor_fails(tmp_path: Path) -> None:
+    # The core P1-C guarantee: an un-anchored (or unwrapped) balanced figure must not
+    # silently pass — a missing required anchor is a FAIL.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="aws_monthly_balanced">$112/mo</span>',
+        "$112/mo",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced"' in out
+
+
+def test_missing_required_current_monthly_anchor_fails(tmp_path: Path) -> None:
+    # The other required key: an un-anchored current-spend comparator must also FAIL
+    # (required-absent, symmetric to the balanced case above — not just a mismatch).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="current_monthly">$165/mo</span>',
+        "$165/mo",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="current_monthly"' in out
+
+
+def test_cost_figure_nested_markup_reads(tmp_path: Path) -> None:
+    # A figure wrapped in <strong> inside the anchor is still read (not fail-open).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="aws_monthly_balanced">$112/mo</span>',
+        '<span data-cost-key="aws_monthly_balanced"><strong>$112/mo</strong></span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "cost figure mismatch" not in out
+
+
+def test_cost_figure_nested_markup_mismatch_fails(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="aws_monthly_balanced">$112/mo</span>',
+        '<span data-cost-key="aws_monthly_balanced"><strong>$999/mo</strong></span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+
+
+def test_unknown_cost_key_ignored(tmp_path: Path) -> None:
+    # An unrecognized data-cost-key is not asserted (and does not satisfy a required key).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="aws_monthly_balanced">$112/mo</span>',
+        '<span data-cost-key="aws_monthly_balanced">$112/mo</span>'
+        '<span data-cost-key="made_up_key">$5/mo</span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "made_up_key" not in out
+
+
+def test_non_numeric_json_value_fails_not_crash(tmp_path: Path) -> None:
+    # A non-whole-dollar JSON value yields a named FAIL, never an uncaught traceback (exit 2).
+    est = json.loads(FIXTURE_EST_INFRA.read_text(encoding="utf-8"))
+    est["projected_costs"]["aws_monthly_balanced"] = "$112"
+    est_path = tmp_path / "estimation-infra.json"
+    est_path.write_text(json.dumps(est), encoding="utf-8")
+    code, out = run_validator(FIXTURE, est_path, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "not a whole-dollar number" in out
