@@ -40,6 +40,111 @@ def _section_counts(html: str) -> dict[str, int]:
     return counts
 
 
+def _normalize_money(text: str) -> str | None:
+    """'$1,415/mo' -> '1415'; '$112' -> '112'. None when no dollar amount present.
+    Cents are truncated (the artifacts store whole-dollar monthly figures)."""
+    m = re.search(r"\$\s*([0-9][0-9,]*)(?:\.[0-9]+)?", text)
+    return m.group(1).replace(",", "") if m else None
+
+
+# data-cost-key anchor -> estimation-infra.json path. Heroku asserts the recommended
+# AWS monthly (Balanced) figure only; the current-spend comparator is a follow-up
+# (Heroku's current_costs key is not yet settled — heroku_monthly_baseline vs _estimated).
+_COST_ANCHORS = {
+    "aws_monthly_balanced": ("projected_costs", "aws_monthly_balanced"),
+}
+# Load-bearing key: when its JSON value exists AND exec-costs is present, the anchor
+# MUST be present (a missing anchor is a FAIL, not a skip — otherwise an un-anchored
+# wrong figure passes, the bug P1-C exists to catch).
+_REQUIRED_COST_KEYS = ("aws_monthly_balanced",)
+
+# Capture inner HTML up to the close tag so a figure wrapped in nested markup
+# (<span data-cost-key=...><strong>$112</strong></span>) is read, not just a text node.
+_ANCHOR_RE = re.compile(
+    r'data-cost-key=["\']([a-z_]+)["\'][^>]*>(.*?)</', re.IGNORECASE | re.DOTALL
+)
+
+
+def _dig(d: dict, path: tuple[str, ...]):
+    cur = d
+    for key in path:
+        if not isinstance(cur, dict) or key not in cur:
+            return None
+        cur = cur[key]
+    return cur
+
+
+def _validate_cost_figures(html: str, migration_dir: Path | None) -> list[str]:
+    """Assert the report's cost figures match estimation-infra.json (P1-C).
+
+    Fail direction:
+    - No estimation-infra.json / corrupt / not a dict -> skip (fail open on absence).
+    - aws_monthly_balanced present in JSON + exec-costs present -> its anchor MUST
+      exist; a missing anchor FAILs (an un-anchored wrong figure must not pass).
+    - Anchor present + JSON value present but rendered dollars differ -> FAIL.
+    - Anchored element with a real JSON value but no $ rendered -> FAIL.
+    - Non-numeric / non-whole-dollar JSON value -> FAIL (named), never a crash.
+    - Unknown anchor key -> skip.
+    """
+    if migration_dir is None:
+        return []
+    est_path = migration_dir / "estimation-infra.json"
+    if not est_path.is_file():
+        return []
+    try:
+        est = json.loads(est_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []  # fail open on ambiguity: a corrupt estimate does not gate the report
+    if not isinstance(est, dict):
+        return []
+    errors: list[str] = []
+    seen_keys: set[str] = set()
+    for match in _ANCHOR_RE.finditer(html):
+        key = match.group(1).lower()
+        path = _COST_ANCHORS.get(key)
+        if path is None:
+            continue
+        seen_keys.add(key)
+        expected = _dig(est, path)
+        if expected is None:
+            continue
+        try:
+            expected_dollars = str(int(expected))
+        except (TypeError, ValueError):
+            errors.append(
+                f'estimation-infra.json {".".join(path)} is not a whole-dollar '
+                f"number: {expected!r}"
+            )
+            continue
+        rendered = _normalize_money(re.sub(r"<[^>]+>", "", match.group(2)))
+        if rendered is None:
+            errors.append(
+                f'data-cost-key="{key}" element renders no dollar amount '
+                f"(expected ${expected_dollars} from {'.'.join(path)})"
+            )
+            continue
+        if expected_dollars != rendered:
+            errors.append(
+                f'cost figure mismatch: data-cost-key="{key}" renders "${rendered}" '
+                f'but estimation-infra.json {".".join(path)} = ${expected_dollars}'
+            )
+
+    if _section_counts(html).get("exec-costs", 0) >= 1:
+        for key in _REQUIRED_COST_KEYS:
+            if key in seen_keys:
+                continue
+            path = _COST_ANCHORS[key]
+            if _dig(est, path) is None:
+                continue
+            errors.append(
+                f'missing data-cost-key="{key}" anchor in the report; cannot '
+                f"confirm the rendered figure matches estimation-infra.json "
+                f'{".".join(path)} (wrap that figure in '
+                f'<span data-cost-key="{key}">...</span>)'
+            )
+    return errors
+
+
 def validate(html: str, migration_dir: Path | None) -> list[str]:
     errors: list[str] = []
     counts = _section_counts(html)
@@ -68,6 +173,7 @@ def validate(html: str, migration_dir: Path | None) -> list[str]:
                     '<section id="what-if-scenarios">'
                 )
 
+    errors.extend(_validate_cost_figures(html, migration_dir))
     return errors
 
 

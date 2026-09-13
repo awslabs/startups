@@ -58,6 +58,15 @@ Write a **self-contained** HTML file to `$MIGRATION_DIR/migration-report.html`
 | `cost-optimization` | Reserved Instance / Savings Plan opportunities table, or the explicit no-eligible-commitment statement — see below. Always present, never omitted                                                                                                                                            |
 | `next-steps`        | Ordered list pointing to `MIGRATION_GUIDE.md` phases (not a procedure dump). Include one bullet noting the Terraform ships with `baseline.tf` (account security baseline — GuardDuty, CloudTrail, budget alerts) and that three contact emails must be set in tfvars before `terraform plan` |
 
+**Cost-figure anchor (machine-checkable).** In `exec-costs`, wrap the recommended AWS
+monthly (Balanced) dollar figure in a `data-cost-key="aws_monthly_balanced"` attribute so
+the validator can confirm it matches `estimation-infra.json` `projected_costs.aws_monthly_balanced`
+— e.g. `<span data-cost-key="aws_monthly_balanced">$112/mo</span>`. The attribute is not
+reader-visible text. The validator asserts the rendered dollars equal the JSON for every
+anchor present. **The `aws_monthly_balanced` anchor is mandatory whenever that JSON value
+exists and `exec-costs` is rendered — a missing anchor is a validator FAIL, not a skip.**
+Only untagged _illustrative_ numbers are skipped.
+
 ### `decision-summary` content (REQUIRED)
 
 1. **Verdict (typography-first — the thesis of this section):** When
@@ -179,7 +188,8 @@ stakeholders, not a design system.
     <nav class="toc">…</nav>
     <section id="decision-summary">…</section>
     <!-- <section id="decision-basis"> when recommendation.decision_basis exists -->
-    <section id="exec-costs">…</section>
+    <section id="exec-costs">… Balanced AWS monthly wrapped as
+      <span data-cost-key="aws_monthly_balanced">$NNN/mo</span> …</section>
     <section id="cost-optimization">…</section>
     <!-- <section id="what-if-scenarios"> when ≥2 scenarios -->
     <section id="next-steps">…</section>
@@ -204,6 +214,10 @@ Before returning:
 5. If `scenarios/index.json` has ≥2 scenarios, contains `what-if-scenarios`.
 6. `cost-optimization` is non-empty — either the table or the explicit
    no-eligible-commitment sentence, never a blank section.
+7. When `projected_costs.aws_monthly_balanced` is present, `exec-costs` wraps that
+   figure in `<span data-cost-key="aws_monthly_balanced">$NNN/mo</span>` (the
+   validator FAILs on a missing anchor — it is how the rendered figure is confirmed
+   against the estimate). The attribute is not reader-visible text.
 
 On failure: fix and rewrite — do **not** leave a stub. Report generation is
 part of Generate for heroku-to-aws (stakeholder deliverable), but a report
