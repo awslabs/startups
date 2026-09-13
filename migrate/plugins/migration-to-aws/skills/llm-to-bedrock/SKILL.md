@@ -67,10 +67,11 @@ on one of those and this fails, that is the likely cause. If the Skill tool call
 A1 step fails or no such mechanism exists on your agent, this skill still has no fallback:
 tell the user plainly that this agent cannot chain into `gcp-to-aws` automatically, and ask
 them to invoke `gcp-to-aws` themselves directly (e.g. "migrate my AI workload to AWS") to run
-Discover through Generate, then come back to this skill once its `generate` phase is
-`completed` (checked in A2) to continue with the SDK rewrite. This is a manual two-step
-workaround for a missing agent capability, not an automated fallback — do not present it to
-the user as this skill "handling it."
+Discover through Design (accepting the decision pack is enough — they do not need to generate
+infra Terraform), then come back to this skill once its Assess artifacts are ready (the
+decision pack is done, or `generate` is `completed`; checked in A2) to continue with the SDK
+rewrite. This is a manual two-step workaround for a missing agent capability, not an automated
+fallback — do not present it to the user as this skill "handling it."
 
 ---
 
@@ -127,8 +128,10 @@ Before invoking, tell the user:
 > GCP or infrastructure component, which is how it's being used here.)"
 
 After invoking the Skill tool, the `gcp-to-aws` skill instructions will load into context.
-Follow those instructions exactly — they will drive the Discover, Clarify, Design, Estimate,
-and Generate phases. The source code to scan is at `$REPO`.
+Follow those instructions exactly — they will drive the Discover, Clarify, Design, and Estimate
+phases through to the decision pack. The source code to scan is at `$REPO`. You do **not** need
+`gcp-to-aws` to run its **Generate** (infra Terraform) phase — that is opt-in and produces nothing
+this SDK rewrite reads; stopping at the decision pack is enough (A2 confirms readiness).
 
 **Important context for the gcp-to-aws skill execution:**
 
@@ -144,22 +147,72 @@ and Generate phases. The source code to scan is at `$REPO`.
 ### A2 — Wait for Assess completion
 
 The `gcp-to-aws` skill is a state machine. After each phase completes, it may stop and wait
-for the next invocation. Check progress against the LATEST run directory only (older
-`.migration/` runs may contain a stale "completed" status):
+for the next invocation. This skill only needs the **Assess artifacts** (`aws-design-ai.json`
+from Design, `ai-workload-profile.json` from Discover, `preferences.json` from Clarify) — it
+never reads anything Generate produces (Terraform, `MIGRATION_GUIDE.md`, `migration-report.html`).
+Those artifacts are all on disk once **Design** completes, so for a pure AI/SDK rewrite you do
+**not** need `gcp-to-aws` to run its infra Generate phase. The check below emits `assess-ready`
+when **any** of these hold (in this order):
+
+1. **Design done + artifact present** — `phases.design == "completed"` AND `aws-design-ai.json`
+   exists. This is the ground truth for the AI path: Design's own completion gate has passed, so
+   the model mapping is real, not mid-authoring. (Existence alone is **not** enough — `design-ai.md`
+   writes the JSON, and Discover/Clarify wrote their two files even earlier, all **before**
+   `design.md` stamps `phases.design`; so a bare "all three files exist" would fire mid-Design.
+   Requiring `phases.design == "completed"` is what closes that early-fire window.) This also
+   covers the `legacy-generate` back-compat state in `gcp-to-aws/SKILL.md`, which is only reachable
+   after Design and therefore already has `phases.design == "completed"`.
+2. **Decide-complete** — `current_phase == "complete"` AND `run_mode == "decide"` AND
+   `phases.generate == "pending"` AND `DECISION.md` on disk (the normal AI-path end state).
+3. **Generate-complete** — `phases.generate == "completed"` (the user also chose to generate infra).
+
+Check progress against the LATEST run directory only (older `.migration/` runs may contain a
+stale status):
 
 ```bash
 MIGRATION_DIR=$(ls -td "$REPO/.migration"/*/ 2>/dev/null | head -1)
 # Stdlib-only JSON read — no boto3, so bare python3 is fine here (no pinned env needed).
-python3 -c "import json,sys; print(json.load(open('$MIGRATION_DIR/.phase-status.json'))['phases'].get('generate','missing'))" 2>/dev/null || echo "no-status-file"
+# Emit one token: assess-ready / not-ready / no-status-file. Ground truth is the Assess the AI
+# path actually consumes (see the three conditions above); the phase-status tuples are fallbacks.
+python3 - "$MIGRATION_DIR" <<'PY' 2>/dev/null || echo "no-status-file"
+import json, os, sys
+d = sys.argv[1]
+if not d:
+    print("no-status-file"); sys.exit()
+def has(f): return os.path.exists(os.path.join(d, f))
+try:
+    s = json.load(open(os.path.join(d, ".phase-status.json")))
+except Exception:
+    # No readable status file, but the design artifact alone is not trusted (may be mid-Design);
+    # without the status we cannot confirm Design's gate passed.
+    print("no-status-file" if not has("aws-design-ai.json") else "not-ready"); sys.exit()
+ph = s.get("phases", {})
+# phases.design == completed means Design's completion gate passed, so aws-design-ai.json is
+# final (not mid-authoring). This also covers the legacy-generate state, which is only reachable
+# after Design. Do NOT accept a bare "all three files exist" — Discover/Clarify write their two
+# files early, and design-ai.md writes aws-design-ai.json BEFORE the gate, so three-files-present
+# fires mid-Design (the early-fire case). A3 remains the artifact-completeness backstop.
+design_done = ph.get("design") == "completed" and has("aws-design-ai.json")
+generate_done = ph.get("generate") == "completed"
+decide_done = (
+    s.get("current_phase") == "complete"
+    and s.get("run_mode") == "decide"
+    and ph.get("generate") == "pending"
+    and has("DECISION.md")
+)
+print("assess-ready" if (design_done or generate_done or decide_done) else "not-ready")
+PY
 ```
 
-- `completed` → proceed to A3.
-- Anything else (including `no-status-file`) → the skill needs to run again. Re-invoke
-  `migration-to-aws:gcp-to-aws` via the Skill tool — it picks up where it left off.
+- `assess-ready` → proceed to A3 (Assess is done whether or not infra Generate ran). A3 still
+  verifies the specific files before Execute reads them.
+- `not-ready` / `no-status-file` → the skill needs to run again. Re-invoke
+  `migration-to-aws:gcp-to-aws` via the Skill tool — it picks up where it left off. (You do
+  not need to push it all the way to Generate; stopping at the decision pack is enough.)
 
-**Cap: at most 6 re-invocations.** If `generate` is still not `completed` after 6, stop and
-show the user the last status output — the Assess skill is stuck and needs manual attention;
-looping further just burns context.
+**Cap: at most 6 re-invocations.** If it is still `not-ready` after 6, stop and show the user
+the last status output — the Assess skill is stuck and needs manual attention; looping further
+just burns context.
 
 ### A3 — Locate Assess output
 
@@ -169,14 +222,16 @@ Find `$MIGRATION_DIR` (the `.migration/<MMDD-HHMM>/` directory that was created)
 ls -td "$REPO/.migration"/*/ 2>/dev/null | head -1
 ```
 
-Verify these files exist in `$MIGRATION_DIR`:
+Verify **all three** of these files exist in `$MIGRATION_DIR` (Phase B reads every one):
 
 - `aws-design-ai.json` (model mapping + architecture)
 - `ai-workload-profile.json` (detected workloads)
 - `preferences.json` (user preferences from Clarify)
 
-If `aws-design-ai.json` is missing, Assess did not complete the AI path correctly. Show the
-error and stop.
+If **any** of the three is missing, Assess did not complete the AI path correctly — name the
+missing file(s), show the error, and stop. (A2 can now report `assess-ready` from the design
+file + `phases.design` alone, so this step is the backstop that guarantees the other two
+artifacts Phase B needs are actually present before Execute reads them.)
 
 ---
 
