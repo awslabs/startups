@@ -199,11 +199,16 @@ contract). Both are `_kind: sidebar` — off-backbone, trigger-entered, never
 - **After Discover**: No prompt. Proceed directly to Clarify.
 
 - **After Estimate**: First offer the what-if workshop sidebar per
-  `estimate-assemble.md` (Enter workshop / Proceed toward Generate). Outer
+  `estimate-assemble.md` (Enter workshop / Proceed to the decision). Outer
   Estimate keeps `current_phase: estimate` until workshop is resolved (entered
   then exited via `workshop-assemble.md`, or declined). If the user enters
-  workshop, follow `references/phases/workshop/workshop.md`. Then, if
-  `phases.feedback` is `"pending"`:
+  workshop, follow `references/phases/workshop/workshop.md`. Once the
+  workshop is resolved, present the **Decision gate** per
+  `estimate-assemble.md` § "Post-Estimate: Decision Gate" — do **not** fall
+  through to Generate or to the feedback prompt below without it. The
+  feedback prompt below fires only after the Decision gate resolves (choice A
+  → decide-complete; choice C → proceeding to Generate); it is not a
+  substitute for the Decision gate.
 
   ```
   Would you like to share quick feedback? (5 optional questions +
@@ -211,18 +216,48 @@ contract). Both are `_kind: sidebar` — off-backbone, trigger-entered, never
   account IDs)
 
   [A] Yes, share feedback
-  [B] No thanks, continue to Generate
+  [B] No thanks, continue
   ```
 
-  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
-  - If user picks **B** → Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`.
+  - If user picks **B** → Set `phases.feedback` to `"completed"`.
+
+  After either choice: if the Decision gate set `run_mode: "decide_and_execute"`
+  (choice C), continue to Generate. If it set `run_mode: "decide"` (choice A),
+  end the turn in the decide-complete state — do not load Generate.
 
 - **Workshop resume (mandatory):** If `current_phase == "estimate"` AND
   `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or
   `"in_progress"`, **do not recompute Estimate**. If `"pending"`, re-present the
   post-Estimate workshop offer from `estimate-assemble.md`. If `"in_progress"`,
-  load `references/phases/workshop/workshop.md`. Generate must wait until
-  `phases.workshop == "completed"` (entered+exited or declined).
+  load `references/phases/workshop/workshop.md`. The Decision gate — and
+  therefore Generate — must wait until `phases.workshop == "completed"`
+  (entered+exited or declined).
+
+- **Gate-presented resume (mandatory):** If `current_phase == "estimate"` AND
+  `phases.estimate == "completed"` AND `phases.workshop == "completed"` AND
+  `run_mode` is **absent**, the user reached the Decision gate but has not yet
+  picked A or C (e.g. closed the session at the gate). **Do not recompute
+  Estimate.** Re-present the post-Estimate Decision gate from
+  `estimate-assemble.md` § "Post-Estimate: Decision Gate" — options **[A] Done
+  for now** and **[C] Generate** only (the workshop is already resolved, so omit
+  B). This is what makes decide-the-default hold across a walk-away, not just at
+  the moment of the gate.
+
+- **Decision gate resume (mandatory):** If `current_phase == "complete"` AND
+  `run_mode == "decide"` AND `phases.generate == "pending"`, this is the
+  decide-complete terminal state (not an incomplete run). Follow
+  `estimate-assemble.md` § "Decide-complete resume" — offer to generate the
+  execution pack; never auto-load `generate.md` and never re-run Estimate.
+
+- **Generate is opt-in (HARD RULE):** Do not load
+  `references/phases/generate/generate.md` unless the user chose option **C**
+  at the post-Estimate Decision gate, accepted the decide-complete resume
+  offer, or the user's current-turn message is an explicit request to produce
+  Terraform / migration scripts (not merely mentioning Terraform). Never
+  auto-chain into Generate after Estimate, the workshop, or feedback "to be
+  helpful." On every path that leads to Generate, `run_mode` must already be
+  `"decide_and_execute"` in `.phase-status.json` before `generate.md` loads.
 
 - **Warm start / explicit what-if**: If the user says "what if", "reprice",
   "workshop mode", or "compare scenarios" and Estimate artifacts already exist,
