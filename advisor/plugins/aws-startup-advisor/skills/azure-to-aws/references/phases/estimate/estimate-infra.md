@@ -200,7 +200,7 @@ Rates come from the named keys in
 | **MSK** | `msk.brokers[broker_instance_type]` × 730 × `number_of_broker_nodes` + storage × `msk.storage_per_gb_month`. `intrinsic` multi-AZ, no multiplier | `broker_instance_type`, `number_of_broker_nodes` |
 | **EKS** | `eks.control_plane_monthly` + `eks.node_rates_monthly[type]` × node count. Pods cost `$0` — compute is billed via the nodes. ALB and NAT are their own lines and are not re-added here | `node_groups[].instance_types`, `desired_size` |
 | **ALB** | `alb.monthly_fixed` + `alb.per_lcu_hour` × 730 × an LCU estimate | one per web service with a load balancer |
-| **NAT Gateway** | `nat_gateway.monthly_fixed` + `nat_gateway.per_gb_processed` × GB. **Azure's NAT Gateway is regional and AWS's is zonal**, so one source resource becomes N — price N, not one | subnet / AZ count from the VPC design |
+| **NAT Gateway** | `nat_gateway.monthly_fixed` + `nat_gateway.per_gb_processed` × GB. **Azure's NAT Gateway is regional and AWS's is zonal**, so one source resource becomes N — price N, not one. When the design is private-subnet (the default posture) and no explicit AZ count is upstream, **N defaults to 2** (the 2-AZ VPC Generate emits); record the assumption. See Part 2C-2 for the estate-wide standing-NAT treatment | subnet / AZ count from the VPC design (default 2) |
 | **S3** | `fast_path_services.s3.storage_per_gb_month` × GB + requests, or `s3.monthly_baseline_est`. **Cross-Region Replication is a NEW line** when the source was GRS or GZRS — Azure bundled that into one SKU and AWS does not | `storage_class`, `source_replication` |
 | **Secrets Manager** | secret count × `fast_path_services.secrets_manager.per_secret_month` + API calls, or `monthly_baseline_est` | Key Vault secret count from the inventory |
 | **Lambda** | `lambda.per_request` × requests + `lambda.per_gb_second_<arch>_first_6b` × GB-seconds | `memory_mb`, `architecture`, invocation volume |
@@ -399,6 +399,51 @@ add — never double-count.
 
 The ALB line's LCU count comes from the same file
 (`alb_lcu_estimate.default_lcus`), for the same reason.
+
+---
+
+## Part 2C-2: Standing network charges (NAT Gateway + load balancer)
+
+<!-- Precedent: gcp-to-aws references/phases/estimate/estimate-infra.md:170-171 prices the
+     NAT line "From VPC design" and the ALB line "From compute service count" — i.e. from
+     the DESIGN, not from a services[] row. Mirror that here as estate-wide STANDING lines,
+     in the same spirit as Part 2C's estate-wide observability line. -->
+
+Two network charges are structural to the target architecture and are billed whether or
+not any `services[]` entry names them. So, exactly like the Part 2C observability line,
+they are emitted from the **design**, not from a `services[]` row:
+
+1. **Standing NAT Gateway line** — derived from the VPC/AZ design, priced whenever a NAT
+   **will be emitted**. Generate's default posture puts compute/database in **private
+   subnets** across a **2-AZ** VPC (shared posture:
+   `references/skills/tf-best-practices/references/security-posture-rules.md` — VPC spans
+   ≥2 AZ, public+private subnets, NAT for private egress), and Azure's NAT Gateway is
+   regional while AWS's is zonal, so one source resource becomes one per AZ. When the AZ
+   count is not explicit upstream, **default N to 2** (the 2-AZ private-subnet VPC Generate
+   emits) and price `nat_gateway.monthly_fixed × 2` (+ `nat_gateway.per_gb_processed × GB`
+   when a data volume is known; otherwise state the per-GB component as unquantified in
+   `assumptions[]`). Record the assumption in `assumptions[]`: "default 2-AZ private-subnet
+   VPC per generate posture; AZ count not explicit upstream." Emit this line even when no
+   `services[]` entry maps to a NAT Gateway — a private-subnet design still pays it.
+   `service_id: "standing-nat-gateway"`, `cluster_id: null`.
+
+2. **Standing ALB/NLB line** — derived from the edge/compute design. A public edge
+   (Application Gateway / Front Door / public L7 LB → **ALB**) prices from
+   `alb.monthly_fixed + alb.per_lcu_hour × 730 × LCU`; an L4 edge (→ **NLB**) prices from
+   `nlb.monthly_fixed + nlb.per_lcu_hour × 730 × LCU` using the new `nlb` rate row. The LCU
+   count is `alb_lcu_estimate.default_lcus`. Emit it even when no `services[]` entry names a
+   load balancer — **except** where a LoadBalanced Elastic Beanstalk environment already
+   provisions its balancer (that ALB is priced inside the EB line; do not re-add it — the
+   double-balancer trap). `service_id: "standing-load-balancer"`, `cluster_id: null`.
+
+The standing NAT line is `$0` **strictly** for a design that emits NO NAT at all — a
+fully-public design, or a SingleInstance Elastic-Beanstalk-only estate, with no private
+subnets. Reserve the zero-with-`basis` note for that genuine no-NAT case (say so in the
+`basis`); a private-subnet design is NOT a $0 case — it prices the 2-AZ standing NAT above.
+The standing balancer line stays `$0`-safe as before: a design whose only balancer is
+already inside an EB line emits it at `$0` with its own note. Emitting a genuine no-NAT /
+no-standalone-balancer line zero-with-`basis` rather than omitting it matches the Part 2
+convention that a considered line stays visible.
 
 ---
 

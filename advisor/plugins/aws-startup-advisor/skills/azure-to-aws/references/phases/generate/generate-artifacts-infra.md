@@ -84,7 +84,9 @@ Rules:
   Optionally add `terraform/README-DEFERRED.md` with a one-line checklist.
 - **A skipped service (config source / observability) emits no resource** — its
   contribution was already folded into its parent (see the App Service Plan fan-in rule).
-- Every generated service must be accounted for; the assembler enforces this.
+- Every generated service must be accounted for as one element of the assembler's
+  `generated[]` array (`{ azure_id, azure_type, aws_service, target_file }`, per
+  `generate-assemble.md`); the assembler enforces this.
 
 ## Step 1: main.tf
 
@@ -144,10 +146,17 @@ For each domain with services in the manifest, populate resource attributes from
 - **Confidence comments:** `confidence: inferred` → `# Tailored to your setup — verify
   (JSON confidence: inferred)`; `deterministic` → optional `# Standard pairing`.
 - **CPU architecture:** read `aws-design.json` `cpu_architecture` (azure default is
-  **x86_64**, not Graviton — Windows/.NET fleets). Emit x86 instance/DB classes and, on
+  **x86_64**, not Graviton — Windows/.NET fleets). `cpu_architecture` governs **COMPUTE
+  ONLY** (ECS/Lambda/EC2/EKS/Elastic Beanstalk). Emit x86 instance/compute classes and, on
   compute, an inline note citing the x86 rationale. Only emit ARM64 (`arm64` Lambda,
   `ARM64` ECS `runtime_platform`, Graviton instance types) when the design explicitly set
   Graviton as an optimization.
+  - **Managed DB/cache default to Graviton regardless of `cpu_architecture`; the x86 opt-out
+    does NOT propagate to database/cache.** Emit the exact Graviton class the design/estimate
+    chose (e.g. `db.m6g.large`, `cache.t4g.*`) so generate == estimate == design — never
+    rewrite a managed RDS/Aurora/ElastiCache class to x86 because the fleet opted out. This is
+    the shared graviton limitation (Graviton on managed DB/cache has no compatibility risk, so
+    the opt-out is a consistency choice that stops at compute), matching gcp.
 - **App Service Plan fan-in (critical):** one `Microsoft.Web/serverfarms` maps to ONE
   compute target (one `aws_elastic_beanstalk_environment` or one Fargate service), sized
   from the PLAN's SKU + instance count — NOT one per web app. Each `Microsoft.Web/sites`
@@ -159,6 +168,14 @@ For each domain with services in the manifest, populate resource attributes from
   `# fill in Secrets Manager` note — **never** the source secret value. A Key Vault *key*
   becomes a `aws_kms_key`. App settings that referenced a Key Vault secret reference the
   Secrets Manager ARN.
+- **Storage:** a Blob Storage container/account becomes an `aws_s3_bucket` emitted per the
+  skill's posture. **Every** emitted `aws_s3_bucket` gets a matching
+  `aws_s3_bucket_versioning` set to `Enabled`, PLUS server-side encryption
+  (`aws_s3_bucket_server_side_encryption_configuration`) and an
+  `aws_s3_bucket_public_access_block` (all four flags `true`) — and CloudFront/OAC for a
+  public bucket, compliance-conditional access logging. Never emit a bare `aws_s3_bucket`
+  without its versioning/SSE/public-access-block companions. Populate bucket names/lifecycle
+  from design.
 - **Availability:** read `preferences.json` `data.availability`. `multi-az-ha` /
   `multi-region` → Aurora (or Multi-AZ RDS) per the design; `single-az` → single-AZ RDS.
   Do not upgrade beyond what the design chose.
@@ -178,9 +195,12 @@ For each domain with services in the manifest, populate resource attributes from
 
 Output identifiers for key resources (VPC ID, DB endpoint, EB env URL, EKS cluster name)
 plus a **`migration_summary`** object with at least: `aws_region`, `environment`,
-`migration_id`, `service_count`, `aligned_with_estimate_tier` = `"balanced"`,
-`cost_scenarios_modeled_in_terraform` = `"design_baseline_only"`. Description on every
-output.
+`migration_id`, `service_count` (resources actually emitted in this `terraform/`),
+`accounted_count` (= `generation-warnings.json.accounted`: generated + deferred +
+skipped/folded — the SAME figure the report body states, so the Terraform summary, the
+report body, and `generation-warnings.json` all agree), `aligned_with_estimate_tier` =
+`"balanced"`, `cost_scenarios_modeled_in_terraform` = `"design_baseline_only"`.
+Description on every output.
 
 ## Step 5: Self-check
 
@@ -190,17 +210,21 @@ output.
 - [ ] Every variable has `type` + `description`; every output has `description`.
 - [ ] Region from `var.aws_region`, never hardcoded.
 - [ ] Exactly ONE compute target per App Service Plan (fan-in honored).
+- [ ] Every `aws_s3_bucket` has a matching `aws_s3_bucket_versioning` (Enabled), SSE, and
+      public-access-block resource — no bare bucket.
 - [ ] `terraform/README.md` exists with the cost-tier vs Terraform note.
 - [ ] `main.tf` begins with the Balanced-alignment header block.
 
-## Step 6: Validate generated Terraform
+## Step 6: Validation is the orchestrator's job (main window) — NOT this worker
 
-**Invoke the `tf-best-practices` skill for the post-writing validation context** — tell
-it `$MIGRATION_DIR/terraform` has been written; follow the fmt/init/validate protocol and
-policy verdict it returns (black box). Record the verdict into
-`$MIGRATION_DIR/validation-report.json` as `policy_status` (+ `policy_violations` on
-failure). Apply fix-and-retry to reported sites (budget 3). An unresolved `POLICY_FAIL`
-the user does not skip/abort blocks phase completion.
+This fragment (and the whole Generate phase WORK) runs in the file-only `rw` worker,
+which cannot invoke skills or run `terraform`/`python`. So this worker emits `terraform/`
+**only**: it does NOT invoke the `tf-best-practices` policy gate, does NOT pin any verdict
+path, and does NOT write `validation-report.json`. The orchestrator (`generate.md`, main
+window) owns Terraform validation, the policy gate, and the single canonical
+`$MIGRATION_DIR/validation-report.json` write after the worker returns — passing only the
+terraform DIR to the skill and merging the policy verdict into the report as
+`policy_status`. See `generate.md` § "Step: Run the phase" step 4.
 
 ## Phase completion
 
@@ -212,6 +236,8 @@ Report generated files to the parent orchestrator. **Do NOT update `.phase-statu
 Emitters implemented, following gcp-to-aws's `generate-artifacts-infra.md` structure
 adapted to azure artifacts: generation manifest, main/variables/outputs core files with
 placeholder-guard validation, per-domain files via `aws_config`, App Service Plan fan-in,
-Secrets Manager references, x86 default, and the `tf-best-practices` authoring +
-validation hand-off. The `tf-best-practices` invocation is by contract; verify it is
-installed alongside this skill.
+Secrets Manager references, x86 default, and the `tf-best-practices` authoring hand-off
+(Step 3.0). Post-write validation, the policy gate, and the `validation-report.json` write
+now live in the orchestrator (`generate.md`, main window), not this worker fragment — the
+`rw` worker cannot invoke skills or run terraform/python. The `tf-best-practices`
+invocation is by contract; verify it is installed alongside this skill.

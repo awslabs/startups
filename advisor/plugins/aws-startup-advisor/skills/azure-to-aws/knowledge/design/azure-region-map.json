@@ -7,7 +7,7 @@
 
   "regions": {
     "eastus":             { "aws": "us-east-1",      "same_country": true,  "geo": "Virginia, US" },
-    "eastus2":            { "aws": "us-east-1",      "same_country": true,  "geo": "Virginia, US" },
+    "eastus2":            { "aws": "us-east-2",      "same_country": true,  "geo": "Columbus, Ohio, US" },
     "centralus":          { "aws": "us-east-2",      "same_country": true,  "geo": "Iowa / Ohio, US" },
     "northcentralus":     { "aws": "us-east-2",      "same_country": true,  "geo": "Illinois / Ohio, US" },
     "southcentralus":     { "aws": "us-east-1",      "same_country": true,  "geo": "Texas, US" },

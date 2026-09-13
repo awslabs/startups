@@ -7,6 +7,7 @@ _reads:
   - artifacts-report (fragment contribution)
 _produces:
   - generation-warnings.json
+  - validation-report.json
 ---
 
 # Generate — Assemble and Account
@@ -15,6 +16,13 @@ _produces:
 > artifact-emitting fragments create their own files; this unit's job is to prove
 > nothing was dropped. See `generate.md` for how it is composed into the phase.
 
+> **`validation-report.json` — declared here, written by the orchestrator.** This unit is
+> the phase's declared owner of `validation-report.json` (the single-creator ledger), but
+> its CONTENT — the Terraform fmt/init/validate result plus the `tf-best-practices` policy
+> verdict — is authored by the orchestrator (`generate.md`) in the MAIN window after this
+> worker returns, because the file-only `rw` worker cannot invoke skills or run
+> `terraform`/`python`. This assembler itself writes only `generation-warnings.json`.
+
 **Execute the steps in order. This is the phase's accounting gate.**
 
 ## Step 1: Account for every designed service
@@ -22,9 +30,11 @@ _produces:
 Walk `aws-design.json` `services[]`. Each entry must be in exactly one of these states,
 and the state must be demonstrable:
 
-- **Generated** — a resource for it exists in an emitted `.tf` file. (A service folded by
-  the App Service Plan fan-in is "generated" via its plan's single compute target — record
-  it as folded, not dropped.)
+- **Generated** — a resource for it exists in an emitted `.tf` file. A service folded by the
+  App Service Plan fan-in is counted ONCE via its parent's single compute target: the PARENT
+  (the `Microsoft.Web/serverfarms` plan → its one compute target) is the `generated[]` entry,
+  and each folded child is recorded as `skipped: folded_into_plan` — folded, not dropped, and
+  not double-counted.
 - **Intentionally not generated** — a skip (config source / observability) or a `deferred[]`
   specialist item. This MUST have a `generation-warnings.json` entry saying why.
 
@@ -59,19 +69,39 @@ input — `generate.md`'s `_forbids_files` names the state artifacts explicitly.
 
 ## generation-warnings.json shape
 
+The generated-service field is named **`generated[]`** — a canonical ARRAY parallel to
+`deferred[]` and `skipped[]`, one element per generated service, never a bare count. This
+is the single authoritative name: there is no `generated_detail`, no `generated_services`,
+and no scalar `generated` — those drifted names are retired.
+
 ```json
 {
   "phase": "generate",
-  "accounted": <int>,
-  "generated": <int>,
+  "generated": [ { "azure_id": "...", "azure_type": "...", "aws_service": "...", "target_file": "..." } ],
   "deferred": [ { "azure_id": "...", "azure_type": "...", "reason": "...", "recommendation": "..." } ],
   "skipped": [ { "azure_id": "...", "reason": "config_source|observability|folded_into_plan", "detail": "..." } ],
-  "warnings": [ { "code": "...", "subject": "...", "detail": "..." } ]
+  "warnings": [ { "code": "...", "subject": "...", "detail": "..." } ],
+  "accounted": <int>
 }
 ```
 
-Every `services[]` entry is reflected in `generated` count, `deferred[]`, or `skipped[]` —
-the sum accounts for all of them.
+`accounted` is DERIVED and it is the HEADLINE figure — `len(generated) + len(deferred)`. It
+counts the primary services actually emitted (each App Service Plan fan-in fold counted ONCE
+via its parent's compute target) plus the deferred specialist items. Every `services[]` entry
+is still reflected in exactly one of `generated[]`, `deferred[]`, or `skipped[]` — the ledger
+stays complete and nothing is dropped — but `skipped[]` entries (reason `config_source`,
+`observability`, or `folded_into_plan`) are recorded for completeness and **EXCLUDED from the
+`accounted` headline**: a config source, an observability sink, or a plan-folded child is not a
+distinct billed service, and folding it into `accounted` double-counts against its parent.
+`total_resources` in `azure-resource-inventory.json` remains the separate RAW discovered figure
+(do not conflate the two).
+
+**EventHub — record the namespace as `generated`, its children as folded.** A
+`Microsoft.EventHub/namespaces` maps to Kinesis or MSK (per `kafka_enabled`) and is emitted as a
+`services[]` entry, so it is a `generated[]` entry. Its `Microsoft.EventHub/.../eventhubs` and
+`.../consumergroups` children are folded into that namespace's target — record each as
+`skipped: folded_into_plan`, never as `generated` and never as `deferred`. (This fixes the
+design-vs-generation inversion where the namespace was folded and a child was counted.)
 
 ## Step 5: Report
 

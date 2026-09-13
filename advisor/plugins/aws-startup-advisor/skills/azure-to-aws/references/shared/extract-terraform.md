@@ -267,6 +267,8 @@ endpoints, App Insights) were added after exactly that happened.
 | `Microsoft.Insights/components`             | `application_type`, `workspace_id`                                          | the report names the app type and the workspace link; `workspace_id` is config, NOT an edge (see `schema-discover-azure.md` § Typed edges) |
 | `Microsoft.Network/privateEndpoints`        | `subresource_names`                                                         | names WHICH sub-resource is fronted (`postgresqlServer`, `blob`, `vault`), which is what makes the `private_link` edge specific rather than "something connects to something" |
 | `Microsoft.Storage/.../blobServices/containers` | `container_access_type`                                                 | `blob` or `container` means public read, which becomes an S3 public-access-block decision |
+| `Microsoft.Network/networkSecurityGroups`   | inline `security_rule[]` → `config.security_rules[]` (each: `name`, `priority`, `direction`, `access`, `protocol`, `source_port_range(s)`, `destination_port_range(s)`, `source_address_prefix(es)`, `destination_address_prefix(es)`) | the SG ingress/egress rules the target security group is built from — inline blocks with NO address, see § Inline blocks that are not resources |
+| `Microsoft.App/containerApps`               | from the inline `template` / `container` blocks: `cpu`, `memory`, `min_replicas`, `max_replicas`, and container `image` | Fargate/App Runner task sizing + scaling, and the `image` drives platform detect — inline blocks, see § Inline blocks that are not resources |
 
 ## Inline blocks that are not resources
 
@@ -303,6 +305,58 @@ price it as fact. A stated unknown is worth more than a plausible number.
 Capability run 4 found this: the corpus VM's root volume was **entirely absent** from the
 design, and the run recorded a prose note because no rule let it do anything better. Every
 VM estate was being understated.
+
+**Inline `security_rule {}` blocks on a network security group have no address either, and
+MUST be extracted into `config.security_rules[]`.**
+
+```hcl
+resource "azurerm_network_security_group" "app" {
+  security_rule {
+    name                       = "allow-https"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+```
+
+A `resource`-block walk sees the NSG but not its rules — they are exactly the os_disk case,
+one level down. Carry each rule (the fields in the § Per-type row) into
+`config.security_rules[]`, because they are what Design turns into the target security
+group's ingress/egress. Two neighbours look similar but are NOT the same:
+`azurerm_subnet_network_security_group_association` stays **association-only** (13.2d — no
+inventory entry, not an untranslated type), while a standalone `azurerm_network_security_rule`
+resource is **not its own mapping target**: follow its `network_security_group_id` to the
+parent NSG and fold it into that NSG's `config.security_rules[]`, exactly as a child resource
+resolves its parent group.
+
+**A Container App's sizing lives in inline `template` / `container` blocks, not on the
+resource itself.**
+
+```hcl
+resource "azurerm_container_app" "api" {
+  template {
+    min_replicas = 1
+    max_replicas = 10
+    container {
+      image  = "myregistry.azurecr.io/api:latest"
+      cpu    = 0.5
+      memory = "1Gi"
+    }
+  }
+}
+```
+
+Same caveat as os_disk and security_rule: a resource-only walk records the app but misses its
+size and scale entirely. Extract `cpu`, `memory`, `min_replicas`, `max_replicas` and the
+container `image` into `config` (the image is what platform detection reads). Without them the
+Fargate/App Runner target is sized from defaults rather than from what the customer declared —
+the same silent understatement the VM root volume caused.
 
 ## Secrets: names only, never values
 
@@ -370,4 +424,8 @@ merges them. Never drop an edge because it crosses a group boundary.
 - [ ] Every warning's `code` is from the closed vocabulary in `schema-discover-azure.md` § Warnings.
 - [ ] Every entry whose block sets `sku`, `sku_name`, `tier`, `capacity` or `size` carries it in
       `config` — including derived types with no per-type row. Design's cost-bearing test reads it.
+- [ ] Every `Microsoft.Network/networkSecurityGroups` entry whose block declares an inline
+      `security_rule` carries those rules in `config.security_rules[]`.
+- [ ] Every `Microsoft.App/containerApps` entry carries the `cpu`/`memory`/`min_replicas`/
+      `max_replicas`/`image` its inline `template`/`container` blocks declare.
 - [ ] No `config` key holds `null` — an attribute the configuration does not set is omitted.

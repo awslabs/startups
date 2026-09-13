@@ -57,6 +57,39 @@ Present the Premium / Balanced / Optimized comparison from `estimation-infra.jso
 - The **what-if comparison** when `scenarios/index.json` has ≥ 2 scenarios (REQUIRED by
   the phase `_assert` in that case).
 
+## Step 3.5: Resource count (REQUIRED)
+
+Any **mapping / plan / service / headline** count the report states — the headline "N
+services", a per-section subtotal, or the appendix mapping table's row count — MUST equal
+`generation-warnings.json.accounted`: the accounted headline = generated services (each
+plan-fold counted ONCE via its parent) + `deferred[]`. `skipped[]` entries (config sources,
+observability, plan-folded children) are still recorded in `generation-warnings.json` for
+completeness but are **EXCLUDED from the accounted headline** — a folded or config-only
+resource is not a distinct billed service, and counting it double-counts against its parent.
+Do **not** count only the emitted `.tf` resources, and do **not** count `services[]` alone —
+a deferred resource is still a resource the customer must plan for. This mirrors the
+PRIMARY-services headline rule in gcp-to-aws `report-decision-core.md` § 1 (secondaries
+excluded). The report-body mapping count, the Terraform `migration_summary` count
+(`generate-artifacts-infra.md` Step 4), and `generation-warnings.json.accounted` must all
+agree.
+
+**Surface the split in the report body (REQUIRED).** State the three figures side by side so
+the reader sees raw estate vs. plan rather than a bare number that appears to disagree with
+the discovery count: **"N discovered · M mapped services · A accounted (M + D deferred)"** —
+where N = `total_resources` (raw discovered), M = generated primary services, D = `deferred[]`,
+and A = `accounted` (= M + D).
+
+**Exception — the discovery/"discovered" count is its own figure.** A statement about what
+was *discovered* — "Discovery identified N resources", "N resources discovered", the raw
+Azure estate size — references `azure-resource-inventory.json` `total_resources` (the RAW
+discovered count), NOT `accounted`. `total_resources` legitimately exceeds `accounted`
+(the accounted set excludes resources that were never mapped/planned — e.g. free/zero-cost
+or non-migratable items), so forcing the discovery label to equal `accounted` understates
+what was actually found. Keep the two distinct: the discovery figure = `total_resources`;
+every mapping/plan/service/headline figure = `accounted` (with the three-way agreement
+above). This mirrors gcp-to-aws `report-decision-core.md` where the discovered/current
+count is a separate figure from the mapping count.
+
 ## Step 4: Draft-for-review footer (REQUIRED — `_assert`)
 
 Every report carries a footer stating it is a draft for review, generated from the

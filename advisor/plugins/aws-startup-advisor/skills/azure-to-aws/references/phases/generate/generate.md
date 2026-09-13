@@ -29,6 +29,7 @@ _produces:
   - README.md
   - migration-report.html
   - generation-warnings.json
+  - validation-report.json
 _advances_to: complete
 _interactive: false
 _exec:
@@ -47,9 +48,11 @@ _preconditions:
   - _assert: "run_mode in .phase-status.json is 'decide_and_execute' — the user chose Execute at the post-Estimate decision gate, accepted the decide-complete resume offer, or explicitly asked for Terraform/migration scripts this turn. An absent run_mode is NOT consent."
     _on_failure: _halt_and_inform
 _postconditions:
-  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json]
+  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json, validation-report.json]
     _on_failure: _halt_and_inform
-  - _validate_json: generation-warnings.json
+  - _validate_json: [generation-warnings.json, validation-report.json]
+    _on_failure: _halt_and_inform
+  - _assert: "validation-report.json (written by the MAIN-WINDOW validation step, not the rw worker) has status in {passed, passed_degraded_offline, skipped_user_continue} AND policy_status == POLICY_OK — unless the user chose skip/abort on a policy failure, in which case status may be policy_failed / policy_status POLICY_FAIL and the phase completes only by that explicit user choice. The tf-best-practices policy gate runs regardless of the offline path, so policy_status is never masked by passed_degraded_offline."
     _on_failure: _halt_and_inform
   - _assert: "terraform/main.tf has a valid provider configuration; terraform/variables.tf declares at least an aws_region variable"
     _on_failure: _halt_and_inform
@@ -83,6 +86,13 @@ Emit the Terraform, the scripts, the docs, and the report. This phase runs under
 `_exec: { _agent: rw }` with `_interactive: false` — the work is bulky, file-only,
 and self-contained, so it runs in an isolated sub-agent while the gates, the state
 transition, and the `HANDOFF_OK` stay in the main window.
+
+**The Terraform validation, the `tf-best-practices` policy gate, and the
+`validation-report.json` write also stay in the main window** — the dispatched `rw`
+worker emits `terraform/` only; it cannot invoke skills or run `terraform`/`python`.
+This mirrors gcp-to-aws's `generate.md`, which owns validation inline in its own main
+window and passes only the terraform DIR to the skill (the caller owns the report). See
+§ "Step: Run the phase" step 4.
 
 ## Generate is opt-in, and the check has no mechanical teeth
 
@@ -121,8 +131,34 @@ and the postcondition contract declared.
 
 ## Step: Run the phase
 
+Steps 2–3 are the phase's WORK and are dispatched to the file-only `rw` worker. Step 4
+and step 5 run in the MAIN window — the worker cannot invoke skills or run
+`terraform`/`python`.
+
 1. Verify the entry gate, including `run_mode`.
-2. Run each fragment whose `_trigger` holds.
-3. Run `generate-assemble.md`.
-4. Evaluate `_postconditions`. On all-pass emit `HANDOFF_OK` and advance to
+2. Run each fragment whose `_trigger` holds. (worker)
+3. Run `generate-assemble.md`. (worker — emits `terraform/`, the docs, the report, and
+   `generation-warnings.json`; it does NOT validate or write `validation-report.json`.)
+4. **Validate the generated Terraform and write the validation report — MAIN WINDOW,
+   after the worker returns and before `_postconditions`.** This MUST run in the main
+   window because the `rw` worker cannot invoke skills or run `terraform`/`python`. This
+   phase is the **caller** of the `tf-best-practices` validation protocol, exactly as
+   gcp-to-aws's `generate.md` owns validation inline in its main window:
+   - Invoke the `tf-best-practices` skill for the post-writing validation context, passing
+     `$MIGRATION_DIR/terraform` — the DIR only (the caller owns the report, just as gcp
+     passes only the terraform DIR to the skill). Treat it as a black box: run the
+     fmt/init/validate stages where available, and the zero-dependency policy checker,
+     which **runs regardless of the offline path** (a provider-registry outage skips
+     `terraform validate` but never the policy gate).
+   - Apply fix-and-retry to the reported `violations[]` sites (budget 3), then run the
+     retry/skip/abort prompt.
+   - WRITE the single canonical report at `$MIGRATION_DIR/validation-report.json` — the two
+     segments joined by a single `/` (slash-joined). Merge the skill's policy verdict into
+     THAT file as `policy_status` (+ `policy_violations` on failure), recorded independently
+     of the fmt/init/validate outcome so a policy failure is never masked by
+     `passed_degraded_offline`. **Never** write a separate `policy-verdict.json`, and never
+     pin the skill's raw verdict path as the report.
+   - An unresolved `POLICY_FAIL` the user does not `skip`/`abort` sets `status: policy_failed`
+     and blocks completion (the `_postconditions` `_assert`).
+5. Evaluate `_postconditions`. On all-pass emit `HANDOFF_OK` and advance to
    `complete`; on any failure emit `GATE_FAIL` and stop.

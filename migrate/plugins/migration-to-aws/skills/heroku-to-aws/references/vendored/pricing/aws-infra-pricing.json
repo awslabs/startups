@@ -28,6 +28,11 @@
     "monthly_fixed": 16.43,
     "per_lcu_hour": 0.008
   },
+  "nlb": {
+    "monthly_fixed": 16.43,
+    "per_lcu_hour": 0.006,
+    "_note": "Network Load Balancer: $0.0225/NLB-hr (= monthly_fixed 16.43 over 730 hrs, the same fixed charge as ALB) + $0.006/LCU-hr. Harvested from gcp-to-aws references/shared/pricing-cache.md (Networking > Network Load Balancer). Priced by the same formula shape as alb."
+  },
   "rds_postgresql": {
     "multi_az_handling": "baked_in",
     "_note": "pricing-cache RDS PostgreSQL table is labeled (On-Demand, Multi-AZ) \u2014 the rate ALREADY includes multi-AZ. Do NOT double for multi_az.",
@@ -170,6 +175,17 @@
     "hosted_zone_monthly": 0.5,
     "per_million_queries": 0.4
   },
+  "sqs": {
+    "standard_per_million_requests": 0.4,
+    "fifo_per_million_requests": 0.5,
+    "_note": "Azure Service Bus queues / Storage Queues map to SQS. Standard $0.40/M requests, FIFO $0.50/M; 1M requests/mo free tier (not subtracted). Harvested from gcp-to-aws references/shared/pricing-cache.md (Supporting Services > SQS)."
+  },
+  "sns": {
+    "per_million_publishes": 0.5,
+    "sqs_delivery_per_million": 0.0,
+    "http_delivery_per_million": 0.6,
+    "_note": "Azure Event Grid / Service Bus topics map to SNS. $0.50/M publishes; SQS delivery $0.00/M; HTTP delivery $0.60/M; 1M publishes/mo free tier. Harvested from gcp-to-aws references/shared/pricing-cache.md (Supporting Services > SNS)."
+  },
   "fast_path_services": {
     "_comment": "Flat monthly_baseline_est per fast-path add-on \u2014 PINNED stated assumptions for the stopgap (these are estimates, not measured rates; an external pricing source will replace them). per-unit rates kept as documentation of the basis. Use monthly_baseline_est as the breakdown mid; mark the line as an estimate.",
     "s3": {
@@ -287,6 +303,7 @@
     "_comment": "Services a consuming skill's design can emit that have NO rates here or in the gcp-to-aws pricing cache. Listed so the hole is visible in the data rather than discovered mid-estimate. Each needs an awspricing MCP lookup; until then the estimate marks the line unavailable and excludes it from totals. NEVER fabricate a rate for one of these.",
     "documentdb": "Azure Cosmos DB (Mongo API) maps to DocumentDB. No documentdb section exists. db.t3.medium is a DOCUMENTDB instance class here \u2014 do not read it from rds_postgresql.instances: different service, and those rates are baked-in Multi-AZ. MCP: AmazonDocDB.",
     "fsx_windows": "Azure Files (SMB) maps to FSx for Windows File Server. No fsx section exists. Needs per-GiB-month SSD/HDD, single-AZ vs multi-AZ, and throughput capacity. MCP: AmazonFSx.",
-    "ec2_windows_license": "See ec2._windows_note. MCP: AmazonEC2 with operatingSystem=Windows."
+    "ec2_windows_license": "See ec2._windows_note. MCP: AmazonEC2 with operatingSystem=Windows.",
+    "ecr": "Azure Container Registry maps to Amazon ECR. No ecr rates here or in the gcp-to-aws pricing cache. Needs per-GB-month storage + data-transfer rates. Surface it as a visible excluded line rather than pricing it silently. MCP: AmazonECR."
   }
 }
