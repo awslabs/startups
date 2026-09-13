@@ -32,6 +32,10 @@ BAD_ELASTICACHE_UNENCRYPTED = FIXTURES / "bad-elasticache-unencrypted"
 GOOD_ELASTICACHE_ENCRYPTED = FIXTURES / "good-elasticache-encrypted"
 GOOD_QUOTED_PORT_HTTPS = FIXTURES / "good-quoted-port-https"
 BAD_DB_SG_PUBLIC_QUOTED_PORT = FIXTURES / "bad-db-sg-public-quoted-port"
+GOOD_HEROKU_EB_LB = FIXTURES / "good-heroku-eb-loadbalanced"
+GOOD_HEROKU_EB_ONLY = FIXTURES / "good-heroku-eb-only"
+GOOD_HEROKU_EB_SINGLEINSTANCE = FIXTURES / "good-heroku-eb-singleinstance"
+BAD_HEROKU_EB_ELASTICACHE = FIXTURES / "bad-heroku-eb-elasticache"
 
 
 def _load_validator_module():
@@ -68,6 +72,47 @@ def test_bad_http_forward_fails() -> None:
     assert code == 1, out
     assert "POLICY_FAIL" in out
     assert "redirect" in out.lower()
+
+
+def test_heroku_eb_loadbalanced_passes() -> None:
+    # EB compute fronted by a STANDALONE ALB (aws_lb_listener present) + RDS. Web
+    # 80/443 open to 0.0.0.0/0 on the ALB is a legitimate web pattern and must NOT
+    # be flagged; only admin/datastore ports are.
+    code, out = run_policy_validator(GOOD_HEROKU_EB_LB)
+    assert code == 0, out
+    assert "POLICY_OK" in out
+
+
+def test_heroku_eb_only_passes_vacuously() -> None:
+    # Pure EB LoadBalanced env, no standalone aws_lb — EB provisions the ALB from
+    # setting blocks the static checker cannot read, so the ALB rules pass with no
+    # listener to inspect. Documents that EB-managed ALB posture is authoring-only.
+    code, out = run_policy_validator(GOOD_HEROKU_EB_ONLY)
+    assert code == 0, out
+    assert "POLICY_OK" in out
+
+
+def test_heroku_eb_singleinstance_passes() -> None:
+    # EB SingleInstance: public-subnet instance, 80/443 open to the world, no ALB.
+    # Web ports are not flagged (only admin/datastore ports are) → POLICY_OK.
+    code, out = run_policy_validator(GOOD_HEROKU_EB_SINGLEINSTANCE)
+    assert code == 0, out
+    assert "POLICY_OK" in out
+
+
+def test_heroku_eb_bad_elasticache_and_http_forward_fails() -> None:
+    # BOTH the unencrypted-ElastiCache and the HTTP-forward violations must fire —
+    # assert both rule IDs from --json so an alb_http_redirect regression can't hide
+    # behind the elasticache failure.
+    with tempfile.TemporaryDirectory() as tmp:
+        out_path = Path(tmp) / "verdict.json"
+        code, _ = run_policy_validator(BAD_HEROKU_EB_ELASTICACHE, json_out=out_path)
+        report = json.loads(out_path.read_text())
+    assert code == 1
+    assert report["policy_status"] == "POLICY_FAIL"
+    rules = {v["rule"] for v in report["violations"]}
+    assert "elasticache_encryption_at_rest" in rules, rules
+    assert "alb_http_redirect" in rules, rules
 
 
 def test_internal_alb_skips_https_requirement() -> None:
@@ -710,7 +755,7 @@ def test_every_fixture_matches_its_good_bad_prefix() -> None:
     # Exact, not `>=`: a floor cannot detect fixtures being deleted down to it,
     # which is the removal this assertion exists to catch. Update deliberately
     # when adding or removing a fixture.
-    assert len(fixture_dirs) == 23, f"fixture count changed: {[d.name for d in fixture_dirs]}"
+    assert len(fixture_dirs) == 27, f"fixture count changed: {[d.name for d in fixture_dirs]}"
     for fixture in fixture_dirs:
         code, out = run_policy_validator(fixture)
         if fixture.name.startswith("bad-"):
