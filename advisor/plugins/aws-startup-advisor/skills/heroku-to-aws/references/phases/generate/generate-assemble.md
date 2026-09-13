@@ -54,7 +54,7 @@ manifests, every service accounted for, no `{{VARIABLE}}` placeholders), then em
 
 Optionally run
 `python3 "$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py" \
-  "$MIGRATION_DIR/migration-report.html" --migration-dir "$MIGRATION_DIR"`
+  "$MIGRATION_DIR/migration-report.html" --mode full --migration-dir "$MIGRATION_DIR"`
 and treat exit `1` as `GATE_FAIL` for the report (repair HTML; do not delete
 Terraform/docs).
 

@@ -85,6 +85,15 @@ _forbids_files:
 
 # Phase 5: Generate Migration Artifacts
 
+> **CONSENT GUARD (check before anything else):** This phase runs only by explicit
+> opt-in (the decision is the product; execution artifacts are opt-in). If
+> `.phase-status.json` → `run_mode` is not `"decide_and_execute"`: when this turn's
+> user message is an explicit Execute request ("generate the Terraform", "create the
+> migration scripts", or Decision-gate choice C), set `run_mode: "decide_and_execute"`
+> (read-merge-write) and proceed; otherwise STOP — do not generate anything — and
+> re-present the Decision gate (or the decide-complete resume offer) from
+> `estimate-assemble.md` / `SKILL.md`.
+
 ## Orientation
 
 Transform the design + estimate into migration artifacts in `$MIGRATION_DIR/`: a
