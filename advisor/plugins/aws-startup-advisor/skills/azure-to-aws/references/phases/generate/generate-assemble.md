@@ -5,9 +5,11 @@ _reads:
   - artifacts-infra (fragment contribution)
   - artifacts-docs (fragment contribution)
   - artifacts-report (fragment contribution)
+  - artifacts-ai (fragment contribution, when aws-design-ai.json exists and run_mode is decide_and_execute)
 _produces:
   - generation-warnings.json
   - validation-report.json
+  - generation-ai.json
 ---
 
 # Generate — Assemble and Account

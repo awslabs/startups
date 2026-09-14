@@ -17,6 +17,9 @@ _fragments:
   - _id: artifacts-report
     _trigger: { _always: true }
     _file: phases/generate/generate-artifacts-report.md
+  - _id: artifacts-ai
+    _trigger: { _when: "aws-design-ai.json exists in $MIGRATION_DIR AND run_mode is decide_and_execute" }
+    _file: phases/generate/generate-artifacts-ai.md
 _assemble:
   _file: phases/generate/generate-assemble.md
 _produces:
@@ -30,6 +33,7 @@ _produces:
   - migration-report.html
   - generation-warnings.json
   - validation-report.json
+  - generation-ai.json
 _advances_to: complete
 _interactive: false
 _exec:
@@ -69,6 +73,8 @@ _postconditions:
   - _assert: "no placeholder {{VARIABLE}} tokens remain in any .tf file; those belong in variables.tf as var.* references"
     _on_failure: _halt_and_inform
   - _assert: "no secret VALUE from the inventory appears in any generated artifact; secrets are emitted as Secrets Manager references"
+    _on_failure: _halt_and_inform
+  - _assert: "WHEN aws-design-ai.json exists AND run_mode is decide_and_execute: generation-ai.json exists and validates, its rollback_plan.mechanism is 'feature_flag' with flag_name 'AI_PROVIDER' and default_value 'azure_openai'; an ai-migration/ directory was produced (setup_bedrock.sh, test_comparison.py, bedrock_monitoring.tf on every path; migrate_to_mantle.sh for the mantle path OR provider_adapter.* for the direct/gpt-oss path, not both); and no proprietary openai.gpt-* model ID is paired with a converse/bedrock-runtime path. When aws-design-ai.json is absent this is vacuously satisfied"
     _on_failure: _halt_and_inform
 _forbids_files:
   - azure-resource-inventory.json

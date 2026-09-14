@@ -15,14 +15,22 @@ _knowledge:
   - { file: references/vendored/state/phase-status.schema.json }
   - { file: knowledge/estimate/rightsizing-thresholds.json }
   - { file: knowledge/estimate/estimate-defaults.json }
+  - { file: references/shared/pricing-cache.md, _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
+  - { file: references/shared/pricing-fallback.md, _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
+  - { file: references/vendored/ai/ai-model-lifecycle.md, _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
+  - { file: references/vendored/ai/bedrock-quotas.md, _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
 _fragments:
   - _id: infra
     _trigger: { _always: true }
     _file: phases/estimate/estimate-infra.md
+  - _id: ai
+    _trigger: { _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
+    _file: phases/estimate/estimate-ai.md
 _assemble:
   _file: phases/estimate/estimate-assemble.md
 _produces:
   - estimation-infra.json
+  - estimation-ai.json
 _advances_to: generate
 _re_entry_guard:
   _stale_if_completed: generate
@@ -72,6 +80,8 @@ _postconditions:
   - _assert: "no human labor, professional services, or people-time appears as a dollar figure or a one-time migration cost category"
     _on_failure: _halt_and_inform
   - _assert: "when the design's target_region differs from the pricing cache _meta.region, the mismatch is stated on the artifact and carried into recommendation.conditions"
+    _on_failure: _halt_and_inform
+  - _assert: "WHEN ai-workload-profile.json exists: estimation-ai.json exists, validates, and carries pricing_source (cached|live|cached_fallback|unavailable), cost_comparison with current_azure_monthly and projected_bedrock_monthly, and a recommendation whose path is migrate_optimized, migrate_phased, or stay. Traditional-AI workloads (document_extraction/image_analysis/speech_transcription) appear in services_not_estimated[], not in the token cost. When the profile is absent this is vacuously satisfied"
     _on_failure: _halt_and_inform
   - _assert: "run_mode is set in .phase-status.json to either 'decide' or 'decide_and_execute' — the decision gate was presented and answered"
     _on_failure: _halt_and_inform

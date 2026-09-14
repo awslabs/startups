@@ -7,10 +7,12 @@ _reads:
   - database (fragment contribution)
   - licensing (fragment contribution)
   - identity (fragment contribution)
+  - ai (fragment contribution, when ai-workload-profile.json exists)
 _produces:
   - preferences.json
 _knowledge:
   - { file: references/shared/schema-preferences.md }
+  - { file: references/shared/schema-discover-ai.md, _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
 ---
 
 # Clarify — Assemble Preferences
@@ -136,4 +138,4 @@ licensing (conditional), identity.
 | Lands in | What |
 | -------- | ---- |
 | step 4   | the cluster pattern-confirmation section, once `patterns.md` exists to produce a `pattern_id` worth confirming |
-| step 6   | the AI categories (`clarify-ai.md`, `clarify-ai-only.md`) |
+| done     | `clarify-ai.md` (wired, build step 3); the standalone `clarify-ai-only.md` route is deferred (§19.9c) |

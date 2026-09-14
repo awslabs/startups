@@ -3,8 +3,10 @@ _assemble: assemble-estimation
 _of_phase: estimate
 _reads:
   - infra (fragment contribution)
+  - ai (fragment contribution, when ai-workload-profile.json exists)
 _produces:
   - estimation-infra.json
+  - estimation-ai.json
 _knowledge:
   - { file: references/vendored/estimate/estimation-infra.schema.json }
   - { file: references/vendored/state/phase-status.schema.json }

@@ -21,6 +21,9 @@ _fragments:
   - _id: identity
     _trigger: { _always: true }
     _file: phases/clarify/clarify-identity.md
+  - _id: ai
+    _trigger: { _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
+    _file: phases/clarify/clarify-ai.md
 _assemble:
   _file: phases/clarify/clarify-assemble.md
 _produces:
@@ -59,6 +62,8 @@ _postconditions:
   - _assert: "if azure-resource-clusters.json assigns any cluster a pattern_id, the user confirmed or corrected that pattern on the assumption sheet and the confirmed value is recorded in preferences.json"
     _on_failure: _halt_and_inform
   - _assert: "if any Microsoft.Web/serverfarms plan hosts more than one Microsoft.Web/sites app, the isolation question was asked and its answer recorded; an absent answer means no split"
+    _on_failure: _halt_and_inform
+  - _assert: "if ai-workload-profile.json exists, preferences.json carries workloads[] and (when agentic_profile.is_agentic) ai_constraints.agentic; every persisted workload row carries workload_id, capability, and target_bedrock_model; and startup_program_status is present (ESSENTIAL, value null until answered) — the workloads[] in preferences.json, not ai-workload-profile.json, is the downstream source of truth"
     _on_failure: _halt_and_inform
 _forbids_files:
   - README.md
@@ -109,7 +114,7 @@ the estimate by multiples:
 ## Status — build step 5 (infra categories)
 
 Five fragments: global, compute, database, licensing (conditional), identity. The AI
-categories (`clarify-ai.md`, `clarify-ai-only.md`) land with the AI route in step 6, and
+category `clarify-ai.md` is now wired (it fires when `ai-workload-profile.json` exists); the standalone `clarify-ai-only.md` route remains deferred (plan §19.9c). The pattern-confirmation section fills in when `patterns.md` lands, and
 the pattern-confirmation section fills in when `patterns.md` lands — until then every
 cluster's `pattern_id` is `unclassified` and its row is DETECTED with nothing to correct.
 
