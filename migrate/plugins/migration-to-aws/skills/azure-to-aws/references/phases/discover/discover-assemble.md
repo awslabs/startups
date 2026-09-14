@@ -3,11 +3,14 @@ _assemble: assemble-inventory
 _of_phase: discover
 _reads:
   - iac (fragment contribution)
+  - app-code (fragment contribution, when source code with an AI signal is present)
 _produces:
   - azure-resource-inventory.json
   - azure-resource-clusters.json
+  - ai-workload-profile.json
 _knowledge:
   - { file: references/shared/schema-discover-azure.md }
+  - { file: references/shared/schema-discover-ai.md, _when: "application code with an AI signal is present" }
   - { file: references/clustering/clustering-algorithm.md }
   - { file: references/clustering/typed-edges-strategy.md }
   - { file: references/clustering/classification-rules.md }

@@ -7,11 +7,15 @@ _fragments:
   - _id: iac
     _trigger: { _always: true }
     _file: phases/discover/discover-iac.md
+  - _id: app-code
+    _trigger: { _when: "source code or a dependency manifest is present in the workspace (.py/.js/.ts/.go/.java/.cs, requirements.txt, package.json, go.mod, pom.xml, *.csproj)" }
+    _file: phases/discover/discover-app-code.md
 _assemble:
   _file: phases/discover/discover-assemble.md
 _produces:
   - azure-resource-inventory.json
   - azure-resource-clusters.json
+  - ai-workload-profile.json
 _advances_to: clarify
 _interactive: false
 _exec:
@@ -43,6 +47,7 @@ _postconditions:
   - _assert: "no secret VALUES appear anywhere in the inventory — app settings, connection strings, and Key Vault entries carry NAMES only"
     _on_failure: _halt_and_inform
   - _assert: "warnings[] is present on the inventory (empty is fine), and every entry carries a code from the closed vocabulary in schema-discover-azure.md § Warnings, a detail, and an azure_id or identifier"
+  - _assert: "WHEN application code with an AI signal at >= 70% confidence was found: ai-workload-profile.json exists, validates against schema-discover-ai.md, and carries summary.ai_source from {azure_openai, openai, anthropic, both, other} (never gemini), a workloads[] array, and — only when an agentic framework was detected — an agentic_profile. WHEN no AI signal reached 70% (or no source code was found), ai-workload-profile.json is absent and this is vacuously satisfied — its absence is not a failure"
     _on_failure: _halt_and_inform
   - _assert: "every edges[] entry's type appears in schema-discover-azure.md § Typed edges — a per-dialect ref may map new syntax onto an existing type but may not invent one"
     _on_failure: _halt_and_inform
