@@ -5,6 +5,7 @@ _requires_phase: discover
 _input:
   - azure-resource-inventory.json
   - azure-resource-clusters.json
+  - ai-workload-profile.json
 _fragments:
   - _id: global
     _trigger: { _always: true }
@@ -40,9 +41,9 @@ _preconditions:
     _on_failure: _halt_and_inform
   - _check_single_active_phase: true
     _on_failure: _halt_and_inform
-  - _check_file_exists: [azure-resource-inventory.json, azure-resource-clusters.json]
+  - _assert: "at least one discovery artifact exists: azure-resource-inventory.json (a full or mixed migration) OR ai-workload-profile.json (an app-code-only / AI-only migration). A run with NEITHER is unrecoverable — discover did not produce a migratable artifact"
     _on_failure: _unrecoverable
-  - _validate_json: [azure-resource-inventory.json, azure-resource-clusters.json]
+  - _assert: "WHEN azure-resource-inventory.json exists it validates as JSON alongside azure-resource-clusters.json; WHEN the run is AI-only (inventory absent, ai-workload-profile.json present) that profile validates against schema-discover-ai.md instead"
     _on_failure: _unrecoverable
 _postconditions:
   - _check_file_exists: preferences.json
@@ -114,9 +115,27 @@ the estimate by multiples:
 ## Status — build step 5 (infra categories)
 
 Five fragments: global, compute, database, licensing (conditional), identity. The AI
-category `clarify-ai.md` is now wired (it fires when `ai-workload-profile.json` exists); the standalone `clarify-ai-only.md` route remains deferred (plan §19.9c). The pattern-confirmation section fills in when `patterns.md` lands, and
+category `clarify-ai.md` is wired (it fires when `ai-workload-profile.json` exists alongside infra), and the standalone `clarify-ai-only.md` route is wired via Step 0's Migration Type Detection (an app-code-only / AI-only run, plan §19.12). The pattern-confirmation section fills in when `patterns.md` lands, and
 the pattern-confirmation section fills in when `patterns.md` lands — until then every
 cluster's `pattern_id` is `unclassified` and its row is DETECTED with nothing to correct.
+
+## Step 0: Migration Type Detection (route AI-only runs first)
+
+Before running any fragment, detect the migration type from which discovery artifacts exist
+(matching gcp's clarify Step 1):
+
+- **Full or mixed migration** — `azure-resource-inventory.json` exists (it may also have
+  `ai-workload-profile.json`). Run the normal flow below: the infra fragments fire on inventory
+  content, and the `ai` fragment adds the AI categories.
+- **AI-only migration** — ONLY `ai-workload-profile.json` exists (no `azure-resource-inventory.json`,
+  because the run was app-code-only and discover-assemble left the inventory absent). Infrastructure
+  stays on Azure; only AI/LLM calls move to Bedrock.
+
+> **HARD GATE — AI-only path.** If the run is AI-only, read `clarify-ai-only.md` NOW and follow
+> that flow to completion. **Skip the normal flow below entirely** — its question text, batching,
+> and interpretation rules live only in `clarify-ai-only.md`, which writes `preferences.json` with
+> `metadata.migration_type: "ai-only"`. Do not run the infra fragments (there is no inventory for
+> their triggers to read) and do not fabricate an assumption sheet from the summaries here.
 
 ## Step: Run the phase
 

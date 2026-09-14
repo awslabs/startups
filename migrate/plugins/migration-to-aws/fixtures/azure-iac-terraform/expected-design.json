@@ -328,10 +328,8 @@
     "_why": "Nothing distinguished 'this rubric is deliberately pending' from 'someone typo'd the filename'. Both read as a HALT at runtime, and a typo would be diagnosed as missing content that already exists. known_pending is checked in BOTH directions: a file listed here that now EXISTS also fails, so the list cannot rot the way a fixture depending on an absent type does.",
     "index_relpath": "../../skills/azure-to-aws/references/design-refs/index.md",
     "design_refs_relpath": "../../skills/azure-to-aws/references/design-refs",
-    "known_pending": [
-      "ai.md"
-    ],
-    "_known_pending_why": "ai.md is the traditional-ML rubric for Microsoft.CognitiveServices/accounts of a non-OpenAI kind. It belongs to build step 6 (AI), which is deferred with the rest of source breadth; no Terraform-sourced infra estate routes to it."
+    "known_pending": [],
+    "_known_pending_why": "Empty: ai.md landed in the AI build (plan §19.2, step 2), so no index.md Reference file is deliberately pending. The asserter fails a known_pending entry that now EXISTS, which is what pruned this list when ai.md was created."
   },
   "sizing_provenance": {
     "_comment": "Every services[] entry whose aws_config carries a SIZE must declare where the number came from. Also pins the two sizes that a sizing table contradicted, because they were model priors before the tables existed.",

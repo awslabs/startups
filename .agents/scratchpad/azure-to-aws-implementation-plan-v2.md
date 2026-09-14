@@ -2556,3 +2556,56 @@ options: author azure's own `references/shared/openai-on-bedrock.md` (a copy of 
 cloud-agnostic Bedrock facts), OR consolidate all three consumer-contract files in one pass.
 Deferred to the start of step 3 (estimate-ai needs pricing-cache anyway, so author all three
 consumer-contract shared files together). Not a gate blocker today.
+
+### 19.12 [DECIDED — reverses §19.9c] app-code-only runs are supported (owner call, 2026-09-14)
+
+§19.9c DEFERRED the ai-only route ("infra stays on Azure, only LLM calls move to Bedrock"),
+citing that it was blocked by discover's IaC-required precondition and had no standalone value
+until the AI chain existed. The AI chain now exists (steps 2–4), and the owner instruction is
+explicit: **gcp-to-aws supports migration from application code alone; azure-to-aws must too.**
+So §19.9c is reversed — app-code-only is now IN scope.
+
+**The gcp mechanism being matched (verbatim load-bearing rule, gcp SKILL.md Prerequisites):**
+_"If no Terraform is found (even when app code or billing files exist …), … stop only when
+nothing will produce any artifact."_ gcp routes every phase on ARTIFACT PRESENCE, and detects
+"AI-only" by the resource inventory being ABSENT while `ai-workload-profile.json` is present.
+gcp writes NO infrastructure inventory for an AI-only run (absent, not empty).
+
+**Azure blocked app-code-only at five gates; the fix matches gcp at each:**
+
+1. **discover.md precondition** (`_assert` requiring `.tf`/`.bicep`/ARM, `_unrecoverable`) —
+   broaden to also accept application source code / a dependency manifest with a detectable AI
+   signal. Keep `_unrecoverable` only for a truly empty workspace (no IaC AND no app code).
+2. **discover.md postconditions** (`_check_file_exists` + `_validate_json` on the inventory, and
+   `_assert "resources[] has ≥1 entry"`) — make them CONDITIONAL on an infra source having been
+   found; add an anchor assert "at least one of azure-resource-inventory.json OR
+   ai-workload-profile.json exists" (gcp's Handoff Check 1). An app-code-only run leaves the
+   inventory ABSENT (matching gcp) and is vacuously clean on the infra asserts.
+3. **discover-assemble.md** "stop if no valid resources / do not write an empty inventory" —
+   change to gcp semantics: stop ONLY if neither a resource inventory NOR
+   `ai-workload-profile.json` was produced. When app-code-only, write the AI profile, skip both
+   inventory artifacts (do NOT write an empty inventory).
+4. **clarify.md precondition** (`_check_file_exists [inventory,clusters]`, `_unrecoverable`) —
+   require "at least one discovery artifact (inventory OR ai-workload-profile.json)"; add
+   `ai-workload-profile.json` to `_input`; add **Migration Type Detection**: inventory absent +
+   AI profile present → AI-only → route to `clarify-ai-only.md`. The infra-assuming
+   postconditions (region/cpu/serverfarms/licensing) already fire conditionally on inventory
+   content and stay vacuous under an absent inventory.
+5. **Build `clarify-ai-only.md`** (the deferred route) — a standalone AI clarify flow that runs
+   when only `ai-workload-profile.json` exists. Ported from gcp's `clarify-ai-only.md`: the
+   cross-cloud question (Q4 — LLM calls move to Bedrock while infra stays on Azure: latency /
+   PrivateLink / egress), compliance (never-dropped), Activate credits (never-dropped, ≡ Q27),
+   and the AI question set reused from `clarify-ai.md`. Writes `preferences.json` with
+   `metadata.migration_type: "ai-only"` and the confirmed `workloads[]`. It is a ROUTED flow
+   (clarify.md detects and hands off), not a `_fragments` entry — matching §6c.
+
+**Artifact-shape decision (match gcp): NO empty inventory.** An app-code-only run produces
+`ai-workload-profile.json` and leaves `azure-resource-inventory.json` / `azure-resource-clusters.json`
+ABSENT. Downstream phases already route on artifact presence (design-ai/estimate-ai/
+generate-artifacts-ai fire on `ai-workload-profile.json`/`aws-design-ai.json`; the infra
+fragments no-op with no inventory), so the AI-only path threads through with no new infra
+plumbing — same as gcp.
+
+**Still Terraform-first for INFRA.** This change does not touch the infra path; it adds the
+app-code-only lane gcp has. A mixed repo (IaC + app code) is unaffected — both fragments run and
+the inventory is written as today.

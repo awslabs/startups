@@ -107,6 +107,12 @@ scope, and `app=` / `workload=` tags.
 
 1. Apply the assembly rules above.
 2. Validate both artifacts against `schema-discover-azure.md`'s checklist.
-3. If no valid resources came from any source after the fragments ran, stop with a
-   diagnostic naming which sources were attempted. Do not write an empty inventory
-   to satisfy the gate.
+3. Stop with a diagnostic ONLY when NEITHER a resource inventory NOR
+   `ai-workload-profile.json` was produced — i.e. nothing will produce any artifact
+   (matching gcp's rule). When an IaC source contributed resources, write the inventory
+   and clusters as usual. When the run is **app-code-only** (the app-code fragment
+   produced `ai-workload-profile.json` but no IaC source was found), write ONLY the AI
+   profile and leave `azure-resource-inventory.json` / `azure-resource-clusters.json`
+   **ABSENT** — never write an empty inventory to satisfy a gate. Clarify detects the
+   app-code-only (AI-only) run by the inventory being absent while the AI profile is
+   present, and routes to `clarify-ai-only.md`.
