@@ -571,9 +571,12 @@ shared schema in step 4.)
    `references/vendored/state/phase-status.schema.json`. Seed `phases` with ONE entry per
    phase the skill declares (its phase files), all `"pending"` EXCEPT this `_init`
    phase which is `"in_progress"`; set `migration_id` to `[MMDD-HHMM]`,
+   `run_id` to a fresh random UUID (v4, e.g. from `uuidgen`; it must never be
+   reused across runs — unlike `migration_id`, it carries no timestamp),
    `last_updated` to the current ISO 8601 timestamp, and `current_phase` to this
-   `_init` phase. (The schema does not enumerate phase names — the valid names are
-   the skill's declared phases.)
+   `_init` phase. Because this seeding runs only on a fresh start, `run_id` is
+   minted once and stays stable across pause/resume. (The schema does not
+   enumerate phase names — the valid names are the skill's declared phases.)
 
 5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
    running the phase's fragments.
