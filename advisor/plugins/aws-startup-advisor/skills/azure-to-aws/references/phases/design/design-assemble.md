@@ -3,8 +3,10 @@ _assemble: assemble-design
 _of_phase: design
 _reads:
   - infra (fragment contribution)
+  - ai (fragment contribution, when ai-workload-profile.json exists)
 _produces:
   - aws-design.json
+  - aws-design-ai.json
 ---
 
 # Design — Assemble Design

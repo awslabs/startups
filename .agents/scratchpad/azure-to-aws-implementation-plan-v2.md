@@ -2193,3 +2193,366 @@ Its top-ranked item is not in this step's scope and is the highest-value thing l
 4. **The reservation `$0` rule is untested and unreachable**, by construction. It stays
    as a contract for when the billing source lands.
 5. §17.9 #1–#4 and #6 unchanged; NOTES.md §1.3–1.9 and §2.x still ~24 findings.
+
+***
+
+## 19. [ADDED] AI / agentic workload capability — build plan (2026-09-14, session 8)
+
+**Owner ask:** add the capability to migrate AI workloads, referencing how `gcp-to-aws`
+implemented it. This section is the plan; no AI code has been written yet. Every claim is
+grounded in files read at HEAD `43fa5dc`; file:line given where load-bearing. Default
+posture per §0: **mirror gcp's AI subsystem; diverge only for a documented Azure fact.**
+
+### 19.0 The headline — this is much smaller than §6a feared
+
+§6a called the shared-AI-promotion PR "the highest-risk item in the plan" and a
+prerequisite blocker. **It is already done on `main`.** `skills/shared/ai/` exists and is
+fully populated (8 files: `ai-openai-to-bedrock.md`, `ai-anthropic-to-bedrock.md`,
+`design-ref-agentic-to-agentcore.md`, `design-ref-harness.md`, `ai-migration-guardrails.md`,
+`ai-model-lifecycle.md`, `bedrock-quotas.md`, `sdk-capability-map.json`), byte-synced into
+gcp and heroku via `references/vendored/ai/`. So the risky cross-skill promotion is behind
+us; azure only needs to **vendor** the tree (additive, per §6a's own note that
+`sync-vendored-shared.ts` walks the vendored side).
+
+Two more facts collapse most of the remaining work:
+
+1. **Azure OpenAI == the OpenAI SDK path.** `shared/ai/ai-openai-to-bedrock.md`'s header
+   states it is source-cloud-agnostic and *explicitly names Azure OpenAI* as a served
+   source, "because the Bedrock target does not depend on which endpoint served the calls."
+   `sdk-capability-map.json` keys on the **SDK call pattern** (`openai.chat.completions.create`,
+   …), and Azure OpenAI apps call the `openai` SDK. So the OpenAI / Anthropic / agentic /
+   guardrails / lifecycle / quota machinery ports **unchanged**.
+2. **Azure already discovers and canonicalizes the AI infra.** `extract-terraform.md`
+   extracts `Microsoft.CognitiveServices/accounts` (`kind`, `sku_name`);
+   `arm-type-canonicalization.md` canonicalizes `azurerm_cognitive_account` /
+   `azurerm_cognitive_deployment` and folds `Microsoft.OpenAI/accounts` →
+   `Microsoft.CognitiveServices/accounts`. The resources land in the inventory today.
+
+### 19.1 The capability is currently a live HALT, not merely "absent"
+
+Because discovery works but the design refs do not exist, **any Azure estate containing a
+Cognitive Services account (which is every Azure OpenAI workload) reaches Design and
+`GATE_FAIL`s** on a dangling reference. This is the intersection of the owner ask with an
+existing latent defect — building AI fixes it. The dangling refs:
+
+- `design-refs/index.md:168-170` → `vendored/ai/ai-openai-to-bedrock.md` (kind OpenAI),
+  `ai.md` (other kinds), `vendored/ai/ai-openai-to-bedrock.md` (`accounts/deployments`)
+- `knowledge/design/fast-path-services.json:651-652` → `Microsoft.CognitiveServices`
+  `route: ai.md`
+- `phases/design/design.md:125` names `ai.md` as expected-but-halting
+- `phases/clarify/clarify.md:112` + `clarify-assemble.md:139` route to `clarify-ai.md` /
+  `clarify-ai-only.md` — also absent
+
+None currently fires only because the Terraform corpus carries no cognitive account. That
+is the §13.6 disarmed-fixture trap again: the HALT is real, just unexercised.
+
+### 19.2 What gcp's AI subsystem is (the thing being ported)
+
+A **self-contained, file-based track** — it does NOT hand off to the sibling `llm-to-bedrock`
+or `agent-advisor` skills (0 references from inside gcp-to-aws). The "handoff" is intra-skill
+fail-closed gates plus routing to vendored sub-refs. Shape:
+
+| gcp file | Role | Produces / key contract |
+|---|---|---|
+| `discover/discover-app-code.md` | SDK + framework signal scan; Step 3 model detect, Step 3B agentic signals 3B.1–3B.9, ≥70% confidence gate | `ai-workload-profile.json` (`summary.ai_source`, `models[]`, `integration.gateway_type`, `workloads[]`, `agentic_profile{is_agentic,framework,orchestration_pattern}`, `tool_manifest[]`) |
+| `discover/discover-openai-api.md` | consent-gated OpenAI Admin API usage capture, GET-only allowlist, supplement-not-anchor | `openai-usage-profile.json`; fills `current_costs` |
+| `shared/schema-discover-ai.md` | the AI artifact schema | `ai_source ∈ gemini\|openai\|anthropic\|both\|other` |
+| `clarify/clarify-ai.md` | Categories F/G/H (Q14–27); Q27 Activate credits ESSENTIAL | when AI profile exists alongside infra |
+| `clarify/clarify-ai-only.md` | AI-only route: infra stays on source cloud, only LLM calls move to Bedrock | `metadata.migration_type: "ai-only"` |
+| `design/design-ai.md` | model map = modality/latency/context/cost via override hierarchy; agentic branch on `migration_approach` (retarget/harness/strands/undecided) | `aws-design-ai.json`; `target_bedrock_model` XOR `target_aws_service` |
+| `estimate/estimate-ai.md` | Bedrock pricing **per 1M tokens**, reads `shared/pricing-cache.md` (not `bedrock-quotas.md`); traditional-AI excluded (per-page) | `estimation-ai.json` |
+| `generate/generate-ai.md` + `generate-artifacts-ai.md` | plan + emit provider adapter code, `setup_bedrock.sh`, `bedrock_monitoring.tf`, gateway configs, eval harness | `generation-ai.json`, `STARTUP_PROGRAMS.md` |
+
+Design-ref routing by `ai_source`: gemini → `design-refs/ai-gemini-to-bedrock.md`; openai →
+`vendored/ai/ai-openai-to-bedrock.md` (+ `shared/openai-on-bedrock.md`); anthropic →
+`vendored/ai/ai-anthropic-to-bedrock.md`; both → gemini+openai; other/absent →
+`design-refs/ai.md` (traditional-ML). Any workload with capability ∈ {document_extraction,
+image_analysis, speech_transcription} also loads `ai.md`.
+
+### 19.3 [DECIDED] What ports, what is net-new, what is Azure-swapped
+
+| Layer | Verdict | Azure delta |
+|---|---|---|
+| `vendored/ai/*` (openai, anthropic, agentcore, harness, guardrails, lifecycle, quotas, sdk-capability-map) | **vendor unchanged** | byte-identical copy of `skills/shared/ai/`, both trees |
+| `design-refs/ai-gemini-to-bedrock.md` | **replace** | net-new `ai-azure-openai-to-bedrock.md` — but since Azure OpenAI == OpenAI models, most estates route to the shared `vendored/ai/ai-openai-to-bedrock.md`; this ref is thin |
+| `design-refs/ai.md` (traditional ML) | **rewrite signals** | Azure ML, AI Vision→Rekognition, Document Intelligence/Form Recognizer→Textract, Speech→Transcribe, Language→Comprehend; AWS targets unchanged |
+| `design/design-ai.md`, `estimate/estimate-ai.md`, `generate/generate-ai.md`, `generate-artifacts-ai.md` | **port with edits** | thread `ai_source: azure_openai`; infra table `google_vertex_ai_*`→`azurerm_cognitive_*`; adapter default provider `vertex_ai`→`azure_openai` |
+| `clarify/clarify-ai.md`, `clarify-ai-only.md` | **port ~unchanged** | provider-agnostic; keep Categories F/G/H and Q27 ESSENTIAL |
+| `discover/discover-app-code.md` | **net-new for azure** (azure has NONE) | Azure SDK signals: python `AzureOpenAI` / `openai.api_type="azure"` / `AZURE_OPENAI_*`; node `@azure/openai`; `azure-ai-inference`. Agentic Step 3B signals port unchanged |
+| `discover/discover-openai-api.md` | **port unchanged** | many Azure apps still hit `api.openai.com`; also captures Azure-OpenAI-via-openai-SDK spend |
+| `shared/schema-discover-ai.md` | **port with edit** | `ai_source` gains `azure_openai`; `profile_source` gains an `iac_cognitive` analog of gcp's `iac_vertex` |
+| SKILL.md | **wire** | AI trigger phrases, `ai_source`, AI conditional-load table, hybrid-stack ~800-line two-pass warning — all absent today (only the single "migrate Azure OpenAI to Bedrock" trigger exists) |
+
+**[DECIDED] `ai_source` gains `azure_openai`, not a reuse of `openai`.** Rationale: the value
+must record the *source estate fact* (this workload ran on Azure OpenAI) for the report and
+for the `iac_cognitive` inference path, even though it *routes to the same* OpenAI→Bedrock
+ref. Same pattern as gcp keeping `gemini` distinct while `both` still loads shared refs.
+Divergence justified by an Azure-specific fact and recorded here per §0.
+
+### 19.4 [ADDED] Consumer-contract dependency — the one non-obvious cost
+
+`shared/ai/README.md` states a skill that vendors `references/vendored/ai/` **must also
+ship** `references/shared/pricing-cache.md` and `references/shared/pricing-fallback.md`.
+Azure's `references/shared/` has **neither**. These are **gcp-authored** (they live in
+`gcp-to-aws/references/shared/`, not in canonical `skills/shared/ai/`), so azure needs its
+own. The Bedrock rate rows are source-agnostic (copy), and only the Azure-OpenAI **source**
+pricing rows differ. This is small but load-bearing — estimate-ai reads `pricing-cache.md`
+for the price lookup order, so without it Estimate for AI is unpriced.
+
+### 19.5 [ADDED] Divergence guard — do not invent a skill handoff
+
+gcp's AI track is self-contained and does not call `llm-to-bedrock`/`agent-advisor`. Per §0,
+azure must NOT add a live Skill-tool handoff gcp lacks. The existing §6b/§6c handoff prose
+(pointer + `handoff-summary.md`) is the agnostic pattern and is unchanged; keep
+`clarify-ai-only.md` as the AI-only entry (per §6c correction) and do not build more surface.
+
+### 19.6 Build order (mirrors gcp; IaC-sourced AI first because discovery already works)
+
+Ordered so each step ends at a green gate suite (both trees; tools run directly):
+
+1. **Vendor `shared/ai/` → `references/vendored/ai/` (both trees)** + author
+   `references/shared/pricing-cache.md` + `pricing-fallback.md` (§19.4). Exit: `shared:check`
+   green, cross-plugin symmetry holds. **This alone un-HALTs the OpenAI-kind path.**
+2. **`design-refs/ai.md` (Azure signals) + `ai-azure-openai-to-bedrock.md`** → resolves the
+   remaining design HALT. Port `design/design-ai.md`; add `schema-design-aws-ai.md` /
+   `aws-design-ai.json` contract.
+3. **`clarify-ai.md` + `clarify-ai-only.md`** (resolve clarify HALT); **`estimate-ai.md`**;
+   **`generate-ai.md` + `generate-artifacts-ai.md`**; SKILL.md wiring + `ai_source` threading;
+   `schema-discover-ai.md` with `azure_openai`.
+4. **`discover-app-code.md` + `discover-openai-api.md`** — makes AI detectable WITHOUT IaC
+   (most startups have no cognitive-account Terraform), so this is the highest-reach step and
+   carries the most Azure-signal authoring. Adds the producer of `ai-workload-profile.json`.
+5. **Fixtures + oracles per phase** (§9 / §15 discipline): an AI-estate fixture with
+   `expected-*` + `check_expected_*`; the pairing check "every `index.md` /
+   `namespace_routing` design-ref exists on disk" (would have caught §19.1); a fresh-context
+   capability run on an AI estate with `fixtures/`/`expected-*`/`after-*` hidden.
+
+Steps 2 and 3 parallelize (design refs vs phase fragments converge on the artifact contract);
+step 4 is independent of both. Step 1 gates all.
+
+### 19.7 Testability note (the §12/§15 trap applies here too)
+
+`_assert` will pass for an AI design produced entirely from the model's pretraining about
+Bedrock — a capable model knows `gpt-4o → anthropic.claude-*` shapes without reading any ref.
+So AI Design is not truly testable until (a) `ai.md` / `ai-azure-openai-to-bedrock.md` exist
+(something to check against) and (b) an oracle pins the divergences where a plausible guess
+and the correct mapping differ (e.g. Document Intelligence → **Textract** not "Bedrock
+vision", `target_aws_service` set and `target_bedrock_model` null for the three traditional
+capabilities). Build the oracle with the design ref, per §12's "the table is the first thing
+that makes output checkable."
+
+### 19.8 [DECIDED] Two mechanics questions, settled
+
+Two things §19 named but did not pin down. Both were raised in review and both change how
+the work is built, so they are decided here.
+
+**(a) App-code discovery is REQUIRED, not optional — it is the AI detector.**
+Azure's `discover` is IaC-only today (a single `iac` fragment). IaC detects AI
+*infrastructure* — a `Microsoft.CognitiveServices/accounts` resource — but the AI *workload*
+(which model, which SDK, whether it is agentic) lives in **application code**, not in
+Terraform, and most startups have no cognitive-account Terraform at all. gcp's entire AI
+detector is `discover-app-code.md` (SDK imports + agentic Step 3B signals →
+`ai-workload-profile.json`); without an app-code scanner azure can only ever see AI when a
+customer happened to Terraform their Cognitive Services account. So `discover-app-code` is
+the piece that makes AI migration real, and `ai-workload-profile.json` (the artifact every
+downstream AI unit reads) has **no producer** until it exists. It stays step 4 in §19.6 for
+sequencing (design/clarify/estimate un-HALT first, on IaC-detected AI), but it is on the
+critical path for the capability, not a nice-to-have. `discover-openai-api.md` is a
+consent-gated *usage/cost supplement*, not a detector — separate, lower priority.
+
+**(b) The AI units are DSL FRAGMENTS, not gcp-style prose files. This is a deliberate,
+sanctioned divergence.**
+gcp's AI files carry **no frontmatter** — they are plain markdown (`# Discover Phase: App
+Code Discovery`) wired by imperative glob logic inside `discover.md` / `clarify.md`. That is
+gcp's older prose-routing style. **Azure is DSL-native (locked decision 1, §0):** a phase
+declares its parts in a `_fragments:` block with `_id` / `_trigger` / `_file`, and the
+interpreter derives loading from that. So azure must NOT copy gcp's prose routing — it must
+express each AI unit as a proper fragment on the owning phase, matching azure's own
+`discover-iac` / `clarify-compute` shape. Copying gcp's frontmatter-less files verbatim
+would reproduce the §12 false-green trap: `parse.ts:49` skips any file not starting with
+`---`, so a prose AI file passes `lint:frontmatter` while being entirely unvalidated. This
+divergence is exactly the kind §0 sanctions (justified by the DSL execution model itself);
+we match gcp's **content, artifact shapes, `ai_source` routing, and agentic branches**, and
+diverge only on the **wiring mechanism**.
+
+The AI unit per phase, as azure fragments (trigger shown as the `_when` guard):
+
+| Phase | Fragment `_id` | `_file` | `_trigger` `_when` |
+|---|---|---|---|
+| discover | `app-code` | `phases/discover/discover-app-code.md` | source code / dependency manifest present in workspace |
+| discover | `openai-api` (optional) | `phases/discover/discover-openai-api.md` | AI profile has `ai_source ∈ {openai, azure_openai, both}`, OR user asks re OpenAI spend (consent-gated) |
+| clarify | `ai` | `phases/clarify/clarify-ai.md` | `ai-workload-profile.json` exists |
+| clarify | (`ai-only` route) | `phases/clarify/clarify-ai-only.md` | ONLY `ai-workload-profile.json` exists (no infra inventory) — routed by `clarify.md`, per §6c |
+| design | `ai` | `phases/design/design-ai.md` | `ai-workload-profile.json` exists |
+| estimate | `ai` | `phases/estimate/estimate-ai.md` | `ai-workload-profile.json` exists |
+| generate | `artifacts-ai` | `phases/generate/generate-artifacts-ai.md` | AI design present AND `run_mode == decide_and_execute` |
+
+Each fragment gets its own `_produces`/`_contributes` and the phase's `_postconditions`
+extend to the AI artifact (`ai-workload-profile.json`, `aws-design-ai.json`,
+`estimation-ai.json`, `generation-ai.json`) — mirroring how the infra fragments contribute
+today. The clarify `ai-only` unit is a routed flow (a full standalone entry), not a
+`_fragments` entry, exactly as §6c kept it.
+
+**Consequence for the phase count.** Adding AI fragments does NOT add phases — they attach
+to the existing seven. `lint:frontmatter` still reports 7 phase files; the fragment count
+per phase grows. (Contrast the never-built `confirm` phase, §16.3, which would have changed
+the phase count.)
+
+### 19.9 [DECIDED] The three open decisions, resolved (2026-09-14)
+
+Resolved by reading how gcp actually consumes each thing (not by assertion). File:line
+evidence is in the session notes; the load-bearing findings are quoted inline.
+
+**(a) Azure-OpenAI source pricing — NO net-new table; reuse the OpenAI rows.**
+gcp's "what you pay today" ($X in the source-vs-target comparison) is **measured/stated
+spend**, resolved by a 4-level precedence in `estimate-ai.md` Part 1:
+`ai-workload-profile.json → current_costs.monthly_ai_spend` (1) → `openai-usage-profile.json`
+(2) → token-volume × source list price (3) → none/multi-tier (4). The **static
+`## Source Provider Pricing` table** in `pricing-cache.md` (Gemini + OpenAI standard-tier
+rows) is used ONLY for the case-3 fallback estimate and the per-model "vs Source Provider"
+comparison column — never for the primary "today" figure.
+Consequence for azure: (i) when Discover/Clarify supply Azure spend, **no source-price table
+is needed at all**; (ii) for the no-spend fallback and the "vs source" column, **Azure
+OpenAI list prices ≈ OpenAI list prices** (same GPT models), so azure **reuses the existing
+OpenAI rows in the shared `pricing-cache.md`** rather than authoring an Azure-specific table.
+This also *retires* the §19.4 worry: the consumer-contract `pricing-cache.md`/`pricing-fallback.md`
+azure must ship already carry the Bedrock target rates AND the OpenAI source rows; azure
+adds **no AI price rows of its own**. (Azure still needs its own `pricing-cache.md` file to
+exist as the consumer-contract artifact — but its AI content is a copy, not net-new pricing.)
+[CORRECTS §19.4, which assumed azure must add Azure-OpenAI source rows.]
+
+**(b) `ai_source` — add `azure_openai` as a DISTINCT label that ROUTES AS `openai`.**
+The shared `vendored/ai/ai-openai-to-bedrock.md` header states it is source-cloud-agnostic
+and **explicitly names Azure OpenAI** as a served source ("the Bedrock target does not depend
+on which endpoint served the calls"). Everything that genuinely differs between `openai` and
+`gemini`/`anthropic` is **target-side** (which design-ref, the Mantle-vs-Converse migration
+path, code examples, the same-model validation rule) — and Azure OpenAI shares ALL of it with
+OpenAI. So a separate branch would be a near-duplicate with zero target-side divergence.
+Keep the value **distinct at the `summary.ai_source` layer** (not collapsed to `"openai"`) to
+preserve the two source-cloud-specific things that would otherwise be lost: **report wording**
+("migrate off Azure OpenAI") and **discovery provenance** (an Azure Cognitive Services /
+`azurerm_cognitive_account` resource inferring `azure_openai`).
+Enum becomes: `azure_openai | openai | anthropic | both | other` (azure DROPS gcp's `gemini`;
+`both` = Azure-OpenAI/OpenAI + another provider). **The trap to avoid:** an unrecognised
+`ai_source` in `design-ai.md`'s routing table falls through to `"other" → ai.md`
+(traditional-ML) — a silent wrong route. So `azure_openai` MUST be explicitly wired at every
+switch, treated as `openai`:
+1. Add `azure_openai` to the `schema-discover-ai.md` enum (else a strict `_assert`/validator rejects it).
+2. Routing row in `design-ai.md` / `SKILL.md` / `design-refs/index.md`:
+   `azure_openai → vendored/ai/ai-openai-to-bedrock.md (+ shared/openai-on-bedrock.md)` — identical to `openai`.
+3. Hardcoded switches map it to openai: `design-ref-harness.md`'s `source_model_provider → "open_ai"`;
+   the `discover-openai-api` load gate/merge; any multi-provider check.
+4. Add the display string "Azure OpenAI" in clarify/report wording spots.
+
+**(c) `ai-only` migration route — DEFERRED to a fast-follow after the full-AI track.**
+The ai-only route (infra stays on Azure, only LLM calls move to Bedrock) is **blocked today
+and has no standalone value yet**, for three reasons:
+- Azure `discover.md`'s precondition is `_assert: "at least one Azure source … .tf/.bicep/ARM"`
+  with `_on_failure: _unrecoverable`. An AI-only customer (only app code, no IaC) **halts
+  unrecoverably at Discover, never reaching Clarify.** gcp avoids this because its discover
+  accepts application code as a standalone source.
+- Azure `clarify.md` also requires `azure-resource-inventory.json` with ≥1 resource — an
+  AI-only run has none.
+- It presupposes the entire AI chain (AI discovery producing `ai-workload-profile.json`, plus
+  `-ai` design/estimate/generate) that this work is only now building.
+Once the full-AI track lands, ai-only is a **small fast-follow**: port `clarify-ai-only.md`
+(~330 lines, mostly a re-skin of the AI/global questions; the only genuinely net-new surface
+is Q4 cross-cloud latency + the cross-cloud `preferences.json` schema), add a `migration_type`
+detector to `clarify.md`, and **relax the discover precondition** to accept an app-code/AI
+source with no IaC. Recorded as a named fast-follow, not dropped. This supersedes §19.6's
+implicit inclusion of `clarify-ai-only.md` in step 3 — it moves OUT of the core track into
+the fast-follow.
+
+**Net effect on the build plan:** step 2 is now unblocked. The consumer-contract pricing
+files (§19.4) are a copy, not net-new pricing authoring. `ai_source` threading is a fixed,
+enumerated list of wiring points. `clarify-ai-only.md` leaves the critical path. The full-AI
+core track is: discover-app-code → clarify-ai → design-ai → estimate-ai → generate-artifacts-ai,
+all keyed on `ai_source ∈ {azure_openai, anthropic, both, other}` routing to the already-vendored
+shared refs.
+
+### 19.10 [DECIDED] AI design output is a SEPARATE aws-design-ai.json (owner call, 2026-09-14)
+
+The one durable architectural fork in step 2: does the AI design layer fold its rows into
+the single `aws-design.json`, or write its own artifact?
+
+**Decision (owner): produce a separate `aws-design-ai.json`, exactly as gcp-to-aws does.**
+
+Rationale and the parity/convention reconciliation:
+- **gcp parity (the deciding factor).** gcp's `design-ai.md` writes its own `aws-design-ai.json`;
+  `estimate-ai.md` reads `aws-design-ai.json` and `generate-ai.md`/`generate-artifacts-ai.md`
+  read it in turn. Matching the artifact shape keeps the entire downstream AI chain a
+  straight port instead of a re-plumb — the §0 default posture (mirror gcp) wins here.
+- **This does NOT break azure's assembler invariant.** azure's rule is "`design-assemble.md`
+  is the single creator of `aws-design.json`." A separate `aws-design-ai.json` leaves that
+  literally true — the infra assembler still solely owns `aws-design.json`; the AI layer owns
+  a DIFFERENT file. So we are not violating the single-writer convention, we are adding a
+  second, independently-owned artifact. This is the same shape gcp has (infra design and AI
+  design are independent artifacts that Design produces side by side).
+- **Wiring within azure's DSL.** The `ai` fragment on the design phase is its OWN writer of
+  `aws-design-ai.json` (it does not contribute into the infra assembler). Concretely:
+  - `design.md` `_fragments` gains `{ _id: ai, _trigger: { _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }, _file: phases/design/design-ai.md }`.
+  - `design.md` `_produces` gains `aws-design-ai.json`.
+  - `design.md` `_knowledge` gains the AI refs under `_when` guards (the vendored openai/anthropic/agentic refs, `design-refs/ai.md`, `references/shared/schema-design-aws-ai.md`).
+  - `design.md` `_postconditions` gain an AI-conditional block: WHEN `ai-workload-profile.json`
+    exists, `aws-design-ai.json` must exist, validate, carry `metadata.ai_source` matching the
+    profile, and every `design_blocks[]`/`bedrock_models[]` entry obey the target_bedrock_model
+    XOR target_aws_service rule. When the profile is absent the AI fragment does not run and the
+    block is vacuously satisfied.
+  - `design-ai.md` frontmatter therefore looks like a fragment that self-produces:
+    `_fragment: ai` / `_of_phase: design` / `_produces: aws-design-ai.json` (NOT `_contributes`),
+    with its own `_postconditions`/completion gate — mirroring how gcp's design-ai fail-closes.
+    This is a DELIBERATE shape divergence from `design-infra.md` (which `_contributes` to the
+    assembler): the AI fragment is a self-contained writer because its artifact is separate.
+    Recorded here so a future reader does not "fix" it to contribute into the assembler.
+
+**Divergence ledger:** azure's infra fragments contribute to an assembler; the AI fragment
+self-writes. Justified by the owner decision to match gcp's separate-artifact downstream
+contract, and it preserves (does not break) the `aws-design.json` single-writer rule.
+
+### 19.11 [BUILT + CORRECTED] Step 2 landed — AI design layer (2026-09-14)
+
+Step 2 is built in both trees; all gates green (frontmatter 7/7, drift 363 identical, shared
+OK, asserters 13, pricing-coverage OK). Files added: `references/shared/schema-design-aws-ai.md`
+(the `aws-design-ai.json` contract), `references/design-refs/ai.md` (traditional-ML rubric with
+Azure signals: Vision→Rekognition, Document Intelligence→Textract, Speech→Transcribe/Polly,
+Language→Comprehend, Translator→Translate, Azure ML→SageMaker), `references/phases/design/
+design-ai.md` (the AI fragment). Edited: `design.md` (ai fragment + knowledge + produces +
+AI postconditions), `design-assemble.md` (now produces both artifacts).
+
+**The design-side HALT is RESOLVED.** Both files `index.md` routes `Microsoft.CognitiveServices`
+to — `ai.md` and `vendored/ai/ai-openai-to-bedrock.md` — are now on disk. A Cognitive Services
+estate no longer `GATE_FAIL`s at Design.
+
+**[CORRECTED] §19.10's wiring mechanism was wrong; the validator taught the right one.**
+§19.10 said the `ai` fragment "self-writes `aws-design-ai.json`" with a `_produces` key. The
+frontmatter validator (`check.ts:185-204`) rejects that: a FRAGMENT may not carry `_produces`,
+and the single-creator rule requires every phase-`_produces` artifact to be created by exactly
+one unit. The DSL-legal way to get a SEPARATE artifact (still matching gcp's shape and the
+owner decision) is: the **assembler `_produces: aws-design-ai.json`** (assembler is the
+creator), and the **`ai` fragment `_contributes: aws-design-ai.json`** (content contributor).
+So `design-assemble.md` now produces BOTH `aws-design.json` and `aws-design-ai.json`; the ai
+fragment contributes to the second. This preserves azure's single-creator invariant AND gives
+the separate artifact gcp has. The divergence-from-`design-infra` shape is smaller than §19.10
+implied: the ai fragment `_contributes` like infra does — it just contributes to a DIFFERENT
+artifact that the assembler also owns.
+
+**[NO WRAPPER] `ai-azure-openai-to-bedrock.md` was NOT created — deliberately.** §19.3/§19.6
+listed it, but `index.md` routes `kind: OpenAI` DIRECTLY to `vendored/ai/ai-openai-to-bedrock.md`
+(which is source-cloud-agnostic and names Azure OpenAI in its header), and
+`fast-path-services.json` namespace-routes `Microsoft.CognitiveServices → ai.md` with a note
+deferring OpenAI-kind to index.md. Nothing points at a wrapper, so creating one would be
+orphaned surface gcp lacks (violates §0). The `ai.md` LLM-routing section points `azure_openai`/
+`openai` straight at the vendored ref.
+
+**[OPEN] `references/shared/openai-on-bedrock.md` is a dangling PROSE dependency.** The vendored
+`ai-openai-to-bedrock.md` and `ai-migration-guardrails.md` cite `references/shared/
+openai-on-bedrock.md` (the Bedrock-target fact base: model IDs, endpoint paths, region matrix,
+quotas) 6+ times. That file is gcp-AUTHORED in gcp's `references/shared/` and is NOT in canonical
+`skills/shared/` — so it is not vendorable via the sync tool. It was removed from design.md's
+`_knowledge` (so it no longer fails frontmatter), but the prose cross-references inside the
+vendored files remain, and a real OpenAI-source design run would want it. It is the SAME
+consumer-contract gap class as `pricing-cache.md`/`pricing-fallback.md` (§19.4). RESOLUTION
+options: author azure's own `references/shared/openai-on-bedrock.md` (a copy of gcp's — it is
+cloud-agnostic Bedrock facts), OR consolidate all three consumer-contract files in one pass.
+Deferred to the start of step 3 (estimate-ai needs pricing-cache anyway, so author all three
+consumer-contract shared files together). Not a gate blocker today.

@@ -17,14 +17,27 @@ _knowledge:
   - { file: knowledge/design/cosmos-dynamodb-conversion.json, _when: "the inventory contains a Microsoft.DocumentDB/databaseAccounts resource whose kind is GlobalDocumentDB — the Core (SQL) API only" }
   - { file: knowledge/design/disk-ebs-sizing.json, _when: "the inventory contains a Microsoft.Compute/disks resource" }
   - { file: knowledge/estimate/rightsizing-thresholds.json, _when: "observed utilization exists — an RDfA rollup or az monitor metrics — so a size can be MEASURED rather than looked up" }
+  - { file: references/shared/schema-design-aws-ai.md, _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
+  - { file: references/design-refs/ai.md, _when: "ai-workload-profile.json exists AND (summary.ai_source is 'other' or absent, OR any workloads[] capability is document_extraction, image_analysis, or speech_transcription)" }
+  - { file: references/vendored/ai/ai-openai-to-bedrock.md, _when: "ai-workload-profile.json exists AND summary.ai_source is azure_openai, openai, or both" }
+  - { file: references/vendored/ai/ai-anthropic-to-bedrock.md, _when: "ai-workload-profile.json exists AND summary.ai_source is anthropic or both" }
+  - { file: references/vendored/ai/ai-migration-guardrails.md, _when: "ai-workload-profile.json exists AND agentic_profile.is_agentic is true" }
+  - { file: references/vendored/ai/design-ref-agentic-to-agentcore.md, _when: "agentic_profile.is_agentic is true AND ai_constraints.agentic.migration_approach is strands" }
+  - { file: references/vendored/ai/design-ref-harness.md, _when: "agentic_profile.is_agentic is true AND ai_constraints.agentic.migration_approach is harness" }
+  - { file: references/vendored/ai/bedrock-quotas.md, _when: "ai-workload-profile.json exists" }
+  - { file: references/vendored/ai/ai-model-lifecycle.md, _when: "ai-workload-profile.json exists" }
 _fragments:
   - _id: infra
     _trigger: { _always: true }
     _file: phases/design/design-infra.md
+  - _id: ai
+    _trigger: { _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
+    _file: phases/design/design-ai.md
 _assemble:
   _file: phases/design/design-assemble.md
 _produces:
   - aws-design.json
+  - aws-design-ai.json
 _advances_to: estimate
 _re_entry_guard:
   _stale_if_completed: estimate
@@ -64,6 +77,14 @@ _postconditions:
   - _assert: "AWS App Runner does not appear as a target anywhere in aws-design.json"
     _on_failure: _halt_and_inform
   - _assert: "every entry whose confidence is 'measured' cites the utilization evidence that backed it"
+    _on_failure: _halt_and_inform
+  - _assert: "WHEN ai-workload-profile.json exists: aws-design-ai.json exists, validates, and has metadata.ai_source equal to the profile's summary.ai_source. WHEN the profile is absent the AI fragment does not run and this is vacuously satisfied"
+    _on_failure: _halt_and_inform
+  - _assert: "WHEN aws-design-ai.json exists: every design_blocks[] row has exactly one of target_bedrock_model / target_aws_service non-null (XOR), and every document_extraction/image_analysis/speech_transcription row has target_bedrock_model null, a non-null target_aws_service, and honest_assessment 'not_applicable' — per references/shared/schema-design-aws-ai.md"
+    _on_failure: _halt_and_inform
+  - _assert: "WHEN aws-design-ai.json exists AND summary.ai_source is azure_openai or openai: every source model that is available on Bedrock and carried by the target region maps to itself with model_change false — not to a Claude/Nova substitute; and no proprietary openai.gpt-* model ID is paired with a converse/bedrock-runtime migration path"
+    _on_failure: _halt_and_inform
+  - _assert: "WHEN aws-design-ai.json exists: regional_warnings[] and multi_model_warnings[] are present (empty is fine); agentic_design is present only when agentic_profile.is_agentic is true; and App Runner appears nowhere"
     _on_failure: _halt_and_inform
 _forbids_files:
   - README.md
