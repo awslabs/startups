@@ -62,6 +62,28 @@ _Quick-reference rows use **—** for **model ID** and **context**; resolve in t
 or AWS model documentation. This is a curated subset for migration selection — see the Bedrock
 pricing page for the full catalog._
 
+### Embeddings — Bedrock (per 1M input tokens, US East)
+
+Embedding models are **input-only** — priced per 1M input tokens, no output charge. Use for
+`embedding` capability workloads (RAG corpora, semantic search, FAQ retrieval). A migration from
+an OpenAI/Azure embedding deployment lands on one of these; note the **dimension** must match (or
+the corpus must be re-embedded and any similarity threshold recalibrated).
+
+| Model                          | Model ID                        | Provider | Input $/1M | Dimensions        | Tier     | Status |
+| ------------------------------ | ------------------------------- | -------- | ---------- | ----------------- | -------- | ------ |
+| Titan Text Embeddings v2       | amazon.titan-embed-text-v2:0    | Amazon   | 0.02       | 1024/512/256      | default  | active |
+| Titan Text Embeddings v1       | amazon.titan-embed-text-v1      | Amazon   | 0.10       | 1536              | legacy   | active |
+| Cohere Embed v4                | cohere.embed-v4:0               | Cohere   | 0.12       | 1536/1024/512/256 | flagship | active |
+| Cohere Embed English v3        | cohere.embed-english-v3         | Cohere   | 0.10       | 1024              | mid      | active |
+| Cohere Embed Multilingual v3   | cohere.embed-multilingual-v3    | Cohere   | 0.10       | 1024              | mid      | active |
+
+**Default target for a migrating OpenAI/Azure embedding workload:** Titan Text Embeddings v2
+(`amazon.titan-embed-text-v2:0`) — cheapest, configurable dimensions (1024 default; 512/256 for
+cost/latency). Choose Cohere Embed v4 when the source used a large-dimension model and matrix
+compatibility or multilingual quality matters. Titan v2 output dimension is configurable, so map
+`text-embedding-3-large` (3072-dim) or `-small` (1536-dim) to Titan 1024 and **re-embed** — there
+is no dimension-preserving swap. See `references/vendored/ai/ai-openai-to-bedrock.md`.
+
 ### Stability AI — Image Generation (per image, US East)
 
 Priced **per image** (not per token). Use for `image_generation` capability workloads.
@@ -145,6 +167,22 @@ Prices per 1M tokens.
 > adds Provisioned Throughput Units (PTU) as an alternative to pay-as-you-go; a customer on PTU
 > has a committed monthly cost that their stated spend captures directly — prefer stated spend
 > over these list rates when available.
+
+### Embeddings — OpenAI / Azure OpenAI source (per 1M input tokens)
+
+The source-side baseline for a migrating embedding workload. Input-only. Map the "$X today" from
+measured/stated spend when available; these list rates are the fallback.
+
+| Model                     | Input $/1M | Dimensions | Tier    |
+| ------------------------- | ---------- | ---------- | ------- |
+| text-embedding-3-large    | 0.13       | 3072       | flagship |
+| text-embedding-3-small    | 0.02       | 1536       | fast     |
+| text-embedding-ada-002    | 0.10       | 1536       | legacy  |
+
+Azure OpenAI bills the same models under deployment names at rates that track this table (PTU
+caveat above applies). A `text-embedding-3-large` → Titan v2 move is **not** a dimension-preserving
+swap (3072 → 1024) — it requires re-embedding the corpus and recalibrating similarity thresholds;
+surface that as a migration task, not a silent cost line.
 
 _Gemini source rows from gcp-to-aws are intentionally omitted: azure-to-aws has no `gemini`
 `ai_source` (plan §19.9b)._

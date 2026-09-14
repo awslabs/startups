@@ -42,9 +42,13 @@ proprietary GPT-5.x source rows), ALL prices are in `pricing-cache.md`. Zero MCP
 AI prices as potentially stale, set `pricing_source: "cached_stale"`, and note it — per that
 file's staleness warning.
 
-**Bedrock pricing is per-1M-tokens.** Every Bedrock figure in `pricing-cache.md` is stated per
-1M input tokens and per 1M output tokens. Divide token counts by 1,000,000 before multiplying by
-the rate. There is no per-hour or baked-in-Multi-AZ dimension here — that RDS-style rule belongs
+**Bedrock pricing is per-1M-tokens.** Every generative Bedrock figure in `pricing-cache.md` is
+stated per 1M input tokens and per 1M output tokens. Divide token counts by 1,000,000 before
+multiplying by the rate. **Embedding models are input-only** — the § Embeddings — Bedrock table
+gives a single per-1M-input rate and no output column; price an embedding workload as
+input_tokens × rate (no output term), and compare against the § Embeddings — OpenAI / Azure OpenAI
+source rate for the "$X today" baseline. A source `text-embedding-3-*` → Titan v2 move is a
+re-embedding task (dimension change), not a free swap — carry the note into the estimate. There is no per-hour or baked-in-Multi-AZ dimension here — that RDS-style rule belongs
 to `estimate-infra.md` and does NOT apply to token pricing.
 
 **Model lifecycle:** When building the model comparison table, check
