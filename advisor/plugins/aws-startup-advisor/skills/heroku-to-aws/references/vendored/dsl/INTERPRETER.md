@@ -538,9 +538,10 @@ cold start that begins a migration.
 (Paths below use the default run root `.migration/` — substitute the skill's
 declared run root (§ Skill bindings). A skill that declares its own state shape
 writes `.phase-status.json` per its SKILL.md's state-file section instead of the
-shared schema in step 4. Telemetry covers only runs under the literal default
-root `.migration/`: a skill that declares its own run root skips the telemetry
-keys in step 4.)
+shared schema in step 4. The run-identity keys in step 4 (`run_id`,
+`owning_skill`, `initiated_by`) are seeded only under the literal default root
+`.migration/`; a skill that declares its own run root, such as agent-advisor,
+skips them and keeps its own state contract.)
 
 1. Check for an existing `.migration/` directory at the project root.
    - **If existing runs are found:** list them with their phase status and ask:
@@ -575,7 +576,7 @@ keys in step 4.)
    `last_updated` to the current ISO 8601 timestamp, and `current_phase` to this
    `_init` phase. (The schema does not enumerate phase names — the valid names are
    the skill's declared phases.) Under the default run root only, also seed two
-   telemetry/attribution keys:
+   run-identity keys, read by telemetry and by the plugin-to-web handoff:
    `run_id` — a fresh random UUID (verbatim from `uuidgen` or equivalent; it must
    never be reused across runs), and `owning_skill` — the running skill's
    directory name in upper case with hyphens replaced by underscores

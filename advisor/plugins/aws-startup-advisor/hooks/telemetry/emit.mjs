@@ -175,6 +175,20 @@ function consentGrantedFor(runDir) {
   return readJson(consentFileFor(runDir))?.consent === "granted";
 }
 
+// The state file's mtime, not its agent-written last_updated field, is compared
+// with the consent record's timestamp: the mtime is set by the OS and cannot be
+// mistyped by the agent. Unknown on either side means "not before".
+function predatesConsent(runDir, statusFile) {
+  const consentedAt = Date.parse(readJson(consentFileFor(runDir))?.consentedAt ?? "");
+  let mtime;
+  try {
+    mtime = statSync(statusFile).mtimeMs;
+  } catch {
+    return false;
+  }
+  return Number.isFinite(consentedAt) && mtime < consentedAt;
+}
+
 // The skills routinely cd into .migration/<id>/ to work with relative paths, so
 // the consent command must find the migration root from anywhere inside the
 // project, not only from its root.
@@ -535,7 +549,8 @@ async function post(endpoint, body) {
 // ------------------------------------------------------------------ per run
 
 async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
-  const status = readJson(path.join(runDir, ".phase-status.json"));
+  const statusFile = path.join(runDir, ".phase-status.json");
+  const status = readJson(statusFile);
   if (!status?.migration_id) return;
 
   // Attribution is read from disk, never from an argument: a run that declares
@@ -557,9 +572,6 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     // touched by another session is that session's to report.
     if (sessionEndMode && snapshot && sessionId && snapshot.sessionId !== sessionId) return;
 
-    const events = diffEvents(status, snapshot);
-    if (events.length === 0) return;
-
     // Identifiers read back from customer-editable files are validated, not
     // trusted: the service rejects the whole event on one malformed UUID.
     // run_id comes from .phase-status.json (seeded at _init); a missing or
@@ -570,6 +582,26 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
       : UUID_RE.test(snapshot?.runId)
         ? snapshot.runId
         : crypto.randomUUID();
+    const validSessionId = UUID_RE.test(sessionId) ? sessionId : undefined;
+
+    // Consent covers what happens from the moment it was given. A run whose
+    // state was last written before the consent record exists is history the
+    // customer never agreed to report: record it as already known and send
+    // nothing, so only transitions from here on are reported.
+    if (!snapshot && predatesConsent(runDir, statusFile)) {
+      writeJson(snapshotFile, {
+        runId,
+        sessionId: validSessionId,
+        phases: status.phases ?? {},
+        completed: status.current_phase === "complete",
+        via: viaMode(),
+        updatedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const events = diffEvents(status, snapshot);
+    if (events.length === 0) return;
 
     const ctx = {
       runDir,
@@ -578,7 +610,7 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
       // is dropped rather than risk rejecting the whole event.
       initiatingSkill: MIGRATION_SKILLS.has(status.initiated_by) ? status.initiated_by : undefined,
       runId,
-      sessionId: UUID_RE.test(sessionId) ? sessionId : undefined,
+      sessionId: validSessionId,
       installId: getInstallId(),
       pluginVersion: pluginVersion(),
     };
