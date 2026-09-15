@@ -86,10 +86,11 @@ function makeProject(status: Record<string, unknown>, consent: 'granted' | 'revo
   mkdirSync(runDir, { recursive: true });
   const consentFile = join(root, '.migration', 'telemetry.json');
   if (consent) {
-    writeFileSync(
-      consentFile,
-      JSON.stringify({ consent, installId: RUN_ID, consentedAt: new Date().toISOString(), version: 1 }),
-    );
+    // Dated a minute before the state file: the emitter treats state last written
+    // before consent as history, and the two writes above can straddle a
+    // millisecond under load.
+    const consentedAt = new Date(Date.now() - 60_000).toISOString();
+    writeFileSync(consentFile, JSON.stringify({ consent, installId: RUN_ID, consentedAt, version: 1 }));
   }
   const statusFile = join(runDir, '.phase-status.json');
   writeFileSync(statusFile, JSON.stringify(status, null, 2));
