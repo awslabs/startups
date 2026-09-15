@@ -6,7 +6,8 @@
 //   node emit.mjs --session-end      teardown: final sweep for this session's runs
 //   node emit.mjs consent <get|grant|revoke|status>
 //
-// Reads .migration/<id>/.phase-status.json, diffs it against the co-located
+// Reads .migration/<id>/.phase-status.json (and .gate-failures.json, where the
+// skill records a failed gate), diffs them against the co-located
 // .telemetry-snapshot.json, and POSTs one event per transition to the endpoint
 // in AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT. Everything it needs is on disk:
 // the run declares its owner via the owning_skill key in .phase-status.json,
@@ -341,6 +342,9 @@ const RESOLVED_STATUS = {
 };
 
 const RUN_MODE = { decide: "DECIDE", decide_and_execute: "DECIDE_AND_EXECUTE" };
+
+// Mirrors the reason= constants of the interpreter's GATE_FAIL line.
+const FAILURE_REASON = { missing: "MISSING", invalid: "INVALID", stale_downstream: "STALE_DOWNSTREAM" };
 
 const mapEnum = (table, value) => (value == null ? undefined : table[String(value).toLowerCase()]);
 
@@ -698,20 +702,39 @@ function deriveAttributes(runDir, skill, event) {
   }
 
   if (event.runMode) attributes.runMode = event.runMode;
+  if (event.failureReason) attributes.failureReason = event.failureReason;
 
   return Object.keys(attributes).length ? attributes : undefined;
 }
 
 // ------------------------------------------------------------------- the diff
 
-// One event per transition between the snapshot and .phase-status.json.
+// The skill records each failed gate in .gate-failures.json, keyed by phase
+// (see INTERPRETER.md, "Recording a failed gate"). Only phases the model knows
+// are reportable; the snapshot lists the phases already reported.
+function gateFailureEntries(gateFailures) {
+  if (!gateFailures || typeof gateFailures !== "object" || Array.isArray(gateFailures)) return [];
+  return Object.entries(gateFailures)
+    .map(([name, entry]) => ({ phase: String(name).toUpperCase(), entry }))
+    .filter(({ phase }) => PHASES.has(phase));
+}
+
+// One event per transition between the snapshot and .phase-status.json, plus
+// one GATE_FAILED per phase newly present in .gate-failures.json (a repeat
+// failure of the same phase is not a new event; its later success is).
 // Pending/in_progress churn emits nothing; a phase name outside the model's
 // enum emits nothing for that phase. RUN_COMPLETED is gated on the snapshot's
 // completed flag, not the transition, so a current_phase that leaves
 // "complete" and returns cannot mint a second terminal event.
-function diffEvents(status, snapshot) {
+function diffEvents(status, snapshot, gateFailures) {
   const events = [];
   if (!snapshot || snapshot.started === false) events.push({ eventName: "RUN_STARTED" });
+  const reported = new Set(snapshot?.gateFailures ?? []);
+  for (const { phase, entry } of gateFailureEntries(gateFailures)) {
+    if (reported.has(phase)) continue;
+    const failureReason = mapEnum(FAILURE_REASON, entry?.reason);
+    events.push({ eventName: "GATE_FAILED", phase, status: "FAILED", ...(failureReason ? { failureReason } : {}) });
+  }
   const before = snapshot?.phases ?? {};
   for (const [name, state] of Object.entries(status.phases ?? {})) {
     if (before[name] === state) continue;
@@ -785,6 +808,7 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
   const statusFile = path.join(runDir, ".phase-status.json");
   const status = readJson(statusFile);
   if (!status?.migration_id) return;
+  const gateFailures = readJson(path.join(runDir, ".gate-failures.json"));
 
   // Attribution is read from disk, never from an argument: a run that declares
   // no owner, or an owner outside the migration set, emits nothing (fail closed)
@@ -822,6 +846,7 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
         runId,
         sessionId: validSessionId,
         phases: status.phases ?? {},
+        gateFailures: gateFailureEntries(gateFailures).map((e) => e.phase),
         completed: status.current_phase === "complete",
         via: viaMode(),
         updatedAt: new Date().toISOString(),
@@ -829,7 +854,7 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
       return;
     }
 
-    const events = diffEvents(status, snapshot);
+    const events = diffEvents(status, snapshot, gateFailures);
     if (events.length === 0) return;
 
     const ctx = {
@@ -874,6 +899,12 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
       sessionId: ctx.sessionId ?? snapshot?.sessionId,
       started: !(runStarted && held.has(runStarted)),
       phases,
+      gateFailures: [
+        ...new Set([
+          ...(snapshot?.gateFailures ?? []),
+          ...events.filter((e) => e.eventName === "GATE_FAILED" && !held.has(e)).map((e) => e.phase),
+        ]),
+      ],
       completed: Boolean(snapshot?.completed) || Boolean(runCompleted && !held.has(runCompleted)),
       via: viaMode(),
       updatedAt: new Date().toISOString(),
