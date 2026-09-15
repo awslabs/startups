@@ -577,8 +577,9 @@ skips them and keeps its own state contract.)
    `_init` phase. (The schema does not enumerate phase names — the valid names are
    the skill's declared phases.) Under the default run root only, also seed two
    run-identity keys, read by telemetry and by the plugin-to-web handoff:
-   `run_id` — a fresh random UUID (verbatim from `uuidgen` or equivalent; it must
-   never be reused across runs), and `owning_skill` — the running skill's
+   `run_id` — a fresh random UUID (run `uuidgen` or equivalent and write its output
+   verbatim; never copy a value from an example or a previous run), and
+   `owning_skill` — the running skill's
    directory name in upper case with hyphens replaced by underscores
    (`gcp-to-aws` → `GCP_TO_AWS`). A skill invoked by another skill still records
    its own id as `owning_skill`; `initiated_by` (the invoking skill's id) is
