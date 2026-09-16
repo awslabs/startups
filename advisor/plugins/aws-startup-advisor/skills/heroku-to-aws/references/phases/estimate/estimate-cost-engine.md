@@ -392,6 +392,8 @@ The savings ranges + `target_services` gating come from [`knowledge/estimate/est
 
 **Always render this section**, even when nothing in the design qualifies for an RI or Savings Plan — per the vendored file's three-state model, state explicitly which state the design landed in rather than omitting the section.
 
+**AWS credits do not cover upfront commitment costs.** Promotional/Activate credits cannot be applied to the upfront cost of Reserved Instances or Savings Plans (Partial Upfront or All Upfront) — they only apply to the ongoing discounted hourly rate. State this once whenever this section is presented (chat summary or report), so a customer on Activate credits does not read "up to 66% off" as free.
+
 **Emit in `optimization_opportunities[]`:**
 
 ### Compute Savings Plans (when Fargate or Elastic Beanstalk/EC2 in design)
@@ -506,7 +508,7 @@ The savings ranges + `target_services` gating come from [`knowledge/estimate/est
 
 Only include optimizations relevant to the designed architecture. Do not include EC2-specific optimizations if no Elastic Beanstalk/EC2 in design.
 
-**No eligible commitment product (per the vendored file's three-state model):** if the design contains nothing from the eligibility matrix's RI/SP-eligible or SP-only rows (e.g. an all-Lambda-equivalent or fully managed-service design with no Fargate/EB/EC2/RDS/Aurora/DynamoDB/ElastiCache), state this explicitly in the section rather than omitting it: "No 1-year/3-year commitment product applies to this architecture." Do not silently skip Part 6.
+**No eligible commitment product (per the vendored file's three-state model):** if the design contains nothing from the eligibility matrix's RI/SP-eligible or SP-only rows (e.g. an all-Lambda-equivalent or fully managed-service design with no Fargate/EB/EC2/RDS/Aurora/DynamoDB/ElastiCache), state this explicitly in the section rather than omitting it: "No 1-year/3-year commitment product applies to this architecture." `optimization_opportunities` may be an empty array in this case — do not fabricate an entry to avoid an empty list. Do not silently skip Part 6.
 
 ---
 

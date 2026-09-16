@@ -1,0 +1,7 @@
+jobs:
+  review:
+    steps:
+      - run: |
+          echo "repo ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "desc ${{ github.event.pull_request.head.repo.description }}"
+          echo "home ${{ github.event.pull_request.head.repo.homepage }}"

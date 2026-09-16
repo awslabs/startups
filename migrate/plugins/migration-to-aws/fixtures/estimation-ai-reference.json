@@ -1,8 +1,8 @@
 {
   "cost_comparison": {
     "current_gcp_monthly": 1250,
-    "projected_bedrock_monthly": 800,
-    "percent_change": "-36%"
+    "projected_bedrock_monthly": 540,
+    "percent_change": "-57%"
   },
   "current_costs": {
     "gcp_monthly_ai_spend": 1250

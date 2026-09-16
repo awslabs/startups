@@ -114,9 +114,30 @@ Repeat the **How to read cost tiers** callout from Section 3 here or include a o
 
 Source: estimation artifact cost_comparison
 
-**Optimization opportunities table** with columns: Optimization, Target Services, Monthly Savings, Commitment, Effort.
+**Do not** put the opportunity table only as an `<h3>` inside this appendix.
+When `optimization_opportunities[]` is non-empty, the executive
+`exec-optimization` section (see `report-decision-core.md` Section 3c) is
+required, and the line-level table MUST be a standalone
+`<section id="appendix-optimization">` immediately after `appendix-costs`.
 
-Merge infra (`estimation-infra.json`) and AI (`estimation-ai.json`) optimization rows when both exist.
+**Optimization opportunities table** (`appendix-optimization`) with columns:
+Optimization, Target, Monthly Savings (or Est. savings), Commitment, Effort.
+
+Merge infra (`estimation-infra.json`) and AI (`estimation-ai.json`) optimization rows when both exist. **The two sources use different field names for the same rendered column** — apply this key map, do not assume the field names match:
+
+| Column          | Infra key (`estimation-infra.json`)                          | AI key (`estimation-ai.json`)                                                                                                                                             |
+| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Optimization    | `opportunity`                                                | `opportunity`                                                                                                                                                             |
+| Target Services | `target_services`                                            | `target_services`                                                                                                                                                         |
+| Monthly Savings | `savings_monthly` (fall back to `savings_percent` when null) | `potential_savings_monthly` (fall back to `potential_savings_percent` when null — the AI schema requires this field on every entry precisely so this cell is never blank) |
+| Commitment      | `commitment`                                                 | `commitment`                                                                                                                                                              |
+| Effort          | `implementation_effort`                                      | `implementation_effort`                                                                                                                                                   |
+
+**Render the Activate-credits caveat once, below the whole merged table, scoped only to the infra-side rows it actually describes — never per-row and never implied to cover every row in a merged table.** That caveat applies only to RI/Savings Plan upfront costs. If the merged table contains any infra-side row with a `commitment` other than `"none"` (Compute SP, Database SP, RDS RI, DynamoDB reserved capacity, ElastiCache Reserved Nodes), render the caveat once beneath the table, worded to make clear it applies to those rows specifically (e.g. "The Activate-credits note below applies to the Reserved Instance/Savings Plan rows only"). Do not render it at all if the table contains only AI-side rows. AI-side rows (including Provisioned Throughput, which is billed hourly with no upfront fee) never trigger this caveat — if any AI-side row is `type: provisioned_throughput`, its Commitment cell reads the exact wording from that row's JSON (`"no-commit, 1-month, or 6-month"`), never the infra-side "1-year or 3-year" vocabulary, and never implies an upfront cost.
+
+**Sequencing (`available`):** AI-side rows carry an `available` field (`day_1`, `after_2_weeks_production_traffic`, `after_sustained_traffic_baseline` — see `estimate-ai.md` Part 6). Group or flag rows so a reader can tell day-1 levers (prompt caching, Batch API, model downsizing, input token reduction, multi-model tiered routing) apart from traffic-gated ones (Intelligent Prompt Routing, Provisioned Throughput) — do not present all optimization rows as equally actionable at migration time.
+
+A table buried only in Appendix B does **not** pass the report validator.
 
 Source: estimation artifact optimization_opportunities
 
@@ -164,7 +185,7 @@ Show this section when `aws-design-ai.json` → `ai_architecture.honest_assessme
 > - **IAM access control:** No API keys to rotate; permissions follow your AWS IAM model
 > - **Model evaluation:** A/B test models with Bedrock's built-in evaluation framework
 > - **Guardrails:** Content filtering and PII detection at the platform level
-> - **Commitment pricing:** Provisioned Throughput for predictable costs at scale
+> - **Commitment pricing:** Provisioned Throughput for predictable costs at scale — no-commit, 1-month, or 6-month terms (not a 1-year/3-year Reserved Instance or Savings Plan; distinct product, distinct terms), worth evaluating only once traffic is sustained and predictable, not at migration time
 >
 > These benefits matter most when: you handle sensitive data, need AI call audit trails, or want to consolidate vendors.
 
@@ -181,17 +202,20 @@ Show this section when `aws-design-ai.json` → `ai_architecture.honest_assessme
 
 **Only include if `generation-ai.json` exists in `$MIGRATION_DIR/` (AI track ran).**
 
-After migration is validated and stable, three optimization levers are available (typical ranges from plugin guidance — validate against your traffic):
+Not all of these require waiting until migration is validated and stable — figures below are AWS's own published numbers where available (see `estimate-ai.md` Part 6, which is the source of truth for these; do not restate different figures here):
 
-| Optimization               | Estimated savings        | When to apply                                    | Prerequisite                                                             |
-| -------------------------- | ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------ |
-| Intelligent Prompt Routing | 10–30%                   | After 2+ weeks of production traffic             | Same model family in multiple tiers (e.g., Claude Sonnet + Haiku)        |
-| Prompt caching             | 20–50% on eligible calls | When prompts have long repeated context          | Minimum ~1K–4K tokens cacheable prefix; per-model minimums and TTL apply |
-| Model distillation         | Up to ~75%               | After 30+ days of stable, high-volume production | Stable prompts, evaluation dataset, sufficient call volume               |
+| Optimization               | Estimated savings                                                                        | When to apply                                                                                               | Prerequisite                                                                                                                                                                      |
+| -------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prompt caching             | Up to 90% on cached input tokens (AWS-published), workload- and cache-hit-rate dependent | Available Day 1 — when prompts have long repeated context                                                   | Minimum ~1K–4K tokens cacheable prefix; per-model minimums and TTL apply                                                                                                          |
+| Multi-model tiered routing | 60–87% (plugin estimate)                                                                 | Available Day 1 (design-time choice) — high/very-high volume, `tiered_strategy` in design                   | Same model family available in 2+ cost tiers at design time                                                                                                                       |
+| Intelligent Prompt Routing | Up to 30% (AWS-published ceiling)                                                        | After 2+ weeks of production traffic (plugin recommendation, not an AWS-imposed minimum — see caveat below) | Same model family in multiple tiers (default: Anthropic or Meta Llama; other models via configurable routers) — **does not apply to a Gemini-only or OpenAI-only Bedrock design** |
+| Model distillation         | Up to ~75%                                                                               | After 30+ days of stable, high-volume production                                                            | Stable prompts, evaluation dataset, sufficient call volume                                                                                                                        |
 
-These are not migration steps — they are post-migration optimizations. Do not block migration on these. Surface as a "Month 2–3" roadmap item.
+**Intelligent Prompt Routing vs. Multi-model tiered routing are two distinct mechanisms, not the same lever under two names:** Intelligent Prompt Routing is Bedrock's own automatic per-request router (AWS product feature, "up to 30%" is AWS's published ceiling — but the "wait 2+ weeks" guidance is this plugin's own caution, not an AWS requirement); Multi-model tiered routing is this plugin's design-time pattern of manually splitting traffic across model tiers ("60-87%" is this plugin's own estimate for that pattern, not an AWS-published figure). Do not merge these into one row.
 
-**Prompt caching caveat:** Caching only helps for long, repeated context windows. Evaluate actual prompt patterns before assuming savings.
+**Not all of these are "post-migration" in the same sense.** Prompt caching and Multi-model tiered routing are usable immediately — do not gate them behind a stability period or present them only as a "Month 2-3" item; a founder reading this section should see they can adopt these on day one. Intelligent Prompt Routing (needs 2+ weeks of production traffic to validate routing quality) and Model distillation (needs 30+ days of stable, high-volume production) are the two levers that genuinely require waiting — surface only those two as a "Month 2-3+" roadmap item. Do not block migration on any of these.
+
+**Prompt caching caveat:** Caching only helps for long, repeated context windows, and the "up to 90%" figure is a ceiling — actual savings depend on cache hit rate and how much of the prompt is cacheable. Evaluate actual prompt patterns before assuming savings.
 
 **Full detail:** Open `ai-workload-profile.json` in this directory.
 
@@ -362,19 +386,21 @@ Write the complete HTML to `$MIGRATION_DIR/migration-report.html`.
 
 The output MUST include these `id` attributes (content from Steps 1–2; gates check **presence only**):
 
-| Section ID           | Content                                |
-| -------------------- | -------------------------------------- |
-| `decision-summary`   | Section 0 — Migration Decision Summary |
-| `exec-services`      | Primary services summary               |
-| `exec-costs`         | Cost comparison headline / tier table  |
-| `exec-timeline`      | Migration shape (stages + drivers)     |
-| `exec-risks`         | Top risks                              |
-| `appendix-services`  | Appendix A                             |
-| `appendix-costs`     | Appendix B                             |
-| `appendix-steps`     | Appendix C                             |
-| `appendix-artifacts` | Appendix E                             |
+| Section ID              | Content                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| `decision-summary`      | Section 0 — Migration Decision Summary                                                           |
+| `exec-services`         | Primary services summary                                                                         |
+| `exec-costs`            | Cost comparison headline / tier table                                                            |
+| `exec-optimization`     | Cost Optimization (SP / RI) — required when `optimization_opportunities[]` is non-empty          |
+| `exec-timeline`         | Migration shape (stages + drivers)                                                               |
+| `exec-risks`            | Top risks                                                                                        |
+| `appendix-services`     | Appendix A                                                                                       |
+| `appendix-costs`        | Appendix B                                                                                       |
+| `appendix-optimization` | Savings Plans / RI opportunity table — required when `optimization_opportunities[]` is non-empty |
+| `appendix-steps`        | Appendix C                                                                                       |
+| `appendix-artifacts`    | Appendix E                                                                                       |
 
-Conditional IDs (include when their trigger applies): `exec-share`, `exec-tco`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `appendix-ai`, `appendix-config`, `appendix-security`, `appendix-security-gap`, `appendix-assumptions`, `appendix-glossary`.
+Conditional IDs (include when their trigger applies): `exec-share`, `exec-tco`, `exec-architecture`, `exec-security-teaser`, `exec-optimization`, `what-if-scenarios`, `appendix-ai`, `appendix-config`, `appendix-security`, `appendix-security-gap`, `appendix-assumptions`, `appendix-optimization`, `appendix-glossary`.
 
 ```html
 <!DOCTYPE html>
@@ -397,6 +423,7 @@ Conditional IDs (include when their trigger applies): `exec-share`, `exec-tco`, 
       <!-- <section id="exec-share"> when a monthly estimate exists -->
       <section id="exec-services"><!-- Primary services --></section>
       <section id="exec-costs"><!-- Cost headline --></section>
+      <!-- <section id="exec-optimization"> when optimization_opportunities[] is non-empty -->
       <!-- <section id="what-if-scenarios"> when scenarios/index.json has ≥2 entries -->
       <section id="exec-timeline"><!-- Timeline --></section>
       <section id="exec-risks"><!-- Top risks --></section>
@@ -404,6 +431,7 @@ Conditional IDs (include when their trigger applies): `exec-share`, `exec-tco`, 
     <div class="appendix">
       <section id="appendix-services"><!-- Appendix A --></section>
       <section id="appendix-costs"><!-- Appendix B --></section>
+      <!-- <section id="appendix-optimization"> when optimization_opportunities[] is non-empty -->
       <section id="appendix-steps"><!-- Appendix C --></section>
       <!-- <section id="appendix-ai"> when AI artifacts exist -->
       <section id="appendix-artifacts"><!-- Appendix E --></section>
@@ -608,7 +636,7 @@ These move from "example in the fixture" to enforced gate. See `references/share
    explicitly distinguish it from total cost of ownership.
 5. **Accessible tables and diagrams.** Every table has a `<caption>` and `scope="col"` on header cells. The architecture diagram is wrapped in `<figure role="img" aria-label="…">` with a `<figcaption>` text alternative.
 6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate in dependency order — estimated AWS run rate $497/mo, BigQuery deferred") in addition to the typography-first verdict headline and plain-text metadata.
-7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate", "workshop scenario comparison" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*`, `what-if-scenarios`, or `decision-summary` section.
+7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-optimization`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-optimization`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate", "workshop scenario comparison" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*`, `what-if-scenarios`, or `decision-summary` section.
 8. **One name per concept.** Use a single consistent label for each recommended choice across the whole report. The recommended Bedrock model and the chosen cost tier keep the same name in the verdict, tables, and appendices (always "Claude Sonnet 5 (recommended)", always "Balanced"). Do not alternate "recommended / selected target / design target / projected" for the same item — one label is how the reader keeps their bearings.
 9. **Ordered action lists.** In `decision-summary`, `Key decisions ahead` and `Next steps` MUST use `<ol class="compact">`, not `<ul>`. The validator fails when either heading is followed by a bullet list. `Migrate if` / `Stay entirely if` remain unordered lists.
 10. **Data first, explanation adjacent.** Never make the reader wade through a how-to-read paragraph or callout to reach the table it explains. Render the data first; put reading guidance in a `<details class="reading-guide">` immediately **after** the table (e.g. "How to read the three cost tiers"). Mandatory caveats that must not be collapsible (the not-comparable rule, baseline-quality labels) attach to the figure they qualify — a `.chip-warn` pill on the metric card plus one line in its `<small>` — rather than a standalone paragraph above the section's data.
@@ -655,6 +683,9 @@ After generating the HTML file, verify:
 19. **Leadership brief and glossary**: When monthly estimates exist,
     `exec-share` is present after the TOC; full reports end with
     `appendix-glossary`, rendered as a two-column table.
+20. **Cost Optimization section**: When `optimization_opportunities[]` is
+    non-empty, `exec-optimization` and `appendix-optimization` are present
+    and TOC-linked. Do not bury the opportunity table only in Appendix B.
 
 **Run automated validator (mandatory when HTML was written):**
 
@@ -670,10 +701,11 @@ python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
   "$MIGRATION_DIR/migration-report.html" \
   --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
   --estimation-ai "$MIGRATION_DIR/estimation-ai.json" \
+  --aws-design "$MIGRATION_DIR/aws-design.json" \
   --migration-dir "$MIGRATION_DIR"
 ```
 
-Pass `--estimation-infra` / `--estimation-ai` only when those files exist in `$MIGRATION_DIR`. Use `--no-readability` only for non-customer test fixtures — not for normal Generate runs.
+Pass `--estimation-infra` / `--estimation-ai` / `--aws-design` only when those files exist in `$MIGRATION_DIR`. Use `--no-readability` only for non-customer test fixtures — not for normal Generate runs.
 
 - On `REPORT_OK`: proceed to Step 5.
 - On `REPORT_FAIL`: **rename** to `migration-report.incomplete.html` (default; do not delete), emit all failure lines to the user, and report to parent: "Report generation incomplete — re-run report step or expand appendix per fixtures/migration-report-reference.html". Do **not** claim a complete report was delivered or present a stub/numbered/jargon report as complete.

