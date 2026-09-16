@@ -1,5 +1,5 @@
 ---
-source_url: https://aws.amazon.com/startups/offers/supabse-updated
+source_url: https://aws.amazon.com/startups/offers/supabase
 title: "$300 Supabase credits for free"
 ---
 

@@ -1,0 +1,4 @@
+jobs:
+  review:
+    steps:
+      - run: echo ${{ github.actor }} ${{ github.triggering_actor }} ${{ github.event.pull_request.user.name }} ${{ github.event.pull_request.user.email }}

@@ -352,9 +352,65 @@ For each PRIMARY resource in `gcp-resource-inventory.json`, map to a dev-tier AW
 
 Sum the dev-tier line items to get `aws_monthly_range_usd.low`. Multiply by 1.5 for `high` (accounts for NAT gateway, data transfer, CloudWatch, and sizing variance).
 
-**If `billing-profile.json` exists:** Set `gcp_monthly_usd` from `summary.total_monthly_spend`. Show both GCP actual and AWS range.
+### Authored-size gate (HARD — do not quote toy dollars)
 
-**If only IaC:** Set `gcp_monthly_usd: null`. Show AWS range only -- never invent GCP spend.
+The table above is a **development-tier stub**. Quoting that sum as "AWS cost" when Terraform authored production sizes is a trust failure (users compare it to their real bill and quit).
+
+**Before writing any dollar range**, scan inventory `config` for **every** resource whose `type` is in the table below — **including SECONDARY**. `google_compute_instance_template`, `google_compute_*_instance_group_manager`, and `google_dataflow_job` are not Priority-1 PRIMARY types; if you only scan PRIMARY, those rows are dead letter.
+
+Fire the gate if **any** row matches. Record every match, then keep at most 5 signals in this **fixed type order** (do not pick by “largest deviation” — units are not comparable): Cloud SQL → Redis → GKE / node pool → Cloud Run → Dataflow → instance template / MIG → others (GCE instance, Filestore, Spanner). Within a type, keep inventory order.
+
+**Normalize before comparing thresholds** — a config field expressed in different units or forms must not let an equivalent size bypass the gate:
+
+- **Cloud Run min instances:** `google_cloud_run_v2_service` sets the minimum on either the service-level `scaling.min_instance_count` or the revision-level `template.scaling.min_instance_count` (read whichever is present; also accept a top-level `min_instance_count`). `google_cloud_run_service` (v1) does not have that field at all — its minimum-instance setting is an annotation: `template.metadata.annotations["autoscaling.knative.dev/minScale"]` or the service-level `metadata.annotations["run.googleapis.com/minScale"]`. Read whichever is present and treat its integer value (annotation values are strings, e.g. `"50"`) as `min_instance_count` for the threshold below.
+- **GKE node count:** evaluate **every** node pool, whether declared as a standalone `google_container_node_pool` resource or as an inline `node_pool { ... }` block (or the default pool) inside `google_container_cluster` — inline blocks are not separate resources, so a per-resource scan misses them. A pool can size itself three ways — fixed `node_count`/`initial_node_count` (no autoscaling block), the `autoscaling.min_node_count`/`max_node_count` form, or the `autoscaling.total_min_node_count`/`total_max_node_count` form (mutually exclusive with the min/max form). **All of these except the `total_*` fields are per-zone counts** — the Google provider defines `node_count` per instance group and `initial_node_count` (including the cluster's default pool) per zone, and `min_node_count`/`max_node_count` are per-zone limits. Only `total_min_node_count`/`total_max_node_count` are pool-wide totals. **Before comparing, convert per-zone counts to totals:** `effective_total = per_zone_count × zone_count`, where `zone_count` is the length of the pool's effective `node_locations` (the pool's own `node_locations`, else the cluster's; default to 1 only when neither is authored). Apply this multiplier to `node_count`, `initial_node_count`, `min_node_count`, and `max_node_count`; use `total_min_node_count`/`total_max_node_count` unchanged. Compare the resulting total against the threshold, so a fixed `node_count = 2` across three `node_locations` (= 6), a per-zone `max_node_count = 2` across three `node_locations` (= 6), and a cluster-wide `total_max_node_count = 6` are each judged on true node count rather than the author's chosen form.
+- **Spanner capacity:** `google_spanner_instance` accepts either `num_nodes` or `processing_units`, and 1 node = 1,000 processing units (Terraform rejects setting both). Convert `processing_units` to node-equivalent (`processing_units / 1000`) before comparing, so `num_nodes = 1` and `processing_units = 1000` evaluate identically.
+
+| Resource type                                                                               | Preview default being compared       | Fire if any authored field is true                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `google_cloud_run_v2_service` / `google_cloud_run_service`                                  | 0.5 vCPU, 1 GB, 1 instance           | Normalized `min_instance_count` (field or annotation, see above) > 1; parsed CPU **> 1** vCPU (`8000m` = 8, `4000m` = 4, bare `2` = 2); memory **> 2Gi** (`16Gi`, `8Gi`)                                                                                                                                                                       |
+| `google_sql_database_instance`                                                              | `db.t4g.micro`, 20 GB, single-AZ     | `disk_size_gb` > 20; `availability_type` is `REGIONAL`; `tier` is not `db-f1-micro` or `db-g1-small`; `master_instance_name` is set (replica); `count` > 1                                                                                                                                                                                     |
+| `google_redis_instance`                                                                     | `cache.t4g.micro` (~1 GB), single-AZ | `memory_size_gb` > 1; `tier` contains `HA` or is `STANDARD` / `STANDARD_HA`                                                                                                                                                                                                                                                                    |
+| `google_container_cluster` / `google_container_node_pool` (each pool, standalone or inline) | 2× `t4g.small`                       | `machine_type` present and does **not** match `*micro*` or `*small*`; the pool-wide totals `total_min_node_count` / `total_max_node_count` (or `gke_node_count`) > 2; **or** any per-zone count (`node_count`, `initial_node_count`, `min_node_count`, `max_node_count`) whose zone-normalized total (`× node_locations` count, see above) > 2 |
+| `google_dataflow_job`                                                                       | not stubbed (omitted service)        | **any presence** of this type fires (this is a missing stub line, not a size miss). Prefer recording `max_workers` / `machine_type` when set                                                                                                                                                                                                   |
+| `google_compute_instance_template`                                                          | `t4g.small`                          | `machine_type` present and does **not** match `*micro*` or `*small*`                                                                                                                                                                                                                                                                           |
+| `google_compute_instance_group_manager` / `google_compute_region_instance_group_manager`    | 1 instance                           | `target_size` > 2; or a linked `google_compute_region_autoscaler` / `google_compute_autoscaler` has `min_replicas` > 2                                                                                                                                                                                                                         |
+| `google_compute_instance`                                                                   | `t4g.small`                          | `machine_type` present and does **not** match `*micro*` or `*small*`                                                                                                                                                                                                                                                                           |
+| `google_filestore_instance`                                                                 | 10 GB                                | `capacity_gb` > 10                                                                                                                                                                                                                                                                                                                             |
+| `google_spanner_instance`                                                                   | 0.5–1 ACU                            | Normalized capacity (`num_nodes`, or `processing_units / 1000` — see above) > 1                                                                                                                                                                                                                                                                |
+
+**Worked normalization cases (pin these so equivalent configs fire identically):**
+
+| Config as authored                                                                                                                             | Normalized value                | Gate fires? |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------- |
+| `google_cloud_run_service` (v1) with `template.metadata.annotations["autoscaling.knative.dev/minScale"] = "50"`, no `min_instance_count` field | `min_instance_count` = 50       | Yes         |
+| `google_cloud_run_service` (v1) with `metadata.annotations["run.googleapis.com/minScale"] = "50"`                                              | `min_instance_count` = 50       | Yes         |
+| `google_cloud_run_v2_service` with `scaling.min_instance_count = 1` (no annotations)                                                           | `min_instance_count` = 1        | No          |
+| `google_cloud_run_v2_service` with revision-level `template.scaling.min_instance_count = 50`, no service-level `scaling`                       | `min_instance_count` = 50       | Yes         |
+| `google_container_node_pool` with `node_count = 20`, `machine_type = "e2-small"`, no `autoscaling` block, single zone                          | 20 × 1 zone = 20                | Yes         |
+| `google_container_node_pool` with `node_count = 2` across 3 `node_locations` (regional pool), no `autoscaling`                                 | 2 × 3 zones = 6                 | Yes         |
+| `google_container_node_pool` with `initial_node_count = 2` across 3 `node_locations`, no `autoscaling`                                         | 2 × 3 zones = 6                 | Yes         |
+| `google_container_node_pool` with `autoscaling { total_min_node_count = 1, total_max_node_count = 20 }`                                        | total max node count = 20       | Yes         |
+| Inline `google_container_cluster { node_pool { node_count = 20, node_config { machine_type = "e2-small" } } }` (not a standalone resource)     | total node count = 20           | Yes         |
+| `google_container_node_pool` with `autoscaling { min_node_count = 1, max_node_count = 2 }`, single zone (no `node_locations`)                  | 2 × 1 zone = 2                  | No          |
+| `google_container_node_pool` with `autoscaling { min_node_count = 1, max_node_count = 2 }` across 3 `node_locations`                           | 2 × 3 zones = 6                 | Yes         |
+| `google_spanner_instance` with `num_nodes = 1`                                                                                                 | node-equivalent = 1             | No          |
+| `google_spanner_instance` with `processing_units = 1000`                                                                                       | node-equivalent = 1000/1000 = 1 | No          |
+| `google_spanner_instance` with `processing_units = 2000`                                                                                       | node-equivalent = 2000/1000 = 2 | Yes         |
+
+If the gate fires:
+
+1. **Do not** compute or store the stub sum. A suppressed quote must never appear as `aws_monthly_range_usd.low` / `.high`.
+2. Set `cost_preview.aws_monthly_range_usd` to `null`.
+3. Set `cost_preview.quote_suppressed` to `true`, `quote_suppressed_reason` to `"authored_sizes_exceed_preview_defaults"`, and `authored_size_signals` to the ordered list from above (`"address: field value"` format, max 5).
+4. Set `cost_preview.disclaimer` to: `"Discover does not quote a monthly AWS range when Terraform sizes exceed the preview's hardcoded development defaults. Estimate after Clarify prices the authored (or user-confirmed) sizes."`
+5. Still set `gcp_monthly_usd` from billing when present (that number is real). Never invent GCP spend.
+
+If the gate does **not** fire, keep the existing stub-range behavior (`quote_suppressed: false` or omit the new fields).
+
+**If `billing-profile.json` exists:** Set `gcp_monthly_usd` from `summary.total_monthly_spend`. Show GCP actual. Show the AWS range **only** when the authored-size gate did not fire.
+
+**If only IaC:** Set `gcp_monthly_usd: null`. Show the AWS range **only** when the authored-size gate did not fire.
 
 **If neither IaC nor billing:** Omit cost preview entirely (`cost_preview: null`).
 
@@ -421,10 +477,52 @@ Write `$MIGRATION_DIR/migration-preview.json`:
 }
 ```
 
+**Suppressed-quote example** (authored-size gate fired — use this shape when `quote_suppressed` is `true`):
+
+```json
+{
+  "preview_version": 1,
+  "computed_at": "<ISO timestamp>",
+  "primary_resource_count": 5,
+  "complexity_signal": "likely_complex",
+  "eligible_for_clarify_fast_path": false,
+  "eligible_for_clarify_simple_path": false,
+  "ai_complexity_signal": null,
+  "services_summary": [
+    { "gcp_type": "google_sql_database_instance", "typical_aws_target": "RDS" },
+    { "gcp_type": "google_redis_instance", "typical_aws_target": "ElastiCache" },
+    { "gcp_type": "google_container_cluster", "typical_aws_target": "EKS" },
+    { "gcp_type": "google_cloud_run_v2_service", "typical_aws_target": "Fargate" }
+  ],
+  "cost_preview": {
+    "gcp_monthly_usd": 44000.00,
+    "aws_monthly_range_usd": null,
+    "quote_suppressed": true,
+    "quote_suppressed_reason": "authored_sizes_exceed_preview_defaults",
+    "authored_size_signals": [
+      "google_sql_database_instance.main: tier db-custom-32-122880",
+      "google_sql_database_instance.main: availability_type REGIONAL",
+      "google_redis_instance.cache: memory_size_gb 100",
+      "google_container_cluster.primary: machine_type e2-standard-16",
+      "google_cloud_run_v2_service.api: min_instance_count 50"
+    ],
+    "disclaimer": "Discover does not quote a monthly AWS range when Terraform sizes exceed the preview's hardcoded development defaults. Estimate after Clarify prices the authored (or user-confirmed) sizes."
+  },
+  "duration_hint": "phased migration — high complexity; confirm after Clarify",
+  "ai_detected": false,
+  "key_decisions_ahead": [
+    "Confirm production DB size and HA requirements before Design",
+    "Target region and deployment model"
+  ]
+}
+```
+
 **Field rules:**
 
 - `cost_preview` is `null` if neither IaC nor billing data was available
 - `cost_preview.gcp_monthly_usd` is `null` if no billing data (IaC-only run)
+- `cost_preview.aws_monthly_range_usd` is `null` when `quote_suppressed` is `true` (authored-size gate). Do not write a stub low/high "for later."
+- `cost_preview.quote_suppressed` / `quote_suppressed_reason` / `authored_size_signals` / `disclaimer` are required when the authored-size gate fired; omit the first three when it did not. When suppressed, `disclaimer` is the gate sentence in step 4 (not the stub “dev-tier ±30%” line). When not suppressed, `disclaimer` stays the existing stub sentence.
 - `ai_detected` is `true` if `ai-workload-profile.json` exists
 - `services_summary` lists only PRIMARY resources, deduplicated by `gcp_type`
 - `eligible_for_clarify_fast_path` is `false` whenever `ai_detected == true`, regardless of infra complexity
@@ -443,7 +541,7 @@ Output this block as part of `discover.md` Step 3's user message (chat only -- n
 | | |
 |---|---|
 | **Services** | [primary_resource_count] resources -> [services_summary as "Fargate, S3"] *(standard pairings)* |
-| **AWS cost (rough)** | ~$[low]-$[high]/mo [vs GCP ~$[gcp]/mo if billing present] *(dev-tier estimate, +-30%)* |
+| **AWS cost (rough)** | [COST_ROW] |
 | **Path shape** | [duration_hint] |
 | **AI** | [if ai_detected: "[model IDs] detected -- AI migration path will run" else "None detected"] |
 | **Decisions ahead** | [key_decisions_ahead joined by "; "] |
@@ -456,3 +554,8 @@ Output this block as part of `discover.md` Step 3's user message (chat only -- n
 ```
 
 Do NOT write this to a file. Chat output only.
+
+**COST_ROW (HARD):** Fill the AWS cost cell from `cost_preview` — do not improvise.
+
+- If `quote_suppressed` is true: `Not quoted at Discover — Terraform sizes are above the preview defaults (e.g. [first authored_size_signal]). Full AWS number in Estimate after you confirm sizing.` If `gcp_monthly_usd` is set, append a second sentence: `Your current GCP bill is ~$[gcp]/mo.` **Never** print `~$[low]-$[high]` or "dev-tier estimate" in this row when the quote is suppressed.
+- Else: `~$[low]-$[high]/mo` [vs GCP ~$[gcp]/mo if billing present] `*(dev-tier estimate, +-30%)*`
