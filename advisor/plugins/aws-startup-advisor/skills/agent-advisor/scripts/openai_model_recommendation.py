@@ -487,17 +487,26 @@ def _feature_findings(detected_features, requirements, path=None, target_model=N
                     "prompt + validation; the OpenAI parse() helper is not the selected path.",
                 )
             )
-    if path != "mantle_openai_chat" and (
-        requirements.get("uses_n") or "multiple_candidates_n" in detected
-    ):
-        deltas.append(
-            _delta(
-                "responses_no_n",
-                "feature",
-                "The Responses API does not support n; request multiple candidates with "
-                "repeated calls.",
+    if requirements.get("uses_n") or "multiple_candidates_n" in detected:
+        if path == "mantle_openai_chat":
+            if target_model and target_model.get("family") == "openai_gpt_6":
+                tuning.append(
+                    _finding(
+                        "multiple_candidates_n_unverified", "[TUNE]",
+                        "Astra Chat Completions support for n has not been verified.",
+                        "Probe n on the selected model and endpoint before preserving it; "
+                        "if unsupported, request multiple candidates with repeated calls.",
+                    )
+                )
+        else:
+            deltas.append(
+                _delta(
+                    "responses_no_n",
+                    "feature",
+                    "The Responses API does not support n; request multiple candidates with "
+                    "repeated calls.",
+                )
             )
-        )
     if "tool_or_function_calling" in detected:
         deltas.append(
             _delta(

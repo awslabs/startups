@@ -183,10 +183,10 @@ Never state either number without stating the inference option it belongs to.
 
 ### GPT-6 Astra — Standard tier, verified 2026-09-09
 
-| Context tier | In-Region / Geo (in · out) | Global CRIS (in · out) | Cache write / read (In-Region / Geo) | Cache write / read (Global) |
-| ------------ | -------------------------- | ---------------------- | ------------------------------------ | --------------------------- |
-| Short (272K) | 11.00 · 55.00              | 10.00 · 50.00          | 13.75 / 1.10                         | 12.50 / 1.00                |
-| Long (1.05M) | 22.00 · 82.50              | 20.00 · 75.00          | 27.50 / 2.20                         | 25.00 / 2.00                |
+| Context tier | In-Region / Geo (in · out) | Global CRIS (in · out) | 30m cache write / read (In-Region / Geo) | 30m cache write / read (Global) |
+| ------------ | -------------------------- | ---------------------- | ---------------------------------------- | ------------------------------- |
+| Short (272K) | 11.00 · 55.00              | 10.00 · 50.00          | 13.75 / 1.10                             | 12.50 / 1.00                    |
+| Long (1.05M) | 22.00 · 82.50              | 20.00 · 75.00          | 27.50 / 2.20                             | 25.00 / 2.00                    |
 
 Above 272K, use the long-context rates. Astra costs **2.5x Sol** at the same context tier and
 inference option using Sol's currently recorded promotional rates. Recommend Astra for capability;

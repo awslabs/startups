@@ -685,6 +685,22 @@ def test_astra_mantle_outside_oregon_requires_decision():
     assert "model_region_unavailable" in _codes(rec["blocks"])
 
 
+@pytest.mark.parametrize("signals", [
+    {"requirements": {"uses_n": True}},
+    {"detected_features": ["multiple_candidates_n"]},
+])
+def test_astra_chat_n_requires_verification_without_responses_reshape(signals):
+    rec = oai.recommend_openai_workload(
+        _workload(source={"model_ids": ["gpt-6-astra"], "api_surface": "chat_completions"},
+                  **signals),
+        "us-west-2", OPENAI_CATALOG,
+    )
+    assert rec["api_path"] == "mantle_openai_chat"
+    assert "multiple_candidates_n_unverified" in _codes(rec["tuning"])
+    assert "responses_no_n" not in _delta_codes(rec)
+    assert "chat_completions_to_responses_required" not in _codes(rec["blocks"])
+
+
 def test_astra_runtime_preserves_model_with_sourced_streaming_and_limits():
     rec = _recommend(_workload(
         source={"model_ids": ["gpt-6-astra"]},

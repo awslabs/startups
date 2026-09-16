@@ -50,14 +50,14 @@ Apply in order. Stop at the first tier that resolves.
 If the detected model is GPT-6 Astra, GPT-5.6 Sol / Terra / Luna, GPT-5.5, or GPT-5.4, the target is **the same model on
 Bedrock**.
 
-| Source model  | Bedrock target | Model ID (mantle / runtime CRIS)                        | Assessment                                                                  |
-| ------------- | -------------- | ------------------------------------------------------- | --------------------------------------------------------------------------- |
-| GPT-6 Astra   | GPT-6 Astra    | See the canonical catalog's Astra access paths          | `strong_migrate` after region/API checks; price the chosen inference option |
-| GPT-5.6 Sol   | GPT-5.6 Sol    | `openai.gpt-5.6-sol` / `us.` `global.` prefixed         | `strong_migrate` — same model; parity on Global CRIS, else +10%             |
-| GPT-5.6 Terra | GPT-5.6 Terra  | `openai.gpt-5.6-terra` / `us.` `in.` `global.` prefixed | `strong_migrate` — same model; parity on Global CRIS, else +10%             |
-| GPT-5.6 Luna  | GPT-5.6 Luna   | `openai.gpt-5.6-luna` / `us.` `in.` `global.` prefixed  | `strong_migrate` — same model; parity on Global CRIS, else +10%             |
-| GPT-5.5       | GPT-5.5        | `openai.gpt-5.5` (mantle only)                          | `strong_migrate` — same model, ~10% over OpenAI std                         |
-| GPT-5.4       | GPT-5.4        | `openai.gpt-5.4` (mantle only)                          | `strong_migrate` — same model, ~10% over OpenAI std                         |
+| Source model  | Bedrock target | Model ID (mantle / runtime CRIS)                        | Assessment                                                                                                           |
+| ------------- | -------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| GPT-6 Astra   | GPT-6 Astra    | `openai.gpt-6-astra` / `us.` `global.` prefixed         | `strong_migrate` after the Astra region/API gate in `shared/openai-on-bedrock.md`; price the chosen inference option |
+| GPT-5.6 Sol   | GPT-5.6 Sol    | `openai.gpt-5.6-sol` / `us.` `global.` prefixed         | `strong_migrate` — same model; parity on Global CRIS, else +10%                                                      |
+| GPT-5.6 Terra | GPT-5.6 Terra  | `openai.gpt-5.6-terra` / `us.` `in.` `global.` prefixed | `strong_migrate` — same model; parity on Global CRIS, else +10%                                                      |
+| GPT-5.6 Luna  | GPT-5.6 Luna   | `openai.gpt-5.6-luna` / `us.` `in.` `global.` prefixed  | `strong_migrate` — same model; parity on Global CRIS, else +10%                                                      |
+| GPT-5.5       | GPT-5.5        | `openai.gpt-5.5` (mantle only)                          | `strong_migrate` — same model, ~10% over OpenAI std                                                                  |
+| GPT-5.4       | GPT-5.4        | `openai.gpt-5.4` (mantle only)                          | `strong_migrate` — same model, ~10% over OpenAI std                                                                  |
 
 Then apply the **region gate** below. Record `model_change: false` and the chosen path in
 `aws-design-ai.json` → `ai_architecture.code_migration`: `migration_path: "mantle_openai_responses"` for the
@@ -149,17 +149,17 @@ the Pricing MCP does not carry GPT-5.x (see `shared/openai-on-bedrock.md`).
 > reduction, which AWS lists as promotional through at least Nov 21, 2026. The pre-reduction in-region
 > rate was $5.50/$33.00; GPT-5.5 keeps that rate.
 
-| Bedrock GPT baseline | Price        | Cross-family alternative | Price        | Delta                  |
-| -------------------- | ------------ | ------------------------ | ------------ | ---------------------- |
+| Bedrock GPT baseline | Price         | Cross-family alternative | Price        | Delta                                 |
+| -------------------- | ------------- | ------------------------ | ------------ | ------------------------------------- |
 | GPT-6 Astra          | 11.00 / 55.00 | Claude Opus 4.8          | 5.00 / 25.00 | Opus 55% cheaper; evaluate capability |
-| GPT-5.6 Sol          | 4.40 / 22.00 | Claude Opus 4.8          | 5.00 / 25.00 | Sol 12% cheaper        |
-| GPT-5.6 Terra        | 2.20 / 13.20 | Claude Sonnet 5          | 2.00 / 10.00 | Sonnet 20% cheaper     |
-| GPT-5.5              | 5.50 / 33.00 | Claude Sonnet 5          | 2.00 / 10.00 | Sonnet 68% cheaper     |
-| GPT-5.5              | 5.50 / 33.00 | Claude Opus 4.8          | 5.00 / 25.00 | Opus 20% cheaper       |
-| GPT-5.4              | 2.75 / 16.50 | Claude Sonnet 5          | 2.00 / 10.00 | Sonnet 36% cheaper     |
-| GPT-5.6 Luna         | 0.22 / 1.32  | Claude Haiku 4.5         | 1.00 / 5.00  | **Luna 75% cheaper**   |
-| GPT-5.6 Luna         | 0.22 / 1.32  | Nova Lite                | 0.06 / 0.24  | Nova Lite 80% cheaper  |
-| GPT-5.6 Luna         | 0.22 / 1.32  | Nova Micro               | 0.035 / 0.14 | Nova Micro 88% cheaper |
+| GPT-5.6 Sol          | 4.40 / 22.00  | Claude Opus 4.8          | 5.00 / 25.00 | Sol 12% cheaper                       |
+| GPT-5.6 Terra        | 2.20 / 13.20  | Claude Sonnet 5          | 2.00 / 10.00 | Sonnet 20% cheaper                    |
+| GPT-5.5              | 5.50 / 33.00  | Claude Sonnet 5          | 2.00 / 10.00 | Sonnet 68% cheaper                    |
+| GPT-5.5              | 5.50 / 33.00  | Claude Opus 4.8          | 5.00 / 25.00 | Opus 20% cheaper                      |
+| GPT-5.4              | 2.75 / 16.50  | Claude Sonnet 5          | 2.00 / 10.00 | Sonnet 36% cheaper                    |
+| GPT-5.6 Luna         | 0.22 / 1.32   | Claude Haiku 4.5         | 1.00 / 5.00  | **Luna 75% cheaper**                  |
+| GPT-5.6 Luna         | 0.22 / 1.32   | Nova Lite                | 0.06 / 0.24  | Nova Lite 80% cheaper                 |
+| GPT-5.6 Luna         | 0.22 / 1.32   | Nova Micro               | 0.035 / 0.14 | Nova Micro 88% cheaper                |
 
 Findings worth surfacing to users:
 
