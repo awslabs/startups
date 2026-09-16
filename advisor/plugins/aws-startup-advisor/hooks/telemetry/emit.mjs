@@ -177,7 +177,12 @@ function consentGrantedFor(runDir) {
 
 // The state file's mtime, not its agent-written last_updated field, is compared
 // with the consent record's timestamp: the mtime is set by the OS and cannot be
-// mistyped by the agent. Unknown on either side means "not before".
+// mistyped by the agent. Unknown on either side means "not before". The slack
+// absorbs coarse filesystem timestamps and same-moment writes: a state file
+// written within two seconds of consent is a live run, and under-reporting a
+// live run costs more than reporting two seconds of history.
+const PRE_CONSENT_SLACK_MS = 2_000;
+
 function predatesConsent(runDir, statusFile) {
   const consentedAt = Date.parse(readJson(consentFileFor(runDir))?.consentedAt ?? "");
   let mtime;
@@ -186,7 +191,7 @@ function predatesConsent(runDir, statusFile) {
   } catch {
     return false;
   }
-  return Number.isFinite(consentedAt) && mtime < consentedAt;
+  return Number.isFinite(consentedAt) && mtime < consentedAt - PRE_CONSENT_SLACK_MS;
 }
 
 // The skills routinely cd into .migration/<id>/ to work with relative paths, so

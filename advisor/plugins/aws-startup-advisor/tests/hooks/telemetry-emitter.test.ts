@@ -71,12 +71,13 @@ function phaseStatus(overrides: Record<string, unknown> = {}) {
   };
 }
 
+// Consent is written before the state file, the order `_init` uses (run
+// directory, consent, then phase status), so the run reads as live rather than
+// as pre-consent history.
 function makeProject(status: Record<string, unknown>, consent: 'granted' | 'revoked' | null = 'granted'): Project {
   const root = mkdtempSync(join(tmpdir(), 'emit-project-'));
   const runDir = join(root, '.migration', '0226-1430');
   mkdirSync(runDir, { recursive: true });
-  const statusFile = join(runDir, '.phase-status.json');
-  writeFileSync(statusFile, JSON.stringify(status, null, 2));
   const consentFile = join(root, '.migration', 'telemetry.json');
   if (consent) {
     writeFileSync(
@@ -84,6 +85,8 @@ function makeProject(status: Record<string, unknown>, consent: 'granted' | 'revo
       JSON.stringify({ consent, installId: RUN_ID, consentedAt: new Date().toISOString(), version: 1 }),
     );
   }
+  const statusFile = join(runDir, '.phase-status.json');
+  writeFileSync(statusFile, JSON.stringify(status, null, 2));
   return { root, runDir, stateDir: mkdtempSync(join(tmpdir(), 'emit-state-')), statusFile, consentFile };
 }
 
@@ -206,6 +209,27 @@ describe('telemetry emitter', () => {
     try {
       // Act + Assert
       assert.deepEqual(await reconcile(p), []);
+    } finally {
+      cleanup(p);
+    }
+  });
+
+  it('reports a run whose state was written moments before consent: a near tie is live, not history', async () => {
+    // Arrange: state first, consent 50 ms later, as a slow host or coarse
+    // filesystem timestamp would order them
+    const p = makeProject(phaseStatus(), null);
+    try {
+      await new Promise((r) => setTimeout(r, 50));
+      writeFileSync(
+        p.consentFile,
+        JSON.stringify({ consent: 'granted', installId: RUN_ID, consentedAt: new Date().toISOString(), version: 1 }),
+      );
+
+      // Act
+      const events = await reconcile(p);
+
+      // Assert
+      assert.equal(events.length, 2, 'RUN_STARTED and DISCOVER are reported');
     } finally {
       cleanup(p);
     }
