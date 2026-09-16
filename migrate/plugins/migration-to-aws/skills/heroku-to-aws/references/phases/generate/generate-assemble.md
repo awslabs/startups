@@ -61,17 +61,17 @@ Terraform/docs).
 The Terraform **policy gate** is not optional, and it is enforced by `generate.md`
 `_postconditions` — a **read-only** gate the interpreter runs in the **main window**
 (`INTERPRETER.md` § `_exec` step 4). The policy checker run, the budget-3 `.tf`
-fix-and-retry loop, and the verdict merge all happen **before** this gate, in
-`generate.md`'s "Finish Generate in the main window (policy reconcile)" step — that is
+fix-and-retry loop, and the verdict write all happen **before** this gate, **in-fragment**
+inside the dispatched `rwx` Generate worker (see `generate-terraform.md` Step 12) — that is
 where `terraform/` may be edited. By the time the gate runs, the retry budget is already
-spent. The gate only does `_validate_json` + assert `policy_status == "POLICY_OK"`.
-If `validation-report.json` is missing/invalid or its reconciled `policy_status` is
-`"POLICY_FAIL"` (or `not_run`), the gate emits `GATE_FAIL`. Per `INTERPRETER.md`
-§ `_postconditions`, this assembler does **not** modify `.tf` files, edit the verdict, or
-advance — it halts and surfaces the residual violations. Recovery is a **human edit of the
-named `.tf` sites followed by a targeted re-run of `validate-terraform-policy.py`**, not a
-full Generate re-run: re-dispatching Generate re-authors `terraform/` from scratch under the
-shell-less `rw` worker and would wipe any manual fixes.
+spent and `validation-report.json` carries the checker's real verdict. The gate only does
+`_validate_json` + assert `policy_status == "POLICY_OK"`. If `validation-report.json` is
+missing/invalid or its `policy_status` is `"POLICY_FAIL"` (or `not_run`), the gate emits
+`GATE_FAIL`. Per `INTERPRETER.md` § `_postconditions`, this assembler does **not** modify
+`.tf` files, edit the verdict, or advance — it halts and surfaces the residual violations.
+Recovery is a **human edit of the named `.tf` sites followed by a targeted re-run of the
+tf-best-practices policy checker**, not a full Generate re-run: re-dispatching Generate
+re-authors `terraform/` from scratch under the worker and would wipe any manual fixes.
 
 ---
 

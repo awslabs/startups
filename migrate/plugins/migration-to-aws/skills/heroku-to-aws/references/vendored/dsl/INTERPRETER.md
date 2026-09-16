@@ -247,7 +247,7 @@ source files down to one small inventory artifact.
 ```yaml
 _interactive: false # REQUIRED to dispatch: the phase's work does not prompt the user
 _exec:
-  _agent: rw # capability tier: ro | rw | git
+  _agent: rw # capability tier: ro | rw | rwx | git
 ```
 
 `_exec` may only be declared on a phase that also declares `_interactive: false`.
@@ -293,13 +293,18 @@ ships these workers under `agents/`; the tier maps to the worker name:
 | -------- | ------------------------------------------- | ----------------------------- |
 | `ro`     | `migration-to-aws:generic-phase-worker-ro`  | Read, Grep, Glob              |
 | `rw`     | `migration-to-aws:generic-phase-worker-rw`  | Read, Grep, Glob, Write, Edit |
+| `rwx`    | `migration-to-aws:generic-phase-worker-rwx` | Read, Grep, Glob, Write, Edit, Bash |
 | `git`    | `migration-to-aws:generic-phase-worker-git` | rw + git                      |
 
 (Only the workers a skill actually needs are shipped. A phase may only name a tier
 whose worker file is present on disk — CI rejects an `_exec._agent` that names a tier
 with no `agents/generic-phase-worker-<tier>.md`, since dispatching to an absent worker
 would fail at runtime. `rw` deliberately excludes shell/Bash so it cannot reach `git`
-— that keeps the `rw`/`git` distinction real.)
+— that keeps the `rw`/`git` distinction real. `rwx` is `rw` plus a SCOPED shell whose
+sole purpose is running the read-only `tf-best-practices` policy checker in-fragment
+(e.g. `python3 .../validate-terraform-policy.py`); it is still not a `git` tier — a host
+that can scope commands SHOULD restrict its Bash to the checker (e.g. `Bash(python3:*)`),
+and the `rwx` worker's prompt binds that scope where the host cannot enforce it.)
 
 To dispatch, invoke the tier's worker via the host's Agent/subagent tool with a
 context block that tells the generic worker WHICH phase to run and where. Build these
@@ -342,6 +347,7 @@ ordered, closed vocabulary (least → most privileged):
 | ----- | ----------------------------------------------- | ----------------------------------------------- |
 | `ro`  | read-only (Read / Grep / Glob / read-only Bash) | analysis-only phases that produce NO artifact   |
 | `rw`  | `ro` + Write / Edit (file creation in the run)  | a phase that writes its `_produces` artifact(s) |
+| `rwx` | `rw` + a scoped shell (run the tf-best-practices policy checker); no `git`  | a producing phase that must run the Terraform policy checker in-fragment |
 | `git` | `rw` + git operations (commit / branch / push)  | a phase that mutates the user's repo history    |
 
 **Derive the minimum, then declare it.** A phase that `_produces` any artifact does
@@ -357,7 +363,7 @@ The validator checks the STRUCTURE of `_exec` (never the runtime tier — that i
 harness's job, see the platform-asymmetry note):
 
 1. `_exec` sub-keys are in the closed set (`_agent`); unknown sub-keys are a typo error.
-2. `_agent` is present and ∈ `{ro, rw, git}`.
+2. `_agent` is present and ∈ `{ro, rw, rwx, git}`.
 3. **Derived-minimum:** a producing phase (`_produces` non-empty) cannot declare `ro`.
 4. **Non-interactive affirmation:** the phase MUST declare `_interactive: false`. A
    phase with `_interactive: true` or no `_interactive` key cannot carry `_exec` —

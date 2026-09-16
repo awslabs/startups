@@ -268,6 +268,7 @@ privileged):
 | ----- | ---------------------------------------- | -------------------------------------------- |
 | `ro`  | read-only (Read / Grep / Glob / ro Bash) | analysis phases that produce NO artifact     |
 | `rw`  | `ro` + Write / Edit                      | a phase that writes its `_produces`          |
+| `rwx` | `rw` + a scoped shell (run the tf policy checker); no `git` | a producing phase that runs the Terraform policy checker in-fragment |
 | `git` | `rw` + git ops                           | a phase that mutates the user's repo history |
 
 The author DECLARES the tier; CI verifies it is not below the minimum derivable from

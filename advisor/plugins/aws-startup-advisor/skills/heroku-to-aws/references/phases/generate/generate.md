@@ -38,7 +38,7 @@ _produces:
 _advances_to: complete
 _interactive: false
 _exec:
-  _agent: rw
+  _agent: rwx
 _preconditions:
   - _check_phase_completed: estimate
     _on_failure: _halt_and_inform
@@ -61,7 +61,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: [validation-report.json]
     _on_failure: _halt_and_inform
-  - _assert: "validation-report.json has $schema 'validation-report/v2' and its policy_status is 'POLICY_OK' (reconciled by the main-window 'Finish Generate' policy step that runs BEFORE this gate; a worker-written not_run placeholder is never accepted). POLICY_FAIL or not_run fails closed. This gate is READ-ONLY: do not run the checker, edit .tf, or edit the verdict here."
+  - _assert: "validation-report.json has $schema 'validation-report/v2' and its policy_status is 'POLICY_OK' (produced in-fragment by the dispatched rwx worker, which ran the tf-best-practices policy checker + fix-and-retry against terraform/ before returning; a not_run placeholder is never accepted). POLICY_FAIL or not_run fails closed. This gate is READ-ONLY: do not run the checker, edit .tf, or edit the verdict here."
     _on_failure: _halt_and_inform
   - _assert: "at least one domain .tf file exists beyond the core files"
     _on_failure: _halt_and_inform
@@ -96,8 +96,9 @@ Transform the design + estimate into migration artifacts in `$MIGRATION_DIR/`: a
 `terraform/` directory, `MIGRATION_GUIDE.md`, `README.md`, `migration-report.html`
 (stakeholder summary + optional what-if scenarios), database migration scripts,
 `generation-warnings.json`, and `validation-report.json` (the Terraform
-validation + policy-gate verdict the main-window "Finish Generate" step
-reconciles before the read-only completion gate reads it).
+policy-gate verdict the Generate worker produces in-fragment — it runs the
+tf-best-practices policy checker against `terraform/` before returning, and the
+read-only completion gate then reads that verdict).
 Terraform for each Elastic Beanstalk web service
 is intentionally incomplete until the customer supplies that app's required
 application port and health check path. Non-web Elastic Beanstalk services do not
@@ -126,44 +127,8 @@ FORBIDDEN — Do NOT include ANY of:
 - Discovering new Heroku resources (Phase 1 is done)
 - Feedback collection (Phase 6 handles this)
 
-**Your ONLY job: Transform the design into migration artifacts. Nothing else** — with one
-main-window exception: running the Terraform policy checker and applying its `fix_hint`s to the
-generated `terraform/` is part of _producing_ the artifacts (the dispatched worker had no shell
-to do it), so the "Finish Generate" step below is in scope. Design/estimate decisions stay final.
-
----
-
-## Finish Generate in the main window (policy reconcile) — BEFORE the gate
-
-This is **leftover Generate work**, not a gate check: the dispatched `_exec._agent: rw` worker
-has no shell (`INTERPRETER.md` § capability tiers — `rw` excludes Bash), so it could not run the
-policy checker and left `policy_status: "not_run"`. The interpreter finishes that work in the MAIN
-window (the only place with a shell), **after the worker returns and before running
-`_postconditions`**. This step MAY edit `terraform/`; the `_postconditions` gate below MUST NOT
-(per `INTERPRETER.md` § `_postconditions`, a gate never mutates artifacts to pass).
-
-1. Run the policy checker against the generated Terraform (write the verdict to a temp sidecar):
-
-   ```
-   python3 "$PLUGIN_ROOT/skills/tf-best-practices/scripts/validate-terraform-policy.py" \
-     "$MIGRATION_DIR/terraform" --json "$MIGRATION_DIR/validation-report.policy.json"
-   ```
-
-2. **On `POLICY_FAIL`, apply the fix-and-retry loop here (budget 3):** read `violations[]`, edit
-   the named `.tf` sites via each `fix_hint`, re-run the checker. This is the ONLY place the
-   `.tf` retry happens.
-
-3. Merge the final verdict into `validation-report.json`: set `policy_status` +
-   `policy_violations[]` from the last checker run, overwriting the worker's `not_run` placeholder.
-   **Leave `status: "passed_degraded_offline"` and `offline_fallback_used: true`** — this step runs
-   only the policy stage, never `terraform fmt/init/validate`, so claiming `status: "passed"` would
-   be false; per the v2 schema the policy verdict is recorded independently of the offline status.
-   Then **delete the `validation-report.policy.json` sidecar** (it is a temp input to the merge,
-   not a second verdict artifact).
-
-4. If the checker cannot run at all (no shell on the host), leave `policy_status: "not_run"`.
-
-Then the `_postconditions` gate runs (read-only): `_validate_json` + the `policy_status ==
-"POLICY_OK"` `_assert`. A residual `POLICY_FAIL` or `not_run` fails the assert → `GATE_FAIL`
-(fail-closed: the gate never certifies a policy pass it could not confirm). The gate does not
-edit anything.
+**Your ONLY job: Transform the design into migration artifacts. Nothing else.** Running the
+tf-best-practices policy checker and applying its `fix_hint`s to the generated `terraform/` is
+part of _producing_ the artifacts, so it happens in-fragment (Generate is dispatched at
+`_exec._agent: rwx`, which grants the scoped shell the checker needs). Design/estimate decisions
+stay final.
