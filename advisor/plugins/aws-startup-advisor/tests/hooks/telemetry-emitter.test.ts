@@ -15,6 +15,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { readFileSync as readText } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 const EMIT = join(import.meta.dirname, '../../hooks/telemetry/emit.mjs');
@@ -291,5 +292,33 @@ describe('telemetry emitter', () => {
     } finally {
       cleanup(p);
     }
+  });
+});
+
+// The consent step is written out in two places: the shared interpreter's _init,
+// which the DSL-governed skills run, and gcp-to-aws's own discover.md, which does
+// its run setup without the interpreter. AppSec approves one wording, so the two
+// must not drift. Compared from "Locate the emitter" to the ordering sentence,
+// with indentation removed, since the two files nest the step differently.
+describe('consent step wording', () => {
+  const SKILLS = join(import.meta.dirname, '../../skills');
+  const consentStep = (file: string) => {
+    const text = readText(file, 'utf8');
+    const start = text.indexOf('Locate the emitter.');
+    const end = text.indexOf('This ordering (run directory first', start);
+    assert.ok(start !== -1 && end !== -1, `consent step not found in ${file}`);
+    return text
+      .slice(start, end)
+      .split('\n')
+      .map((line) => line.replace(/^\s+/, ''))
+      .join('\n');
+  };
+
+  it('is identical in the shared interpreter and in gcp-to-aws discover.md', () => {
+    // Act + Assert
+    assert.equal(
+      consentStep(join(SKILLS, 'gcp-to-aws/references/phases/discover/discover.md')),
+      consentStep(join(SKILLS, 'shared/dsl/INTERPRETER.md')),
+    );
   });
 });
