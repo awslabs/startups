@@ -2609,3 +2609,42 @@ plumbing — same as gcp.
 **Still Terraform-first for INFRA.** This change does not touch the infra path; it adds the
 app-code-only lane gcp has. A mixed repo (IaC + app code) is unaffected — both fragments run and
 the inventory is written as today.
+
+### 19.13 [DECIDED] Assess-complete handoff — emit DECISION.md at the decision gate (issue #292 item 3)
+
+Colleague issue awslabs/startups#292 (a pre-Azure convergence plan, written before it knew
+azure-to-aws had already been built) item 3: **standardize the Assess handoff** so a downstream
+AI-rewrite path can consume an Assess-complete run from ANY source-cloud skill, not just gcp.
+The standard signal is a tuple: `run_mode: "decide"` + `current_phase: "complete"` + a
+`DECISION.md` (the Slack/GitHub-friendly decision marker) — the same shape gcp emits at its
+`estimate.md` decision gate (`estimate.md:192-204`, rendered via shared `report-decision-core.md`).
+
+**Conformance found (2026-09-15):** azure already emitted the `run_mode`/`current_phase` tuple on
+option A, but produced **no `DECISION.md`** — so an Assess-complete azure run was not recognisable
+by a consumer keyed on gcp's marker. That is the item-3 gap for OUR half.
+
+**Our half — DONE:** `estimate-assemble.md` option A now writes `$MIGRATION_DIR/DECISION.md`
+(Step 3a) — plain Markdown, no HTML: verdict headline, cost table (current Azure vs projected AWS,
+floor/credibility caveats verbatim), migrate-if/stay-if, timeline band, top risks, assumptions,
+CTA line. `DECISION.md` added to `estimate.md` + `estimate-assemble.md` `_produces` and gated by a
+postcondition (`WHEN run_mode == decide, DECISION.md exists`). It is built from the artifacts that
+exist at decision time (preferences + aws-design*/estimation-*), so it needs no new renderer.
+Content matches gcp's `DECISION.md` twin spec (`report-decision-core.md` line 22).
+
+**Deferred (a consumer-contract file, same class as pricing-cache/openai-on-bedrock §19.4/§19.11):**
+the full HTML `decision-report.html` twin. gcp renders it via shared `report-decision-core.md`,
+which is gcp-AUTHORED (not canonical, not vendored in azure). Vendoring it is the natural companion
+to the other shared consumer files and is a presentation upgrade — `DECISION.md` is the
+load-bearing handoff marker and stands alone.
+
+**NOT our half — the other side of item 3 (flag to the colleague, do NOT edit unilaterally):**
+`llm-to-bedrock` delegates Assess by a HARDCODED cross-skill call to gcp-to-aws (its Step 0b checks
+`../gcp-to-aws/SKILL.md` and refuses to run without it; its description says "REQUIRES the
+gcp-to-aws skill"). It has no awareness of azure-to-aws. For an AI-led entry ("migrate my Azure
+OpenAI code to Bedrock") to route Assess to azure-to-aws, `llm-to-bedrock` must learn to select the
+Assess provider by source cloud and read back the SAME tuple + `DECISION.md` + aws-design-ai.json.
+That edits a sibling skill we do not own (it is #290's territory) and it raises a design question:
+azure-to-aws already has a SELF-CONTAINED AI track (discover-app-code → clarify-ai → design-ai →
+estimate-ai → generate-artifacts-ai), so an Azure AI user does not NEED llm-to-bedrock. Whether
+azure should ALSO be a delegated Assess provider behind llm-to-bedrock (two doors to the same room)
+is an owner/colleague decision, recorded here, not made in code.

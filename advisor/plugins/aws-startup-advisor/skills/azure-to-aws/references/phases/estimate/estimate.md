@@ -31,6 +31,7 @@ _assemble:
 _produces:
   - estimation-infra.json
   - estimation-ai.json
+  - DECISION.md
 _advances_to: generate
 _re_entry_guard:
   _stale_if_completed: generate
@@ -84,6 +85,8 @@ _postconditions:
   - _assert: "WHEN ai-workload-profile.json exists: estimation-ai.json exists, validates, and carries pricing_source (cached|live|cached_fallback|unavailable), cost_comparison with current_azure_monthly and projected_bedrock_monthly, and a recommendation whose path is migrate_optimized, migrate_phased, or stay. Traditional-AI workloads (document_extraction/image_analysis/speech_transcription) appear in services_not_estimated[], not in the token cost. When the profile is absent this is vacuously satisfied"
     _on_failure: _halt_and_inform
   - _assert: "run_mode is set in .phase-status.json to either 'decide' or 'decide_and_execute' — the decision gate was presented and answered"
+    _on_failure: _halt_and_inform
+  - _assert: "WHEN the user chose option A (run_mode == 'decide', current_phase == 'complete'): DECISION.md exists at $MIGRATION_DIR/DECISION.md — the plain-Markdown decision marker (verdict headline, cost table, migrate-if/stay-if, timeline band, top risks, assumptions, CTA line; no HTML). This is the standardized Assess-complete handoff artifact a downstream AI-rewrite path (e.g. llm-to-bedrock) reads alongside the run_mode/current_phase tuple. WHEN run_mode == 'decide_and_execute' (option C) it need not exist yet — Generate will produce the full report. See plan §19.13."
     _on_failure: _halt_and_inform
 _forbids_files:
   - README.md

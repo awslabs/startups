@@ -7,6 +7,7 @@ _reads:
 _produces:
   - estimation-infra.json
   - estimation-ai.json
+  - DECISION.md
 _knowledge:
   - { file: references/vendored/estimate/estimation-infra.schema.json }
   - { file: references/vendored/state/phase-status.schema.json }
@@ -99,12 +100,46 @@ no shared schema change.
 
 | Choice | `run_mode` | `current_phase` | `phases.workshop` | Then |
 | ------ | ---------- | --------------- | ----------------- | ---- |
-| **A** — done for now | `"decide"` | `"complete"` | `"completed"` (declined) | Close out. `phases.generate` **stays** `"pending"`: that combination means "decision complete, execution available on request" |
+| **A** — done for now | `"decide"` | `"complete"` | `"completed"` (declined) | **Write `DECISION.md` (Step 3a below)**, then close out. `phases.generate` **stays** `"pending"`: that combination means "decision complete, execution available on request" |
 | **B** — what-if workshop | `"decide"` | stays `"estimate"` | `"in_progress"` | Enter the `workshop` sidebar. **Re-present this gate when the sidebar resolves** (options A and C; the active scenario carries into either). Never advance to Generate from inside the sidebar |
 | **C** — generate | `"decide_and_execute"` | `"generate"` | `"completed"` (declined) | Continue to Generate |
 
 Use the read-merge-write Phase Status Update Protocol, and set `phases.estimate`
 to `"completed"` in the same write.
+
+### Step 3a — On option A, write `DECISION.md` (the Assess-complete handoff marker)
+
+Option A is a completed Assess: the customer has a design and a costed decision but no
+execution artifacts. Write `$MIGRATION_DIR/DECISION.md` — a plain-Markdown decision report
+(Slack/GitHub-friendly, **no HTML tags**) built from the artifacts that exist now
+(`preferences.json`, `aws-design.json` and/or `aws-design-ai.json`, `estimation-infra.json`
+and/or `estimation-ai.json`). This is the standardized "assessment is done, here is the
+decision" marker that a downstream AI-rewrite path reads — it pairs with the
+`run_mode: "decide"` + `current_phase: "complete"` tuple so any consumer can recognise an
+Assess-complete azure run the same way it recognises a gcp one.
+
+Content (match gcp-to-aws's `DECISION.md` twin — same shape, Azure wording):
+
+1. **Verdict headline** — the recommendation in one line (migrate / migrate-with-conditions /
+   stay), from `estimation-*.json` `recommendation`.
+2. **Cost table** — current Azure monthly vs projected AWS monthly (1:1 lift and right-sized),
+   with the floor/credibility caveats carried verbatim from the estimate; for an AI-only run,
+   the Bedrock projection and the source-vs-target comparison from `estimation-ai.json`.
+3. **Migrate-if / Stay-if** — the conditions under which the recommendation holds.
+4. **Timeline band** — `~[N–M] weeks` from the complexity tier, or omit when no tier signal.
+5. **Top risks** — the most material assumptions/exclusions (availability downgrade, unpriced
+   lines, licensing, the RDS Multi-AZ overstatement, etc.).
+6. **Assumptions** — the defaulted-not-confirmed rows that shaped the numbers.
+7. **CTA line** — "Ready to execute? Say 'generate the Terraform and migration artifacts' and
+   I'll produce the full execution pack from this same analysis." Plus: "This decision report
+   was written without execution artifacts; the full migration report replaces it if you
+   proceed."
+
+> **The full HTML `decision-report.html` twin is deferred** — it needs gcp's shared
+> `report-decision-core.md` renderer vendored into azure (a consumer-contract file, the same
+> class as `pricing-cache.md`; see plan §19.13). `DECISION.md` is the load-bearing handoff
+> marker and stands alone as plain Markdown; the HTML report is a presentation upgrade, not
+> the handoff signal.
 
 ### Why C writes `run_mode` before Generate loads
 
