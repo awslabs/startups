@@ -5,7 +5,10 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
 ```json
 {
   "migration_id": "0226-1430",
+  "run_id": "[random UUID, written once at creation]",
+  "owning_skill": "GCP_TO_AWS",
   "last_updated": "2026-02-26T15:35:22Z",
+  "current_phase": "design",
   "phases": {
     "discover": "completed",
     "clarify": "completed",
@@ -20,11 +23,15 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
 
 **Field Definitions:**
 
-| Field           | Type     | Set When                                                         |
-| --------------- | -------- | ---------------------------------------------------------------- |
-| `migration_id`  | string   | Created (matches folder name, never changes)                     |
-| `last_updated`  | ISO 8601 | After each phase update                                          |
-| `phases.<name>` | string   | Phase transitions: `"pending"` → `"in_progress"` → `"completed"` |
+| Field           | Type     | Set When                                                                                                                       |
+| --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `migration_id`  | string   | Created (matches folder name, never changes)                                                                                   |
+| `run_id`        | UUID     | Created (random, from `uuidgen`; never changes or is reused). The run's identifier for telemetry and the plugin-to-web handoff |
+| `owning_skill`  | string   | Created (`GCP_TO_AWS`; never changes). Telemetry attributes the run to it                                                      |
+| `initiated_by`  | string   | Created, only when another skill started the run (e.g. `LLM_TO_BEDROCK`); otherwise absent                                     |
+| `last_updated`  | ISO 8601 | After each phase update                                                                                                        |
+| `current_phase` | string   | After each phase update: the next phase to run, or `complete`; authoritative when present                                      |
+| `phases.<name>` | string   | Phase transitions: `"pending"` → `"in_progress"` → `"completed"`                                                               |
 
 **Optional field — `run_mode`:**
 
@@ -43,4 +50,5 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
 - `workshop` is an optional **sidebar** (like feedback): never appears as
   `current_phase`; `"completed"` means resolved (entered or declined).
 - `migration_id` matches the `$MIGRATION_DIR` folder name (e.g., `0226-1430`).
+- `run_id` and `owning_skill` are written once when the run is created and never change; `initiated_by` is optional and set only when another skill started the run.
 - `run_mode` is optional; when present it must be `"decide"` or `"decide_and_execute"`. It is flow state (Generate consent), not a design constraint — it never appears in `preferences.json`.

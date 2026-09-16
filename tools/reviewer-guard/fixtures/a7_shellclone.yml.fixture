@@ -1,0 +1,6 @@
+jobs:
+  review:
+    steps:
+      - run: |
+          gh pr checkout "$PR_NUMBER"
+          ./scripts/build.sh
