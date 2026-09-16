@@ -27,6 +27,8 @@ _preconditions:
 _postconditions:
   - _check_file_exists: [diagram.md, recommendation.md, mini-brief.md, recommendation-report.html]
     _on_failure: _halt_and_inform
+  - _assert: "when the awareness IDs resolved in Step 1 are non-empty, recommendation.md, mini-brief.md, and recommendation-report.html include every managed alternative with its status and requirement conflicts; openai_agents_api retains the public-beta, US-only, and no-ZDR caveats including self-hosted execution; awareness does not add scored runtimes"
+    _on_failure: _halt_and_inform
   - _assert: "recommendation.md fills all 12 sections (business summary first, technical detail after) with the freshness footer; mini-brief.md carries the recommendation, top-3 signals, eliminated, model, and any io_wait/fedramp/region/cris notes set in design.json (a non-agent unit in a mixed system may show 'no model' when its model_recommendation is null); recommendation-report.html was generated (Step 5 is not optional); when design.json has >1 unit, recommendation.md contains the System topology section and the report one unit card per unit; every unit card whose design.json unit has a non-null model_recommendation contains the 'Why this model' card (rationale paragraph + collapsed 'Full model & migration detail' details block) rendered from unit.model_recommendation values, not invented"
     _on_failure: _halt_and_inform
   - _assert: "recommendation.md's architecture-diagram section carries diagram.md's content INLINE — the Mermaid fenced block itself (and the ASCII fallback when build_diagram.py produced one), copied verbatim. A pointer such as 'see diagram.md' does not satisfy it: the recommendation doc is read on its own, often as the only artifact a reader opens, and the diagram is the section's whole content"
@@ -49,6 +51,11 @@ winning runtime's service card and
 (Same exception as Design Step 2: a `serverless_workers` unit has NO `<verdict>.md` card — do not
 attempt to load one; derive its content from `temporal.md` + `poc-shapes.md`.)
 
+Read `design.json.managed_alternatives` as the awareness option IDs. Only when the array is absent,
+use `[design.json.managed_alternative]` if the legacy value is present and not `none`, otherwise
+use `[]`. An explicitly empty array stays empty. When IDs are present, also load
+`references/decision-refs/managed-alternatives.md`.
+
 ## Step 2 — Build the architecture diagram
 
 Load `references/diagram/build-diagram.md` and follow it to produce `$RUN_DIR/diagram.md`
@@ -70,6 +77,14 @@ For `migrate`: also fill Section 9 (Bedrock model) with the **coarse family mapp
 migration plugins — no dollar figures. Section 10 (cost magnitude) presents the per-unit
 target-state bands from estimate.json and notes that the migration TCO comparison and
 current-spend delta are produced by the migration plugins.
+
+**Section 5 — Managed alternatives:** when awareness IDs are present, append a subsection titled
+"Managed alternatives (awareness only)" after the scored alternatives. For each ID, use its
+reference section's product name, status, tradeoffs, and available source links. Include OpenAI
+Agents API's public-beta status, US-only data residency, and no-ZDR limit even for a self-hosted
+sandbox; identify any conflict with the customer's requirements. Keep this an awareness note:
+do not add these options to scores or the runtime ranking. Omit the subsection when the list is
+empty.
 
 **Section 3c — Temporal migration** (conditional: only if ANY
 `design.json.units[].workload_class == "temporal_worker_poll"` — the `temporal` block has no
@@ -114,6 +129,9 @@ TO `$RUN_DIR/mini-brief.md` (a file, not just chat text; Step 5.5 re-reads it):
   `[BLOCKS]`, evaluation mode, and live verification status. Never describe model access as
   runnable unless `live_verification.status == "passed"`.
 - Any `warnings` from the scoring result (e.g. 5 TPS).
+- When awareness IDs are present, summarize the managed alternatives from recommendation.md §5,
+  including any requirement conflict; retain the OpenAI public-beta, US-only, and no-ZDR caveats
+  when `openai_agents_api` is listed.
 - If `design.json` has `io_wait_tco_note == true`: the I/O-wait TCO point (AgentCore bills $0
   during model/human waits — a cost edge for spiky/HITL traffic; no dollar figures).
 - When set: `fedramp_note` (FedRAMP WIP — verify + GovCloud fallback),

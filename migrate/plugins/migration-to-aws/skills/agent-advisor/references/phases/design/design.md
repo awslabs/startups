@@ -26,6 +26,8 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: design.json
     _on_failure: _halt_and_inform
+  - _assert: "design.json records managed_alternatives and the legacy managed_alternative using the source/current-provider mapping in Step 4; awareness options do not change scores, eliminations, or the chosen runtime"
+    _on_failure: _halt_and_inform
   - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_compute_type, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; every agentcore-verdict unit carries agentcore_compute_type (microvms or instances) verbatim from its scoring result and every non-agentcore unit carries null — the compute type is never re-derived in Design; every model-bearing unit's model_recommendation is derived from the matching model-recommendation.json workload entry and accepted confirm.model_decision, including model_identity, model, api_path, invocation_model_id, source, source_analysis, feature_assessment, compatibility, architecture_impacts, additional_targets (separate-modality target contracts, carried verbatim when present), blocks, tuning, migration_deltas, evaluation, rollout, provisional verification, and live_verification when model-verification.json exists; no model was independently selected from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled Public Preview regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
     _on_failure: _halt_and_inform
 ---
@@ -68,11 +70,24 @@ values on failure. Record which succeeded vs fell back (for the freshness footer
 
 ## Step 4 — Provider lock-in check
 
-Determine the managed alternative from the source/current model provider: Claude-committed →
-`claude_managed`; OpenAI-committed → `bedrock_managed`; multi-provider or undecided → `none`.
-If a managed alternative applies, surface it **as awareness only** (per `managed-alternatives.md`)
-with its tradeoffs — do NOT present it as the recommendation. Otherwise note AgentCore supports
-all models.
+Determine the managed alternatives from the source/current model provider, not the recommended
+target model. Record both fields using this table:
+
+| Source/current provider     | `managed_alternatives`                     | Legacy `managed_alternative` |
+| --------------------------- | ------------------------------------------ | ---------------------------- |
+| Claude-committed            | `["claude_managed"]`                       | `claude_managed`             |
+| OpenAI-committed            | `["bedrock_managed", "openai_agents_api"]` | `bedrock_managed`            |
+| Multi-provider or undecided | `[]`                                       | `none`                       |
+
+The array records all awareness options; the singular field preserves the existing artifact
+contract. Map the IDs to the Claude Managed Agents, Bedrock Managed Agents, and OpenAI Agents API
+sections in `managed-alternatives.md`. Carry both fields into `design.json` for Generate.
+
+Surface each listed option **as awareness only**, with the reference's status and tradeoffs.
+For OpenAI Agents API, include the public-beta status and US-only data residency / no-ZDR limits,
+including with self-hosted execution; flag any conflict with the customer's requirements.
+Do not score these options or change the chosen runtime. For an empty array, omit the awareness
+note.
 
 ## Step 4b — I/O-wait TCO differentiator (surface proactively)
 
@@ -336,6 +351,7 @@ considered" and the "Eliminated" line (Generate reads design.json, not scoring-r
   "volatile_facts": {"microvms_session_cap": {"value": "8h", "source": "mcp|cached"},
                      "instances_session_cap": {"value": "14d", "source": "mcp|cached"}},
   "managed_alternative": "claude_managed | bedrock_managed | none",
+  "managed_alternatives": [...],
   "io_wait_tco_note": true|false,
   "fedramp_note": true|false,
   "region_availability_note": "... | null",
