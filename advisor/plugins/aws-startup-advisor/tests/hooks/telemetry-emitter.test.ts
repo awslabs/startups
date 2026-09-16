@@ -27,6 +27,9 @@ type Received = { body: any };
 let server: Server;
 let endpoint: string;
 const received: Received[] = [];
+// What the stub answers; a test flips it to 403 to stand in for the service's
+// closed launch gate.
+let respondWith = 200;
 
 before(async () => {
   server = createServer((req, res) => {
@@ -34,7 +37,7 @@ before(async () => {
     req.on('data', (c) => chunks.push(c));
     req.on('end', () => {
       received.push({ body: JSON.parse(Buffer.concat(chunks).toString('utf8')) });
-      res.writeHead(200).end();
+      res.writeHead(respondWith).end();
     });
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -231,6 +234,34 @@ describe('telemetry emitter', () => {
       // Assert
       assert.equal(events.length, 2, 'RUN_STARTED and DISCOVER are reported');
     } finally {
+      cleanup(p);
+    }
+  });
+
+  it('holds the snapshot while the service refuses with 403, then reports the run in full once it accepts', async () => {
+    // Arrange
+    const p = makeProject(phaseStatus());
+    try {
+      // Act: the gate is closed for the first reconcile and open for the second
+      respondWith = 403;
+      const refused = await reconcile(p);
+      const snapshotWhileRefused = existsSync(join(p.runDir, '.telemetry-snapshot.json'));
+      respondWith = 200;
+      const accepted = await reconcile(p);
+      const again = await reconcile(p);
+
+      // Assert
+      assert.equal(refused.length, 2, 'the events were attempted');
+      assert.equal(snapshotWhileRefused, false, 'but nothing was recorded as reported');
+      assert.deepEqual(
+        accepted.map((b) => [activity(b).eventName, activity(b).phase]).sort(),
+        [['PHASE_COMPLETED', 'DISCOVER'], ['RUN_STARTED', undefined]],
+        'the same events are sent again once accepted',
+      );
+      assert.deepEqual(again, []);
+      assert.equal(snapshotOf(p).runId, RUN_ID);
+    } finally {
+      respondWith = 200;
       cleanup(p);
     }
   });

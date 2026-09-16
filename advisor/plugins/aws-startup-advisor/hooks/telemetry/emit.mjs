@@ -536,20 +536,28 @@ function buildRequest(event, ctx) {
   };
 }
 
+// Resolves to the HTTP status; rejects on a network failure or timeout.
 async function post(endpoint, body) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
   try {
-    await fetch(endpoint, {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+    return response.status;
   } finally {
     clearTimeout(timer);
   }
 }
+
+// The service answers 403 while its launch gate is closed (and a WAF rate limit
+// answers the same). Nothing was accepted, so this is not the loss the design
+// tolerates: the snapshot is left alone and the run is reported in full on a
+// later trigger, exactly as with a disabled endpoint.
+const REFUSED_STATUS = 403;
 
 // ------------------------------------------------------------------ per run
 
@@ -625,7 +633,8 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     // snapshot write, so the next trigger would repeat the batch. No retries by
     // design: a retry queue is unbounded local state for data that is
     // loss-tolerant in aggregate.
-    await Promise.allSettled(events.map((event) => post(endpoint, buildRequest(event, ctx))));
+    const results = await Promise.allSettled(events.map((event) => post(endpoint, buildRequest(event, ctx))));
+    if (results.some((r) => r.status === "fulfilled" && r.value === REFUSED_STATUS)) return;
 
     // via/updatedAt are the hook-liveness tag: an instruction-driven caller can
     // read them to skip its call when a hook reported recently, and the
