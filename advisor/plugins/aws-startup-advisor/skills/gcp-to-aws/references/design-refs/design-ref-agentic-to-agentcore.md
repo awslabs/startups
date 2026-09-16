@@ -180,17 +180,23 @@ When Strands path is selected, write this to `aws-design-ai.json`:
         }
       ],
       "orchestration_primitive": "single_agent|agents_as_tools|swarm|graph",
-      "session_manager": "none|file|s3",
-      "memory_service": false,
+      "session_manager": "s3",
+      "memory_service": true,
       "deployment_target": "agentcore_runtime",
       "bridge_phase": true,
       "source_framework": "from agentic_profile.framework"
     },
     "regional_fit": "available|preview|unavailable",
+    "memory_ingestion": {
+      "api": "IngestData",
+      "rationale": "The application retains raw interactions elsewhere; only extracted long-term records are needed in AgentCore."
+    },
     "warnings": []
   }
 }
 ```
+
+**Memory fields:** This skeleton illustrates `cross_session`. Select `memory_ingestion.api` and `rationale` using the ingestion rules above; `IngestData` is not an unconditional default. For `none` or `session`, omit `memory_ingestion`, set `strands_config.memory_service` to `false`, and select `session_manager` from the memory integration table.
 
 **Mapping `orchestration_pattern` → `orchestration_primitive`:**
 

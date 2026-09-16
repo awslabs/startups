@@ -77,7 +77,11 @@ Include embeddings migration (Titan Embeddings v2 via `invoke_model`) if `capabi
 
 When the design enables cross-session memory (`harness_config.memory_type == "cross_session"` or `strands_config.memory_service == true`), read `aws-design-ai.json` → `agentic_design.memory_ingestion`. If absent, return to the selected design reference to confirm raw-event retention and record the API choice before generating memory steps.
 
-Add an activity to `generation-ai.json` → `migration_plan.phases[].activities` naming the selected `api` and its `rationale`, the application integration point, and the matching IAM action (`bedrock-agentcore:IngestData` or `bedrock-agentcore:CreateEvent`) plus the required retrieval permissions. Include configuration of long-term extraction strategies and verification of processed records with `ListMemoryRecords` or `RetrieveMemoryRecords`. For `CreateEvent`, also verify that the raw event remains retrievable; for `IngestData`, state that no retrievable short-term event is created and that successful submission does not mean extraction has completed. Omit memory-ingestion activities for stateless or session-only designs.
+Add an activity to `generation-ai.json` → `migration_plan.phases[].activities` naming the selected `api` and its `rationale`, the application integration point, and the matching IAM action (`bedrock-agentcore:IngestData` or `bedrock-agentcore:CreateEvent`) plus the required retrieval permissions. Include configuration of long-term extraction strategies.
+
+Verify expected extracted content in the intended namespace using `RetrieveMemoryRecords` (semantic search), or enumerate and inspect candidates with paginated `ListMemoryRecords`. To inspect a specific candidate, use `GetMemoryRecord` with a `memoryRecordId` returned by either operation; `IngestData` does not return a record ID. Match the expected extracted facts and available metadata, not merely a non-empty response. A semantic-search miss alone does not prove extraction failed.
+
+For `CreateEvent`, also verify that the raw event remains retrievable; for `IngestData`, state that no retrievable short-term event is created and that successful submission does not mean extraction has completed. Omit memory-ingestion activities for stateless or session-only designs.
 
 ---
 

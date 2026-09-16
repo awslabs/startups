@@ -126,7 +126,7 @@ When Harness path is selected, write this to `aws-design-ai.json`:
         }
       ],
       "memory_enabled": true,
-      "memory_type": "session|cross_session",
+      "memory_type": "cross_session",
       "incremental_migration": true,
       "source_model_provider": "open_ai|google",
       "source_model_id": "from models[0].model_id",
@@ -134,10 +134,16 @@ When Harness path is selected, write this to `aws-design-ai.json`:
     },
     "regional_fit": "available|unavailable",
     "deployment_regions": ["from preferences.json target_region"],
+    "memory_ingestion": {
+      "api": "IngestData",
+      "rationale": "The application retains raw interactions elsewhere; only extracted long-term records are needed in AgentCore."
+    },
     "warnings": []
   }
 }
 ```
+
+**Memory fields:** This skeleton illustrates `cross_session`. Select `memory_ingestion.api` and `rationale` using the ingestion rules above; `IngestData` is not an unconditional default. For `session`, set `harness_config.memory_type` to `"session"`. For `none`, set `harness_config.memory_enabled` to `false` and omit `memory_type`. Omit `memory_ingestion` for both `none` and `session`.
 
 **Field rules:**
 
