@@ -37,10 +37,14 @@ You MUST NOT use the shell for anything else. In particular you MUST NOT:
 
 If a phase's prose seems to need a shell command outside this scope, that is a signal
 the phase was dispatched at the wrong tier; stop and report it (see the completion
-protocol), do not try to work around it. (Where the host supports command-level
-permission scoping — e.g. Claude Code `permissions.allow` rules like `Bash(python3:*)` /
-`Bash(uvx:*)` — the deployment SHOULD restrict this worker's `Bash` to exactly those
-commands. Absent that enforcement, the scope above is your binding instruction.)
+protocol), do not try to work around it. **The in-prompt scope above (the explicit
+forbidden-actions list) is the real, always-present enforcement** — treat it as binding
+regardless of host. Separately, IF a host offers command-level permission scoping (e.g.
+Claude Code `permissions.allow` rules such as `Bash(python3:*)` / `Bash(uvx:*)`), a
+deployment MAY additionally restrict this worker's `Bash` to exactly those commands as
+defense-in-depth. That host-level restriction is an optional hardening, not something this
+worker relies on or that is known to be configured on any host today — do not assume it is
+in effect.
 
 # 1. Critical rules
 

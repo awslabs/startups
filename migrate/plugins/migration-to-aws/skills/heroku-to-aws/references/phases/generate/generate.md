@@ -61,7 +61,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: [validation-report.json]
     _on_failure: _halt_and_inform
-  - _assert: "validation-report.json has $schema 'validation-report/v2' and its policy_status is 'POLICY_OK' (produced in-fragment by the dispatched rwx worker, which ran the tf-best-practices policy checker + fix-and-retry against terraform/ before returning; a not_run placeholder is never accepted). POLICY_FAIL or not_run fails closed. This gate is READ-ONLY: do not run the checker, edit .tf, or edit the verdict here."
+  - _assert: "validation-report.json has $schema 'validation-report/v2' and its policy_status is 'POLICY_OK' (produced in-fragment by the dispatched rwx worker, which ran the tf-best-practices policy checker + fix-and-retry against terraform/ before returning; a not_run placeholder is never accepted). POLICY_FAIL or not_run fails closed. TRUST BOUNDARY: this gate reads the worker-written verdict and trusts its provenance claim (the worker MUST NOT invent POLICY_OK — see generate-terraform.md); it does NOT independently re-run the checker to re-derive the result. This is the same trust level as every other _postconditions _assert here (each reads what the worker wrote). This gate is READ-ONLY: do not run the checker, edit .tf, or edit the verdict here."
     _on_failure: _halt_and_inform
   - _assert: "at least one domain .tf file exists beyond the core files"
     _on_failure: _halt_and_inform
