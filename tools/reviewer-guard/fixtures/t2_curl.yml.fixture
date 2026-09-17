@@ -1,0 +1,13 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - run: |
+          curl -sL "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${HEAD_SHA}" | tar xz
+          wget -qO- "https://github.com/${GITHUB_REPOSITORY}/archive/${HEAD_SHA}.zip" > a.zip
+          make -C . check

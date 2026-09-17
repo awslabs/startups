@@ -386,7 +386,8 @@ Present in `estimation-infra.json` only when `preferences.json` → `design_cons
 ## Output Validation Checklist
 
 - `design_source` is `"infrastructure"`
-- `pricing_source.status` is `"cached"`, `"live"`, `"cached_fallback"`, or `"unavailable"`
+- `pricing_source.status` is `"cached"`, `"live"`, `"cached_fallback"`, or `"unavailable"` (there is no `"cached_stale"` status — a stale cache is `status: "cached"` with `fallback_staleness.is_stale: true`)
+- `pricing_source.fallback_staleness.is_stale` is `true` when the cache is older than its staleness threshold, with a non-null `staleness_warning`; `false` otherwise
 - `accuracy_confidence` matches the pricing mode (±5-10% for cached/live, ±15-25% for fallback)
 - `current_costs.source` is `"billing_data"` if `billing-profile.json` was used, `"inventory_estimate"`, `"preferences"`, `"user_provided"` (asked during estimate), or `"unavailable"` (user declined) otherwise
 - `current_costs.gcp_monthly` matches billing-profile.json total (if used) or is a reasonable estimate

@@ -1,0 +1,5 @@
+jobs:
+  review:
+    steps:
+      - run: echo ${{ format('{0}', github.event.pull_request.title) }}
+      - run: echo ${{ format('{0}{1}', github.event.pull_request.body, github.head_ref) }}

@@ -1,5 +1,14 @@
 # Repo infrastructure - only admins can modify
 /.github/                @awslabs/startups-admins
+# Enforcement code for /.github/, so it needs the same review as what it enforces.
+# `tools/reviewer-guard/` holds the allowlist that permits `agentcore-reviewer.yml` to run
+# on `pull_request_target`. Adding an entry to ALLOWED_USES, adding a shell hash, or making
+# main() return 0 is exactly as powerful as editing the workflow itself. The guard lives
+# outside `.github/workflows/` because the hostile fixtures beside it were being read as
+# real pipelines by every workflow scanner in CI, and without this rule that move would
+# have traded a scanner problem for a missing-review problem. There is no `*` default
+# owner, so an unmatched path needs nobody.
+/tools/                  @awslabs/startups-admins
 mise.toml                @awslabs/startups-admins
 dprint.json              @awslabs/startups-admins
 .pre-commit-config.yaml  @awslabs/startups-admins

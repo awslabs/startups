@@ -1,0 +1,5 @@
+jobs:
+  review:
+    steps:
+      - run: echo ${{ format('{0}', github.event.pull_request.title) }}
+      - run: echo ${{ fromJSON('{"a":1}').a }}${{ github.head_ref }}

@@ -21,7 +21,7 @@ Existing `aws-dev-toolkit` installs continue to function but receive no updates.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the content gate that applies to this folder, and the [root CONTRIBUTING guide](../CONTRIBUTING.md) for the RFC process, code of conduct, and licensing.
 
-Contributions here must pass all three criteria: startup-specific rather than general-purpose AWS guidance, no overlap with Agent Toolkit for AWS, and no reference to deprecated or sunset AWS services. The gate exists so this folder does not re-create the overlap that led to the previous plugin's removal.
+Contributions here must pass all three criteria: startup-specific rather than general-purpose AWS guidance, no overlap with Agent Toolkit for AWS, and no recommendation of a deprecated or sunset service. The mechanical gate checks frontmatter, naming, and pointers, and reports sunset-service mentions as notes; all three criteria themselves are decided by human and agent review.
 
 ## License
 
