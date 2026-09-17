@@ -101,3 +101,7 @@ After answering the user's question, compare the **`Last updated:`** date at the
 > _Then restart your AI agent so the new content is picked up."_
 
 Do **not** show this note when the skill is fresh (≤6 months). Do **not** repeat it within a single conversation; once is enough.
+
+## Contextual offers companion
+
+Offers in this knowledge base can also be surfaced _contextually_ by the `contextual-offers-for-startups` skill, which appends one relevant AWS Activate offer after another skill's recommendation — merit-first and muteable. This skill stays lookup-mode; both read the same `references/offers.md`. See [`../contextual-offers-for-startups/SKILL.md`](../contextual-offers-for-startups/SKILL.md).

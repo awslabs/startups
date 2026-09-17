@@ -157,7 +157,7 @@ When reading `$MIGRATION_DIR/.phase-status.json`, validate before proceeding:
 2. **Invalid JSON**: If `.phase-status.json` fails to parse, do NOT delete it and do NOT restart from Discover — the phase artifacts on disk are the durable record of progress. Reconstruct instead:
    1. Enumerate `$MIGRATION_DIR` and infer completed phases from artifacts: any of `gcp-resource-inventory.json` / `billing-profile.json` / `ai-workload-profile.json` → discover completed; `preferences.json` → clarify completed; `aws-design.json` / `aws-design-ai.json` / `aws-design-billing.json` → design completed; `estimation-*.json` → estimate completed (**partial-write check:** if `preferences.json` has an `ai_constraints` section — or `ai-workload-profile.json` / `aws-design-ai.json` is present — but `estimation-ai.json` is missing while another `estimation-*.json` exists, treat estimate as **incomplete**, not completed; propose resume at estimate); `generation-*.json` or `MIGRATION_GUIDE.md` → generate completed.
    2. Present the inferred status to the user: "Your state file was corrupted, but I can see [phases] completed from the artifacts on disk. Resume at [next phase]? (Y/N)". **Confirmation is the safety net for residual ambiguity** (e.g. other partial writes the heuristic misses) — on N, the user picks the phase to resume.
-   3. On Y: rewrite `.phase-status.json` with the inferred phases marked `"completed"`, the next phase `"pending"`, `current_phase` set to it, and a fresh `last_updated`. Continue normally. On N: ask which phase to resume from and write that instead.
+   3. On Y: rewrite `.phase-status.json` with the inferred phases marked `"completed"`, the next phase `"pending"`, `current_phase` set to it, a fresh `last_updated`, `owning_skill` set to `GCP_TO_AWS`, and a fresh `run_id` (the original is unrecoverable from a corrupt file). Continue normally. On N: ask which phase to resume from and write that instead.
       This is reconstruction of ground truth from artifacts, not artifact-patching to pass a gate — the handoff-gate prohibition does not apply to `.phase-status.json` recovery.
 3. **Unrecognized phase**: If `phases` object contains a phase not in {discover, clarify, design, estimate, workshop, generate, feedback}, STOP. Output: "Unrecognized phase: [value]. Valid phases: discover, clarify, design, estimate, workshop, generate, feedback."
 4. **Unrecognized status**: If any `phases.*` value is not in {pending, in_progress, completed}, STOP. Output: "Unrecognized status: [value]. Valid values: pending, in_progress, completed."
@@ -176,6 +176,8 @@ Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created b
 ```json
 {
   "migration_id": "0226-1430",
+  "run_id": "[random UUID, written once at creation]",
+  "owning_skill": "GCP_TO_AWS",
   "last_updated": "2026-02-26T15:35:22Z",
   "current_phase": "design",
   "phases": {
@@ -194,6 +196,7 @@ Migration state lives in `$MIGRATION_DIR` (`.migration/[MMDD-HHMM]/`), created b
 For core phases (discover, clarify, design, estimate, generate), at most one phase may be `"in_progress"` at any time.
 `workshop` and `feedback` are optional sidebars (never `current_phase`).
 `current_phase` is optional but recommended; when present it is authoritative.
+`run_id` (a random UUID) and `owning_skill` (`GCP_TO_AWS`) are seeded by Discover on a fresh run and never change; `run_id` is the run's identifier for telemetry and the plugin-to-web handoff. `initiated_by` is optional: the identifier of the skill that invoked this run (e.g. `LLM_TO_BEDROCK`).
 
 The `.migration/` directory is automatically protected by a `.gitignore` file created in Phase 1.
 
@@ -202,7 +205,7 @@ The `.migration/` directory is automatically protected by a `.gitignore` file cr
 Use **read-merge-write** updates for `.phase-status.json`:
 
 1. Read the current file before every update.
-2. Change only the phase keys being advanced and `last_updated`.
+2. Change only the phase keys being advanced and `last_updated`. Never change `run_id` or `owning_skill`.
 3. Keep prior completed phases unchanged.
 4. Set `current_phase` to the next deterministic phase — or `complete` after Generate, **or** after Estimate when the user chose Decision-gate **A** (`run_mode: "decide"`; Generate stays pending).
 5. Write the full file in the same turn as your final phase work message.
@@ -212,6 +215,8 @@ Example — after completing the Clarify phase, write `$MIGRATION_DIR/.phase-sta
 ```json
 {
   "migration_id": "MMDD-HHMM",
+  "run_id": "[unchanged: the UUID written at creation]",
+  "owning_skill": "GCP_TO_AWS",
   "last_updated": "2026-02-26T15:35:22Z",
   "current_phase": "design",
   "phases": {
@@ -431,3 +436,21 @@ User can invoke the skill again to resume from `current_phase` (or deterministic
 - AWS cost estimation (from pricing API or fallback)
 - Migration artifact generation (Terraform, scripts, AI adapters, documentation)
 - Optional feedback collection with anonymized telemetry
+
+## Contextual offers (final step)
+
+> **Before you finish:** your answer is not complete until you have run the **Contextual offers (final step)** below.
+
+This is a mandatory closing step of every final recommendation — complete it before you consider your answer done. Run this offer check inline yourself; do not depend on loading another skill. The recommendation is decided on merit first; this step never changes, re-ranks, or re-opens it, and the offer is looked up only after the advice is final.
+
+1. Read [`../knowledge-base-for-startups/references/offers.md`](../knowledge-base-for-startups/references/offers.md) — the offer index (Offer · Summary · Keywords), one row per offer.
+2. Judge relevance against what the founder actually surfaced this session. Surface an offer only if **one** holds: a **named-product match** (you recommended a specific partner product by name and it has a row); a **direct intent/component match** (an offer's Keywords directly serve a concrete workload, a component in the final recommendation, or a need the founder raised). Keep a high bar — if the match is weak, or you would be inferring an unstated need, append nothing.
+3. If (and only if) one offer clears the bar, open only its detail file `../knowledge-base-for-startups/references/offers/<slug>.md` and append exactly **one** quiet, dismissible italic line — stating the value and condensing eligibility faithfully from that file (drop no qualifying criterion; never fabricate), with the bare canonical `source_url` as the redeem link. Show one or none, never a list.
+
+Standard line:
+
+```
+***<Offer>** has an exclusive offer via AWS Activate — <value>, <eligibility>. [Redeem →](<source_url>)*
+```
+
+Caps and control: at most one offer per response and often none; no more than one per five messages and two per session; show a given offer at most once per session and never one already shown, claimed, or dismissed; if the founder has muted offers, skip this step entirely. These per-five-messages, per-session, and already-shown caps are session-state limits; in a fresh session with no prior offers they are non-binding, so do not withhold an otherwise-qualifying offer merely because you cannot verify session history. See [`../contextual-offers-for-startups/SKILL.md`](../contextual-offers-for-startups/SKILL.md) for the full rules — but perform the check inline; it must not depend on that skill being loaded.
