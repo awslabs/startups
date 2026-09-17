@@ -8,6 +8,7 @@ _reads:
   - eks-generate (fragment contribution, when EKS in design)
 _produces:
   - generation-warnings.json
+  - validation-report.json
 ---
 
 # Generate — Validate and Assemble
@@ -36,6 +37,25 @@ assembler adds the cross-artifact checks that span multiple fragment outputs:
 - `README.md` references all files that actually exist
 - `MIGRATION_GUIDE.md` data migration sections match design content (no empty sections)
 
+**Authoritative Terraform policy check (after all Terraform producers):**
+
+1. Invoke the `tf-best-practices` skill at its post-writing (Part 2) touchpoint
+   against `$MIGRATION_DIR/terraform`, writing the checker output to the temporary
+   `$MIGRATION_DIR/validation-report.policy.json` sidecar. This assembler runs
+   after `eks-generate`, so the scan covers `eks.tf` and every other final `.tf`
+   file. The scoped shell runs only that checker (`python3`/`uvx`), never `git`,
+   network calls, or arbitrary commands.
+2. On `POLICY_FAIL`, apply the `fix_hint`s to the named `.tf` sites and rerun the
+   checker, up to the shared budget of three attempts.
+3. Write `$MIGRATION_DIR/validation-report.json` in the v2 envelope from
+   `references/terraform-validation.md`, preserving
+   `status: "passed_degraded_offline"` and `offline_fallback_used: true` because
+   this path does not run `terraform fmt/init/validate`. Merge the sidecar's
+   `policy_status` into `policy_status` and its `violations[]` into
+   `policy_violations[]`; never invent `POLICY_OK`.
+4. Delete `validation-report.policy.json` after the merge. If no shell is
+   available, write `policy_status: "not_run"` so `_postconditions` fails closed.
+
 ---
 
 ## Completion Handoff Gate (Fail Closed)
@@ -61,17 +81,23 @@ Terraform/docs).
 The Terraform **policy gate** is not optional, and it is enforced by `generate.md`
 `_postconditions` — a **read-only** gate the interpreter runs in the **main window**
 (`INTERPRETER.md` § `_exec` step 4). The policy checker run, the budget-3 `.tf`
-fix-and-retry loop, and the verdict write all happen **before** this gate, **in-fragment**
-inside the dispatched `rwx` Generate worker (see `generate-terraform.md` Step 12) — that is
-where `terraform/` may be edited. By the time the gate runs, the retry budget is already
-spent and `validation-report.json` carries the checker's real verdict. The gate only does
+fix-and-retry loop, and the verdict write all happen **before** this gate in this
+assembler, after every Terraform-producing fragment has finished. This is where
+`terraform/` may be edited. By the time the gate runs, the retry budget is already
+spent and `validation-report.json` covers the final Terraform directory. The gate only does
 `_validate_json` + assert `policy_status == "POLICY_OK"`. If `validation-report.json` is
 missing/invalid or its `policy_status` is `"POLICY_FAIL"` (or `not_run`), the gate emits
 `GATE_FAIL`. Per `INTERPRETER.md` § `_postconditions`, this assembler does **not** modify
-`.tf` files, edit the verdict, or advance — it halts and surfaces the residual violations.
-Recovery is a **human edit of the named `.tf` sites followed by a targeted re-run of the
-tf-best-practices policy checker**, not a full Generate re-run: re-dispatching Generate
-re-authors `terraform/` from scratch under the worker and would wipe any manual fixes.
+`.tf` files or the verdict after the read-only gate begins, and it does not advance on
+failure — it halts and surfaces the residual violations.
+
+Targeted recovery is: (1) human-edit the named `.tf` sites; (2) rerun the checker
+against `$MIGRATION_DIR/terraform` with `--json
+$MIGRATION_DIR/validation-report.policy.json`; (3) merge the sidecar's
+`policy_status` and `violations[]` into the canonical v2 report's `policy_status`
+and `policy_violations[]` without replacing its `$schema` envelope; (4) delete the
+sidecar; and (5) rerun the read-only Generate `_postconditions`. Do **not**
+redispatch Generate: it re-authors `terraform/` and would wipe manual fixes.
 
 ---
 

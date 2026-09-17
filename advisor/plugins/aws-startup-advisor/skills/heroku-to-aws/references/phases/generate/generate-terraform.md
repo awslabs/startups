@@ -12,7 +12,6 @@ _contributes:
   - .github/workflows/deploy-eb.yml
   - terraform/.gitignore
   - terraform/terraform.tfvars.example
-  - validation-report.json
 ---
 
 # Generate Phase: Terraform Configuration Generation
@@ -1593,12 +1592,21 @@ resource "aws_iam_role_policy" "codepipeline_policy_<app_name>" {
         Effect = "Allow"
         Action = [
           "elasticbeanstalk:CreateApplicationVersion",
-          "elasticbeanstalk:CreateStorageLocation",
           "elasticbeanstalk:DescribeApplications",
           "elasticbeanstalk:DescribeApplicationVersions",
           "elasticbeanstalk:DescribeEnvironments",
           "elasticbeanstalk:UpdateEnvironment"
         ]
+        Resource = [
+          "arn:aws:elasticbeanstalk:${var.aws_region}:${data.aws_caller_identity.current.account_id}:application/<app_name>",
+          "arn:aws:elasticbeanstalk:${var.aws_region}:${data.aws_caller_identity.current.account_id}:applicationversion/<app_name>/*",
+          "arn:aws:elasticbeanstalk:${var.aws_region}:${data.aws_caller_identity.current.account_id}:environment/<app_name>/*"
+        ]
+      },
+      {
+        # AWS does not support resource-level permissions for this action.
+        Effect   = "Allow"
+        Action   = "elasticbeanstalk:CreateStorageLocation"
         Resource = "*"
       }
     ]
@@ -2239,35 +2247,11 @@ After all files are written:
 6. **Security baseline**: `baseline.tf` exists and contains the full always-on resource list from Step 1.5 (three `aws_account_alternate_contact`, password policy, S3 account PAB, EBS default encryption, Access Analyzer, IMDSv2 account default, CloudTrail + log bucket, budget, GuardDuty); its `locals.cloudtrail_retention_days` is a positive integer; the compliance-conditional section is present exactly when the normalized `compliance` array contains soc2/pci/hipaa/fedramp; the three contact email variables are declared without defaults and with placeholder-rejecting validation blocks
 7. **Elastic Beanstalk web runtime inputs**: For every EB web service, verify its per-app `eb_application_port_<app>_web` and `eb_health_check_path_<app>_web` variables are declared without defaults, include the required validation blocks, and are referenced directly by that app's `PORT` and `HealthCheckPath` settings. Verify non-web EB services do not require these variables. Do not report an EB web configuration as ready to plan until the customer has supplied both values for every web app.
 
-8. **Run the Terraform policy checker and write `validation-report.json` (in-fragment).**
-   Generate is dispatched at `_exec._agent: rwx` (`INTERPRETER.md` § capability tiers), which is
-   `rw` plus a scoped shell for exactly this — so this fragment runs the checker itself; there is
-   no deferred main-window reconcile.
-   - Author `terraform/` to satisfy the Step 0 posture — that is what makes the policy check pass
-     by construction.
-   - **Invoke the `tf-best-practices` skill at its post-writing (Part 2) touchpoint**, passing
-     `$MIGRATION_DIR/terraform` as the target directory and `--json
-     $MIGRATION_DIR/validation-report.policy.json` as the temp verdict sidecar. Treat the skill
-     as a **black box**: run the checker it specifies and act on the exit code / `violations[]`
-     it returns. The scoped shell runs only that checker (`python3`/`uvx`), never `git` or
-     arbitrary commands.
-   - **On `POLICY_FAIL`, apply the fix-and-retry loop (budget 3):** read `violations[]`, edit the
-     named `.tf` sites via each `fix_hint` with the `Edit` tool, re-run the checker. This is where
-     the `.tf` retry happens.
-   - Write `$MIGRATION_DIR/validation-report.json` in the **v2 envelope**
-     (`references/terraform-validation.md` § Report Schema) with `"$schema": "validation-report/v2"`.
-     Because this fragment runs only the policy stage (never `terraform fmt/init/validate`), it sets
-     `"status": "passed_degraded_offline"` and `"offline_fallback_used": true`, and records the
-     real `policy_status` (`POLICY_OK` after a clean run, or `POLICY_FAIL` with `policy_violations[]`
-     if the budget is exhausted). It MUST NOT invent `POLICY_OK` — the verdict is whatever the
-     checker actually returned. A residual `POLICY_FAIL` then fails the read-only
-     `_postconditions` `_assert` in `generate.md` (fail-closed).
-   - **Delete the `$MIGRATION_DIR/validation-report.policy.json` sidecar** once its verdict has
-     been merged into `validation-report.json`. It is a temp input to the merge, not a second
-     verdict artifact, and must not be left behind in the run directory.
-   - If the host has **no shell at all** (an inline-only host where the `rwx` tier is inert AND no
-     main-window shell is available), leave `policy_status: "not_run"`; the gate then fails closed.
-     On a normal dispatched or inline run the checker runs here.
+8. **Defer the authoritative Terraform policy check to the assembler.** Author
+   `terraform/` to satisfy the Step 0 posture, but do not write
+   `validation-report.json` here. The assembler runs after every fragment,
+   including conditional `eks-generate`, and owns the checker, retry loop, and
+   canonical v2 report (see `generate-assemble.md` Step 3).
 
 > Scope note: `validate-terraform-policy.py` inspects standalone `aws_lb_listener` blocks. An
 > Elastic Beanstalk **LoadBalanced** environment's ALB is provisioned by EB from
@@ -2275,4 +2259,6 @@ After all files are written:
 > so a pure-EB design passes the ALB rules vacuously (there is no standalone listener to inspect).
 > That is a known limitation, not a bypass: EB TLS/listener posture is authoring-only here.
 
-When all files are written, control returns to `generate.md` (then the phase assembler `generate-assemble.md`), which runs the phase completion handoff gate per its `_postconditions`.
+When this fragment's files are written, control returns to `generate.md`. After all
+other fragments finish, `generate-assemble.md` validates the final Terraform
+directory and runs the phase completion handoff gate per its `_postconditions`.

@@ -181,6 +181,9 @@ for the caller, so a false positive would block a real migration).
 `aws_iam_user_policy`):
 
 - **`no_wildcard_iam`** — an `Allow` statement must not use `Action`/`Resource` `"*"`.
+  The one narrow exception is an isolated
+  `elasticbeanstalk:CreateStorageLocation` statement with `Resource = "*"` because
+  AWS does not support resource-level permissions for that action.
   `aws_iam_policy_document` data sources and assume-role trust policies fail open.
 
 > The checker is a zero-dependency static HCL reader (no `terraform init`, no provider

@@ -35,6 +35,7 @@ BAD_DB_SG_PUBLIC_QUOTED_PORT = FIXTURES / "bad-db-sg-public-quoted-port"
 GOOD_HEROKU_EB_LB = FIXTURES / "good-heroku-eb-loadbalanced"
 GOOD_HEROKU_EB_ONLY = FIXTURES / "good-heroku-eb-only"
 GOOD_HEROKU_EB_SINGLEINSTANCE = FIXTURES / "good-heroku-eb-singleinstance"
+GOOD_HEROKU_EB_CODEPIPELINE = FIXTURES / "good-heroku-eb-codepipeline"
 BAD_HEROKU_EB_ELASTICACHE = FIXTURES / "bad-heroku-eb-elasticache"
 
 
@@ -98,6 +99,54 @@ def test_heroku_eb_singleinstance_passes() -> None:
     code, out = run_policy_validator(GOOD_HEROKU_EB_SINGLEINSTANCE)
     assert code == 0, out
     assert "POLICY_OK" in out
+
+
+def test_heroku_eb_codepipeline_required_wildcard_passes() -> None:
+    # AWS does not support resource-level permissions for CreateStorageLocation;
+    # its isolated Resource "*" statement is required, not an over-broad grant.
+    code, out = run_policy_validator(GOOD_HEROKU_EB_CODEPIPELINE)
+    assert code == 0, out
+    assert "POLICY_OK" in out
+
+
+def test_required_wildcard_action_cannot_hide_other_actions() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        terraform_dir = Path(tmp)
+        (terraform_dir / "policy.tf").write_text(
+            '''
+resource "aws_iam_role_policy" "mixed" {
+  role = "example-role"
+  policy = jsonencode({
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["elasticbeanstalk:CreateStorageLocation", "s3:*"]
+      Resource = "*"
+    }]
+  })
+}
+'''
+        )
+        code, out = run_policy_validator(terraform_dir)
+    assert code == 1, out
+    assert "no_wildcard_iam" in out
+
+
+def test_heroku_policy_check_runs_after_eks_fragment() -> None:
+    phase_dir = (
+        PLUGIN_SKILL_ROOT.parent
+        / "heroku-to-aws"
+        / "references"
+        / "phases"
+        / "generate"
+    )
+    phase = (phase_dir / "generate.md").read_text()
+    terraform_fragment = (phase_dir / "generate-terraform.md").read_text()
+    assembler = (phase_dir / "generate-assemble.md").read_text()
+
+    assert phase.index("_id: eks-generate") < phase.index("_assemble:")
+    assert "Defer the authoritative Terraform policy check to the assembler" in terraform_fragment
+    assert "Authoritative Terraform policy check (after all Terraform producers)" in assembler
+    assert "after `eks-generate`" in assembler
 
 
 def test_heroku_eb_bad_elasticache_and_http_forward_fails() -> None:
@@ -755,7 +804,7 @@ def test_every_fixture_matches_its_good_bad_prefix() -> None:
     # Exact, not `>=`: a floor cannot detect fixtures being deleted down to it,
     # which is the removal this assertion exists to catch. Update deliberately
     # when adding or removing a fixture.
-    assert len(fixture_dirs) == 27, f"fixture count changed: {[d.name for d in fixture_dirs]}"
+    assert len(fixture_dirs) == 28, f"fixture count changed: {[d.name for d in fixture_dirs]}"
     for fixture in fixture_dirs:
         code, out = run_policy_validator(fixture)
         if fixture.name.startswith("bad-"):
