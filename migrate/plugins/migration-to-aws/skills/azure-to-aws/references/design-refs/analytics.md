@@ -8,18 +8,18 @@ inventory contains one.
 Two types reach this file. Most of Azure's analytics surface does not, and that is
 deliberate: Synapse, Data Factory, Stream Analytics and Machine Learning workspaces are
 **specialist gates** in `fast-path-services.json`, because in each case the migration work
-is a rewrite the resource does not describe. A Stream Analytics job's cost *is* its query
+is a rewrite the resource does not describe. A Stream Analytics job's cost _is_ its query
 rewrite; naming "Managed Flink" describes none of it (13.1g). Do not add rubric rows here
 for gated types — a gate must never be overridden by anything below it (§ 7a.2).
 
 ## 1. Eliminators — hard technical blockers
 
-| Candidate | Eliminated when |
-| --------- | --------------- |
-| **OpenSearch Serverless** | the workload needs a **fixed cluster topology** the customer manages, or plugins beyond the serverless surface |
-| **EMR** | the workspace uses **any Databricks-proprietary feature** — Unity Catalog, Delta Live Tables, Databricks SQL warehouses, Photon, MLflow model registry, Databricks Workflows, or notebooks as the primary interface. EMR is Spark; it is not Databricks with a different bill |
-| **EMR Serverless** | the workload needs **long-lived interactive clusters** with attached notebooks |
-| **Bedrock Knowledge Bases** | the index serves **keyword or faceted search** for an application UI rather than retrieval for a model |
+| Candidate                   | Eliminated when                                                                                                                                                                                                                                                               |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **OpenSearch Serverless**   | the workload needs a **fixed cluster topology** the customer manages, or plugins beyond the serverless surface                                                                                                                                                                |
+| **EMR**                     | the workspace uses **any Databricks-proprietary feature** — Unity Catalog, Delta Live Tables, Databricks SQL warehouses, Photon, MLflow model registry, Databricks Workflows, or notebooks as the primary interface. EMR is Spark; it is not Databricks with a different bill |
+| **EMR Serverless**          | the workload needs **long-lived interactive clusters** with attached notebooks                                                                                                                                                                                                |
+| **Bedrock Knowledge Bases** | the index serves **keyword or faceted search** for an application UI rather than retrieval for a model                                                                                                                                                                        |
 
 ## 2. The six criteria, in order, first match wins
 
@@ -29,11 +29,11 @@ Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
 
-| Source | Target | Why |
-| ------ | ------ | --- |
-| `Microsoft.Search/searchServices` | **Amazon OpenSearch Service** | Azure AI Search is a managed inverted-index service with vector support. OpenSearch is the counterpart on both counts |
-| `Microsoft.Databricks/workspaces` | **Databricks on AWS** | The like-for-like is the same product on the other cloud. This is the default and it is usually right |
-| `Microsoft.Databricks/workspaces`, plain Spark only | **EMR** | Only when § 2.4 confirms nothing Databricks-specific is in use. See § 3 |
+| Source                                              | Target                        | Why                                                                                                                   |
+| --------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.Search/searchServices`                   | **Amazon OpenSearch Service** | Azure AI Search is a managed inverted-index service with vector support. OpenSearch is the counterpart on both counts |
+| `Microsoft.Databricks/workspaces`                   | **Databricks on AWS**         | The like-for-like is the same product on the other cloud. This is the default and it is usually right                 |
+| `Microsoft.Databricks/workspaces`, plain Spark only | **EMR**                       | Only when § 2.4 confirms nothing Databricks-specific is in use. See § 3                                               |
 
 ### 2.3 User preference
 
@@ -45,15 +45,15 @@ has chosen Databricks on AWS. Either answer wins over the derived one.
 
 **Azure AI Search → OpenSearch.** What carries and what does not:
 
-| Azure AI Search | OpenSearch |
-| --------------- | ---------- |
-| Index schema, analyzers, scoring profiles | index mappings, analyzers, function score — direct in concept, reauthored in syntax |
-| Vector fields and vector search | k-NN — direct |
-| `replica_count` / `partition_count` | data node count / primary shard count — a **sizing input**, not a mapping. See § 4 |
-| **Indexers** pulling from Blob, Cosmos or SQL | **no equivalent.** OpenSearch does not pull. This becomes an explicit ingestion pipeline — Lambda, OpenSearch Ingestion, or Glue — which is new infrastructure the source did not have |
+| Azure AI Search                                                | OpenSearch                                                                                                                                                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Index schema, analyzers, scoring profiles                      | index mappings, analyzers, function score — direct in concept, reauthored in syntax                                                                                                               |
+| Vector fields and vector search                                | k-NN — direct                                                                                                                                                                                     |
+| `replica_count` / `partition_count`                            | data node count / primary shard count — a **sizing input**, not a mapping. See § 4                                                                                                                |
+| **Indexers** pulling from Blob, Cosmos or SQL                  | **no equivalent.** OpenSearch does not pull. This becomes an explicit ingestion pipeline — Lambda, OpenSearch Ingestion, or Glue — which is new infrastructure the source did not have            |
 | **Skillsets** (OCR, entity recognition, key phrase extraction) | **no equivalent.** These call Cognitive Services during indexing. The counterpart is Textract / Comprehend invoked from the ingestion pipeline, which means the skillset becomes application code |
-| **Semantic ranker** | no direct counterpart. Options are a reranking model on Bedrock or SageMaker, or accepting BM25 plus vector hybrid scoring — a quality decision, not a config change |
-| Knowledge store | no equivalent |
+| **Semantic ranker**                                            | no direct counterpart. Options are a reranking model on Bedrock or SageMaker, or accepting BM25 plus vector hybrid scoring — a quality decision, not a config change                              |
+| Knowledge store                                                | no equivalent                                                                                                                                                                                     |
 
 The honest summary for the report: **the index maps; the pipeline that fills it does not.**
 An estimate that prices only the OpenSearch domain has priced the smaller half of the work

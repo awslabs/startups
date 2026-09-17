@@ -18,25 +18,30 @@ profile exists only for an estate whose AI infra is in Terraform.
   "metadata": {
     "report_date": "<ISO 8601>",
     "project_directory": "<path>",
-    "profile_source": "application_code",   // application_code | iac_cognitive | merged
-    "sources_analyzed": { "terraform": true, "application_code": false, "billing_data": false, "openai_usage_api": false }
+    "profile_source": "application_code", // application_code | iac_cognitive | merged
+    "sources_analyzed": {
+      "terraform": true,
+      "application_code": false,
+      "billing_data": false,
+      "openai_usage_api": false
+    }
   },
   "summary": {
     "overall_confidence": 0.0,
-    "confidence_level": "high",              // high | medium | low
+    "confidence_level": "high", // high | medium | low
     "total_models_detected": 0,
     "languages_found": [],
-    "ai_source": "azure_openai",             // azure_openai | openai | anthropic | both | other
+    "ai_source": "azure_openai", // azure_openai | openai | anthropic | both | other
     "inferred_from_iac": false
   },
-  "models": [],                              // see § models[]; MAY be empty for iac_cognitive
-  "integration": {},                         // see § integration
-  "infrastructure": [],                      // Azure AI Terraform resources; [] if no IaC
-  "current_costs": {},                       // ONLY if billing or usage-API ran — see § current_costs
-  "detection_signals": [],                   // see § detection_signals[]
-  "workloads": [],                           // ALWAYS present, [] if none — see § workloads[]
-  "agentic_profile": null,                   // ONLY if is_agentic — see § agentic_profile
-  "tool_manifest": []                        // ONLY if agentic_profile exists — see § tool_manifest[]
+  "models": [], // see § models[]; MAY be empty for iac_cognitive
+  "integration": {}, // see § integration
+  "infrastructure": [], // Azure AI Terraform resources; [] if no IaC
+  "current_costs": {}, // ONLY if billing or usage-API ran — see § current_costs
+  "detection_signals": [], // see § detection_signals[]
+  "workloads": [], // ALWAYS present, [] if none — see § workloads[]
+  "agentic_profile": null, // ONLY if is_agentic — see § agentic_profile
+  "tool_manifest": [] // ONLY if agentic_profile exists — see § tool_manifest[]
 }
 ```
 
@@ -62,12 +67,12 @@ One per detected model. **Field names are exact** (the §13.3b drift class):
 
 ```jsonc
 {
-  "model_id": "gpt-4o",                      // NOT model_name / name
-  "service": "azure_openai",                 // NOT service_type / azure_service (see below)
-  "detected_via": ["code"],                  // NOT detection_method — subset of code|terraform|billing
+  "model_id": "gpt-4o", // NOT model_name / name
+  "service": "azure_openai", // NOT service_type / azure_service (see below)
+  "detected_via": ["code"], // NOT detection_method — subset of code|terraform|billing
   "evidence": [{ "source": "code", "file": "app/llm.py", "line": 42, "pattern": "AzureOpenAI(" }],
-  "capabilities_used": ["text_generation"],  // NOT capabilities / features
-  "usage_context": "chat completion endpoint"  // NOT description / purpose
+  "capabilities_used": ["text_generation"], // NOT capabilities / features
+  "usage_context": "chat completion endpoint" // NOT description / purpose
 }
 ```
 
@@ -79,15 +84,19 @@ One per detected model. **Field names are exact** (the §13.3b drift class):
 
 ```jsonc
 {
-  "primary_sdk": "openai",                   // Azure OpenAI apps use the openai SDK; also @azure/openai, azure-ai-inference
+  "primary_sdk": "openai", // Azure OpenAI apps use the openai SDK; also @azure/openai, azure-ai-inference
   "sdk_version": "1.x",
   "frameworks": [],
   "languages": ["python"],
-  "pattern": "direct_sdk",                   // direct_sdk | framework | rest_api | mixed | unknown
-  "gateway_type": null,                      // llm_router | api_gateway | voice_platform | framework | direct | null
-  "capabilities_summary": {                  // boolean map
-    "text_generation": true, "streaming": false, "function_calling": false,
-    "vision": false, "embeddings": false, "batch_processing": false
+  "pattern": "direct_sdk", // direct_sdk | framework | rest_api | mixed | unknown
+  "gateway_type": null, // llm_router | api_gateway | voice_platform | framework | direct | null
+  "capabilities_summary": { // boolean map
+    "text_generation": true,
+    "streaming": false,
+    "function_calling": false,
+    "vision": false,
+    "embeddings": false,
+    "batch_processing": false
   }
 }
 ```
@@ -118,13 +127,13 @@ after Clarify confirms them**, not this array.
 
 ```jsonc
 {
-  "workload_id": "wl_3a1f2c",                // "wl_" + sha256(model_id + "|" + sdk_method + "|" + structured_flag)[:6]
-  "model_id": "gpt-4o",                      // MUST be one of models[].model_id
+  "workload_id": "wl_3a1f2c", // "wl_" + sha256(model_id + "|" + sdk_method + "|" + structured_flag)[:6]
+  "model_id": "gpt-4o", // MUST be one of models[].model_id
   "sdk_method": "openai.chat.completions.create",
-  "capability": "text_generation",           // see enum below
-  "capability_confidence": "high",           // high | medium | low
+  "capability": "text_generation", // see enum below
+  "capability_confidence": "high", // high | medium | low
   "structured_output": false,
-  "call_sites": [{ "file": "app/llm.py", "line": 42 }]   // non-empty, POSIX repo-relative
+  "call_sites": [{ "file": "app/llm.py", "line": 42 }] // non-empty, POSIX repo-relative
 }
 ```
 
@@ -143,12 +152,24 @@ Present ONLY if `is_agentic: true`; null otherwise. Provider-agnostic (framework
 ```jsonc
 {
   "is_agentic": true,
-  "framework": "langgraph",                  // langgraph|crewai|autogen|openai_agents|strands|custom|none
-  "agents": [{ "agent_id": "a1", "file": "...", "line": 0, "model_id": "gpt-4o", "tools": [], "memory_type": "conversation_buffer", "role": "..." }],
-  "orchestration_pattern": "single",         // single|hierarchical|swarm|graph|sequential|unknown
-  "agent_count": 1, "tool_count": 0,
-  "has_human_in_loop": false, "has_memory": false,
-  "memory_backend": "unknown"                // redis|postgres|in_memory|vector_store|unknown
+  "framework": "langgraph", // langgraph|crewai|autogen|openai_agents|strands|custom|none
+  "agents": [
+    {
+      "agent_id": "a1",
+      "file": "...",
+      "line": 0,
+      "model_id": "gpt-4o",
+      "tools": [],
+      "memory_type": "conversation_buffer",
+      "role": "..."
+    }
+  ],
+  "orchestration_pattern": "single", // single|hierarchical|swarm|graph|sequential|unknown
+  "agent_count": 1,
+  "tool_count": 0,
+  "has_human_in_loop": false,
+  "has_memory": false,
+  "memory_backend": "unknown" // redis|postgres|in_memory|vector_store|unknown
 }
 ```
 
@@ -163,16 +184,16 @@ Present ONLY if `agentic_profile` exists (`[]` if agentic but no tools). Provide
 
 ## Azure swaps (vs gcp-to-aws's schema-discover-ai.md)
 
-| Location | gcp | azure |
-|---|---|---|
-| `summary.ai_source` enum | `gemini` | `azure_openai` (gemini dropped) |
-| `metadata.profile_source` enum | `iac_vertex` | `iac_cognitive` |
-| `models[].service` examples | `vertex_ai_*` | `azure_openai`, `cognitive_*`, `azure_ml` |
-| `integration.primary_sdk` example | `google-cloud-aiplatform` | `openai` / `@azure/openai` / `azure-ai-inference` |
-| `infrastructure[].type` examples | `google_vertex_ai_endpoint` | `azurerm_cognitive_account` etc. |
-| `detection_signals[].method` | `live_gcloud` | `live_az` |
-| `current_costs.breakdown[].provider` | `gcp` | `azure` |
-| field-name rule | NOT `gcp_service` | NOT `azure_service` — the field is `service` |
+| Location                             | gcp                         | azure                                             |
+| ------------------------------------ | --------------------------- | ------------------------------------------------- |
+| `summary.ai_source` enum             | `gemini`                    | `azure_openai` (gemini dropped)                   |
+| `metadata.profile_source` enum       | `iac_vertex`                | `iac_cognitive`                                   |
+| `models[].service` examples          | `vertex_ai_*`               | `azure_openai`, `cognitive_*`, `azure_ml`         |
+| `integration.primary_sdk` example    | `google-cloud-aiplatform`   | `openai` / `@azure/openai` / `azure-ai-inference` |
+| `infrastructure[].type` examples     | `google_vertex_ai_endpoint` | `azurerm_cognitive_account` etc.                  |
+| `detection_signals[].method`         | `live_gcloud`               | `live_az`                                         |
+| `current_costs.breakdown[].provider` | `gcp`                       | `azure`                                           |
+| field-name rule                      | NOT `gcp_service`           | NOT `azure_service` — the field is `service`      |
 
 ## Validation Checklist
 

@@ -134,14 +134,14 @@ Before any calculation, surface the status:
 "Found in the pricing file" below means **the concrete rate row resolved**, per
 Step 0a-ii — not merely that the service's section exists.
 
-| Priority | Source                                               | Condition                                                                                       | `pricing_source` value |
-| -------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------- |
-| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Rate row found in the pricing file                                                              | `"cached"`             |
-| 1b       | Same, base rate only                                 | Base row found but a required component is not priced (e.g. a Windows licence adder)            | `"partial"`            |
-| 2        | MCP API (`get_pricing`)                              | Rate row NOT in the file, MCP available                                                         | `"live"`               |
-| 3        | Pricing file after MCP failure                       | MCP attempted but failed, rate row IS in file                                                   | `"cached_fallback"`    |
-| 4        | Formula constants / well-known published rate        | NOT in file, MCP failed, but the cost engine's own formulas carry the rate (state it verbatim)  | `"estimated"`          |
-| 5        | Unavailable                                          | NOT in file, MCP failed, no formula constant either                                             | `"unavailable"`        |
+| Priority | Source                                               | Condition                                                                                      | `pricing_source` value |
+| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------- |
+| 1        | `references/vendored/pricing/aws-infra-pricing.json` | Rate row found in the pricing file                                                             | `"cached"`             |
+| 1b       | Same, base rate only                                 | Base row found but a required component is not priced (e.g. a Windows licence adder)           | `"partial"`            |
+| 2        | MCP API (`get_pricing`)                              | Rate row NOT in the file, MCP available                                                        | `"live"`               |
+| 3        | Pricing file after MCP failure                       | MCP attempted but failed, rate row IS in file                                                  | `"cached_fallback"`    |
+| 4        | Formula constants / well-known published rate        | NOT in file, MCP failed, but the cost engine's own formulas carry the rate (state it verbatim) | `"estimated"`          |
+| 5        | Unavailable                                          | NOT in file, MCP failed, no formula constant either                                            | `"unavailable"`        |
 
 Row 4 is the documented home of the `services_by_source.estimated` bucket the
 shared schema and assemblers carry: a service priced from a rate the cost

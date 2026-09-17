@@ -647,7 +647,7 @@ def main() -> int:  # noqa: C901 -- a fixture oracle is a checklist; splitting i
     declared = set()
     if src.exists():
         # read the codes out of the skill file's table, rather than restating them here
-        declared = set(re.findall(r"^\| `([a-z0-9_]+)` \|", src.read_text(), re.M))
+        declared = set(re.findall(r"^\| `([a-z0-9_]+)` +\|", src.read_text(), re.M))
         check(bool(declared), f"could not read any warning codes from {wv['source_file_relpath']}")
     else:
         FAILS.append(f"cannot reach {wv['source_file_relpath']} to read the closed vocabulary")

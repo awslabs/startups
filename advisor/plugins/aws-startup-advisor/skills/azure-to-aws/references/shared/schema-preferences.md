@@ -7,13 +7,13 @@ Contract for the Clarify artifact. `clarify-assemble.md` is its single creator.
 A row's shape is `disposition`, `value`, `default`, plus **exactly one** justification key.
 Which key depends on the disposition:
 
-| Disposition | Required key | Holds |
-| ----------- | ------------ | ----- |
-| `DETECTED` | **`source`** | *What in the estate was read.* "every resource is westeurope", "source is `Microsoft.Cache/Redis`, not redisEnterprise" |
-| `PROPOSED` | none required | the value came from the documented default, and `default` already says so |
-| `ESSENTIAL` | `context` when there is useful framing | what the user needs in order to answer. `unanswered: true` + `blocks_phase: true` when left null |
-| `N/A` | **`reason`** | why the category or row does not apply |
-| any, when a blocker forced it | **`forced_by`** | the `hard_blockers` key that removed the choice |
+| Disposition                   | Required key                           | Holds                                                                                                                   |
+| ----------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `DETECTED`                    | **`source`**                           | _What in the estate was read._ "every resource is westeurope", "source is `Microsoft.Cache/Redis`, not redisEnterprise" |
+| `PROPOSED`                    | none required                          | the value came from the documented default, and `default` already says so                                               |
+| `ESSENTIAL`                   | `context` when there is useful framing | what the user needs in order to answer. `unanswered: true` + `blocks_phase: true` when left null                        |
+| `N/A`                         | **`reason`**                           | why the category or row does not apply                                                                                  |
+| any, when a blocker forced it | **`forced_by`**                        | the `hard_blockers` key that removed the choice                                                                         |
 
 **`DETECTED` means READ FROM THE ESTATE, so it must say what it read.** A `DETECTED` row
 whose `value` equals its `default` and which carries no `source` is indistinguishable from a
@@ -37,12 +37,12 @@ substitute for it.
 
 Every row carries one of four dispositions, and the distinction is load-bearing:
 
-| Disposition | Meaning                                                                      |
-| ----------- | ---------------------------------------------------------------------------- |
-| `DETECTED`  | read from the estate; shown for confirmation, not asked                       |
-| `PROPOSED`  | the skill's recommendation with a default the user may change                  |
-| `ESSENTIAL` | cannot be defaulted; the phase does not complete until it is answered          |
-| `N/A`       | considered and does not apply to this estate                                   |
+| Disposition | Meaning                                                               |
+| ----------- | --------------------------------------------------------------------- |
+| `DETECTED`  | read from the estate; shown for confirmation, not asked               |
+| `PROPOSED`  | the skill's recommendation with a default the user may change         |
+| `ESSENTIAL` | cannot be defaulted; the phase does not complete until it is answered |
+| `N/A`       | considered and does not apply to this estate                          |
 
 `N/A` is written explicitly, never omitted. An absent key and a considered `N/A` are
 different facts, and the report distinguishes them — "we checked your estate for SQL
@@ -54,46 +54,66 @@ licensing exposure and found none" is a different statement from silence.
 {
   "phase": "clarify",
   "global": {
-    "target_region":     { "disposition": "DETECTED", "value": "eu-west-1", "default": "eu-west-1" },
-    "environment_scope": { "disposition": "DETECTED", "value": ["prod"],   "default": ["prod"] },
-    "migration_window":  { "disposition": "PROPOSED", "value": null,       "default": null }
+    "target_region": { "disposition": "DETECTED", "value": "eu-west-1", "default": "eu-west-1" },
+    "environment_scope": { "disposition": "DETECTED", "value": ["prod"], "default": ["prod"] },
+    "migration_window": { "disposition": "PROPOSED", "value": null, "default": null }
   },
   "design_constraints": {
-    "cpu_architecture":        { "disposition": "PROPOSED", "value": "x86_64", "default": "x86_64" },
-    "compute_target":          { "disposition": "PROPOSED", "value": null, "default": "elastic_beanstalk" },
-    "cost_optimization":       { "disposition": "PROPOSED", "value": null, "default": "balanced" },
-    "traffic_pattern":         { "disposition": "PROPOSED", "value": null, "default": "steady" },
-    "long_lived_connections":  { "disposition": "PROPOSED", "value": null, "default": false },
-    "vm_cutover":              { "disposition": "ESSENTIAL", "value": "mgn", "default": null }
+    "cpu_architecture": { "disposition": "PROPOSED", "value": "x86_64", "default": "x86_64" },
+    "compute_target": { "disposition": "PROPOSED", "value": null, "default": "elastic_beanstalk" },
+    "cost_optimization": { "disposition": "PROPOSED", "value": null, "default": "balanced" },
+    "traffic_pattern": { "disposition": "PROPOSED", "value": null, "default": "steady" },
+    "long_lived_connections": { "disposition": "PROPOSED", "value": null, "default": false },
+    "vm_cutover": { "disposition": "ESSENTIAL", "value": "mgn", "default": null }
   },
   "data": {
-    "availability":    { "disposition": "ESSENTIAL", "value": "single-az", "default": null,
-                         "source_ha_context": "pg-contoso-store: ZoneRedundant, standby zone 2" },
-    "db_cutover":      { "disposition": "ESSENTIAL", "value": "dms", "default": null },
-    "traffic_pattern": { "disposition": "PROPOSED",  "value": null, "default": "steady" },
-    "storage_io":      { "disposition": "PROPOSED",  "value": null, "default": "medium" },
-    "cosmos_rw_split": { "disposition": "N/A",       "value": null, "default": null },
-    "redis_modules":   { "disposition": "DETECTED",  "value": false, "default": false }
+    "availability": {
+      "disposition": "ESSENTIAL",
+      "value": "single-az",
+      "default": null,
+      "source_ha_context": "pg-contoso-store: ZoneRedundant, standby zone 2"
+    },
+    "db_cutover": { "disposition": "ESSENTIAL", "value": "dms", "default": null },
+    "traffic_pattern": { "disposition": "PROPOSED", "value": null, "default": "steady" },
+    "storage_io": { "disposition": "PROPOSED", "value": null, "default": "medium" },
+    "cosmos_rw_split": { "disposition": "N/A", "value": null, "default": null },
+    "redis_modules": { "disposition": "DETECTED", "value": false, "default": false }
   },
   "baseline": {
     "azure_monthly_spend": { "disposition": "ESSENTIAL", "value": null, "default": null }
   },
-  "identity": { "disposition": "PROPOSED", "value": "identity_center_reinvite",
-                "default": "identity_center_reinvite" },
+  "identity": {
+    "disposition": "PROPOSED",
+    "value": "identity_center_reinvite",
+    "default": "identity_center_reinvite"
+  },
   "licensing": {
-    "windows_model": { "disposition": "ESSENTIAL", "value": "license_included", "default": null,
-                       "context": "4 Windows VMs, 14 vCPUs total" },
-    "sql_model":     { "disposition": "N/A", "value": null, "default": null },
-    "ahub_in_use":   { "disposition": "DETECTED", "value": false, "default": false },
-    "blockers":      [ { "azure_id": "<azure_id>", "code": "azure_edition_windows_server" } ]
+    "windows_model": {
+      "disposition": "ESSENTIAL",
+      "value": "license_included",
+      "default": null,
+      "context": "4 Windows VMs, 14 vCPUs total"
+    },
+    "sql_model": { "disposition": "N/A", "value": null, "default": null },
+    "ahub_in_use": { "disposition": "DETECTED", "value": false, "default": false },
+    "blockers": [{ "azure_id": "<azure_id>", "code": "azure_edition_windows_server" }]
   },
   "app_service_plans": [
-    { "plan_azure_id": "<azure_id>", "hosted_app_count": 5,
-      "isolation_split": { "disposition": "PROPOSED", "value": false, "default": false } }
+    {
+      "plan_azure_id": "<azure_id>",
+      "hosted_app_count": 5,
+      "isolation_split": { "disposition": "PROPOSED", "value": false, "default": false }
+    }
   ],
   "clusters": [
-    { "cluster_id": "<slug>", "pattern_id": { "disposition": "DETECTED", "value": "unclassified",
-                                              "default": "unclassified" } }
+    {
+      "cluster_id": "<slug>",
+      "pattern_id": {
+        "disposition": "DETECTED",
+        "value": "unclassified",
+        "default": "unclassified"
+      }
+    }
   ],
   "workshop": {}
 }
@@ -101,23 +121,23 @@ licensing exposure and found none" is a different statement from silence.
 
 Which fragment owns which section:
 
-| Section | Fragment |
-| ------- | -------- |
-| `global`, `design_constraints.cost_optimization`, `baseline` | `clarify-global.md` |
-| the rest of `design_constraints`, `app_service_plans[]` | `clarify-compute.md` |
-| `data` | `clarify-database.md` |
-| `licensing` | `clarify-licensing.md` (or an N/A stub from the assembler when it does not fire) |
-| `identity` | `clarify-identity.md` |
-| `clusters[]` | the assembler, from `azure-resource-clusters.json` |
+| Section                                                      | Fragment                                                                         |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `global`, `design_constraints.cost_optimization`, `baseline` | `clarify-global.md`                                                              |
+| the rest of `design_constraints`, `app_service_plans[]`      | `clarify-compute.md`                                                             |
+| `data`                                                       | `clarify-database.md`                                                            |
+| `licensing`                                                  | `clarify-licensing.md` (or an N/A stub from the assembler when it does not fire) |
+| `identity`                                                   | `clarify-identity.md`                                                            |
+| `clusters[]`                                                 | the assembler, from `azure-resource-clusters.json`                               |
 
 ## The two rules that carry the most weight
 
-**`ESSENTIAL` + `value: null` is the completion gate.** An essential row has no default *on
-purpose*, and the phase must not complete while one is unanswered. This is the only place
+**`ESSENTIAL` + `value: null` is the completion gate.** An essential row has no default _on
+purpose_, and the phase must not complete while one is unanswered. This is the only place
 the contract can express "shown and not answered", and the assembler's checklist asserts it.
 
 **A value taken from its default stays `PROPOSED`.** Never promote it to `DETECTED`, which
-means *read from the estate*, and never to a user decision. Design's rationale prints "you
+means _read from the estate_, and never to a user decision. Design's rationale prints "you
 chose Elastic Beanstalk" differently from "we assumed Elastic Beanstalk", and the report
 distinguishes them — but only if this file recorded which happened.
 

@@ -119,6 +119,7 @@ since Jan 2023, so a missing SSE block is not an unencrypted bucket.
 **Applies to:** `aws_elasticache_replication_group` and Redis-engine `aws_elasticache_cluster`.
 
 **Rule:**
+
 - `aws_elasticache_replication_group`: set `at_rest_encryption_enabled = true` (and consider
   `transit_encryption_enabled = true`). ElastiCache does not encrypt at rest by default.
 - `aws_elasticache_cluster` in the Redis single-node form (`engine = "redis"`, no

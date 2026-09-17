@@ -12,19 +12,19 @@ and no compute decision is architecture-invariant.
 Checked first, before any preference. An eliminator is physics or a product boundary, not
 a judgement, so it removes a candidate outright.
 
-| Candidate | Eliminated when                                                                                     |
-| --------- | --------------------------------------------------------------------------------------------------- |
+| Candidate          | Eliminated when                                                                                                                                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **AWS App Runner** | **ALWAYS. It is not a candidate for anything.** No longer accepting new customers as of April 2026. Do not offer it, do not mention it as a forward-look, do not put it in a candidate list. ECS Express Mode may be mentioned only as a forward-look on the Fargate path |
-| Lambda    | the workload runs longer than **15 minutes** per invocation — a hard ceiling, not a quota            |
-| Lambda    | the function is a **Durable Function** (an orchestrator, entity, or activity binding). Durable's state machine has no Lambda equivalent; it maps to Step Functions plus Lambda, which is a re-architecture and therefore a rubric decision, not a like-for-like |
-| Lambda    | the plan is **not** a consumption plan and `always_on` is true — a warm always-on process is not what Lambda is |
-| Lambda    | the app needs a **writable local filesystem** beyond `/tmp`, or persistent local state |
-| Elastic Beanstalk | the workload is **Windows Containers**. EB supports Windows Server platforms and Linux Docker, not Windows containers |
-| Elastic Beanstalk | more than one **distinct process type** must scale independently. EB scales an environment, not a process within it — this is heroku-to-aws's non-web-formation finding, and it applies identically here |
-| Fargate   | the workload needs **GPU**. Fargate has none — route to EC2 and `gpu-hpc.md`                          |
-| Fargate   | the workload needs a **privileged container**, a kernel module, or a custom kernel                    |
-| EKS       | never eliminated, but never selected without a signal — see criterion 2                              |
-| EC2       | never eliminated. It is the floor: anything can run on EC2                                            |
+| Lambda             | the workload runs longer than **15 minutes** per invocation — a hard ceiling, not a quota                                                                                                                                                                                 |
+| Lambda             | the function is a **Durable Function** (an orchestrator, entity, or activity binding). Durable's state machine has no Lambda equivalent; it maps to Step Functions plus Lambda, which is a re-architecture and therefore a rubric decision, not a like-for-like           |
+| Lambda             | the plan is **not** a consumption plan and `always_on` is true — a warm always-on process is not what Lambda is                                                                                                                                                           |
+| Lambda             | the app needs a **writable local filesystem** beyond `/tmp`, or persistent local state                                                                                                                                                                                    |
+| Elastic Beanstalk  | the workload is **Windows Containers**. EB supports Windows Server platforms and Linux Docker, not Windows containers                                                                                                                                                     |
+| Elastic Beanstalk  | more than one **distinct process type** must scale independently. EB scales an environment, not a process within it — this is heroku-to-aws's non-web-formation finding, and it applies identically here                                                                  |
+| Fargate            | the workload needs **GPU**. Fargate has none — route to EC2 and `gpu-hpc.md`                                                                                                                                                                                              |
+| Fargate            | the workload needs a **privileged container**, a kernel module, or a custom kernel                                                                                                                                                                                        |
+| EKS                | never eliminated, but never selected without a signal — see criterion 2                                                                                                                                                                                                   |
+| EC2                | never eliminated. It is the floor: anything can run on EC2                                                                                                                                                                                                                |
 
 ## 2. The six criteria, in order, first match wins
 
@@ -37,23 +37,23 @@ Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
 
-What the source workload *is* decides more than anything the customer could tell us.
+What the source workload _is_ decides more than anything the customer could tell us.
 
-| Source                                                        | Target                                                |
-| ------------------------------------------------------------- | ----------------------------------------------------- |
-| `Microsoft.ContainerService/managedClusters`                   | **EKS** — fast-path row, never reaches this file       |
-| `Microsoft.Web/serverfarms` whose hosted sites are all functions on a **consumption** plan (`Y1`, `FC1`) | **Lambda** |
-| `Microsoft.Web/serverfarms` hosting web apps                   | **Elastic Beanstalk**                                  |
-| `Microsoft.App/containerApps` / `managedEnvironments`          | **Fargate**                                            |
-| `Microsoft.ContainerInstance/containerGroups`                  | **Fargate** — a one-shot task becomes a Fargate task, not a service |
-| `Microsoft.Compute/virtualMachines`                            | **EC2**, MGN-based cutover                             |
-| `Microsoft.Compute/virtualMachineScaleSets`                    | **EC2 Auto Scaling group**                             |
-| `Microsoft.Web/staticSites`                                    | **S3 + CloudFront**, plus Lambda + API Gateway for its managed functions |
+| Source                                                                                                   | Target                                                                   |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `Microsoft.ContainerService/managedClusters`                                                             | **EKS** — fast-path row, never reaches this file                         |
+| `Microsoft.Web/serverfarms` whose hosted sites are all functions on a **consumption** plan (`Y1`, `FC1`) | **Lambda**                                                               |
+| `Microsoft.Web/serverfarms` hosting web apps                                                             | **Elastic Beanstalk**                                                    |
+| `Microsoft.App/containerApps` / `managedEnvironments`                                                    | **Fargate**                                                              |
+| `Microsoft.ContainerInstance/containerGroups`                                                            | **Fargate** — a one-shot task becomes a Fargate task, not a service      |
+| `Microsoft.Compute/virtualMachines`                                                                      | **EC2**, MGN-based cutover                                               |
+| `Microsoft.Compute/virtualMachineScaleSets`                                                              | **EC2 Auto Scaling group**                                               |
+| `Microsoft.Web/staticSites`                                                                              | **S3 + CloudFront**, plus Lambda + API Gateway for its managed functions |
 
 **Elastic Beanstalk is the App Service Plan default, and the reason is posture not
 preference.** App Service is a managed platform the customer already pays for: AWS
 manages deployments, scaling, patching, and health. Fargate hands them a container
-lifecycle they did not previously own. Moving a PaaS workload to containers *during* a
+lifecycle they did not previously own. Moving a PaaS workload to containers _during_ a
 cloud migration changes two variables at once, and when it goes wrong there is no way to
 tell which one caused it.
 
@@ -72,13 +72,13 @@ An absent preference is not a preference — fall through, do not default here.
 
 Only reached when 2.2 and 2.3 disagree with what the workload can actually do.
 
-| Signal                                                | Consequence                                                            |
-| ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| Signal                                                                   | Consequence                                                                                                 |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | the plan runs **containers** (`linux_fx_version` is a `DOCKER\|…` image) | Fargate over Elastic Beanstalk — the app is already a container, so the PaaS argument in 2.2 does not apply |
-| **VNet integration** is configured on the site        | any target, but the design must place it in private subnets and say so  |
-| an app runs `WEBSITE_RUN_FROM_PACKAGE`                | EB source bundles are equivalent; no target change, worth a note        |
-| a **deployment slot** exists                          | EB blue-green via swap URL, or a weighted target group on Fargate       |
-| `always_on = false` on a non-consumption plan         | the customer is tolerating cold starts; Lambda becomes viable if 2.2 pointed at EB |
+| **VNet integration** is configured on the site                           | any target, but the design must place it in private subnets and say so                                      |
+| an app runs `WEBSITE_RUN_FROM_PACKAGE`                                   | EB source bundles are equivalent; no target change, worth a note                                            |
+| a **deployment slot** exists                                             | EB blue-green via swap URL, or a weighted target group on Fargate                                           |
+| `always_on = false` on a non-consumption plan                            | the customer is tolerating cold starts; Lambda becomes viable if 2.2 pointed at EB                          |
 
 ### 2.5 Cluster context
 

@@ -138,13 +138,13 @@ days. Below `confidence_rules.min_window_days` in
 Stated up front, because three of these look like bugs otherwise and a reader who
 assumes otherwise will misread the output.
 
-| Constraint | Consequence |
-| ---------- | ----------- |
-| No billing or metrics source is built | The Azure baseline is the user's stated figure or nothing — see `estimate-infra.md` Part 1. Rungs 1, 2 and 4 cannot fire |
-| The reservation `$0` rule needs consumption data | It is a **contract for later**, not something a Terraform-only run exercises. `reservation_substitutions` is legitimately an empty array |
-| Utilization-based right-sizing needs metrics | The right-sizing delta comes from **declared waste** only, and may legitimately be `$0`. When it is, the artifact must say why |
-| The pricing cache is `us-east-1` | Most Azure estates map to another AWS region, so the region mismatch fires on most runs and must be stated rather than absorbed |
-| Three services have no rates anywhere | DocumentDB, FSx for Windows, and the Windows licence adder. Their lines are `unavailable` or `partial`, and both totals then become **floors** |
+| Constraint                                       | Consequence                                                                                                                                    |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| No billing or metrics source is built            | The Azure baseline is the user's stated figure or nothing — see `estimate-infra.md` Part 1. Rungs 1, 2 and 4 cannot fire                       |
+| The reservation `$0` rule needs consumption data | It is a **contract for later**, not something a Terraform-only run exercises. `reservation_substitutions` is legitimately an empty array       |
+| Utilization-based right-sizing needs metrics     | The right-sizing delta comes from **declared waste** only, and may legitimately be `$0`. When it is, the artifact must say why                 |
+| The pricing cache is `us-east-1`                 | Most Azure estates map to another AWS region, so the region mismatch fires on most runs and must be stated rather than absorbed                |
+| Three services have no rates anywhere            | DocumentDB, FSx for Windows, and the Windows licence adder. Their lines are `unavailable` or `partial`, and both totals then become **floors** |
 
 None of these is a reason to produce a number anyway. A floor that says it is a
 floor is useful; a total that quietly omits the most expensive line is not.

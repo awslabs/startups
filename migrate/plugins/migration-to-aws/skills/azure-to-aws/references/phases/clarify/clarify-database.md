@@ -20,13 +20,13 @@ the one answer that cannot be read from the estate.
 
 ## Step 1: Extract before proposing
 
-| Read from the inventory | Resolves |
-| ----------------------- | -------- |
-| each flexible server's `high_availability.mode` and `zone` | the source's HA posture — **context for Q-D1, never the answer** |
-| `sku_name`, `storage_mb`, `version`, `backup_retention_days` | sizing inputs and the engine-version floor |
+| Read from the inventory                                                           | Resolves                                                                       |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| each flexible server's `high_availability.mode` and `zone`                        | the source's HA posture — **context for Q-D1, never the answer**               |
+| `sku_name`, `storage_mb`, `version`, `backup_retention_days`                      | sizing inputs and the engine-version floor                                     |
 | `Microsoft.Sql/servers/databases` `sku_name` (DTU or vCore) and `elastic_pool_id` | the Azure SQL tier; an `elastic_pool_id` routes to the specialist gate instead |
-| Cosmos `kind` / `capabilities` | which API, and therefore whether Q-D5 fires at all |
-| Cosmos `throughput` and per-container `throughput` | the RU/s figure Q-D5 converts |
+| Cosmos `kind` / `capabilities`                                                    | which API, and therefore whether Q-D5 fires at all                             |
+| Cosmos `throughput` and per-container `throughput`                                | the RU/s figure Q-D5 converts                                                  |
 
 ## Step 2: The rows
 
@@ -47,19 +47,19 @@ What availability do your databases need on AWS?
 [D] Multi-region — Aurora Global Database
 ```
 
-**Consequence line (PROPOSED case):** *Assuming single-AZ → the smallest defensible
+**Consequence line (PROPOSED case):** _Assuming single-AZ → the smallest defensible
 database line. Multi-AZ roughly doubles it and buys automatic failover; Aurora is a
-different operational model again.*
+different operational model again._
 
-**Consequence line (ESSENTIAL case — say this instead):** *Your `pg-contoso-store` is
+**Consequence line (ESSENTIAL case — say this instead):** _Your `pg-contoso-store` is
 configured `ZoneRedundant` with a standby in zone 2 today. We will not assume you want to
 keep paying for that, and we will not assume you want to give it up. This one needs an
-answer.*
+answer._
 
 Two rules, and both matter:
 
-1. **Do not read the source's HA setting as the answer.** It tells you what they *bought*,
-   not what they *need*. Zone-redundancy is frequently a default nobody chose, and plenty
+1. **Do not read the source's HA setting as the answer.** It tells you what they _bought_,
+   not what they _need_. Zone-redundancy is frequently a default nobody chose, and plenty
    of single-zone databases are load-bearing.
 2. **When no answer is given, the default is `single-az`, explicitly not Aurora.**
    Inferring Aurora from the source's HA inflates the estimate with no visible cause, and
@@ -104,9 +104,9 @@ Pair the row with the extracted size so the choice is informed — a 60 GiB data
 [C] Spiky / unpredictable
 ```
 
-**Consequence line:** *Assuming steady → sized from current capacity, no read replicas.
+**Consequence line:** _Assuming steady → sized from current capacity, no read replicas.
 Read-heavy workloads add replicas, which adds cost but usually less than upsizing the
-primary.*
+primary._
 
 ### Q-D4 — Storage I/O
 
@@ -116,8 +116,8 @@ primary.*
 [A] Low        [B] Medium — gp3 general purpose        (default)        [C] High — needs provisioned IOPS
 ```
 
-**Consequence line:** *Assuming medium I/O → gp3 storage. High-IOPS workloads need io2 or
-provisioned IOPS, which is a materially different storage line.*
+**Consequence line:** _Assuming medium I/O → gp3 storage. High-IOPS workloads need io2 or
+provisioned IOPS, which is a materially different storage line._
 
 **Storage size is never right-sized downward from utilization.** Shrinking allocated
 storage is not an online operation on RDS, so a too-small guess is expensive to undo.
@@ -158,9 +158,9 @@ Also record, as findings rather than questions:
 for Redis has no modules — the answer is no); PROPOSED when it is
 `Microsoft.Cache/redisEnterprise`. **Default:** `false`.
 
-**Consequence line:** *Assuming no Redis modules → ElastiCache Redis is a drop-in.
+**Consequence line:** _Assuming no Redis modules → ElastiCache Redis is a drop-in.
 RediSearch, RedisJSON and RedisTimeSeries have no ElastiCache or MemoryDB equivalent, and
-that is a feature gap rather than a sizing difference.*
+that is a feature gap rather than a sizing difference._
 
 ## Step 3: Rows returned
 
@@ -182,13 +182,13 @@ the server is not.
 
 ## Who consumes these
 
-| Row | Consumer |
-| --- | -------- |
-| `availability` | `database.md` §1 — the post-rubric override that selects RDS vs Aurora |
-| `db_cutover` | Generate's migration runbook, and the DMS-versus-dump tooling choice |
-| `traffic_pattern`, `storage_io` | Estimate's instance class and storage type |
-| `cosmos_rw_split` | `database.md` §4's RU/s → WCU/RCU conversion |
-| `redis_modules` | `database.md`'s ElastiCache eliminator |
+| Row                             | Consumer                                                               |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `availability`                  | `database.md` §1 — the post-rubric override that selects RDS vs Aurora |
+| `db_cutover`                    | Generate's migration runbook, and the DMS-versus-dump tooling choice   |
+| `traffic_pattern`, `storage_io` | Estimate's instance class and storage type                             |
+| `cosmos_rw_split`               | `database.md` §4's RU/s → WCU/RCU conversion                           |
+| `redis_modules`                 | `database.md`'s ElastiCache eliminator                                 |
 
 ## Status — build step 5
 

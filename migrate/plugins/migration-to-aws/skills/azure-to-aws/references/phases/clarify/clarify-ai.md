@@ -19,14 +19,14 @@ the `azure_openai | openai | anthropic | both | other` source vocabulary.
 
 Read from `ai-workload-profile.json`:
 
-| Read | From | Use |
-| ---- | ---- | --- |
-| `summary.ai_source` | summary | which provider migrated; personalizes wording ("Azure OpenAI") |
-| `models[]`, `workloads[]` | top level | the confirmation table (Gate 1) and per-workload rows |
-| `integration.pattern`, `.gateway_type`, `.frameworks[]` | integration | Q14 framework auto-detect |
-| `integration.capabilities_summary` | integration | Q20 modalities |
-| `agentic_profile` | top level | whether Category G fires at all |
-| `current_costs.monthly_ai_spend` | current_costs (if present) | Q15 default (else PROPOSED default) |
+| Read                                                    | From                       | Use                                                            |
+| ------------------------------------------------------- | -------------------------- | -------------------------------------------------------------- |
+| `summary.ai_source`                                     | summary                    | which provider migrated; personalizes wording ("Azure OpenAI") |
+| `models[]`, `workloads[]`                               | top level                  | the confirmation table (Gate 1) and per-workload rows          |
+| `integration.pattern`, `.gateway_type`, `.frameworks[]` | integration                | Q14 framework auto-detect                                      |
+| `integration.capabilities_summary`                      | integration                | Q20 modalities                                                 |
+| `agentic_profile`                                       | top level                  | whether Category G fires at all                                |
+| `current_costs.monthly_ai_spend`                        | current_costs (if present) | Q15 default (else PROPOSED default)                            |
 
 Present an **AI Context Summary** row for the assembler to show: `ai_source`, profile origin,
 models detected, capabilities, integration pattern + SDK, gateway/router, frameworks.
@@ -82,7 +82,7 @@ Fires when `workloads[]` has **≥ 2 entries** — it replaces the per-workload 
 table the assembler presents at Gate 1:
 
 | # | Model | SDK Method | Capability | Confidence | Proposed Bedrock Target |
-|---|-------|-----------|-----------|-----------|-------------------------|
+| - | ----- | ---------- | ---------- | ---------- | ----------------------- |
 
 Per row: **Accept / Edit / Drop.** High-confidence rows pre-fill the Bedrock target and skip
 Q16–Q22; medium/low ask ≤ 2 questions each. The capability→target proposal uses the same mapping
@@ -103,19 +103,24 @@ Q16–Q22, and write `"workloads": []` when none.
 
 ```jsonc
 {
-  "ai_framework": ["direct"],               // DETECTED | PROPOSED
-  "ai_monthly_spend": "$500-$2K",           // DETECTED | PROPOSED
-  "ai_priority": "balanced",                // PROPOSED
-  "ai_critical_feature": null,              // PROPOSED
-  "ai_token_volume": "low",                 // PROPOSED
-  "ai_model_baseline": "gpt-4o",            // DETECTED | PROPOSED
-  "ai_vision": false,                       // DETECTED | PROPOSED
-  "ai_complexity": "moderate",              // PROPOSED
-  "startup_program_status": null,           // ESSENTIAL — value null until answered (the Gate-2 completion gate)
-  "ai_constraints": {                       // agentic block present ONLY when agentic_profile.is_agentic
-    "agentic": { "migration_approach": "undecided", "memory_requirement": "session", "task_duration": "medium", "incremental_migration": false }
+  "ai_framework": ["direct"], // DETECTED | PROPOSED
+  "ai_monthly_spend": "$500-$2K", // DETECTED | PROPOSED
+  "ai_priority": "balanced", // PROPOSED
+  "ai_critical_feature": null, // PROPOSED
+  "ai_token_volume": "low", // PROPOSED
+  "ai_model_baseline": "gpt-4o", // DETECTED | PROPOSED
+  "ai_vision": false, // DETECTED | PROPOSED
+  "ai_complexity": "moderate", // PROPOSED
+  "startup_program_status": null, // ESSENTIAL — value null until answered (the Gate-2 completion gate)
+  "ai_constraints": { // agentic block present ONLY when agentic_profile.is_agentic
+    "agentic": {
+      "migration_approach": "undecided",
+      "memory_requirement": "session",
+      "task_duration": "medium",
+      "incremental_migration": false
+    }
   },
-  "workloads": []                           // the confirmed array (persist rule above)
+  "workloads": [] // the confirmed array (persist rule above)
 }
 ```
 
@@ -124,12 +129,12 @@ read from the estate; Design's rationale and the report distinguish "you chose" 
 
 ## Who consumes these
 
-| Field | Consumer |
-| ----- | -------- |
+| Field                                                                                  | Consumer                                            |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | `workloads[]`, `ai_priority`, `ai_critical_feature`, `ai_latency`, `ai_model_baseline` | `design-ai.md` model selection + override hierarchy |
-| `ai_constraints.agentic.migration_approach` | `design-ai.md` Step 0.6 agentic routing |
-| `ai_token_volume`, `ai_monthly_spend` | `estimate-ai.md` token tiers + ROI |
-| `startup_program_status`, `ai_monthly_spend` | `generate-artifacts-ai.md` STARTUP_PROGRAMS.md |
+| `ai_constraints.agentic.migration_approach`                                            | `design-ai.md` Step 0.6 agentic routing             |
+| `ai_token_volume`, `ai_monthly_spend`                                                  | `estimate-ai.md` token tiers + ROI                  |
+| `startup_program_status`, `ai_monthly_spend`                                           | `generate-artifacts-ai.md` STARTUP_PROGRAMS.md      |
 
 ## Status — build step 3 (AI route)
 

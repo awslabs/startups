@@ -8,20 +8,20 @@ Loaded by `discover-assemble.md`. Produces `azure-resource-clusters.json` per
 A resource group is a **filing decision**, not an architectural one, and Azure estates
 file four different ways:
 
-| RG layout                                          | Does RG-only clustering work?                                 |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| one app per group                                  | yes                                                           |
-| one group per environment, several apps            | **no** — splits nothing; one cluster holds unrelated workloads |
-| horizontal groups by type (`rg-data`, `rg-app`)    | **no** — actively separates an app from its own database       |
-| one group for everything (the startup default)     | **no signal at all**                                          |
+| RG layout                                       | Does RG-only clustering work?                                  |
+| ----------------------------------------------- | -------------------------------------------------------------- |
+| one app per group                               | yes                                                            |
+| one group per environment, several apps         | **no** — splits nothing; one cluster holds unrelated workloads |
+| horizontal groups by type (`rg-data`, `rg-app`) | **no** — actively separates an app from its own database       |
+| one group for everything (the startup default)  | **no signal at all**                                           |
 
 So the group is a good **seed** and a bad final answer. The point of clustering is to
-make the recommendation describe *workloads*; a cluster that is really just a filing
+make the recommendation describe _workloads_; a cluster that is really just a filing
 folder produces a report that reads like 40 unrelated rows with extra steps.
 
 **Azure's edge data is richer than GCP's and does not require IaC.** GCP's graph comes
 from Terraform reference expressions, so it exists only when IaC does. Azure embeds full
-ARM resource IDs inside resource *properties*, so `hosted_on`, `network`, `private_link`,
+ARM resource IDs inside resource _properties_, so `hosted_on`, `network`, `private_link`,
 `secret_ref`, `data_ref`, and `identity_grant` all survive a live capture or an RDfA
 archive. That is what makes refinement worth doing here.
 
@@ -47,21 +47,21 @@ find the connected components. Two things count as connectivity here:
    for the report's phrasing, never for connectivity;
 2. **containment**, derived from the `azure_id` prefix — but ONLY within the
    `/providers/` chain. A VNet and its subnets, a storage account and its share, a plan
-   and its slots are connected (the child's id extends the parent's *past* the
-   `/providers/` segment). Containment is deliberately not an *edge*
+   and its slots are connected (the child's id extends the parent's _past_ the
+   `/providers/` segment). Containment is deliberately not an _edge_
    (`schema-discover-azure.md` says why) but it is unquestionably a relationship, and
    omitting it is what over-fragments a seed.
 
    > **The resource-group scope prefix does NOT count as containment.** A
    > `Microsoft.Resources/resourceGroups` resource has id
-   > `/subscriptions/<sub>/resourceGroups/<rg>`, which is a literal prefix of *every*
+   > `/subscriptions/<sub>/resourceGroups/<rg>`, which is a literal prefix of _every_
    > resource in the group — its members' ids all begin
    > `/subscriptions/<sub>/resourceGroups/<rg>/providers/...`. Counting that prefix as
    > containment connects the whole seed through the group resource itself, collapses
    > every component into one, and permanently disables the split step (a real repo that
    > declares its `azurerm_resource_group` hits this; the worked example's corpus omitted
    > it and so missed it). Containment holds between two resources ONLY when the child id
-   > extends the parent id *after* a shared `/providers/` segment — never when the
+   > extends the parent id _after_ a shared `/providers/` segment — never when the
    > "parent" is the resourceGroups (or subscription) scope itself. Equivalently: the
    > resourceGroups resource contains nothing for clustering purposes; it clusters as an
    > ordinary member of its seed and, being a Skip Mapping with no primary rank, attaches
@@ -75,7 +75,7 @@ rather than promoting it to a cluster of its own.
 Set `justification: "split:no_internal_edges"` on each resulting cluster.
 
 > **A `split:*` cluster legitimately has an EMPTY `edges[]`.** Its justification is the
-> *absence* of a relationship, and there is nothing to show. Only `merge:*` and the bare
+> _absence_ of a relationship, and there is nothing to show. Only `merge:*` and the bare
 > `edges` justification require a non-empty `edges[]` — see `schema-discover-azure.md`.
 
 **Both guards exist because the first draft of this file over-fragmented badly, and its
@@ -97,19 +97,19 @@ Set `justification: "merge:cross_group_edges"`, and `edges[]` **must** contain t
 crossing edges that caused it. A merge whose justification cannot be shown is a merge the
 user cannot validate on the Clarify assumption sheet.
 
-**Not every edge type should merge.** Two edge types are *ambient* — they connect almost
+**Not every edge type should merge.** Two edge types are _ambient_ — they connect almost
 everything to a small number of shared resources, so merging on them collapses the whole
 estate into one cluster and destroys the partition:
 
-| Edge type            | Merges? | Why                                                                                              |
-| -------------------- | ------- | ------------------------------------------------------------------------------------------------ |
-| `hosted_on`          | **yes** | the strongest edge there is — an app and its plan are one compute unit                            |
-| `data_ref`           | **yes** | an app and the database it addresses are one workload                                             |
-| `private_link`       | **yes** | an explicit, deliberately-created app-to-data path                                                |
-| `declared_affinity`  | **yes** | the customer said so; declared intent outranks inference                                          |
-| `identity_grant`     | **yes** | "app X reads storage Y" is a real dependency, and Azure exposes it more cleanly than GCP          |
-| `network`            | **no**  | every workload in a VNet shares subnets. A shared subnet is colocation, not relatedness           |
-| `secret_ref`         | **no**  | one Key Vault typically serves the entire estate; merging on it produces one cluster              |
+| Edge type           | Merges? | Why                                                                                      |
+| ------------------- | ------- | ---------------------------------------------------------------------------------------- |
+| `hosted_on`         | **yes** | the strongest edge there is — an app and its plan are one compute unit                   |
+| `data_ref`          | **yes** | an app and the database it addresses are one workload                                    |
+| `private_link`      | **yes** | an explicit, deliberately-created app-to-data path                                       |
+| `declared_affinity` | **yes** | the customer said so; declared intent outranks inference                                 |
+| `identity_grant`    | **yes** | "app X reads storage Y" is a real dependency, and Azure exposes it more cleanly than GCP |
+| `network`           | **no**  | every workload in a VNet shares subnets. A shared subnet is colocation, not relatedness  |
+| `secret_ref`        | **no**  | one Key Vault typically serves the entire estate; merging on it produces one cluster     |
 
 A non-merging edge is still **recorded** on the resource and still counts for Step 2's
 internal connectivity — it just does not pull two candidates together. That asymmetry is

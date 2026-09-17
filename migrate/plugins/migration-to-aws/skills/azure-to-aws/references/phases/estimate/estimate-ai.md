@@ -324,7 +324,7 @@ fields.
 | `timestamp`                     | string | ISO 8601                                                                                                                        |
 | `pricing_source`                | string | `"cached"`, `"live"`, `"cached_fallback"`, `"cached_stale"`, or `"unavailable"`                                                 |
 | `accuracy_confidence`           | string | `"±5-10%"` or `"±15-25%"`                                                                                                       |
-| `current_costs`                 | object | `source`, `azure_monthly_ai_spend`, `services[]`                                                                               |
+| `current_costs`                 | object | `source`, `azure_monthly_ai_spend`, `services[]`                                                                                |
 | `token_volume`                  | object | `source`, `monthly_input_tokens`, `monthly_output_tokens`, `ratio`                                                              |
 | `model_comparison`              | array  | All viable models: `model`, `monthly_cost`, `vs_current`, `quality`, `capabilities_match`, `missing_capabilities[]`             |
 | `recommended_model`             | object | `model`, `monthly_cost`, `breakdown` (input/output/embeddings), `rationale`                                                     |
@@ -333,10 +333,10 @@ fields.
 | `cost_comparison`               | object | `current_azure_monthly`, `projected_bedrock_monthly`, `monthly_difference`, `annual_difference`, `percent_change`               |
 | `migration_cost_considerations` | object | `categories[]` (always `[]`), `complexity_factors[]` (technical integration only), `note` (must state human/pro costs excluded) |
 | `roi_analysis`                  | object | `monthly_cost_delta`, `annual_cost_delta`, `justification`, `non_cost_benefits[]`                                               |
-| `optimization_opportunities`    | array  | `opportunity`, `potential_savings_monthly`, `implementation_effort`, `description`                                             |
+| `optimization_opportunities`    | array  | `opportunity`, `potential_savings_monthly`, `implementation_effort`, `description`                                              |
 | `optimized_projection`          | object | `monthly_with_optimizations`, `vs_current`, `note`                                                                              |
 | `recommendation`                | object | `path`, `path_label`, `migrate_if`, `stay_if`, `confidence`, `rationale` (see Part 7)                                           |
-| `services_not_estimated`        | array  | Traditional-AI workloads excluded from token cost: `{workload_id, target_aws_service, reason: "not_token_priced"}`             |
+| `services_not_estimated`        | array  | Traditional-AI workloads excluded from token cost: `{workload_id, target_aws_service, reason: "not_token_priced"}`              |
 
 `current_costs.azure_monthly_ai_spend` (NOT `gcp_monthly_ai_spend`) and
 `cost_comparison.current_azure_monthly` (NOT `current_gcp_monthly`) are the Azure field names.

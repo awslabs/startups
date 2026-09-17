@@ -26,11 +26,11 @@ Three consequences worth stating, because each one looks like an exception and i
    neighbours, so the target is still fixed once the resource is known. This is the
    same shape as gcp's `google_sql_database_instance` (SQL Server) row, which is
    conditioned on the engine. Owner decisions 11.4 and 11.5 state that protocol is the
-   *whole* rubric for those two, which means there is no rubric left — only a lookup.
+   _whole_ rubric for those two, which means there is no rubric left — only a lookup.
 2. **Additive company is not a target change.** A static-website storage account still
    maps to S3 even though the pattern layer adds CloudFront; a disk still maps to EBS
    even though an ASG appears around it. The row's `aws_service` is unchanged, so the
-   label holds. Only a *substituted* service would break the invariant.
+   label holds. Only a _substituted_ service would break the invariant.
 3. **Post-selection sizing does not compromise an `Always` condition.** gp3-versus-io2
    by IOPS, and instance size from measured utilization, happen after the service is
    chosen. The row picks the service; sizing never revisits it.
@@ -48,10 +48,10 @@ in a way the others are not.
 The plan's §7a.3 fixed a 10-row table before the canonical child-type vocabulary
 existed. Four rows are additions of necessity rather than scope:
 
-| Added row                                                                | Why it is not optional                                                                                                                                                                                       |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Microsoft.Network/virtualNetworks/subnets`                              | Canonicalization emits subnets as their own child-typed resources. Without a row, every subnet reaches the unknown-type policy, matches "sits in a network provider namespace", and **STOPs the design** — on every real estate. |
-| `.../blobServices/containers`, `.../queueServices/queues`, `.../tableServices/tables` | Same reason, and each has an unambiguous target (S3, SQS, DynamoDB). Leaving them out would STOP on any account that declares its containers explicitly. |
+| Added row                                                                             | Why it is not optional                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.Network/virtualNetworks/subnets`                                           | Canonicalization emits subnets as their own child-typed resources. Without a row, every subnet reaches the unknown-type policy, matches "sits in a network provider namespace", and **STOPs the design** — on every real estate. |
+| `.../blobServices/containers`, `.../queueServices/queues`, `.../tableServices/tables` | Same reason, and each has an unambiguous target (S3, SQS, DynamoDB). Leaving them out would STOP on any account that declares its containers explicitly.                                                                         |
 
 ### The storage-account row and owner decision 11.5
 
@@ -70,15 +70,15 @@ never inherit the parent's target.
 
 ## Confidence vocabulary
 
-Four tiers. Use them **only** as defined here — they describe *how the mapping was
-chosen*, never how obvious the answer feels.
+Four tiers. Use them **only** as defined here — they describe _how the mapping was
+chosen_, never how obvious the answer feels.
 
-| JSON `confidence`  | Means                                                                                                        | Say this to users                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| JSON `confidence`  | Means                                                                                                                                         | Say this to users                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `deterministic`    | The canonical ARM type matched a **Direct Mappings** row, the row's condition held, and the target came from that row. **No rubric was run.** | **Standard pairing**                |
-| `measured`         | A rubric outcome backed by *observed utilization*, not declared config — RDfA's rollup or `az monitor metrics list`. Must cite the evidence. | **Measured from your actual usage** |
-| `inferred`         | A rubric outcome from declared configuration only.                                                            | **Tailored to your setup**          |
-| `billing_inferred` | The billing-only design path — spend line items without infrastructure detail.                                | **Estimated from billing only**     |
+| `measured`         | A rubric outcome backed by _observed utilization_, not declared config — RDfA's rollup or `az monitor metrics list`. Must cite the evidence.  | **Measured from your actual usage** |
+| `inferred`         | A rubric outcome from declared configuration only.                                                                                            | **Tailored to your setup**          |
+| `billing_inferred` | The billing-only design path — spend line items without infrastructure detail.                                                                | **Estimated from billing only**     |
 
 `measured` is named after the evidence rather than the tool (it was `rdfa_inferred` in
 an earlier draft) precisely so the live `az` path can earn it when it supplies the same
@@ -93,7 +93,7 @@ reasoning that did not happen. A Skip Mapping produces no entry at all, only a
 **Canonical reference:** this section. Other phase files point here rather than
 restating it.
 
-**The common confusion:** `design-refs/index.md` lists a *typical AWS target* per ARM
+**The common confusion:** `design-refs/index.md` lists a _typical AWS target_ per ARM
 type. That is not the same as `deterministic`. Confidence is `deterministic` only when
 the type appears in `fast-path-services.json` → `direct_mappings` and its condition
 held; everything else routed through `index.md` is `inferred` (or `measured` when
@@ -131,11 +131,11 @@ Applied after selection, and only to rubric outcomes. **Never** to a `determinis
 row: substituting a preferred target over a fast-path row is the invariant violation
 this whole file exists to prevent.
 
-| Workload category                     | Preferred target                                                            | Rationale                                                                        |
-| ------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| PaaS / managed platform (App Service) | **Elastic Beanstalk**, unless `preferences.json` selects containers or EKS   | Preserves the managed-platform model the customer already pays for                |
-| Containerized workloads               | Fargate (default), Lambda (event-driven), EKS (Kubernetes already in use)    | Deeper VPC / ALB / IAM / scaling integration than lighter-weight alternatives     |
-| Third-party auth in use               | Keep the existing provider                                                  | A startup on Entra External ID, Auth0, or Clerk should not be moved to Cognito    |
+| Workload category                     | Preferred target                                                           | Rationale                                                                      |
+| ------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| PaaS / managed platform (App Service) | **Elastic Beanstalk**, unless `preferences.json` selects containers or EKS | Preserves the managed-platform model the customer already pays for             |
+| Containerized workloads               | Fargate (default), Lambda (event-driven), EKS (Kubernetes already in use)  | Deeper VPC / ALB / IAM / scaling integration than lighter-weight alternatives  |
+| Third-party auth in use               | Keep the existing provider                                                 | A startup on Entra External ID, Auth0, or Clerk should not be moved to Cognito |
 
 **AWS App Runner is not a candidate anywhere**, at any step, including as a
 "forward-look" — it stopped accepting new customers in April 2026. ECS Express Mode

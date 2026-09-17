@@ -11,8 +11,15 @@
   },
 
   "dynamodb_units": {
-    "wcu": { "write_kb": 1, "_note": "1 WCU = one write per second of an item up to 1 KB. A 3 KB item costs 3 WCU per write." },
-    "rcu": { "strong_read_kb": 4, "eventual_reads_per_rcu": 2, "_note": "1 RCU = one strongly-consistent read per second of an item up to 4 KB, or two eventually-consistent reads. The 4 KB granularity is why small-item read workloads convert far more cheaply than the RU number suggests." }
+    "wcu": {
+      "write_kb": 1,
+      "_note": "1 WCU = one write per second of an item up to 1 KB. A 3 KB item costs 3 WCU per write."
+    },
+    "rcu": {
+      "strong_read_kb": 4,
+      "eventual_reads_per_rcu": 2,
+      "_note": "1 RCU = one strongly-consistent read per second of an item up to 4 KB, or two eventually-consistent reads. The 4 KB granularity is why small-item read workloads convert far more cheaply than the RU number suggests."
+    }
   },
 
   "formulas": {
@@ -28,14 +35,25 @@
 
   "multipliers": {
     "consistency": {
-      "Strong":          { "read_multiplier": 2.0, "_why": "Cosmos Strong reads cost roughly double, and on the DynamoDB side strongly-consistent reads consume a full RCU where eventual consumes half." },
-      "BoundedStaleness":{ "read_multiplier": 2.0 },
-      "Session":         { "read_multiplier": 1.0, "_note": "The Cosmos default. Maps most naturally to DynamoDB eventually-consistent reads." },
-      "ConsistentPrefix":{ "read_multiplier": 1.0 },
-      "Eventual":        { "read_multiplier": 1.0 }
+      "Strong": {
+        "read_multiplier": 2.0,
+        "_why": "Cosmos Strong reads cost roughly double, and on the DynamoDB side strongly-consistent reads consume a full RCU where eventual consumes half."
+      },
+      "BoundedStaleness": { "read_multiplier": 2.0 },
+      "Session": {
+        "read_multiplier": 1.0,
+        "_note": "The Cosmos default. Maps most naturally to DynamoDB eventually-consistent reads."
+      },
+      "ConsistentPrefix": { "read_multiplier": 1.0 },
+      "Eventual": { "read_multiplier": 1.0 }
     },
-    "multi_region_writes": { "write_multiplier": 2.0, "_why": "Cosmos multi-region write accounts charge write RU per region. The DynamoDB counterpart is Global Tables, which charges rWCU per replica region -- the shape matches, the naming does not." },
-    "indexing": { "_note": "Cosmos indexes EVERY property by default and the write RU already includes that cost. DynamoDB charges index writes separately per GSI. So a naive RU->WCU conversion UNDERSTATES DynamoDB cost for any container that will need GSIs, because the source's index cost was hidden inside the 5 RU and the target's is a separate line. Name every GSI the access pattern requires; do not fold them into the base WCU." }
+    "multi_region_writes": {
+      "write_multiplier": 2.0,
+      "_why": "Cosmos multi-region write accounts charge write RU per region. The DynamoDB counterpart is Global Tables, which charges rWCU per replica region -- the shape matches, the naming does not."
+    },
+    "indexing": {
+      "_note": "Cosmos indexes EVERY property by default and the write RU already includes that cost. DynamoDB charges index writes separately per GSI. So a naive RU->WCU conversion UNDERSTATES DynamoDB cost for any container that will need GSIs, because the source's index cost was hidden inside the 5 RU and the target's is a separate line. Name every GSI the access pattern requires; do not fold them into the base WCU."
+    }
   },
 
   "autoscale": {

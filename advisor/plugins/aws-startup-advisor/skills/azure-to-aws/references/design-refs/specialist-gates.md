@@ -12,7 +12,7 @@ precedence, what it emits, and the five deltas from gcp.
 gcp-to-aws has exactly one gate, expressed as a hardcoded `google_bigquery_` prefix
 test inside `design-infra.md`. Azure has five at resource level plus one at cluster
 level, so a prefix test would become a chain of five, each one an independent place to
-forget a row. The table form also makes the *precedence invariant* checkable: a
+forget a row. The table form also makes the _precedence invariant_ checkable: a
 canonical type must resolve to at most one of `skip_mappings`, `specialist_gates`, and
 `direct_mappings`, and that is only verifiable when the three sit in one file.
 
@@ -58,13 +58,13 @@ read as a free service.
 
 ## The five resource-level gates, and why each one is gated
 
-| Type                                                   | The information we do not have                                                            |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `Microsoft.Sql/managedInstances`                       | Whether the instance-scoped surface is actually used — VNet injection, cross-database queries, SQL Agent jobs, CLR, instance logins. RDS SQL Server covers a database, not an instance. |
-| `Microsoft.Sql/servers/elasticPools`                   | Per-database utilization, and therefore the bin-packing. One RDS instance overprovisions; one per database multiplies the estimate. Both answers are wrong. |
-| `Microsoft.Synapse/workspaces`                         | Which of the three surfaces is load-bearing — dedicated SQL pools, serverless SQL, or Spark. They land on three different services with three different migration paths. |
-| `Microsoft.DataFactory/factories`                      | The activity graph. Glue, Step Functions, and MWAA each cover part of ADF; naming one understates the work by a large factor. |
-| `Microsoft.Compute/virtualMachines` + a SQL Server image | The licensing posture — Azure Hybrid Use Benefit, core minimums, and any Always-On configuration. **Conditional on the image, not the type.** |
+| Type                                                     | The information we do not have                                                                                                                                                          |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.Sql/managedInstances`                         | Whether the instance-scoped surface is actually used — VNet injection, cross-database queries, SQL Agent jobs, CLR, instance logins. RDS SQL Server covers a database, not an instance. |
+| `Microsoft.Sql/servers/elasticPools`                     | Per-database utilization, and therefore the bin-packing. One RDS instance overprovisions; one per database multiplies the estimate. Both answers are wrong.                             |
+| `Microsoft.Synapse/workspaces`                           | Which of the three surfaces is load-bearing — dedicated SQL pools, serverless SQL, or Spark. They land on three different services with three different migration paths.                |
+| `Microsoft.DataFactory/factories`                        | The activity graph. Glue, Step Functions, and MWAA each cover part of ADF; naming one understates the work by a large factor.                                                           |
+| `Microsoft.Compute/virtualMachines` + a SQL Server image | The licensing posture — Azure Hybrid Use Benefit, core minimums, and any Always-On configuration. **Conditional on the image, not the type.**                                           |
 
 ### The SQL-on-VM gate emits TWO entries
 
@@ -79,13 +79,13 @@ the total quietly too low.
 
 ## What is deliberately NOT gated
 
-| Considered                             | Decision                                                                                                                            |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `Microsoft.Sql/servers/databases`      | **Not gated.** A single Azure SQL Database on a DTU or vCore tier maps cleanly to RDS SQL Server (owner decision 11.3), and deferring the common case makes the skill look weaker than it is. |
-| `Microsoft.Databricks/workspaces`      | **Not gated** — Databricks runs on AWS, so this is a platform move rather than a re-architecture. Full depth in `analytics.md`.      |
-| `Microsoft.Cache/redisEnterprise`      | **Not gated** — rubric. The modules (RediSearch, RedisJSON) have no ElastiCache equivalent, but that is a feature-parity finding, not an unknown. |
-| Azure Hybrid Use Benefit / licensing   | **Not a gate** — `licensing.md`, loaded conditionally from Clarify category I. One essential question (License Included versus BYOL on Dedicated Hosts), no core-minimum math. |
-| Azure Edition Windows Server           | **Not a gate — a hard blocker.** MGN refuses the image until it is re-imaged. There is no option to weigh, so it is a `warnings[]` entry with `severity: "blocker"`, not a question. |
+| Considered                           | Decision                                                                                                                                                                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.Sql/servers/databases`    | **Not gated.** A single Azure SQL Database on a DTU or vCore tier maps cleanly to RDS SQL Server (owner decision 11.3), and deferring the common case makes the skill look weaker than it is. |
+| `Microsoft.Databricks/workspaces`    | **Not gated** — Databricks runs on AWS, so this is a platform move rather than a re-architecture. Full depth in `analytics.md`.                                                               |
+| `Microsoft.Cache/redisEnterprise`    | **Not gated** — rubric. The modules (RediSearch, RedisJSON) have no ElastiCache equivalent, but that is a feature-parity finding, not an unknown.                                             |
+| Azure Hybrid Use Benefit / licensing | **Not a gate** — `licensing.md`, loaded conditionally from Clarify category I. One essential question (License Included versus BYOL on Dedicated Hosts), no core-minimum math.                |
+| Azure Edition Windows Server         | **Not a gate — a hard blocker.** MGN refuses the image until it is re-imaged. There is no option to weigh, so it is a `warnings[]` entry with `severity: "blocker"`, not a question.          |
 
 ## The cluster-level gate
 
@@ -102,12 +102,12 @@ assessment — which is what it is.
 
 The gate table is complete and the precedence order is enforced by `design-infra.md`.
 
-| Lands in | What                                                                              |
-| -------- | --------------------------------------------------------------------------------- |
-| step 4   | `patterns.md` and the cluster-level `data-pipeline` gate                          |
+| Lands in | What                                                                                   |
+| -------- | -------------------------------------------------------------------------------------- |
+| step 4   | `patterns.md` and the cluster-level `data-pipeline` gate                               |
 | step 5   | `licensing.md`, and the `analytics.md` / `database.md` content the non-gated rows need |
 
 **Untested.** No fixture exercises a gate yet: the `azure-iac-terraform` corpus contains
 no Managed Instance, elastic pool, Synapse workspace, Data Factory, or SQL-on-VM image.
 The rows above are therefore reviewed, not verified. A gate fixture belongs with build
-step 5, when `database.md` exists to be the thing a gate is chosen *instead of*.
+step 5, when `database.md` exists to be the thing a gate is chosen _instead of_.

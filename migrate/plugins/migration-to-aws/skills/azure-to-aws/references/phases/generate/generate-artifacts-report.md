@@ -80,7 +80,7 @@ where N = `total_resources` (raw discovered), M = generated primary services, D 
 and A = `accounted` (= M + D).
 
 **Exception — the discovery/"discovered" count is its own figure.** A statement about what
-was *discovered* — "Discovery identified N resources", "N resources discovered", the raw
+was _discovered_ — "Discovery identified N resources", "N resources discovered", the raw
 Azure estate size — references `azure-resource-inventory.json` `total_resources` (the RAW
 discovered count), NOT `accounted`. `total_resources` legitimately exceeds `accounted`
 (the accounted set excludes resources that were never mapped/planned — e.g. free/zero-cost

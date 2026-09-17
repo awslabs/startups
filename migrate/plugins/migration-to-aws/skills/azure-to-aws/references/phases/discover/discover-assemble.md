@@ -37,7 +37,7 @@ the validation checklist.
    actually contributed), `subscriptions_discovered`, `total_resources`, and
    `confidence`.
 4. Apply source precedence when two sources describe the same `azure_id`, highest
-   first: **live `az`** (current existence and configuration — it is *now*), then
+   first: **live `az`** (current existence and configuration — it is _now_), then
    **RDfA** (utilization, reservations, consumption; loses to live on state because
    an archive may be days old, wins on measurement because live has no rollup), then
    **IaC** (authoritative for provenance, module structure, and declared-but-
@@ -65,7 +65,7 @@ Four tiers, set per resource and per mapping decision:
 | Label              | Meaning                                                    | Source                                              |
 | ------------------ | ---------------------------------------------------------- | --------------------------------------------------- |
 | `deterministic`    | fixed 1:1 table lookup                                     | the fast-path Direct Mappings table                 |
-| `measured`         | rubric backed by observed utilization, not declared config  | RDfA 31-day rollup **or** `az monitor metrics list` |
+| `measured`         | rubric backed by observed utilization, not declared config | RDfA 31-day rollup **or** `az monitor metrics list` |
 | `inferred`         | rubric from declared config only                           | IaC, or live CLI without metrics                    |
 | `billing_inferred` | billing-only fallback                                      | Cost Management export                              |
 
@@ -86,9 +86,9 @@ produce identical output, and the phase's postcondition on the justifying edge s
 only pass by not being evaluated. `split:*` and `merge:*` require a non-empty `edges[]`
 carrying the evidence.
 
-| Lands in | What                                                                                                    |
-| -------- | ------------------------------------------------------------------------------------------------------- |
-| step 2   | The merge-and-drift rules above, exercised once more than one source can contribute                     |
+| Lands in | What                                                                                                                                                            |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| step 2   | The merge-and-drift rules above, exercised once more than one source can contribute                                                                             |
 | step 4   | `patterns.md` and the cluster-level `data-pipeline` gate. Until it exists every cluster carries `pattern_status: "catalog_absent"` — a defined state, not a gap |
 
 **Resource group is a good seed and a bad final answer.** It works when there is one
@@ -98,7 +98,7 @@ separates things that belong together under horizontal groups (`rg-databases`,
 refinement is what makes clustering mean anything.
 
 Azure's edge data is richer than GCP's and does not require IaC: ARM resource IDs
-are embedded in resource *properties*, so edges survive every discovery source —
+are embedded in resource _properties_, so edges survive every discovery source —
 `serverFarmId` on a web app, `subnetId`, a private endpoint's `privateLinkServiceId`,
 a Key Vault reference in app settings, a managed identity plus its role-assignment
 scope, and `app=` / `workload=` tags.

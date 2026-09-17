@@ -98,11 +98,11 @@ Rules for the pack itself:
 `state/phase-status.schema.json`. It is **already** in that schema, so this needs
 no shared schema change.
 
-| Choice | `run_mode` | `current_phase` | `phases.workshop` | Then |
-| ------ | ---------- | --------------- | ----------------- | ---- |
-| **A** — done for now | `"decide"` | `"complete"` | `"completed"` (declined) | **Write `DECISION.md` (Step 3a below)**, then close out. `phases.generate` **stays** `"pending"`: that combination means "decision complete, execution available on request" |
-| **B** — what-if workshop | `"decide"` | stays `"estimate"` | `"in_progress"` | Enter the `workshop` sidebar. **Re-present this gate when the sidebar resolves** (options A and C; the active scenario carries into either). Never advance to Generate from inside the sidebar |
-| **C** — generate | `"decide_and_execute"` | `"generate"` | `"completed"` (declined) | Continue to Generate |
+| Choice                   | `run_mode`             | `current_phase`    | `phases.workshop`        | Then                                                                                                                                                                                           |
+| ------------------------ | ---------------------- | ------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A** — done for now     | `"decide"`             | `"complete"`       | `"completed"` (declined) | **Write `DECISION.md` (Step 3a below)**, then close out. `phases.generate` **stays** `"pending"`: that combination means "decision complete, execution available on request"                   |
+| **B** — what-if workshop | `"decide"`             | stays `"estimate"` | `"in_progress"`          | Enter the `workshop` sidebar. **Re-present this gate when the sidebar resolves** (options A and C; the active scenario carries into either). Never advance to Generate from inside the sidebar |
+| **C** — generate         | `"decide_and_execute"` | `"generate"`       | `"completed"` (declined) | Continue to Generate                                                                                                                                                                           |
 
 Use the read-merge-write Phase Status Update Protocol, and set `phases.estimate`
 to `"completed"` in the same write.

@@ -55,8 +55,8 @@ Reply with a row number to change it, or "looks right" to accept all.
 for the remainder — the phase completes either way. A wizard the user cannot escape is an
 interrogation.
 
-**Show N/A rows too**, compactly, at the end of the sheet. *"Licensing — N/A, no Windows or
-SQL found"* tells the user the estate was checked. Silence does not, and the report
+**Show N/A rows too**, compactly, at the end of the sheet. _"Licensing — N/A, no Windows or
+SQL found"_ tells the user the estate was checked. Silence does not, and the report
 distinguishes the two.
 
 ### Gate 2 — The essential questions
@@ -64,8 +64,8 @@ distinguishes the two.
 Only after the sheet is confirmed. Ask each ESSENTIAL row directly, batched, **with the
 context its fragment supplied** — an essential question without its context is unanswerable:
 
-> *Your `pg-contoso-store` is `ZoneRedundant` with a standby in zone 2 today. We will not
-> assume you want to keep paying for that, and we will not assume you want to give it up.*
+> _Your `pg-contoso-store` is `ZoneRedundant` with a standby in zone 2 today. We will not
+> assume you want to keep paying for that, and we will not assume you want to give it up._
 
 An ESSENTIAL row has no default **on purpose**, and the phase does not complete until every
 one is answered. Do not invent a default to get past the gate; do not treat silence as an
@@ -94,9 +94,9 @@ the last point before Design commits, and it is cheap relative to re-running fou
 
 **REQUIRED at the top level of `preferences.json`.** Exactly one of:
 
-| Value | Means |
-| ----- | ----- |
-| `COMPLETE` | Every row the user was shown is recorded, and no `ESSENTIAL` row has `value: null`. The phase may emit `HANDOFF_OK` |
+| Value                  | Means                                                                                                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `COMPLETE`             | Every row the user was shown is recorded, and no `ESSENTIAL` row has `value: null`. The phase may emit `HANDOFF_OK`                                                 |
 | `BLOCKED_ON_ESSENTIAL` | At least one `ESSENTIAL` row was shown and left unanswered. The phase emits `GATE_FAIL`, and every blocking row carries `unanswered: true` and `blocks_phase: true` |
 
 `ESSENTIAL` + `value: null` **is** the completion gate (decision 13.5b) — an essential row
@@ -135,7 +135,7 @@ rewriting their answer and faking a gate failure both hide a real decision they 
 Owns the three gates and the checklist. Reads five fragments: global, compute, database,
 licensing (conditional), identity.
 
-| Lands in | What |
-| -------- | ---- |
+| Lands in | What                                                                                                           |
+| -------- | -------------------------------------------------------------------------------------------------------------- |
 | step 4   | the cluster pattern-confirmation section, once `patterns.md` exists to produce a `pattern_id` worth confirming |
-| done     | `clarify-ai.md` (wired, build step 3); the standalone `clarify-ai-only.md` route is deferred (§19.9c) |
+| done     | `clarify-ai.md` (wired, build step 3); the standalone `clarify-ai-only.md` route is deferred (§19.9c)          |

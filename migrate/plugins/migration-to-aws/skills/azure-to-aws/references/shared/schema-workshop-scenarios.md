@@ -16,12 +16,12 @@ with this file.
       "scenario_id": "baseline",
       "label": "As designed",
       "created_at": "<ISO 8601>",
-      "preference_patch": {},             // only the knobs that differ from baseline
+      "preference_patch": {}, // only the knobs that differ from baseline
       "totals": {
         "non_optimized_monthly": 0,
         "right_sized_monthly": 0
       },
-      "pricing_source": "cached",         // cached | cached_stale | live | cached_fallback
+      "pricing_source": "cached", // cached | cached_stale | live | cached_fallback
       "design_snapshot": "scenarios/<scenario_id>/aws-design.json",
       "estimate_snapshot": "scenarios/<scenario_id>/estimation-infra.json"
     }

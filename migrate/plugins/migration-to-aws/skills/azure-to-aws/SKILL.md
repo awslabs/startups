@@ -216,6 +216,6 @@ phase contract. Both are `_kind: sidebar` — off-backbone, trigger-entered, nev
 
 ## Scope Notes
 
-- **Azure Migrate is out of scope.** It discovers on-premises estates for moving *into* Azure and has no role in an Azure exit.
+- **Azure Migrate is out of scope.** It discovers on-premises estates for moving _into_ Azure and has no role in an Azure exit.
 - **Azure Edition Windows Server is a hard blocker, not a question.** AWS Application Migration Service refuses the image until it is re-imaged; surface that as a warning rather than asking the user to choose.
 - **Cosmos DB routing is per-API even though depth is Core-only**: Core (SQL) → DynamoDB (full depth), Mongo → DocumentDB, Cassandra → Keyspaces, Gremlin → Neptune, Table → DynamoDB.

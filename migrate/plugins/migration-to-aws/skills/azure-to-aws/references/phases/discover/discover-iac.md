@@ -12,7 +12,7 @@ _contributes:
 
 ## Why one fragment covers three dialects
 
-Terraform `azurerm_*`, Bicep, and ARM JSON all land here. Bicep compiles *to* ARM and
+Terraform `azurerm_*`, Bicep, and ARM JSON all land here. Bicep compiles _to_ ARM and
 both key off the same `Microsoft.*` type namespace, so they share one reason to
 change; all three converge on one section of one artifact; and the extraction
 semantics (Azure resource type → inventory entry) are shared, with only the surface
@@ -28,11 +28,11 @@ itself, and exits cleanly when it finds none.
 
 Record each independently — a repo may carry all three.
 
-| Dialect     | Detection                                                                                             |
-| ----------- | ----------------------------------------------------------------------------------------------------- |
-| `terraform` | a `**/*.tf` or `**/*.tf.json` file containing a `resource "azurerm_` block                             |
-| `bicep`     | a `**/*.bicep` file                                                                                    |
-| `arm`       | a `**/*.json` file whose top-level `$schema` contains `deploymentTemplate`                              |
+| Dialect     | Detection                                                                  |
+| ----------- | -------------------------------------------------------------------------- |
+| `terraform` | a `**/*.tf` or `**/*.tf.json` file containing a `resource "azurerm_` block |
+| `bicep`     | a `**/*.bicep` file                                                        |
+| `arm`       | a `**/*.json` file whose top-level `$schema` contains `deploymentTemplate` |
 
 Exclude `.terraform/`, `**/node_modules/`, `**/.git/`, and anything under
 `$MIGRATION_DIR` from all three scans.
@@ -45,11 +45,11 @@ with no IaC is the common case, and the phase's other fragments cover it.
 
 For each detected dialect, load its ref and follow it:
 
-| Dialect     | Ref                                        |
-| ----------- | ------------------------------------------ |
-| `terraform` | `references/shared/extract-terraform.md`   |
-| `bicep`     | `references/shared/extract-bicep.md`       |
-| `arm`       | `references/shared/extract-arm.md`         |
+| Dialect     | Ref                                      |
+| ----------- | ---------------------------------------- |
+| `terraform` | `references/shared/extract-terraform.md` |
+| `bicep`     | `references/shared/extract-bicep.md`     |
+| `arm`       | `references/shared/extract-arm.md`       |
 
 > **HALT if a dialect is present and its ref is not on disk.** Emit `GATE_FAIL` naming
 > the dialect and the missing file. Do **not** extract that dialect from your own
@@ -100,7 +100,7 @@ cost-bearing test reads — and record the Terraform type in `iac_metadata.deriv
 **The cross-check is a signal, not a veto.** It records whether a second artefact agreed.
 Only record a type in `iac_metadata.untranslated_types` when you genuinely cannot say what
 the service is — a type you can NAME is never untranslated. What must never happen is a
-*silent* guess: every derived type is recorded with its provenance, so a reviewer can see
+_silent_ guess: every derived type is recorded with its provenance, so a reviewer can see
 which were looked up and which were reasoned about.
 
 ## Step 4: Write the contribution
@@ -128,7 +128,7 @@ found. "The fragment ran" proves nothing — it always runs and may exit empty.
 App settings and connection strings contribute **names only**. Storage account keys,
 Key Vault secret values, passwords, and tokens are discarded — not redacted in place,
 because a redaction placeholder still discloses that the field existed and roughly how
-long it was. A Key Vault *reference* is kept as a `secret_ref` edge, because the
+long it was. A Key Vault _reference_ is kept as a `secret_ref` edge, because the
 reference is architecture and the secret is not.
 
 Do not read `terraform.tfstate`, `*.tfstate.backup`, or any `*.tfstate` under any
@@ -145,9 +145,9 @@ producing a nearly empty inventory. See `extract-terraform.md` Step 3.
 `arm-type-canonicalization.md`. It is exercised by the `azure-iac-terraform` fixture
 and its asserter.
 
-| Lands in | What                                                              |
-| -------- | ----------------------------------------------------------------- |
-| step 2   | `extract-bicep.md` and `extract-arm.md`                            |
+| Lands in | What                                    |
+| -------- | --------------------------------------- |
+| step 2   | `extract-bicep.md` and `extract-arm.md` |
 
 Until those two refs exist, a workspace containing `.bicep` or ARM templates **halts**
 per Step 2 rather than partially discovering. That is deliberate: a partial inventory

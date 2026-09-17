@@ -62,8 +62,8 @@ design, so an invented window would add false precision to the one output people
 [C] Aggressive — smallest defensible footprint
 ```
 
-**Consequence line:** *Balanced right-sizes only where measurement supports it. Aggressive
-can cut the estimate materially and needs load testing before cutover.*
+**Consequence line:** _Balanced right-sizes only where measurement supports it. Aggressive
+can cut the estimate materially and needs load testing before cutover._
 
 Feeds the aggressiveness slider in `knowledge/estimate/rightsizing-thresholds.json`. With no
 utilization data it changes nothing — say so on the row rather than implying it will.

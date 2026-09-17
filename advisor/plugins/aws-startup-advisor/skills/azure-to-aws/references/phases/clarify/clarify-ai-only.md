@@ -84,18 +84,18 @@ running). → `ai_constraints.cross_cloud`. Default `"latency-acceptable"`.
 `models[].model_id` is populated with confidence ≥ 0.8 (`chosen_by: extracted`). **Azure catalog**
 (Azure OpenAI deployments — no Gemini):
 
-| Source (Azure OpenAI / OpenAI deployment) | Baseline recommendation | Pricing context |
-| ------------------------------------------ | ----------------------- | --------------- |
-| GPT-5.6 (Sol/Terra/Luna) | **Same model on Bedrock** | ~10% over OpenAI std (data-residency tier) |
-| GPT-5.5 | **Same model on Bedrock** | ~10% over std |
-| GPT-5.4 | **Same model on Bedrock** | ~10% over std |
-| GPT-4o | GPT-5.6 Terra; or Claude Sonnet 5 | not on Bedrock — offer both |
-| GPT-4 / 4 Turbo | GPT-5.6 Terra; or Sonnet 5 | not on Bedrock — offer both |
-| GPT-4.1 / mini / nano | GPT-5.6 Terra/Luna; or Nova Lite/Micro | not on Bedrock — offer both |
-| GPT-3.5 Turbo | GPT-5.6 Luna; or Haiku 4.5 | Luna cheaper |
-| o-series (o3/o4-mini) | GPT-5.6 Sol/Terra; or Sonnet 5 | not on Bedrock — offer both |
-| Claude (Anthropic SDK) | Same model on Bedrock | client swap only — no model change |
-| Other / multiple / don't know | ask / infer | — |
+| Source (Azure OpenAI / OpenAI deployment) | Baseline recommendation                | Pricing context                            |
+| ----------------------------------------- | -------------------------------------- | ------------------------------------------ |
+| GPT-5.6 (Sol/Terra/Luna)                  | **Same model on Bedrock**              | ~10% over OpenAI std (data-residency tier) |
+| GPT-5.5                                   | **Same model on Bedrock**              | ~10% over std                              |
+| GPT-5.4                                   | **Same model on Bedrock**              | ~10% over std                              |
+| GPT-4o                                    | GPT-5.6 Terra; or Claude Sonnet 5      | not on Bedrock — offer both                |
+| GPT-4 / 4 Turbo                           | GPT-5.6 Terra; or Sonnet 5             | not on Bedrock — offer both                |
+| GPT-4.1 / mini / nano                     | GPT-5.6 Terra/Luna; or Nova Lite/Micro | not on Bedrock — offer both                |
+| GPT-3.5 Turbo                             | GPT-5.6 Luna; or Haiku 4.5             | Luna cheaper                               |
+| o-series (o3/o4-mini)                     | GPT-5.6 Sol/Terra; or Sonnet 5         | not on Bedrock — offer both                |
+| Claude (Anthropic SDK)                    | Same model on Bedrock                  | client swap only — no model change         |
+| Other / multiple / don't know             | ask / infer                            | —                                          |
 
 **Same-model rows first.** GPT-5.6/5.5/5.4 run on Bedrock via `bedrock-mantle` (Responses,
 in-region only) — the case is AWS commitments/governance/residency, not savings, and not parity
@@ -119,9 +119,9 @@ real-time / image-gen / speech). → `ai_critical_feature`. Default none.
 
 **Q11 — AWS Activate credits** (**never dropped**; ≡ full-flow Q27). Never infer funding stage
 from Q3 spend. Options: have credits / self-funded (→ Activate Founders up to $5K) /
-VC-backed (→ Activate Portfolio up to $200K, needs Org ID) / don't know. Escalations: `>$10K` →
-AWS Credits for AI Startups; `$2K-$10K`+ AND agentic → Generative AI Accelerator (up to $1M).
-→ `startup_program_status`. Default `"unknown"` (neutral copy, both tiers).
+VC-backed (→ Activate Portfolio up to $200K, needs Org ID) / don't know. Escalations: `>$10K`→
+AWS Credits for AI Startups; $2K-$10K plus AND agentic → Generative AI Accelerator (up to $1M).
+→`startup_program_status`. Default`"unknown"` (neutral copy, both tiers).
 
 ## Step 3: Assemble and write preferences.json
 

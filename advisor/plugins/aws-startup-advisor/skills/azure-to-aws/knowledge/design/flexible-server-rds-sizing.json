@@ -5,20 +5,77 @@
   "_provenance": "Authored from published Flexible Server compute tiers and published RDS instance class specs. NOT verified against a live API.",
 
   "skus": {
-    "B_Standard_B1ms":     { "azure": { "vcpu": 1,  "memory_gib": 2 },   "aws": { "instance_class": "db.t4g.small",   "vcpu": 2,  "memory_gib": 2 },   "x86_equivalent": "db.t3.small" },
-    "B_Standard_B2s":      { "azure": { "vcpu": 2,  "memory_gib": 4 },   "aws": { "instance_class": "db.t4g.medium",  "vcpu": 2,  "memory_gib": 4 },   "x86_equivalent": "db.t3.medium" },
-    "B_Standard_B2ms":     { "azure": { "vcpu": 2,  "memory_gib": 8 },   "aws": { "instance_class": "db.t4g.large",   "vcpu": 2,  "memory_gib": 8 },   "x86_equivalent": "db.t3.large" },
-    "B_Standard_B4ms":     { "azure": { "vcpu": 4,  "memory_gib": 16 },  "aws": { "instance_class": "db.t4g.xlarge",  "vcpu": 4,  "memory_gib": 16 },  "x86_equivalent": "db.t3.xlarge" },
-    "GP_Standard_D2s_v3":  { "azure": { "vcpu": 2,  "memory_gib": 8 },   "aws": { "instance_class": "db.m6g.large",   "vcpu": 2,  "memory_gib": 8 },   "x86_equivalent": "db.m6i.large",   "note": "The committed golden had db.t4g.medium here: 2 vCPU / 4 GiB against a source of 2 vCPU / 8 GiB. HALF the memory, and nothing caught it because no table existed and the oracle pins no sizes." },
-    "GP_Standard_D4s_v3":  { "azure": { "vcpu": 4,  "memory_gib": 16 },  "aws": { "instance_class": "db.m6g.xlarge",  "vcpu": 4,  "memory_gib": 16 },  "x86_equivalent": "db.m6i.xlarge" },
-    "GP_Standard_D8s_v3":  { "azure": { "vcpu": 8,  "memory_gib": 32 },  "aws": { "instance_class": "db.m6g.2xlarge", "vcpu": 8,  "memory_gib": 32 },  "x86_equivalent": "db.m6i.2xlarge" },
-    "GP_Standard_D16s_v3": { "azure": { "vcpu": 16, "memory_gib": 64 },  "aws": { "instance_class": "db.m6g.4xlarge", "vcpu": 16, "memory_gib": 64 },  "x86_equivalent": "db.m6i.4xlarge" },
-    "GP_Standard_D32s_v3": { "azure": { "vcpu": 32, "memory_gib": 128 }, "aws": { "instance_class": "db.m6g.8xlarge", "vcpu": 32, "memory_gib": 128 }, "x86_equivalent": "db.m6i.8xlarge" },
-    "MO_Standard_E2s_v3":  { "azure": { "vcpu": 2,  "memory_gib": 16 },  "aws": { "instance_class": "db.r6g.large",   "vcpu": 2,  "memory_gib": 16 },  "x86_equivalent": "db.r6i.large" },
-    "MO_Standard_E4s_v3":  { "azure": { "vcpu": 4,  "memory_gib": 32 },  "aws": { "instance_class": "db.r6g.xlarge",  "vcpu": 4,  "memory_gib": 32 },  "x86_equivalent": "db.r6i.xlarge" },
-    "MO_Standard_E8s_v3":  { "azure": { "vcpu": 8,  "memory_gib": 64 },  "aws": { "instance_class": "db.r6g.2xlarge", "vcpu": 8,  "memory_gib": 64 },  "x86_equivalent": "db.r6i.2xlarge" },
-    "MO_Standard_E16s_v3": { "azure": { "vcpu": 16, "memory_gib": 128 }, "aws": { "instance_class": "db.r6g.4xlarge", "vcpu": 16, "memory_gib": 128 }, "x86_equivalent": "db.r6i.4xlarge" },
-    "MO_Standard_E32s_v3": { "azure": { "vcpu": 32, "memory_gib": 256 }, "aws": { "instance_class": "db.r6g.8xlarge", "vcpu": 32, "memory_gib": 256 }, "x86_equivalent": "db.r6i.8xlarge" }
+    "B_Standard_B1ms": {
+      "azure": { "vcpu": 1, "memory_gib": 2 },
+      "aws": { "instance_class": "db.t4g.small", "vcpu": 2, "memory_gib": 2 },
+      "x86_equivalent": "db.t3.small"
+    },
+    "B_Standard_B2s": {
+      "azure": { "vcpu": 2, "memory_gib": 4 },
+      "aws": { "instance_class": "db.t4g.medium", "vcpu": 2, "memory_gib": 4 },
+      "x86_equivalent": "db.t3.medium"
+    },
+    "B_Standard_B2ms": {
+      "azure": { "vcpu": 2, "memory_gib": 8 },
+      "aws": { "instance_class": "db.t4g.large", "vcpu": 2, "memory_gib": 8 },
+      "x86_equivalent": "db.t3.large"
+    },
+    "B_Standard_B4ms": {
+      "azure": { "vcpu": 4, "memory_gib": 16 },
+      "aws": { "instance_class": "db.t4g.xlarge", "vcpu": 4, "memory_gib": 16 },
+      "x86_equivalent": "db.t3.xlarge"
+    },
+    "GP_Standard_D2s_v3": {
+      "azure": { "vcpu": 2, "memory_gib": 8 },
+      "aws": { "instance_class": "db.m6g.large", "vcpu": 2, "memory_gib": 8 },
+      "x86_equivalent": "db.m6i.large",
+      "note": "The committed golden had db.t4g.medium here: 2 vCPU / 4 GiB against a source of 2 vCPU / 8 GiB. HALF the memory, and nothing caught it because no table existed and the oracle pins no sizes."
+    },
+    "GP_Standard_D4s_v3": {
+      "azure": { "vcpu": 4, "memory_gib": 16 },
+      "aws": { "instance_class": "db.m6g.xlarge", "vcpu": 4, "memory_gib": 16 },
+      "x86_equivalent": "db.m6i.xlarge"
+    },
+    "GP_Standard_D8s_v3": {
+      "azure": { "vcpu": 8, "memory_gib": 32 },
+      "aws": { "instance_class": "db.m6g.2xlarge", "vcpu": 8, "memory_gib": 32 },
+      "x86_equivalent": "db.m6i.2xlarge"
+    },
+    "GP_Standard_D16s_v3": {
+      "azure": { "vcpu": 16, "memory_gib": 64 },
+      "aws": { "instance_class": "db.m6g.4xlarge", "vcpu": 16, "memory_gib": 64 },
+      "x86_equivalent": "db.m6i.4xlarge"
+    },
+    "GP_Standard_D32s_v3": {
+      "azure": { "vcpu": 32, "memory_gib": 128 },
+      "aws": { "instance_class": "db.m6g.8xlarge", "vcpu": 32, "memory_gib": 128 },
+      "x86_equivalent": "db.m6i.8xlarge"
+    },
+    "MO_Standard_E2s_v3": {
+      "azure": { "vcpu": 2, "memory_gib": 16 },
+      "aws": { "instance_class": "db.r6g.large", "vcpu": 2, "memory_gib": 16 },
+      "x86_equivalent": "db.r6i.large"
+    },
+    "MO_Standard_E4s_v3": {
+      "azure": { "vcpu": 4, "memory_gib": 32 },
+      "aws": { "instance_class": "db.r6g.xlarge", "vcpu": 4, "memory_gib": 32 },
+      "x86_equivalent": "db.r6i.xlarge"
+    },
+    "MO_Standard_E8s_v3": {
+      "azure": { "vcpu": 8, "memory_gib": 64 },
+      "aws": { "instance_class": "db.r6g.2xlarge", "vcpu": 8, "memory_gib": 64 },
+      "x86_equivalent": "db.r6i.2xlarge"
+    },
+    "MO_Standard_E16s_v3": {
+      "azure": { "vcpu": 16, "memory_gib": 128 },
+      "aws": { "instance_class": "db.r6g.4xlarge", "vcpu": 16, "memory_gib": 128 },
+      "x86_equivalent": "db.r6i.4xlarge"
+    },
+    "MO_Standard_E32s_v3": {
+      "azure": { "vcpu": 32, "memory_gib": 256 },
+      "aws": { "instance_class": "db.r6g.8xlarge", "vcpu": 32, "memory_gib": 256 },
+      "x86_equivalent": "db.r6i.8xlarge"
+    }
   },
 
   "storage": {

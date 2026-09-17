@@ -74,8 +74,8 @@ unit file for its own contract; this phase owns only lifecycle and the cross-cut
 Two facts the frontmatter cannot express:
 
 1. **Fragments are additive, not redundant, and they may disagree.** IaC carries
-   *declared intent* (module structure, naming, what is parameterized, and resources
-   declared but never deployed). Live `az` and RDfA carry *actual state*. When two
+   _declared intent_ (module structure, naming, what is parameterized, and resources
+   declared but never deployed). Live `az` and RDfA carry _actual state_. When two
    sources disagree about the same `azure_id`, the assembler records BOTH values and
    which one won as a drift entry. A disagreement is never silently reconciled — the
    drift is itself customer-visible value.
@@ -92,10 +92,10 @@ Two facts the frontmatter cannot express:
 Terraform discovery is real and clustering is real. One fragment (`discover-iac.md`,
 Terraform only) plus an assembler that writes both artifacts.
 
-| Lands in | What                                                                                   |
-| -------- | -------------------------------------------------------------------------------------- |
-| step 2   | Bicep + ARM inside `discover-iac.md`; the `billing` and `app-code` fragments           |
-| step 2   | The `rdfa` fragment, then the live `az` path — security contract, capture pre-work, parsing fragment, in that order |
+| Lands in | What                                                                                                                                                                                                                   |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| step 2   | Bicep + ARM inside `discover-iac.md`; the `billing` and `app-code` fragments                                                                                                                                           |
+| step 2   | The `rdfa` fragment, then the live `az` path — security contract, capture pre-work, parsing fragment, in that order                                                                                                    |
 | step 4   | `patterns.md` — pattern RECOGNITION only. Seed / split / merge / tier / primary / roles are implemented in `references/clustering/`; every cluster carries `pattern_status: "catalog_absent"` until the catalog exists |
 
 The live `az` path will NOT be a plain fragment. This phase runs under

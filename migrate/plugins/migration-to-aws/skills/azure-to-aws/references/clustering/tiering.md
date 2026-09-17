@@ -21,12 +21,12 @@ that is the wrong tool here:
 
 Assign in order; the first match wins.
 
-| Tier                        | Cluster contains…                                                                 |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| `network_identity_secrets`  | only networking, identity, secrets, and observability types — no compute, no data   |
-| `data`                      | at least one database, cache, storage, or messaging resource, and **no** compute    |
-| `compute`                   | at least one compute resource (plan, site, VM, VMSS, AKS cluster, container app)    |
-| `edge`                      | only edge types — Front Door / CDN, Application Gateway, API Management, Traffic Manager, public IP — fronting resources in OTHER clusters |
+| Tier                       | Cluster contains…                                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `network_identity_secrets` | only networking, identity, secrets, and observability types — no compute, no data                                                          |
+| `data`                     | at least one database, cache, storage, or messaging resource, and **no** compute                                                           |
+| `compute`                  | at least one compute resource (plan, site, VM, VMSS, AKS cluster, container app)                                                           |
+| `edge`                     | only edge types — Front Door / CDN, Application Gateway, API Management, Traffic Manager, public IP — fronting resources in OTHER clusters |
 
 **`compute` deliberately outranks `data`.** A merged app+database cluster is a compute
 cluster: the compute is what gets sized, what dominates the estimate, and what the report

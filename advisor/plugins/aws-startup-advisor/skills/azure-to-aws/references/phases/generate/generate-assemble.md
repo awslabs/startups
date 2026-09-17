@@ -58,7 +58,7 @@ Scan the emitted `.tf` files:
 2. **Secret-value scan** — no secret VALUE from `azure-resource-inventory.json` may appear in
    any generated artifact. Secrets are emitted as Secrets Manager references only. A hit is a
    gate failure. (Match against the inventory's captured secret values / Key Vault secret
-   contents; note discovery never captured Key Vault secret *values*, so this guards against
+   contents; note discovery never captured Key Vault secret _values_, so this guards against
    any that leaked via app-settings.)
 
 On any gate failure: emit `GATE_FAIL`, do not mark the phase complete, do not patch the

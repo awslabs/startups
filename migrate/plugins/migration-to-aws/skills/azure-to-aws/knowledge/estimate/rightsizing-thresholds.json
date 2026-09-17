@@ -4,19 +4,33 @@
   "_provenance": "The band boundaries and slider values are the product owner's chosen defaults (plan section 0), not measurements. They are tunable constants and this file is the only place they may be changed.",
 
   "p95_bands": [
-    { "max_p95_percent": 35,  "action": "quarter", "_meaning": "Drop to roughly one quarter of the source's vCPU/memory, floored by the smallest instance that meets the memory requirement." },
-    { "max_p95_percent": 70,  "action": "half",    "_meaning": "Drop to roughly half." },
-    { "max_p95_percent": 100, "action": "same",    "_meaning": "Keep the like-for-like size. A workload at or above 70% P95 has no headroom to give up." }
+    {
+      "max_p95_percent": 35,
+      "action": "quarter",
+      "_meaning": "Drop to roughly one quarter of the source's vCPU/memory, floored by the smallest instance that meets the memory requirement."
+    },
+    { "max_p95_percent": 70, "action": "half", "_meaning": "Drop to roughly half." },
+    {
+      "max_p95_percent": 100,
+      "action": "same",
+      "_meaning": "Keep the like-for-like size. A workload at or above 70% P95 has no headroom to give up."
+    }
   ],
 
   "aggressiveness": {
     "_what_it_is": "The target post-migration utilization the customer is willing to run at. Higher means smaller instances and less headroom.",
     "_default": "medium",
     "levels": {
-      "low":        { "target_utilization_percent": 50, "_for": "Regulated or spiky workloads, or a first migration where confidence matters more than cost." },
-      "medium":     { "target_utilization_percent": 60, "_for": "The default. Balances saving against burst headroom." },
-      "high":       { "target_utilization_percent": 70, "_for": "Cost-sensitive, steady traffic, autoscaling in place." },
-      "aggressive": { "target_utilization_percent": 90, "_for": "Only with autoscaling AND a stated tolerance for saturation. Say out loud that this trades resilience for cost." }
+      "low": {
+        "target_utilization_percent": 50,
+        "_for": "Regulated or spiky workloads, or a first migration where confidence matters more than cost."
+      },
+      "medium": { "target_utilization_percent": 60, "_for": "The default. Balances saving against burst headroom." },
+      "high": { "target_utilization_percent": 70, "_for": "Cost-sensitive, steady traffic, autoscaling in place." },
+      "aggressive": {
+        "target_utilization_percent": 90,
+        "_for": "Only with autoscaling AND a stated tolerance for saturation. Say out loud that this trades resilience for cost."
+      }
     }
   },
 

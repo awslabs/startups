@@ -122,18 +122,18 @@ resolved.
 
 Emit in tier order — network, identity, and secrets first, then data, then compute,
 then edge. That is the same tiering the clusters carry, which is why the tiering
-replaced topological depth: Generate's sequencing is what the ordering is *for*.
+replaced topological depth: Generate's sequencing is what the ordering is _for_.
 
 ## Status — skeleton (build step 1)
 
 Wiring only: three artifact fragments and an assembler, with the full artifact floor
 and the postcondition contract declared.
 
-| Lands in | What                                                             |
-| -------- | ---------------------------------------------------------------- |
-| step 6   | The Terraform, script, doc, and report emitters                   |
+| Lands in | What                                                                  |
+| -------- | --------------------------------------------------------------------- |
+| step 6   | The Terraform, script, doc, and report emitters                       |
 | step 6   | The report shape — cluster-level rationale first, rows to an appendix |
-| step 6   | The AI handoff summary, when the handoff offer is accepted         |
+| step 6   | The AI handoff summary, when the handoff offer is accepted            |
 
 ## Step: Run the phase
 

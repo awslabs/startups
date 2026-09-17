@@ -41,14 +41,14 @@ auth OTHER Azure calls). Log and skip; identity is handled by Clarify Category J
 Scan for Azure SDK and AI-provider imports. Record `file_path`, `import_statement`,
 `inferred_service`, `confidence` (0.60–0.80 — inferred from code, not config).
 
-| Import | Inferred service |
-| ------ | ---------------- |
-| `azure.storage.blob` / `@azure/storage-blob` | Blob Storage |
-| `azure.cosmos` / `@azure/cosmos` | Cosmos DB |
-| `azure.servicebus` / `@azure/service-bus` | Service Bus |
-| `azure.keyvault.*` / `@azure/keyvault-*` | Key Vault |
-| `redis` / `ioredis` | Azure Cache for Redis |
-| `azure.identity` (for data-plane calls) | managed identity |
+| Import                                       | Inferred service      |
+| -------------------------------------------- | --------------------- |
+| `azure.storage.blob` / `@azure/storage-blob` | Blob Storage          |
+| `azure.cosmos` / `@azure/cosmos`             | Cosmos DB             |
+| `azure.servicebus` / `@azure/service-bus`    | Service Bus           |
+| `azure.keyvault.*` / `@azure/keyvault-*`     | Key Vault             |
+| `redis` / `ioredis`                          | Azure Cache for Redis |
+| `azure.identity` (for data-plane calls)      | managed identity      |
 
 The AI-relevant imports are the point of this fragment — see Step 3.
 
@@ -68,21 +68,21 @@ Scan active (non-commented) code for `websocket`, `WebSocket`, `socket.io`, Fast
 
 Scan source and manifests for AI patterns. Record pattern, file location, confidence.
 
-| Pattern | What to look for | Confidence |
-| ------- | ---------------- | ---------- |
-| 3.1 Azure OpenAI (Python) | `from openai import AzureOpenAI` / `AsyncAzureOpenAI`; a client built with `azure_endpoint=`, `api_version=`; `openai.api_type = "azure"` (legacy); env `AZURE_OPENAI_ENDPOINT` / `AZURE_OPENAI_API_KEY` / `AZURE_OPENAI_DEPLOYMENT_NAME` | 98% |
-| 3.2 Azure OpenAI (Node) | `@azure/openai`, `AzureOpenAI` from `openai` with `azureADTokenProvider`/`endpoint`; `azure-ai-inference` / `@azure-rest/ai-inference` | 98% |
-| 3.3 Azure OpenAI (.NET) | `Azure.AI.OpenAI` (`OpenAIClient` with an Azure endpoint) | 95% |
-| 3.4 OpenAI direct | `from openai import OpenAI` / `client.chat.completions.create()` with NO azure config; model strings `gpt-4o`, `gpt-4.1`, `o3`, `o4-mini` | 98% |
-| 3.5 Anthropic | `anthropic`, `claude-*` model strings | 98% |
-| 3.6 Azure AI Vision | `azure.ai.vision.*`, `azure-cognitiveservices-vision-computervision`, `ComputerVisionClient` | 90% |
-| 3.7 Azure AI Document Intelligence | `azure.ai.formrecognizer` / `azure.ai.documentintelligence`, `DocumentAnalysisClient`, `DocumentIntelligenceClient` | 90% |
-| 3.8 Azure AI Speech | `azure.cognitiveservices.speech`, `SpeechConfig`, `SpeechRecognizer`, `SpeechSynthesizer` | 90% |
-| 3.9 Azure AI Language | `azure.ai.textanalytics`, `TextAnalyticsClient` | 90% |
-| 3.10 Azure AI Translator | `azure.ai.translation.*` | 90% |
-| 3.11 Azure Machine Learning | `azureml`, `azure.ai.ml`, `MLClient` | 85% |
-| 3.12 Azure AI Search (RAG) | `azure.search.documents`, `SearchClient`, `VectorizedQuery` — with embeddings, a RAG signal | 85% |
-| 3.13 Embeddings & RAG | `langchain` + `AzureOpenAIEmbeddings`; `llama_index` + Azure; vector DB + embeddings | 85% |
+| Pattern                            | What to look for                                                                                                                                                                                                                          | Confidence |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 3.1 Azure OpenAI (Python)          | `from openai import AzureOpenAI` / `AsyncAzureOpenAI`; a client built with `azure_endpoint=`, `api_version=`; `openai.api_type = "azure"` (legacy); env `AZURE_OPENAI_ENDPOINT` / `AZURE_OPENAI_API_KEY` / `AZURE_OPENAI_DEPLOYMENT_NAME` | 98%        |
+| 3.2 Azure OpenAI (Node)            | `@azure/openai`, `AzureOpenAI` from `openai` with `azureADTokenProvider`/`endpoint`; `azure-ai-inference` / `@azure-rest/ai-inference`                                                                                                    | 98%        |
+| 3.3 Azure OpenAI (.NET)            | `Azure.AI.OpenAI` (`OpenAIClient` with an Azure endpoint)                                                                                                                                                                                 | 95%        |
+| 3.4 OpenAI direct                  | `from openai import OpenAI` / `client.chat.completions.create()` with NO azure config; model strings `gpt-4o`, `gpt-4.1`, `o3`, `o4-mini`                                                                                                 | 98%        |
+| 3.5 Anthropic                      | `anthropic`, `claude-*` model strings                                                                                                                                                                                                     | 98%        |
+| 3.6 Azure AI Vision                | `azure.ai.vision.*`, `azure-cognitiveservices-vision-computervision`, `ComputerVisionClient`                                                                                                                                              | 90%        |
+| 3.7 Azure AI Document Intelligence | `azure.ai.formrecognizer` / `azure.ai.documentintelligence`, `DocumentAnalysisClient`, `DocumentIntelligenceClient`                                                                                                                       | 90%        |
+| 3.8 Azure AI Speech                | `azure.cognitiveservices.speech`, `SpeechConfig`, `SpeechRecognizer`, `SpeechSynthesizer`                                                                                                                                                 | 90%        |
+| 3.9 Azure AI Language              | `azure.ai.textanalytics`, `TextAnalyticsClient`                                                                                                                                                                                           | 90%        |
+| 3.10 Azure AI Translator           | `azure.ai.translation.*`                                                                                                                                                                                                                  | 90%        |
+| 3.11 Azure Machine Learning        | `azureml`, `azure.ai.ml`, `MLClient`                                                                                                                                                                                                      | 85%        |
+| 3.12 Azure AI Search (RAG)         | `azure.search.documents`, `SearchClient`, `VectorizedQuery` — with embeddings, a RAG signal                                                                                                                                               | 85%        |
+| 3.13 Embeddings & RAG              | `langchain` + `AzureOpenAIEmbeddings`; `llama_index` + Azure; vector DB + embeddings                                                                                                                                                      | 85%        |
 
 Manifest deps to check: `openai`, `azure-ai-inference`, `@azure/openai`, `Azure.AI.OpenAI`,
 `azure-ai-formrecognizer`, `azure-ai-documentintelligence`, `azure-cognitiveservices-vision-computervision`,
@@ -92,19 +92,19 @@ Manifest deps to check: `openai`, `azure-ai-inference`, `@azure/openai`, `Azure.
 
 ## Step 3B: Agentic framework signals (ports unchanged from gcp)
 
-| Pattern | What to look for | Confidence |
-| ------- | ---------------- | ---------- |
-| 3B.1 LangGraph | `from langgraph`, `StateGraph(`, `add_node(`, `add_edge(`, `.compile()` | 95% |
-| 3B.2 CrewAI | `from crewai`, `Crew(`, `Agent(` with `role=`, `Task(` | 95% |
-| 3B.3 AutoGen | `from autogen`, `AssistantAgent(`, `GroupChat(`, `ConversableAgent(` | 95% |
-| 3B.4 OpenAI Agents SDK | `from openai.agents` / `from agents import`, `openai.beta.assistants`, `Runner(` | 95% |
-| 3B.5 Strands | `from strands`, `Agent(` with `tools=`, `Swarm(`, `GraphBuilder(` | 95% |
-| 3B.5a Pydantic AI | `from pydantic_ai import Agent`, `Agent(model=`, `.run_sync(` | 95% |
-| 3B.5b Agno | `from agno.agent import Agent`, `Team(`, `.print_response(` | 95% |
-| 3B.6 Custom agent loop | a loop with BOTH an LLM call AND tool dispatch from model output AND result parse-back | 80% |
-| 3B.7 Tool definitions | `@tool` decorators, `tools=[{...schema...}]`, `function_declarations=` | 90% |
-| 3B.8 MCP integration | `from mcp.server` / `from mcp.client`, `mcp.json`, `MCPClient(` | 90% |
-| 3B.9 Agent memory | `ConversationBufferMemory(`, `ChatMessageHistory(`, `MemorySaver(`, vector-store retrieval into agent context | 85% |
+| Pattern                | What to look for                                                                                              | Confidence |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- | ---------- |
+| 3B.1 LangGraph         | `from langgraph`, `StateGraph(`, `add_node(`, `add_edge(`, `.compile()`                                       | 95%        |
+| 3B.2 CrewAI            | `from crewai`, `Crew(`, `Agent(` with `role=`, `Task(`                                                        | 95%        |
+| 3B.3 AutoGen           | `from autogen`, `AssistantAgent(`, `GroupChat(`, `ConversableAgent(`                                          | 95%        |
+| 3B.4 OpenAI Agents SDK | `from openai.agents` / `from agents import`, `openai.beta.assistants`, `Runner(`                              | 95%        |
+| 3B.5 Strands           | `from strands`, `Agent(` with `tools=`, `Swarm(`, `GraphBuilder(`                                             | 95%        |
+| 3B.5a Pydantic AI      | `from pydantic_ai import Agent`, `Agent(model=`, `.run_sync(`                                                 | 95%        |
+| 3B.5b Agno             | `from agno.agent import Agent`, `Team(`, `.print_response(`                                                   | 95%        |
+| 3B.6 Custom agent loop | a loop with BOTH an LLM call AND tool dispatch from model output AND result parse-back                        | 80%        |
+| 3B.7 Tool definitions  | `@tool` decorators, `tools=[{...schema...}]`, `function_declarations=`                                        | 90%        |
+| 3B.8 MCP integration   | `from mcp.server` / `from mcp.client`, `mcp.json`, `MCPClient(`                                               | 90%        |
+| 3B.9 Agent memory      | `ConversationBufferMemory(`, `ChatMessageHistory(`, `MemorySaver(`, vector-store retrieval into agent context | 85%        |
 
 Manifest deps: `langgraph`, `crewai`, `pyautogen`/`autogen`, `strands-agents`, `pydantic-ai`,
 `agno`, `mcp`. Note: `langchain_openai.AzureChatOpenAI` / `AzureOpenAIEmbeddings` are the Azure

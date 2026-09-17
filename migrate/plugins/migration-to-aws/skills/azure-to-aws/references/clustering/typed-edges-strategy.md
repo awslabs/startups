@@ -8,7 +8,7 @@ file is the strategy: what each edge is worth as evidence, and why the weights d
 
 gcp-to-aws builds its graph from Terraform reference expressions, so **the graph exists
 only when IaC does** — a live-capture-only GCP run has no edges at all. Azure embeds full
-ARM resource IDs inside resource *properties* (`serverFarmId`, `subnetId`,
+ARM resource IDs inside resource _properties_ (`serverFarmId`, `subnetId`,
 `privateLinkServiceId`, a Key Vault reference in an app setting), so every edge type
 survives a live `az` capture and an RDfA archive. Clustering therefore works on the
 live-first path, which is the default here.
@@ -27,15 +27,15 @@ The distinction that matters is **specific versus ambient**. A specific edge was
 to connect two particular resources; an ambient edge connects almost everything to a small
 number of shared resources.
 
-| Edge                | Weight   | Merges? | Reasoning                                                                                     |
-| ------------------- | -------- | ------- | --------------------------------------------------------------------------------------------- |
-| `hosted_on`         | hard     | yes     | Not evidence of relatedness — it *is* the relationship. An app and its plan are one compute unit, and this edge is also what prevents the 5× cost error |
-| `data_ref`          | strong   | yes     | Someone wrote this app's config to address this database. Specific by construction             |
-| `private_link`      | strong   | yes     | A private endpoint is deliberately created to reach one resource. The most explicit app-to-data signal Azure offers |
-| `declared_affinity` | strong   | yes     | An `app=` / `workload=` tag is the customer stating intent. Declared intent outranks inference |
-| `identity_grant`    | medium   | yes     | "App X can read storage Y" — a real dependency, and cleaner in Azure than GCP because the role-assignment scope names the target |
-| `network`           | ambient  | **no**  | Every workload in a VNet shares subnets. Merging here collapses the estate into one cluster    |
-| `secret_ref`        | ambient  | **no**  | One Key Vault typically serves everything. Same collapse                                       |
+| Edge                | Weight  | Merges? | Reasoning                                                                                                                                               |
+| ------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hosted_on`         | hard    | yes     | Not evidence of relatedness — it _is_ the relationship. An app and its plan are one compute unit, and this edge is also what prevents the 5× cost error |
+| `data_ref`          | strong  | yes     | Someone wrote this app's config to address this database. Specific by construction                                                                      |
+| `private_link`      | strong  | yes     | A private endpoint is deliberately created to reach one resource. The most explicit app-to-data signal Azure offers                                     |
+| `declared_affinity` | strong  | yes     | An `app=` / `workload=` tag is the customer stating intent. Declared intent outranks inference                                                          |
+| `identity_grant`    | medium  | yes     | "App X can read storage Y" — a real dependency, and cleaner in Azure than GCP because the role-assignment scope names the target                        |
+| `network`           | ambient | **no**  | Every workload in a VNet shares subnets. Merging here collapses the estate into one cluster                                                             |
+| `secret_ref`        | ambient | **no**  | One Key Vault typically serves everything. Same collapse                                                                                                |
 
 An ambient edge is still **recorded** and still counts for internal connectivity in the
 split step. It just cannot pull two candidate clusters together. Sharing a subnet is weak

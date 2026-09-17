@@ -25,15 +25,15 @@ Read `aws-design-ai.json → ai_architecture.code_migration.migration_path` and
 `ai-workload-profile.json → integration.languages[0]` (`python`→`.py`, `javascript`/`typescript`→
 `.js`, `go`→`.go`, else `.py`).
 
-| `migration_path` / framework | Emits (in addition to the always-on set) |
-| ---------------------------- | ----------------------------------------- |
-| `mantle_openai_responses` | `ai-migration/migrate_to_mantle.sh` — **skip the provider adapter** |
-| `direct` (or absent) | `ai-migration/provider_adapter.{py,js,go}` |
-| `gpt-oss` | `ai-migration/provider_adapter.{py,js,go}` targeting gpt-oss via Converse |
-| gateway (`llm_router`/`api_gateway`/`voice_platform`/`framework`) | `ai-migration/gateway_config.{yaml,py,json}` — skip the adapter |
-| agentic `migration_approach == harness` | `ai-migration/harness.json`, `ai-migration/deploy_harness.sh` |
-| agentic `migration_approach == strands` | `ai-migration/strands_agents.py`, `ai-migration/deploy_strands.sh` |
-| eval opted in | `ai-migration/eval-prompts.jsonl`, `ai-migration/run-evaluation.sh` |
+| `migration_path` / framework                                      | Emits (in addition to the always-on set)                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `mantle_openai_responses`                                         | `ai-migration/migrate_to_mantle.sh` — **skip the provider adapter**       |
+| `direct` (or absent)                                              | `ai-migration/provider_adapter.{py,js,go}`                                |
+| `gpt-oss`                                                         | `ai-migration/provider_adapter.{py,js,go}` targeting gpt-oss via Converse |
+| gateway (`llm_router`/`api_gateway`/`voice_platform`/`framework`) | `ai-migration/gateway_config.{yaml,py,json}` — skip the adapter           |
+| agentic `migration_approach == harness`                           | `ai-migration/harness.json`, `ai-migration/deploy_harness.sh`             |
+| agentic `migration_approach == strands`                           | `ai-migration/strands_agents.py`, `ai-migration/deploy_strands.sh`        |
+| eval opted in                                                     | `ai-migration/eval-prompts.jsonl`, `ai-migration/run-evaluation.sh`       |
 
 **Always emit (every path):** `ai-migration/setup_bedrock.sh`, `ai-migration/test_comparison.py`
 (always Python), `ai-migration/bedrock_monitoring.tf`.
@@ -105,7 +105,13 @@ default 50). Cost-anomaly monitor `monitor_type = "DIMENSIONAL"`, `monitor_dimen
   "timestamp": "<ISO 8601>",
   "migration_plan": { "approach": "...", "phases": [], "models_to_migrate": [] },
   "step_by_step_guide": {},
-  "rollback_plan": { "mechanism": "feature_flag", "flag_name": "AI_PROVIDER", "default_value": "azure_openai", "rollback_time": "...", "triggers": [] },
+  "rollback_plan": {
+    "mechanism": "feature_flag",
+    "flag_name": "AI_PROVIDER",
+    "default_value": "azure_openai",
+    "rollback_time": "...",
+    "triggers": []
+  },
   "monitoring": {},
   "production_readiness_checklist": [],
   "success_criteria": {},

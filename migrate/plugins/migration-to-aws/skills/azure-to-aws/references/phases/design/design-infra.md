@@ -15,14 +15,14 @@ disposition table, pass 2 is the category rubric. It applies the precedence orde
 
 ## What to load
 
-| File                                          | When                                                    |
-| --------------------------------------------- | ------------------------------------------------------- |
-| `references/shared/schema-design-aws.md`      | always — the artifact contract, including every REQUIRED field |
-| `knowledge/design/fast-path-services.json`    | always — it is pass 1 for every resource                |
-| `references/design-refs/fast-path.md`         | always — the contract for what the table's labels claim  |
-| `references/design-refs/specialist-gates.md`  | when any resource matches a `specialist_gates` row       |
-| `references/design-refs/index.md`             | when any resource matched no row in the table            |
-| the category file `index.md` names             | per category actually present — never speculatively      |
+| File                                         | When                                                           |
+| -------------------------------------------- | -------------------------------------------------------------- |
+| `references/shared/schema-design-aws.md`     | always — the artifact contract, including every REQUIRED field |
+| `knowledge/design/fast-path-services.json`   | always — it is pass 1 for every resource                       |
+| `references/design-refs/fast-path.md`        | always — the contract for what the table's labels claim        |
+| `references/design-refs/specialist-gates.md` | when any resource matches a `specialist_gates` row             |
+| `references/design-refs/index.md`            | when any resource matched no row in the table                  |
+| the category file `index.md` names           | per category actually present — never speculatively            |
 
 ## The admission test for Direct Mappings
 
@@ -30,7 +30,7 @@ Stated once, in `fast-path.md` § The admission test. The short form: **is this 
 correct regardless of the surrounding architecture?** Architecture-invariant rows are
 admissible; everything else is a rubric decision. That is why the table is all
 infrastructure primitives with one exception (`managedClusters` → EKS), and why Azure
-Functions → Lambda is *not* a fast-path row: a function inside an otherwise
+Functions → Lambda is _not_ a fast-path row: a function inside an otherwise
 Fargate-based workload may belong on Fargate, and a durable or long-running function
 hits the eliminator anyway.
 
@@ -85,7 +85,7 @@ than rows.
 
 > **Why this exists.** `gcp-to-aws` routes an unknown type to a category by
 > substring-matching its NAME — `"log" → monitoring`, which also matches
-> `google_dia`**`log`**`flow_agent`. Azure has a better signal for free. Before these
+> `google_dia` **`log`** `flow_agent`. Azure has a better signal for free. Before these
 > rules, azure went from "no row" straight to the cost-bearing STOP, which made it
 > **stricter than gcp on less than half the per-type coverage**: a type we could name, in a
 > namespace we understood, still halted the design.
@@ -140,7 +140,7 @@ asks for the type to be filed. That should be rare.
 > to the model for facts about Azure (what a service is, what a SKU's vCPU count is) and
 > never for this project's positions (Elastic Beanstalk over Fargate for PaaS posture,
 > `x86_64` over Graviton, single-AZ plus a finding rather than inferring Aurora from silence).
-> A model-chosen *category* is a fact-shaped judgement; the rubric it lands in still supplies
+> A model-chosen _category_ is a fact-shaped judgement; the rubric it lands in still supplies
 > the opinion.
 
 The consumption test is mechanical whenever RDfA or billing ran, so a resource that
@@ -160,7 +160,7 @@ matching `missing_rubric_file` entry reads as complete to anything that only ins
 `services[]`, which is most report code.
 
 Discarding the work would make the user re-run everything to learn one missing row, and
-it would hide *which* resources were already fine. Writing the partial artifact is also
+it would hide _which_ resources were already fine. Writing the partial artifact is also
 what makes the STOP testable by an external asserter. This is **not** the same as
 patching an artifact to force a gate to pass — the gate still fails, loudly, and the
 `halt` object is the reason.
@@ -194,20 +194,20 @@ Discover's (`schema-discover-azure.md` § Warnings: `code`, `azure_id` or `ident
 `detail`) and a **separate closed vocabulary**. Discover's codes describe what could not
 be read; these describe what was decided.
 
-| `code`                        | Emitted when                                                                        |
-| ----------------------------- | ----------------------------------------------------------------------------------- |
-| `skipped_no_aws_equivalent`   | a `skip_mappings` row with `kind: noise`                                             |
-| `skipped_config_source`       | a `skip_mappings` row with `kind: config_source` — the `detail` MUST name what it contributed |
-| `skipped_observability`       | an `Microsoft.Insights/*` or Log Analytics resource; carries `report_note: "cloudwatch_fallback"` |
-| `app_consumed_by_plan`        | one per `Microsoft.Web/sites` folded into its plan, with `plan_azure_id`             |
-| `idle_app_service_plan`       | a plan with zero apps; `severity: "cost_optimization"`                               |
-| `benign_unknown_type`         | an unmapped canonical type that cleared the cost-bearing test                        |
-| `routed_by_model_category`    | the namespace was not in `namespace_routing`, so the category was chosen by judgement. `detail` MUST name the namespace AND the category chosen, so the decision is reviewable rather than invisible |
-| `type_derived_uncorroborated` | Discover derived the ARM type but no second artefact declared its namespace. Carried through from the inventory so it appears in the design's own warnings too |
-| `routed_by_namespace_rule`    | a type resolved by `namespace_routing` rather than an authored row. `detail` MUST name the namespace and the rubric it routed to, so the derived decision is auditable |
-| `routed_by_child_type_rule`   | a child type folded into its parent by `child_type_rule`. `detail` MUST name the parent and what was contributed |
+| `code`                               | Emitted when                                                                                                                                                                                                                                    |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `skipped_no_aws_equivalent`          | a `skip_mappings` row with `kind: noise`                                                                                                                                                                                                        |
+| `skipped_config_source`              | a `skip_mappings` row with `kind: config_source` — the `detail` MUST name what it contributed                                                                                                                                                   |
+| `skipped_observability`              | an `Microsoft.Insights/*` or Log Analytics resource; carries `report_note: "cloudwatch_fallback"`                                                                                                                                               |
+| `app_consumed_by_plan`               | one per `Microsoft.Web/sites` folded into its plan, with `plan_azure_id`                                                                                                                                                                        |
+| `idle_app_service_plan`              | a plan with zero apps; `severity: "cost_optimization"`                                                                                                                                                                                          |
+| `benign_unknown_type`                | an unmapped canonical type that cleared the cost-bearing test                                                                                                                                                                                   |
+| `routed_by_model_category`           | the namespace was not in `namespace_routing`, so the category was chosen by judgement. `detail` MUST name the namespace AND the category chosen, so the decision is reviewable rather than invisible                                            |
+| `type_derived_uncorroborated`        | Discover derived the ARM type but no second artefact declared its namespace. Carried through from the inventory so it appears in the design's own warnings too                                                                                  |
+| `routed_by_namespace_rule`           | a type resolved by `namespace_routing` rather than an authored row. `detail` MUST name the namespace and the rubric it routed to, so the derived decision is auditable                                                                          |
+| `routed_by_child_type_rule`          | a child type folded into its parent by `child_type_rule`. `detail` MUST name the parent and what was contributed                                                                                                                                |
 | `availability_downgrade_from_source` | the source database is zone-redundant / HA but the target is single-AZ, because no availability answer was recorded. `severity: "review"` — the customer silently loses HA they were paying for unless this is said out loud (`database.md` §1) |
-| `<hard_blocker key>`          | a `hard_blockers` row, e.g. `azure_edition_windows_server`; `severity: "blocker"`     |
+| `<hard_blocker key>`                 | a `hard_blockers` row, e.g. `azure_edition_windows_server`; `severity: "blocker"`                                                                                                                                                               |
 
 A cost-bearing unknown and an untranslated type produce a `halt` entry, **not** a
 warning. That distinction is the whole point of the split policy: a warning means the

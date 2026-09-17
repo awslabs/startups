@@ -4,29 +4,29 @@ Pass-2 rubric for every messaging type `index.md` routes here. Loaded only when 
 inventory contains one.
 
 **Outcome is `confidence: inferred`.** Never `deterministic` — `Microsoft.EventHub/namespaces`
-is the one messaging type that *is* a fast-path row, because owner decision 11.4 made
+is the one messaging type that _is_ a fast-path row, because owner decision 11.4 made
 protocol the whole rubric and left nothing to reason about. Everything below has something
 left to reason about.
 
 The recurring shape: **Service Bus is one broker with many capabilities; AWS splits those
 capabilities across SQS, SNS, EventBridge and Amazon MQ.** So the namespace does not map
-to a service — its *entities* do, and the namespace maps to whatever set they need.
+to a service — its _entities_ do, and the namespace maps to whatever set they need.
 
 ## 1. Eliminators — hard technical blockers
 
 Each is a property of the source entity, readable from IaC. Check them before anything else.
 
-| Candidate | Eliminated when |
-| --------- | --------------- |
-| **SQS** (standard or FIFO) | the entity's `max_message_size_in_kilobytes` exceeds **256 KB**. SQS caps at 256 KB; Service Bus Premium allows 100 MB. Route to Amazon MQ, or to SQS with an S3 claim-check — and say which |
-| **SQS** | `default_message_ttl` exceeds **14 days**, the SQS retention ceiling |
-| **SQS FIFO** | `duplicate_detection_history_time_window` exceeds **5 minutes**. FIFO's dedup window is fixed at 5 minutes; Service Bus allows up to 7 days. A longer window needs an idempotency table, which is application work |
-| **SQS** | messages are **scheduled more than 15 minutes** ahead (`scheduled_enqueue_time`). `DelaySeconds` caps at 900. Route long scheduling to EventBridge Scheduler or Step Functions |
-| **SQS / SNS** | the application speaks **AMQP 1.0 or JMS directly** rather than through the Service Bus SDK. SQS and SNS are HTTPS APIs; there is no AMQP surface. Amazon MQ is the only candidate that keeps the wire protocol |
-| **SNS** | a subscription filter uses a **Service Bus SQL filter** that references anything other than equality on user properties — `LIKE`, `IN`, arithmetic, `sys.` system properties. SNS filter policies are attribute matching only |
-| **SNS** | the topic requires **ordered delivery with sessions**. SNS FIFO topics exist but require a FIFO SQS subscriber and offer no session concept |
-| **Amazon MQ** | the customer's stated goal includes **removing broker management**. Amazon MQ is a managed broker, not a serverless queue: it has instance sizes, patch windows and a maintenance model that SQS does not |
-| **API Gateway WebSocket** | the source uses SignalR's **server-to-client streaming or MessagePack hub protocol** unchanged. The hub protocol is SignalR-specific; either target is a client rewrite |
+| Candidate                  | Eliminated when                                                                                                                                                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SQS** (standard or FIFO) | the entity's `max_message_size_in_kilobytes` exceeds **256 KB**. SQS caps at 256 KB; Service Bus Premium allows 100 MB. Route to Amazon MQ, or to SQS with an S3 claim-check — and say which                                  |
+| **SQS**                    | `default_message_ttl` exceeds **14 days**, the SQS retention ceiling                                                                                                                                                          |
+| **SQS FIFO**               | `duplicate_detection_history_time_window` exceeds **5 minutes**. FIFO's dedup window is fixed at 5 minutes; Service Bus allows up to 7 days. A longer window needs an idempotency table, which is application work            |
+| **SQS**                    | messages are **scheduled more than 15 minutes** ahead (`scheduled_enqueue_time`). `DelaySeconds` caps at 900. Route long scheduling to EventBridge Scheduler or Step Functions                                                |
+| **SQS / SNS**              | the application speaks **AMQP 1.0 or JMS directly** rather than through the Service Bus SDK. SQS and SNS are HTTPS APIs; there is no AMQP surface. Amazon MQ is the only candidate that keeps the wire protocol               |
+| **SNS**                    | a subscription filter uses a **Service Bus SQL filter** that references anything other than equality on user properties — `LIKE`, `IN`, arithmetic, `sys.` system properties. SNS filter policies are attribute matching only |
+| **SNS**                    | the topic requires **ordered delivery with sessions**. SNS FIFO topics exist but require a FIFO SQS subscriber and offer no session concept                                                                                   |
+| **Amazon MQ**              | the customer's stated goal includes **removing broker management**. Amazon MQ is a managed broker, not a serverless queue: it has instance sizes, patch windows and a maintenance model that SQS does not                     |
+| **API Gateway WebSocket**  | the source uses SignalR's **server-to-client streaming or MessagePack hub protocol** unchanged. The hub protocol is SignalR-specific; either target is a client rewrite                                                       |
 
 ## 2. The six criteria, in order, first match wins
 
@@ -36,16 +36,16 @@ Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
 
-| Source | Target | Why |
-| ------ | ------ | --- |
-| `Microsoft.ServiceBus/namespaces/queues` | **SQS** | A point-to-point queue with competing consumers is exactly SQS |
-| `Microsoft.ServiceBus/namespaces/queues` with `requires_session = true` | **SQS FIFO**, session id → **message group id** | Sessions are Service Bus's ordering primitive and the message group is SQS's. This is the closest mapping in the file |
-| `Microsoft.ServiceBus/namespaces/topics` | **SNS** | Fan-out to multiple independent subscribers |
-| `Microsoft.ServiceBus/namespaces/topics` whose subscriptions carry **content-based** SQL filters | **EventBridge** | EventBridge rules match on event content; SNS filter policies match on message attributes. If the filter reads the payload, SNS cannot express it |
-| `Microsoft.ServiceBus/namespaces` | **the union of what its entities need** | The namespace is a container, not a broker instance. See § 3 |
-| `Microsoft.EventHub/namespaces/eventhubs` | **a topic in MSK**, or **a stream in Kinesis** — whichever the parent namespace resolved to | The hub is not its own service. See § 4 |
-| `Microsoft.SignalRService/SignalR`, `service_mode = "Serverless"` | **API Gateway WebSocket API + Lambda** | Serverless SignalR already has no hub server; the shape matches |
-| `Microsoft.SignalRService/SignalR`, `service_mode = "Default"` or `"Classic"` | **API Gateway WebSocket API**, with the hub server becoming a Fargate service or Lambda | A hub server exists and has to land somewhere |
+| Source                                                                                           | Target                                                                                      | Why                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.ServiceBus/namespaces/queues`                                                         | **SQS**                                                                                     | A point-to-point queue with competing consumers is exactly SQS                                                                                    |
+| `Microsoft.ServiceBus/namespaces/queues` with `requires_session = true`                          | **SQS FIFO**, session id → **message group id**                                             | Sessions are Service Bus's ordering primitive and the message group is SQS's. This is the closest mapping in the file                             |
+| `Microsoft.ServiceBus/namespaces/topics`                                                         | **SNS**                                                                                     | Fan-out to multiple independent subscribers                                                                                                       |
+| `Microsoft.ServiceBus/namespaces/topics` whose subscriptions carry **content-based** SQL filters | **EventBridge**                                                                             | EventBridge rules match on event content; SNS filter policies match on message attributes. If the filter reads the payload, SNS cannot express it |
+| `Microsoft.ServiceBus/namespaces`                                                                | **the union of what its entities need**                                                     | The namespace is a container, not a broker instance. See § 3                                                                                      |
+| `Microsoft.EventHub/namespaces/eventhubs`                                                        | **a topic in MSK**, or **a stream in Kinesis** — whichever the parent namespace resolved to | The hub is not its own service. See § 4                                                                                                           |
+| `Microsoft.SignalRService/SignalR`, `service_mode = "Serverless"`                                | **API Gateway WebSocket API + Lambda**                                                      | Serverless SignalR already has no hub server; the shape matches                                                                                   |
+| `Microsoft.SignalRService/SignalR`, `service_mode = "Default"` or `"Classic"`                    | **API Gateway WebSocket API**, with the hub server becoming a Fargate service or Lambda     | A hub server exists and has to land somewhere                                                                                                     |
 
 ### 2.3 User preference
 
@@ -57,18 +57,18 @@ AMQP, we are not rewriting clients" has chosen Amazon MQ, and that answer wins.
 Service Bus capabilities and where they land. Anything with **no** counterpart becomes a
 `warnings[]` entry, never a silent omission.
 
-| Service Bus feature | AWS |
-| ------------------- | --- |
-| Dead-letter queue per entity | SQS redrive policy to a DLQ — direct |
-| `lock_duration` / peek-lock | SQS visibility timeout — direct |
-| `max_delivery_count` | redrive `maxReceiveCount` — direct |
-| Duplicate detection (≤ 5 min) | SQS FIFO content-based dedup — direct |
-| Sessions | SQS FIFO message group id — direct |
-| Auto-forwarding between entities | **no equivalent.** Needs a Lambda relay, which is new code |
-| Transactions spanning two entities | **no equivalent.** SQS and SNS have no cross-entity transaction |
-| Scheduled messages > 15 min | EventBridge Scheduler — a different service, so a new component |
+| Service Bus feature                                        | AWS                                                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Dead-letter queue per entity                               | SQS redrive policy to a DLQ — direct                                                 |
+| `lock_duration` / peek-lock                                | SQS visibility timeout — direct                                                      |
+| `max_delivery_count`                                       | redrive `maxReceiveCount` — direct                                                   |
+| Duplicate detection (≤ 5 min)                              | SQS FIFO content-based dedup — direct                                                |
+| Sessions                                                   | SQS FIFO message group id — direct                                                   |
+| Auto-forwarding between entities                           | **no equivalent.** Needs a Lambda relay, which is new code                           |
+| Transactions spanning two entities                         | **no equivalent.** SQS and SNS have no cross-entity transaction                      |
+| Scheduled messages > 15 min                                | EventBridge Scheduler — a different service, so a new component                      |
 | Topic subscription **rule actions** (mutating the message) | **no equivalent.** SNS and EventBridge filter, they do not transform. Needs a Lambda |
-| Geo-disaster recovery pairing | SQS/SNS are regional and already multi-AZ; cross-region needs explicit replication |
+| Geo-disaster recovery pairing                              | SQS/SNS are regional and already multi-AZ; cross-region needs explicit replication   |
 
 **Premium namespaces are a signal, not a size.** `sku = "Premium"` buys resource isolation,
 VNet integration and 100 MB messages. Do not read it as throughput and do not translate it
@@ -106,7 +106,7 @@ children rather than from itself.
 5. A namespace with **zero** entities is idle: map it, and flag it as a cost-optimization
    finding, exactly as `compute.md` § 3 treats a zero-app plan.
 
-An estimate that prices the namespace *and* each queue has double-counted. An estimate
+An estimate that prices the namespace _and_ each queue has double-counted. An estimate
 that prices only the namespace has priced nothing.
 
 ## 4. An Event Hub is a topic inside its namespace's target
@@ -114,10 +114,10 @@ that prices only the namespace has priced nothing.
 `Microsoft.EventHub/namespaces` is a fast-path row: `kafka_enabled` → MSK, otherwise
 Kinesis Data Streams. The hub inside it inherits that decision and must never re-open it.
 
-| Parent resolved to | Hub becomes | Carry across |
-| ------------------ | ----------- | ------------ |
-| **MSK** | a Kafka **topic** | `partition_count` → topic partitions; `message_retention` (days) → `retention.ms`; consumer groups → Kafka consumer groups, unchanged in concept |
-| **Kinesis Data Streams** | a **stream** | `partition_count` → shard count as the starting point; `message_retention` → stream retention (24 h default, up to 365 days); consumer groups → **enhanced fan-out consumers**, which are priced per consumer-shard-hour |
+| Parent resolved to       | Hub becomes       | Carry across                                                                                                                                                                                                             |
+| ------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **MSK**                  | a Kafka **topic** | `partition_count` → topic partitions; `message_retention` (days) → `retention.ms`; consumer groups → Kafka consumer groups, unchanged in concept                                                                         |
+| **Kinesis Data Streams** | a **stream**      | `partition_count` → shard count as the starting point; `message_retention` → stream retention (24 h default, up to 365 days); consumer groups → **enhanced fan-out consumers**, which are priced per consumer-shard-hour |
 
 Two traps:
 

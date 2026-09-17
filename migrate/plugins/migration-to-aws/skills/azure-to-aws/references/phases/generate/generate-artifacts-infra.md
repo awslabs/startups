@@ -15,7 +15,7 @@ _contributes:
 
 Emits idiomatic replacement Terraform for the designed architecture. Where the
 customer supplied IaC, its module structure and naming inform the output — that is
-what the *declared intent* half of discovery was for, and it is why IaC stays a
+what the _declared intent_ half of discovery was for, and it is why IaC stays a
 first-class source even when live discovery is authoritative for state.
 
 Per-domain `.tf` files (compute, data, network, security) are emitted as the design
@@ -48,34 +48,34 @@ If any REQUIRED file is missing: **STOP** — "Missing required artifact: [filen
 Generate `$MIGRATION_DIR/terraform/`, emitting only the domain files for domains that
 have services in `aws-design.json`:
 
-| File                       | Domain     | Contains |
-| -------------------------- | ---------- | -------- |
-| `main.tf`                  | core       | provider, S3 backend, data sources, cost-tier header |
+| File                       | Domain     | Contains                                                            |
+| -------------------------- | ---------- | ------------------------------------------------------------------- |
+| `main.tf`                  | core       | provider, S3 backend, data sources, cost-tier header                |
 | `variables.tf`             | core       | all input variables (types, defaults, placeholder-guard validation) |
-| `outputs.tf`               | core       | key resource outputs + `migration_summary` |
-| `.gitignore`               | core       | tfstate/tfvars ignores |
-| `terraform.tfvars.example` | core       | one entry per variable, source-annotated |
-| `network.tf`               | networking | VPC, subnets, security groups, ALB/NLB, NAT |
-| `compute.tf`               | compute    | Elastic Beanstalk, ECS/Fargate, EKS, EC2, Lambda |
-| `data.tf`                  | data       | RDS/Aurora, ElastiCache, DynamoDB |
-| `storage.tf`               | storage    | S3, EFS/FSx |
-| `messaging.tf`             | messaging  | SQS, SNS, Kinesis/MSK |
-| `security.tf`              | security   | IAM roles, KMS keys, Secrets Manager references |
-| `README.md`                | core       | cost-tier vs Terraform note (one stack, Balanced-aligned) |
+| `outputs.tf`               | core       | key resource outputs + `migration_summary`                          |
+| `.gitignore`               | core       | tfstate/tfvars ignores                                              |
+| `terraform.tfvars.example` | core       | one entry per variable, source-annotated                            |
+| `network.tf`               | networking | VPC, subnets, security groups, ALB/NLB, NAT                         |
+| `compute.tf`               | compute    | Elastic Beanstalk, ECS/Fargate, EKS, EC2, Lambda                    |
+| `data.tf`                  | data       | RDS/Aurora, ElastiCache, DynamoDB                                   |
+| `storage.tf`               | storage    | S3, EFS/FSx                                                         |
+| `messaging.tf`             | messaging  | SQS, SNS, Kinesis/MSK                                               |
+| `security.tf`              | security   | IAM roles, KMS keys, Secrets Manager references                     |
+| `README.md`                | core       | cost-tier vs Terraform note (one stack, Balanced-aligned)           |
 
 ## Step 0: Build the generation manifest
 
 Walk `aws-design.json` `services[]`. Assign each service to a target `.tf` file by
 `aws_service` (canonical AWS service on the mapping):
 
-| AWS service (from the mapping)                       | Target file    |
-| ---------------------------------------------------- | -------------- |
+| AWS service (from the mapping)                                   | Target file    |
+| ---------------------------------------------------------------- | -------------- |
 | VPC, VPC subnet, Security Group, ALB, NLB, NAT Gateway, Route 53 | `network.tf`   |
-| Elastic Beanstalk, ECS, Fargate, EKS, EC2, Lambda    | `compute.tf`   |
-| RDS PostgreSQL, RDS MySQL, Aurora, ElastiCache, DynamoDB | `data.tf`      |
-| S3, EFS, FSx                                          | `storage.tf`   |
-| SQS, SNS, Kinesis, MSK                                | `messaging.tf` |
-| IAM Role, KMS, Secrets Manager, ECR                  | `security.tf`  |
+| Elastic Beanstalk, ECS, Fargate, EKS, EC2, Lambda                | `compute.tf`   |
+| RDS PostgreSQL, RDS MySQL, Aurora, ElastiCache, DynamoDB         | `data.tf`      |
+| S3, EFS, FSx                                                     | `storage.tf`   |
+| SQS, SNS, Kinesis, MSK                                           | `messaging.tf` |
+| IAM Role, KMS, Secrets Manager, ECR                              | `security.tf`  |
 
 Rules:
 
@@ -165,7 +165,7 @@ For each domain with services in the manifest, populate resource attributes from
   the app count. (This is why the fan-in fold happened in Design; honor it here.)
 - **Secrets:** a Key Vault secret becomes an `aws_secretsmanager_secret` +
   `aws_secretsmanager_secret_version` whose value is a placeholder/`var` reference or a
-  `# fill in Secrets Manager` note — **never** the source secret value. A Key Vault *key*
+  `# fill in Secrets Manager` note — **never** the source secret value. A Key Vault _key_
   becomes a `aws_kms_key`. App settings that referenced a Key Vault secret reference the
   Secrets Manager ARN.
 - **Storage:** a Blob Storage container/account becomes an `aws_s3_bucket` emitted per the

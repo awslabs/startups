@@ -153,5 +153,5 @@ that split matters, so it is stated here rather than left to each unit:
 Why presentation sits in the assembler: with five fragments each presenting its own
 section the user would face five sheets and five rounds of essentials, interleaved. gcp
 runs **one** sheet as a single mandatory gate and then batches the essentials, and this
-phase's own postcondition says *"every assumption-sheet row the user was shown"* —
+phase's own postcondition says _"every assumption-sheet row the user was shown"_ —
 singular. One gate, one recap, one place that knows the full row set.

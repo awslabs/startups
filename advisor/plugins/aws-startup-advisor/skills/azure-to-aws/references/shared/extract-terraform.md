@@ -36,22 +36,22 @@ For every `resource "azurerm_<x>" "<local_name>" { … }`:
    a. **Listed in the table** → use it. `azure_type_provenance: "table"`.
 
    b. **Not listed** → DERIVE it per that file's § Deriving a type that is not listed:
-      camelCase-pluralise the Terraform suffix for the resource segment, and supply the
-      namespace. Cross-check the namespace against `fast-path-services.json` →
-      `namespace_routing`, which is a **signal, not a veto**:
+   camelCase-pluralise the Terraform suffix for the resource segment, and supply the
+   namespace. Cross-check the namespace against `fast-path-services.json` →
+   `namespace_routing`, which is a **signal, not a veto**:
 
-      - recognised → `azure_type_provenance: "derived"`
-      - not recognised → `azure_type_provenance: "derived_uncorroborated"`, plus a
-        `type_derived_uncorroborated` warning naming the namespace
+   - recognised → `azure_type_provenance: "derived"`
+   - not recognised → `azure_type_provenance: "derived_uncorroborated"`, plus a
+     `type_derived_uncorroborated` warning naming the namespace
 
-      **Either way keep the resource, with its full `config`,** and add the Terraform type
-      to `iac_metadata.derived_types`. Design routes an uncorroborated namespace to a
-      model-chosen category rather than halting.
+   **Either way keep the resource, with its full `config`,** and add the Terraform type
+   to `iac_metadata.derived_types`. Design routes an uncorroborated namespace to a
+   model-chosen category rather than halting.
 
    c. **You cannot say what the service is at all** → only then is it unresolvable. Record
-      it in `iac_metadata.untranslated_types` and in `warnings[]` as
-      `untranslated_terraform_type` with the local name, and skip the resource. This is
-      rare. A type you can NAME is never untranslated.
+   it in `iac_metadata.untranslated_types` and in `warnings[]` as
+   `untranslated_terraform_type` with the local name, and skip the resource. This is
+   rare. A type you can NAME is never untranslated.
 
    **Do not skip a resource merely because its type is unlisted.** Dropping it is what made
    87% of the provider surface a hard stop, and it destroyed the `sku`/`tier` evidence Design
@@ -161,8 +161,8 @@ nothing.
 
 **A cost-bearing AzAPI type with no disposition still STOPs Design**, exactly as any other
 type would. Naming a resource is not the same as knowing what it maps to: the untranslated
-STOP is about the *type vocabulary*, and the unknown-type policy (§ 7a.4) is about the
-*disposition*. AzAPI clears the first and not the second.
+STOP is about the _type vocabulary_, and the unknown-type policy (§ 7a.4) is about the
+_disposition_. AzAPI clears the first and not the second.
 
 ## Step 3: Modules are boundaries, not resources
 
@@ -182,7 +182,7 @@ this order, and stop at the first that works:
 > **Reading `.terraform/modules/` is explicitly ALLOWED, and it is the single highest-value
 > exception in this file.** Step 1 bans `.terraform/` wholesale to keep state files out,
 > and that ban is correct for state — but `.terraform/modules/` holds nothing except
-> *downloaded module source code*, which is exactly as safe to read as the local module
+> _downloaded module source code_, which is exactly as safe to read as the local module
 > source in case 1 and carries no resolved values at all. The blanket ban was
 > over-broad.
 >
@@ -232,7 +232,7 @@ attribute from this type", never "skip the resource".
 > Capability run 4 hit exactly this: `azurerm_iothub` has no row, carries
 > `sku { name = "S1", capacity = 1 }`, and the run carried the SKU anyway while recording
 > that no rule authorised it. It only escaped mattering because the namespace gate fired
-> first. On any estate whose derived type lands in a *rubric* namespace it would have
+> first. On any estate whose derived type lands in a _rubric_ namespace it would have
 > understated a cost-bearing resource.
 >
 > § Step 2a already states the right rule for AzAPI — "extract `sku`, `tier` and `capacity`
@@ -244,31 +244,31 @@ inventory passes every shape assertion, and the attribute is simply absent when 
 or Estimate reaches for it. Four rows in this table (Key Vault, Log Analytics, private
 endpoints, App Insights) were added after exactly that happened.
 
-| Canonical type                              | Carry into `config`                                                        | Why                                       |
-| ------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
-| `Microsoft.Web/serverfarms`                 | `sku_name`, `worker_count`, `os_type`, `zone_balancing_enabled`             | the plan is the compute unit and its SKU + instance count is what is being paid for |
-| `Microsoft.Web/sites`                       | `kind`, `service_plan_id`, `runtime_stack`, `app_setting_names`, `https_only` | `kind` separates web app from function app; the plan link drives the fan-in |
-| `Microsoft.Compute/virtualMachines`         | `size`, `os_type`, `image_publisher`, `image_offer`, `image_sku`, `zone`, **`os_disk`** | size drives right-sizing; the image drives licensing and the Windows x86 path; `os_disk` is the ROOT VOLUME — see § Inline blocks that are not resources |
-| `Microsoft.Compute/virtualMachineScaleSets` | `sku`, `instances`, `os_type`, `image_*`, **`os_disk`**                       | as above, plus the ASG mapping and the launch template's root volume |
-| `Microsoft.Compute/disks`                   | `storage_account_type`, `disk_size_gb`, `disk_iops_read_write`               | the gp3 → io2 breakpoint                  |
-| `Microsoft.ContainerService/managedClusters`| `kubernetes_version`, `default_node_pool` (`vm_size`, `node_count`, `min_count`, `max_count`), `network_plugin` | EKS node sizing |
-| `Microsoft.DBforPostgreSQL/flexibleServers` / `...MySQL/...` | `sku_name`, `storage_mb`, `version`, `high_availability`, `zone`, `backup_retention_days` | RDS vs Aurora, and the availability override gate |
-| `Microsoft.Sql/servers/databases`           | `sku_name`, `max_size_gb`, `elastic_pool_id`, `zone_redundant`               | an `elastic_pool_id` routes to the specialist gate |
-| `Microsoft.DocumentDB/databaseAccounts`     | `kind`, `capabilities`, `consistency_level`, `throughput`, `geo_locations`   | `kind` + `capabilities` select the per-API target (Core/Mongo/Cassandra/Gremlin/Table) |
-| `Microsoft.Cache/Redis`                     | `sku_name`, `family`, `capacity`, `shard_count`                             | ElastiCache node sizing                   |
-| `Microsoft.Storage/storageAccounts`         | `account_tier`, `account_replication_type`, `account_kind`, `static_website` | S3 mapping; `static_website` is a `static-site-api` pattern signal |
-| `Microsoft.Storage/.../fileServices/shares` | `enabled_protocol`, `quota`                                                 | **the EFS-vs-FSx discriminator** — `NFS` → EFS, `SMB` → FSx for Windows File Server |
-| `Microsoft.EventHub/namespaces`             | `sku`, `capacity`, `kafka_enabled`, `partition_count`                       | **the MSK-vs-Kinesis discriminator** — `kafka_enabled` → MSK |
-| `Microsoft.CognitiveServices/accounts`      | `kind`, `sku_name`                                                          | `kind: OpenAI` is the Azure OpenAI signal, routed to the shared OpenAI→Bedrock guide |
-| `Microsoft.Network/virtualNetworks`         | `address_space`, `dns_servers`                                              | VPC CIDR planning                         |
-| `Microsoft.Network/virtualNetworks/subnets` | `address_prefixes`, `service_endpoints`, `delegation`                        | subnet layout; a delegation is a hard placement constraint |
-| `Microsoft.KeyVault/vaults`                 | `sku_name`, `purge_protection_enabled`, `soft_delete_retention_days`         | `sku_name: premium` means HSM-backed keys, which is a KMS custom-key-store decision rather than plain Secrets Manager — and it is a price difference |
-| `Microsoft.OperationalInsights/workspaces`  | `sku`, `retention_in_days`, `daily_quota_gb`                                | the Skip Mapping still needs these: retention and ingest volume are what the CloudWatch Logs fallback costs |
-| `Microsoft.Insights/components`             | `application_type`, `workspace_id`                                          | the report names the app type and the workspace link; `workspace_id` is config, NOT an edge (see `schema-discover-azure.md` § Typed edges) |
-| `Microsoft.Network/privateEndpoints`        | `subresource_names`                                                         | names WHICH sub-resource is fronted (`postgresqlServer`, `blob`, `vault`), which is what makes the `private_link` edge specific rather than "something connects to something" |
-| `Microsoft.Storage/.../blobServices/containers` | `container_access_type`                                                 | `blob` or `container` means public read, which becomes an S3 public-access-block decision |
-| `Microsoft.Network/networkSecurityGroups`   | inline `security_rule[]` → `config.security_rules[]` (each: `name`, `priority`, `direction`, `access`, `protocol`, `source_port_range(s)`, `destination_port_range(s)`, `source_address_prefix(es)`, `destination_address_prefix(es)`) | the SG ingress/egress rules the target security group is built from — inline blocks with NO address, see § Inline blocks that are not resources |
-| `Microsoft.App/containerApps`               | from the inline `template` / `container` blocks: `cpu`, `memory`, `min_replicas`, `max_replicas`, and container `image` | Fargate/App Runner task sizing + scaling, and the `image` drives platform detect — inline blocks, see § Inline blocks that are not resources |
+| Canonical type                                               | Carry into `config`                                                                                                                                                                                                                    | Why                                                                                                                                                                           |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.Web/serverfarms`                                  | `sku_name`, `worker_count`, `os_type`, `zone_balancing_enabled`                                                                                                                                                                        | the plan is the compute unit and its SKU + instance count is what is being paid for                                                                                           |
+| `Microsoft.Web/sites`                                        | `kind`, `service_plan_id`, `runtime_stack`, `app_setting_names`, `https_only`                                                                                                                                                          | `kind` separates web app from function app; the plan link drives the fan-in                                                                                                   |
+| `Microsoft.Compute/virtualMachines`                          | `size`, `os_type`, `image_publisher`, `image_offer`, `image_sku`, `zone`, **`os_disk`**                                                                                                                                                | size drives right-sizing; the image drives licensing and the Windows x86 path; `os_disk` is the ROOT VOLUME — see § Inline blocks that are not resources                      |
+| `Microsoft.Compute/virtualMachineScaleSets`                  | `sku`, `instances`, `os_type`, `image_*`, **`os_disk`**                                                                                                                                                                                | as above, plus the ASG mapping and the launch template's root volume                                                                                                          |
+| `Microsoft.Compute/disks`                                    | `storage_account_type`, `disk_size_gb`, `disk_iops_read_write`                                                                                                                                                                         | the gp3 → io2 breakpoint                                                                                                                                                      |
+| `Microsoft.ContainerService/managedClusters`                 | `kubernetes_version`, `default_node_pool` (`vm_size`, `node_count`, `min_count`, `max_count`), `network_plugin`                                                                                                                        | EKS node sizing                                                                                                                                                               |
+| `Microsoft.DBforPostgreSQL/flexibleServers` / `...MySQL/...` | `sku_name`, `storage_mb`, `version`, `high_availability`, `zone`, `backup_retention_days`                                                                                                                                              | RDS vs Aurora, and the availability override gate                                                                                                                             |
+| `Microsoft.Sql/servers/databases`                            | `sku_name`, `max_size_gb`, `elastic_pool_id`, `zone_redundant`                                                                                                                                                                         | an `elastic_pool_id` routes to the specialist gate                                                                                                                            |
+| `Microsoft.DocumentDB/databaseAccounts`                      | `kind`, `capabilities`, `consistency_level`, `throughput`, `geo_locations`                                                                                                                                                             | `kind` + `capabilities` select the per-API target (Core/Mongo/Cassandra/Gremlin/Table)                                                                                        |
+| `Microsoft.Cache/Redis`                                      | `sku_name`, `family`, `capacity`, `shard_count`                                                                                                                                                                                        | ElastiCache node sizing                                                                                                                                                       |
+| `Microsoft.Storage/storageAccounts`                          | `account_tier`, `account_replication_type`, `account_kind`, `static_website`                                                                                                                                                           | S3 mapping; `static_website` is a `static-site-api` pattern signal                                                                                                            |
+| `Microsoft.Storage/.../fileServices/shares`                  | `enabled_protocol`, `quota`                                                                                                                                                                                                            | **the EFS-vs-FSx discriminator** — `NFS` → EFS, `SMB` → FSx for Windows File Server                                                                                           |
+| `Microsoft.EventHub/namespaces`                              | `sku`, `capacity`, `kafka_enabled`, `partition_count`                                                                                                                                                                                  | **the MSK-vs-Kinesis discriminator** — `kafka_enabled` → MSK                                                                                                                  |
+| `Microsoft.CognitiveServices/accounts`                       | `kind`, `sku_name`                                                                                                                                                                                                                     | `kind: OpenAI` is the Azure OpenAI signal, routed to the shared OpenAI→Bedrock guide                                                                                          |
+| `Microsoft.Network/virtualNetworks`                          | `address_space`, `dns_servers`                                                                                                                                                                                                         | VPC CIDR planning                                                                                                                                                             |
+| `Microsoft.Network/virtualNetworks/subnets`                  | `address_prefixes`, `service_endpoints`, `delegation`                                                                                                                                                                                  | subnet layout; a delegation is a hard placement constraint                                                                                                                    |
+| `Microsoft.KeyVault/vaults`                                  | `sku_name`, `purge_protection_enabled`, `soft_delete_retention_days`                                                                                                                                                                   | `sku_name: premium` means HSM-backed keys, which is a KMS custom-key-store decision rather than plain Secrets Manager — and it is a price difference                          |
+| `Microsoft.OperationalInsights/workspaces`                   | `sku`, `retention_in_days`, `daily_quota_gb`                                                                                                                                                                                           | the Skip Mapping still needs these: retention and ingest volume are what the CloudWatch Logs fallback costs                                                                   |
+| `Microsoft.Insights/components`                              | `application_type`, `workspace_id`                                                                                                                                                                                                     | the report names the app type and the workspace link; `workspace_id` is config, NOT an edge (see `schema-discover-azure.md` § Typed edges)                                    |
+| `Microsoft.Network/privateEndpoints`                         | `subresource_names`                                                                                                                                                                                                                    | names WHICH sub-resource is fronted (`postgresqlServer`, `blob`, `vault`), which is what makes the `private_link` edge specific rather than "something connects to something" |
+| `Microsoft.Storage/.../blobServices/containers`              | `container_access_type`                                                                                                                                                                                                                | `blob` or `container` means public read, which becomes an S3 public-access-block decision                                                                                     |
+| `Microsoft.Network/networkSecurityGroups`                    | inline `security_rule[]` → `config.security_rules[]` (each: `name`, `priority`, `direction`, `access`, `protocol`, `source_port_range(s)`, `destination_port_range(s)`, `source_address_prefix(es)`, `destination_address_prefix(es)`) | the SG ingress/egress rules the target security group is built from — inline blocks with NO address, see § Inline blocks that are not resources                               |
+| `Microsoft.App/containerApps`                                | from the inline `template` / `container` blocks: `cpu`, `memory`, `min_replicas`, `max_replicas`, and container `image`                                                                                                                | Fargate/App Runner task sizing + scaling, and the `image` drives platform detect — inline blocks, see § Inline blocks that are not resources                                  |
 
 ## Inline blocks that are not resources
 
@@ -382,22 +382,22 @@ Terraform expresses relationships as interpolated references, so the edge set co
 from the reference graph rather than from resolved ARM IDs (which the source does not
 contain). Resolve each reference to the target's reconstructed `azure_id`.
 
-| Terraform attribute                                                | Edge `type`          | Notes                                                                 |
-| ------------------------------------------------------------------ | -------------------- | --------------------------------------------------------------------- |
-| `service_plan_id` / `app_service_plan_id` on a site                | `hosted_on`          | **The edge that prevents the 5× App Service Plan cost error.** Always extract it. |
-| `subnet_id`, `virtual_network_subnet_id`                           | `network`            | VNet colocation                                                        |
-| `private_service_connection.private_connection_resource_id` on a private endpoint | `private_link` | the app-to-data edge; see below                              |
-| `@Microsoft.KeyVault(...)` in an app setting, or a `key_vault_id`   | `secret_ref`         | value is never recorded, only the reference                            |
-| a reference to a data resource's `fqdn` / `hostname` / `endpoint` / `.id` from a compute resource's config | `data_ref` | **the app-to-data edge.** The commonest real form is an app setting interpolating a database or cache address. It is the edge that merges an app and its database when they sit in different resource groups, so dropping it defeats the merge |
-| `principal_id` + `scope` on an `azurerm_role_assignment`           | `identity_grant`     | "app X reads storage Y" — cleaner than GCP exposes it                  |
-| `tags` containing `app` or `workload`                              | `declared_affinity`  | declared intent when present; tag KEYS are safe to keep verbatim       |
+| Terraform attribute                                                                                        | Edge `type`         | Notes                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `service_plan_id` / `app_service_plan_id` on a site                                                        | `hosted_on`         | **The edge that prevents the 5× App Service Plan cost error.** Always extract it.                                                                                                                                                              |
+| `subnet_id`, `virtual_network_subnet_id`                                                                   | `network`           | VNet colocation                                                                                                                                                                                                                                |
+| `private_service_connection.private_connection_resource_id` on a private endpoint                          | `private_link`      | the app-to-data edge; see below                                                                                                                                                                                                                |
+| `@Microsoft.KeyVault(...)` in an app setting, or a `key_vault_id`                                          | `secret_ref`        | value is never recorded, only the reference                                                                                                                                                                                                    |
+| a reference to a data resource's `fqdn` / `hostname` / `endpoint` / `.id` from a compute resource's config | `data_ref`          | **the app-to-data edge.** The commonest real form is an app setting interpolating a database or cache address. It is the edge that merges an app and its database when they sit in different resource groups, so dropping it defeats the merge |
+| `principal_id` + `scope` on an `azurerm_role_assignment`                                                   | `identity_grant`    | "app X reads storage Y" — cleaner than GCP exposes it                                                                                                                                                                                          |
+| `tags` containing `app` or `workload`                                                                      | `declared_affinity` | declared intent when present; tag KEYS are safe to keep verbatim                                                                                                                                                                               |
 
 Set `via` on each edge to the attribute name it came from, so the Clarify assumption
-sheet can explain *why* two resources were called one workload.
+sheet can explain _why_ two resources were called one workload.
 
 **Private endpoints are edge-bearing config sources, not mapping targets.** Inventory
 the endpoint (a resource absent from the inventory cannot be reported as skipped), but
-also emit the `private_link` edge from the endpoint's *consumer* to the resource it
+also emit the `private_link` edge from the endpoint's _consumer_ to the resource it
 fronts, and add one `warnings[]` entry per consumed endpoint naming the edge it
 produced. Structurally this is the same case as gcp's `*_app_version` resources.
 

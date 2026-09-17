@@ -27,16 +27,16 @@ Loads when **any** of these is true:
 
 **When it does not fire, `licensing` is written as `N/A` — explicitly, never omitted**
 (`clarify-assemble.md` rule 3). An absent key and a considered `N/A` are different facts:
-*"we checked your estate for Windows and SQL licensing exposure and found none"* is a real
+_"we checked your estate for Windows and SQL licensing exposure and found none"_ is a real
 statement, and silence is not.
 
 ## Step 1: Extract
 
-| Read | Resolves |
-| ---- | -------- |
-| every VM's `os_type`, `image_publisher`, `image_offer`, `image_sku` | which VMs are Windows, and which carry SQL Server |
-| VM `size` (vCPU count) | the licensing unit — Windows and SQL are licensed per core |
-| any `Microsoft.Sql/*` presence | whether the SQL question fires independently of any VM |
+| Read                                                                | Resolves                                                   |
+| ------------------------------------------------------------------- | ---------------------------------------------------------- |
+| every VM's `os_type`, `image_publisher`, `image_offer`, `image_sku` | which VMs are Windows, and which carry SQL Server          |
+| VM `size` (vCPU count)                                              | the licensing unit — Windows and SQL are licensed per core |
+| any `Microsoft.Sql/*` presence                                      | whether the SQL question fires independently of any VM     |
 
 ## Step 2: The rows
 
@@ -59,7 +59,7 @@ sizing granularity, and the minimum commitment. Defaulting either way would sile
 an architecture.
 
 **Feed the row with the extracted core count**, because that is what makes the question
-answerable: *"4 Windows VMs, 14 vCPUs total"* lets someone judge whether their existing
+answerable: _"4 Windows VMs, 14 vCPUs total"_ lets someone judge whether their existing
 licences cover it. A bare question does not.
 
 **Do not do the licence-cost arithmetic.** Core minimums, Software Assurance eligibility,
@@ -91,7 +91,7 @@ too low.
 
 If the inventory shows AHUB in use, record it as a finding: the benefit is
 Azure-specific and **does not travel**. The customer is currently paying a reduced Azure
-rate that has no AWS equivalent, so the honest comparison is against the *unreduced* rate.
+rate that has no AWS equivalent, so the honest comparison is against the _unreduced_ rate.
 Getting this wrong makes AWS look worse than it is, and is the sort of error that is
 noticed.
 
@@ -136,12 +136,12 @@ When the fragment does not fire at all, the assembler writes:
 
 ## Who consumes these
 
-| Row | Consumer |
-| --- | -------- |
-| `windows_model` | Estimate's licensing delta line; Generate's tenancy and placement config |
-| `sql_model` | `specialist-gates.md`'s SQL-on-VM gate, which emits **two** entries — EC2 for the host, deferred for the database |
-| `ahub_in_use` | Estimate's baseline — the Azure side must be compared at the unreduced rate |
-| `blockers` | the report, and `compute.md`'s Q-C6 option suppression |
+| Row             | Consumer                                                                                                          |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `windows_model` | Estimate's licensing delta line; Generate's tenancy and placement config                                          |
+| `sql_model`     | `specialist-gates.md`'s SQL-on-VM gate, which emits **two** entries — EC2 for the host, deferred for the database |
+| `ahub_in_use`   | Estimate's baseline — the Azure side must be compared at the unreduced rate                                       |
+| `blockers`      | the report, and `compute.md`'s Q-C6 option suppression                                                            |
 
 ## Status — build step 5
 

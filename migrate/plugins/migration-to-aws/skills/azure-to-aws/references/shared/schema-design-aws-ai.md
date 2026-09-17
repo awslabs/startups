@@ -24,12 +24,12 @@ for it.
   "timestamp": "<ISO 8601>",
   "source_profile": "ai-workload-profile.json",
   "metadata": {
-    "ai_source": "azure_openai",          // MUST equal summary.ai_source from the profile
-    "bedrock_models_selected": [],         // aws_model_id strings chosen (Bedrock targets only)
-    "regional_validation": "checked"       // checked | fallback_static  (see § regional_validation)
+    "ai_source": "azure_openai", // MUST equal summary.ai_source from the profile
+    "bedrock_models_selected": [], // aws_model_id strings chosen (Bedrock targets only)
+    "regional_validation": "checked" // checked | fallback_static  (see § regional_validation)
   },
-  "design_blocks": [],                     // one per workloads[] entry — see § design_blocks
-  "ai_architecture": {                     // see § ai_architecture
+  "design_blocks": [], // one per workloads[] entry — see § design_blocks
+  "ai_architecture": { // see § ai_architecture
     "honest_assessment": "strong_migrate",
     "honest_assessment_reason": null,
     "tiered_strategy": null,
@@ -39,10 +39,10 @@ for it.
     "infrastructure": [],
     "services_to_migrate": []
   },
-  "regional_warnings": [],                 // ALWAYS present, [] when clean — see § regional_warnings
-  "multi_model_warnings": [],              // ALWAYS present, [] when single model — see § multi_model_warnings
-  "agentic_design": null,                  // present ONLY when agentic_profile.is_agentic — see § agentic_design
-  "halt": {}                               // present ONLY when the AI design is failing its gate
+  "regional_warnings": [], // ALWAYS present, [] when clean — see § regional_warnings
+  "multi_model_warnings": [], // ALWAYS present, [] when single model — see § multi_model_warnings
+  "agentic_design": null, // present ONLY when agentic_profile.is_agentic — see § agentic_design
+  "halt": {} // present ONLY when the AI design is failing its gate
 }
 ```
 
@@ -55,14 +55,14 @@ One row per confirmed workload. This is the per-workload target decision.
 
 ```jsonc
 {
-  "workload_id": "wl_3a1f2c",              // from the profile's workloads[]; preserve verbatim
-  "model_id": "gpt-4o",                    // the source model / SDK method the workload used
-  "target_bedrock_model": "anthropic.claude-sonnet-4-5-v1:0",  // XOR target_aws_service — see below
-  "target_aws_service": null,              // XOR target_bedrock_model — see below
-  "capability": "text_generation",         // the workload's capability (see § capability vocabulary)
-  "capability_confidence": "high",         // high | medium | low
+  "workload_id": "wl_3a1f2c", // from the profile's workloads[]; preserve verbatim
+  "model_id": "gpt-4o", // the source model / SDK method the workload used
+  "target_bedrock_model": "anthropic.claude-sonnet-4-5-v1:0", // XOR target_aws_service — see below
+  "target_aws_service": null, // XOR target_bedrock_model — see below
+  "capability": "text_generation", // the workload's capability (see § capability vocabulary)
+  "capability_confidence": "high", // high | medium | low
   "rationale": "<one or two sentences a customer can read>",
-  "confidence_warning": null               // non-null string when capability_confidence == "low"
+  "confidence_warning": null // non-null string when capability_confidence == "low"
 }
 ```
 

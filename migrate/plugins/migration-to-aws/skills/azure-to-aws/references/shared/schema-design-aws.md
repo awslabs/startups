@@ -18,12 +18,12 @@ creator and owns the validation checklist at the bottom.
   "phase": "design",
   "timestamp": "<ISO 8601>",
   "source_inventory": "azure-resource-inventory.json",
-  "clusters": [],        // one per input cluster — see § clusters
-  "services": [],        // mapped resources — see § services
-  "deferred": [],        // specialist gates — see § deferred
-  "pending_rubric": [],  // a named rubric file is not on disk — see § pending_rubric
-  "warnings": [],        // ALWAYS present, `[]` when clean — see § warnings
-  "halt": {}             // present ONLY when the phase is failing its gate — see § halt
+  "clusters": [], // one per input cluster — see § clusters
+  "services": [], // mapped resources — see § services
+  "deferred": [], // specialist gates — see § deferred
+  "pending_rubric": [], // a named rubric file is not on disk — see § pending_rubric
+  "warnings": [], // ALWAYS present, `[]` when clean — see § warnings
+  "halt": {} // present ONLY when the phase is failing its gate — see § halt
 }
 ```
 
@@ -42,10 +42,10 @@ A resource with an AWS target.
   "azure_id": "<ARM resource ID from the inventory>",
   "azure_type": "Microsoft.Cache/Redis",
   "aws_service": "ElastiCache Redis",
-  "aws_config": {},                 // target-shaped config; also where a consumed child's contribution lands
-  "confidence": "deterministic",    // deterministic | measured | inferred | billing_inferred
-  "fast_path_row": "Microsoft.Cache/Redis",   // REQUIRED when confidence is deterministic
-  "rubric_applied": "compute.md",             // REQUIRED when pass 2 ran
+  "aws_config": {}, // target-shaped config; also where a consumed child's contribution lands
+  "confidence": "deterministic", // deterministic | measured | inferred | billing_inferred
+  "fast_path_row": "Microsoft.Cache/Redis", // REQUIRED when confidence is deterministic
+  "rubric_applied": "compute.md", // REQUIRED when pass 2 ran
   "rationale": "<one or two sentences a customer can read>"
 }
 ```
@@ -68,21 +68,21 @@ FIRST in the artifact and first in the report, because that is the holistic payo
 {
   "cluster_id": "rg-app",
   "pattern_id": "unclassified",
-  "pattern_status": "catalog_absent",   // recognized | unclassified | catalog_absent
-  "target_architecture": null,          // null iff pattern_status is not "recognized"
+  "pattern_status": "catalog_absent", // recognized | unclassified | catalog_absent
+  "target_architecture": null, // null iff pattern_status is not "recognized"
   "rationale": "<why these resources are one workload, and what the target shape is>",
-  "constraints_imposed": []             // the candidate-set restriction the pattern applied
+  "constraints_imposed": [] // the candidate-set restriction the pattern applied
 }
 ```
 
 **`pattern_status` exists so that "no pattern could be recognized" has a defined home.**
 Three states, and they are not the same fact:
 
-| `pattern_status` | Meaning                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| `recognized`     | a pattern matched; `pattern_id` names it and `target_architecture` is a real string       |
+| `pattern_status` | Meaning                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `recognized`     | a pattern matched; `pattern_id` names it and `target_architecture` is a real string                                                                                             |
 | `unclassified`   | the catalog was consulted and nothing matched. A required fallback, not a failure — but it MUST be flagged in the report so the output does not overclaim architectural insight |
-| `catalog_absent` | `design-refs/patterns.md` is not on disk (it lands in build step 4), so no recognition was attempted at all |
+| `catalog_absent` | `design-refs/patterns.md` is not on disk (it lands in build step 4), so no recognition was attempted at all                                                                     |
 
 Without this field, the phase's postcondition demanding `target_architecture` is
 unsatisfiable while `patterns.md` is absent, and the honest response — leaving it
@@ -125,13 +125,13 @@ halt guard's record. Never a place to put a resource you could have mapped.
 {
   "azure_id": "...",
   "azure_type": "Microsoft.Web/serverfarms",
-  "ref_file": "references/design-refs/compute.md",   // REQUIRED — which rubric is missing
+  "ref_file": "references/design-refs/compute.md", // REQUIRED — which rubric is missing
   "candidates": ["Elastic Beanstalk", "Fargate", "EKS"],
   "is_compute_unit": true,
-  "sizing_source": {},                  // REQUIRED when is_compute_unit — see below
-  "sizing_provenance": "table",         // REQUIRED whenever aws_config carries a size — see below
-  "routing_provenance": "table",        // REQUIRED — table | index_md | child_type_rule | namespace_rule | model_category
-  "hosted_app_azure_ids": [],           // REQUIRED on a Microsoft.Web/serverfarms entry
+  "sizing_source": {}, // REQUIRED when is_compute_unit — see below
+  "sizing_provenance": "table", // REQUIRED whenever aws_config carries a size — see below
+  "routing_provenance": "table", // REQUIRED — table | index_md | child_type_rule | namespace_rule | model_category
+  "hosted_app_azure_ids": [], // REQUIRED on a Microsoft.Web/serverfarms entry
   "note": "<what a reader needs to know before the rubric lands>"
 }
 ```
@@ -175,13 +175,13 @@ mentions the resource. `service_id` is for human reference within one artifact o
 
 **REQUIRED on every `services[]` entry.** How this resource's disposition was reached:
 
-| Value | Means |
-| ----- | ----- |
-| `table` | An authored row in `fast-path-services.json` — `direct_mappings`, `skip_mappings` or `specialist_gates` |
-| `index_md` | A Reference row in `design-refs/index.md` routed it to a category rubric |
-| `child_type_rule` | Derived: a child type folded into its parent, per `fast-path-services.json` → `child_type_rule` |
-| `namespace_rule` | Derived: routed by provider namespace, per `fast-path-services.json` → `namespace_routing` |
-| `model_category` | The namespace is not in that list, so the best-fit category was chosen from the rubrics on disk and its six criteria applied. Carries a `routed_by_model_category` warning naming the namespace and the category |
+| Value             | Means                                                                                                                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `table`           | An authored row in `fast-path-services.json` — `direct_mappings`, `skip_mappings` or `specialist_gates`                                                                                                          |
+| `index_md`        | A Reference row in `design-refs/index.md` routed it to a category rubric                                                                                                                                         |
+| `child_type_rule` | Derived: a child type folded into its parent, per `fast-path-services.json` → `child_type_rule`                                                                                                                  |
+| `namespace_rule`  | Derived: routed by provider namespace, per `fast-path-services.json` → `namespace_routing`                                                                                                                       |
+| `model_category`  | The namespace is not in that list, so the best-fit category was chosen from the rubrics on disk and its six criteria applied. Carries a `routed_by_model_category` warning naming the namespace and the category |
 
 **`confidence: "deterministic"` requires `routing_provenance: "table"`.** No derived route —
 `child_type_rule`, `namespace_rule` or `model_category` — can ever earn that tier — it has no `fast_path_row` to name, and the rubric made the
@@ -198,16 +198,16 @@ in the artifact, which is how 53 orphans and a confidently-wrong category both h
 **REQUIRED on every `services[]` entry whose `aws_config` carries a size** — an instance
 type, instance class, node count, shard count, capacity unit, or volume type. One of:
 
-| Value | Means |
-| ----- | ----- |
-| `table` | Looked up in a `knowledge/design/*.json` or `knowledge/estimate/*.json` table. The row exists and its two sides justify each other |
-| `measured` | Derived from observed utilization via `knowledge/estimate/rightsizing-thresholds.json`. Requires the evidence cited on the entry, per `design.md`'s postcondition |
-| `user_stated` | The customer gave the size in Clarify or a workshop |
-| `model_prior` | **No table row covered it.** The number came from the model's own knowledge |
+| Value         | Means                                                                                                                                                             |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `table`       | Looked up in a `knowledge/design/*.json` or `knowledge/estimate/*.json` table. The row exists and its two sides justify each other                                |
+| `measured`    | Derived from observed utilization via `knowledge/estimate/rightsizing-thresholds.json`. Requires the evidence cited on the entry, per `design.md`'s postcondition |
+| `user_stated` | The customer gave the size in Clarify or a workshop                                                                                                               |
+| `model_prior` | **No table row covered it.** The number came from the model's own knowledge                                                                                       |
 
 **`model_prior` is a legal value and must be used honestly.** It exists because the
 alternative is what this skill did until 2026-09-07: every size in the committed golden
-was a pretrained association, `sizing_source` recorded only the Azure *input* so the
+was a pretrained association, `sizing_source` recorded only the Azure _input_ so the
 output looked sourced, and the oracle pinned no sizes, so two runs could disagree on every
 number and both stay green. Writing `table` when no row was consulted is the failure this
 field is here to prevent — and it is the one failure a reviewer cannot detect from the
@@ -249,11 +249,11 @@ Present **only** when the phase is failing its gate. Absent on a clean design.
 }
 ```
 
-| `kind`                        | Raised by                                                                       |
-| ----------------------------- | ------------------------------------------------------------------------------- |
-| `untranslated_terraform_type` | a non-empty `iac_metadata.untranslated_types` — treated as cost-bearing by default |
+| `kind`                        | Raised by                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| `untranslated_terraform_type` | a non-empty `iac_metadata.untranslated_types` — treated as cost-bearing by default    |
 | `unmapped_canonical_type`     | a canonical type in no table and no `index.md` row, that failed the cost-bearing test |
-| `missing_rubric_file`         | **one entry per distinct missing ref file**, not per affected resource            |
+| `missing_rubric_file`         | **one entry per distinct missing ref file**, not per affected resource                |
 
 **Every `pending_rubric[]` entry's `ref_file` must have a matching
 `missing_rubric_file` entry in `halt.blocking`.** `pending_rubric[]` records which

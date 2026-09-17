@@ -40,22 +40,22 @@ Design runs.
 
 ## Compute
 
-| Canonical ARM type                                      | Reference             | Target (fast-path) / candidate set (rubric)                                    |
-| ------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------ |
-| `Microsoft.Web/serverfarms` (plan hosts web apps)       | `compute.md`          | {Elastic Beanstalk, Fargate, EKS} — **this is the compute unit**                |
-| `Microsoft.Web/serverfarms` (every hosted site has `kind` containing `functionapp`) | `compute.md` | {Lambda, Fargate} — still the plan, not the functions             |
-| `Microsoft.Web/sites`                                   | **no entry, ever**    | folded into its plan; see below                                                |
-| `Microsoft.Web/sites/slots`                             | fast-path: skip       | a blue-green note on the parent plan's mapping                                 |
-| `Microsoft.Web/staticSites`                             | `compute.md`          | {S3 + CloudFront, and Lambda + API Gateway for its managed functions}          |
-| `Microsoft.Compute/virtualMachines`                     | `compute.md`          | {EC2} — MGN-based cutover. SQL Server images additionally hit a specialist gate |
-| `Microsoft.Compute/virtualMachineScaleSets`             | `compute.md`          | {EC2 Auto Scaling group}                                                       |
-| `Microsoft.Compute/availabilitySets`                    | fast-path: skip       | multi-AZ spread on the members' ASG                                            |
-| `Microsoft.ContainerService/managedClusters`            | fast-path: **direct** | EKS                                                                            |
-| `Microsoft.ContainerService/managedClusters/agentPools` | fast-path: skip       | EKS node-group sizing on the parent                                            |
-| `Microsoft.ContainerRegistry/registries`                | fast-path: **direct** | ECR                                                                            |
-| `Microsoft.App/containerApps`                           | `compute.md`          | {Fargate}                                                                        |
-| `Microsoft.ContainerInstance/containerGroups`            | `compute.md`          | {Fargate task} — a one-shot container group is a task, not a service               |
-| `Microsoft.App/managedEnvironments`                     | `compute.md`          | {ECS cluster + VPC}; usually a config source for its container apps instead              |
+| Canonical ARM type                                                                  | Reference             | Target (fast-path) / candidate set (rubric)                                     |
+| ----------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------- |
+| `Microsoft.Web/serverfarms` (plan hosts web apps)                                   | `compute.md`          | {Elastic Beanstalk, Fargate, EKS} — **this is the compute unit**                |
+| `Microsoft.Web/serverfarms` (every hosted site has `kind` containing `functionapp`) | `compute.md`          | {Lambda, Fargate} — still the plan, not the functions                           |
+| `Microsoft.Web/sites`                                                               | **no entry, ever**    | folded into its plan; see below                                                 |
+| `Microsoft.Web/sites/slots`                                                         | fast-path: skip       | a blue-green note on the parent plan's mapping                                  |
+| `Microsoft.Web/staticSites`                                                         | `compute.md`          | {S3 + CloudFront, and Lambda + API Gateway for its managed functions}           |
+| `Microsoft.Compute/virtualMachines`                                                 | `compute.md`          | {EC2} — MGN-based cutover. SQL Server images additionally hit a specialist gate |
+| `Microsoft.Compute/virtualMachineScaleSets`                                         | `compute.md`          | {EC2 Auto Scaling group}                                                        |
+| `Microsoft.Compute/availabilitySets`                                                | fast-path: skip       | multi-AZ spread on the members' ASG                                             |
+| `Microsoft.ContainerService/managedClusters`                                        | fast-path: **direct** | EKS                                                                             |
+| `Microsoft.ContainerService/managedClusters/agentPools`                             | fast-path: skip       | EKS node-group sizing on the parent                                             |
+| `Microsoft.ContainerRegistry/registries`                                            | fast-path: **direct** | ECR                                                                             |
+| `Microsoft.App/containerApps`                                                       | `compute.md`          | {Fargate}                                                                       |
+| `Microsoft.ContainerInstance/containerGroups`                                       | `compute.md`          | {Fargate task} — a one-shot container group is a task, not a service            |
+| `Microsoft.App/managedEnvironments`                                                 | `compute.md`          | {ECS cluster + VPC}; usually a config source for its container apps instead     |
 
 **`Microsoft.Web/sites` never gets an entry of its own** — not in `services[]`, not in
 `deferred[]`, not in `pending_rubric[]`. The compute unit is always the
@@ -77,20 +77,20 @@ GPU and HPC VM series (ND / NC / NV / HB / HX) branch inside `compute.md` to
 
 ## Data
 
-| Canonical ARM type                                        | Reference             | Target / candidate set                                                  |
-| --------------------------------------------------------- | --------------------- | ------------------------------------------------------------------- |
-| `Microsoft.DBforPostgreSQL/flexibleServers`               | `database.md`         | {RDS PostgreSQL, Aurora PostgreSQL} — an availability override gate selects the family, not the rubric |
-| `Microsoft.DBforPostgreSQL/servers` (Single Server)       | `database.md`         | {RDS PostgreSQL} — note the source is retired on Azure                 |
-| `Microsoft.DBforMySQL/flexibleServers`                    | `database.md`         | {RDS MySQL, Aurora MySQL} — an availability override gate selects the family         |
-| `Microsoft.DBforMySQL/servers` (Single Server)            | `database.md`         | {RDS MySQL}                                                           |
-| `Microsoft.Sql/servers`                                   | `database.md`         | {RDS instance hosting its databases}; often a config source instead    |
-| `Microsoft.Sql/servers/databases`                         | `database.md`         | {RDS SQL Server} — owner decision 11.3 puts the common case on the rubric path, not on a gate |
-| `Microsoft.Sql/servers/elasticPools`                      | fast-path: **gate**   | `Deferred — specialist engagement`                                  |
-| `Microsoft.Sql/managedInstances`                          | fast-path: **gate**   | `Deferred — specialist engagement`                                  |
-| `Microsoft.DocumentDB/databaseAccounts` (Mongo/Cassandra/Gremlin/Table) | fast-path: **direct** | DocumentDB / Keyspaces / Neptune / DynamoDB by API      |
-| `Microsoft.DocumentDB/databaseAccounts` (Core / SQL API)  | `database.md`         | {DynamoDB} — RU/s → WCU/RCU conversion, full depth; the only Cosmos surface on the rubric path |
-| `Microsoft.Cache/Redis`                                   | fast-path: **direct** | ElastiCache Redis                                                   |
-| `Microsoft.Cache/redisEnterprise`                         | `database.md`         | {ElastiCache Redis, MemoryDB}; RediSearch/RedisJSON modules have no equivalent either way |
+| Canonical ARM type                                                      | Reference             | Target / candidate set                                                                                 |
+| ----------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `Microsoft.DBforPostgreSQL/flexibleServers`                             | `database.md`         | {RDS PostgreSQL, Aurora PostgreSQL} — an availability override gate selects the family, not the rubric |
+| `Microsoft.DBforPostgreSQL/servers` (Single Server)                     | `database.md`         | {RDS PostgreSQL} — note the source is retired on Azure                                                 |
+| `Microsoft.DBforMySQL/flexibleServers`                                  | `database.md`         | {RDS MySQL, Aurora MySQL} — an availability override gate selects the family                           |
+| `Microsoft.DBforMySQL/servers` (Single Server)                          | `database.md`         | {RDS MySQL}                                                                                            |
+| `Microsoft.Sql/servers`                                                 | `database.md`         | {RDS instance hosting its databases}; often a config source instead                                    |
+| `Microsoft.Sql/servers/databases`                                       | `database.md`         | {RDS SQL Server} — owner decision 11.3 puts the common case on the rubric path, not on a gate          |
+| `Microsoft.Sql/servers/elasticPools`                                    | fast-path: **gate**   | `Deferred — specialist engagement`                                                                     |
+| `Microsoft.Sql/managedInstances`                                        | fast-path: **gate**   | `Deferred — specialist engagement`                                                                     |
+| `Microsoft.DocumentDB/databaseAccounts` (Mongo/Cassandra/Gremlin/Table) | fast-path: **direct** | DocumentDB / Keyspaces / Neptune / DynamoDB by API                                                     |
+| `Microsoft.DocumentDB/databaseAccounts` (Core / SQL API)                | `database.md`         | {DynamoDB} — RU/s → WCU/RCU conversion, full depth; the only Cosmos surface on the rubric path         |
+| `Microsoft.Cache/Redis`                                                 | fast-path: **direct** | ElastiCache Redis                                                                                      |
+| `Microsoft.Cache/redisEnterprise`                                       | `database.md`         | {ElastiCache Redis, MemoryDB}; RediSearch/RedisJSON modules have no equivalent either way              |
 
 The availability selector (single-az / multi-az / multi-az-ha / multi-region) is a
 **post-rubric override gate** in `database.md`, not a criterion — it forces RDS versus
@@ -98,14 +98,14 @@ Aurora regardless of rubric output, because availability is never inferable from
 
 ## Storage
 
-| Canonical ARM type                                          | Reference             | Target / candidate set                       |
-| ----------------------------------------------------------- | --------------------- | ---------------------------------------- |
-| `Microsoft.Storage/storageAccounts`                         | fast-path: **direct** | S3 (blob surface)                        |
-| `Microsoft.Storage/storageAccounts/blobServices/containers`  | fast-path: **direct** | S3                                       |
-| `Microsoft.Storage/storageAccounts/fileServices/shares`      | fast-path: **direct** | FSx for Windows File Server (SMB) / EFS (NFS) |
-| `Microsoft.Storage/storageAccounts/queueServices/queues`      | fast-path: **direct** | SQS                                      |
-| `Microsoft.Storage/storageAccounts/tableServices/tables`      | fast-path: **direct** | DynamoDB                                 |
-| `Microsoft.Compute/disks`                                    | fast-path: **direct** | EBS                                      |
+| Canonical ARM type                                          | Reference             | Target / candidate set                        |
+| ----------------------------------------------------------- | --------------------- | --------------------------------------------- |
+| `Microsoft.Storage/storageAccounts`                         | fast-path: **direct** | S3 (blob surface)                             |
+| `Microsoft.Storage/storageAccounts/blobServices/containers` | fast-path: **direct** | S3                                            |
+| `Microsoft.Storage/storageAccounts/fileServices/shares`     | fast-path: **direct** | FSx for Windows File Server (SMB) / EFS (NFS) |
+| `Microsoft.Storage/storageAccounts/queueServices/queues`    | fast-path: **direct** | SQS                                           |
+| `Microsoft.Storage/storageAccounts/tableServices/tables`    | fast-path: **direct** | DynamoDB                                      |
+| `Microsoft.Compute/disks`                                   | fast-path: **direct** | EBS                                           |
 
 `storage.md` carries the rubric for anything that reaches it — today only the share
 row's protocol reasoning and the lifecycle/tiering notes. It exists because the
@@ -113,49 +113,49 @@ protocol discriminator has to be documented somewhere a reviewer can find it.
 
 ## Networking
 
-| Canonical ARM type                          | Reference             | Target / candidate set                          |
-| ------------------------------------------- | --------------------- | ------------------------------------------- |
-| `Microsoft.Network/virtualNetworks`         | fast-path: **direct** | VPC                                         |
-| `Microsoft.Network/virtualNetworks/subnets`  | fast-path: **direct** | VPC subnet                                  |
+| Canonical ARM type                          | Reference             | Target / candidate set                       |
+| ------------------------------------------- | --------------------- | -------------------------------------------- |
+| `Microsoft.Network/virtualNetworks`         | fast-path: **direct** | VPC                                          |
+| `Microsoft.Network/virtualNetworks/subnets` | fast-path: **direct** | VPC subnet                                   |
 | `Microsoft.Network/networkSecurityGroups`   | fast-path: **direct** | Security Group (DENY rules need a NACL note) |
-| `Microsoft.Network/dnsZones`                | fast-path: **direct** | Route 53 hosted zone                        |
-| `Microsoft.Network/loadBalancers`           | `networking.md`       | {NLB, ALB}                                  |
-| `Microsoft.Network/applicationGateways`     | `networking.md`       | {ALB, ALB + AWS WAF}                        |
-| `Microsoft.Network/natGateways`             | `networking.md`       | {NAT Gateway}                                 |
-| `Microsoft.Cdn/profiles`                    | `networking.md`       | {CloudFront}                                  |
-| `Microsoft.Network/frontDoors` (deprecated) | `networking.md`       | {CloudFront, CloudFront + AWS WAF}                        |
-| `Microsoft.ApiManagement/service`           | `networking.md`       | {API Gateway}                                 |
-| `Microsoft.Network/networkInterfaces`       | fast-path: skip       | ENI, created by its owner                   |
-| `Microsoft.Network/publicIPAddresses`       | fast-path: skip       | Elastic IP, managed by ALB/NAT              |
-| `Microsoft.Network/privateEndpoints`        | fast-path: skip       | none — read for its edge                    |
-| `Microsoft.Network/privateDnsZones`         | fast-path: skip       | implicit in the VPC design                  |
+| `Microsoft.Network/dnsZones`                | fast-path: **direct** | Route 53 hosted zone                         |
+| `Microsoft.Network/loadBalancers`           | `networking.md`       | {NLB, ALB}                                   |
+| `Microsoft.Network/applicationGateways`     | `networking.md`       | {ALB, ALB + AWS WAF}                         |
+| `Microsoft.Network/natGateways`             | `networking.md`       | {NAT Gateway}                                |
+| `Microsoft.Cdn/profiles`                    | `networking.md`       | {CloudFront}                                 |
+| `Microsoft.Network/frontDoors` (deprecated) | `networking.md`       | {CloudFront, CloudFront + AWS WAF}           |
+| `Microsoft.ApiManagement/service`           | `networking.md`       | {API Gateway}                                |
+| `Microsoft.Network/networkInterfaces`       | fast-path: skip       | ENI, created by its owner                    |
+| `Microsoft.Network/publicIPAddresses`       | fast-path: skip       | Elastic IP, managed by ALB/NAT               |
+| `Microsoft.Network/privateEndpoints`        | fast-path: skip       | none — read for its edge                     |
+| `Microsoft.Network/privateDnsZones`         | fast-path: skip       | implicit in the VPC design                   |
 
 `networking.md` also carries the "free on AWS" findings — cross-AZ patterns, VPC
 peering versus Azure's paid VNet peering — which are report content, not mappings.
 
 ## Messaging
 
-| Canonical ARM type                        | Reference             | Target / candidate set                                     |
-| ----------------------------------------- | --------------------- | ------------------------------------------------------ |
-| `Microsoft.ServiceBus/namespaces`         | `messaging.md`        | {SQS + SNS, Amazon MQ}                                 |
-| `Microsoft.ServiceBus/namespaces/queues`  | `messaging.md`        | {SQS}                                                    |
-| `Microsoft.ServiceBus/namespaces/topics`  | `messaging.md`        | {SNS, EventBridge}                                     |
-| `Microsoft.EventHub/namespaces`           | fast-path: **direct** | MSK when `kafka_enabled`, else Kinesis Data Streams    |
-| `Microsoft.EventHub/namespaces/eventhubs` | `messaging.md`        | {a topic or stream inside the parent's target}           |
-| `Microsoft.SignalRService/SignalR`        | `messaging.md`        | {API Gateway WebSocket APIs, AppSync subscriptions}   |
+| Canonical ARM type                        | Reference             | Target / candidate set                              |
+| ----------------------------------------- | --------------------- | --------------------------------------------------- |
+| `Microsoft.ServiceBus/namespaces`         | `messaging.md`        | {SQS + SNS, Amazon MQ}                              |
+| `Microsoft.ServiceBus/namespaces/queues`  | `messaging.md`        | {SQS}                                               |
+| `Microsoft.ServiceBus/namespaces/topics`  | `messaging.md`        | {SNS, EventBridge}                                  |
+| `Microsoft.EventHub/namespaces`           | fast-path: **direct** | MSK when `kafka_enabled`, else Kinesis Data Streams |
+| `Microsoft.EventHub/namespaces/eventhubs` | `messaging.md`        | {a topic or stream inside the parent's target}      |
+| `Microsoft.SignalRService/SignalR`        | `messaging.md`        | {API Gateway WebSocket APIs, AppSync subscriptions} |
 
 Event Hubs is protocol-only by owner decision 11.4 and carries no throughput
 threshold, which is why it is a fast-path row rather than a rubric row.
 
 ## Identity and secrets
 
-| Canonical ARM type                                 | Reference             | Target / candidate set                    |
-| -------------------------------------------------- | --------------------- | ------------------------------------- |
+| Canonical ARM type                                 | Reference             | Target / candidate set                                 |
+| -------------------------------------------------- | --------------------- | ------------------------------------------------------ |
 | `Microsoft.KeyVault/vaults`                        | fast-path: **direct** | Secrets Manager (+ KMS for keys, ACM for certificates) |
-| `Microsoft.KeyVault/vaults/secrets`                | fast-path: skip       | names feed the parent vault           |
-| `Microsoft.ManagedIdentity/userAssignedIdentities` | fast-path: **direct** | IAM Role                              |
-| `Microsoft.Authorization/roleAssignments`          | fast-path: skip       | IAM policy, authored not translated   |
-| `Microsoft.Authorization/roleDefinitions`          | fast-path: skip       | IAM policy                            |
+| `Microsoft.KeyVault/vaults/secrets`                | fast-path: skip       | names feed the parent vault                            |
+| `Microsoft.ManagedIdentity/userAssignedIdentities` | fast-path: **direct** | IAM Role                                               |
+| `Microsoft.Authorization/roleAssignments`          | fast-path: skip       | IAM policy, authored not translated                    |
+| `Microsoft.Authorization/roleDefinitions`          | fast-path: skip       | IAM policy                                             |
 
 Human identity — Entra ID tenants, users, groups, app registrations — is **not** a
 resource mapping. It is `identity.md`, reached from Clarify category J, and it defaults
@@ -163,11 +163,11 @@ to a fresh IAM Identity Center re-invite rather than an Entra ID federation.
 
 ## AI
 
-| Canonical ARM type                                     | Reference                                    | Target / candidate set |
-| ------------------------------------------------------ | -------------------------------------------- | ------------------ |
-| `Microsoft.CognitiveServices/accounts` (`kind: OpenAI`) | `vendored/ai/ai-openai-to-bedrock.md`        | {Bedrock}            |
-| `Microsoft.CognitiveServices/accounts` (other kinds)   | `ai.md`                                      | {Textract, Rekognition, Comprehend, Transcribe} by capability |
-| `Microsoft.CognitiveServices/accounts/deployments`     | `vendored/ai/ai-openai-to-bedrock.md`        | a config source — the deployed model name is the mapping input |
+| Canonical ARM type                                      | Reference                             | Target / candidate set                                         |
+| ------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `Microsoft.CognitiveServices/accounts` (`kind: OpenAI`) | `vendored/ai/ai-openai-to-bedrock.md` | {Bedrock}                                                      |
+| `Microsoft.CognitiveServices/accounts` (other kinds)    | `ai.md`                               | {Textract, Rekognition, Comprehend, Transcribe} by capability  |
+| `Microsoft.CognitiveServices/accounts/deployments`      | `vendored/ai/ai-openai-to-bedrock.md` | a config source — the deployed model name is the mapping input |
 
 Azure OpenAI has no ARM provider of its own; `kind` is the only signal. The model
 catalogue and the Bedrock mapping do not change based on which endpoint served the
@@ -175,12 +175,12 @@ calls, which is why this routes to the same shared guide as an OpenAI-direct wor
 
 ## Analytics
 
-| Canonical ARM type                     | Reference           | Target / candidate set                       |
-| -------------------------------------- | ------------------- | ---------------------------------------- |
-| `Microsoft.Search/searchServices`      | `analytics.md`      | {Amazon OpenSearch Service}                |
-| `Microsoft.Databricks/workspaces`      | `analytics.md`      | {Databricks on AWS, EMR}                 |
-| `Microsoft.Synapse/workspaces`         | fast-path: **gate** | `Deferred — specialist engagement`       |
-| `Microsoft.DataFactory/factories`      | fast-path: **gate** | `Deferred — specialist engagement`       |
+| Canonical ARM type                | Reference           | Target / candidate set             |
+| --------------------------------- | ------------------- | ---------------------------------- |
+| `Microsoft.Search/searchServices` | `analytics.md`      | {Amazon OpenSearch Service}        |
+| `Microsoft.Databricks/workspaces` | `analytics.md`      | {Databricks on AWS, EMR}           |
+| `Microsoft.Synapse/workspaces`    | fast-path: **gate** | `Deferred — specialist engagement` |
+| `Microsoft.DataFactory/factories` | fast-path: **gate** | `Deferred — specialist engagement` |
 
 ## Observability
 
@@ -192,11 +192,11 @@ report should mention. There is no target and no import path for retained teleme
 
 ## Not in this file
 
-| Canonical ARM type                    | Disposition                                             |
-| ------------------------------------- | ------------------------------------------------------- |
-| `Microsoft.Resources/resourceGroups`  | fast-path: skip — AWS account structure and tags        |
-| `Microsoft.Resources/deployments`     | fast-path: skip — deployment history, not infrastructure |
-| `Microsoft.Web/certificates`          | fast-path: skip — ACM issues for the target's hostnames  |
+| Canonical ARM type                   | Disposition                                              |
+| ------------------------------------ | -------------------------------------------------------- |
+| `Microsoft.Resources/resourceGroups` | fast-path: skip — AWS account structure and tags         |
+| `Microsoft.Resources/deployments`    | fast-path: skip — deployment history, not infrastructure |
+| `Microsoft.Web/certificates`         | fast-path: skip — ACM issues for the target's hostnames  |
 
 A canonical type that appears in **neither** this file nor `fast-path-services.json` does
 **not** go straight to a STOP. Two derived rules run first, both defined as data in

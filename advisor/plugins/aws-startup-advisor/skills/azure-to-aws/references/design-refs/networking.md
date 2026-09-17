@@ -14,15 +14,15 @@ recurring reason: **AWS splits or multiplies what Azure presents as one resource
 
 ## 1. Eliminators — hard technical blockers
 
-| Candidate | Eliminated when |
-| --------- | --------------- |
-| **ALB** | the listener carries **non-HTTP traffic** — raw TCP, UDP, or TLS passthrough without termination. ALB is HTTP/HTTPS only, and this is a protocol boundary, not a preference |
-| **ALB** | the workload needs a **static IP** per listener. ALB's addresses are DNS-resolved and change; NLB supports an Elastic IP per subnet |
-| **NLB** | routing decisions depend on **path, host header, HTTP method, or query string**. NLB is layer 4 and cannot see any of it |
-| **NLB** | **AWS WAF** must inspect the traffic. WAF attaches to ALB, CloudFront, API Gateway and AppSync — never to an NLB |
-| **CloudFront** | the origin speaks a **non-HTTP protocol** |
-| **API Gateway HTTP API** | the source uses **request or response transformation**, usage plans with API keys, or WAF on the API itself. Those are REST API features |
-| **API Gateway** | the source runs a **self-hosted APIM gateway** in a datacentre or another cloud. There is no managed equivalent; this is a finding, not a mapping |
+| Candidate                | Eliminated when                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ALB**                  | the listener carries **non-HTTP traffic** — raw TCP, UDP, or TLS passthrough without termination. ALB is HTTP/HTTPS only, and this is a protocol boundary, not a preference |
+| **ALB**                  | the workload needs a **static IP** per listener. ALB's addresses are DNS-resolved and change; NLB supports an Elastic IP per subnet                                         |
+| **NLB**                  | routing decisions depend on **path, host header, HTTP method, or query string**. NLB is layer 4 and cannot see any of it                                                    |
+| **NLB**                  | **AWS WAF** must inspect the traffic. WAF attaches to ALB, CloudFront, API Gateway and AppSync — never to an NLB                                                            |
+| **CloudFront**           | the origin speaks a **non-HTTP protocol**                                                                                                                                   |
+| **API Gateway HTTP API** | the source uses **request or response transformation**, usage plans with API keys, or WAF on the API itself. Those are REST API features                                    |
+| **API Gateway**          | the source runs a **self-hosted APIM gateway** in a datacentre or another cloud. There is no managed equivalent; this is a finding, not a mapping                           |
 
 ## 2. The six criteria, in order, first match wins
 
@@ -34,17 +34,17 @@ Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
 
-| Source | Target | Why |
-| ------ | ------ | --- |
-| `Microsoft.Network/loadBalancers` | **NLB** | Azure Load Balancer is **layer 4 only**. It has no path routing, no host rules, no header inspection, so NLB is the like-for-like. ALB is in the candidate set only for the case in 2.4 |
-| `Microsoft.Network/applicationGateways`, SKU `Standard_v2` | **ALB** | App Gateway is Azure's layer-7 balancer. ALB is the direct counterpart |
-| `Microsoft.Network/applicationGateways`, SKU `WAF_v2` | **ALB + AWS WAF** | The WAF tier is not a bigger gateway, it is a different product surface. Dropping the WAF silently removes a control the customer is paying for and may be attesting to |
-| `Microsoft.Network/natGateways` | **NAT Gateway**, one **per availability zone** | See § 3. This is the row's whole reason for existing |
-| `Microsoft.Cdn/profiles`, `Standard_AzureFrontDoor` / `Premium_AzureFrontDoor` | **CloudFront** | Front Door is caching plus global anycast load balancing plus (Premium) WAF. CloudFront covers caching and anycast; the WAF half needs AWS WAF attached |
-| `Microsoft.Cdn/profiles`, `Standard_Microsoft` / classic Verizon or Akamai SKUs | **CloudFront** | Classic CDN is caching only, so the mapping is smaller than it looks — no load balancing to carry over |
-| `Microsoft.Network/frontDoors` (deprecated classic) | **CloudFront**, plus **AWS WAF** when a WAF policy is attached | Same as above. Flag that the source resource is on Azure's deprecated Front Door surface, since the customer is likely migrating it either way |
-| `Microsoft.ApiManagement/service`, `Consumption` tier | **API Gateway HTTP API** | Consumption APIM has no VNet integration and a reduced policy surface, which is the shape HTTP API fits |
-| `Microsoft.ApiManagement/service`, `Developer` / `Basic` / `Standard` / `Premium` | **API Gateway REST API** | These tiers have the full policy engine, so REST API is the only tier with comparable request/response handling. See § 4 — the policy layer is a rewrite regardless |
+| Source                                                                            | Target                                                         | Why                                                                                                                                                                                     |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.Network/loadBalancers`                                                 | **NLB**                                                        | Azure Load Balancer is **layer 4 only**. It has no path routing, no host rules, no header inspection, so NLB is the like-for-like. ALB is in the candidate set only for the case in 2.4 |
+| `Microsoft.Network/applicationGateways`, SKU `Standard_v2`                        | **ALB**                                                        | App Gateway is Azure's layer-7 balancer. ALB is the direct counterpart                                                                                                                  |
+| `Microsoft.Network/applicationGateways`, SKU `WAF_v2`                             | **ALB + AWS WAF**                                              | The WAF tier is not a bigger gateway, it is a different product surface. Dropping the WAF silently removes a control the customer is paying for and may be attesting to                 |
+| `Microsoft.Network/natGateways`                                                   | **NAT Gateway**, one **per availability zone**                 | See § 3. This is the row's whole reason for existing                                                                                                                                    |
+| `Microsoft.Cdn/profiles`, `Standard_AzureFrontDoor` / `Premium_AzureFrontDoor`    | **CloudFront**                                                 | Front Door is caching plus global anycast load balancing plus (Premium) WAF. CloudFront covers caching and anycast; the WAF half needs AWS WAF attached                                 |
+| `Microsoft.Cdn/profiles`, `Standard_Microsoft` / classic Verizon or Akamai SKUs   | **CloudFront**                                                 | Classic CDN is caching only, so the mapping is smaller than it looks — no load balancing to carry over                                                                                  |
+| `Microsoft.Network/frontDoors` (deprecated classic)                               | **CloudFront**, plus **AWS WAF** when a WAF policy is attached | Same as above. Flag that the source resource is on Azure's deprecated Front Door surface, since the customer is likely migrating it either way                                          |
+| `Microsoft.ApiManagement/service`, `Consumption` tier                             | **API Gateway HTTP API**                                       | Consumption APIM has no VNet integration and a reduced policy surface, which is the shape HTTP API fits                                                                                 |
+| `Microsoft.ApiManagement/service`, `Developer` / `Basic` / `Standard` / `Premium` | **API Gateway REST API**                                       | These tiers have the full policy engine, so REST API is the only tier with comparable request/response handling. See § 4 — the policy layer is a rewrite regardless                     |
 
 ### 2.3 User preference
 
@@ -56,7 +56,7 @@ A recorded answer always wins over a derived one.
 - **An internal Azure Load Balancer fronting HTTP-only backends** may map to an internal
   **ALB** instead of an NLB, when the customer's own routing already happens in the
   application and moving it to the balancer would simplify the target. This is the only
-  route to ALB from an Azure LB, it is a deliberate capability *increase*, and the
+  route to ALB from an Azure LB, it is a deliberate capability _increase_, and the
   rationale must say so — never present it as like-for-like.
 - **App Gateway with `url_path_map` or multiple `http_listener` host names** confirms ALB
   rather than NLB. If a path map exists, carry its rules into `aws_config` as ALB listener
@@ -74,7 +74,7 @@ A recorded answer always wins over a derived one.
 > An Elastic Beanstalk load-balanced environment **provisions its own ALB**. An ECS
 > service behind a target group needs one too. So if an App Gateway's backend pool
 > contains a `Microsoft.Web/sites` whose plan mapped to Elastic Beanstalk, mapping the
-> gateway to a *second* ALB double-counts the balancer — one hourly charge and one LCU
+> gateway to a _second_ ALB double-counts the balancer — one hourly charge and one LCU
 > line that the target architecture does not have.
 >
 > This is the networking analogue of the App Service Plan fan-in (`compute.md` § 3),
@@ -122,7 +122,7 @@ AZ count of the target design.
 
 ## 4. APIM's policy layer is a rewrite, and the mapping does not say so
 
-`Microsoft.ApiManagement/service` maps to API Gateway as a *service*. What does not map
+`Microsoft.ApiManagement/service` maps to API Gateway as a _service_. What does not map
 is the policy XML: `<inbound>`, `<outbound>`, `<backend>` and `<on-error>` sections
 holding rate limits, JWT validation, header rewriting, caching, mock responses and
 `<send-request>` callouts.
@@ -143,12 +143,12 @@ document. So:
 Report content, not mappings. State only what is structural; verify every rate against
 `references/vendored/pricing/aws-infra-pricing.json` before it reaches a dollar figure.
 
-| Finding | Direction |
-| ------- | --------- |
-| **VNet peering is billed on both ingress and egress** in Azure. VPC peering **within an AZ is free**; cross-AZ traffic is charged one way | **saving**, and often a large one for chatty multi-VNet estates |
-| **Azure Bastion is an hourly priced resource.** Systems Manager Session Manager has no hourly charge and no host | **saving** — a whole line item disappears (13.1f) |
-| **AWS NAT Gateway is per-AZ** (§ 3) | **increase** — say so in the same breath as the savings |
-| **Cross-AZ data transfer** is charged on AWS. Azure's zone-redundant frontends bundle more of this into the resource price | **increase**, and it is easy to miss because there is no resource to point at |
+| Finding                                                                                                                                   | Direction                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **VNet peering is billed on both ingress and egress** in Azure. VPC peering **within an AZ is free**; cross-AZ traffic is charged one way | **saving**, and often a large one for chatty multi-VNet estates               |
+| **Azure Bastion is an hourly priced resource.** Systems Manager Session Manager has no hourly charge and no host                          | **saving** — a whole line item disappears (13.1f)                             |
+| **AWS NAT Gateway is per-AZ** (§ 3)                                                                                                       | **increase** — say so in the same breath as the savings                       |
+| **Cross-AZ data transfer** is charged on AWS. Azure's zone-redundant frontends bundle more of this into the resource price                | **increase**, and it is easy to miss because there is no resource to point at |
 
 A findings list that only contains savings is a sales document. Both columns go in the report.
 

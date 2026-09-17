@@ -32,31 +32,31 @@ recommend Legacy/excluded models for new migrations.**
 
 ### Multi-provider quick reference (per 1M tokens)
 
-| Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                       |
-| -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ------------------------------------------------------------ |
-| Claude Fable 5                   | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                       |
-| Claude Sonnet 5                  | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active ($2/$10 — launch rate became standard on Sep 1, 2026; the $3/$15 step-up was cancelled)         |
-| Claude Opus 4.8                  | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
-| Claude Sonnet 4.6                | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                       |
-| Claude Opus 4.6                  | anthropic.claude-opus-4-6-v1             | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                       |
-| Claude Haiku 4.5                 | anthropic.claude-haiku-4-5-20251001-v1:0 | Anthropic | 1.00       | 5.00        | 200K    | fast      | active                                                       |
-| Claude Opus 4.1                  | anthropic.claude-opus-4-1-20250805-v1:0  | Anthropic | 15.00      | 75.00       | 200K    | premium   | legacy (EOL Jan 8, 2027)                                     |
-| Llama 4 Maverick                 | meta.llama4-maverick-17b-instruct-v1:0   | Meta      | 0.24       | 0.97        | 1M      | mid       | active                                                       |
-| Llama 4 Scout                    | meta.llama4-scout-17b-instruct-v1:0      | Meta      | 0.17       | 0.66        | 10M     | efficient | active                                                       |
-| Llama 3.3 70B                    | meta.llama3-3-70b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | active                                                       |
-| Nova 2 Lite                      | amazon.nova-2-lite-v1:0                  | Amazon    | 0.33       | 2.75        | 1M      | mid       | active                                                       |
-| Nova Pro                         | amazon.nova-pro-v1:0                     | Amazon    | 0.80       | 3.20        | 300K    | mid       | active                                                       |
-| Nova Lite                        | amazon.nova-lite-v1:0                    | Amazon    | 0.06       | 0.24        | 300K    | fast      | active                                                       |
-| Nova Micro                       | amazon.nova-micro-v1:0                   | Amazon    | 0.035      | 0.14        | 128K    | budget    | active                                                       |
-| Mistral Large 3                  | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                                                       |
-| DeepSeek-R1                      | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                                                       |
-| gpt-oss-20b                      | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                                                       |
-| gpt-oss-120b                     | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                                                       |
-| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 4.40       | 22.00       | 272K    | frontier  | active (mantle in-region + runtime CRIS; 1M tier 8.80/33.00) |
-| GPT-5.6 Terra                    | openai.gpt-5.6-terra                     | OpenAI    | 2.20       | 13.20       | 272K    | flagship  | active (mantle in-region + runtime CRIS; 1M tier 4.40/19.80) |
-| GPT-5.6 Luna                     | openai.gpt-5.6-luna                      | OpenAI    | 0.22       | 1.32        | 272K    | fast      | active (mantle in-region + runtime CRIS; 1M tier 0.44/1.98)  |
-| GPT-5.5                          | openai.gpt-5.5                           | OpenAI    | 5.50       | 33.00       | 272K    | frontier  | active (mantle only; no 1M tier)                             |
-| GPT-5.4                          | openai.gpt-5.4                           | OpenAI    | 2.75       | 16.50       | 272K    | flagship  | active (mantle only; no 1M tier)                             |
+| Model             | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                                                         |
+| ----------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ---------------------------------------------------------------------------------------------- |
+| Claude Fable 5    | anthropic.claude-fable-5                 | Anthropic | 10.00      | 50.00       | 1M      | frontier  | active                                                                                         |
+| Claude Sonnet 5   | anthropic.claude-sonnet-5                | Anthropic | 2.00       | 10.00       | 1M      | flagship  | active ($2/$10 — launch rate became standard on Sep 1, 2026; the $3/$15 step-up was cancelled) |
+| Claude Opus 4.8   | anthropic.claude-opus-4-8                | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                                                         |
+| Claude Sonnet 4.6 | anthropic.claude-sonnet-4-6              | Anthropic | 3.00       | 15.00       | 200K    | flagship  | active                                                                                         |
+| Claude Opus 4.6   | anthropic.claude-opus-4-6-v1             | Anthropic | 5.00       | 25.00       | 200K    | premium   | active                                                                                         |
+| Claude Haiku 4.5  | anthropic.claude-haiku-4-5-20251001-v1:0 | Anthropic | 1.00       | 5.00        | 200K    | fast      | active                                                                                         |
+| Claude Opus 4.1   | anthropic.claude-opus-4-1-20250805-v1:0  | Anthropic | 15.00      | 75.00       | 200K    | premium   | legacy (EOL Jan 8, 2027)                                                                       |
+| Llama 4 Maverick  | meta.llama4-maverick-17b-instruct-v1:0   | Meta      | 0.24       | 0.97        | 1M      | mid       | active                                                                                         |
+| Llama 4 Scout     | meta.llama4-scout-17b-instruct-v1:0      | Meta      | 0.17       | 0.66        | 10M     | efficient | active                                                                                         |
+| Llama 3.3 70B     | meta.llama3-3-70b-instruct-v1:0          | Meta      | 0.72       | 0.72        | 128K    | mid       | active                                                                                         |
+| Nova 2 Lite       | amazon.nova-2-lite-v1:0                  | Amazon    | 0.33       | 2.75        | 1M      | mid       | active                                                                                         |
+| Nova Pro          | amazon.nova-pro-v1:0                     | Amazon    | 0.80       | 3.20        | 300K    | mid       | active                                                                                         |
+| Nova Lite         | amazon.nova-lite-v1:0                    | Amazon    | 0.06       | 0.24        | 300K    | fast      | active                                                                                         |
+| Nova Micro        | amazon.nova-micro-v1:0                   | Amazon    | 0.035      | 0.14        | 128K    | budget    | active                                                                                         |
+| Mistral Large 3   | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                                                                                         |
+| DeepSeek-R1       | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                                                                                         |
+| gpt-oss-20b       | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                                                                                         |
+| gpt-oss-120b      | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                                                                                         |
+| GPT-5.6 Sol       | openai.gpt-5.6-sol                       | OpenAI    | 4.40       | 22.00       | 272K    | frontier  | active (mantle in-region + runtime CRIS; 1M tier 8.80/33.00)                                   |
+| GPT-5.6 Terra     | openai.gpt-5.6-terra                     | OpenAI    | 2.20       | 13.20       | 272K    | flagship  | active (mantle in-region + runtime CRIS; 1M tier 4.40/19.80)                                   |
+| GPT-5.6 Luna      | openai.gpt-5.6-luna                      | OpenAI    | 0.22       | 1.32        | 272K    | fast      | active (mantle in-region + runtime CRIS; 1M tier 0.44/1.98)                                    |
+| GPT-5.5           | openai.gpt-5.5                           | OpenAI    | 5.50       | 33.00       | 272K    | frontier  | active (mantle only; no 1M tier)                                                               |
+| GPT-5.4           | openai.gpt-5.4                           | OpenAI    | 2.75       | 16.50       | 272K    | flagship  | active (mantle only; no 1M tier)                                                               |
 
 _Quick-reference rows use **—** for **model ID** and **context**; resolve in the Bedrock console
 or AWS model documentation. This is a curated subset for migration selection — see the Bedrock
@@ -69,13 +69,13 @@ Embedding models are **input-only** — priced per 1M input tokens, no output ch
 an OpenAI/Azure embedding deployment lands on one of these; note the **dimension** must match (or
 the corpus must be re-embedded and any similarity threshold recalibrated).
 
-| Model                          | Model ID                        | Provider | Input $/1M | Dimensions        | Tier     | Status |
-| ------------------------------ | ------------------------------- | -------- | ---------- | ----------------- | -------- | ------ |
-| Titan Text Embeddings v2       | amazon.titan-embed-text-v2:0    | Amazon   | 0.02       | 1024/512/256      | default  | active |
-| Titan Text Embeddings v1       | amazon.titan-embed-text-v1      | Amazon   | 0.10       | 1536              | legacy   | active |
-| Cohere Embed v4                | cohere.embed-v4:0               | Cohere   | 0.12       | 1536/1024/512/256 | flagship | active |
-| Cohere Embed English v3        | cohere.embed-english-v3         | Cohere   | 0.10       | 1024              | mid      | active |
-| Cohere Embed Multilingual v3   | cohere.embed-multilingual-v3    | Cohere   | 0.10       | 1024              | mid      | active |
+| Model                        | Model ID                     | Provider | Input $/1M | Dimensions        | Tier     | Status |
+| ---------------------------- | ---------------------------- | -------- | ---------- | ----------------- | -------- | ------ |
+| Titan Text Embeddings v2     | amazon.titan-embed-text-v2:0 | Amazon   | 0.02       | 1024/512/256      | default  | active |
+| Titan Text Embeddings v1     | amazon.titan-embed-text-v1   | Amazon   | 0.10       | 1536              | legacy   | active |
+| Cohere Embed v4              | cohere.embed-v4:0            | Cohere   | 0.12       | 1536/1024/512/256 | flagship | active |
+| Cohere Embed English v3      | cohere.embed-english-v3      | Cohere   | 0.10       | 1024              | mid      | active |
+| Cohere Embed Multilingual v3 | cohere.embed-multilingual-v3 | Cohere   | 0.10       | 1024              | mid      | active |
 
 **Default target for a migrating OpenAI/Azure embedding workload:** Titan Text Embeddings v2
 (`amazon.titan-embed-text-v2:0`) — cheapest, configurable dimensions (1024 default; 512/256 for
@@ -102,12 +102,12 @@ Priced **per image** (not per token). Use for `image_generation` capability work
 
 Per 1M tokens unless noted.
 
-| Model                    | Batch in | Batch out | 5m cache write | 1h cache write | Cache read |
-| ------------------------ | -------- | --------- | -------------- | -------------- | ---------- |
-| Claude Sonnet 5          | 1.00     | 5.00      | 2.50           | 4.00           | 0.20       |
-| Claude Opus 4.8          | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
-| Claude Sonnet 4.6        | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
-| Claude Haiku 4.5         | 0.50     | 2.50      | 1.25           | 2.00           | 0.10       |
+| Model             | Batch in | Batch out | 5m cache write | 1h cache write | Cache read |
+| ----------------- | -------- | --------- | -------------- | -------------- | ---------- |
+| Claude Sonnet 5   | 1.00     | 5.00      | 2.50           | 4.00           | 0.20       |
+| Claude Opus 4.8   | 2.50     | 12.50     | 6.25           | 10.00          | 0.50       |
+| Claude Sonnet 4.6 | 1.50     | 7.50      | 3.75           | 6.00           | 0.30       |
+| Claude Haiku 4.5  | 0.50     | 2.50      | 1.25           | 2.00           | 0.10       |
 
 ### OpenAI on Bedrock — the same-model path
 
@@ -173,11 +173,11 @@ Prices per 1M tokens.
 The source-side baseline for a migrating embedding workload. Input-only. Map the "$X today" from
 measured/stated spend when available; these list rates are the fallback.
 
-| Model                     | Input $/1M | Dimensions | Tier    |
-| ------------------------- | ---------- | ---------- | ------- |
-| text-embedding-3-large    | 0.13       | 3072       | flagship |
-| text-embedding-3-small    | 0.02       | 1536       | fast     |
-| text-embedding-ada-002    | 0.10       | 1536       | legacy  |
+| Model                  | Input $/1M | Dimensions | Tier     |
+| ---------------------- | ---------- | ---------- | -------- |
+| text-embedding-3-large | 0.13       | 3072       | flagship |
+| text-embedding-3-small | 0.02       | 1536       | fast     |
+| text-embedding-ada-002 | 0.10       | 1536       | legacy   |
 
 Azure OpenAI bills the same models under deployment names at rates that track this table (PTU
 caveat above applies). A `text-embedding-3-large` → Titan v2 move is **not** a dimension-preserving

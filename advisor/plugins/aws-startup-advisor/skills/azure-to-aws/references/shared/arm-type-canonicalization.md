@@ -25,8 +25,8 @@ Terraform types directly.
 > So the default path is **derivation** (§ Deriving a type that is not listed), and the
 > table's job is to hold the cases where derivation would be **wrong**.
 >
-> This is the same selection rule the fixture oracles already use — *pin only facts where
-> a plausible improvisation and the correct answer diverge* — applied to the table for the
+> This is the same selection rule the fixture oracles already use — _pin only facts where
+> a plausible improvisation and the correct answer diverge_ — applied to the table for the
 > first time.
 >
 > **The derivable rows present today are a CLOSED CORE.** They are verified and cost
@@ -65,13 +65,13 @@ Terraform types directly.
 These are the rows where a plausible guess and the correct answer diverge. They are
 the reason this file exists rather than relying on the pattern.
 
-| Trap                                                                                                                                      | Wrong                             | Right                                    |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------------------- |
-| **Function apps are not their own type.** `Microsoft.Web/functionApps` does not exist. A function app is a `sites` resource with `kind` containing `functionapp`. | `Microsoft.Web/functionApps`      | `Microsoft.Web/sites`                    |
-| **`serverFarmId` is a property, not a type name.** The camelCase `serverFarmId` on a site is the pointer *to* its plan; the plan's own type is `Microsoft.Web/serverfarms`. | `serverFarmId` used as a type     | `Microsoft.Web/serverfarms`              |
-| **Cosmos DB's provider is `DocumentDB`.** The product was renamed; the ARM provider never was.                                             | `Microsoft.CosmosDB/accounts`     | `Microsoft.DocumentDB/databaseAccounts`  |
-| **Azure OpenAI has no provider of its own.** It is a Cognitive Services account whose `kind` is `OpenAI`.                                   | `Microsoft.OpenAI/accounts`       | `Microsoft.CognitiveServices/accounts`   |
-| **A resource group's own ID has no `/providers/` segment.** See § Reconstructing `azure_id`.                                                | `.../providers/Microsoft.Resources/resourceGroups/rg` | `/subscriptions/<sub>/resourceGroups/rg` |
+| Trap                                                                                                                                                                        | Wrong                                                 | Right                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------- |
+| **Function apps are not their own type.** `Microsoft.Web/functionApps` does not exist. A function app is a `sites` resource with `kind` containing `functionapp`.           | `Microsoft.Web/functionApps`                          | `Microsoft.Web/sites`                    |
+| **`serverFarmId` is a property, not a type name.** The camelCase `serverFarmId` on a site is the pointer _to_ its plan; the plan's own type is `Microsoft.Web/serverfarms`. | `serverFarmId` used as a type                         | `Microsoft.Web/serverfarms`              |
+| **Cosmos DB's provider is `DocumentDB`.** The product was renamed; the ARM provider never was.                                                                              | `Microsoft.CosmosDB/accounts`                         | `Microsoft.DocumentDB/databaseAccounts`  |
+| **Azure OpenAI has no provider of its own.** It is a Cognitive Services account whose `kind` is `OpenAI`.                                                                   | `Microsoft.OpenAI/accounts`                           | `Microsoft.CognitiveServices/accounts`   |
+| **A resource group's own ID has no `/providers/` segment.** See § Reconstructing `azure_id`.                                                                                | `.../providers/Microsoft.Resources/resourceGroups/rg` | `/subscriptions/<sub>/resourceGroups/rg` |
 
 `kind` is therefore load-bearing, not decoration: it is the only thing separating a
 web app from a function app, and a Cognitive Services account from Azure OpenAI.
@@ -80,62 +80,62 @@ and `Microsoft.CognitiveServices/accounts` entry.
 
 ## Compute
 
-| Terraform type                                                                                                            | Canonical ARM type                                 |
-| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `azurerm_linux_web_app`, `azurerm_windows_web_app`, `azurerm_app_service` (deprecated)                                     | `Microsoft.Web/sites`                              |
-| `azurerm_linux_function_app`, `azurerm_windows_function_app`, `azurerm_function_app` (deprecated)                           | `Microsoft.Web/sites` (`kind` contains `functionapp`) |
-| `azurerm_linux_web_app_slot`, `azurerm_windows_web_app_slot`                                                               | `Microsoft.Web/sites/slots`                        |
-| `azurerm_service_plan`, `azurerm_app_service_plan` (deprecated)                                                            | `Microsoft.Web/serverfarms`                        |
-| `azurerm_static_site`                                                                                                     | `Microsoft.Web/staticSites`                        |
-| `azurerm_linux_virtual_machine`, `azurerm_windows_virtual_machine`, `azurerm_virtual_machine` (deprecated)                  | `Microsoft.Compute/virtualMachines`                |
-| `azurerm_linux_virtual_machine_scale_set`, `azurerm_windows_virtual_machine_scale_set`, `azurerm_orchestrated_virtual_machine_scale_set`, `azurerm_virtual_machine_scale_set` (deprecated) | `Microsoft.Compute/virtualMachineScaleSets` |
-| `azurerm_managed_disk`                                                                                                    | `Microsoft.Compute/disks`                          |
-| `azurerm_availability_set`                                                                                                | `Microsoft.Compute/availabilitySets`               |
-| `azurerm_kubernetes_cluster`                                                                                              | `Microsoft.ContainerService/managedClusters`       |
-| `azurerm_kubernetes_cluster_node_pool`                                                                                    | `Microsoft.ContainerService/managedClusters/agentPools` |
-| `azurerm_container_registry`                                                                                              | `Microsoft.ContainerRegistry/registries`           |
-| `azurerm_container_app`                                                                                                   | `Microsoft.App/containerApps`                      |
-| `azurerm_container_app_environment`                                                                                       | `Microsoft.App/managedEnvironments`                |
-| `azurerm_container_group`                                                                                                 | `Microsoft.ContainerInstance/containerGroups`      |
-| `azurerm_virtual_machine_extension`                                                                                       | `Microsoft.Compute/virtualMachines/extensions`     |
-| `azurerm_snapshot`                                                                                                        | `Microsoft.Compute/snapshots`                      |
-| `azurerm_image`                                                                                                           | `Microsoft.Compute/images`                         |
-| `azurerm_shared_image_gallery`                                                                                            | `Microsoft.Compute/galleries`                      |
-| `azurerm_shared_image`                                                                                                    | `Microsoft.Compute/galleries/images`               |
-| `azurerm_proximity_placement_group`                                                                                       | `Microsoft.Compute/proximityPlacementGroups`       |
+| Terraform type                                                                                                                                                                             | Canonical ARM type                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| `azurerm_linux_web_app`, `azurerm_windows_web_app`, `azurerm_app_service` (deprecated)                                                                                                     | `Microsoft.Web/sites`                                   |
+| `azurerm_linux_function_app`, `azurerm_windows_function_app`, `azurerm_function_app` (deprecated)                                                                                          | `Microsoft.Web/sites` (`kind` contains `functionapp`)   |
+| `azurerm_linux_web_app_slot`, `azurerm_windows_web_app_slot`                                                                                                                               | `Microsoft.Web/sites/slots`                             |
+| `azurerm_service_plan`, `azurerm_app_service_plan` (deprecated)                                                                                                                            | `Microsoft.Web/serverfarms`                             |
+| `azurerm_static_site`                                                                                                                                                                      | `Microsoft.Web/staticSites`                             |
+| `azurerm_linux_virtual_machine`, `azurerm_windows_virtual_machine`, `azurerm_virtual_machine` (deprecated)                                                                                 | `Microsoft.Compute/virtualMachines`                     |
+| `azurerm_linux_virtual_machine_scale_set`, `azurerm_windows_virtual_machine_scale_set`, `azurerm_orchestrated_virtual_machine_scale_set`, `azurerm_virtual_machine_scale_set` (deprecated) | `Microsoft.Compute/virtualMachineScaleSets`             |
+| `azurerm_managed_disk`                                                                                                                                                                     | `Microsoft.Compute/disks`                               |
+| `azurerm_availability_set`                                                                                                                                                                 | `Microsoft.Compute/availabilitySets`                    |
+| `azurerm_kubernetes_cluster`                                                                                                                                                               | `Microsoft.ContainerService/managedClusters`            |
+| `azurerm_kubernetes_cluster_node_pool`                                                                                                                                                     | `Microsoft.ContainerService/managedClusters/agentPools` |
+| `azurerm_container_registry`                                                                                                                                                               | `Microsoft.ContainerRegistry/registries`                |
+| `azurerm_container_app`                                                                                                                                                                    | `Microsoft.App/containerApps`                           |
+| `azurerm_container_app_environment`                                                                                                                                                        | `Microsoft.App/managedEnvironments`                     |
+| `azurerm_container_group`                                                                                                                                                                  | `Microsoft.ContainerInstance/containerGroups`           |
+| `azurerm_virtual_machine_extension`                                                                                                                                                        | `Microsoft.Compute/virtualMachines/extensions`          |
+| `azurerm_snapshot`                                                                                                                                                                         | `Microsoft.Compute/snapshots`                           |
+| `azurerm_image`                                                                                                                                                                            | `Microsoft.Compute/images`                              |
+| `azurerm_shared_image_gallery`                                                                                                                                                             | `Microsoft.Compute/galleries`                           |
+| `azurerm_shared_image`                                                                                                                                                                     | `Microsoft.Compute/galleries/images`                    |
+| `azurerm_proximity_placement_group`                                                                                                                                                        | `Microsoft.Compute/proximityPlacementGroups`            |
 
 ## Data
 
-| Terraform type                                                    | Canonical ARM type                            |
-| ----------------------------------------------------------------- | --------------------------------------------- |
-| `azurerm_postgresql_flexible_server`                              | `Microsoft.DBforPostgreSQL/flexibleServers`    |
-| `azurerm_postgresql_server` (deprecated Single Server)            | `Microsoft.DBforPostgreSQL/servers`            |
-| `azurerm_mysql_flexible_server`                                   | `Microsoft.DBforMySQL/flexibleServers`         |
-| `azurerm_mysql_server` (deprecated Single Server)                 | `Microsoft.DBforMySQL/servers`                 |
-| `azurerm_mssql_server`                                            | `Microsoft.Sql/servers`                        |
-| `azurerm_mssql_database`                                          | `Microsoft.Sql/servers/databases`              |
-| `azurerm_mssql_elasticpool`                                       | `Microsoft.Sql/servers/elasticPools`           |
-| `azurerm_mssql_managed_instance`                                  | `Microsoft.Sql/managedInstances`               |
-| `azurerm_cosmosdb_account`                                        | `Microsoft.DocumentDB/databaseAccounts`        |
-| `azurerm_redis_cache`                                             | `Microsoft.Cache/Redis`                        |
-| `azurerm_redis_enterprise_cluster`                                | `Microsoft.Cache/redisEnterprise`              |
-| `azurerm_storage_account`                                         | `Microsoft.Storage/storageAccounts`            |
-| `azurerm_storage_container`                                       | `Microsoft.Storage/storageAccounts/blobServices/containers` |
-| `azurerm_storage_share`                                           | `Microsoft.Storage/storageAccounts/fileServices/shares` |
-| `azurerm_storage_queue`                                           | `Microsoft.Storage/storageAccounts/queueServices/queues` |
-| `azurerm_storage_table`                                           | `Microsoft.Storage/storageAccounts/tableServices/tables` |
-| `azurerm_storage_management_policy`                               | `Microsoft.Storage/storageAccounts/managementPolicies` |
-| `azurerm_postgresql_flexible_server_database`                     | `Microsoft.DBforPostgreSQL/flexibleServers/databases` |
-| `azurerm_postgresql_flexible_server_firewall_rule`                | `Microsoft.DBforPostgreSQL/flexibleServers/firewallRules` |
-| `azurerm_mysql_flexible_database`                                 | `Microsoft.DBforMySQL/flexibleServers/databases` |
-| `azurerm_mssql_firewall_rule`                                     | `Microsoft.Sql/servers/firewallRules`         |
-| `azurerm_cosmosdb_sql_database`                                   | `Microsoft.DocumentDB/databaseAccounts/sqlDatabases` |
-| `azurerm_cosmosdb_sql_container`                                  | `Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers` |
-| `azurerm_cosmosdb_mongo_database`                                 | `Microsoft.DocumentDB/databaseAccounts/mongodbDatabases` |
-| `azurerm_cosmosdb_cassandra_keyspace`                             | `Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces` |
-| `azurerm_app_configuration`                                       | `Microsoft.AppConfiguration/configurationStores` |
-| `azurerm_recovery_services_vault`                                 | `Microsoft.RecoveryServices/vaults`           |
-| `azurerm_backup_policy_vm`                                        | `Microsoft.RecoveryServices/vaults/backupPolicies` |
+| Terraform type                                         | Canonical ARM type                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------- |
+| `azurerm_postgresql_flexible_server`                   | `Microsoft.DBforPostgreSQL/flexibleServers`                     |
+| `azurerm_postgresql_server` (deprecated Single Server) | `Microsoft.DBforPostgreSQL/servers`                             |
+| `azurerm_mysql_flexible_server`                        | `Microsoft.DBforMySQL/flexibleServers`                          |
+| `azurerm_mysql_server` (deprecated Single Server)      | `Microsoft.DBforMySQL/servers`                                  |
+| `azurerm_mssql_server`                                 | `Microsoft.Sql/servers`                                         |
+| `azurerm_mssql_database`                               | `Microsoft.Sql/servers/databases`                               |
+| `azurerm_mssql_elasticpool`                            | `Microsoft.Sql/servers/elasticPools`                            |
+| `azurerm_mssql_managed_instance`                       | `Microsoft.Sql/managedInstances`                                |
+| `azurerm_cosmosdb_account`                             | `Microsoft.DocumentDB/databaseAccounts`                         |
+| `azurerm_redis_cache`                                  | `Microsoft.Cache/Redis`                                         |
+| `azurerm_redis_enterprise_cluster`                     | `Microsoft.Cache/redisEnterprise`                               |
+| `azurerm_storage_account`                              | `Microsoft.Storage/storageAccounts`                             |
+| `azurerm_storage_container`                            | `Microsoft.Storage/storageAccounts/blobServices/containers`     |
+| `azurerm_storage_share`                                | `Microsoft.Storage/storageAccounts/fileServices/shares`         |
+| `azurerm_storage_queue`                                | `Microsoft.Storage/storageAccounts/queueServices/queues`        |
+| `azurerm_storage_table`                                | `Microsoft.Storage/storageAccounts/tableServices/tables`        |
+| `azurerm_storage_management_policy`                    | `Microsoft.Storage/storageAccounts/managementPolicies`          |
+| `azurerm_postgresql_flexible_server_database`          | `Microsoft.DBforPostgreSQL/flexibleServers/databases`           |
+| `azurerm_postgresql_flexible_server_firewall_rule`     | `Microsoft.DBforPostgreSQL/flexibleServers/firewallRules`       |
+| `azurerm_mysql_flexible_database`                      | `Microsoft.DBforMySQL/flexibleServers/databases`                |
+| `azurerm_mssql_firewall_rule`                          | `Microsoft.Sql/servers/firewallRules`                           |
+| `azurerm_cosmosdb_sql_database`                        | `Microsoft.DocumentDB/databaseAccounts/sqlDatabases`            |
+| `azurerm_cosmosdb_sql_container`                       | `Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers` |
+| `azurerm_cosmosdb_mongo_database`                      | `Microsoft.DocumentDB/databaseAccounts/mongodbDatabases`        |
+| `azurerm_cosmosdb_cassandra_keyspace`                  | `Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces`      |
+| `azurerm_app_configuration`                            | `Microsoft.AppConfiguration/configurationStores`                |
+| `azurerm_recovery_services_vault`                      | `Microsoft.RecoveryServices/vaults`                             |
+| `azurerm_backup_policy_vm`                             | `Microsoft.RecoveryServices/vaults/backupPolicies`              |
 
 Note that `azurerm_storage_share` is what makes the Azure Files → EFS-or-FSx routing
 decision reachable: its `enabled_protocol` (`SMB` or `NFS`) is the discriminator, so
@@ -143,66 +143,66 @@ carry it into `config.enabled_protocol`.
 
 ## Networking
 
-| Terraform type                    | Canonical ARM type                          |
-| --------------------------------- | ------------------------------------------- |
-| `azurerm_virtual_network`         | `Microsoft.Network/virtualNetworks`          |
-| `azurerm_subnet`                  | `Microsoft.Network/virtualNetworks/subnets`  |
-| `azurerm_network_security_group`  | `Microsoft.Network/networkSecurityGroups`    |
-| `azurerm_network_interface`       | `Microsoft.Network/networkInterfaces`        |
-| `azurerm_public_ip`               | `Microsoft.Network/publicIPAddresses`        |
-| `azurerm_lb`                      | `Microsoft.Network/loadBalancers`            |
-| `azurerm_application_gateway`     | `Microsoft.Network/applicationGateways`      |
-| `azurerm_nat_gateway`             | `Microsoft.Network/natGateways`              |
-| `azurerm_dns_zone`                | `Microsoft.Network/dnsZones`                 |
-| `azurerm_private_dns_zone`        | `Microsoft.Network/privateDnsZones`          |
-| `azurerm_private_endpoint`        | `Microsoft.Network/privateEndpoints`         |
-| `azurerm_cdn_frontdoor_profile`   | `Microsoft.Cdn/profiles`                     |
-| `azurerm_frontdoor` (deprecated)  | `Microsoft.Network/frontDoors`               |
-| `azurerm_route_table`             | `Microsoft.Network/routeTables`               |
-| `azurerm_route`                   | `Microsoft.Network/routeTables/routes`       |
-| `azurerm_virtual_network_peering` | `Microsoft.Network/virtualNetworks/virtualNetworkPeerings` |
-| `azurerm_firewall`                | `Microsoft.Network/azureFirewalls`           |
-| `azurerm_firewall_policy`         | `Microsoft.Network/firewallPolicies`         |
-| `azurerm_bastion_host`            | `Microsoft.Network/bastionHosts`             |
-| `azurerm_network_security_rule`   | `Microsoft.Network/networkSecurityGroups/securityRules` |
-| `azurerm_lb_backend_address_pool` | `Microsoft.Network/loadBalancers/backendAddressPools` |
-| `azurerm_lb_probe`                | `Microsoft.Network/loadBalancers/probes`     |
-| `azurerm_lb_rule`                 | `Microsoft.Network/loadBalancers/loadBalancingRules` |
-| `azurerm_private_dns_zone_virtual_network_link` | `Microsoft.Network/privateDnsZones/virtualNetworkLinks` |
-| `azurerm_dns_a_record`, `azurerm_dns_cname_record`, and the other `azurerm_dns_*_record` types | `Microsoft.Network/dnsZones/<RECORDTYPE>`, the record type taken from the Terraform type name (`/A`, `/CNAME`, `/TXT`) — this row is a pattern, not a lookup |
-| `azurerm_cdn_endpoint`            | `Microsoft.Cdn/profiles/endpoints`           |
-| `azurerm_cdn_frontdoor_endpoint`  | `Microsoft.Cdn/profiles/afdEndpoints`        |
-| `azurerm_web_application_firewall_policy` | `Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies` |
-| `azurerm_traffic_manager_profile` | `Microsoft.Network/trafficManagerProfiles`   |
-| `azurerm_nat_gateway_public_ip_association`, `azurerm_subnet_route_table_association`, and every other `*_association` | **no type of its own** — see § Association-only resources |
+| Terraform type                                                                                                         | Canonical ARM type                                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `azurerm_virtual_network`                                                                                              | `Microsoft.Network/virtualNetworks`                                                                                                                          |
+| `azurerm_subnet`                                                                                                       | `Microsoft.Network/virtualNetworks/subnets`                                                                                                                  |
+| `azurerm_network_security_group`                                                                                       | `Microsoft.Network/networkSecurityGroups`                                                                                                                    |
+| `azurerm_network_interface`                                                                                            | `Microsoft.Network/networkInterfaces`                                                                                                                        |
+| `azurerm_public_ip`                                                                                                    | `Microsoft.Network/publicIPAddresses`                                                                                                                        |
+| `azurerm_lb`                                                                                                           | `Microsoft.Network/loadBalancers`                                                                                                                            |
+| `azurerm_application_gateway`                                                                                          | `Microsoft.Network/applicationGateways`                                                                                                                      |
+| `azurerm_nat_gateway`                                                                                                  | `Microsoft.Network/natGateways`                                                                                                                              |
+| `azurerm_dns_zone`                                                                                                     | `Microsoft.Network/dnsZones`                                                                                                                                 |
+| `azurerm_private_dns_zone`                                                                                             | `Microsoft.Network/privateDnsZones`                                                                                                                          |
+| `azurerm_private_endpoint`                                                                                             | `Microsoft.Network/privateEndpoints`                                                                                                                         |
+| `azurerm_cdn_frontdoor_profile`                                                                                        | `Microsoft.Cdn/profiles`                                                                                                                                     |
+| `azurerm_frontdoor` (deprecated)                                                                                       | `Microsoft.Network/frontDoors`                                                                                                                               |
+| `azurerm_route_table`                                                                                                  | `Microsoft.Network/routeTables`                                                                                                                              |
+| `azurerm_route`                                                                                                        | `Microsoft.Network/routeTables/routes`                                                                                                                       |
+| `azurerm_virtual_network_peering`                                                                                      | `Microsoft.Network/virtualNetworks/virtualNetworkPeerings`                                                                                                   |
+| `azurerm_firewall`                                                                                                     | `Microsoft.Network/azureFirewalls`                                                                                                                           |
+| `azurerm_firewall_policy`                                                                                              | `Microsoft.Network/firewallPolicies`                                                                                                                         |
+| `azurerm_bastion_host`                                                                                                 | `Microsoft.Network/bastionHosts`                                                                                                                             |
+| `azurerm_network_security_rule`                                                                                        | `Microsoft.Network/networkSecurityGroups/securityRules`                                                                                                      |
+| `azurerm_lb_backend_address_pool`                                                                                      | `Microsoft.Network/loadBalancers/backendAddressPools`                                                                                                        |
+| `azurerm_lb_probe`                                                                                                     | `Microsoft.Network/loadBalancers/probes`                                                                                                                     |
+| `azurerm_lb_rule`                                                                                                      | `Microsoft.Network/loadBalancers/loadBalancingRules`                                                                                                         |
+| `azurerm_private_dns_zone_virtual_network_link`                                                                        | `Microsoft.Network/privateDnsZones/virtualNetworkLinks`                                                                                                      |
+| `azurerm_dns_a_record`, `azurerm_dns_cname_record`, and the other `azurerm_dns_*_record` types                         | `Microsoft.Network/dnsZones/<RECORDTYPE>`, the record type taken from the Terraform type name (`/A`, `/CNAME`, `/TXT`) — this row is a pattern, not a lookup |
+| `azurerm_cdn_endpoint`                                                                                                 | `Microsoft.Cdn/profiles/endpoints`                                                                                                                           |
+| `azurerm_cdn_frontdoor_endpoint`                                                                                       | `Microsoft.Cdn/profiles/afdEndpoints`                                                                                                                        |
+| `azurerm_web_application_firewall_policy`                                                                              | `Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies`                                                                                         |
+| `azurerm_traffic_manager_profile`                                                                                      | `Microsoft.Network/trafficManagerProfiles`                                                                                                                   |
+| `azurerm_nat_gateway_public_ip_association`, `azurerm_subnet_route_table_association`, and every other `*_association` | **no type of its own** — see § Association-only resources                                                                                                    |
 
 ## Identity, secrets, messaging
 
-| Terraform type                       | Canonical ARM type                                    |
-| ------------------------------------ | ----------------------------------------------------- |
-| `azurerm_key_vault`                  | `Microsoft.KeyVault/vaults`                           |
-| `azurerm_key_vault_secret`           | `Microsoft.KeyVault/vaults/secrets`                   |
-| `azurerm_user_assigned_identity`     | `Microsoft.ManagedIdentity/userAssignedIdentities`    |
-| `azurerm_role_assignment`            | `Microsoft.Authorization/roleAssignments`             |
-| `azurerm_servicebus_namespace`       | `Microsoft.ServiceBus/namespaces`                     |
-| `azurerm_servicebus_queue`           | `Microsoft.ServiceBus/namespaces/queues`              |
-| `azurerm_servicebus_topic`           | `Microsoft.ServiceBus/namespaces/topics`              |
-| `azurerm_eventhub_namespace`         | `Microsoft.EventHub/namespaces`                       |
-| `azurerm_eventhub`                   | `Microsoft.EventHub/namespaces/eventhubs`             |
-| `azurerm_api_management`             | `Microsoft.ApiManagement/service`                     |
-| `azurerm_signalr_service`            | `Microsoft.SignalRService/SignalR`                    |
-| `azurerm_key_vault_key`              | `Microsoft.KeyVault/vaults/keys`                      |
-| `azurerm_key_vault_certificate`      | `Microsoft.KeyVault/vaults/certificates`              |
-| `azurerm_federated_identity_credential` | `Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials` |
-| `azurerm_servicebus_subscription`    | `Microsoft.ServiceBus/namespaces/topics/subscriptions` |
-| `azurerm_eventhub_consumer_group`    | `Microsoft.EventHub/namespaces/eventhubs/consumergroups` |
-| `azurerm_eventhub_authorization_rule`| `Microsoft.EventHub/namespaces/eventhubs/authorizationRules` |
-| `azurerm_eventgrid_topic`            | `Microsoft.EventGrid/topics`                          |
-| `azurerm_eventgrid_system_topic`     | `Microsoft.EventGrid/systemTopics`                    |
-| `azurerm_eventgrid_event_subscription` | `Microsoft.EventGrid/eventSubscriptions`            |
-| `azurerm_logic_app_workflow`         | `Microsoft.Logic/workflows`                           |
-| `azurerm_management_lock`            | `Microsoft.Authorization/locks`                       |
-| `azurerm_policy_assignment`, `azurerm_resource_group_policy_assignment`, `azurerm_subscription_policy_assignment` | `Microsoft.Authorization/policyAssignments` |
+| Terraform type                                                                                                    | Canonical ARM type                                                              |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `azurerm_key_vault`                                                                                               | `Microsoft.KeyVault/vaults`                                                     |
+| `azurerm_key_vault_secret`                                                                                        | `Microsoft.KeyVault/vaults/secrets`                                             |
+| `azurerm_user_assigned_identity`                                                                                  | `Microsoft.ManagedIdentity/userAssignedIdentities`                              |
+| `azurerm_role_assignment`                                                                                         | `Microsoft.Authorization/roleAssignments`                                       |
+| `azurerm_servicebus_namespace`                                                                                    | `Microsoft.ServiceBus/namespaces`                                               |
+| `azurerm_servicebus_queue`                                                                                        | `Microsoft.ServiceBus/namespaces/queues`                                        |
+| `azurerm_servicebus_topic`                                                                                        | `Microsoft.ServiceBus/namespaces/topics`                                        |
+| `azurerm_eventhub_namespace`                                                                                      | `Microsoft.EventHub/namespaces`                                                 |
+| `azurerm_eventhub`                                                                                                | `Microsoft.EventHub/namespaces/eventhubs`                                       |
+| `azurerm_api_management`                                                                                          | `Microsoft.ApiManagement/service`                                               |
+| `azurerm_signalr_service`                                                                                         | `Microsoft.SignalRService/SignalR`                                              |
+| `azurerm_key_vault_key`                                                                                           | `Microsoft.KeyVault/vaults/keys`                                                |
+| `azurerm_key_vault_certificate`                                                                                   | `Microsoft.KeyVault/vaults/certificates`                                        |
+| `azurerm_federated_identity_credential`                                                                           | `Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials` |
+| `azurerm_servicebus_subscription`                                                                                 | `Microsoft.ServiceBus/namespaces/topics/subscriptions`                          |
+| `azurerm_eventhub_consumer_group`                                                                                 | `Microsoft.EventHub/namespaces/eventhubs/consumergroups`                        |
+| `azurerm_eventhub_authorization_rule`                                                                             | `Microsoft.EventHub/namespaces/eventhubs/authorizationRules`                    |
+| `azurerm_eventgrid_topic`                                                                                         | `Microsoft.EventGrid/topics`                                                    |
+| `azurerm_eventgrid_system_topic`                                                                                  | `Microsoft.EventGrid/systemTopics`                                              |
+| `azurerm_eventgrid_event_subscription`                                                                            | `Microsoft.EventGrid/eventSubscriptions`                                        |
+| `azurerm_logic_app_workflow`                                                                                      | `Microsoft.Logic/workflows`                                                     |
+| `azurerm_management_lock`                                                                                         | `Microsoft.Authorization/locks`                                                 |
+| `azurerm_policy_assignment`, `azurerm_resource_group_policy_assignment`, `azurerm_subscription_policy_assignment` | `Microsoft.Authorization/policyAssignments`                                     |
 
 `azurerm_eventhub_namespace`'s `kafka_enabled` attribute is what the Event Hubs
 rubric keys off (Kafka-protocol consumers → MSK, native AMQP/SDK → Kinesis), so carry
@@ -210,27 +210,27 @@ it into `config.kafka_enabled`.
 
 ## Observability, AI, analytics
 
-| Terraform type                          | Canonical ARM type                                     |
-| --------------------------------------- | ------------------------------------------------------ |
-| `azurerm_application_insights`          | `Microsoft.Insights/components`                        |
-| `azurerm_log_analytics_workspace`       | `Microsoft.OperationalInsights/workspaces`             |
-| `azurerm_monitor_diagnostic_setting`    | `Microsoft.Insights/diagnosticSettings`                |
-| `azurerm_monitor_action_group`          | `Microsoft.Insights/actionGroups`                      |
-| `azurerm_monitor_metric_alert`          | `Microsoft.Insights/metricAlerts`                      |
+| Terraform type                          | Canonical ARM type                                                          |
+| --------------------------------------- | --------------------------------------------------------------------------- |
+| `azurerm_application_insights`          | `Microsoft.Insights/components`                                             |
+| `azurerm_log_analytics_workspace`       | `Microsoft.OperationalInsights/workspaces`                                  |
+| `azurerm_monitor_diagnostic_setting`    | `Microsoft.Insights/diagnosticSettings`                                     |
+| `azurerm_monitor_action_group`          | `Microsoft.Insights/actionGroups`                                           |
+| `azurerm_monitor_metric_alert`          | `Microsoft.Insights/metricAlerts`                                           |
 | `azurerm_cognitive_account`             | `Microsoft.CognitiveServices/accounts` (`kind` = `OpenAI` for Azure OpenAI) |
-| `azurerm_cognitive_deployment`          | `Microsoft.CognitiveServices/accounts/deployments`     |
-| `azurerm_search_service`                | `Microsoft.Search/searchServices`                      |
-| `azurerm_data_factory`                  | `Microsoft.DataFactory/factories`                      |
-| `azurerm_synapse_workspace`             | `Microsoft.Synapse/workspaces`                         |
-| `azurerm_databricks_workspace`          | `Microsoft.Databricks/workspaces`                      |
-| `azurerm_monitor_autoscale_setting`     | `Microsoft.Insights/autoscaleSettings`                 |
-| `azurerm_application_insights_web_test`  | `Microsoft.Insights/webtests` |
-| `azurerm_monitor_data_collection_rule`  | `Microsoft.Insights/dataCollectionRules`               |
-| `azurerm_monitor_diagnostic_categories` | (data source, not a resource — no entry)               |
-| `azurerm_batch_account`                 | `Microsoft.Batch/batchAccounts`                        |
-| `azurerm_machine_learning_workspace`    | `Microsoft.MachineLearningServices/workspaces`         |
-| `azurerm_stream_analytics_job`          | `Microsoft.StreamAnalytics/streamingjobs` |
-| `azurerm_dev_test_lab`                  | `Microsoft.DevTestLab/labs`                            |
+| `azurerm_cognitive_deployment`          | `Microsoft.CognitiveServices/accounts/deployments`                          |
+| `azurerm_search_service`                | `Microsoft.Search/searchServices`                                           |
+| `azurerm_data_factory`                  | `Microsoft.DataFactory/factories`                                           |
+| `azurerm_synapse_workspace`             | `Microsoft.Synapse/workspaces`                                              |
+| `azurerm_databricks_workspace`          | `Microsoft.Databricks/workspaces`                                           |
+| `azurerm_monitor_autoscale_setting`     | `Microsoft.Insights/autoscaleSettings`                                      |
+| `azurerm_application_insights_web_test` | `Microsoft.Insights/webtests`                                               |
+| `azurerm_monitor_data_collection_rule`  | `Microsoft.Insights/dataCollectionRules`                                    |
+| `azurerm_monitor_diagnostic_categories` | (data source, not a resource — no entry)                                    |
+| `azurerm_batch_account`                 | `Microsoft.Batch/batchAccounts`                                             |
+| `azurerm_machine_learning_workspace`    | `Microsoft.MachineLearningServices/workspaces`                              |
+| `azurerm_stream_analytics_job`          | `Microsoft.StreamAnalytics/streamingjobs`                                   |
+| `azurerm_dev_test_lab`                  | `Microsoft.DevTestLab/labs`                                                 |
 
 Everything in the observability block lands in Skip Mappings — observability is
 re-established on the target rather than migrated, with a CloudWatch fallback note.
@@ -240,9 +240,9 @@ and because a resource absent from the inventory cannot be reported as skipped.
 
 ## Resource groups
 
-| Terraform type            | Canonical ARM type                     |
-| ------------------------- | -------------------------------------- |
-| `azurerm_resource_group`  | `Microsoft.Resources/resourceGroups`   |
+| Terraform type           | Canonical ARM type                   |
+| ------------------------ | ------------------------------------ |
+| `azurerm_resource_group` | `Microsoft.Resources/resourceGroups` |
 
 ## Association-only resources
 
@@ -267,7 +267,7 @@ warning means "this skill has a gap", and an association is not a gap — it is 
 Terraform-shaped thing that correctly has no ARM type. Filing them as untranslated
 would bury the real gaps in noise, and on an IaC-heavy repo the associations outnumber
 the genuinely-missing types. `azurerm_role_assignment` is the one borderline case: it
-*does* have an ARM type (`Microsoft.Authorization/roleAssignments`, a Skip Mapping), so
+_does_ have an ARM type (`Microsoft.Authorization/roleAssignments`, a Skip Mapping), so
 it gets an entry AND contributes its `identity_grant` edge.
 
 ## Casing is a convention, not a fact
@@ -311,9 +311,9 @@ The provider namespace is **not** derivable from the Terraform name: nothing in
 `fast-path-services.json` → `namespace_routing`**, which declares 54 namespaces
 independently of this file.
 
-| Outcome | Action |
-| ------- | ------ |
-| Namespace **is** in `namespace_routing` | An independent artefact corroborates it. `azure_type_provenance: "derived"` |
+| Outcome                                     | Action                                                                                                                                                                                                                                                           |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Namespace **is** in `namespace_routing`     | An independent artefact corroborates it. `azure_type_provenance: "derived"`                                                                                                                                                                                      |
 | Namespace is **not** in `namespace_routing` | **Still accept it.** `azure_type_provenance: "derived_uncorroborated"`, plus a `type_derived_uncorroborated` warning naming the namespace. Design routes it to a model-chosen category (`fast-path-services.json` → `namespace_routing._unrecognised_namespace`) |
 
 Either way the resource keeps its place in `resources[]` with its full `config`, and the

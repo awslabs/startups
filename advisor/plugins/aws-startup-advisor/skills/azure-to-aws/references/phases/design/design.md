@@ -117,7 +117,7 @@ The precedence order below is what reconciles them.
    not a preference.
 4. **Direct Mappings → `deterministic`** — the pre-determined recommendations.
 5. **Pattern constraint** — the holistic layer, applied to whatever is left.
-6. **Six-criteria rubric** — chooses *within* the pattern's candidate set:
+6. **Six-criteria rubric** — chooses _within_ the pattern's candidate set:
    Eliminators, Operational Model, User Preference, Feature Parity, Cluster Context,
    Simplicity, applied in order, first match wins.
 7. **Preferred-target substitution.**
@@ -133,7 +133,7 @@ genuine pattern/fast-path conflict is evidence the row does not belong in Direct
 Mappings — the fix is to demote the row, never to let the pattern win.
 
 Right-sizing is **post-selection, not a seventh criterion.** The six criteria select
-a *service* and never touch capacity; adding a seventh would break "apply in order,
+a _service_ and never touch capacity; adding a seventh would break "apply in order,
 first match wins". Each rubric file gets an additive `## Right-Sizing` section,
 structurally parallel to `## CPU Architecture`.
 
@@ -150,11 +150,11 @@ still halts rather than being improvised; only `licensing.md`, `gpu-hpc.md`, `ai
 file lands, and the halt decision reads from disk. If this list and `ls` disagree, `ls` is
 right and this list is the bug.
 
-| Lands in | What                                                                                                     |
-| -------- | -------------------------------------------------------------------------------------------------------- |
+| Lands in | What                                                                                                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | step 4   | `patterns.md` and the cluster-level `data-pipeline` gate. Clustering itself is real; only pattern RECOGNITION is outstanding, so every cluster carries `pattern_status: "catalog_absent"` |
-| step 5   | The remaining eight category files, and the `knowledge/design/*.json` sizing tables wired through `_knowledge` `_when` guards |
-| step 6   | The AI design route                                                                                       |
+| step 5   | The remaining eight category files, and the `knowledge/design/*.json` sizing tables wired through `_knowledge` `_when` guards                                                             |
+| step 6   | The AI design route                                                                                                                                                                       |
 
 **A missing SIZING table is treated more softly than a missing RUBRIC file, on purpose.**
 Without `appservice-eb-sizing.json` the design still names Elastic Beanstalk and states a

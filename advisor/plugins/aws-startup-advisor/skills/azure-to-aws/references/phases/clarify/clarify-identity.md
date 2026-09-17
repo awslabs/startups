@@ -23,10 +23,10 @@ startup-weighted skill, so the row establishes a direction and stops.
 
 Keeping these apart is the whole reason this fragment is small:
 
-| | Where it lives |
-| --- | --- |
-| **Workload identity** — managed identities, role assignments, what an app is allowed to read | already handled without a question. `Microsoft.ManagedIdentity/userAssignedIdentities` → IAM Role is a fast-path row; `roleAssignments` is a Skip Mapping because IAM policy is *authored* against the AWS design rather than translated |
-| **Human identity** — who logs in, from where, with what MFA | **this fragment**, and it is not a resource mapping at all |
+|                                                                                              | Where it lives                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Workload identity** — managed identities, role assignments, what an app is allowed to read | already handled without a question. `Microsoft.ManagedIdentity/userAssignedIdentities` → IAM Role is a fast-path row; `roleAssignments` is a Skip Mapping because IAM policy is _authored_ against the AWS design rather than translated |
+| **Human identity** — who logs in, from where, with what MFA                                  | **this fragment**, and it is not a resource mapping at all                                                                                                                                                                               |
 
 A one-to-one translation of Azure RBAC would encode Azure's scope hierarchy
 (management group → subscription → resource group → resource) into IAM, which has no such
@@ -34,11 +34,11 @@ nesting. That is why the workload half is deliberately not a question.
 
 ## Step 1: Extract
 
-| Read | Resolves |
-| ---- | -------- |
+| Read                                                        | Resolves                                                 |
+| ----------------------------------------------------------- | -------------------------------------------------------- |
 | count of `Microsoft.ManagedIdentity/userAssignedIdentities` | how much workload identity exists, for the row's context |
-| presence of `Microsoft.Authorization/roleAssignments` | whether RBAC is in active use |
-| presence of `Microsoft.KeyVault/vaults` | whether secrets are already centralised |
+| presence of `Microsoft.Authorization/roleAssignments`       | whether RBAC is in active use                            |
+| presence of `Microsoft.KeyVault/vaults`                     | whether secrets are already centralised                  |
 
 None of these change the answer. They make the row's context line concrete.
 
@@ -57,9 +57,9 @@ How should people sign in to AWS?
     and use it for AWS sign-in via SAML or OIDC
 ```
 
-**Consequence line:** *Assuming a fresh IAM Identity Center directory → the simplest path,
+**Consequence line:** _Assuming a fresh IAM Identity Center directory → the simplest path,
 and no dependency on Azure after cutover. Choose federation if you are keeping Entra ID for
-other reasons, such as Microsoft 365.*
+other reasons, such as Microsoft 365._
 
 **Why [A] is the default rather than [B].** Federation is the more sophisticated answer and
 the wrong assumption here. Defaulting to it would mean the migration **retains a dependency
@@ -83,8 +83,8 @@ Say that in the row so [A] does not read as a cop-out.
 
 ## Who consumes this
 
-| Row | Consumer |
-| --- | -------- |
+| Row        | Consumer                                                                                                 |
+| ---------- | -------------------------------------------------------------------------------------------------------- |
 | `identity` | `design-refs/identity.md` (build step 5, not yet written) and Generate's IAM Identity Center scaffolding |
 
 `identity.md` is still missing, and `index.md` routes one type to it. That is a real gap

@@ -6,7 +6,7 @@
 > Vendored into each consuming skill as
 > `references/vendored/ai/design-ref-agentic-to-agentcore.md` and kept byte-identical by
 > `shared:check`; edit HERE, then run `shared:sync`.
-
+>
 > Loaded by `design-ai.md` Step 0.6 when `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "strands"`.
 
 **Prerequisites:** `references/vendored/ai/ai-migration-guardrails.md` must already be loaded (Step 0.6 loads it before this file). Do NOT duplicate regional caveats, pricing rules, or effort estimation rules here.

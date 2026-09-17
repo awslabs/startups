@@ -5,7 +5,7 @@
 > Vendored into each consuming skill as
 > `references/vendored/ai/ai-anthropic-to-bedrock.md` and kept byte-identical by
 > `shared:check`; edit HERE, then run `shared:sync`.
-
+>
 > Loaded by `design-ai.md` when `ai_source == "anthropic"`.
 > The user is already on Claude via the Anthropic SDK. Migration is a client swap only.
 > No model change, no prompt rewriting, no retraining required.

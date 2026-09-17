@@ -72,12 +72,12 @@ Skip if `agentic_profile` is absent. If `agentic_profile.is_agentic == true`:
 1. Load `references/vendored/ai/ai-migration-guardrails.md` once.
 2. Read `preferences.json` → `ai_constraints.agentic.migration_approach` and route:
 
-| `migration_approach` | Action |
-| -------------------- | ------ |
-| `"retarget"`         | Standard model-swap (Parts 1–6). Framework stays; only the model layer changes. Load `references/vendored/ai/ai-migration-guardrails.md` retarget notes. |
+| `migration_approach` | Action                                                                                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `"retarget"`         | Standard model-swap (Parts 1–6). Framework stays; only the model layer changes. Load `references/vendored/ai/ai-migration-guardrails.md` retarget notes.                                                                                         |
 | `"harness"`          | Load `references/vendored/ai/design-ref-harness.md`. If absent, proceed model-layer only + a user note. Set `harness_config.source_model_provider` to `"open_ai"` for an `azure_openai`/`openai` source (§19.9(b)), `"anthropic"` for anthropic. |
-| `"strands"`          | Load `references/vendored/ai/design-ref-agentic-to-agentcore.md`. |
-| `"undecided"`        | Treat as `"retarget"`; note it in the summary. |
+| `"strands"`          | Load `references/vendored/ai/design-ref-agentic-to-agentcore.md`.                                                                                                                                                                                |
+| `"undecided"`        | Treat as `"retarget"`; note it in the summary.                                                                                                                                                                                                   |
 
 The agentic ref ADDS agent infrastructure on top of the model-layer design (Parts 1–6 still
 run); it does not replace it.
@@ -100,16 +100,16 @@ each workload:
 
 1. Use `capability` to select the target class:
 
-   | Capability | Target |
-   | ---------- | ------ |
-   | `text_generation` / `structured_output` / `unknown` | Bedrock text/reasoning — apply the override hierarchy below |
-   | `image_generation` | Stability AI (Core / Ultra) |
-   | `embedding` | Amazon Titan Embed Text v2 |
-   | `speech_to_text` | Amazon Transcribe |
-   | `text_to_speech` | Amazon Polly |
-   | `document_extraction` | `target_aws_service: "textract"` — see `ai.md` (NOT a Bedrock model) |
-   | `image_analysis` | `target_aws_service: "rekognition"` — see `ai.md` |
-   | `speech_transcription` | `target_aws_service: "transcribe"` — see `ai.md` |
+   | Capability                                          | Target                                                               |
+   | --------------------------------------------------- | -------------------------------------------------------------------- |
+   | `text_generation` / `structured_output` / `unknown` | Bedrock text/reasoning — apply the override hierarchy below          |
+   | `image_generation`                                  | Stability AI (Core / Ultra)                                          |
+   | `embedding`                                         | Amazon Titan Embed Text v2                                           |
+   | `speech_to_text`                                    | Amazon Transcribe                                                    |
+   | `text_to_speech`                                    | Amazon Polly                                                         |
+   | `document_extraction`                               | `target_aws_service: "textract"` — see `ai.md` (NOT a Bedrock model) |
+   | `image_analysis`                                    | `target_aws_service: "rekognition"` — see `ai.md`                    |
+   | `speech_transcription`                              | `target_aws_service: "transcribe"` — see `ai.md`                     |
 
    For the three traditional-AI capabilities: leave `target_bedrock_model: null`, set
    `target_aws_service`, skip the override hierarchy, and set `honest_assessment:
@@ -168,14 +168,14 @@ it) → Mantle Responses API, minimal; `direct_sdk` → Bedrock SDK/Converse, me
 
 Map Azure AI infrastructure to AWS:
 
-| Azure resource | AWS equivalent |
-| -------------- | -------------- |
-| `Microsoft.CognitiveServices/accounts` (`kind: OpenAI`) | Bedrock model access (serverless, no infra) |
-| `Microsoft.CognitiveServices/accounts/deployments` | config source — the deployed model name is the mapping input, not a target |
-| `Microsoft.MachineLearningServices/workspaces` online endpoint | SageMaker Endpoint |
-| `Microsoft.MachineLearningServices` batch endpoint / job | SageMaker Batch Transform / training |
-| `Microsoft.Search/searchServices` (vector index for RAG) | OpenSearch Serverless or Bedrock Knowledge Base |
-| managed identity with AI data-plane role | IAM role with Bedrock/AI-service permissions (`inferred`) |
+| Azure resource                                                 | AWS equivalent                                                             |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `Microsoft.CognitiveServices/accounts` (`kind: OpenAI`)        | Bedrock model access (serverless, no infra)                                |
+| `Microsoft.CognitiveServices/accounts/deployments`             | config source — the deployed model name is the mapping input, not a target |
+| `Microsoft.MachineLearningServices/workspaces` online endpoint | SageMaker Endpoint                                                         |
+| `Microsoft.MachineLearningServices` batch endpoint / job       | SageMaker Batch Transform / training                                       |
+| `Microsoft.Search/searchServices` (vector index for RAG)       | OpenSearch Serverless or Bedrock Knowledge Base                            |
+| managed identity with AI data-plane role                       | IAM role with Bedrock/AI-service permissions (`inferred`)                  |
 
 ## Part 5: Code migration plan
 

@@ -20,13 +20,13 @@ gcp's Compute Model category.
 Resolve from the inventory first — a DETECTED row costs the user nothing to confirm, and a
 question that discovery could have answered is a question that should not have been asked.
 
-| Read from the inventory | Resolves |
-| ----------------------- | -------- |
-| every `Microsoft.Web/serverfarms` entry's `sku_name`, `worker_count`, `os_type` | the compute unit and its current capacity |
-| the `hosted_on` edges into each plan | how many apps share it — the input to Q-C2 |
-| any site's `linux_fx_version` containing `DOCKER\|` | the workload is already containerised |
-| every VM / VMSS `os_type` and `image_publisher` | whether Windows is present, which forces Q-C4 |
-| `Microsoft.ContainerService/managedClusters` present | Kubernetes is already in use |
+| Read from the inventory                                                         | Resolves                                      |
+| ------------------------------------------------------------------------------- | --------------------------------------------- |
+| every `Microsoft.Web/serverfarms` entry's `sku_name`, `worker_count`, `os_type` | the compute unit and its current capacity     |
+| the `hosted_on` edges into each plan                                            | how many apps share it — the input to Q-C2    |
+| any site's `linux_fx_version` containing `DOCKER\|`                             | the workload is already containerised         |
+| every VM / VMSS `os_type` and `image_publisher`                                 | whether Windows is present, which forces Q-C4 |
+| `Microsoft.ContainerService/managedClusters` present                            | Kubernetes is already in use                  |
 
 ## Step 2: The rows
 
@@ -46,9 +46,9 @@ Where should your App Service workloads run on AWS?
 [C] EKS — only if your team already runs Kubernetes
 ```
 
-**Consequence line for the sheet:** *Assuming Elastic Beanstalk → the managed-platform
+**Consequence line for the sheet:** _Assuming Elastic Beanstalk → the managed-platform
 posture you already pay for is preserved. Choose Fargate for direct container control, or
-EKS only if you already operate Kubernetes.*
+EKS only if you already operate Kubernetes._
 
 Why EB is the default and not Fargate: moving a PaaS workload to containers **during** a
 cloud migration changes two variables at once, and when something breaks afterwards there
@@ -71,9 +71,9 @@ docs, webhooks. On Azure they share the plan's capacity and cost one S1.
 [B] Split into separate environments per app
 ```
 
-**Consequence line:** *Keeping them together mirrors what you pay for today. Splitting
+**Consequence line:** _Keeping them together mirrors what you pay for today. Splitting
 gives each app its own environment and its own failure domain — and multiplies the compute
-line by the number of apps.*
+line by the number of apps._
 
 **N/A** for a plan hosting zero or one app. A zero-app plan gets no isolation row at all;
 it gets the idle-capacity finding instead.
@@ -93,15 +93,15 @@ present anywhere in the estate; PROPOSED otherwise.
 [B] Graviton (arm64) — roughly 20% cheaper for equivalent capacity
 ```
 
-**Consequence line:** *x86_64 is the default here because Azure estates carry Windows and
+**Consequence line:** _x86_64 is the default here because Azure estates carry Windows and
 .NET routinely. If your workloads are Linux with no x86-only dependency, Graviton reduces
-compute cost for the same capacity.*
+compute cost for the same capacity._
 
 **This default diverges from every other skill in this repo, deliberately** — gcp and
 heroku default to Graviton. `references/shared/graviton.md`'s escape path (Windows, .NET
 Framework, GPU/CUDA, RDS SQL Server) fires routinely on Azure fleets, and a recommendation
 that has to be withdrawn costs more trust than one never made. When the row is DETECTED,
-say *which* resource forced it.
+say _which_ resource forced it.
 
 ### Q-C4 — Traffic pattern
 
@@ -113,9 +113,9 @@ say *which* resource forced it.
 [C] Spiky — unpredictable bursts
 ```
 
-**Consequence line:** *Assuming steady load → sized from your current capacity with no
+**Consequence line:** _Assuming steady load → sized from your current capacity with no
 scheduled scaling. Business-hours or spiky patterns change the scaling policy and can
-lower the estimate materially.*
+lower the estimate materially._
 
 ### Q-C5 — Long-lived connections
 
@@ -129,8 +129,8 @@ Do any of these apps hold WebSocket or other long-lived connections?
 [B] Yes
 ```
 
-**Consequence line:** *Assuming none → standard ALB configuration. Long-lived connections
-change idle-timeout and target-group settings, and rule Lambda out for those workloads.*
+**Consequence line:** _Assuming none → standard ALB configuration. Long-lived connections
+change idle-timeout and target-group settings, and rule Lambda out for those workloads._
 
 ### Q-C6 — VM cutover strategy — **ESSENTIAL**
 
@@ -195,14 +195,14 @@ prints the difference.
 
 ## Who consumes these
 
-| Row | Consumer |
-| --- | -------- |
-| `compute_target` | `design-refs/compute.md` criterion 2.3, which **overrides** the operational-model default in 2.2 |
-| `isolation_split` | `design-infra.md`'s fan-in rule, and `design.md`'s postcondition on `Microsoft.Web/sites` entries |
-| `cpu_architecture` | `compute.md` § CPU Architecture, and Estimate's instance selection |
-| `traffic_pattern` | Estimate's scaling assumptions |
-| `long_lived_connections` | `compute.md`'s Lambda eliminator, and the ALB configuration in Generate |
-| `vm_cutover` | Generate's migration runbook shape |
+| Row                      | Consumer                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `compute_target`         | `design-refs/compute.md` criterion 2.3, which **overrides** the operational-model default in 2.2  |
+| `isolation_split`        | `design-infra.md`'s fan-in rule, and `design.md`'s postcondition on `Microsoft.Web/sites` entries |
+| `cpu_architecture`       | `compute.md` § CPU Architecture, and Estimate's instance selection                                |
+| `traffic_pattern`        | Estimate's scaling assumptions                                                                    |
+| `long_lived_connections` | `compute.md`'s Lambda eliminator, and the ALB configuration in Generate                           |
+| `vm_cutover`             | Generate's migration runbook shape                                                                |
 
 ## Status — build step 5
 

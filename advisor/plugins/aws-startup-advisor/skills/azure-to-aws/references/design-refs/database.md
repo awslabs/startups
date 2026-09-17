@@ -10,29 +10,29 @@ sizing.
 
 **For Postgres and MySQL Flexible Server, the availability answer selects the family, and
 it overrides whatever the rubric would have chosen.** Read it from
-`preferences.json` → **`data.availability`** — *not* `design_constraints.availability`,
+`preferences.json` → **`data.availability`** — _not_ `design_constraints.availability`,
 which is where gcp-to-aws keeps it and where this file wrongly looked until 2026-09-07.
 `clarify-database.md` writes it under `data`, and `schema-preferences.md` § data documents
 it there.
 
 > **Why that typo was dangerous rather than annoying.** Looking in the wrong place finds
 > nothing, and § the absent case below then says to default to RDS single-AZ — which is
-> the *same answer* the corpus produces, so every test stayed green. On an estate where
+> the _same answer_ the corpus produces, so every test stayed green. On an estate where
 > the customer answers `multi-az-ha` it silently produces RDS where Aurora was chosen,
 > and the artifact records the customer's answer faithfully next to a target that ignores
 > it. Capability run 4 found it by reading both files. This is a post-rubric override gate,
-not a criterion, and it is the cleanest lift in the whole port — gcp's Q6 maps across
-unchanged.
+> not a criterion, and it is the cleanest lift in the whole port — gcp's Q6 maps across
+> unchanged.
 
 | `data.availability` | Target (match the engine from the source) |
-| --------------------------------- | ----------------------------------------- |
-| `single-az`                       | **RDS PostgreSQL** / **RDS MySQL**        |
-| `multi-az`                        | **RDS** … **Multi-AZ**                    |
-| `multi-az-ha`                     | **Aurora** PostgreSQL / MySQL, Multi-AZ   |
-| `multi-region`                    | **Aurora Global Database**                |
+| ------------------- | ----------------------------------------- |
+| `single-az`         | **RDS PostgreSQL** / **RDS MySQL**        |
+| `multi-az`          | **RDS** … **Multi-AZ**                    |
+| `multi-az-ha`       | **Aurora** PostgreSQL / MySQL, Multi-AZ   |
+| `multi-region`      | **Aurora Global Database**                |
 
-**Why an override rather than a criterion:** availability is *never inferable from
-configuration*. A source `high_availability { mode = "ZoneRedundant" }` tells you what
+**Why an override rather than a criterion:** availability is _never inferable from
+configuration_. A source `high_availability { mode = "ZoneRedundant" }` tells you what
 they bought, not what they need — plenty of estates carry zone-redundancy nobody asked for
 because it was a default, and plenty of single-zone databases are load-bearing. Only the
 customer can answer it, so a rubric that inferred it from the source would be
@@ -50,29 +50,29 @@ way to see why.
 
 ## 2. Eliminators
 
-| Candidate | Eliminated when |
-| --------- | --------------- |
-| Aurora Serverless v2 | the workload needs a **fixed reserved capacity floor** below its minimum ACU billing granularity — a permanently-busy database is cheaper provisioned |
-| DynamoDB | the source uses **joins, transactions across arbitrary keys, or ad-hoc query patterns**. Cosmos Core → DynamoDB is a data-model migration; if the access pattern is relational, it is the wrong target regardless of the source being NoSQL |
-| ElastiCache Redis | the source uses **Redis modules** (RediSearch, RedisJSON, RedisTimeSeries) — no ElastiCache equivalent. MemoryDB does not add them either; this is a feature-parity finding, and the honest output names the gap |
-| Amazon Keyspaces | the source relies on **Cassandra materialized views or UDFs** |
-| RDS SQL Server | the source is a **Managed Instance** — specialist gate, never a rubric outcome |
+| Candidate            | Eliminated when                                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Aurora Serverless v2 | the workload needs a **fixed reserved capacity floor** below its minimum ACU billing granularity — a permanently-busy database is cheaper provisioned                                                                                       |
+| DynamoDB             | the source uses **joins, transactions across arbitrary keys, or ad-hoc query patterns**. Cosmos Core → DynamoDB is a data-model migration; if the access pattern is relational, it is the wrong target regardless of the source being NoSQL |
+| ElastiCache Redis    | the source uses **Redis modules** (RediSearch, RedisJSON, RedisTimeSeries) — no ElastiCache equivalent. MemoryDB does not add them either; this is a feature-parity finding, and the honest output names the gap                            |
+| Amazon Keyspaces     | the source relies on **Cassandra materialized views or UDFs**                                                                                                                                                                               |
+| RDS SQL Server       | the source is a **Managed Instance** — specialist gate, never a rubric outcome                                                                                                                                                              |
 
 ## 3. Per-engine routing
 
 Applied after the eliminators; the availability gate in §1 then overrides the family for
 the two Flexible Server engines.
 
-| Source                                                        | Target                                                        |
-| ------------------------------------------------------------- | ------------------------------------------------------------- |
-| `Microsoft.DBforPostgreSQL/flexibleServers`                    | RDS or Aurora PostgreSQL — §1 selects                          |
-| `Microsoft.DBforMySQL/flexibleServers`                         | RDS or Aurora MySQL — §1 selects                               |
+| Source                                                                   | Target                                                                                                                                                       |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Microsoft.DBforPostgreSQL/flexibleServers`                              | RDS or Aurora PostgreSQL — §1 selects                                                                                                                        |
+| `Microsoft.DBforMySQL/flexibleServers`                                   | RDS or Aurora MySQL — §1 selects                                                                                                                             |
 | `Microsoft.DBforPostgreSQL/servers`, `.../MySQL/servers` (Single Server) | same as Flexible, **plus** a finding: Single Server is retired on Azure, so the migration is also an upgrade and the source version may be below RDS's floor |
-| `Microsoft.Sql/servers/databases`                              | **RDS SQL Server** (owner decision 11.3). Carry the source tier — DTU or vCore — into `aws_config` as the sizing input |
-| `Microsoft.Sql/servers`                                        | the RDS instance hosting its databases; usually a config source rather than its own entry |
-| `Microsoft.DocumentDB/databaseAccounts` (Core / SQL API)       | **DynamoDB** — see §4                                          |
-| `Microsoft.Cache/redisEnterprise`                              | ElastiCache Redis, or MemoryDB when durability is required      |
-| `Microsoft.Search/searchServices`                              | routed to `analytics.md` (OpenSearch), not here                 |
+| `Microsoft.Sql/servers/databases`                                        | **RDS SQL Server** (owner decision 11.3). Carry the source tier — DTU or vCore — into `aws_config` as the sizing input                                       |
+| `Microsoft.Sql/servers`                                                  | the RDS instance hosting its databases; usually a config source rather than its own entry                                                                    |
+| `Microsoft.DocumentDB/databaseAccounts` (Core / SQL API)                 | **DynamoDB** — see §4                                                                                                                                        |
+| `Microsoft.Cache/redisEnterprise`                                        | ElastiCache Redis, or MemoryDB when durability is required                                                                                                   |
+| `Microsoft.Search/searchServices`                                        | routed to `analytics.md` (OpenSearch), not here                                                                                                              |
 
 The four non-Core Cosmos APIs are **fast-path rows**, not rubric decisions — Mongo →
 DocumentDB, Cassandra → Keyspaces, Gremlin → Neptune, Table → DynamoDB. The wire protocol

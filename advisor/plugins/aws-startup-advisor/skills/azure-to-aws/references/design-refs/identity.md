@@ -15,26 +15,26 @@ user-assigned managed identities are Direct Mappings, so most of this resolves i
 
 ## 1. Eliminators
 
-| Candidate | Eliminated when |
-| --------- | --------------- |
-| **Secrets Manager** | the material is a **key used for cryptographic operations** rather than a stored credential. A key that is wrapped, unwrapped or used to sign belongs in **KMS**; Secrets Manager stores bytes, it does not perform crypto |
-| **Secrets Manager** | the value is a **TLS certificate served by a load balancer**. That is **ACM** |
-| **Parameter Store** | the value needs automatic rotation with a rotation function. That is Secrets Manager |
-| **IAM user** | **ALWAYS, for a workload.** A managed identity becomes an IAM **role** assumed by the compute, never a long-lived access key. Emitting an IAM user with keys for a workload that had no keys is a security regression introduced by the migration |
+| Candidate           | Eliminated when                                                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Secrets Manager** | the material is a **key used for cryptographic operations** rather than a stored credential. A key that is wrapped, unwrapped or used to sign belongs in **KMS**; Secrets Manager stores bytes, it does not perform crypto                        |
+| **Secrets Manager** | the value is a **TLS certificate served by a load balancer**. That is **ACM**                                                                                                                                                                     |
+| **Parameter Store** | the value needs automatic rotation with a rotation function. That is Secrets Manager                                                                                                                                                              |
+| **IAM user**        | **ALWAYS, for a workload.** A managed identity becomes an IAM **role** assumed by the compute, never a long-lived access key. Emitting an IAM user with keys for a workload that had no keys is a security regression introduced by the migration |
 
 ## 2. Operational model
 
-| Source | Target | Why |
-| ------ | ------ | --- |
-| `Microsoft.KeyVault/vaults` | **Secrets Manager**, plus **KMS** if the vault has keys and **ACM** if it has certificates | Fast-path row. The split is by what the vault CONTAINS, which is why the row's note records whether a keys or certificates child was seen |
-| `Microsoft.KeyVault/vaults/secrets` | **no target** — names feed the parent vault | Fast-path skip. **Names only, never values** — the secret boundary in `extract-terraform.md` applies |
-| `Microsoft.KeyVault/vaults/keys` | **KMS key** on the parent's mapping | A key is a crypto object, not a stored string |
-| `Microsoft.KeyVault/vaults/certificates` | **ACM**, or Secrets Manager when the certificate is consumed by application code rather than terminated at a balancer | The consumer decides, and the consumer is visible in the cluster's edges |
-| `Microsoft.ManagedIdentity/userAssignedIdentities` | **IAM role** | Fast-path row |
-| `.../federatedIdentityCredentials` | **IRSA** or **EKS Pod Identity** on the parent role | Genuinely equivalent: a Kubernetes service account trades a token for cloud credentials on both sides |
-| System-assigned identity (a property, not a resource) | the compute resource's **instance profile** or **task role** | It has no `resources[]` entry of its own, so it lands in the compute entry's `aws_config` |
-| `Microsoft.Authorization/roleAssignments` | **no target** — IAM policy is authored | See § 3 |
-| `Microsoft.AppConfiguration/configurationStores` | **AppConfig**, or Parameter Store for plain key/value | Values are not read; the secret boundary applies to a config store too |
+| Source                                                | Target                                                                                                                | Why                                                                                                                                       |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `Microsoft.KeyVault/vaults`                           | **Secrets Manager**, plus **KMS** if the vault has keys and **ACM** if it has certificates                            | Fast-path row. The split is by what the vault CONTAINS, which is why the row's note records whether a keys or certificates child was seen |
+| `Microsoft.KeyVault/vaults/secrets`                   | **no target** — names feed the parent vault                                                                           | Fast-path skip. **Names only, never values** — the secret boundary in `extract-terraform.md` applies                                      |
+| `Microsoft.KeyVault/vaults/keys`                      | **KMS key** on the parent's mapping                                                                                   | A key is a crypto object, not a stored string                                                                                             |
+| `Microsoft.KeyVault/vaults/certificates`              | **ACM**, or Secrets Manager when the certificate is consumed by application code rather than terminated at a balancer | The consumer decides, and the consumer is visible in the cluster's edges                                                                  |
+| `Microsoft.ManagedIdentity/userAssignedIdentities`    | **IAM role**                                                                                                          | Fast-path row                                                                                                                             |
+| `.../federatedIdentityCredentials`                    | **IRSA** or **EKS Pod Identity** on the parent role                                                                   | Genuinely equivalent: a Kubernetes service account trades a token for cloud credentials on both sides                                     |
+| System-assigned identity (a property, not a resource) | the compute resource's **instance profile** or **task role**                                                          | It has no `resources[]` entry of its own, so it lands in the compute entry's `aws_config`                                                 |
+| `Microsoft.Authorization/roleAssignments`             | **no target** — IAM policy is authored                                                                                | See § 3                                                                                                                                   |
+| `Microsoft.AppConfiguration/configurationStores`      | **AppConfig**, or Parameter Store for plain key/value                                                                 | Values are not read; the secret boundary applies to a config store too                                                                    |
 
 ## 3. RBAC is authored, not translated
 
@@ -53,7 +53,7 @@ So:
 1. **Read** the assignment for its `identity_grant` edge — "app X reads storage Y" is real
    architectural information and clustering uses it.
 2. **Do not** emit an IAM policy document from it.
-3. Record the *intent* in the migration guide: the principal, the resource, and the access
+3. Record the _intent_ in the migration guide: the principal, the resource, and the access
    level, so a human authors the equivalent policy deliberately.
 4. `azurerm_role_assignment` is the one borderline case in the association-only class: it
    **does** have an ARM type, so it gets an inventory entry AND contributes its edge.

@@ -12,12 +12,12 @@ through `namespace_routing` because they have no row of their own.
 
 ## 1. Eliminators
 
-| Candidate | Eliminated when |
-| --------- | --------------- |
-| **EFS** | the share's `enabled_protocol` is **SMB**. EFS is NFS only — this is a protocol boundary, not a preference |
-| **FSx for Windows File Server** | the share's `enabled_protocol` is **NFS** |
-| **S3** | the workload needs **POSIX filesystem semantics** — byte-range writes in place, hard links, file locking. S3 is an object store, and an application that mounts a drive letter or a mount point is not doing object access |
-| **S3 Glacier / Deep Archive** | the data is read on a latency-sensitive path. Archive retrieval is minutes to hours |
+| Candidate                       | Eliminated when                                                                                                                                                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **EFS**                         | the share's `enabled_protocol` is **SMB**. EFS is NFS only — this is a protocol boundary, not a preference                                                                                                                 |
+| **FSx for Windows File Server** | the share's `enabled_protocol` is **NFS**                                                                                                                                                                                  |
+| **S3**                          | the workload needs **POSIX filesystem semantics** — byte-range writes in place, hard links, file locking. S3 is an object store, and an application that mounts a drive letter or a mount point is not doing object access |
+| **S3 Glacier / Deep Archive**   | the data is read on a latency-sensitive path. Archive retrieval is minutes to hours                                                                                                                                        |
 
 ## 2. The protocol rule (owner decision 11.5)
 
@@ -25,10 +25,10 @@ through `namespace_routing` because they have no row of their own.
 rubric row, because `enabled_protocol` is a property of the resource itself and there is
 no rubric left once you read it:
 
-| `enabled_protocol` | Target | Why |
-| ------------------ | ------ | --- |
-| `SMB` | **FSx for Windows File Server** | SMB shares are usually AD-joined, which lines up with the Windows weighting the rest of this skill assumes. FSx speaks SMB natively |
-| `NFS` | **EFS** | Direct protocol match |
+| `enabled_protocol` | Target                          | Why                                                                                                                                 |
+| ------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `SMB`              | **FSx for Windows File Server** | SMB shares are usually AD-joined, which lines up with the Windows weighting the rest of this skill assumes. FSx speaks SMB natively |
+| `NFS`              | **EFS**                         | Direct protocol match                                                                                                               |
 
 The row is here only so a reviewer can find the reasoning. Do not re-decide it.
 
@@ -40,13 +40,13 @@ is the one condition on the storage account row.
 
 Carried across, not re-decided:
 
-| Azure | AWS |
-| ----- | --- |
-| `access_tier = "Hot"` | S3 Standard |
-| `access_tier = "Cool"` | S3 Standard-IA |
-| `access_tier = "Cold"` | S3 Glacier Instant Retrieval |
-| Archive tier (per-blob) | S3 Glacier Flexible Retrieval or Deep Archive — the choice is a retrieval-time decision, so it is a finding, not a mapping |
-| `Microsoft.Storage/storageAccounts/managementPolicies` | S3 lifecycle configuration — rule shapes differ; carry the INTENT and say the rules were reauthored |
+| Azure                                                  | AWS                                                                                                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `access_tier = "Hot"`                                  | S3 Standard                                                                                                                |
+| `access_tier = "Cool"`                                 | S3 Standard-IA                                                                                                             |
+| `access_tier = "Cold"`                                 | S3 Glacier Instant Retrieval                                                                                               |
+| Archive tier (per-blob)                                | S3 Glacier Flexible Retrieval or Deep Archive — the choice is a retrieval-time decision, so it is a finding, not a mapping |
+| `Microsoft.Storage/storageAccounts/managementPolicies` | S3 lifecycle configuration — rule shapes differ; carry the INTENT and say the rules were reauthored                        |
 
 **`is_hns_enabled` (Data Lake Gen2) is a signal, not a tier.** A hierarchical-namespace
 account is usually an analytics data lake, so it belongs to whatever cluster the pipeline
@@ -58,12 +58,12 @@ rather than mapping to a lone bucket.
 `account_replication_type` maps to a durability posture, and two of the five have no
 direct counterpart:
 
-| Azure | AWS |
-| ----- | --- |
-| `LRS` | S3 Standard — single-region, multi-AZ by default |
-| `ZRS` | S3 Standard. Already how S3 behaves; no extra configuration and no extra cost |
+| Azure            | AWS                                                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LRS`            | S3 Standard — single-region, multi-AZ by default                                                                                                                                                            |
+| `ZRS`            | S3 Standard. Already how S3 behaves; no extra configuration and no extra cost                                                                                                                               |
 | `GRS` / `RA-GRS` | **S3 Cross-Region Replication**, which is an explicit configuration with its own storage and transfer cost. This is a NEW line item, not a free carry-over — Azure bundles it into the SKU and AWS does not |
-| `GZRS` | S3 + CRR, as GRS |
+| `GZRS`           | S3 + CRR, as GRS                                                                                                                                                                                            |
 
 Emit a `warnings[]` entry for any GRS/GZRS account, because the estimate has to gain a
 replication cost that the source's single SKU hid.
