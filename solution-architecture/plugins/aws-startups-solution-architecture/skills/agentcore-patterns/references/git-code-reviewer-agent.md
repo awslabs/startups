@@ -131,15 +131,74 @@ workflow triggered by a fork receives no secrets and no OIDC token.** It cannot
 assume a role, so it cannot invoke the runtime. This is the wiring that silently
 does not fire.
 
-| Trigger               | Has credentials on fork PRs | Note                                                                             |
-| --------------------- | --------------------------- | -------------------------------------------------------------------------------- |
-| `pull_request`        | no                          | Works only for same-repository branches                                          |
-| `pull_request_target` | yes                         | Runs in the base repo context. Checking out the fork head here leaks credentials |
-| `workflow_run`        | yes                         | Base-repo context, reads the PR through the API, never checks out fork code      |
+| Trigger               | Credentials on fork PRs | Needs maintainer approval on a first fork PR | `paths:` | Note                                                                 |
+| --------------------- | ----------------------- | -------------------------------------------- | -------- | -------------------------------------------------------------------- |
+| `pull_request`        | no                      | yes                                          | yes      | Works only for same-repository branches                              |
+| `pull_request_target` | yes                     | **no**                                       | yes      | Base-repo context. Checking out the fork head here leaks credentials |
+| `workflow_run`        | yes                     | inherits the triggering run's                | **no**   | Base-repo context, and depends on another workflow having succeeded  |
 
-`workflow_run` after the existing build is the safe default. Because the agent
-already reads through the API rather than checking anything out, moving between
-triggers is a workflow-file change rather than an agent rewrite.
+**Use `pull_request` for same-repo branches and `pull_request_target` for forks, with the
+two arms partitioned on head repository so nothing is reviewed twice.** That is one review
+per push on every pull request, including a first-time contributor's, with no maintainer
+action.
+
+The approval column is the one that decides this, and it is easy to miss. A fork
+`pull_request` run requires a maintainer to approve the workflow for a first-time
+contributor, and a `workflow_run` chained off that run inherits the wait. So a reviewer
+built on `workflow_run` does not review a first contribution until someone clicks, which
+is the case an external-contribution reviewer exists for. `workflow_run` also reviews
+nothing when the workflow it chains from fails, which is backwards: a broken pull request
+is one you especially want read. And it supports no `paths:` filter, so the scope test has
+to move into the job.
+
+`pull_request_target` is safe **only** while nothing from the fork is executed or expanded.
+Two invariants, both of which must survive every future edit:
+
+- **No checkout, and nothing else that fetches the pull request.** Not `actions/checkout`,
+  not a local composite action or reusable workflow, and not `gh pr checkout` or a bare
+  `git clone` in a `run:` body. The runtime reads the diff through the API instead.
+- **No fork-controlled value reaches a shell.** A title, body, branch name, label, or
+  login interpolated into a `run:` block is script injection with credentials attached.
+
+Assert both rather than documenting them, because losing either is a credential exposure
+that reads as an ordinary edit in review. Assert with an allowlist over the parsed YAML,
+not a search for bad patterns: sixteen hostile workflows were written against a two-grep
+version of this check and fifteen passed it. `uses: "actions/checkout@v4"` defeats an
+anchored pattern, a folded scalar defeats it again, and
+`${{ format('{0}', github.event.pull_request.title) }}` defeats a `[^}]*` class because the
+class cannot cross the `}` inside `{0}`. Enumerate what is permitted and fail closed on
+everything else.
+
+### The OIDC trust policy must pin the workflow, not just the repository
+
+This is the trap that is invisible from the workflow file. The OIDC `sub` claim is
+**identical** for `pull_request` and `pull_request_target`, so a trust policy conditioned
+on `sub` alone accepts a fork-triggered run the moment you add the fork arm, with no
+change on the cloud side and nothing to notice. A `sub`-only policy also lets _any_
+workflow in the repository assume the role.
+
+Pin `workflow_ref` to the reviewer's own path:
+
+```text
+token.actions.githubusercontent.com:workflow_ref:
+  <owner>/<repo>/.github/workflows/<reviewer>.yml@*
+```
+
+Leave the ref open. The two arms legitimately differ: a same-repo `pull_request` run loads
+the workflow from the pull request's own ref, while a fork's `pull_request_target` run
+always loads the default branch's copy, which a fork cannot modify. Pinning
+`@refs/heads/main` would break the same-repo arm; pinning the path is what stops every
+other workflow.
+
+Keep the role's own permissions minimal alongside this: one `InvokeAgentRuntime` action on
+one runtime ARN, and `statuses: write` as the only repository permission. Then the worst a
+fork can provoke is a runtime invocation and a status on its own commit, which is cost and
+noise rather than a path to credentials.
+
+One consequence to plan for: the fork arm always runs the default branch's copy of the
+workflow, so a change to the reviewer's own triggers cannot be exercised by the pull
+request that makes it. Verify the same-repo arm in the pull request and expect the fork
+path to start behaving only after merge.
 
 Two invocation details that fail with unhelpful errors: the session id has a
 minimum length (pad short ids), and the payload content type must be set

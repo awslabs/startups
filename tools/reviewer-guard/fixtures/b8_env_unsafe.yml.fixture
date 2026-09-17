@@ -1,0 +1,7 @@
+jobs:
+  review:
+    steps:
+      - env:
+          LABEL: ${{ github.event.pull_request.head.label }}
+        run: |
+          eval "echo $LABEL"

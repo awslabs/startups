@@ -1,12 +1,14 @@
 ---
 source_url: https://aws.amazon.com/startups/offers/amplitude
-title: "AWS Activate x Amplitude for Startups Scholarship"
+title: "Amplitude for Startups: Free Year of Growth Plan ($60k value)"
 ---
 
-## AWS Activate x Amplitude for Startups Scholarship
+## Amplitude for Startups: Free Year of Growth Plan ($60k value)
 
-### Estimated offer value: $50,000.00
+### Estimated offer value: $60,000.00
 
-Get one year of free access to the Amplitude Growth plan—including Analytics, Feature and Web Experimentation, Session Replay, and CDP—plus competitive discounts for life. All AWS activate customers are eligible for the scholarship program even if they fall outside of our Scholarship program criteria.
+Amplitude helps you build self-improving products with AI Agents, Analytics, Experimentation, Session Replay, and Data Governance—all in one platform. Turn every release into a continuous learning loop with a behavioral context and seamless integration into your AI workflows.
 
-Get all the tools you need to understand users and find product market fit—Analytics, Experimentation, Session Replay, Customer Data Platform (CDP)—with free access to the Amplitude Growth plan for one year.
+Find and scale product-market fit faster through a free year of the Growth Plan, plus competitive discounts for life. We transform user interactions into structured data for insights on engagement, conversion, and retention, so you can focus on building what matters.
+
+All AWS Activate startups not currently in the program are eligible, regardless of the eligibility criteria.

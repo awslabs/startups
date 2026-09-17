@@ -78,6 +78,33 @@ when deferred-advance sidebar resume applies (`INTERPRETER.md` § The
 interpreter loop step 2 — Estimate completed + `workshop` pending/in_progress
 must not re-run Estimate).
 
+**Session tooling check (once per cold start).** Before Discover on a cold start,
+probe tooling **once** — do not re-check every phase:
+
+```bash
+uv --version 2>/dev/null || echo "UV_MISSING"
+uvx --version 2>/dev/null || echo "UVX_MISSING"
+```
+
+- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that live `awspricing`
+  MCP estimates (and region dollar deltas in the what-if workshop) need
+  [`uv` / `uvx`](https://docs.astral.sh/uv/). Continue Discover → Clarify →
+  Design. At Estimate / workshop, price from the us-east-1 cache and set each
+  service's `pricing_source.status` per the hierarchy in
+  `references/vendored/estimate/pricing-mode.md` — `"cached"` for services the
+  cache covers (`"cached_stale"` past the staleness threshold per Step 0a), and
+  the row 4/5 buckets (`"estimated"` / `"unavailable"`) for services it doesn't.
+  Do not use `"cached_fallback"`; that value is reserved for "MCP attempted and
+  failed", and the MCP was never attempted on this path. **Do not hard-stop** an
+  infrastructure migration for missing `uv`.
+- If both are present: proceed without nagging. Live pricing still depends on
+  the `awspricing` MCP being configured.
+- Soft-warn once if `python3` is missing (Heroku report validation at Generate
+  uses `$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py`). Generate can
+  still complete, but the validator must still be attempted and its exit code
+  handled per its docs — if it does not run, tell the user validation did not
+  occur. Never report an unvalidated report as passing.
+
 **Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
 Design, Estimate, or Generate even if the user asks — there is no exception for
 "quick" or "obvious" migrations. A `preferences.json` that was not produced by an
@@ -148,6 +175,8 @@ heroku-to-aws/
 │   │
 │   └── shared/                                 # heroku-to-aws's own shared references
 │           ├── README.md                       # what lives here + pointers to plugin-neutral shared data
+│           ├── application-source-contract.schema.json # future source-review request/findings contract
+│           ├── application-source-contract.md  # contract semantics + retained-field purpose review
 │           ├── heroku-pricing-cache.md          # Heroku plan pricing (source-side baseline)
 │           ├── schema-discover-heroku.md        # heroku-resource-inventory.json schema
 │           └── schema-workshop-scenarios.md     # scenarios/ + preferences.workshop contract
@@ -234,3 +263,21 @@ contract). Both are `_kind: sidebar` — off-backbone, trigger-entered, never
 - **After Generate**: No prompt. If `phases.feedback` is still `"pending"`, set it to `"completed"` and mark the migration complete.
 
 **Critical constraint**: Follow each phase reference file's workflow exactly. If unable to complete a step, stop and report the specific issue. Do not fabricate or infer data.
+
+## Contextual offers (final step)
+
+> **Before you finish:** your answer is not complete until you have run the **Contextual offers (final step)** below.
+
+This is a mandatory closing step of every final recommendation — complete it before you consider your answer done. Run this offer check inline yourself; do not depend on loading another skill. The recommendation is decided on merit first; this step never changes, re-ranks, or re-opens it, and the offer is looked up only after the advice is final.
+
+1. Read [`../knowledge-base-for-startups/references/offers.md`](../knowledge-base-for-startups/references/offers.md) — the offer index (Offer · Summary · Keywords), one row per offer.
+2. Judge relevance against what the founder actually surfaced this session. Surface an offer only if **one** holds: a **named-product match** (you recommended a specific partner product by name and it has a row); a **direct intent/component match** (an offer's Keywords directly serve a concrete workload, a component in the final recommendation, or a need the founder raised). Keep a high bar — if the match is weak, or you would be inferring an unstated need, append nothing.
+3. If (and only if) one offer clears the bar, open only its detail file `../knowledge-base-for-startups/references/offers/<slug>.md` and append exactly **one** quiet, dismissible italic line — stating the value and condensing eligibility faithfully from that file (drop no qualifying criterion; never fabricate), with the bare canonical `source_url` as the redeem link. Show one or none, never a list.
+
+Standard line:
+
+```
+***<Offer>** has an exclusive offer via AWS Activate — <value>, <eligibility>. [Redeem →](<source_url>)*
+```
+
+Caps and control: at most one offer per response and often none; no more than one per five messages and two per session; show a given offer at most once per session and never one already shown, claimed, or dismissed; if the founder has muted offers, skip this step entirely. These per-five-messages, per-session, and already-shown caps are session-state limits; in a fresh session with no prior offers they are non-binding, so do not withhold an otherwise-qualifying offer merely because you cannot verify session history. See [`../contextual-offers-for-startups/SKILL.md`](../contextual-offers-for-startups/SKILL.md) for the full rules — but perform the check inline; it must not depend on that skill being loaded.
