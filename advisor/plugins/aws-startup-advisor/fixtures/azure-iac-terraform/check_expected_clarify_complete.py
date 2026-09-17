@@ -24,7 +24,7 @@ Exits 0 on PASS, 1 on FAIL. Stdlib only.
 
 from __future__ import annotations
 
-import subprocess
+import subprocess  # nosec B404 — fixture asserter; runs only the committed validator via sys.executable
 import sys
 from pathlib import Path
 
@@ -35,7 +35,7 @@ def main() -> int:
     if len(sys.argv) != 2:
         print(f"usage: {Path(__file__).name} <migration_run_dir>", file=sys.stderr)
         return 2
-    return subprocess.run(
+    return subprocess.run(  # nosec B603 — list args, no shell, committed script path only
         [
             sys.executable,
             str(HERE / "check_expected_clarify.py"),
