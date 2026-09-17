@@ -2246,9 +2246,11 @@ After all files are written:
    - Author `terraform/` to satisfy the Step 0 posture — that is what makes the policy check pass
      by construction.
    - **Invoke the `tf-best-practices` skill at its post-writing (Part 2) touchpoint**, passing
-     `$MIGRATION_DIR/terraform` as the target directory. Treat it as a **black box**: run the
-     checker it specifies and act on the exit code / `violations[]` it returns. The scoped shell
-     runs only that checker (`python3`/`uvx`), never `git` or arbitrary commands.
+     `$MIGRATION_DIR/terraform` as the target directory and `--json
+     $MIGRATION_DIR/validation-report.policy.json` as the temp verdict sidecar. Treat the skill
+     as a **black box**: run the checker it specifies and act on the exit code / `violations[]`
+     it returns. The scoped shell runs only that checker (`python3`/`uvx`), never `git` or
+     arbitrary commands.
    - **On `POLICY_FAIL`, apply the fix-and-retry loop (budget 3):** read `violations[]`, edit the
      named `.tf` sites via each `fix_hint` with the `Edit` tool, re-run the checker. This is where
      the `.tf` retry happens.
@@ -2260,6 +2262,9 @@ After all files are written:
      if the budget is exhausted). It MUST NOT invent `POLICY_OK` — the verdict is whatever the
      checker actually returned. A residual `POLICY_FAIL` then fails the read-only
      `_postconditions` `_assert` in `generate.md` (fail-closed).
+   - **Delete the `$MIGRATION_DIR/validation-report.policy.json` sidecar** once its verdict has
+     been merged into `validation-report.json`. It is a temp input to the merge, not a second
+     verdict artifact, and must not be left behind in the run directory.
    - If the host has **no shell at all** (an inline-only host where the `rwx` tier is inert AND no
      main-window shell is available), leave `policy_status: "not_run"`; the gate then fails closed.
      On a normal dispatched or inline run the checker runs here.

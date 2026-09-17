@@ -107,12 +107,12 @@ phase; there is one worker shell per capability tier, and the _phase to run_ is 
 in at dispatch time. The only thing baked into a worker is its tool allow-list — the
 tier. The plugin ships these under `agents/`, and the tier maps to the worker name:
 
-| `_agent` | Worker                                         | Allow-list                    |
-| -------- | ---------------------------------------------- | ----------------------------- |
-| `ro`     | `aws-startup-advisor:generic-phase-worker-ro`  | Read, Grep, Glob              |
-| `rw`     | `aws-startup-advisor:generic-phase-worker-rw`  | Read, Grep, Glob, Write, Edit |
+| `_agent` | Worker                                         | Allow-list                          |
+| -------- | ---------------------------------------------- | ----------------------------------- |
+| `ro`     | `aws-startup-advisor:generic-phase-worker-ro`  | Read, Grep, Glob                    |
+| `rw`     | `aws-startup-advisor:generic-phase-worker-rw`  | Read, Grep, Glob, Write, Edit       |
 | `rwx`    | `aws-startup-advisor:generic-phase-worker-rwx` | Read, Grep, Glob, Write, Edit, Bash |
-| `git`    | `aws-startup-advisor:generic-phase-worker-git` | rw + git                      |
+| `git`    | `aws-startup-advisor:generic-phase-worker-git` | rw + git                            |
 
 Only the workers a skill actually needs are shipped. Today
 `generic-phase-worker-rw` (for `discover`) and `generic-phase-worker-rwx` (for `generate`,
@@ -160,14 +160,14 @@ Read/Grep/Glob/Write/Edit tools cover it with room to spare, so `discover` stays
 **Generation is the exception.** After it authors `terraform/`, `generate` must run the
 read-only `tf-best-practices` policy checker over what it wrote (and apply the reported
 fixes) — that needs a shell to invoke `python3`/`uvx`. Rather than give `rw` a shell
-(which would hand *every* `rw` worker, including `discover`, arbitrary Bash), `generate`
+(which would hand _every_ `rw` worker, including `discover`, arbitrary Bash), `generate`
 runs at a distinct tier, **`rwx`** = `rw` + a **scoped** shell. The scope is the point:
 the `rwx` worker's only sanctioned command is the checker (`python3 .../validate-terraform-policy.py`
 or the `uvx` equivalent) — never `git`, never the network, never arbitrary shell. Because
 running Python on Claude Code goes through the `Bash` tool (there is no separate
 interpreter tool), the `rwx` worker's `tools:` lists `Bash`, and the command scope is held
 two ways: host permission rules where available (e.g. `Bash(python3:*)` / `Bash(uvx:*)`)
-and, always, the worker prompt's binding instruction. Note this softens the tier *ordering*
+and, always, the worker prompt's binding instruction. Note this softens the tier _ordering_
 (an `rwx` shell could in principle reach `git`) but not any real boundary the platform
 enforced — the main window, and an inline-only host, already run at full access. `git`
 remains a separate tier for phases whose explicit purpose is mutating repo history.
@@ -222,13 +222,13 @@ than inline), just a smaller and different one than the raw output size suggests
 
 ## Files this touches
 
-| File                                               | What it holds                                                    |
-| -------------------------------------------------- | ---------------------------------------------------------------- |
-| `skills/shared/dsl/INTERPRETER.md` § `_exec`       | the runtime dispatch contract (the authority)                    |
-| `tools/frontmatter-validator/types.ts`, `check.ts` | the typed model, closed vocab, and structural checks             |
-| `agents/generic-phase-worker-rw.md`                | the generic `rw` worker shell (phase passed at dispatch)         |
-| `agents/generic-phase-worker-rwx.md`               | the generic `rwx` worker (rw + scoped shell for the tf checker)  |
-| `skills/heroku-to-aws/.../discover/discover.md`    | first consumer — `_exec: { _agent: rw }` + `_interactive: false` |
+| File                                               | What it holds                                                      |
+| -------------------------------------------------- | ------------------------------------------------------------------ |
+| `skills/shared/dsl/INTERPRETER.md` § `_exec`       | the runtime dispatch contract (the authority)                      |
+| `tools/frontmatter-validator/types.ts`, `check.ts` | the typed model, closed vocab, and structural checks               |
+| `agents/generic-phase-worker-rw.md`                | the generic `rw` worker shell (phase passed at dispatch)           |
+| `agents/generic-phase-worker-rwx.md`               | the generic `rwx` worker (rw + scoped shell for the tf checker)    |
+| `skills/heroku-to-aws/.../discover/discover.md`    | first consumer — `_exec: { _agent: rw }` + `_interactive: false`   |
 | `skills/heroku-to-aws/.../generate/generate.md`    | second consumer — `_exec: { _agent: rwx }` (validates in-fragment) |
 
 ---

@@ -289,12 +289,12 @@ tier, whose only baked-in trait is its tool allow-list. The PHASE it runs is pas
 in at dispatch time, so a single shell serves every phase at that tier. The plugin
 ships these workers under `agents/`; the tier maps to the worker name:
 
-| `_agent` | Worker to dispatch                             | Allow-list (the tier)         |
-| -------- | ---------------------------------------------- | ----------------------------- |
-| `ro`     | `aws-startup-advisor:generic-phase-worker-ro`  | Read, Grep, Glob              |
-| `rw`     | `aws-startup-advisor:generic-phase-worker-rw`  | Read, Grep, Glob, Write, Edit |
+| `_agent` | Worker to dispatch                             | Allow-list (the tier)               |
+| -------- | ---------------------------------------------- | ----------------------------------- |
+| `ro`     | `aws-startup-advisor:generic-phase-worker-ro`  | Read, Grep, Glob                    |
+| `rw`     | `aws-startup-advisor:generic-phase-worker-rw`  | Read, Grep, Glob, Write, Edit       |
 | `rwx`    | `aws-startup-advisor:generic-phase-worker-rwx` | Read, Grep, Glob, Write, Edit, Bash |
-| `git`    | `aws-startup-advisor:generic-phase-worker-git` | rw + git                      |
+| `git`    | `aws-startup-advisor:generic-phase-worker-git` | rw + git                            |
 
 (Only the workers a skill actually needs are shipped. A phase may only name a tier
 whose worker file is present on disk — CI rejects an `_exec._agent` that names a tier
@@ -343,12 +343,12 @@ not. (See the platform-asymmetry note below.)
 `_agent` names the capability tier the dispatched work runs at. The tiers are an
 ordered, closed vocabulary (least → most privileged):
 
-| Tier  | Capabilities                                    | Use for                                         |
-| ----- | ----------------------------------------------- | ----------------------------------------------- |
-| `ro`  | read-only (Read / Grep / Glob / read-only Bash) | analysis-only phases that produce NO artifact   |
-| `rw`  | `ro` + Write / Edit (file creation in the run)  | a phase that writes its `_produces` artifact(s) |
-| `rwx` | `rw` + a scoped shell (run the tf-best-practices policy checker); no `git`  | a producing phase that must run the Terraform policy checker in-fragment |
-| `git` | `rw` + git operations (commit / branch / push)  | a phase that mutates the user's repo history    |
+| Tier  | Capabilities                                                               | Use for                                                                  |
+| ----- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `ro`  | read-only (Read / Grep / Glob / read-only Bash)                            | analysis-only phases that produce NO artifact                            |
+| `rw`  | `ro` + Write / Edit (file creation in the run)                             | a phase that writes its `_produces` artifact(s)                          |
+| `rwx` | `rw` + a scoped shell (run the tf-best-practices policy checker); no `git` | a producing phase that must run the Terraform policy checker in-fragment |
+| `git` | `rw` + git operations (commit / branch / push)                             | a phase that mutates the user's repo history                             |
 
 **Derive the minimum, then declare it.** A phase that `_produces` any artifact does
 write work, so it needs at least `rw`; declaring `ro` on a producing phase is a
