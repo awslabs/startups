@@ -64,7 +64,7 @@ The AgentCore CLI (`agentcore init` → `agentcore deploy`) is fast for prototyp
 
 Only adopt AgentCore for these specific capabilities when you actually need them:
 
-1. **Cedar policy enforcement on tool calls** — building authorization logic per-tool is error-prone
+1. **Cedar policy enforcement on tool calls and Memory access** — AgentCore supports fine-grained access control (FGAC) for supported Memory operations through a Gateway and Cedar policies. For JWT-claim-based user or tenant isolation, configure OAuth (JWT) authentication and enforce Cedar policies that bind actor or namespace access to verified claims. IAM-authenticated callers can also be governed by Cedar using their IAM identity. `BatchCreateMemoryRecords`, `BatchUpdateMemoryRecords`, and `BatchDeleteMemoryRecords` are outside Cedar FGAC; IAM policies can allow or deny each batch operation as a whole. ([AWS documentation](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory-gateway-fgac.html); Memory FGAC guidance verified 2026-09-16.)
 2. **Managed OAuth token lifecycle** — refresh tokens, secret rotation, multi-provider
 3. **Cross-session memory with automatic summarization** — LTM extraction is non-trivial to build
 4. **Built-in observability (OTel → X-Ray/CloudWatch)** — saves 1-2 weeks of instrumentation work
