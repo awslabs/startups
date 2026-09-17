@@ -34,13 +34,13 @@ in Estimate rather than a Clarify question — see `estimate-infra.md`).
 Resolve from discovery first — a DETECTED row costs the user nothing to confirm, and a
 question discovery could have answered is a question that should not have been asked.
 
-| Read from discovery                                                                            | Resolves                                                                     |
-| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| GCP regions across all PRIMARY compute/database resources in `gcp-resource-inventory.json`       | single-region vs multi-region — the input to Q1 / Q1b                        |
-| `billing-profile.json → summary.total_monthly_spend`                                              | GCP spend band (Q3)                                                          |
-| `billing-profile.json → commitments.has_active_cuds`                                              | whether Q3.5 fires at all                                                    |
-| each `google_sql_database_instance`'s `availability_type` / `config.availability_type`            | context for the availability question (Q6) — **never the answer**, same rule as Azure |
-| Cloud Run `min_instance_count` / `min_instances` (context only, not extracted here — see `clarify-compute.md` Q10) | whether Category C's traffic question can auto-resolve                       |
+| Read from discovery                                                                                                | Resolves                                                                              |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| GCP regions across all PRIMARY compute/database resources in `gcp-resource-inventory.json`                         | single-region vs multi-region — the input to Q1 / Q1b                                 |
+| `billing-profile.json → summary.total_monthly_spend`                                                               | GCP spend band (Q3)                                                                   |
+| `billing-profile.json → commitments.has_active_cuds`                                                               | whether Q3.5 fires at all                                                             |
+| each `google_sql_database_instance`'s `availability_type` / `config.availability_type`                             | context for the availability question (Q6) — **never the answer**, same rule as Azure |
+| Cloud Run `min_instance_count` / `min_instances` (context only, not extracted here — see `clarify-compute.md` Q10) | whether Category C's traffic question can auto-resolve                                |
 
 ## Step 2: The rows
 
@@ -79,12 +79,12 @@ to the spend band below and **skip Q3** when unambiguous (`chosen_by: "extracted
 billing is absent or ambiguous, ask Q3.
 
 | Monthly USD   | `gcp_monthly_spend` |
-| ------------- | -------------------- |
-| < 1,000       | `"<$1K"`              |
-| 1,000–4,999   | `"$1K-$5K"`           |
-| 5,000–19,999  | `"$5K-$20K"`          |
-| 20,000–99,999 | `"$20K-$100K"`        |
-| ≥ 100,000     | `">$100K"`            |
+| ------------- | ------------------- |
+| < 1,000       | `"<$1K"`            |
+| 1,000–4,999   | `"$1K-$5K"`         |
+| 5,000–19,999  | `"$5K-$20K"`        |
+| 20,000–99,999 | `"$20K-$100K"`      |
+| ≥ 100,000     | `">$100K"`          |
 
 **Rationale:** Total GCP spend is the primary input for ARR estimation, which determines
 credits eligibility tier. Also provides a sanity check for cost estimates when billing data is
@@ -106,12 +106,12 @@ extraction was skipped due to ambiguity, show:
 > Your billing data shows ~$[total_monthly_spend]/month. Does this match your expectation?
 
 | Answer                 | Recommendation Impact                                                                              |
-| ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| < $1,000/month         | Entry-tier migration funding programs may apply; cost estimates use conservative ranges             |
-| $1,000–$5,000/month    | Migration funding review may apply; cost estimates use mid-range assumptions                        |
-| $5,000–$20,000/month   | Migration funding review may apply; reserved pricing options are evaluated in cost recommendations  |
-| $20,000–$100,000/month | Migration funding and support program review may apply; savings commitment options are evaluated    |
-| > $100,000/month       | Enterprise migration program review may apply; dedicated migration support path may be recommended  |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| < $1,000/month         | Entry-tier migration funding programs may apply; cost estimates use conservative ranges            |
+| $1,000–$5,000/month    | Migration funding review may apply; cost estimates use mid-range assumptions                       |
+| $5,000–$20,000/month   | Migration funding review may apply; reserved pricing options are evaluated in cost recommendations |
+| $20,000–$100,000/month | Migration funding and support program review may apply; savings commitment options are evaluated   |
+| > $100,000/month       | Enterprise migration program review may apply; dedicated migration support path may be recommended |
 
 Interpret:
 
@@ -151,13 +151,13 @@ compare against GCP list price or committed rate.
 > 6. I plan to let them expire and not renew
 
 | Answer                        | Recommendation Impact                                                                                                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Expire within 6 months        | Migration timing favorable — plan migration to coincide with CUD expiration for clean cost transition                  |
-| Expire in 6–12 months         | Consider phased migration starting now; some overlap cost is acceptable for operational benefits                        |
-| More than 12 months remaining | Factor CUD overlap cost into ROI analysis; migration still viable if operational benefits justify dual-payment period    |
-| Not sure when they expire     | Recommend customer check GCP console (Billing → Commitments) before finalizing migration timeline                       |
-| No active CUDs                 | No commitment overlap concern; migrate on any timeline                                                                  |
-| Plan to let them expire       | Align migration completion with CUD expiration date for optimal cost transition                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Expire within 6 months        | Migration timing favorable — plan migration to coincide with CUD expiration for clean cost transition                 |
+| Expire in 6–12 months         | Consider phased migration starting now; some overlap cost is acceptable for operational benefits                      |
+| More than 12 months remaining | Factor CUD overlap cost into ROI analysis; migration still viable if operational benefits justify dual-payment period |
+| Not sure when they expire     | Recommend customer check GCP console (Billing → Commitments) before finalizing migration timeline                     |
+| No active CUDs                | No commitment overlap concern; migrate on any timeline                                                                |
+| Plan to let them expire       | Align migration completion with CUD expiration date for optimal cost transition                                       |
 
 Interpret:
 
@@ -196,9 +196,9 @@ other way.
 `config.availability_type`):
 
 | GCP value  | `availability` extracted |
-| ---------- | -------------------------- |
-| `ZONAL`    | `"single-az"`               |
-| `REGIONAL` | `"multi-az"`                |
+| ---------- | ------------------------ |
+| `ZONAL`    | `"single-az"`            |
+| `REGIONAL` | `"multi-az"`             |
 
 Resolve this question only when **all** Cloud SQL PostgreSQL/MySQL instances agree on the
 same mapped value. `multi-az-ha` and `multi-region` are **never** auto-extracted — those
@@ -262,7 +262,7 @@ briefly and migrated with native tools — without one, live replication via DMS
 > 5. I don't know
 
 | Answer         | Recommendation Impact                                                                                                                                                                                                                                       |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Weekly window  | Standard cutover with DNS switchover during window; **pg_dump/pg_restore** for PostgreSQL <10GB; **pgcopydb** for larger databases — parallel copying cuts migration time significantly; no DMS licensing, no replication lag risk                          |
 | Monthly window | Cutover timed to monthly window; pg_dump/pg_restore or **pgcopydb** depending on DB size; blue/green for application layer                                                                                                                                  |
 | Zero downtime  | **AWS DMS required** for live database replication; blue/green deployment for application layer; **RDS blue/green deployments** (RDS path per Q6) or **Aurora blue/green deployments** (Aurora path per Q6); Route 53 weighted routing for traffic shifting |
@@ -310,16 +310,16 @@ Azure's fragment: whether it is a question at all depends on which compute is pr
 
 ## Who consumes these
 
-| Row                  | Consumer                                                                                    |
-| --------------------- | --------------------------------------------------------------------------------------------- |
-| `target_region`       | Design's region selection; every downstream cost figure                                      |
-| `user_geography`      | Design's CDN / Route 53 strategy, and the availability question's Catastrophic branch         |
-| `compliance`          | Design's service catalog, region gate, and security-baseline defaults                         |
-| `availability`        | `clarify-database.md`'s RDS-vs-Aurora family selection (post-rubric override)                 |
-| `compute`             | `clarify-compute.md`'s Q7b/Q8 early-exit check                                                |
-| `cutover_strategy`    | Generate's migration runbook shape, and the DMS-versus-pg_dump tooling choice                  |
-| `gcp_monthly_spend`   | Estimate's migrate-vs-stay comparison and Activate credits tier                                |
-| `cud_status`          | Estimate's commitment-overlap ROI framing                                                      |
+| Row                 | Consumer                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `target_region`     | Design's region selection; every downstream cost figure                               |
+| `user_geography`    | Design's CDN / Route 53 strategy, and the availability question's Catastrophic branch |
+| `compliance`        | Design's service catalog, region gate, and security-baseline defaults                 |
+| `availability`      | `clarify-database.md`'s RDS-vs-Aurora family selection (post-rubric override)         |
+| `compute`           | `clarify-compute.md`'s Q7b/Q8 early-exit check                                        |
+| `cutover_strategy`  | Generate's migration runbook shape, and the DMS-versus-pg_dump tooling choice         |
+| `gcp_monthly_spend` | Estimate's migrate-vs-stay comparison and Activate credits tier                       |
+| `cud_status`        | Estimate's commitment-overlap ROI framing                                             |
 
 ## Status — build step 5 (restructure)
 

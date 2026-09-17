@@ -46,11 +46,11 @@ Present these to the user so they can self-select accurately:
 > 4. CATASTROPHIC — Regulatory, safety, or major financial consequences per minute of downtime
 > 5. I don't know
 
-| Answer            | Recommendation Impact                                                                                                                                                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Inconvenient      | Single-AZ RDS acceptable, standard ECS/EKS deployment, no special HA requirements                                                                                                                                                                      |
-| Significant Issue | Multi-AZ RDS required, ALB with health checks, auto-scaling groups                                                                                                                                                                                     |
-| Mission-Critical  | Aurora Multi-AZ (higher availability than RDS), multi-AZ mandatory, Route 53 health checks; single-region with fast failover is sufficient for most mission-critical workloads                                                                         |
+| Answer            | Recommendation Impact                                                                                                                                                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inconvenient      | Single-AZ RDS acceptable, standard ECS/EKS deployment, no special HA requirements                                                                                                                                                                                |
+| Significant Issue | Multi-AZ RDS required, ALB with health checks, auto-scaling groups                                                                                                                                                                                               |
+| Mission-Critical  | Aurora Multi-AZ (higher availability than RDS), multi-AZ mandatory, Route 53 health checks; single-region with fast failover is sufficient for most mission-critical workloads                                                                                   |
 | Catastrophic      | If users are global: Aurora Global Database + active-active multi-region + Route 53 failover routing; if users are single/multi-region: Aurora Multi-AZ with aggressive RTO/RPO targets is sufficient — global infrastructure not warranted without global users |
 
 ### Interpret — RDS vs Aurora family selection

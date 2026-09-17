@@ -35,10 +35,10 @@ from-scratch design.
 > 3. Global (users worldwide, latency critical)
 > 4. I don't know
 
-| Answer        | Recommendation Impact                                                                                                                                                                                                                     |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single region | Deploy in closest AWS region to users; standard Route 53 routing                                                                                                                                                                          |
-| Multi-region  | Primary region closest to majority; CloudFront for static assets and API caching; Route 53 latency-based routing — multi-region infrastructure deferred to the availability question                                                    |
+| Answer        | Recommendation Impact                                                                                                                                                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single region | Deploy in closest AWS region to users; standard Route 53 routing                                                                                                                                                                                                |
+| Multi-region  | Primary region closest to majority; CloudFront for static assets and API caching; Route 53 latency-based routing — multi-region infrastructure deferred to the availability question                                                                            |
 | Global        | Primary region by largest user concentration; CloudFront globally distributed; Route 53 geolocation routing — Aurora Global Database and multi-region compute only if the availability answer is Catastrophic AND write latency is a confirmed hard requirement |
 
 ### Interpret
@@ -60,13 +60,13 @@ Each skill's `clarify-global.md` (or equivalent) fills in:
 1. **The region-mapping table** — GCP maps GCP regions to AWS regions from
    inventory; Azure maps Azure regions to AWS regions via
    `knowledge/design/azure-region-map.json`. This file has no opinion on the
-   mapping table itself, only on the question that decides *when* a single
+   mapping table itself, only on the question that decides _when_ a single
    answer suffices versus when geography needs asking directly.
 2. **Auto-extraction / skip rule** — when the estate's resources all agree on
    one source-cloud region, a skill MAY treat that as `user_geography:
    "single-region"` with `chosen_by: "extracted"` and skip presenting this
    question, PROVIDED the skill also asks (or has already asked) where the
-   *users* are when the estate spans regions — a single Azure/GCP region does
+   _users_ are when the estate spans regions — a single Azure/GCP region does
    not, by itself, prove users are single-region; a skill that skips outright
    on region-count alone must say so as a documented shortcut, not silently
    claim `chosen_by: "extracted"` for the geography row.

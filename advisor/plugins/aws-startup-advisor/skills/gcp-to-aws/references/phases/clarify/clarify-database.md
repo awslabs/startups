@@ -186,11 +186,11 @@ re-asked or re-resolved per database category.
 
 ## Who consumes these
 
-| Row                 | Consumer                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| `database_traffic`   | Design's read-replica / write-capacity sizing, within the family `availability` chose |
-| `db_io_workload`     | Design's storage type selection (gp3 / io2 / Provisioned IOPS / I/O-Optimized)         |
-| `db_size`            | Generate's migration tooling selection (pg_dump / pgcopydb / DMS)                      |
+| Row                | Consumer                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| `database_traffic` | Design's read-replica / write-capacity sizing, within the family `availability` chose |
+| `db_io_workload`   | Design's storage type selection (gp3 / io2 / Provisioned IOPS / I/O-Optimized)        |
+| `db_size`          | Generate's migration tooling selection (pg_dump / pgcopydb / DMS)                     |
 
 ## Status — build step 5 (restructure)
 

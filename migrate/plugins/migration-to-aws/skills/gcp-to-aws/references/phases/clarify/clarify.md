@@ -93,13 +93,13 @@ Two GCP-specific mechanisms that no sibling skill has:
 
 ## Category Reference Files
 
-| File                  | Category                                 | Questions                 | Loaded When                                     |
-| ---------------------- | ------------------------------------------- | ---------------------------- | -------------------------------------------------- |
-| `clarify-global.md`   | A — Global/Strategic                     | Q1–Q7                     | Always                                             |
-| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q7b–Q11b                  | Compute or billing-source resources present         |
-| `clarify-database.md` | D — Database                              | Q12–Q13b                  | Database resources present                         |
-| `clarify-ai.md`       | F — AI/Bedrock, G — Agentic, H — Programs | Q14–Q27                   | `ai-workload-profile.json` exists                  |
-| `clarify-ai-only.md`  | _(standalone)_                            | Q1–Q11 (+ Q1.5 compliance) | AI-only migration (no infrastructure artifacts)     |
+| File                  | Category                                  | Questions                  | Loaded When                                     |
+| --------------------- | ----------------------------------------- | -------------------------- | ----------------------------------------------- |
+| `clarify-global.md`   | A — Global/Strategic                      | Q1–Q7                      | Always                                          |
+| `clarify-compute.md`  | B — Config Gaps, C — Compute              | Q7b–Q11b                   | Compute or billing-source resources present     |
+| `clarify-database.md` | D — Database                              | Q12–Q13b                   | Database resources present                      |
+| `clarify-ai.md`       | F — AI/Bedrock, G — Agentic, H — Programs | Q14–Q27                    | `ai-workload-profile.json` exists               |
+| `clarify-ai-only.md`  | _(standalone)_                            | Q1–Q11 (+ Q1.5 compliance) | AI-only migration (no infrastructure artifacts) |
 
 ## Status — build step 5 (restructure)
 

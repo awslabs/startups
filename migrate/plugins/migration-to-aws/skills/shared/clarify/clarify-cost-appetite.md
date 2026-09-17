@@ -23,7 +23,7 @@ instead of GCP's silently-disabled-by-default right-sizing toggle.
 > How aggressively should we right-size your AWS design versus your current capacity?
 >
 > [A] Conservative — like-for-like capacity, lowest risk
-> [B] Balanced — right-size where measured data supports it     (default)
+> [B] Balanced — right-size where measured data supports it (default)
 > [C] Aggressive — smallest defensible footprint
 
 **Consequence line:** _Balanced right-sizes only where measurement supports it.

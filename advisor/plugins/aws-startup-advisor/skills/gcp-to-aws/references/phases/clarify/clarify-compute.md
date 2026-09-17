@@ -316,14 +316,14 @@ fill inventory gaps, not design constraints, and Category B and Category C never
 
 ## Who consumes these
 
-| Row                          | Consumer                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------------ |
-| `compute_model`                | Design's App Engine → Elastic Beanstalk/Fargate/Lambda routing decision       |
-| `kubernetes`                   | Design's GKE → EKS vs ECS Fargate routing decision                            |
-| `websocket`                    | Design's ALB configuration (WebSocket support)                                |
-| `cloud_run_traffic_pattern`    | Estimate's migrate-vs-stay analysis for Cloud Run                             |
-| `cloud_run_monthly_spend`      | Estimate's migrate-vs-stay analysis for Cloud Run                             |
-| `cpu_architecture`             | Design's instance-family selection; Estimate's pricing; the Workshop sheet     |
+| Row                         | Consumer                                                                   |
+| --------------------------- | -------------------------------------------------------------------------- |
+| `compute_model`             | Design's App Engine → Elastic Beanstalk/Fargate/Lambda routing decision    |
+| `kubernetes`                | Design's GKE → EKS vs ECS Fargate routing decision                         |
+| `websocket`                 | Design's ALB configuration (WebSocket support)                             |
+| `cloud_run_traffic_pattern` | Estimate's migrate-vs-stay analysis for Cloud Run                          |
+| `cloud_run_monthly_spend`   | Estimate's migrate-vs-stay analysis for Cloud Run                          |
+| `cpu_architecture`          | Design's instance-family selection; Estimate's pricing; the Workshop sheet |
 
 ## Status — build step 5 (restructure)
 

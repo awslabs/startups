@@ -28,10 +28,10 @@ question instead of having their hard constraint recognized up front.
 > 2. No, AWS-only is acceptable
 > 3. I don't know
 
-| Answer                    | Recommendation Impact                                                                                                |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Answer                    | Recommendation Impact                                                                                                                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Yes, multi-cloud required | **Immediate EKS recommendation** — Kubernetes is the only portable abstraction layer. Skip the Kubernetes-sentiment / compute-target question. Container-orchestration-eligible PaaS compute (Cloud Run, App Engine, App Service) routes to EKS too, overriding its normal default target. |
-| No, AWS-only acceptable   | Full compute decision tree continues — EKS vs the simpler managed-container option is evaluated based on team sentiment / detected signals |
+| No, AWS-only acceptable   | Full compute decision tree continues — EKS vs the simpler managed-container option is evaluated based on team sentiment / detected signals                                                                                                                                                 |
 
 ### Interpret
 
