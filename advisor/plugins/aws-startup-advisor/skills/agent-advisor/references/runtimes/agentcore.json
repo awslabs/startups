@@ -56,6 +56,12 @@
       "verify_via_mcp": true
     },
     {
+      "key": "identity_consent_portal_regions",
+      "verification_key": "agentcore.identity_oauth",
+      "value": "all commercial regions where AgentCore Identity is available",
+      "verify_via_mcp": true
+    },
+    {
       "key": "io_wait_billing",
       "verification_key": "agentcore.io_wait_billing",
       "value": "verify current I/O-wait billing behavior (microVMs compute type only)",
