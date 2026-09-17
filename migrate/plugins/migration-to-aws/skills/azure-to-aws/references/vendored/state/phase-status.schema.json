@@ -20,10 +20,25 @@
       "type": "string",
       "description": "The phase to run next: a declared phase name, or the 'complete' terminal. Optional but recommended; when present it is authoritative for phase selection."
     },
-    "run_mode": {
+"run_mode": {
       "type": "string",
       "enum": ["decide", "decide_and_execute"],
       "description": "OPTIONAL, and only meaningful for a skill whose artifact-generating phase is opt-in. 'decide' = the run has produced a design and a cost estimate and stops there. 'decide_and_execute' = the user chose, at the skill's post-Estimate decision gate, to also generate migration artifacts. A skill that gates Generate on this MUST write 'decide_and_execute' BEFORE loading its generate phase, so a session that dies mid-Generate resumes as an Execute run rather than re-asking. An ABSENT run_mode is not consent: it means the question has not been put to the user yet. Skills with an unconditional Generate omit this key entirely; that is why it is optional rather than defaulted."
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Random UUID minted once at _init and never changed. Stable across pause/resume and, unlike migration_id, carries no timestamp. The run's identifier for telemetry events and for the plugin-to-web handoff."
+    },
+    "owning_skill": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "description": "Telemetry identifier of the skill that owns this run (the skill directory name in upper case with hyphens as underscores, e.g. GCP_TO_AWS), written at _init. Telemetry attributes events to this key; a run without it emits nothing."
+    },
+    "initiated_by": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "description": "Identifier of the skill that invoked this run, when another skill did (e.g. LLM_TO_BEDROCK delegating to GCP_TO_AWS). Optional; sent as initiatingSkill when it names a migration skill."
     },
     "phases": {
       "type": "object",
