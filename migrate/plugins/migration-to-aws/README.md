@@ -195,7 +195,7 @@ It enforces a set of fail-open-on-ambiguity rules (internet-facing ALB TLS termi
 python3 skills/tf-best-practices/scripts/validate-terraform-policy.py ./terraform --json verdict.json
 ```
 
-The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_hint` for wiring into your own pipeline. For the authoring posture rules and the full rule list, see [skills/tf-best-practices/SKILL.md](skills/tf-best-practices/SKILL.md). (Scope note: `gcp-to-aws` is the only in-tree consumer today; direct standalone use is supported but not yet wired into other skills.)
+The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_hint` for wiring into your own pipeline. For the authoring posture rules and the full rule list, see [skills/tf-best-practices/SKILL.md](skills/tf-best-practices/SKILL.md). (Scope note: `gcp-to-aws` and `heroku-to-aws` both consume the policy gate in their Generate phase; direct standalone use is also supported.)
 
 ## agent-advisor
 

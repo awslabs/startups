@@ -49,8 +49,10 @@ the `.tf` it generated, `terraform fmt` auto-apply, the retry/skip/abort prompt,
 Phase Completion gate, and every `.phase-status.json` write. See the consuming skill's
 generate phase for how the verdict feeds those decisions.
 
-> **Consumers (v1):** `gcp-to-aws` only. The contract is source-agnostic and designed to
-> be adopted by `heroku-to-aws` later, but that wiring is intentionally out of scope for now.
+> **Consumers:** `gcp-to-aws` (prose Generate) and `heroku-to-aws` (DSL Generate). The
+> contract is source-agnostic; each caller wires the two touchpoints in its own Generate
+> idiom — gcp-to-aws as prose steps, heroku-to-aws as a fragment step plus a fail-closed
+> `_postconditions` assert enforced by the interpreter.
 
 ## Part 1 — Authoring posture (load before writing `terraform/`)
 
@@ -143,6 +145,14 @@ for the caller, so a false positive would block a real migration).
 - **`alb_http_redirect`** — an HTTP `:80` listener must `redirect` to HTTPS, never `forward`
   to targets. Internal ALBs (`internal = true`) are exempt.
 
+> **Elastic Beanstalk ALBs are invisible to these rules.** The ALB rules inspect standalone
+> `aws_lb_listener` blocks. An EB **LoadBalanced** environment provisions its ALB from
+> `aws_elastic_beanstalk_environment` `setting` blocks, which the static checker does not read —
+> so a pure-EB design passes the ALB rules **vacuously** (no listener to inspect). EB listener/TLS
+> posture is therefore authoring-only, not gate-enforced. (Fixtures `good-heroku-eb-only`
+> and `good-heroku-eb-singleinstance` document this; `good-heroku-eb-loadbalanced` carries a
+> standalone ALB so the listener rules are exercised on real blocks.)
+
 **Managed database exposure & encryption** (`aws_db_instance`, `aws_rds_cluster`):
 
 - **`rds_not_public`** — must not set `publicly_accessible = true` (absent/variable → fail-open).
@@ -171,6 +181,9 @@ for the caller, so a false positive would block a real migration).
 `aws_iam_user_policy`):
 
 - **`no_wildcard_iam`** — an `Allow` statement must not use `Action`/`Resource` `"*"`.
+  The one narrow exception is an isolated
+  `elasticbeanstalk:CreateStorageLocation` statement with `Resource = "*"` because
+  AWS does not support resource-level permissions for that action.
   `aws_iam_policy_document` data sources and assume-role trust policies fail open.
 
 > The checker is a zero-dependency static HCL reader (no `terraform init`, no provider
