@@ -545,7 +545,10 @@ cold start that begins a migration.
 (Paths below use the default run root `.migration/` — substitute the skill's
 declared run root (§ Skill bindings). A skill that declares its own state shape
 writes `.phase-status.json` per its SKILL.md's state-file section instead of the
-shared schema in step 4.)
+shared schema in step 4. The run-identity keys in step 4 (`run_id`,
+`owning_skill`, `initiated_by`) are seeded only under the literal default root
+`.migration/`; a skill that declares its own run root, such as agent-advisor,
+skips them and keeps its own state contract.)
 
 1. Check for an existing `.migration/` directory at the project root.
    - **If existing runs are found:** list them with their phase status and ask:
@@ -579,7 +582,15 @@ shared schema in step 4.)
    phase which is `"in_progress"`; set `migration_id` to `[MMDD-HHMM]`,
    `last_updated` to the current ISO 8601 timestamp, and `current_phase` to this
    `_init` phase. (The schema does not enumerate phase names — the valid names are
-   the skill's declared phases.)
+   the skill's declared phases.) Under the default run root only, also seed two
+   run-identity keys, read by telemetry and by the plugin-to-web handoff:
+   `run_id` — a fresh random UUID (run `uuidgen` or equivalent and write its output
+   verbatim; never copy a value from an example or a previous run), and
+   `owning_skill` — the running skill's
+   directory name in upper case with hyphens replaced by underscores
+   (`gcp-to-aws` → `GCP_TO_AWS`). A skill invoked by another skill still records
+   its own id as `owning_skill`; `initiated_by` (the invoking skill's id) is
+   optional and may be left unset.
 
 5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
    running the phase's fragments.
