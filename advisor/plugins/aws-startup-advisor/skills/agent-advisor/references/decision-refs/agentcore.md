@@ -34,6 +34,11 @@ An always-on service is still a better ECS/EKS fit — Instances sessions end at
 - microVMs session cap: 8h; Instances session cap: 14 days (not indefinite)
 - microVMs compute cap: 2 vCPU / 8 GB (Instances lifts this via EC2 instance choice)
 - Instances launch regions: limited set at launch (2026-08) — verify current list
+- AWS Agent Registry GA Regions (2026-08-31 snapshot): `us-east-1`, `us-west-2`,
+  `ap-northeast-1`, `ap-southeast-2`, `eu-west-1`
+  ([GA announcement](https://aws.amazon.com/about-aws/whats-new/2026/08/aws-agent-registry-generally-available)).
+  Verify Registry availability in its intended Region before recommending it; Runtime
+  availability does not establish Registry availability. See `freshness.md`.
 - FedRAMP: authorization in progress (WIP) — verify current status; NOT a hard block
 
 ## Deployment models
@@ -58,7 +63,13 @@ An always-on service is still a better ECS/EKS fit — Instances sessions end at
 
 - Payments: for agents that pay / transact on a user's behalf — surface only for
   transactional / high-risk-action workloads.
-- Registry: agent/tool discovery and multi-agent orchestration — surface only for multi-agent setups.
+- AWS Agent Registry (`registry`): centralized discovery and governance for agents, tools,
+  skills, MCP servers, and custom resources. Surface when the user needs a shared catalog,
+  resource discovery, or approval-based governance, including single-agent workloads; multiple
+  agents alone are not a reason to add it. Registry catalogs resources; it does not orchestrate
+  their execution. The former AgentCore Registry now uses the dedicated `agent-registry`
+  namespace ([migration guide](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-faq.html)).
+  Access it via console, CLI, SDK, or MCP; it integrates with AgentCore, Amazon Quick, and Kiro IDE.
 
 ## Tradeoffs
 
