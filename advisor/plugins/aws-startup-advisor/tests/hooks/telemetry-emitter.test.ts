@@ -156,6 +156,22 @@ describe('telemetry emitter', () => {
     }
   });
 
+  it('sends a run_id that macOS uuidgen minted in upper case in lower case, the only form the data lake accepts', async () => {
+    // Arrange
+    const p = makeProject(phaseStatus({ run_id: RUN_ID.toUpperCase() }));
+    try {
+      // Act
+      const bodies = await reconcile(p);
+
+      // Assert
+      assert.equal(bodies.length, 2);
+      for (const body of bodies) assert.equal(activity(body).runId, RUN_ID);
+      assert.equal(snapshotOf(p).runId, RUN_ID);
+    } finally {
+      cleanup(p);
+    }
+  });
+
   it('reports each later transition exactly once and the terminal event with its run mode', async () => {
     // Arrange
     const p = makeProject(phaseStatus());

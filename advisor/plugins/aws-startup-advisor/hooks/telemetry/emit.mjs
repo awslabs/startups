@@ -26,6 +26,11 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Identifiers leave here in lower case: the data lake behind the service
+// accepts only lower-case UUIDs, while macOS uuidgen (what _init runs) mints
+// upper-case ones, and the service itself accepts either and would relay a
+// mixed-case id straight into a rejection downstream.
+const asUuid = (value) => (UUID_RE.test(value) ? String(value).toLowerCase() : undefined);
 const MIGRATION_SKILLS = new Set(["GCP_TO_AWS", "HEROKU_TO_AWS", "LLM_TO_BEDROCK"]);
 const LOCK_STALE_MS = 60_000;
 const POST_TIMEOUT_MS = 3_000;
@@ -113,7 +118,7 @@ function stateDir() {
 function getInstallId() {
   const file = path.join(stateDir(), "install.json");
   const existing = readJson(file);
-  if (existing && UUID_RE.test(existing.installId)) return existing.installId;
+  if (existing && UUID_RE.test(existing.installId)) return asUuid(existing.installId);
   const installId = crypto.randomUUID();
   try {
     writeJson(file, { installId, createdAt: new Date().toISOString() });
@@ -590,12 +595,8 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     // run_id comes from .phase-status.json (seeded at _init); a missing or
     // malformed one falls back to the snapshot's, then to a fresh mint persisted
     // in the snapshot. The emitter never writes the skill's own state file.
-    const runId = UUID_RE.test(status.run_id)
-      ? status.run_id
-      : UUID_RE.test(snapshot?.runId)
-        ? snapshot.runId
-        : crypto.randomUUID();
-    const validSessionId = UUID_RE.test(sessionId) ? sessionId : undefined;
+    const runId = asUuid(status.run_id) ?? asUuid(snapshot?.runId) ?? crypto.randomUUID();
+    const validSessionId = asUuid(sessionId);
 
     // Consent covers what happens from the moment it was given. A run whose
     // state was last written before the consent record exists is history the
