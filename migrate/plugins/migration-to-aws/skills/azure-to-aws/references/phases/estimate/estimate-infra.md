@@ -721,7 +721,7 @@ classify from the largest tier down, first match wins. Inputs:
 | Monthly spend | the right-sized total                                                                                  |
 | Has databases | any `aws_service` in {RDS PostgreSQL, DocumentDB, ElastiCache Redis, MSK, FSx for Windows File Server} |
 | Availability  | `preferences.data.availability`                                                                        |
-| Compliance    | **No Clarify fragment produces this row.** See below                                                   |
+| Compliance    | `preferences.design_constraints.compliance` (array; see below)                                         |
 | Multi-region  | more than one distinct `aws_config.region`                                                             |
 | Licensing     | `preferences.licensing._fired`                                                                         |
 
@@ -730,20 +730,26 @@ carries no cost — deferred work is still work. A **floor** total must not pull
 tier down: when lines were excluded, classify on the evidence that those services
 exist, not on a total that omits them. And:
 
-**Compliance is not asked anywhere in this skill.** `clarify-global.md` produces
-`target_region`, `environment_scope`, `migration_window`, `cost_optimization` and
-`azure_monthly_spend` — no fragment produces a compliance row. So record
-`compliance: null` with the reason, **never `"none"`**: "none" is an answer, and
-nobody was asked. Two consequences to handle rather than absorb:
+**Read `preferences.design_constraints.compliance`.** Clarify now always asks this
+(Q-A1c, ESSENTIAL). Normalize the array before classifying:
 
-- `complexity-tiers.json` lists `compliance_present: true` as one of four `large`
-  conditions under `match: "any"`, so that condition can never be evaluated on this
-  skill. Say so in `complexity_inputs`; do not report it as evaluated-and-false.
-- **Part 8's hard trigger 1 has a permanently-true first clause** ("compliance is
-  unknown"), because the question is never put. Only its second clause — signals
-  suggesting a regulated requirement — does any work. Read it as a one-clause
-  trigger until a compliance row exists, and do not treat the unknown as a signal
-  in itself.
+- **No frameworks (explicit none):** `[]` (canonical) or `["none"]` (accepted
+  alias from the AI-only path). Record `complexity_inputs.compliance` as `[]`.
+  `compliance_present` is false. Do **not** emit `compliance_never_asked`.
+- **Unconfirmed:** `["unknown"]`, or a still-null ESSENTIAL row that somehow
+  reached Estimate. Record the raw value, treat the catalog like "none" (no
+  speculative BAA-only stack), emit `compliance_unconfirmed`, and let Part 8
+  hard-trigger 1 evaluate its **second** clause (regulated signals) rather than
+  treating unknown as permanently true.
+- **Named frameworks:** `["soc2"]`, `["pci"]`, … — `compliance_present` is true
+  when any entry is a named framework (not `none`/`unknown`).
+
+Never invent `"none"` as a string scalar. Never write `compliance: null` on a run
+whose Clarify artifact already has a compliance row.
+
+`compliance_never_asked` remains in the closed vocabulary only for **pre-question
+frozen artifacts** (the `after-estimate/` capability-run snapshot). Live Estimate
+must not emit it once Q-A1c exists.
 
 **The tier here is driven by a row count, not by money.** `service_count_gte: 9`
 fires on the literal `services[]` length, which includes `$0` networking
@@ -772,10 +778,10 @@ the estate is expensive.
 
 **Hard triggers — any one forces `outcome: "defer_for_evidence"`:**
 
-| # | Trigger                                                                                                                                                       | Evidence to name                                            |
-| - | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1 | Compliance is unknown **and** signals suggest a government or heavily regulated requirement — the region set, service catalog and pricing all change together | Confirmation from the customer's compliance owner           |
-| 2 | The customer's **only** stated motivation is cost saving **and** no baseline exists at all (`current_costs.source == "unavailable"`)                          | An Azure Cost Management export, or a stated monthly figure |
+| # | Trigger                                                                                                                                                                                                                                          | Evidence to name                                            |
+| - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| 1 | Compliance is `["unknown"]` or unanswered **and** signals suggest a government or heavily regulated requirement — the region set, service catalog and pricing all change together. An explicit `[]` / `["none"]` does **not** fire this trigger. | Confirmation from the customer's compliance owner           |
+| 2 | The customer's **only** stated motivation is cost saving **and** no baseline exists at all (`current_costs.source == "unavailable"`)                                                                                                             | An Azure Cost Management export, or a stated monthly figure |
 
 `defer_for_evidence` is expected to be **rare**: AWS almost always has the
 services, and the AWS-side estimate can almost always be produced. Prefer
@@ -846,23 +852,24 @@ an invented code makes the report's grouping unstable. Estimate had none, which
 left every code in this phase improvised. **This vocabulary is closed on the same
 terms: add a row here first, then use it.**
 
-| Code                                | Fires when                                                                                            |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `pricing_unavailable`               | A line's rate row does not exist and the MCP was unreachable — `exclusion_reason: no_rate`            |
-| `pricing_partial`                   | A base rate resolved but a required component did not — `exclusion_reason: partial_rate`              |
-| `quantity_unavailable`              | Every rate resolved but no quantity exists to multiply — `exclusion_reason: no_quantity`              |
-| `rate_configuration_mismatch`       | The rate describes a different configuration than the design (single-AZ priced from a Multi-AZ table) |
-| `region_rate_mismatch`              | `target_region` differs from the pricing cache's `_meta.region`                                       |
-| `pricing_cache_stale`               | The cache is past its own `staleness_days` window                                                     |
-| `baseline_not_invoiced`             | The Azure baseline came from any rung other than a Cost Management export                             |
-| `baseline_unavailable`              | No Azure baseline could be established at all                                                         |
-| `quantity_from_stated_baseline`     | A line was priced from a rate file's own `monthly_baseline_est` rather than an estate quantity        |
-| `component_not_sized`               | A priced line's sub-component has a rate but no quantity (MSK per-broker storage)                     |
-| `rightsizing_delta_zero_no_metrics` | The delta is `$0` because no utilization data exists                                                  |
-| `declared_waste_found`              | The IaC declares waste (an idle plan, an unattached disk)                                             |
-| `licensing_cost_absent`             | `licensing._fired` and the Windows rate is unavailable                                                |
-| `deferred_bears_azure_cost`         | A `deferred[]` entry is cost-bearing on Azure, so the baseline includes it and the AWS side does not  |
-| `compliance_never_asked`            | Recorded once per run: no fragment produces a compliance row                                          |
+| Code                                | Fires when                                                                                                                          |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `pricing_unavailable`               | A line's rate row does not exist and the MCP was unreachable — `exclusion_reason: no_rate`                                          |
+| `pricing_partial`                   | A base rate resolved but a required component did not — `exclusion_reason: partial_rate`                                            |
+| `quantity_unavailable`              | Every rate resolved but no quantity exists to multiply — `exclusion_reason: no_quantity`                                            |
+| `rate_configuration_mismatch`       | The rate describes a different configuration than the design (single-AZ priced from a Multi-AZ table)                               |
+| `region_rate_mismatch`              | `target_region` differs from the pricing cache's `_meta.region`                                                                     |
+| `pricing_cache_stale`               | The cache is past its own `staleness_days` window                                                                                   |
+| `baseline_not_invoiced`             | The Azure baseline came from any rung other than a Cost Management export                                                           |
+| `baseline_unavailable`              | No Azure baseline could be established at all                                                                                       |
+| `quantity_from_stated_baseline`     | A line was priced from a rate file's own `monthly_baseline_est` rather than an estate quantity                                      |
+| `component_not_sized`               | A priced line's sub-component has a rate but no quantity (MSK per-broker storage)                                                   |
+| `rightsizing_delta_zero_no_metrics` | The delta is `$0` because no utilization data exists                                                                                |
+| `declared_waste_found`              | The IaC declares waste (an idle plan, an unattached disk)                                                                           |
+| `licensing_cost_absent`             | `licensing._fired` and the Windows rate is unavailable                                                                              |
+| `deferred_bears_azure_cost`         | A `deferred[]` entry is cost-bearing on Azure, so the baseline includes it and the AWS side does not                                |
+| `compliance_unconfirmed`            | Clarify asked compliance and the recorded value is `["unknown"]` (or still null); catalog treated like none, report caveat required |
+| `compliance_never_asked`            | **Legacy.** Pre-Q-A1c frozen artifacts only. Do not emit on a live run after Clarify records a compliance row                       |
 
 Each warning carries `code`, a human `message`, and the `service_id` it concerns
 where it concerns one. **If a situation needs a code that is not here, add the row

@@ -332,7 +332,8 @@ Category E if `billing-profile.json` exists:
 > "Would you also like HA upgrade and right-sizing recommendations based on your billing
 > data? If not, I'll use conservative defaults (no upgrades, match current capacity)."
 
-If user opts in, present Q-E1–Q-E2 (defined in **Category E — Migration Posture** above).
+If user opts in, present Q-E1, and Q-E2 **unless** the cost-optimization-appetite row
+already resolved to `aggressive` (then apply `right_sizing: true` without asking Q-E2).
 Otherwise, apply Category E defaults (`ha_upgrade: false`, `right_sizing: false`).
 
 ## Answer Combination Triggers

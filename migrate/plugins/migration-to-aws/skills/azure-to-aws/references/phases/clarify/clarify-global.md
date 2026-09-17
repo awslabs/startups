@@ -140,6 +140,16 @@ Q-C1 in `clarify-compute.md` becomes N/A. When multi-cloud resolves to "no" (the
 this fragment writes **no** `compute_target` key at all — Q-C1 is the sole owner of that row
 in the ordinary case, exactly as before this restructure.
 
+## Who consumes these
+
+| Row                   | Consumer                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| `target_region`       | Design's region selection; every downstream cost figure                                          |
+| `user_geography`      | Design's CDN / Route 53 strategy (`networking.md` §2.3), and Q-D1's Catastrophic → Aurora Global |
+| `compliance`          | Estimate complexity + hard-trigger 1; Design catalog/region gate; Generate hardening posture     |
+| `cost_optimization`   | Estimate's aggressiveness slider (`rightsizing-thresholds.json`)                                 |
+| `azure_monthly_spend` | Estimate's migrate-vs-stay comparison                                                            |
+
 ## Status — build step 5
 
 Implemented. `knowledge/design/azure-region-map.json` **exists** — look the region up

@@ -157,16 +157,24 @@ const STATUS_ENUM = new Set(["pending", "in_progress", "completed"]);
 
 /**
  * Declared phases of a skill: the `_phase:` frontmatter values under references/phases/.
- * Returns null both when there is no phases/ dir AND when frontmatter rollout is only
- * partial — i.e. fewer phase subdirectories declare `_phase:` than exist on disk. A
- * skill mid-rollout (some phase files still frontmatter-less, per
- * frontmatter-validator's own documented phase-by-phase tolerance) has an incomplete
- * `_phase:` set that would otherwise read as "this skill only has N phases" and flag
- * every seed listing the not-yet-annotated ones as an error.
+ * Distinguishes "skill missing", "no _phase: yet", and "partial rollout" so a skip is
+ * loud in CI rather than looking like "this skill has no phases". Partial rollout
+ * (fewer `_phase:` values than phase directories) is NOT authoritative — treating it as
+ * the full set would flag every seed that lists the not-yet-annotated phases.
  */
-function declaredPhases(skill: string): Set<string> | null {
-  const phasesDir = join(SKILLS, skill, "references/phases");
-  if (!existsSync(phasesDir)) return null;
+type DeclaredPhases =
+  | { kind: "ok"; phases: Set<string> }
+  | { kind: "skip"; reason: string };
+
+function declaredPhases(skill: string): DeclaredPhases {
+  const skillDir = join(SKILLS, skill);
+  if (!existsSync(skillDir)) {
+    return { kind: "skip", reason: `inferred skill '${skill}' is not present under skills/` };
+  }
+  const phasesDir = join(skillDir, "references/phases");
+  if (!existsSync(phasesDir)) {
+    return { kind: "skip", reason: `skill '${skill}' has no references/phases/ directory` };
+  }
   const phaseDirs = readdirSync(phasesDir).filter((d) => statSync(join(phasesDir, d)).isDirectory());
   const out = new Set<string>();
   for (const rel of walk(phasesDir).filter((f) => f.endsWith(".md"))) {
@@ -174,9 +182,22 @@ function declaredPhases(skill: string): Set<string> | null {
     const m = head.match(/^_phase:\s*([a-z0-9_-]+)\s*$/m);
     if (m) out.add(m[1]);
   }
-  if (out.size === 0) return null;
-  if (out.size < phaseDirs.length) return null; // partial rollout — not yet authoritative
-  return out;
+  if (out.size === 0) {
+    return {
+      kind: "skip",
+      reason: `skill '${skill}' has ${phaseDirs.length} phase dir(s) but ZERO _phase: frontmatter — cross-check cannot run`,
+    };
+  }
+  if (out.size < phaseDirs.length) {
+    return {
+      kind: "skip",
+      reason:
+        `WARNING: skill '${skill}' has PARTIAL _phase: rollout (${out.size} of ${phaseDirs.length} phase dirs: ${
+          [...out].sort().join(", ")
+        }). Phase-set cross-check SKIPPED — seeds can drift from undeclared dirs until rollout is complete`,
+    };
+  }
+  return { kind: "ok", phases: out };
 }
 
 for (const rel of phaseStatusFiles) {
@@ -196,19 +217,21 @@ for (const rel of phaseStatusFiles) {
   const fixtureDir = rel.split("/")[0] ?? "";
   const skill = `${fixtureDir.split("-")[0]}-to-aws`;
   const declared = declaredPhases(skill);
-  if (!declared) {
-    notes.push(`${where}: no declared-phase set found for inferred skill '${skill}' — cross-check skipped`);
+  if (declared.kind === "skip") {
+    notes.push(`${where}: ${declared.reason}`);
     continue;
   }
   const have = new Set(Object.keys(phases));
-  for (const p of declared) {
+  for (const p of declared.phases) {
     if (!have.has(p)) problems.push(`${where}: skill '${skill}' declares phase '${p}' but the seed omits it`);
   }
   for (const p of have) {
-    if (!declared.has(p)) problems.push(`${where}: seed lists phase '${p}' which skill '${skill}' does not declare`);
+    if (!declared.phases.has(p)) {
+      problems.push(`${where}: seed lists phase '${p}' which skill '${skill}' does not declare`);
+    }
   }
   const current = ps["current_phase"];
-  if (typeof current === "string" && current !== "complete" && !declared.has(current)) {
+  if (typeof current === "string" && current !== "complete" && !declared.phases.has(current)) {
     problems.push(`${where}: current_phase '${current}' is not a declared phase of '${skill}'`);
   }
 }

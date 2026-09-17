@@ -51,6 +51,14 @@ Section 1. Whatever survives is the candidate set.
 `preferences.json` → `design_constraints` overrides 2.2, per-resource beating global.
 A recorded answer always wins over a derived one.
 
+**`global.user_geography`** (Clarify Q-A1b) is a second override, for CDN / DNS only:
+
+- `multi-region` or `global` → emit **CloudFront** (and Route 53 latency or geolocation
+  routing) for public HTTP edges even when no `Microsoft.Cdn/*` / Front Door resource
+  exists. Record `cdn_required_by_geography` on `aws-design.json`.
+- `single-region` or absent → do not invent CloudFront from this row; keep 2.2 mappings
+  for real Front Door / CDN resources.
+
 ### 2.4 Feature parity
 
 - **An internal Azure Load Balancer fronting HTTP-only backends** may map to an internal

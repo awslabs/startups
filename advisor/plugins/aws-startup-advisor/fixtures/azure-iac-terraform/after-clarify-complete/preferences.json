@@ -33,7 +33,7 @@
   "design_constraints": {
     "compliance": {
       "disposition": "ESSENTIAL",
-      "value": ["none"],
+      "value": [],
       "default": null
     },
     "cpu_architecture": {

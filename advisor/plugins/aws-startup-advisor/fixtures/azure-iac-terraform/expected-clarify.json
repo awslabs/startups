@@ -12,6 +12,15 @@
       ],
       "why": "every resource is westeurope, so the region is MAPPED from the estate, not proposed. The wrong answer is the repo-wide us-east-1 default, which would silently move a European estate to Virginia."
     },
+    "global.user_geography": {
+      "disposition": "PROPOSED",
+      "value": "single-region",
+      "must_not_be_disposition": [
+        "ESSENTIAL",
+        "N/A"
+      ],
+      "why": "one Azure region, so Q-A1b defaults to single-region. Design's CDN/Route 53 path and Q-D1's Catastrophic branch read this row; omitting it still passed the golden until it was pinned."
+    },
     "design_constraints.compliance": {
       "disposition": "ESSENTIAL",
       "value": null,

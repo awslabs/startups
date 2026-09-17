@@ -12,6 +12,15 @@
       ],
       "why": "every resource is westeurope, so the region is MAPPED from the estate, not proposed. The wrong answer is the repo-wide us-east-1 default, which would silently move a European estate to Virginia."
     },
+    "global.user_geography": {
+      "disposition": "PROPOSED",
+      "value": "single-region",
+      "must_not_be_disposition": [
+        "ESSENTIAL",
+        "N/A"
+      ],
+      "why": "one Azure region, so Q-A1b defaults to single-region. Design's CDN/Route 53 path and Q-D1's Catastrophic branch read this row; omitting it still passed the golden until it was pinned."
+    },
     "design_constraints.cpu_architecture": {
       "disposition": "DETECTED",
       "value": "x86_64",
@@ -26,14 +35,12 @@
     },
     "design_constraints.compliance": {
       "disposition": "ESSENTIAL",
-      "value": [
-        "none"
-      ],
+      "value": [],
       "must_not_be_disposition": [
         "PROPOSED",
         "DETECTED"
       ],
-      "why": "Compliance status is never inferable from ARM/Bicep/Terraform, so this question always fires. The scripted user answers it on this branch (unlike the blocked branch), which is required for clarify_status to reach COMPLETE."
+      "why": "Compliance status is never inferable from ARM/Bicep/Terraform, so this question always fires. Canonical explicit-none is [] (clarify-compliance.md answer 1), not [\"none\"]. The scripted user answers it on this branch (unlike the blocked branch), which is required for clarify_status to reach COMPLETE."
     },
     "design_constraints.compute_target": {
       "disposition": "PROPOSED",
