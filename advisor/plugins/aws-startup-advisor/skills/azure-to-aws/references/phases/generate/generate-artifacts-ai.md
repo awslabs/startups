@@ -16,7 +16,7 @@ The Azure port of gcp's `generate-artifacts-ai.md` + the essential migration-pla
 `generate-ai.md`, folded into one fragment (azure keeps Generate lean — `generate-artifacts-*`
 fragments, no separate plan file). Reads `aws-design-ai.json`, `estimation-ai.json` (for the
 budget seed), `ai-workload-profile.json`, `preferences.json`. Missing a REQUIRED input → STOP
-("Missing required artifact: <file>. Complete the prior phase that produces it.").
+("Missing required artifact: `<file>`. Complete the prior phase that produces it.").
 
 ## Step 0: Determine the artifact path
 

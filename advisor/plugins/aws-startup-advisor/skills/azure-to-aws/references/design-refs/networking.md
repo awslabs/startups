@@ -29,6 +29,7 @@ recurring reason: **AWS splits or multiplies what Azure presents as one resource
 Apply in sequence, stop at the first that fires.
 
 ### 2.1 Eliminators
+
 Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
@@ -46,6 +47,7 @@ Section 1. Whatever survives is the candidate set.
 | `Microsoft.ApiManagement/service`, `Developer` / `Basic` / `Standard` / `Premium` | **API Gateway REST API** | These tiers have the full policy engine, so REST API is the only tier with comparable request/response handling. See § 4 — the policy layer is a rewrite regardless |
 
 ### 2.3 User preference
+
 `preferences.json` → `design_constraints` overrides 2.2, per-resource beating global.
 A recorded answer always wins over a derived one.
 
@@ -80,6 +82,7 @@ A recorded answer always wins over a derived one.
 >
 > **Rule.** When a balancer's backend pool resolves — through the `hosted_on` or
 > `backend_pool` edge — to a compute target that provisions its own balancer:
+>
 > 1. Emit **one** entry, for the balancer that the compute target creates.
 > 2. Record the Azure balancer as consumed, with one `warnings[]` entry naming the
 >    compute resource that absorbed it, and carry its listener rules and WAF association
@@ -94,6 +97,7 @@ An App Gateway fronting a static site (`staticSites`, or a storage account with
 `static_website`) is absorbed by **CloudFront**, not mapped to an ALB.
 
 ### 2.6 Simplicity
+
 Where 2.2–2.5 leave two candidates standing, take the one with fewer moving parts in the
 target account. A single ALB with listener rules beats an NLB plus a self-managed proxy
 tier that reproduces layer-7 routing.

@@ -32,9 +32,11 @@ Do not weigh these. Apply them in sequence and stop at the first that fires. Add
 seventh, or reordering, breaks the property that makes the outcome reproducible.
 
 ### 2.1 Eliminators
+
 Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
+
 What the source workload *is* decides more than anything the customer could tell us.
 
 | Source                                                        | Target                                                |
@@ -56,6 +58,7 @@ cloud migration changes two variables at once, and when it goes wrong there is n
 tell which one caused it.
 
 ### 2.3 User preference
+
 `preferences.json` → `design_constraints.compute_target` **overrides 2.2**, per-resource
 overrides beating the global default. This is the criterion the customer's own answer
 lives in, and it sits above feature parity deliberately: a team that has decided to run
@@ -66,6 +69,7 @@ Recognised values: `elastic_beanstalk`, `ecs-fargate`, `eks-managed`, `ec2`, `la
 An absent preference is not a preference — fall through, do not default here.
 
 ### 2.4 Feature parity
+
 Only reached when 2.2 and 2.3 disagree with what the workload can actually do.
 
 | Signal                                                | Consequence                                                            |
@@ -77,6 +81,7 @@ Only reached when 2.2 and 2.3 disagree with what the workload can actually do.
 | `always_on = false` on a non-consumption plan         | the customer is tolerating cold starts; Lambda becomes viable if 2.2 pointed at EB |
 
 ### 2.5 Cluster context
+
 Read the cluster's other members via `azure-resource-clusters.json` and its
 `pattern_id`. **A pattern may narrow the candidate set; it may never override a
 `deterministic` mapping** — and it never reaches this file for one, because a fast-path
@@ -89,6 +94,7 @@ one runtime is cheaper to operate than two. When the cluster's `pattern_status` 
 than inventing an architecture.
 
 ### 2.6 Simplicity
+
 The tiebreak, and it has a direction: **prefer the target with fewer moving parts the
 customer has to operate.** EB over Fargate over EKS, all else equal. If two candidates
 survive to here, they are genuinely equivalent for this workload and the operational

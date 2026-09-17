@@ -221,7 +221,6 @@ Two corollaries:
 - A `model_prior` entry SHOULD carry a `warnings[]` entry naming the type that has no
   sizing row, so the gap is visible in the report and fixable in one place.
 
-
 ## `warnings[]`
 
 Same entry shape as Discover's (`schema-discover-azure.md` § Warnings: `code`, an

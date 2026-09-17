@@ -134,6 +134,7 @@ Anthropic, an Azure Cognitive client) → 90%+; weak-only → 60–70%; none →
 dead/commented code excluded.
 
 **Exit gate — confidence < 70%:**
+
 - If `ai-workload-profile.json` already exists with `metadata.profile_source: "iac_cognitive"` (from
   `discover-iac.md`'s Cognitive-Services path): **exit cleanly, do not modify it** — the
   IaC-inferred profile is retained. Report signals + confidence.
@@ -198,6 +199,7 @@ entries referenced by AI code. `{ address, type, file, config }`. `infrastructur
 ## Step 8: Contribute ai-workload-profile.json
 
 Build the profile per `references/shared/schema-discover-ai.md`. **`ai_source`:**
+
 - `azure_openai` — Azure OpenAI SDK/deployments detected (the 3.1–3.3 Azure signals).
 - `openai` — direct OpenAI SDK, no azure config (3.4).
 - `anthropic` — Anthropic only.

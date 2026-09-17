@@ -134,7 +134,7 @@ fallback when no measured spend exists, and the source side of the per-model "vs
 Prices per 1M tokens.
 
 > **Tier note — these are OpenAI STANDARD-tier rates.** Bedrock in-region for the same models is
-> the OpenAI *data-residency* tier, exactly 1.10x these figures (see the OpenAI-on-Bedrock note
+> the OpenAI _data-residency_ tier, exactly 1.10x these figures (see the OpenAI-on-Bedrock note
 > above). So a same-model move for GPT-5.6 Sol/Terra/Luna, GPT-5.5, GPT-5.4 is a ~10% increase,
 > not parity — compute the target from the Bedrock table, not by carrying these over. These rows
 > are the right source-side baseline, and the only figures available for models with **no**

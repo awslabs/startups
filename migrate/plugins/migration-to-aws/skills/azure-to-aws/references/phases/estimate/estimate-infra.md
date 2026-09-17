@@ -374,9 +374,9 @@ Read them from there; do not supply a remembered figure.
    count, floored at `custom_metrics_floor`.
 3. **Alarms** — `max(alarms_floor, alarms_per_service × service count)`.
 4. Cost = `log_gb × cloudwatch.log_ingestion_per_gb`
-   + `log_gb × cloudwatch.log_storage_per_gb_month × retention_months`
-   + `metrics × cloudwatch.custom_metric_month`
-   + `alarms × cloudwatch.standard_alarm_month`,
+   - `log_gb × cloudwatch.log_storage_per_gb_month × retention_months`
+   - `metrics × cloudwatch.custom_metric_month`
+   - `alarms × cloudwatch.standard_alarm_month`,
    with `retention_months` from `cloudwatch_defaults`. Add X-Ray
    (`cloudwatch.xray_per_million_traces`) **only** when tracing is actually
    detected in the source; otherwise it contributes a cost that traces back to no
@@ -441,7 +441,7 @@ fully-public design, or a SingleInstance Elastic-Beanstalk-only estate, with no 
 subnets. Reserve the zero-with-`basis` note for that genuine no-NAT case (say so in the
 `basis`); a private-subnet design is NOT a $0 case — it prices the 2-AZ standing NAT above.
 The standing balancer line stays `$0`-safe as before: a design whose only balancer is
-already inside an EB line emits it at `$0` with its own note. Emitting a genuine no-NAT /
+already inside an EB line emits it at`$0`with its own note. Emitting a genuine no-NAT /
 no-standalone-balancer line zero-with-`basis` rather than omitting it matches the Part 2
 convention that a considered line stays visible.
 

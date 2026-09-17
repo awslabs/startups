@@ -33,7 +33,7 @@ Terraform types directly.
 > nothing at runtime, so they stay. But adding another derivable row means the file is
 > growing toward completeness again. **The count of derivable rows is capped and must never
 > rise** — see § Admission test for what makes a row admissible.
-
+>
 > **`azapi_resource` does not use this table.** The AzAPI provider states the canonical
 > ARM type in its own `type` argument (`Microsoft.Consumption/budgets@2023-05-01`), so
 > there is nothing to translate and no row to add. See `extract-terraform.md`

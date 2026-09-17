@@ -43,6 +43,7 @@ profile exists only for an estate whose AI infra is in Terraform.
 ## summary.ai_source — the routing key
 
 `azure_openai | openai | anthropic | both | other`. This is the value `design-ai.md` routes on.
+
 - `azure_openai` — Azure OpenAI SDK/deployments detected. **Routes identically to `openai`**
   (the shared OpenAI→Bedrock guide serves Azure OpenAI); the distinct label is kept for report
   wording and provenance (plan §19.9b).

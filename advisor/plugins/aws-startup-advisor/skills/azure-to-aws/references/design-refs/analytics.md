@@ -24,6 +24,7 @@ for gated types — a gate must never be overridden by anything below it (§ 7a.
 ## 2. The six criteria, in order, first match wins
 
 ### 2.1 Eliminators
+
 Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
@@ -35,6 +36,7 @@ Section 1. Whatever survives is the candidate set.
 | `Microsoft.Databricks/workspaces`, plain Spark only | **EMR** | Only when § 2.4 confirms nothing Databricks-specific is in use. See § 3 |
 
 ### 2.3 User preference
+
 `preferences.json` → `design_constraints` overrides 2.2. A customer consolidating onto
 AWS-native services has chosen EMR and OpenSearch; a customer with a Databricks contract
 has chosen Databricks on AWS. Either answer wins over the derived one.
@@ -74,6 +76,7 @@ changes the retrieval contract, so it is a recommendation for the report, not a 
   cluster.
 
 ### 2.6 Simplicity
+
 Where both stand, prefer the target that keeps the customer's existing operational model.
 Moving Databricks-on-Azure to Databricks-on-AWS changes one variable; moving it to EMR
 changes the platform, the job definitions and the team's tooling at the same time as the

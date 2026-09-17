@@ -17,7 +17,7 @@ _produces:
 > **Assembler unit.** The single creator of `generation-warnings.json`. The
 > artifact-emitting fragments create their own files; this unit's job is to prove
 > nothing was dropped. See `generate.md` for how it is composed into the phase.
-
+>
 > **`validation-report.json` — declared here, written by the orchestrator.** This unit is
 > the phase's declared owner of `validation-report.json` (the single-creator ledger), but
 > its CONTENT — the Terraform fmt/init/validate result plus the `tf-best-practices` policy

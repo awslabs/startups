@@ -23,13 +23,13 @@ Design runs.
 > Confidence is never `deterministic` for a row routed through this file. It is
 > `inferred`, or `measured` when observed utilization backed the choice. See
 > `fast-path.md` § Confidence vocabulary.
-
+>
 > **A type in this file has already failed the fast-path lookup.** Check
 > `fast-path-services.json` FIRST — `skip_mappings`, then `specialist_gates`, then
 > `direct_mappings`. A type that matched there never reaches this file. Types that
 > appear in both are listed here anyway, with their fast-path disposition named in the
 > Reference column, so this file can be read as the complete type inventory.
-
+>
 > **HALT if a Reference file named below is not on disk.** Emit `GATE_FAIL` naming the
 > type and the missing file. Do **not** map the resource from your own knowledge of
 > Azure and AWS. This is the same guard, for the same reason, as `discover-iac.md`

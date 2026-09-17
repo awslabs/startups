@@ -66,7 +66,8 @@ KMS-encrypted logs, us-east-1/us-west-2; FedRAMP → GovCloud (smaller catalog);
 with geographic `eu.` inference profiles (`global.` forbidden), document the Azure-EU → AWS-EU
 transfer; PCI/SOC2/CCPA → CloudTrail + scoped IAM + retention. → `design_constraints.compliance`.
 Explicit "None" → `["none"]` `chosen_by: user`. Skip/default → `["unknown"]` `chosen_by: default`
-+ append "Compliance requirements were not confirmed by the user" to `metadata.report_caveats[]`.
+
+- append "Compliance requirements were not confirmed by the user" to `metadata.report_caveats[]`.
 
 **Q2 — What matters most?** Quality (Sonnet/Opus) / Speed (Haiku, Nova) / Cost (Haiku, Nova
 Micro) / Special (→Q10) / Balanced (Sonnet). → `ai_priority`. Default `"balanced"`.

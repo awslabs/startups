@@ -112,7 +112,6 @@ rule resolved it** — so its namespace is one this skill does not recognise. Ha
 every one of these would once have stopped Design at roughly the third resource of a real
 inventory; with the derived rules in front, it is now a genuinely rare case. So:
 
-
 The type IS canonical and present in `resources[]`, but matched no row in
 `fast-path-services.json` and has no row in `index.md`. Halting on every one of these
 would stop Azure Design at roughly the third resource of a real inventory — tenants are

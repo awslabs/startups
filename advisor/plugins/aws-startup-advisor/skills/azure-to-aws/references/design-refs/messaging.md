@@ -31,6 +31,7 @@ Each is a property of the source entity, readable from IaC. Check them before an
 ## 2. The six criteria, in order, first match wins
 
 ### 2.1 Eliminators
+
 Section 1. Whatever survives is the candidate set.
 
 ### 2.2 Operational model
@@ -47,6 +48,7 @@ Section 1. Whatever survives is the candidate set.
 | `Microsoft.SignalRService/SignalR`, `service_mode = "Default"` or `"Classic"` | **API Gateway WebSocket API**, with the hub server becoming a Fargate service or Lambda | A hub server exists and has to land somewhere |
 
 ### 2.3 User preference
+
 `preferences.json` → `design_constraints` overrides 2.2. A customer who has said "keep
 AMQP, we are not rewriting clients" has chosen Amazon MQ, and that answer wins.
 
@@ -84,6 +86,7 @@ eliminator and for whether VNet integration implies a private-endpoint edge.
   **SNS** covers both; EventBridge to an HTTP endpoint needs an API destination.
 
 ### 2.6 Simplicity
+
 Prefer the smaller target set. A topic with three subscriptions and no content filters is
 SNS plus three SQS queues, not EventBridge plus three rules plus three queues.
 

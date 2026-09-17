@@ -8,7 +8,7 @@ _contributes:
 # Estimate — AI Workload Cost Engine
 
 > Loaded when ai-workload-profile.json exists. Contributes estimation-ai.json (the assembler is its creator; see estimate.md). Execute ALL steps in order.
-
+>
 > **Fragment unit.** This fragment _contributes_ to `estimation-ai.json`; the artifact
 > itself is declared on the assembler's `_produces` and written there — the same
 > design-ai / aws-design-ai split, one layer over. `estimate-infra.md` prices the estate's

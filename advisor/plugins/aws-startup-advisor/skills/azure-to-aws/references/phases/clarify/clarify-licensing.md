@@ -175,4 +175,3 @@ licensing — without it the question arrives with no context and the obvious re
 guess.
 
 An N/A category is written out with its reason, never omitted.
-
