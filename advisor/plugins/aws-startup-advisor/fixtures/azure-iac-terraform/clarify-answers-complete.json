@@ -5,6 +5,7 @@
   "_sheet_response_why": "Accept every DETECTED and PROPOSED row unchanged, so the golden shows the DEFAULTS. A run that silently promotes a default to a user decision is one of the failures this catches.",
   "essential_answers": {
     "design_constraints.vm_cutover": "mgn",
+    "design_constraints.compliance": ["none"],
     "data.availability": "single-az",
     "data.db_cutover": "dms",
     "licensing.windows_model": "license_included",

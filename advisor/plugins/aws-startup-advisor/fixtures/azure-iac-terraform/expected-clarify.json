@@ -12,6 +12,15 @@
       ],
       "why": "every resource is westeurope, so the region is MAPPED from the estate, not proposed. The wrong answer is the repo-wide us-east-1 default, which would silently move a European estate to Virginia."
     },
+    "design_constraints.compliance": {
+      "disposition": "ESSENTIAL",
+      "value": null,
+      "must_not_be_disposition": [
+        "PROPOSED",
+        "DETECTED"
+      ],
+      "why": "Compliance status is never inferable from ARM/Bicep/Terraform, so this question always fires for a full-infrastructure migration and is never silently defaulted to 'none'. The scripted user declines to answer it on this branch, mirroring the spend row, so it must also block the phase."
+    },
     "design_constraints.cpu_architecture": {
       "disposition": "DETECTED",
       "value": "x86_64",
@@ -100,9 +109,10 @@
     "_requires_keys_why": "requires_keys follows the DISPOSITION, per schema-preferences.md: DETECTED needs `source` (what in the estate was read), N/A needs `reason`, ESSENTIAL needs `context`. Aligned 2026-09-08 - several rows demanded `reason` on a DETECTED row, which is the N/A key, so the assertion was asking for the wrong field."
   },
   "essential_gate": {
-    "_why": "An ESSENTIAL row with a null value IS the completion gate. The scripted user declines to state spend, so the phase must NOT complete. A run that emits HANDOFF_OK here has invented consent, and no shape assertion can catch that \u2014 the artifact is perfectly well-formed.",
+    "_why": "An ESSENTIAL row with a null value IS the completion gate. The scripted user declines to state spend AND compliance, so the phase must NOT complete. A run that emits HANDOFF_OK here has invented consent, and no shape assertion can catch that \u2014 the artifact is perfectly well-formed.",
     "expected_unanswered": [
-      "baseline.azure_monthly_spend"
+      "baseline.azure_monthly_spend",
+      "design_constraints.compliance"
     ],
     "expected_status": "BLOCKED_ON_ESSENTIAL"
   },
