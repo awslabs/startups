@@ -1,7 +1,6 @@
 ---
 _fragment: database
 _of_phase: clarify
-_trigger: { _when: "database resources present in the inventory — Cloud SQL, Spanner, Memorystore" }
 _contributes:
   - preferences.json (design_constraints section: database_traffic, db_io_workload, db_size)
 ---

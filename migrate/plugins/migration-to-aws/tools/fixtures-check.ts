@@ -154,17 +154,28 @@ if (files.length > 0) {
 // ---- 5. .phase-status.json shape + phase-set cross-check --------------------
 const STATUS_ENUM = new Set(["pending", "in_progress", "completed"]);
 
-/** Declared phases of a skill: the `_phase:` frontmatter values under references/phases/. */
+/**
+ * Declared phases of a skill: the `_phase:` frontmatter values under references/phases/.
+ * Returns null both when there is no phases/ dir AND when frontmatter rollout is only
+ * partial — i.e. fewer phase subdirectories declare `_phase:` than exist on disk. A
+ * skill mid-rollout (some phase files still frontmatter-less, per
+ * frontmatter-validator's own documented phase-by-phase tolerance) has an incomplete
+ * `_phase:` set that would otherwise read as "this skill only has N phases" and flag
+ * every seed listing the not-yet-annotated ones as an error.
+ */
 function declaredPhases(skill: string): Set<string> | null {
   const phasesDir = join(SKILLS, skill, "references/phases");
   if (!existsSync(phasesDir)) return null;
+  const phaseDirs = readdirSync(phasesDir).filter((d) => statSync(join(phasesDir, d)).isDirectory());
   const out = new Set<string>();
   for (const rel of walk(phasesDir).filter((f) => f.endsWith(".md"))) {
     const head = readFileSync(join(phasesDir, rel), "utf8").slice(0, 400);
     const m = head.match(/^_phase:\s*([a-z0-9_-]+)\s*$/m);
     if (m) out.add(m[1]);
   }
-  return out.size > 0 ? out : null;
+  if (out.size === 0) return null;
+  if (out.size < phaseDirs.length) return null; // partial rollout — not yet authoritative
+  return out;
 }
 
 for (const rel of phaseStatusFiles) {

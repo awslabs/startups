@@ -1,10 +1,6 @@
 ---
 _fragment: compute
 _of_phase: clarify
-_trigger:
-  {
-    _when: "billing-profile.json exists AND gcp-resource-inventory.json does NOT exist (Category B), OR any compute resource is present — Cloud Run, Cloud Functions, GKE, GCE, App Engine (Category C)",
-  }
 _contributes:
   - preferences.json (design_constraints section: compute_model, kubernetes, cpu_architecture; metadata.inventory_clarifications for Category B)
 ---

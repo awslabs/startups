@@ -3,11 +3,6 @@ _fragment: global
 _of_phase: clarify
 _contributes:
   - preferences.json (global section; created here, finalized by the assembler)
-_knowledge:
-  - { file: references/vendored/clarify/clarify-region.md }
-  - { file: references/vendored/clarify/clarify-compliance.md }
-  - { file: references/vendored/clarify/clarify-cost-appetite.md }
-  - { file: references/vendored/clarify/clarify-multicloud.md }
 ---
 
 # Clarify — Global Preferences

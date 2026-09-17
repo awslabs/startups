@@ -1,7 +1,6 @@
 ---
 _fragment: ai
 _of_phase: clarify
-_trigger: { _when: "ai-workload-profile.json exists in $MIGRATION_DIR" }
 _contributes:
   - preferences.json (ai_constraints section, startup_constraints.startup_program_status)
 ---

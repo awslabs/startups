@@ -3,12 +3,6 @@ _fragment: global
 _of_phase: clarify
 _contributes:
   - preferences.json (global section, design_constraints section; created here, finalized by the assembler)
-_knowledge:
-  - { file: references/vendored/clarify/clarify-region.md }
-  - { file: references/vendored/clarify/clarify-compliance.md }
-  - { file: references/vendored/clarify/clarify-availability.md }
-  - { file: references/vendored/clarify/clarify-cost-appetite.md }
-  - { file: references/vendored/clarify/clarify-multicloud.md }
 ---
 
 # Category A — Global/Strategic (Always Fires)
