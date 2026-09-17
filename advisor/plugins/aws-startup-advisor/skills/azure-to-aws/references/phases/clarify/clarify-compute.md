@@ -32,8 +32,13 @@ question that discovery could have answered is a question that should not have b
 
 ### Q-C1 — Compute target
 
-**Disposition:** DETECTED when an AKS cluster is the only compute in the estate (Kubernetes
-is already the answer); PROPOSED otherwise.
+**N/A when `clarify-global.md`'s Q-A1d (multi-cloud portability) already forced
+`design_constraints.compute_target` to `eks`** — check that row first; if
+`forced_by: "multi_cloud_required"` is set, emit this row as N/A with that reason and do
+not ask Q-C1 at all. Portability is an estate-wide decision, not a per-workload one.
+
+**Disposition (otherwise):** DETECTED when an AKS cluster is the only compute in the estate
+(Kubernetes is already the answer); PROPOSED otherwise.
 **Default:** `elastic_beanstalk`.
 
 ```

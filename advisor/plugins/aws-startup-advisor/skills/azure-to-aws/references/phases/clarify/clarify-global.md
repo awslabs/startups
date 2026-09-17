@@ -3,6 +3,11 @@ _fragment: global
 _of_phase: clarify
 _contributes:
   - preferences.json (global section; created here, finalized by the assembler)
+_knowledge:
+  - { file: references/vendored/clarify/clarify-region.md }
+  - { file: references/vendored/clarify/clarify-compliance.md }
+  - { file: references/vendored/clarify/clarify-cost-appetite.md }
+  - { file: references/vendored/clarify/clarify-multicloud.md }
 ---
 
 # Clarify — Global Preferences
@@ -11,9 +16,14 @@ _contributes:
 
 Gathers the estate-wide answers every Azure migration needs regardless of what the
 inventory contains: target AWS region (mapped from the estate's Azure regions rather
-than assumed), migration window, environment scope (which of the discovered
-subscriptions and environments are in scope), CPU architecture, and cost-optimization
-appetite.
+than assumed), user geography, compliance requirements, multi-cloud portability,
+migration window, environment scope (which of the discovered subscriptions and
+environments are in scope), CPU architecture, and cost-optimization appetite.
+
+**Four of these questions are canonical, shared with `gcp-to-aws`** — see
+`references/vendored/clarify/`. Read the linked file for the question text, options,
+and interpretation rule; this fragment supplies only the Azure-specific
+auto-extraction signal, default, and disposition escalation.
 
 **The architecture default is `x86_64`, and that is a deliberate divergence from the
 rest of this repo.** Graviton is the default in the GCP and Heroku skills. Azure
@@ -36,6 +46,46 @@ someone). **Default when DETECTED:** the mapped region.
 Map from the estate's Azure regions via `knowledge/design/azure-region-map.json` — do not
 assume `us-east-1` when the estate is plainly European. `westeurope` → `eu-west-1`.
 
+This is the region-**mapping** half of the canonical region question
+(`references/vendored/clarify/clarify-region.md`). Read that file for the
+"where are your users" half. **Disposition (Q-A1b):** PROPOSED when Q-A1 resolves to a
+single mapped region (default: `"single-region"`, matching the canonical file's default
+answer 1 — the shortcut is the same one GCP's Q1 documents: a single detected
+infrastructure region does not by itself prove single-region users, but it is a reasonable
+default, correctable on the sheet); **ESSENTIAL** when the estate spans multiple Azure
+regions (the map cannot pick one AND geography genuinely needs a direct answer, mirroring
+GCP's Q1 escalation rule). A CDN / Front Door / Traffic Manager resource in the inventory is
+a DETECTED signal for `"multi-region"` or `"global"` — read it before proposing
+`"single-region"`.
+
+### Q-A1c — Compliance and regulatory requirements — **ESSENTIAL, always**
+
+Canonical question: `references/vendored/clarify/clarify-compliance.md`. **This
+question always fires for a full-infrastructure Azure migration** — there is no
+Azure-specific auto-extraction signal (compliance status is never inferable from
+ARM/Bicep/Terraform), so this fragment supplies no override to the canonical file's
+disposition, options, or default. Ask it exactly as written there.
+
+This closes a real gap: before this fragment referenced the canonical file, Azure's
+infrastructure Clarify flow asked no compliance question at all, and `estimate-infra.md`
+had to carry a permanent `compliance: null` special case as a result. Now that this
+question fires, `estimate-infra.md`'s Part 7 hard-trigger-1 first clause is no longer
+permanently true — it evaluates normally against the recorded `compliance` array.
+
+### Q-A1d — Multi-cloud portability
+
+**Disposition:** PROPOSED when compute resources are present; N/A otherwise.
+**Default:** per the canonical file — no constraint, full compute decision tree.
+
+Canonical question: `references/vendored/clarify/clarify-multicloud.md`. On this
+skill, a "yes" answer's early exit routes to EKS and skips **Q-C1** (compute target)
+in `clarify-compute.md` — any App-Service-Plan compute that would otherwise default
+to Elastic Beanstalk routes to EKS instead, overriding Q-C1's normal default. Record
+the resolved value as `design_constraints.compute_target: { value: "eks", chosen_by:
+"user", forced_by: "multi_cloud_required" }` so Q-C1 can detect the early exit and
+skip its own row entirely rather than emitting a second, conflicting compute-target
+row.
+
 ### Q-A2 — Environment scope
 
 **Disposition:** DETECTED from the resource groups and name patterns present.
@@ -54,19 +104,12 @@ design, so an invented window would add false precision to the one output people
 
 ### Q-A4 — Cost optimization appetite
 
-**Disposition:** PROPOSED. **Default:** `balanced`.
-
-```
-[A] Conservative — like-for-like capacity, lowest risk
-[B] Balanced — right-size where measured data supports it     (default)
-[C] Aggressive — smallest defensible footprint
-```
-
-**Consequence line:** _Balanced right-sizes only where measurement supports it. Aggressive
-can cut the estimate materially and needs load testing before cutover._
+Canonical question: `references/vendored/clarify/clarify-cost-appetite.md`. **Disposition:**
+PROPOSED. **Default:** `balanced` (per the canonical file).
 
 Feeds the aggressiveness slider in `knowledge/estimate/rightsizing-thresholds.json`. With no
-utilization data it changes nothing — say so on the row rather than implying it will.
+utilization data it changes nothing — say so on the row rather than implying it will (the
+canonical file states this same caveat; repeat it on the sheet, do not drop it).
 
 ### Q-A5 — Azure baseline spend
 
@@ -81,10 +124,12 @@ absent from the report, which is worth stating rather than leaving the reader to
 ```jsonc
 "global": {
   "target_region":     { "disposition": "DETECTED", "value": "eu-west-1", "default": "eu-west-1" },
+  "user_geography":    { "disposition": "PROPOSED", "value": "single-region", "default": "single-region" },
   "environment_scope": { "disposition": "DETECTED", "value": ["prod"],   "default": ["prod"] },
   "migration_window":  { "disposition": "PROPOSED", "value": null,       "default": null }
 },
 "design_constraints": {
+  "compliance":        { "disposition": "ESSENTIAL", "value": null, "default": null },
   "cost_optimization": { "disposition": "PROPOSED", "value": null, "default": "balanced" }
 },
 "baseline": {
@@ -92,8 +137,13 @@ absent from the report, which is worth stating rather than leaving the reader to
 }
 ```
 
-`cpu_architecture` is **not** here — it belongs to `clarify-compute.md`, because whether it
-is a question at all depends on whether Windows is present.
+`cpu_architecture` and `compute_target` are **not** here — they belong to
+`clarify-compute.md`'s Q-C3 and Q-C1. **This fragment writes `design_constraints
+.compute_target` itself ONLY when Q-A1d (multi-cloud) resolves to "yes"** — in that case it
+writes `{ "value": "eks", "chosen_by": "user", "forced_by": "multi_cloud_required" }` and
+Q-C1 in `clarify-compute.md` becomes N/A. When multi-cloud resolves to "no" (the default),
+this fragment writes **no** `compute_target` key at all — Q-C1 is the sole owner of that row
+in the ordinary case, exactly as before this restructure.
 
 ## Status — build step 5
 
