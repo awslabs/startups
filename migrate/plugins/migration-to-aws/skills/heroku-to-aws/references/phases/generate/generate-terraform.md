@@ -1425,7 +1425,7 @@ resource "aws_iam_role_policy" "eb_read_secrets_<app_name>" {
 
 ### `.github/workflows/deploy-eb.yml` — GitHub Actions EB Deploy (Default)
 
-Emit this file when `eb_deploy_method.value` is `"github_actions"` or absent. The workflow uses GitHub OIDC role assumption, packages the source bundle, creates one EB application version, and updates every generated EB environment for the app (web, worker, clock, custom).
+Emit this file when `eb_deploy_method.value` is `"github_actions"` or absent. For Standard Mode, the workflow uses GitHub OIDC role assumption, packages the source bundle, creates one EB application version, and updates every generated EB environment for the app (web, worker, clock, custom). For Cluster Mode, use the new Elastic Beanstalk GitHub Action to deploy directly from the repository as part of CI/CD.
 
 ```yaml
 name: Deploy Elastic Beanstalk
