@@ -24,8 +24,16 @@ Read from `$MIGRATION_DIR/`: `aws-design.json` (`clusters[]` with `pattern_statu
 `azure-resource-inventory.json` (drift + reservation signals), `preferences.json`,
 and `scenarios/index.json` if it exists (workshop what-ifs).
 
-Reuse the executive-summary renderer conventions from the shared report spec where
-available; otherwise emit clean semantic HTML (headings, tables, a table of contents).
+**Load `references/shared/report-decision-core.md` and render it in `full` mode.** That file is
+the single source of truth for every executive-summary section (Decision Summary through "What
+this assessment rests on") — verdict typography, the required section IDs, baseline-quality and
+not-comparable rules, Activate wording, and the CSS readability contract all live there. Do not
+restate or paraphrase its rules here.
+
+There is no hand-rolled fallback. If that file is missing, emit
+`GATE_FAIL | phase=generate | fragment=artifacts-report | reason=renderer_missing` and stop — a
+report that silently degrades to unstructured HTML is worse than one that fails loudly, because
+the phase still reports success and the customer still receives the file.
 
 ## Step 1: Lead with cluster-level rationale (REQUIRED — `_assert`)
 
@@ -90,12 +98,63 @@ every mapping/plan/service/headline figure = `accounted` (with the three-way agr
 above). This mirrors gcp-to-aws `report-decision-core.md` where the discovered/current
 count is a separate figure from the mapping count.
 
+## Step 3.75: Stable appendix lettering (REQUIRED — validator-enforced)
+
+Use the same stable customer-visible appendix labels as the full-report contract. The letter is
+part of the heading and TOC label; it does not shift when a conditional section is absent:
+
+| Section ID              | Visible heading prefix                               |
+| ----------------------- | ---------------------------------------------------- |
+| `appendix-services`     | Appendix A — Service Recommendations                 |
+| `appendix-costs`        | Appendix B — Cost Estimates                          |
+| `appendix-optimization` | Appendix B.1 — Savings Plans and Reserved Instances  |
+| `appendix-steps`        | Appendix C — Migration Steps and Rollback            |
+| `appendix-ai`           | Appendix D — AI Migration                            |
+| `appendix-artifacts`    | Appendix E — Generated Artifacts Catalog             |
+| `appendix-config`       | Appendix F — Your Configuration                      |
+| `appendix-security`     | Appendix G — Security Capabilities                   |
+| `appendix-security-gap` | Appendix H — Security Gap Analysis                   |
+| `appendix-assumptions`  | Appendix I — Assumptions, Exclusions, and Validation |
+| `appendix-glossary`     | Appendix J — Glossary                                |
+
+Render `appendix-artifacts` before `appendix-config`. Conditional sections keep their reserved
+letters when absent — for example, an infra-only report still uses Appendix E for artifacts,
+never renumbering it to D. The plugin-root report validator checks both `<h2>` and TOC labels.
+
 ## Step 4: Draft-for-review footer (REQUIRED — `_assert`)
 
 Every report carries a footer stating it is a draft for review, generated from the
 migration plan, and that figures are estimates to validate before decisions.
 
 > **Plan-share links are GATED OFF** (landing page not live). Do NOT emit a share link.
+
+## Step 5: Validate the rendered report (REQUIRED — mandatory gate)
+
+The prose above is not self-enforcing. Run the plugin's report validator, which is
+source-cloud-agnostic and already present at plugin root — resolve it the same way the
+`tf-best-practices` policy checker is resolved:
+
+```bash
+python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
+  "$MIGRATION_DIR/migration-report.html" \
+  --estimation-infra "$MIGRATION_DIR/estimation-infra.json" \
+  --estimation-ai "$MIGRATION_DIR/estimation-ai.json" \
+  --migration-dir "$MIGRATION_DIR"
+```
+
+Pass `--estimation-infra` / `--estimation-ai` only when those files exist in `$MIGRATION_DIR`.
+
+Branch on the exit code, exactly as gcp-to-aws's `generate.md` does:
+
+- `0` (`REPORT_OK`) — proceed.
+- `1` (`REPORT_FAIL`) — **rename** the file to `migration-report.incomplete.html` (do not
+  delete), emit every failure line to the user, and report incompleteness to the parent. Do NOT
+  present a stub as a complete report.
+- any other code — the validator did not run (e.g. `python3` unavailable). Tell the user
+  validation was skipped; never record it as a pass.
+
+The validator is stdlib-only. Do not ask the user to install Vale, Pa11y, axe, or Chromium, and
+do not skip validation because such tooling is absent — it is never required.
 
 ## Status — implemented (build step: Generate)
 

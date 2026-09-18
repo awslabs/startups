@@ -64,7 +64,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "MIGRATION_GUIDE.md has Prerequisites and Verification sections; README.md lists the generated artifacts"
     _on_failure: _halt_and_inform
-  - _assert: "migration-report.html leads with the cluster-level architecture rationale; the per-resource mapping table appears only in an appendix; a draft-for-review footer is present"
+  - _assert: "migration-report.html was rendered from references/shared/report-decision-core.md in full mode and PASSES $PLUGIN_ROOT/scripts/validate-migration-report.py (REPORT_OK, exit 0), which is the authority for required section IDs, TOC integrity, the CSS readability contract, and accessibility. A REPORT_FAIL leaves migration-report.incomplete.html and blocks completion. Additionally: the report leads with cluster-level architecture rationale, the per-resource mapping table appears only in an appendix, and a draft-for-review footer is present"
     _on_failure: _halt_and_inform
   - _assert: "if scenarios/index.json has at least 2 scenarios, migration-report.html includes the what-if comparison"
     _on_failure: _halt_and_inform
