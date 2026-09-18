@@ -48,6 +48,16 @@ Map discovered elements to Harness configuration:
 | `memory_requirement: "cross_session"`               | AgentCore Memory service                                                   | Configure memory persistence across sessions                        |
 | `memory_requirement: "none"`                        | No memory config needed                                                    | Stateless invocations                                               |
 
+**Long-term memory ingestion (`cross_session` only):**
+
+Add `agentic_design.memory_ingestion` to `aws-design-ai.json` with `api` (`"IngestData"` or `"CreateEvent"`) and `rationale` (why the workload needs that path). Omit this object for `none` or `session`. This is an application ingestion decision, not a Harness configuration property.
+
+- Choose `IngestData` when only extracted long-term records are needed and raw interactions do not need to be stored as AgentCore events, including when the application already retains them elsewhere.
+- Choose `CreateEvent` when raw interactions must remain retrievable as AgentCore short-term events or support event branching. If this requirement is unknown, confirm it before selecting an API.
+- `IngestData` uses the memory's configured long-term extraction strategies; successful submission means accepted, and records become available after processing.
+
+Source: [Ingest content into long-term memory](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/long-term-ingest-data.html).
+
 **Tool mapping decision:**
 
 ```
@@ -116,7 +126,7 @@ When Harness path is selected, write this to `aws-design-ai.json`:
         }
       ],
       "memory_enabled": true,
-      "memory_type": "session|cross_session",
+      "memory_type": "cross_session",
       "incremental_migration": true,
       "source_model_provider": "open_ai|google",
       "source_model_id": "from models[0].model_id",
@@ -124,10 +134,16 @@ When Harness path is selected, write this to `aws-design-ai.json`:
     },
     "regional_fit": "available|unavailable",
     "deployment_regions": ["from preferences.json target_region"],
+    "memory_ingestion": {
+      "api": "IngestData",
+      "rationale": "The application retains raw interactions elsewhere; only extracted long-term records are needed in AgentCore."
+    },
     "warnings": []
   }
 }
 ```
+
+**Memory fields:** This skeleton illustrates `cross_session`. Select `memory_ingestion.api` and `rationale` using the ingestion rules above; `IngestData` is not an unconditional default. For `session`, set `harness_config.memory_type` to `"session"`. For `none`, set `harness_config.memory_enabled` to `false` and omit `memory_type`. Omit `memory_ingestion` for both `none` and `session`.
 
 **Field rules:**
 
@@ -151,6 +167,7 @@ After the standard model comparison summary from `design-ai.md`, add:
 > - Approach: Config-based agent deployment on AgentCore
 > - Tools mapped: [count] tools → [types breakdown]
 > - Memory: [session/cross-session/none]
+> - Memory ingestion (cross_session only): [memory_ingestion.api] — [memory_ingestion.rationale]
 > - Incremental migration: [yes/no]
 > - Regional availability: [available/preview in target region]
 > - Estimated effort: [range] depending on [drivers from guardrails]
