@@ -60,7 +60,9 @@ Profiles below use the Graviton (`t4g.*`) default that the design phase now emit
 | Cluster fee per hour  | $0.10  |
 | Cluster fee per month | $73.00 |
 
-Worker nodes billed separately as EC2 or Fargate.
+Worker nodes billed separately: standard node groups → EC2; Fargate → per vCPU/GB.
+
+**EKS Auto Mode management fee** — not cacheable as a flat rate. Per the AWS EKS pricing page, the fee **varies by EC2 instance type**, is charged **in addition to** the EC2 instance price, billed per-second (1-min minimum), and is **independent of the EC2 purchase option** (On-Demand/RI/Savings Plans/Spot). Look up the exact per-instance-type rate via the `awspricing` MCP or aws.amazon.com/eks/pricing (>150 nodes org-wide: contact AWS account team). Do not hardcode a rate or percentage.
 
 ### EC2 (On-Demand, Linux, x86)
 
