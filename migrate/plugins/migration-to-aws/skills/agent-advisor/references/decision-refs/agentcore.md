@@ -40,6 +40,8 @@ An always-on service is still a better ECS/EKS fit — Instances sessions end at
   Verify Registry availability in its intended Region before recommending it; Runtime
   availability does not establish Registry availability. See `freshness.md`.
 - FedRAMP: authorization in progress (WIP) — verify current status; NOT a hard block
+- Identity managed consent portal: all commercial Regions where AgentCore Identity
+  is available (2026-09) — GovCloud is outside this scope; verify current list
 
 ## Deployment models
 
@@ -48,7 +50,12 @@ An always-on service is still a better ECS/EKS fit — Instances sessions end at
 
 ## Six dimensions
 
-- Identity: built-in (free), OAuth via enhanced Identity
+- Identity: built-in (free), OAuth via enhanced Identity — each Gateway gets a
+  managed consent portal (hosted web client + credential provider list), removing
+  custom OAuth callback infrastructure for 3LO flows with third-party tools in
+  commercial Regions where AgentCore Identity is available
+  ([announcement](https://aws.amazon.com/about-aws/whats-new/2026/09/amazon-bedrock-agentcore/);
+  verified 2026-09-17)
 - Observability: auto OTEL traces
 - Guardrails: Bedrock Guardrails + Policy (Cedar) for high-risk actions
 - Scaling: 5,000 concurrent sessions, 25 TPS launch (adjustable)
