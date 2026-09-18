@@ -185,6 +185,11 @@ either string form (`"*"`) or single-element list form (`["*"]`). Scope to speci
 and resource ARNs. A list that also contains scoped entries (e.g. `["s3:GetObject", ...]`) is
 not a blanket wildcard and is allowed.
 
+The narrow exception is an isolated `elasticbeanstalk:CreateStorageLocation`
+statement with `Resource = "*"`. AWS does not define resource-level permissions
+for that action; combining it with any other action does not qualify for the
+exception.
+
 **Gate mapping:** `no_wildcard_iam`. The gate scans literal policy JSON (heredoc or
 `jsonencode({...})`) in the resources above. `aws_iam_policy_document` **data sources** fail
 open (their statements are HCL blocks, not literal JSON the reader can inspect), and assume-role

@@ -77,7 +77,14 @@ const ALLOWLIST: Record<string, Set<string>> = {
     "scripts/test_build_diagram.py",
     "scripts/test_unit_grouping.py",
   ]),
+  // SKILL.md: advisor copy carries the contextual-offers final-step block, which
+  // references the advisor-only offers catalog, so it intentionally diverges from
+  // the migrate canonical copy (migrate has no offers catalog to mirror it into).
+  "gcp-to-aws": new Set([
+    "SKILL.md",
+  ]),
   "heroku-to-aws": new Set([
+    "SKILL.md",
     "references/vendored/dsl/INTERPRETER.md",
     "references/vendored/estimate/estimation-infra.schema.json",
     "references/vendored/state/phase-status.schema.json",
