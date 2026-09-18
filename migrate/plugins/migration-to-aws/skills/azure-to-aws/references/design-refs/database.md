@@ -31,6 +31,14 @@ it there.
 | `multi-az-ha`       | **Aurora** PostgreSQL / MySQL, Multi-AZ   |
 | `multi-region`      | **Aurora Global Database**                |
 
+Clarify writes `multi-region` only when the availability answer is Catastrophic **and**
+`global.user_geography` is `global` (canonical `clarify-availability.md`). If
+availability is `multi-az-ha` and geography is `global`, do **not** upgrade the family
+here — that would invent Aurora Global without the recorded availability value. If
+geography is `single-region` / `multi-region` and availability is somehow `multi-region`,
+still honor the recorded availability row (the user picked [D] on Q-D1) and say in the
+rationale that global infrastructure was requested without global users.
+
 **Why an override rather than a criterion:** availability is _never inferable from
 configuration_. A source `high_availability { mode = "ZoneRedundant" }` tells you what
 they bought, not what they need — plenty of estates carry zone-redundancy nobody asked for

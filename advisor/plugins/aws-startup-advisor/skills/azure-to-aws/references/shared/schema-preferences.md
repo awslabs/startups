@@ -55,10 +55,16 @@ licensing exposure and found none" is a different statement from silence.
   "phase": "clarify",
   "global": {
     "target_region": { "disposition": "DETECTED", "value": "eu-west-1", "default": "eu-west-1" },
+    "user_geography": {
+      "disposition": "PROPOSED",
+      "value": "single-region",
+      "default": "single-region"
+    },
     "environment_scope": { "disposition": "DETECTED", "value": ["prod"], "default": ["prod"] },
     "migration_window": { "disposition": "PROPOSED", "value": null, "default": null }
   },
   "design_constraints": {
+    "compliance": { "disposition": "ESSENTIAL", "value": [], "default": null },
     "cpu_architecture": { "disposition": "PROPOSED", "value": "x86_64", "default": "x86_64" },
     "compute_target": { "disposition": "PROPOSED", "value": null, "default": "elastic_beanstalk" },
     "cost_optimization": { "disposition": "PROPOSED", "value": null, "default": "balanced" },
@@ -154,6 +160,13 @@ distinguishes them — but only if this file recorded which happened.
 - **`isolation_split` defaults to `false`**, because splitting multiplies compute cost.
 - **`vm_cutover` and `db_cutover` have no defaults at all.** They select entirely different
   runbooks, not different numbers.
+- **`global.user_geography` defaults to `single-region`** when Q-A1 maps one Azure region
+  (PROPOSED, correctable). Design reads it for CloudFront / Route 53 (`networking.md` §2.3)
+  and Q-D1's Catastrophic branch uses it before writing `data.availability: "multi-region"`.
+- **`design_constraints.compliance` is always ESSENTIAL.** Canonical encoding:
+  `[]` = explicit none (alias `["none"]` accepted from the AI-only path); `["unknown"]` =
+  unconfirmed; named frameworks are strings like `"soc2"`. Never a scalar `"none"`. Never
+  `null` once the row has been answered. Design, Estimate, and Generate all read this array.
 
 ## Status — build step 5 (infra categories)
 

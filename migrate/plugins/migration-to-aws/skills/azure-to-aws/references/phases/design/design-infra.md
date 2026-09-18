@@ -23,6 +23,27 @@ disposition table, pass 2 is the category rubric. It applies the precedence orde
 | `references/design-refs/specialist-gates.md` | when any resource matches a `specialist_gates` row             |
 | `references/design-refs/index.md`            | when any resource matched no row in the table                  |
 | the category file `index.md` names           | per category actually present — never speculatively            |
+| `preferences.json`                           | always — geography, compliance, availability, compute target   |
+
+## Apply geography and compliance from Clarify
+
+Read these **before** pass 1. They are not mapping-table rows; they constrain which
+targets and extra services the rubrics may emit.
+
+**`global.user_geography`** (canonical region question, Q-A1b):
+
+| Value           | Design effect                                                                                                                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `single-region` | No extra CDN or Route 53 latency/geolocation policy from this row. Map Front Door / CDN only when those Azure resources exist (`networking.md`).                                                                      |
+| `multi-region`  | Require CloudFront for public HTTP edges (static assets and API caching) and Route 53 latency-based routing, even when the inventory has no Front Door.                                                               |
+| `global`        | Same CloudFront + Route 53 geolocation. **Do not** invent Aurora Global Database from geography alone — that still requires `data.availability == "multi-region"` (Catastrophic + global users, resolved in Clarify). |
+
+If `user_geography` is absent, treat as `single-region` and say so in the rationale
+(Clarify default). Do not invent a second AWS region.
+
+**`design_constraints.compliance`:** normalize `[]` and `["none"]` as no frameworks;
+`["unknown"]` as unconfirmed (full catalog, report caveat). Named frameworks gate
+region and service eligibility the same way Generate's authoring posture does.
 
 ## The admission test for Direct Mappings
 
@@ -207,6 +228,7 @@ be read; these describe what was decided.
 | `routed_by_namespace_rule`           | a type resolved by `namespace_routing` rather than an authored row. `detail` MUST name the namespace and the rubric it routed to, so the derived decision is auditable                                                                          |
 | `routed_by_child_type_rule`          | a child type folded into its parent by `child_type_rule`. `detail` MUST name the parent and what was contributed                                                                                                                                |
 | `availability_downgrade_from_source` | the source database is zone-redundant / HA but the target is single-AZ, because no availability answer was recorded. `severity: "review"` — the customer silently loses HA they were paying for unless this is said out loud (`database.md` §1) |
+| `cdn_required_by_geography`          | `user_geography` is `multi-region` or `global` and the design added CloudFront that the Azure inventory did not already imply. `detail` MUST name the geography value                                                                           |
 | `<hard_blocker key>`                 | a `hard_blockers` row, e.g. `azure_edition_windows_server`; `severity: "blocker"`                                                                                                                                                               |
 
 A cost-bearing unknown and an untranslated type produce a `halt` entry, **not** a

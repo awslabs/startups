@@ -445,11 +445,12 @@
     "must_not_be": "a warnings[] entry with no code, or a code absent from estimate-infra.md's table. An improvised code is indistinguishable from a typo to whatever groups the report."
   },
   "compliance_never_asked": {
-    "_why": "CORRECTED after capability run 6, which got this right where the fixture author wrote 'none'. NO Clarify fragment produces a compliance row: clarify-global.md emits target_region, environment_scope, migration_window, cost_optimization and azure_monthly_spend. 'none' is an answer; nobody was asked.",
+    "_why": "This after-estimate/ snapshot is a FROZEN pre-Q-A1c capability-run artifact. It does not chain from after-clarify/. Live Estimate must not emit compliance_never_asked once Clarify has a compliance row; it may emit compliance_unconfirmed for [\"unknown\"]. Keep asserting never_asked here so the frozen file does not get rewritten to fabricate [].",
+    "_stale_premise_flagged_after_clarify_fragment_restructure": "clarify-global.md always asks Q-A1c (ESSENTIAL). Canonical explicit-none is []. Regenerating this golden end-to-end is follow-up, not this PR. Workshop fixture also still trails.",
     "expected_compliance": null,
     "must_not_be": "none",
-    "must_not_be_why": "Recording 'none' fabricates an answer to an unasked question, and it silently satisfies complexity-tiers.json's compliance_present condition as evaluated-and-false when it is unevaluable.",
-    "tier_condition_unevaluable": "complexity-tiers.json lists compliance_present as one of four large conditions under match 'any'. On this skill it can never fire.",
-    "hard_trigger_1_clause_permanently_true": "Part 8's hard trigger 1 opens with 'compliance is unknown', which is always true here because the question is never put. Only its second clause does any work."
+    "must_not_be_why": "Recording scalar 'none' fabricates an answer. Live runs write [] for explicit none.",
+    "tier_condition_unevaluable": "On THIS frozen artifact, compliance_present cannot fire because compliance is null. Live runs evaluate the recorded array.",
+    "hard_trigger_1_clause_permanently_true": "On THIS frozen artifact, trigger 1's first clause was always true. Live Estimate fires it only for [\"unknown\"]/unanswered plus regulated signals — not for [] / [\"none\"]."
   }
 }

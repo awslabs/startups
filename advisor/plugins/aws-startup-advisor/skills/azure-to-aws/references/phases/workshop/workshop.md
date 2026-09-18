@@ -70,11 +70,14 @@ Knobs on the sheet: region, HA, compute target, cost optimization, CPU architect
 **The architecture default is `x86_64`** here, matching the skill default rather than
 the repo-wide Graviton default — see SKILL.md § Philosophy.
 
-## Status — skeleton (build step 1)
+## Status — build step 6
 
-Wiring only: three fragments and an assembler, with the sidebar contract
-(`_kind`, `_trigger`, `_gates`, no `_advances_to`) fully declared. The knob set and
-the reprice mechanics land in step 6.
+Implemented. The knob set (region, HA posture, compute target, cost
+optimization, CPU architecture), the Apply & reprice mechanics, the
+comparison table, and the sidebar-resolve handoff back to the decision gate
+are ported from `gcp-to-aws`'s equivalent, adapted to this skill's knobs and
+its Premium/Balanced/Optimized scenario schema — see each fragment's own
+Status note for what changed versus GCP's version.
 
 ## Step: Run the sidebar
 

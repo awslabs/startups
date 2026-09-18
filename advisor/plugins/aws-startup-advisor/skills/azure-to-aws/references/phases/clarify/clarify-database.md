@@ -47,6 +47,20 @@ What availability do your databases need on AWS?
 [D] Multi-region — Aurora Global Database
 ```
 
+Interpret → `data.availability`:
+
+| Answer | Write          | When `global.user_geography` is not `global`                                                                                                                                   |
+| ------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [A]    | `single-az`    | —                                                                                                                                                                              |
+| [B]    | `multi-az`     | —                                                                                                                                                                              |
+| [C]    | `multi-az-ha`  | —                                                                                                                                                                              |
+| [D]    | `multi-region` | Still write `multi-region` (the user picked [D]). Design honors it and says in the rationale that global infrastructure was requested without global users (`database.md` §1). |
+
+Canonical `clarify-availability.md`: Catastrophic + `user_geography: "global"` is the
+combination that **warrants** Aurora Global. Do not auto-upgrade [C] to `multi-region`
+because geography is global — that would invent Aurora Global without the recorded
+availability answer. Do not refuse [D] when geography is `single-region` / `multi-region`.
+
 **Consequence line (PROPOSED case):** _Assuming single-AZ → the smallest defensible
 database line. Multi-AZ roughly doubles it and buys automatic failover; Aurora is a
 different operational model again._

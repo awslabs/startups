@@ -30,3 +30,8 @@ CI enforces that these copies are byte-identical to the canonical source
 | `ai/design-ref-harness.md`              | `skills/shared/ai/design-ref-harness.md`              |
 | `ai/design-ref-agentic-to-agentcore.md` | `skills/shared/ai/design-ref-agentic-to-agentcore.md` |
 | `ai/sdk-capability-map.json`            | `skills/shared/ai/sdk-capability-map.json`            |
+| `clarify/clarify-region.md`             | `skills/shared/clarify/clarify-region.md`             |
+| `clarify/clarify-compliance.md`         | `skills/shared/clarify/clarify-compliance.md`         |
+| `clarify/clarify-availability.md`       | `skills/shared/clarify/clarify-availability.md`       |
+| `clarify/clarify-cost-appetite.md`      | `skills/shared/clarify/clarify-cost-appetite.md`      |
+| `clarify/clarify-multicloud.md`         | `skills/shared/clarify/clarify-multicloud.md`         |

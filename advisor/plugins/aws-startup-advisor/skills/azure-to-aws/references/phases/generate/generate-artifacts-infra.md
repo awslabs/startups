@@ -134,7 +134,9 @@ that satisfies whatever posture it returns. Do NOT reach into its files.
 Caller context to pass:
 
 - **`compliance`** — `preferences.json` → `design_constraints.compliance` (array; may be
-  empty/absent). Empty ⇒ no compliance-conditional hardening.
+  empty/absent). `[]`, absent, and `["none"]` ⇒ no compliance-conditional hardening.
+  `["unknown"]` ⇒ same catalog as none, plus the report caveat. Named frameworks ⇒
+  hardening from `tf-best-practices`.
 - **`aws_config` values** — instance classes, CPU/memory, storage, engine versions per
   service. The posture constrains shape, not numbers.
 

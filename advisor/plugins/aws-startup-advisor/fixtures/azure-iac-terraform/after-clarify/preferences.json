@@ -23,9 +23,21 @@
       "disposition": "PROPOSED",
       "value": null,
       "default": null
+    },
+    "user_geography": {
+      "disposition": "PROPOSED",
+      "value": "single-region",
+      "default": "single-region"
     }
   },
   "design_constraints": {
+    "compliance": {
+      "disposition": "ESSENTIAL",
+      "value": null,
+      "default": null,
+      "unanswered": true,
+      "blocks_phase": true
+    },
     "cpu_architecture": {
       "disposition": "DETECTED",
       "value": "x86_64",

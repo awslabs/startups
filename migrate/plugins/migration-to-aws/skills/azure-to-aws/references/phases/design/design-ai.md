@@ -84,8 +84,9 @@ run); it does not replace it.
 
 ## Step 0.7: Apply compliance constraints
 
-Read `preferences.json` → `design_constraints.compliance`. Skip only when `none`/`unknown`/
-absent (record the caveat when `unknown`). Otherwise apply BEFORE Part 1 as hard filters:
+Read `preferences.json` → `design_constraints.compliance`. Skip only when the value is
+absent, `[]`, `["none"]`, or `["unknown"]` (record the caveat when `unknown`). Named
+frameworks apply BEFORE Part 1 as hard filters:
 `hipaa` → BAA-eligible Bedrock models + KMS-encrypted invocation logs; `fedramp` → GovCloud
 region, re-run Step 0.5, a `regional_warnings[]` entry per unavailable model; `gdpr` → EU
 region with geographic `eu.` inference profiles (`global.` forbidden); `pci`/`soc2`/`ccpa` →

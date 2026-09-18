@@ -12,6 +12,15 @@
       ],
       "why": "every resource is westeurope, so the region is MAPPED from the estate, not proposed. The wrong answer is the repo-wide us-east-1 default, which would silently move a European estate to Virginia."
     },
+    "global.user_geography": {
+      "disposition": "PROPOSED",
+      "value": "single-region",
+      "must_not_be_disposition": [
+        "ESSENTIAL",
+        "N/A"
+      ],
+      "why": "one Azure region, so Q-A1b defaults to single-region. Design's CDN/Route 53 path and Q-D1's Catastrophic branch read this row; omitting it still passed the golden until it was pinned."
+    },
     "design_constraints.cpu_architecture": {
       "disposition": "DETECTED",
       "value": "x86_64",
@@ -23,6 +32,15 @@
       ],
       "why": "a Windows VM is present, so x86_64 is not a CHOICE \u2014 graviton.md's escape path applies. Offering it as PROPOSED implies Graviton is available for that VM, and it is not.",
       "_requires_keys_why": "forced_by, not source: x86_64 here is not a free reading of the estate, it is FORCED by a Windows workload that removes Graviton as an option. schema-preferences.md gives forced_by precedence over the disposition's usual key for exactly this case."
+    },
+    "design_constraints.compliance": {
+      "disposition": "ESSENTIAL",
+      "value": [],
+      "must_not_be_disposition": [
+        "PROPOSED",
+        "DETECTED"
+      ],
+      "why": "Compliance status is never inferable from ARM/Bicep/Terraform, so this question always fires. Canonical explicit-none is [] (clarify-compliance.md answer 1), not [\"none\"]. The scripted user answers it on this branch (unlike the blocked branch), which is required for clarify_status to reach COMPLETE."
     },
     "design_constraints.compute_target": {
       "disposition": "PROPOSED",
