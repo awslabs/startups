@@ -3,16 +3,18 @@ _phase: generate
 _title: "Generate Migration Artifacts"
 _requires_phase: estimate
 _input:
-  - aws-design.json
-  - estimation-infra.json
   - preferences.json
-  - azure-resource-inventory.json
+  - { file: aws-design.json, _when: "run has an infra track" }
+  - { file: estimation-infra.json, _when: "run has an infra track" }
+  - { file: azure-resource-inventory.json, _when: "run has an infra track" }
+  - { file: aws-design-ai.json, _when: "run has an AI track" }
+  - { file: estimation-ai.json, _when: "run has an AI track" }
 _fragments:
   - _id: artifacts-infra
-    _trigger: { _always: true }
+    _trigger: { _when: "run has an infra track (aws-design.json + estimation-infra.json exist)" }
     _file: phases/generate/generate-artifacts-infra.md
   - _id: artifacts-docs
-    _trigger: { _always: true }
+    _trigger: { _when: "run has an infra track (MIGRATION_GUIDE.md/terraform docs apply)" }
     _file: phases/generate/generate-artifacts-docs.md
   - _id: artifacts-report
     _trigger: { _always: true }
@@ -23,17 +25,17 @@ _fragments:
 _assemble:
   _file: phases/generate/generate-assemble.md
 _produces:
-  - terraform/main.tf
-  - terraform/variables.tf
-  - terraform/outputs.tf
-  - terraform/.gitignore
-  - terraform/terraform.tfvars.example
-  - MIGRATION_GUIDE.md
-  - README.md
   - migration-report.html
   - generation-warnings.json
   - validation-report.json
-  - generation-ai.json
+  - README.md
+  - { file: terraform/main.tf, _when: "run has an infra track" }
+  - { file: terraform/variables.tf, _when: "run has an infra track" }
+  - { file: terraform/outputs.tf, _when: "run has an infra track" }
+  - { file: terraform/.gitignore, _when: "run has an infra track" }
+  - { file: terraform/terraform.tfvars.example, _when: "run has an infra track" }
+  - { file: MIGRATION_GUIDE.md, _when: "run has an infra track" }
+  - { file: generation-ai.json, _when: "run has an AI track and run_mode is decide_and_execute" }
 _advances_to: complete
 _interactive: false
 _exec:
@@ -45,26 +47,20 @@ _preconditions:
     _on_failure: _halt_and_inform
   - _check_single_active_phase: true
     _on_failure: _halt_and_inform
-  - _check_file_exists: [aws-design.json, estimation-infra.json, preferences.json, azure-resource-inventory.json]
-    _on_failure: _unrecoverable
-  - _validate_json: [aws-design.json, estimation-infra.json, preferences.json, azure-resource-inventory.json]
+  - _assert: "preferences.json exists and validates. WHEN the run has an infra track (azure-resource-inventory.json was produced at Discover): aws-design.json, estimation-infra.json, and azure-resource-inventory.json also exist and validate as JSON. WHEN the run is AI-only / app-code-only (no azure-resource-inventory.json — the app-code-only Discover/Clarify-ai-only/Design-ai/Estimate-ai track): those infra artifacts are ABSENT and instead ai-workload-profile.json, aws-design-ai.json, and estimation-ai.json exist and validate. A run with NEITHER an infra design nor an AI design is unrecoverable."
     _on_failure: _unrecoverable
   - _assert: "run_mode in .phase-status.json is 'decide_and_execute' — the user chose Execute at the post-Estimate decision gate, accepted the decide-complete resume offer, or explicitly asked for Terraform/migration scripts this turn. An absent run_mode is NOT consent."
     _on_failure: _halt_and_inform
 _postconditions:
-  - _check_file_exists: [terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json, validation-report.json]
+  - _assert: "the always-produced artifacts exist and (where JSON) validate: migration-report.html, generation-warnings.json, validation-report.json, README.md. WHEN the run has an infra track: terraform/main.tf, terraform/variables.tf, terraform/outputs.tf, terraform/.gitignore, terraform/terraform.tfvars.example, and MIGRATION_GUIDE.md also exist. WHEN the run is AI-only (no aws-design.json / estimation-infra.json): there is no terraform/ directory and no MIGRATION_GUIDE.md; instead generation-ai.json exists and validates and an ai-migration/ directory was produced. migration-report.html is required on BOTH paths — a completed Generate with no report is a gate failure."
     _on_failure: _halt_and_inform
   - _validate_json: [generation-warnings.json, validation-report.json]
     _on_failure: _halt_and_inform
-  - _assert: "validation-report.json (written by the MAIN-WINDOW validation step, not the rw worker) has status in {passed, passed_degraded_offline, skipped_user_continue} AND policy_status == POLICY_OK — unless the user chose skip/abort on a policy failure, in which case status may be policy_failed / policy_status POLICY_FAIL and the phase completes only by that explicit user choice. The tf-best-practices policy gate runs regardless of the offline path, so policy_status is never masked by passed_degraded_offline."
+  - _assert: "validation-report.json (written by the MAIN-WINDOW validation step, not the rw worker) has status in {passed, passed_degraded_offline, skipped_user_continue} AND policy_status == POLICY_OK. On an AI-only run its terraform_dir is ai-migration (the Bedrock monitoring stack is the only generated Terraform) and the tf-best-practices policy gate still runs against it — unless the user chose skip/abort on a policy failure, in which case status may be policy_failed / policy_status POLICY_FAIL and the phase completes only by that explicit user choice. The tf-best-practices policy gate runs regardless of the offline path, so policy_status is never masked by passed_degraded_offline."
     _on_failure: _halt_and_inform
-  - _assert: "terraform/main.tf has a valid provider configuration; terraform/variables.tf declares at least an aws_region variable"
+  - _assert: "WHEN the run has an infra track: terraform/main.tf has a valid provider configuration; terraform/variables.tf declares at least an aws_region variable; at least one domain .tf file exists beyond the core files; and MIGRATION_GUIDE.md has Prerequisites and Verification sections. WHEN AI-only: vacuously satisfied (no terraform/ or MIGRATION_GUIDE.md on this path). README.md lists the generated artifacts on every path."
     _on_failure: _halt_and_inform
-  - _assert: "at least one domain .tf file exists beyond the core files"
-    _on_failure: _halt_and_inform
-  - _assert: "MIGRATION_GUIDE.md has Prerequisites and Verification sections; README.md lists the generated artifacts"
-    _on_failure: _halt_and_inform
-  - _assert: "migration-report.html was rendered from references/shared/report-decision-core.md in full mode and PASSES $PLUGIN_ROOT/scripts/validate-migration-report.py (REPORT_OK, exit 0), which is the authority for required section IDs, TOC integrity, the CSS readability contract, and accessibility. A REPORT_FAIL leaves migration-report.incomplete.html and blocks completion. Additionally: the report leads with cluster-level architecture rationale, the per-resource mapping table appears only in an appendix, and a draft-for-review footer is present"
+  - _assert: "migration-report.html ALWAYS exists (it is a required _produces artifact on every path — an infra/mixed run and an AI-only app-code run alike; a completed Generate with no report is a gate failure, never a silent skip). It was rendered from references/shared/report-decision-core.md and PASSES $PLUGIN_ROOT/scripts/validate-migration-report.py (REPORT_OK, exit 0), which is the authority for required section IDs, TOC integrity, the CSS readability contract, and accessibility. Infra/mixed runs render full mode (validated default mode); an AI-only run (no aws-design.json / estimation-infra.json) renders AI-only mode and is validated with --mode ai_only --estimation-ai estimation-ai.json. A REPORT_FAIL leaves migration-report.incomplete.html and blocks completion. Additionally, for a run with an infra track: the report leads with cluster-level architecture rationale, the per-resource mapping table appears only in an appendix, and a draft-for-review footer is present"
     _on_failure: _halt_and_inform
   - _assert: "if scenarios/index.json has at least 2 scenarios, migration-report.html includes the what-if comparison"
     _on_failure: _halt_and_inform

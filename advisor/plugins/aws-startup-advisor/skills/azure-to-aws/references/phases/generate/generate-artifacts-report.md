@@ -35,6 +35,44 @@ There is no hand-rolled fallback. If that file is missing, emit
 report that silently degrades to unstructured HTML is worse than one that fails loudly, because
 the phase still reports success and the customer still receives the file.
 
+## AI-only report path (REQUIRED when there is no infrastructure track)
+
+An app-code-only / AI-workload repo produces the AI artifacts but **no infra track** —
+`aws-design.json`, `estimation-infra.json`, and `terraform/` do not exist, only
+`ai-workload-profile.json`, `aws-design-ai.json`, `estimation-ai.json`,
+`generation-ai.json`, and `ai-migration/`. `migration-report.html` is **still a required
+`_produces` artifact on this path** — never skip it. A completed Generate with no report
+is the silent-degradation failure this fragment exists to prevent.
+
+When `aws-design.json` and `estimation-infra.json` are BOTH absent but the AI artifacts
+exist, render `migration-report.html` in **AI-only mode**: still load
+`references/shared/report-decision-core.md` for the decision-core section rules
+(verdict typography, `exec-assumptions`, `exec-risks`, Activate wording, the CSS
+readability contract), but source every figure from the AI artifacts and OMIT the infra
+executive/appendix sections (`exec-services`, `exec-costs`, `appendix-costs`,
+`appendix-services`, `appendix-steps`) that no infra track can populate. Required sections
+on this path: `decision-summary`, `exec-assumptions`, `exec-risks`, `appendix-ai`,
+`appendix-artifacts`, `appendix-config`, `appendix-glossary`. Render:
+
+- **`decision-summary`** — the verdict from `estimation-ai.json` -> `recommendation`
+  (e.g. already-on-Bedrock -> `go`, model_change:false), the AI monthly run rate from
+  `cost_comparison` (labeled estimated, with the accuracy band), and the residual Azure
+  coupling as the real migration work (e.g. retarget Azure AI Search -> OpenSearch
+  Serverless / Bedrock Knowledge Bases; re-embed at the target dimension).
+- **`exec-optimization`** (REQUIRED when `estimation-ai.json` -> `optimization_opportunities`
+  is non-empty, e.g. a `provisioned_throughput` entry) — the same standalone-section rule
+  as the full report; a buried table does not satisfy it.
+- **`appendix-ai`** — the model migration table from `aws-design-ai.json` (each
+  `models_to_migrate` with model_change / migration_path), the feature-flag rollback
+  (`AI_PROVIDER`), and the vector-store re-index note.
+- **`appendix-artifacts`** — the `ai-migration/` catalog (setup, adapter/mantle, comparison
+  test, `bedrock_monitoring.tf`) and `STARTUP_PROGRAMS.md`.
+- **`appendix-config`** — the `preferences.json` values and every `chosen_by: "default"`
+  assumption (token volume, compliance-unknown, region) with its consequence.
+
+Step 3.5's infra resource-count rule does not apply (no `aws-design.json` services); the
+AI accounting lives in `appendix-ai`. Step 5 validates this report with `--mode ai_only`.
+
 ## Step 1: Lead with cluster-level rationale (REQUIRED — `_assert`)
 
 The report OPENS with the workload story, one block per `clusters[]` entry:
@@ -143,6 +181,8 @@ python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" \
 ```
 
 Pass `--estimation-infra` / `--estimation-ai` only when those files exist in `$MIGRATION_DIR`.
+
+**AI-only path:** when there is no infra track (no `estimation-infra.json`), add `--mode ai_only` so the validator requires the AI-only section set (`decision-summary`, `exec-assumptions`, `exec-risks`, `appendix-ai`, `appendix-artifacts`, `appendix-config`, `appendix-glossary`) instead of the infra sections. Pass `--estimation-ai "$MIGRATION_DIR/estimation-ai.json"`.
 
 Branch on the exit code, exactly as gcp-to-aws's `generate.md` does:
 

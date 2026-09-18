@@ -29,6 +29,8 @@ _produces:
 
 ## Step 1: Account for every designed service
 
+**Route on what exists (mirrors gcp-to-aws generate accounting).** When the run is AI-only / app-code-only there is no `aws-design.json` and no emitted `terraform/` — account against the AI artifacts instead: every `aws-design-ai.json` `models_to_migrate` entry is either **generated** (its adapter/monitoring landed in `ai-migration/`, e.g. `provider_adapter.py` / `migrate_to_mantle.sh`, `bedrock_monitoring.tf`) or carries a `generation-warnings.json` entry (e.g. `already_on_bedrock` model_change:false, or a `residual_azure_dependency` such as an Azure AI Search vector store to retarget). Any AI model or residual coupling that is neither generated nor warned is a dropped item — a gate failure. The `.tf`/secret/placeholder scans in Step 3 run against `ai-migration/*.tf` on this path. The rest of this step (below) applies to a run WITH an infra track.
+
 Walk `aws-design.json` `services[]`. Each entry must be in exactly one of these states,
 and the state must be demonstrable:
 
