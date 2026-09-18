@@ -10,7 +10,7 @@ _produces:
   - ai-workload-profile.json
 _knowledge:
   - { file: references/shared/schema-discover-azure.md }
-  - { file: references/shared/schema-discover-ai.md, _when: "application code with an AI signal is present" }
+  - { file: references/shared/schema-discover-ai.md, _when: "application code with an AI signal is present OR the IaC contribution contains a Cognitive Services account/deployment or Machine Learning workspace" }
   - { file: references/clustering/clustering-algorithm.md }
   - { file: references/clustering/typed-edges-strategy.md }
   - { file: references/clustering/classification-rules.md }
@@ -57,6 +57,12 @@ the validation checklist.
    `tier`, `primary`, member roles, and `justification`. `clustering-algorithm.md` is the
    procedure; `typed-edges-strategy.md` says which edge types may merge and which are
    ambient; `classification-rules.md` picks the primary; `tiering.md` assigns the tier.
+
+8. Merge AI-profile contributions by producer. IaC only ->
+   `metadata.profile_source: "iac_cognitive"`; app-code only -> `"application_code"`; both ->
+   `"merged"`, with code winning conflicts and `infrastructure[]` unioned by `address`.
+   Preserve both `sources_analyzed` flags. A strong IaC AI signal without an IaC profile
+   contribution is an assembly failure, not an optional absence.
 
 ## Confidence vocabulary
 

@@ -6,10 +6,10 @@
 > is the Azure port of gcp-to-aws's `schema-discover-ai.md`, kept parallel so the downstream AI
 > ports stay straight; the only changes are the source-provider swaps recorded in § Azure swaps.
 
-Produced by `discover-app-code.md` when app-code AI confidence ≥ 70% (build step 4), OR — as a
+Produced by `discover-app-code.md` when app-code AI confidence ≥ 70%, OR — as a
 minimal IaC-inferred profile — by `discover-iac.md` when the inventory is Cognitive-Services /
-Azure-ML strong. Until `discover-app-code.md` lands, the only producer is the IaC path, so a
-profile exists only for an estate whose AI infra is in Terraform.
+Azure-ML strong. Both producers have landed. An infrastructure-only repo (AI in Terraform,
+no application code) depends on the IaC path; an app-code-only repo depends on the app-code path.
 
 ## Shape
 
@@ -209,6 +209,6 @@ Present ONLY if `agentic_profile` exists (`[]` if agentic but no tools). Provide
 
 ## Status — build step 3 (contract)
 
-Written as the AI-track contract. Its producer `discover-app-code.md` lands in step 4; until
-then `discover-iac.md`'s Cognitive-Services path is the only writer (minimal `iac_cognitive`
-profile).
+Written as the AI-track contract. `discover-app-code.md` is the application-code producer
+(build step 4, now landed). `discover-iac.md`'s Cognitive-Services path is the
+infrastructure-only producer (minimal `iac_cognitive` profile).

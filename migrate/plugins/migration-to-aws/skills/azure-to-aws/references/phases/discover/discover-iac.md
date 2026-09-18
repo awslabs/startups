@@ -3,6 +3,7 @@ _fragment: iac
 _of_phase: discover
 _contributes:
   - azure-resource-inventory.json (resources[], iac_metadata section)
+  - ai-workload-profile.json (minimal iac_cognitive profile when Azure AI infrastructure is present)
 ---
 
 # Discover — Infrastructure as Code
@@ -123,6 +124,59 @@ Append to `azure-resource-inventory.json`'s `resources[]` and write `iac_metadat
 `resources[]` must contain at least one entry sourced from each dialect that was
 found. "The fragment ran" proves nothing — it always runs and may exit empty.
 
+## Step 4.5: Contribute the IaC-inferred AI profile
+
+After extraction, inspect the canonical inventory contribution. A **strong Azure AI
+infrastructure signal** is any resource whose case-folded `azure_type` is:
+
+- `Microsoft.CognitiveServices/accounts`
+- `Microsoft.CognitiveServices/accounts/deployments`
+- `Microsoft.MachineLearningServices/workspaces`
+
+`Microsoft.Search/searchServices` alone is not a strong signal: a search service may be a
+keyword-only index. Include it in `infrastructure[]` only when at least one strong signal is
+present.
+
+When no strong signal is present, contribute no AI profile. When one is present, contribute a
+minimal `ai-workload-profile.json` payload conforming to
+`references/shared/schema-discover-ai.md`:
+
+1. Set `metadata.profile_source: "iac_cognitive"` and
+   `metadata.sources_analyzed.terraform: true`; all unavailable source flags are `false`.
+2. Set `summary.inferred_from_iac: true`. Use `summary.ai_source: "azure_openai"` when an
+   account has `config.kind` equal to `OpenAI` (case-insensitive) OR a deployment's model
+   format is `OpenAI`; otherwise use `"other"`. Never infer `openai`, `anthropic`, or `both`
+   from Azure infrastructure alone.
+3. Copy every strong-signal resource, plus supporting Search resources, into
+   `infrastructure[]` as `{ address, type, file, role, config }`. `address` and `file` come
+   from `config.tf_address` and `config.tf_file`; `type` is the original Terraform type when
+   available, otherwise the canonical Azure type. `role` is `account`, `deployment`,
+   `ml_workspace`, or `search`.
+4. For each Cognitive Services deployment whose extracted `config.model.name` is a literal,
+   add one deduplicated `models[]` row. Use the model name as `model_id`, service
+   `azure_openai`, `detected_via: ["terraform"]`, evidence naming the Terraform file and
+   address, and capabilities derived only from an unambiguous model family:
+   `text-embedding-*` -> `embeddings`; `dall-e-*` / `gpt-image-*` -> `image_generation`;
+   `whisper-*` -> `speech_to_text`; `tts-*` -> `text_to_speech`; otherwise
+   `text_generation`. An expression or unknown model name produces no model row; do not turn
+   a deployment name into a base model.
+5. Set `integration.primary_sdk: null`, `sdk_version: null`, `frameworks: []`,
+   `languages: []`, `pattern: "unknown"`, `gateway_type: null`, and a
+   `capabilities_summary` derived from the model rows. IaC proves deployed infrastructure,
+   not which SDK or language calls it.
+6. Set `workloads: []`. A workload requires a call site and SDK method; infrastructure alone
+   cannot supply either. Omit `current_costs`, `agentic_profile`, and `tool_manifest`.
+7. Add one `detection_signals[]` entry per strong resource with `method: "terraform"`,
+   `confidence: 0.95` for a deployment or an account whose kind is OpenAI, otherwise `0.85`,
+   and evidence naming its Terraform address and file. Set
+   `summary.overall_confidence` to the highest signal and derive `confidence_level`
+   (`high` at >=0.90, otherwise `medium`).
+
+The assembler is still the single writer of the final file. This fragment contributes the
+payload. If the app-code fragment also contributes one, merge per
+`discover-app-code.md` Step 8: code wins on conflict, union `infrastructure[]` by address,
+set both source flags, and set `metadata.profile_source: "merged"`.
+
 ## Step 5: Never emit a secret
 
 App settings and connection strings contribute **names only**. Storage account keys,
@@ -139,15 +193,17 @@ downloaded module SOURCE, which is exactly as safe as a local module path and ca
 resolved values. Reading it is what stops a repo built on Azure Verified Modules from
 producing a nearly empty inventory. See `extract-terraform.md` Step 3.
 
-## Status — build step 2 (partial)
+## Status - build steps 2 and 3 (partial)
 
 **Terraform is implemented**, via `extract-terraform.md` plus
 `arm-type-canonicalization.md`. It is exercised by the `azure-iac-terraform` fixture
-and its asserter.
+and its asserter. The minimal `iac_cognitive` AI-profile producer is implemented for
+Terraform-discovered Cognitive Services and Azure Machine Learning resources.
 
-| Lands in | What                                    |
-| -------- | --------------------------------------- |
-| step 2   | `extract-bicep.md` and `extract-arm.md` |
+| Lands in | What                                                            |
+| -------- | --------------------------------------------------------------- |
+| step 2   | `extract-bicep.md` and `extract-arm.md`                         |
+| done     | Minimal `iac_cognitive` producer for `ai-workload-profile.json` |
 
 Until those two refs exist, a workspace containing `.bicep` or ARM templates **halts**
 per Step 2 rather than partially discovering. That is deliberate: a partial inventory
