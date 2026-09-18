@@ -19,7 +19,7 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
 
    > **Here's how this works.** Six phases: I scan your Terraform, app code, or billing data; confirm a few assumptions with you; then design the AWS architecture, price it, and generate everything. Your part is small — most answers come from your own files; you'll typically confirm one summary sheet and answer 2–7 questions. At the end you get a migrate-or-stay recommendation with costs, Terraform for the in-scope workloads, and step-by-step migration scripts. You can stop at any point — progress is saved and I'll resume where you left off.
 
-   Do not pad it, restate it later, or block on it — continue directly into discovery in the same turn.
+   Do not pad it, restate it later, or block on it — continue directly into run setup in the same turn; the consent question in step 4 below is the only stop before discovery.
 
 1. Check for existing `.migration/` directory at the project root.
    - **If existing runs found:** List them with their phase status and ask:
@@ -39,7 +39,61 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
 
    This prevents accidental commits of migration artifacts.
 
-4. Write `.phase-status.json` with exact schema:
+4. **Telemetry consent (once, before any state is written).** This is the one
+   place run setup waits for an answer:
+
+   1. Locate the emitter. `CLAUDE_PLUGIN_ROOT` is set by Claude Code only, so
+      other hosts fall through to the search; `find -L` because a local install
+      is often a symlink, and the wildcard after the plugin name because a
+      marketplace install interposes a version directory.
+
+      ```bash
+      EMIT="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/hooks/telemetry/emit.mjs}"
+      if [ ! -f "$EMIT" ]; then
+        for base in "$HOME/.cursor/plugins" "$HOME/.claude/plugins"; do
+          [ -d "$base" ] || continue
+          EMIT=$(find -L "$base" -maxdepth 8 -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' 2>/dev/null | head -1)
+          [ -n "$EMIT" ] && break
+        done
+      fi
+      if [ ! -f "$EMIT" ]; then
+        HOMEDIR=$(cd -P "$HOME" 2>/dev/null && pwd)
+        EMIT=$(find "${HOMEDIR:-$HOME}" -maxdepth 10 \
+          \( -name node_modules -o -name Library -o -name .git -o -name .Trash -o -name .cache \) -prune -o \
+          -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' -print 2>/dev/null | head -1)
+      fi
+      ```
+
+      If no emitter is found, skip this step entirely and continue: consent
+      stays unset, telemetry stays off, and the migration is never blocked by it.
+
+   2. Run `node "$EMIT" consent get`. Anything other than `unset` means this
+      project already has a decision: do not ask again and skip the rest of this
+      consent step.
+
+   3. On `unset`, ask once, verbatim:
+
+      > Before we start: may I share anonymous progress data about this migration
+      > with AWS — which phases complete and how the run ends, the approximate size
+      > of your estate and whether it includes a database or AI, your current
+      > monthly spend as a range, and the recommendation this tool reaches? It never
+      > includes your code, file paths, resource names, project or app names,
+      > account details, or exact costs. It's optional, this migration works exactly
+      > the same either way, and you can ask me to stop sharing at any time.
+
+   4. Record the answer with the command, never by writing the file yourself:
+      yes → `node "$EMIT" consent grant`; no → `node "$EMIT" consent revoke`.
+      A decline is recorded locally and nothing is ever sent for it; treat "no"
+      as final. Acknowledge in one line and move on. Do not re-ask, do not argue,
+      do not repeat the offer later in the run.
+   5. If the customer later asks to stop sharing, run `node "$EMIT" consent revoke`,
+      confirm in one line, and never re-offer; nothing more is sent for this
+      project.
+
+   This ordering (run directory first, consent second, phase status third) is
+   mandatory: asking later would lose the run's opening transitions.
+
+5. Write `.phase-status.json` with exact schema:
 
    ```json
    {
@@ -62,7 +116,7 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
 
    `run_id` is minted once here: run `uuidgen` (or an equivalent random UUID source) and write its output verbatim; never copy a value from an example or a previous run. It is never changed or reused across runs; unlike `migration_id` it carries no timestamp, so it uniquely identifies this run for telemetry and for the plugin-to-web handoff. `owning_skill` is always `GCP_TO_AWS`. If another skill invoked this run (llm-to-bedrock does, for Assess), also set `initiated_by` to that skill's identifier, e.g. `"initiated_by": "LLM_TO_BEDROCK"`.
 
-5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before proceeding to Step 1.
+6. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before proceeding to Step 1.
 
 ## Step 1: Scan for Input Sources and Run Sub-Discoveries
 

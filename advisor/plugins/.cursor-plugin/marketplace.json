@@ -1,0 +1,16 @@
+{
+  "name": "startups-advisor",
+  "owner": {
+    "name": "Amazon Web Services"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "description": "AWS Startup Advisor plugin for Cursor: architecture, cost, security, and migration to AWS."
+  },
+  "plugins": [
+    {
+      "name": "aws-startup-advisor",
+      "source": "./aws-startup-advisor"
+    }
+  ]
+}

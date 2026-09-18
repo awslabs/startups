@@ -544,10 +544,10 @@ cold start that begins a migration.
 (Paths below use the default run root `.migration/` — substitute the skill's
 declared run root (§ Skill bindings). A skill that declares its own state shape
 writes `.phase-status.json` per its SKILL.md's state-file section instead of the
-shared schema in step 4. The run-identity keys in step 4 (`run_id`,
-`owning_skill`, `initiated_by`) are seeded only under the literal default root
-`.migration/`; a skill that declares its own run root, such as agent-advisor,
-skips them and keeps its own state contract.)
+shared schema in step 5. The consent step (step 4) and the run-identity keys in
+step 5 (`run_id`, `owning_skill`, `initiated_by`) apply only under the literal
+default root `.migration/`; a skill that declares its own run root, such as
+agent-advisor, skips both and keeps its own state contract.)
 
 1. Check for an existing `.migration/` directory at the project root.
    - **If existing runs are found:** list them with their phase status and ask:
@@ -575,7 +575,62 @@ skips them and keeps its own state contract.)
 
    This prevents accidental commits of migration artifacts.
 
-4. Write `.phase-status.json` per the schema
+4. **Telemetry consent (default run root only; once, before any state is
+   written).** Skip this step if the skill declares its own run root: nothing is
+   ever reported for such runs, so there is nothing to consent to. Otherwise:
+
+   1. Locate the emitter. `CLAUDE_PLUGIN_ROOT` is set by Claude Code only, so
+      other hosts fall through to the search; `find -L` because a local install
+      is often a symlink, and the wildcard after the plugin name because a
+      marketplace install interposes a version directory.
+
+      ```bash
+      EMIT="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/hooks/telemetry/emit.mjs}"
+      if [ ! -f "$EMIT" ]; then
+        for base in "$HOME/.cursor/plugins" "$HOME/.claude/plugins"; do
+          [ -d "$base" ] || continue
+          EMIT=$(find -L "$base" -maxdepth 8 -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' 2>/dev/null | head -1)
+          [ -n "$EMIT" ] && break
+        done
+      fi
+      if [ ! -f "$EMIT" ]; then
+        HOMEDIR=$(cd -P "$HOME" 2>/dev/null && pwd)
+        EMIT=$(find "${HOMEDIR:-$HOME}" -maxdepth 10 \
+          \( -name node_modules -o -name Library -o -name .git -o -name .Trash -o -name .cache \) -prune -o \
+          -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' -print 2>/dev/null | head -1)
+      fi
+      ```
+
+      If no emitter is found, skip this step entirely and continue: consent
+      stays unset, telemetry stays off, and the migration is never blocked by it.
+
+   2. Run `node "$EMIT" consent get`. Anything other than `unset` means this
+      project already has a decision: do not ask again and skip the rest of this
+      consent step.
+
+   3. On `unset`, ask once, verbatim:
+
+      > Before we start: may I share anonymous progress data about this migration
+      > with AWS — which phases complete and how the run ends, the approximate size
+      > of your estate and whether it includes a database or AI, your current
+      > monthly spend as a range, and the recommendation this tool reaches? It never
+      > includes your code, file paths, resource names, project or app names,
+      > account details, or exact costs. It's optional, this migration works exactly
+      > the same either way, and you can ask me to stop sharing at any time.
+
+   4. Record the answer with the command, never by writing the file yourself:
+      yes → `node "$EMIT" consent grant`; no → `node "$EMIT" consent revoke`.
+      A decline is recorded locally and nothing is ever sent for it; treat "no"
+      as final. Acknowledge in one line and move on. Do not re-ask, do not argue,
+      do not repeat the offer later in the run.
+   5. If the customer later asks to stop sharing, run `node "$EMIT" consent revoke`,
+      confirm in one line, and never re-offer; nothing more is sent for this
+      project.
+
+   This ordering (run directory first, consent second, phase status third) is
+   mandatory: asking later would lose the run's opening transitions.
+
+5. Write `.phase-status.json` per the schema
    `references/vendored/state/phase-status.schema.json`. Seed `phases` with ONE entry per
    phase the skill declares (its phase files), all `"pending"` EXCEPT this `_init`
    phase which is `"in_progress"`; set `migration_id` to `[MMDD-HHMM]`,
@@ -591,5 +646,5 @@ skips them and keeps its own state contract.)
    its own id as `owning_skill`; `initiated_by` (the invoking skill's id) is
    optional and may be left unset.
 
-5. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
+6. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
    running the phase's fragments.

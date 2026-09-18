@@ -73,5 +73,6 @@
     "deploy-ai-agent",
     "choose-agent-runtime"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "hooks": "hooks/telemetry/cursor/hooks.json"
 }

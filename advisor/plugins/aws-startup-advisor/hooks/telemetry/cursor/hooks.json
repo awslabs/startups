@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "node ./hooks/telemetry/emit.mjs --reconcile",
+        "timeout": 30
+      }
+    ],
+    "stop": [
+      {
+        "command": "node ./hooks/telemetry/emit.mjs --reconcile",
+        "timeout": 30
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "node ./hooks/telemetry/emit.mjs --session-end",
+        "timeout": 10
+      }
+    ]
+  }
+}
