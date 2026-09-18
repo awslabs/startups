@@ -4,10 +4,11 @@ AI agent skills for migrating workloads to AWS, built for [Claude Code](https://
 
 ## What This Does
 
-Point this plugin at your GCP project or Heroku account, your Terraform files, application code, or billing data. It runs a structured 6-phase assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
+Point this plugin at your Azure subscription, GCP project, or Heroku account, your Terraform/Bicep/ARM files, application code, or billing data. It runs a structured phased assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.
 
 **Supported migration sources:**
 
+- **Azure → AWS** — App Service, AKS, Virtual Machines, Azure Functions, Azure Database for PostgreSQL/MySQL Flexible Server, Cosmos DB, Azure Cache for Redis, Blob Storage, Service Bus, Event Hubs, VNet, Azure OpenAI, and AI/agentic workloads
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
 - **Heroku → AWS** — Dynos (→ Elastic Beanstalk by default; Fargate or EKS overrides), Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
 
@@ -67,13 +68,33 @@ After installation, just describe what you want to migrate:
 - "Migrate my Temporal workers to AWS"
 - "I'm already on AWS and want to add AgentCore memory/gateway to my agent"
 
-GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor writes a `.agent-advisor/<session>/` directory. Both land in the current working directory with all artifacts.
+Azure/GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor writes a `.agent-advisor/<session>/` directory. Both land in the current working directory with all artifacts.
+
+**Live Azure discovery — how it works:** No Terraform, Bicep, or exports needed. If `az login` works in your terminal, just ask — the agent confirms the target subscription and requests your consent, then inventories it using read-only `list`/`show` commands with an explicit `--subscription` on every call. It captures resource names, canonical ARM types, regions, SKUs, network topology, and app-setting **names only** — never app-setting or connection-string values, never storage account keys, never a Key Vault secret, and never an access token. It never runs a command that creates, changes, or deletes anything. If you also have Terraform, Bicep, or ARM templates, the agent cross-checks them against your live tenant and reports drift. A Resource Discovery for Azure report can be supplied instead or as well, and adds measured utilization and reservation data that turns right-sizing into a measurement rather than a guess.
 
 **Live GCP discovery — how it works:** No Terraform or exports needed. If `gcloud auth login` works in your terminal, just ask — the agent confirms the target project and requests your consent, then inventories it using read-only list/describe commands. It captures resource names, types, regions, sizing, network topology, and env var **names only** — never env var values, secret values, database contents, or access tokens, and never a command that creates, changes, or deletes anything. If you also have Terraform, the agent cross-checks it against your live project and reports drift. (AI/agentic detection still needs your application code.)
 
 **Live Heroku discovery — how it works:** No Terraform or exports needed. If `heroku login` works in your terminal, just ask — the agent requests your consent, then inventories your account using read-only list/info CLI commands. It captures app names, dyno types, add-on plans and prices, domains, pipelines, and config var **key names only**. It never reads config var values, credentials, or your API token, and never runs a command that creates, changes, or deletes anything. If you also have `heroku_*` Terraform, the agent cross-checks it against your live account and reports drift.
 
 ## What It Detects
+
+### Azure → AWS
+
+| Category         | Azure → AWS                                                                                                                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute          | App Service Plan → Elastic Beanstalk (default), Fargate or EKS override — the **plan** is the compute unit and its apps are deployments onto it                                                     |
+| Containers       | AKS → EKS, Azure Container Registry → ECR, Container Apps → Fargate                                                                                                                                 |
+| Virtual machines | VMs / VM Scale Sets → EC2 / Auto Scaling, Managed Disks → EBS (gp3, io2 above the IOPS breakpoint), MGN-based cutover                                                                               |
+| Serverless       | Azure Functions → Lambda or Fargate (a rubric decision, not a fixed mapping — durable and long-running functions hit the Lambda ceiling)                                                            |
+| Databases        | PostgreSQL/MySQL Flexible Server → RDS or Aurora, Cosmos DB by API (Core → DynamoDB, Mongo → DocumentDB, Cassandra → Keyspaces, Gremlin → Neptune), Azure SQL / Managed Instance → specialist-gated |
+| Caching          | Azure Cache for Redis → ElastiCache                                                                                                                                                                 |
+| Storage          | Blob Storage → S3, Azure Files → EFS or FSx                                                                                                                                                         |
+| Networking       | VNet → VPC, NSG → Security Group, Application Gateway / Front Door → ALB + CloudFront, Azure DNS → Route 53                                                                                         |
+| Messaging        | Service Bus → SQS/SNS, Event Hubs → MSK for Kafka-protocol consumers or Kinesis for native AMQP/SDK use                                                                                             |
+| Secrets          | Key Vault → Secrets Manager (+ KMS for keys)                                                                                                                                                        |
+| Identity         | Managed Identity → IAM Role; Entra ID → IAM Identity Center (fresh re-invite by default, federation on request)                                                                                     |
+| AI Models        | Azure OpenAI → Amazon Bedrock (same mapping as direct OpenAI — the target does not depend on which endpoint served the calls)                                                                       |
+| IaC dialects     | Terraform (`azurerm_*`), Bicep, and ARM templates                                                                                                                                                   |
 
 ### GCP → AWS
 
@@ -133,6 +154,7 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 
 | Agent Skill       | Triggers                                                                                                                                                                                                                                                                                                                        |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **azure-to-aws**  | "migrate from Azure", "Azure to AWS", "move off Azure", "migrate AKS to EKS", "migrate App Service to AWS", "migrate Azure SQL to RDS", "migrate Cosmos DB to DynamoDB", "migrate Azure OpenAI to Bedrock", "migrate Bicep to Terraform", "estimate AWS costs for my Azure infrastructure"                                      |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS"                                                                        |
 | **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                                                           |
 | **agent-advisor** | "which runtime for my agent", "AgentCore vs ECS vs EKS vs Lambda", "deploy an AI agent on AWS", "I have an agent idea — what do I build", "move my agents to AWS with a plan", "add AgentCore memory/gateway/identity to my agent", "migrate Temporal workers to AWS", "run Temporal on AWS", "build a POC for my agent on AWS" |

@@ -387,7 +387,7 @@ Serverless inference: $0.0000200 per second per GB memory.
 
 ### Multi-provider quick reference (per 1M tokens)
 
-See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Legacy models for new migrations.** Rows whose Status is `restricted (…)` are never `recommended_model` / `backup_model` and never a default (Covered Models, gated previews).
+See `vendored/ai/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Legacy models for new migrations.** Rows whose Status is `restricted (…)` are never `recommended_model` / `backup_model` and never a default (Covered Models, gated previews).
 
 | Model                            | Model ID                                 | Provider  | Input $/1M | Output $/1M | Context | Tier      | Status                                                       |
 | -------------------------------- | ---------------------------------------- | --------- | ---------- | ----------- | ------- | --------- | ------------------------------------------------------------ |
@@ -629,7 +629,7 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (Meta). Pr
 
 #### Llama 3.2 — US East (Ohio), on-demand and batch
 
-> **Lifecycle note:** All Llama 3.2 Instruct models reached **EOL on Jul 7, 2026** and are no longer available for inference on Bedrock. Do not select for any migrations. Use **Llama 4 Scout / Maverick** instead. See `shared/ai-model-lifecycle.md`.
+> **Lifecycle note:** All Llama 3.2 Instruct models reached **EOL on Jul 7, 2026** and are no longer available for inference on Bedrock. Do not select for any migrations. Use **Llama 4 Scout / Maverick** instead. See `vendored/ai/ai-model-lifecycle.md`.
 
 | Model                    | On-demand in | On-demand out | Batch in | Batch out |
 | ------------------------ | ------------ | ------------- | -------- | --------- |
@@ -660,7 +660,7 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (Meta). Pr
 
 #### Llama 3.1 — US East (Ohio), on-demand and batch
 
-> **Lifecycle note:** Llama 3.1 405B Instruct reached **EOL on Jul 7, 2026** and is no longer available for inference on Bedrock. Do not select for any migrations. Use **Llama 4 Maverick** instead. See `shared/ai-model-lifecycle.md`.
+> **Lifecycle note:** Llama 3.1 405B Instruct reached **EOL on Jul 7, 2026** and is no longer available for inference on Bedrock. Do not select for any migrations. Use **Llama 4 Maverick** instead. See `vendored/ai/ai-model-lifecycle.md`.
 
 | Model                                              | On-demand in | On-demand out | Batch in | Batch out |
 | -------------------------------------------------- | ------------ | ------------- | -------- | --------- |
@@ -787,7 +787,7 @@ Per 1M tokens. **Nova 2 Omni** and **Nova 2 Pro** are **Preview**. Image column 
 
 #### Creative — US East (N. Virginia)
 
-> **Lifecycle note:** Nova Canvas v1 is **Legacy** (EOL Sep 30, 2026) and Nova Reel v1 is **Legacy** (EOL Sep 30, 2026). Do not recommend for new migrations. See `shared/ai-model-lifecycle.md`.
+> **Lifecycle note:** Nova Canvas v1 is **Legacy** (EOL Sep 30, 2026) and Nova Reel v1 is **Legacy** (EOL Sep 30, 2026). Do not recommend for new migrations. See `vendored/ai/ai-model-lifecycle.md`.
 
 **Amazon Nova Canvas** (on-demand, per image): up to **1024×1024** — Standard **$0.04**, Premium **$0.06**; up to **2048×2048** — Standard **$0.06**, Premium **$0.08**.
 
@@ -797,7 +797,7 @@ Per 1M tokens. **Nova 2 Omni** and **Nova 2 Pro** are **Preview**. Image column 
 
 #### Speech — US East (N. Virginia)
 
-> **Lifecycle note:** Nova Sonic v1 is **excluded** (EOL Sep 14, 2026, within the 90-day exclusion window). Do not recommend for new migrations. Prefer **Nova 2 Sonic**. See `shared/ai-model-lifecycle.md`.
+> **Lifecycle note:** Nova Sonic v1 is **excluded** (EOL Sep 14, 2026, within the 90-day exclusion window). Do not recommend for new migrations. Prefer **Nova 2 Sonic**. See `vendored/ai/ai-model-lifecycle.md`.
 
 Per 1M tokens.
 

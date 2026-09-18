@@ -1,6 +1,6 @@
 # Pricing Fallback
 
-> Loaded by `ai-migration-guardrails.md` as the tertiary pricing source when both
+> Loaded by `references/vendored/ai/ai-migration-guardrails.md` as the tertiary pricing source when both
 > `pricing-cache.md` (primary) and the `awspricing` MCP server (secondary) are unavailable.
 
 ## When This File Is Used

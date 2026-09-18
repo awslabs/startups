@@ -896,6 +896,59 @@ def check_elasticache_encryption_at_rest(tf_files: list[tuple[str, str]]) -> lis
     return violations
 
 
+def check_elasticache_cluster_encryption(tf_files: list[tuple[str, str]]) -> list[Violation]:
+    """Flag single-node Redis aws_elasticache_cluster resources without encryption.
+
+    aws_elasticache_cluster is the standalone (non-replication-group) cache form.
+    A Redis-engine cluster (engine = "redis") that is NOT a member of a
+    replication group (no replication_group_id) DOES support and MUST set both
+    at_rest_encryption_enabled = true and transit_encryption_enabled = true; a
+    missing or literally-false value is a violation.
+
+    Exempt (fail open), matching the replication-group check's style:
+    - engine == "memcached" (does not support these attributes),
+    - a variable-driven engine or an absent engine (cannot evaluate literally),
+    - a cluster that carries replication_group_id (encryption is enforced on the
+      owning aws_elasticache_replication_group).
+    A variable-driven encryption attribute also fails open per-attribute.
+    """
+    violations: list[Violation] = []
+    for rel_path, content in tf_files:
+        for name, body, line in _extract_blocks(content, "aws_elasticache_cluster"):
+            engine = _attr_string(body, "engine")
+            if engine != "redis":
+                continue  # memcached / variable-driven / absent engine → exempt
+            if _has_own_attr(body, "replication_group_id"):
+                continue  # node of a replication group — encryption enforced there
+            for attr in ("at_rest_encryption_enabled", "transit_encryption_enabled"):
+                val = _attr_string(body, attr)
+                has_attr = _has_own_attr(body, attr)
+                if has_attr and val is None:
+                    continue  # variable-driven — fail open
+                if val == "true":
+                    continue
+                violations.append(
+                    Violation(
+                        check="policy",
+                        rule="elasticache_encryption_at_rest",
+                        file=rel_path,
+                        line=line,
+                        severity="error",
+                        summary=(
+                            f"aws_elasticache_cluster '{name}' (engine = redis) does "
+                            f"not set {attr} = true"
+                        ),
+                        fix_hint=(
+                            "Set at_rest_encryption_enabled = true and "
+                            "transit_encryption_enabled = true on the Redis cluster "
+                            "(or move it into an encrypted "
+                            "aws_elasticache_replication_group)"
+                        ),
+                    )
+                )
+    return violations
+
+
 def validate(terraform_dir: Path) -> tuple[bool, list[Violation]]:
     tf_files = _read_tf_files(terraform_dir)
     if not tf_files:
@@ -910,6 +963,7 @@ def validate(terraform_dir: Path) -> tuple[bool, list[Violation]]:
     violations.extend(check_no_wildcard_iam(tf_files))
     violations.extend(check_rds_encryption_at_rest(tf_files))
     violations.extend(check_elasticache_encryption_at_rest(tf_files))
+    violations.extend(check_elasticache_cluster_encryption(tf_files))
     return len(violations) == 0, violations
 
 
@@ -945,7 +999,8 @@ def main() -> int:
 
     checks = (
         "alb_https,rds_not_public,db_sg_no_public_ingress,sg_no_public_admin_ingress,"
-        "no_wildcard_iam,rds_encryption,elasticache_encryption"
+        "no_wildcard_iam,rds_encryption,elasticache_encryption,"
+        "elasticache_cluster_encryption"
     )
 
     if ok:

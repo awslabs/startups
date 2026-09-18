@@ -59,14 +59,25 @@
     "temporal-cloud",
     "temporal-workers",
     "temporal-to-aws",
-    "durable-execution"
+    "durable-execution",
+    "azure",
+    "azure-to-aws",
+    "aks",
+    "app-service",
+    "azure-sql",
+    "cosmos-db",
+    "azure-openai",
+    "entra-id",
+    "blob-storage",
+    "bicep",
+    "arm-template"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "GCP to AWS Migration",
     "shortDescription": "Migrate GCP infrastructure and AI workloads to AWS with architecture mapping, cost analysis, and runnable Terraform.",
-    "longDescription": "Point this plugin at your Terraform files, application code, or GCP billing data. It runs a structured 6-phase migration assessment — discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.\n\nFor AI-focused startups, it detects your entire AI stack (models, agents, tools, orchestration patterns) and recommends three migration paths: retarget (keep your framework, swap models), AgentCore Harness (config-based managed agents), or Strands Agents (AWS-native multi-agent SDK).\n\nGenerates Terraform configurations, migration scripts, provider adapters, harness.json, and documentation — all tailored to your specific stack.",
+    "longDescription": "Point this plugin at your Terraform files, application code, or GCP billing data. It runs a structured 6-phase migration assessment \u2014 discovering what you have, asking the right questions, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts.\n\nFor AI-focused startups, it detects your entire AI stack (models, agents, tools, orchestration patterns) and recommends three migration paths: retarget (keep your framework, swap models), AgentCore Harness (config-based managed agents), or Strands Agents (AWS-native multi-agent SDK).\n\nGenerates Terraform configurations, migration scripts, provider adapters, harness.json, and documentation \u2014 all tailored to your specific stack.",
     "developerName": "Amazon Web Services",
     "category": "Developer Tools",
     "capabilities": [

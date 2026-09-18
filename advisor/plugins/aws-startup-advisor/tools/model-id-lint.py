@@ -32,7 +32,7 @@ BAD_PATTERNS = [
         "Claude Sonnet 4 (EOL Oct 14, 2026, excluded) used outside the model catalog",
         {  # allowlist: catalog files whose job is recording the model + its EOL status
             "skills/gcp-to-aws/references/shared/pricing-cache.md",
-            "skills/gcp-to-aws/references/shared/ai-model-lifecycle.md",
+            "skills/shared/ai/ai-model-lifecycle.md",
         },
     ),
     (
@@ -45,6 +45,19 @@ BAD_PATTERNS = [
 ]
 
 SELF = Path(__file__).resolve()
+
+# A vendored copy under `skills/<skill>/references/vendored/<rel>` is a byte-identical
+# mirror of the canonical `skills/shared/<rel>` (enforced by `shared:check`), so it
+# inherits the canonical file's allowlist entry. Collapsing the path here keeps the
+# allowlist a set of CANONICAL paths — otherwise every new skill that vendors a
+# catalog file would silently start failing this lint until someone remembered to
+# add its mirror, which is exactly the per-copy manifest the vendoring model exists
+# to avoid.
+_VENDORED = re.compile(r"^skills/[^/]+/references/vendored/")
+
+
+def canonicalize(rel: str) -> str:
+    return _VENDORED.sub("skills/shared/", rel)
 
 
 def main() -> int:
@@ -59,8 +72,9 @@ def main() -> int:
             text = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
+        canonical = canonicalize(rel)
         for pattern, why, allow in BAD_PATTERNS:
-            if rel in allow:
+            if rel in allow or canonical in allow:
                 continue
             for i, line in enumerate(text.splitlines(), 1):
                 if pattern.search(line):
