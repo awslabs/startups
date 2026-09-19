@@ -1,55 +1,106 @@
 #!/usr/bin/env python3
-"""Validate heroku-to-aws migration-report.html (thin stakeholder report).
+"""Validate heroku-to-aws migration report HTML (thin stakeholder report).
 
-Required sections: decision-summary, exec-costs, next-steps.
-Conditional: what-if-scenarios when scenarios/index.json has ≥2 entries.
-Footer must contain "draft for review".
+Two modes, sharing the decision-core sections (see
+skills/heroku-to-aws/references/shared/report-decision-core.md):
+
+  full     (default) migration-report.html — decision-summary, exec-costs,
+           next-steps required; decision-basis / what-if-scenarios conditional.
+  decision decision-report.html — decision-summary, exec-costs required;
+           decision-cta required instead of next-steps; decision-basis /
+           what-if-scenarios conditional (same triggers as full mode).
 
 Exit 0 on PASS, 1 on FAIL.
 
 Usage:
   python3 validate-heroku-migration-report.py /path/to/migration-report.html \\
       --migration-dir "$MIGRATION_DIR"
+  python3 validate-heroku-migration-report.py /path/to/decision-report.html \\
+      --mode decision
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
-REQUIRED_SECTION_IDS = [
+# Required in both modes.
+COMMON_REQUIRED_SECTION_IDS = [
     "decision-summary",
     "exec-costs",
-    "next-steps",
 ]
 
-SECTION_OPEN = re.compile(
-    r'<section\b[^>]*\bid=["\']([^"\']+)["\'][^>]*>',
-    re.IGNORECASE,
-)
+# The one structural difference between modes: decision mode ends on a CTA
+# pointing at Generate instead of the full report's next-steps list (which
+# assumes MIGRATION_GUIDE.md / terraform/ already exist — they don't yet in
+# decision mode).
+MODE_REQUIRED_SECTION_ID = {
+    "full": "next-steps",
+    "decision": "decision-cta",
+}
+
+
+class _SectionOpenTagCollector(HTMLParser):
+    """Collect the `id` of every real (rendered) <section> open tag.
+
+    Uses the stdlib parser rather than a regex so that a <section id="..."> that
+    only exists inside an HTML comment (e.g. an unexpanded template placeholder
+    like `<!-- <section id="decision-basis"> when ... -->`) is never counted as
+    present — HTMLParser routes comment text to handle_comment, never
+    re-tokenizing it as a real tag, whereas a regex scanning raw source text
+    cannot distinguish a real tag from one that merely looks like a tag inside
+    a comment."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.section_ids: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "section":
+            sid = dict(attrs).get("id")
+            if sid:
+                self.section_ids.append(sid)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
 
 
 def _section_counts(html: str) -> dict[str, int]:
+    parser = _SectionOpenTagCollector()
+    parser.feed(html)
+    parser.close()
     counts: dict[str, int] = {}
-    for match in SECTION_OPEN.finditer(html):
-        sid = match.group(1)
+    for sid in parser.section_ids:
         counts[sid] = counts.get(sid, 0) + 1
     return counts
 
 
-def validate(html: str, migration_dir: Path | None) -> list[str]:
+def validate(html: str, migration_dir: Path | None, mode: str = "full") -> list[str]:
     errors: list[str] = []
     counts = _section_counts(html)
 
-    for sid in REQUIRED_SECTION_IDS:
+    required = [*COMMON_REQUIRED_SECTION_IDS, MODE_REQUIRED_SECTION_ID[mode]]
+    for sid in required:
         n = counts.get(sid, 0)
         if n == 0:
             errors.append(f'missing required <section id="{sid}">')
         elif n > 1:
             errors.append(f'duplicate <section id="{sid}"> ({n} occurrences)')
+
+    # The other mode's terminal section must NOT appear — decision-report.html
+    # must not carry a next-steps pointer into an execution pack that does not
+    # exist yet, and migration-report.html should not carry the pre-execution
+    # decision-cta once the real thing (next-steps) exists.
+    other_mode = "decision" if mode == "full" else "full"
+    other_terminal = MODE_REQUIRED_SECTION_ID[other_mode]
+    if counts.get(other_terminal, 0) >= 1:
+        errors.append(
+            f'--mode {mode} report must not contain <section id="{other_terminal}"> '
+            f"(that is the {other_mode}-mode terminal section)"
+        )
 
     if "draft for review" not in html.lower():
         errors.append('footer must contain "draft for review" disclaimer')
@@ -68,6 +119,86 @@ def validate(html: str, migration_dir: Path | None) -> list[str]:
                     '<section id="what-if-scenarios">'
                 )
 
+        # generate-report.md / report-decision-core.md § decision-basis: when
+        # Estimate declared decision_basis (evidence/assumptions behind the
+        # verdict), the report MUST render it — in both modes, since decision
+        # mode reuses these exact content rules rather than restating them.
+        # Read the same estimation-infra.json the report itself was built
+        # from, so a report that silently drops decision_basis (e.g. a
+        # refactor that forgets the section) cannot still say REPORT_OK.
+        est_path = migration_dir / "estimation-infra.json"
+        if est_path.is_file():
+            try:
+                est = json.loads(est_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                est = None
+            decision_basis = ((est or {}).get("recommendation") or {}).get("decision_basis")
+            if decision_basis and counts.get("decision-basis", 0) < 1:
+                errors.append(
+                    "estimation-infra.json declares recommendation.decision_basis "
+                    'but the report has no <section id="decision-basis"> '
+                    '("What This Assessment Rests On")'
+                )
+
+    if mode == "decision" and migration_dir is not None:
+        # Decision mode's real invariant: THIS decide-complete cycle has not
+        # itself gone through Generate yet (phases.generate is "pending" or
+        # absent). It is NOT "no terraform/ or generation-*.json file exists
+        # on disk" — a prior Generate/workshop-reprice cycle's execution pack
+        # can legitimately still be sitting there (workshop re-entry
+        # preserves it deliberately: it may hold customer-edited baseline.tf/
+        # variables.tf or hand-authored terraform.tfvars/state that cannot be
+        # safely deleted). Treating raw file presence as the signal made a
+        # perfectly valid decision, after a workshop reprice on a
+        # previously-executed run, permanently unable to pass — the pre-
+        # execution claim this check exists to make ("no code has been
+        # generated for the CURRENT decision") was never really about the
+        # filesystem; it's about .phase-status.json's own bookkeeping.
+        #
+        # phases.generate == "completed"/"in_progress" is exactly the signal
+        # that consent to execute for the CURRENT cycle was already given —
+        # that state is precisely what "decision mode" (pre-execution) must
+        # not be, and .phase-status.json is the interpreter's own source of
+        # truth for it (see phase-status.schema.json's run_mode/phases
+        # description).
+        #
+        # Fail open ONLY on a genuinely MISSING status file — that means no
+        # run has ever tracked state here, which is not evidence of anything
+        # (e.g. the isolated unit-test path validating HTML without a real
+        # $MIGRATION_DIR). Do NOT fail open on a file that EXISTS but is
+        # unreadable or fails to parse as JSON: that is state corruption, and
+        # INTERPRETER.md § State-file validation is explicit that invalid
+        # JSON is a STOP condition ("do not proceed or guess"), not something
+        # to treat as equivalent to "no state exists." Guessing "pending"
+        # past a corrupt file would let a broken run silently pass the one
+        # check this mode exists to enforce.
+        phase_path = migration_dir / ".phase-status.json"
+        generate_status: str | None = None
+        if phase_path.is_file():
+            try:
+                phase_text = phase_path.read_text(encoding="utf-8")
+                if not phase_text.strip():
+                    raise json.JSONDecodeError("empty file", phase_text, 0)
+                phase = json.loads(phase_text)
+            except (OSError, json.JSONDecodeError) as exc:
+                errors.append(
+                    "decision mode: .phase-status.json exists but could not "
+                    f"be read/parsed ({exc}) — state corrupted (invalid "
+                    "JSON). Delete the file and restart the current phase "
+                    "(INTERPRETER.md § State-file validation); an unreadable "
+                    "state file is not evidence of a pre-execution decision"
+                )
+            else:
+                generate_status = (phase or {}).get("phases", {}).get("generate")
+        if generate_status in ("completed", "in_progress"):
+            errors.append(
+                "decision mode: .phase-status.json phases.generate is "
+                f"{generate_status!r} — this decide-complete cycle already "
+                "went through Generate; decision mode is pre-execution only "
+                "for the CURRENT cycle (a prior cycle's execution pack may "
+                "legitimately remain on disk after a workshop reprice)"
+            )
+
     return errors
 
 
@@ -75,6 +206,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report_path", type=Path)
     parser.add_argument("--migration-dir", type=Path, default=None)
+    parser.add_argument(
+        "--mode",
+        choices=["full", "decision"],
+        default="full",
+        help="full = migration-report.html (default); decision = decision-report.html",
+    )
     args = parser.parse_args()
 
     if not args.report_path.is_file():
@@ -82,9 +219,9 @@ def main() -> int:
         return 1
 
     html = args.report_path.read_text(encoding="utf-8")
-    errors = validate(html, args.migration_dir)
+    errors = validate(html, args.migration_dir, args.mode)
     if errors:
-        print(f"REPORT_FAIL | file={args.report_path} | errors={len(errors)}", file=sys.stderr)
+        print(f"REPORT_FAIL | file={args.report_path} | mode={args.mode} | errors={len(errors)}", file=sys.stderr)
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         return 1
@@ -93,9 +230,12 @@ def main() -> int:
     optional = []
     if counts.get("what-if-scenarios", 0) >= 1:
         optional.append("what-if-scenarios")
+    if counts.get("decision-basis", 0) >= 1:
+        optional.append("decision-basis")
+    required_count = len(COMMON_REQUIRED_SECTION_IDS) + 1
     print(
-        "REPORT_OK | structure=complete | sections="
-        f"{len(REQUIRED_SECTION_IDS)}/{len(REQUIRED_SECTION_IDS)}"
+        "REPORT_OK | structure=complete | mode="
+        f"{args.mode} | sections={required_count}/{required_count}"
         + (f" | optional={','.join(optional)}" if optional else "")
     )
     return 0

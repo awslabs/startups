@@ -50,11 +50,34 @@ Recompute inventory fingerprint. If it differs from
 
 > Inventory changed since baseline. Re-run Discover before workshop reprice.
 
-### 2. Stale Generate guard
+### 2. Stale Generate guard — already enforced at Entry, not repeated here
 
-If `.phase-status.json` has `phases.generate` (or later) `completed`, require
-Estimate `_re_entry_guard` confirm and reset those phases to `pending` before
-continuing.
+`workshop.md` § Entry step 2 ("Stale Generate/decide guard") is the single
+authoritative point that detects a stale Generate/decide state (completed,
+in-progress, or a resolved decide-complete with `run_mode` set) and resets
+`phases.generate` and downstream phases to `"pending"`. It runs before
+`workshop-refresh.md` is ever reached, on every path into this phase (Apply &
+reprice, Compare scenarios, or exiting workshop without touching this file at
+all). By the time this step runs, `phases.generate` has therefore already
+been reset if it needed to be.
+
+That guard does NOT delete anything Generate wrote — a previous execution
+pack (`terraform/`, `generation-*.json`, etc.) is left on disk untouched,
+since files under `terraform/` may carry customer edits (`generate-terraform.md`
+tells users to fill in `terraform.tfvars` and hand-edit `baseline.tf`/
+`variables.tf`) that no filename-based rule can safely distinguish from
+still-pristine generated output. The Decision gate's `--mode decision`
+validator determines "pre-execution" from `.phase-status.json`'s
+`phases.generate` value, not from whether those files exist — so a stale
+execution pack coexisting with a fresh decision is the expected, supported
+state, not something this step needs to resolve.
+
+Do not re-check `phases.generate == "completed"` here — a second check at
+this point would never fire, since Entry step 2 already reset it on this same
+invocation.
+
+If `workshop-refresh.md` is ever invoked without having passed through
+`workshop.md` § Entry, treat that as an interpreter bug.
 
 ### 3. Patch preferences
 

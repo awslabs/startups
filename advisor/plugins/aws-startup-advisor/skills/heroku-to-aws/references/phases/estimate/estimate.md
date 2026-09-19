@@ -79,9 +79,23 @@ and evaluates the `_knowledge` guards to load the pricing/defaults/tier data. Th
 fragment selects the pricing mode and computes the financial picture; the assembler
 writes the final artifact, runs the completion gate, presents the summary, and
 **offers the optional what-if workshop sidebar**
-(`references/phases/workshop/workshop.md`, `_kind: sidebar`) before Generate —
-read each unit file for its own contract. Outer Estimate defers
-`current_phase → generate` until workshop is resolved (see `estimate-assemble.md`).
+(`references/phases/workshop/workshop.md`, `_kind: sidebar`), then the
+**post-Estimate Decision gate** — read each unit file for its own contract.
+Outer Estimate defers `current_phase → generate` until both the workshop AND
+the Decision gate are resolved (see `estimate-assemble.md`).
+
+**Decision gate deviation from `_advances_to` (documented exception):** this
+phase's frontmatter declares `_advances_to: generate`, which the interpreter
+loop treats as the default next `current_phase` on `HANDOFF_OK`. The Decision
+gate's choice **A** ("Done for now") deliberately overrides that default and
+sets `current_phase: "complete"` instead, leaving `phases.generate` at
+`"pending"` (the decide-complete state) — see `estimate-assemble.md` §
+"Post-Estimate: Decision Gate". This is a documented exception to "advance to
+`_advances_to`", in the same spirit as the inner-workshop-reprice path
+documented below skipping `HANDOFF_OK` entirely: both exist because the phase
+orchestrates a user choice the frontmatter's static routing cannot express.
+Choice **C** ("Generate Terraform and migration scripts") follows
+`_advances_to` normally.
 
 ---
 

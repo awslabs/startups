@@ -117,9 +117,11 @@ After outer-run `HANDOFF_OK` (not an inner workshop reprice):
 2. Ensure `phases.workshop` exists (seed `"pending"` if the key is missing).
 3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
    `"estimate"` until the workshop sidebar is resolved (entered then exited, or
-   declined). This matches sidebar semantics: workshop never owns
-   `current_phase`, and mid-workshop fixtures correctly stay on `estimate`.
-4. Offer the what-if workshop below.
+   declined) **and** the Decision gate below has been answered. This matches
+   sidebar semantics: workshop never owns `current_phase`, and mid-workshop
+   fixtures correctly stay on `estimate`.
+4. Offer the what-if workshop below. On exit or decline, present the Decision
+   gate (below) — do **not** fall through to Generate directly.
 
 ---
 
@@ -130,24 +132,109 @@ update — offer:
 
 ```
 Phase 4 of 6 complete (Estimate). Remaining: Generate (+ optional Feedback).
-Before Generate, want to see how the numbers move if you change something?
+Before you decide, want to see how the numbers move if you change something?
 I can reprice scenarios side by side in about a minute each, without
 re-running discovery — for example: a different AWS region, single-AZ
 database for staging, a different compute target, or ARM-based (Graviton)
 instances.
 
 [A] Enter what-if workshop
-[B] Proceed toward Generate
+[B] Proceed to the decision
 ```
 
 **Data-justified scenario hint (add one line when applicable):** if a material assumption was defaulted or tier-derived rather than confirmed — most commonly `database_ha` — append: "Suggestion: we assumed [assumption]; comparing a [alternative] scenario would bound it before you commit." Suggest at most one.
 
 - **A** → Load `references/phases/workshop/workshop.md` (sidebar) and follow it
   (baseline capture if `scenarios/` missing, then the sheet). Keep
-  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
+  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`. On
+  workshop exit, **return to the Decision gate below** (do not advance to
+  Generate directly) — the workshop's active scenario carries into it.
 - **B** → Mark `phases.workshop` → `"completed"` (resolved/declined — no
-  `scenarios/` required). Set `current_phase` → `"generate"`. Continue with the
-  Feedback/Generate sidebars in `SKILL.md`.
+  `scenarios/` required). Proceed to the Decision gate below.
 
 On first workshop entry after this Estimate, `workshop-refresh.md` baseline
 capture snapshots the current artifacts as `scenario-001` before any edits.
+
+---
+
+## Post-Estimate: Decision Gate
+
+**The decision is the product; execution artifacts are opt-in.** The verdict
+(`recommendation.outcome` / `path`) already exists in `estimation-infra.json` —
+present it and let the user choose what happens next. Never advance to
+Generate without an explicit choice of option C (or an explicit later request
+for Terraform/scripts).
+
+Reached only after the what-if workshop offer above has been resolved
+(entered-and-exited, or declined) — never presented while `phases.workshop`
+is `"pending"` or `"in_progress"`.
+
+Present (values from `estimation-infra.json`; one line each):
+
+```
+Phase 4 of 6 complete (Estimate). Remaining: Generate (+ optional Feedback).
+
+### Decision pack ready
+
+- Verdict: [outcome_label when recommendation.outcome exists; else path_label]
+- AWS estimate (Balanced): $[X]/mo · Your Heroku baseline: [figure, or "not
+  established" when current_costs.source is unavailable]
+- Timeline if you execute: ~[N–M] weeks ([complexity_tier], from
+  references/vendored/estimate/complexity-tiers.json)
+
+[A] Done for now — I have what I need to decide
+[B] Explore what-ifs — reprice scenarios side by side (~1 min each): region,
+    single-AZ database, compute target, Graviton
+[C] Generate Terraform and migration scripts
+```
+
+Omit option **B** if the workshop sidebar is already `"completed"` from the
+offer above (do not re-offer the same choice twice in one turn) — present only
+**[A] Done for now** and **[C] Generate Terraform and migration scripts** in
+that case.
+
+**Choice handling:**
+
+- **A** → Then:
+  1. **Render the decision pack:** load
+     `references/shared/report-decision-core.md` and render it in **decision**
+     mode — write `$MIGRATION_DIR/decision-report.html` and
+     `$MIGRATION_DIR/DECISION.md` per that file's decision-mode rules (no
+     appendices, no Terraform, CTA footer). Validate with
+     `python3 "$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py" "$MIGRATION_DIR/decision-report.html" --mode decision --migration-dir "$MIGRATION_DIR"`
+     (absolute paths — cwd must not be load-bearing; `--migration-dir` is required
+     so the decision-mode pre-execution checks — no `terraform/` / `generation-*.json`
+     yet — actually run) and fix failures before presenting.
+  2. Set `run_mode: "decide"` and `current_phase: "complete"` in
+     `.phase-status.json` (`phases.generate` **stays** `"pending"` — this
+     combination means "decision complete, execution available on request";
+     see `references/vendored/state/phase-status.schema.json`).
+  3. Continue with the Feedback sidebar per `SKILL.md`. Close with:
+     "Your decision report is saved at `decision-report.html` (plus a
+     Slack-friendly `DECISION.md`). If you decide to migrate, say 'generate
+     the Terraform and migration scripts' — everything is saved and I'll pick
+     up from here."
+- **B** → Load `references/phases/workshop/workshop.md`. Keep
+  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`. On
+  workshop exit, **return to this gate** (options A and C; the workshop's
+  active scenario carries into either) — do not advance to Generate directly.
+- **C** → Set `run_mode: "decide_and_execute"` and `current_phase` →
+  `"generate"`. Continue with the Feedback/Generate sidebars in `SKILL.md`.
+
+### Decide-complete resume
+
+If a warm start finds `current_phase == "complete"` AND `run_mode == "decide"`
+AND `phases.generate == "pending"`: this is the decide-complete terminal state,
+not an incomplete run. Do **not** re-run Estimate. Offer:
+
+```
+Your last session ended with a decision (see decision-report.html /
+DECISION.md). Want to generate the Terraform and migration scripts now?
+
+[A] Yes, generate now
+[B] No, I'm still deciding
+```
+
+- **A** → Set `run_mode: "decide_and_execute"` and `current_phase` →
+  `"generate"` **before** loading `generate.md`. Continue to Generate.
+- **B** → Leave state unchanged; end the turn.
