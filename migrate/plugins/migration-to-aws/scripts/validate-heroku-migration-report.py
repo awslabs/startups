@@ -18,6 +18,7 @@ import argparse
 import json
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 REQUIRED_SECTION_IDS = [
@@ -40,6 +41,144 @@ def _section_counts(html: str) -> dict[str, int]:
     return counts
 
 
+def _body_scope(html: str) -> str:
+    """Body only, excluding <style> blocks, so CSS hex/decimal values never
+    trip the currency-formatting check (mirrors the GCP validator's
+    _readability_scope)."""
+    no_style = re.sub(r"<style\b.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
+    body = re.search(r"<body\b[^>]*>(.*?)</body>", no_style, re.DOTALL | re.IGNORECASE)
+    return body.group(1) if body else no_style
+
+
+# Ported from validate-migration-report.py — same currency-formatting rule
+# (monthly figures render as whole dollars; cents are reserved for genuinely
+# sub-dollar precision or per-unit rates). See that file's comment for the
+# full rationale; kept identical here so both validators stay in sync. The
+# Heroku report has no documented Calculation/Notes column (its exec-costs
+# section is a Heroku-vs-AWS side-by-side or three-tier table, per
+# generate-report.md — no per-service arithmetic show-work column), so this
+# copy has no calc-column exemption; everything else ports unchanged.
+CENTS_RE = re.compile(r"\$([0-9][0-9,]*)\.([0-9]{2})\b")
+
+# Deliberately does NOT accept a BARE "month"/"mo" as itself the qualifying
+# unit — see validate-migration-report.py's _RATE_SUFFIX_RE comment for the
+# full rationale (a bare "/mo" is exactly the unit an ordinary monthly total
+# is denominated in, not evidence of a per-unit rate). "/mo per <unit>" is
+# still accepted (e.g. "$5.00/mo per policy").
+_RATE_SUFFIX_RE = re.compile(
+    r"^\s*(?:/|\(|\bper\b)?\s*(?:mo\b\s*(?:per\b\s*)?)?"
+    r"(?:hr|hour|hourly|vcpu|gb|gib|tb|image|unit|policy|1m|10k|"
+    r"[0-9]+-mo)\b",
+    re.IGNORECASE,
+)
+
+_CENTS_MEANINGFUL_BELOW = 2
+
+
+class _DecodedTextParser(HTMLParser):
+    """Extract rendered text as the browser would present it — entities
+    decoded, comments and inert content (script/style/template) excluded —
+    while preserving amount/unit adjacency across inline markup (mirrors
+    validate-migration-report.py's _DecodedTextRunParser; see that file's
+    class docstring for the full rationale). No Calculation/Notes column
+    tracking here — the Heroku report has no such column."""
+
+    _INLINE_TAGS = {
+        "a", "abbr", "b", "bdi", "bdo", "cite", "code", "data", "dfn", "em",
+        "i", "kbd", "mark", "q", "s", "samp", "small", "span", "strong",
+        "sub", "sup", "time", "u", "var", "wbr",
+    }
+    _INERT_TAGS = {"script", "style", "template"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._parts: list[str] = []
+        self._inert_depth = 0
+        # Absolute offsets (into text()) of every block-level separator — a
+        # rate-suffix match must never read past one of these into unrelated
+        # content from a different cell/row/paragraph (see
+        # validate-migration-report.py's identical tracking for the full
+        # rationale — a single separating space does not itself stop a
+        # word-based regex when the next block happens to start with a real
+        # rate-unit word like "Hourly").
+        self._boundaries: list[int] = []
+
+    def _append(self, text: str, *, is_boundary: bool = False) -> None:
+        if not text:
+            return
+        if is_boundary:
+            self._boundaries.append(sum(len(p) for p in self._parts))
+        self._parts.append(text)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in self._INERT_TAGS:
+            self._inert_depth += 1
+            return
+        if self._inert_depth == 0 and tag not in self._INLINE_TAGS:
+            self._append(" ", is_boundary=True)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag not in self._INLINE_TAGS and tag not in self._INERT_TAGS:
+            self._append(" ", is_boundary=True)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in self._INERT_TAGS:
+            if self._inert_depth > 0:
+                self._inert_depth -= 1
+            return
+        if self._inert_depth == 0 and tag not in self._INLINE_TAGS:
+            self._append(" ", is_boundary=True)
+
+    def handle_data(self, data: str) -> None:
+        if self._inert_depth == 0:
+            self._append(data)
+
+    def text(self) -> str:
+        return "".join(self._parts)
+
+    def boundaries(self) -> list[int]:
+        return self._boundaries
+
+
+def _decoded_text(html: str) -> tuple[str, list[int]]:
+    parser = _DecodedTextParser()
+    parser.feed(_body_scope(html))
+    parser.close()
+    return parser.text(), parser.boundaries()
+
+
+def _validate_currency_formatting(html: str) -> list[str]:
+    """Monthly cost figures must render as whole dollars. Flag any $X.YY
+    figure whose whole-dollar part is >= $2 and that is not immediately
+    followed by a per-unit-rate suffix (/hr, per policy, etc.)."""
+    errors: list[str] = []
+    text, boundaries = _decoded_text(html)
+    seen: set[str] = set()
+    for match in CENTS_RE.finditer(text):
+        whole = int(match.group(1).replace(",", ""))
+        if whole < _CENTS_MEANINGFUL_BELOW:
+            continue
+        cutoff = match.end() + 25
+        for boundary in boundaries:
+            if boundary >= match.end():
+                cutoff = min(cutoff, boundary)
+                break
+        trailing = text[match.end():cutoff]
+        if _RATE_SUFFIX_RE.match(trailing):
+            continue
+        token = match.group(0)
+        if token in seen:
+            continue
+        seen.add(token)
+        errors.append(
+            f'currency formatting: "{token}" renders cents on a monthly-scale '
+            "figure — round to a whole dollar (cents only for genuinely "
+            'sub-dollar precision, e.g. "$1.50", "$0.40", or a per-unit rate '
+            'like "$0.018/hr")'
+        )
+    return errors
+
+
 def validate(html: str, migration_dir: Path | None) -> list[str]:
     errors: list[str] = []
     counts = _section_counts(html)
@@ -53,6 +192,8 @@ def validate(html: str, migration_dir: Path | None) -> list[str]:
 
     if "draft for review" not in html.lower():
         errors.append('footer must contain "draft for review" disclaimer')
+
+    errors.extend(_validate_currency_formatting(html))
 
     if migration_dir is not None:
         index_path = migration_dir / "scenarios" / "index.json"
