@@ -5,6 +5,13 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 
 # Heroku-to-AWS Migration Skill
 
+The skill base directory is given in the "Base directory for this skill: X" line the
+harness emits at load time. Call it `<SKILL_BASE>`. The report validator lives at
+`<SKILL_BASE>/scripts/validate-heroku-migration-report.py` — resolve it relative to
+`<SKILL_BASE>`, never assume a plugin-root `scripts/` directory, since a standalone
+`npx skills add --skill heroku-to-aws` install carries only this skill's own
+directory tree, not the plugin's top-level `scripts/`.
+
 ## Philosophy
 
 - **Full platform exit by default**: Heroku is in sustaining engineering (KTLO) — stability and support only, no new investment. Enterprise contracts are no longer sold to new customers. This skill assumes complete departure from Heroku (compute, data, and add-ons) within a user-defined window. Do not recommend indefinite continued use of Heroku.
@@ -100,7 +107,7 @@ uvx --version 2>/dev/null || echo "UVX_MISSING"
 - If both are present: proceed without nagging. Live pricing still depends on
   the `awspricing` MCP being configured.
 - Soft-warn once if `python3` is missing (Heroku report validation at Generate
-  uses `$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py`). Generate can
+  uses `<SKILL_BASE>/scripts/validate-heroku-migration-report.py`). Generate can
   still complete, but the validator must still be attempted and its exit code
   handled per its docs — if it does not run, tell the user validation did not
   occur. Never report an unvalidated report as passing.
