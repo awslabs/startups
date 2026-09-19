@@ -84,10 +84,11 @@ function makeProject(status: Record<string, unknown>, consent: 'granted' | 'revo
   mkdirSync(runDir, { recursive: true });
   const consentFile = join(root, '.migration', 'telemetry.json');
   if (consent) {
-    writeFileSync(
-      consentFile,
-      JSON.stringify({ consent, installId: RUN_ID, consentedAt: new Date().toISOString(), version: 1 }),
-    );
+    // Dated a minute before the state file: the emitter treats state last written
+    // before consent as history, and the two writes above can straddle a
+    // millisecond under load.
+    const consentedAt = new Date(Date.now() - 60_000).toISOString();
+    writeFileSync(consentFile, JSON.stringify({ consent, installId: RUN_ID, consentedAt, version: 1 }));
   }
   const statusFile = join(runDir, '.phase-status.json');
   writeFileSync(statusFile, JSON.stringify(status, null, 2));
@@ -122,6 +123,9 @@ async function reconcile(p: Project): Promise<any[]> {
 
 const activity = (body: any) => body.pluginTelemetryEvent.migrationActivity;
 const snapshotOf = (p: Project) => JSON.parse(readFileSync(join(p.runDir, '.telemetry-snapshot.json'), 'utf8'));
+const writeGateFailures = (p: Project, failures: unknown) =>
+  writeFileSync(join(p.runDir, '.gate-failures.json'), JSON.stringify(failures, null, 2));
+const summary = (b: any) => [activity(b).eventName, activity(b).phase, activity(b).status];
 
 describe('telemetry emitter', () => {
   it('reports a new run once: RUN_STARTED plus the phases already resolved, under the state file run_id', async () => {
@@ -305,6 +309,86 @@ describe('telemetry emitter', () => {
         [['PHASE_COMPLETED', 'CLARIFY']],
         'no RUN_STARTED is invented for a run that started before consent',
       );
+    } finally {
+      cleanup(p);
+    }
+  });
+
+  it('reports a failed gate once per phase with its reason, and the later pass of that phase as its own event', async () => {
+    // Arrange: clarify's completion gate failed on a missing artifact
+    const p = makeProject(phaseStatus());
+    writeGateFailures(p, { clarify: { reason: 'missing', field: 'preferences.json', at: '2026-02-26T15:40:00Z' } });
+    try {
+      // Act
+      const first = await reconcile(p);
+      writeGateFailures(p, { clarify: { reason: 'invalid', field: 'preferences.json', at: '2026-02-26T15:41:00Z' } });
+      const repeat = await reconcile(p);
+      writeFileSync(
+        p.statusFile,
+        JSON.stringify(phaseStatus({ current_phase: 'design', phases: { ...phaseStatus().phases, clarify: 'completed' } }), null, 2),
+      );
+      const passed = await reconcile(p);
+
+      // Assert
+      assert.deepEqual(first.map(summary).sort(), [
+        ['GATE_FAILED', 'CLARIFY', 'FAILED'],
+        ['PHASE_COMPLETED', 'DISCOVER', 'SUCCESS'],
+        ['RUN_STARTED', undefined, undefined],
+      ]);
+      const failed = first.map(activity).find((a) => a.eventName === 'GATE_FAILED');
+      assert.deepEqual(failed.attributes, { sourceProvider: 'GCP', failureReason: 'MISSING' });
+      assert.deepEqual(repeat, [], 'a second failure of the same phase is not a new event');
+      assert.deepEqual(passed.map(summary), [['PHASE_COMPLETED', 'CLARIFY', 'SUCCESS']]);
+      assert.deepEqual(snapshotOf(p).gateFailures, ['CLARIFY']);
+    } finally {
+      cleanup(p);
+    }
+  });
+
+  it('sends nothing it cannot map: an unknown phase is skipped, an unknown reason drops only the attribute, a malformed record is ignored', async () => {
+    // Arrange
+    const partial = makeProject(phaseStatus());
+    writeGateFailures(partial, { bogus: { reason: 'missing' }, design: { reason: 'exploded' } });
+    const malformed = makeProject(phaseStatus());
+    writeGateFailures(malformed, ['design']);
+    try {
+      // Act
+      const fromPartial = (await reconcile(partial)).map(activity).filter((a) => a.eventName === 'GATE_FAILED');
+      const fromMalformed = (await reconcile(malformed)).map(activity).filter((a) => a.eventName === 'GATE_FAILED');
+
+      // Assert
+      assert.deepEqual(
+        fromPartial.map((a) => [a.phase, a.status, a.attributes]),
+        [['DESIGN', 'FAILED', { sourceProvider: 'GCP' }]],
+      );
+      assert.deepEqual(fromMalformed, []);
+      assert.deepEqual(snapshotOf(malformed).gateFailures, []);
+    } finally {
+      cleanup(partial);
+      cleanup(malformed);
+    }
+  });
+
+  it('baselines gate failures recorded before consent together with the phases, so only later failures are reported', async () => {
+    // Arrange: state and a recorded failure both predate the consent record
+    const p = makeProject(phaseStatus());
+    writeGateFailures(p, { clarify: { reason: 'missing', field: 'preferences.json', at: '2026-02-25T10:00:00Z' } });
+    const dayAgo = new Date(Date.now() - 24 * 3600 * 1000);
+    utimesSync(p.statusFile, dayAgo, dayAgo);
+    try {
+      // Act
+      const first = await reconcile(p);
+      const baselined = snapshotOf(p).gateFailures;
+      writeGateFailures(p, {
+        clarify: { reason: 'missing', field: 'preferences.json', at: '2026-02-25T10:00:00Z' },
+        design: { reason: 'invalid', field: 'design.json', at: '2026-02-26T16:00:00Z' },
+      });
+      const later = await reconcile(p);
+
+      // Assert
+      assert.deepEqual(first, []);
+      assert.deepEqual(baselined, ['CLARIFY'], 'the pre-consent failure is recorded as already known');
+      assert.deepEqual(later.map(summary), [['GATE_FAILED', 'DESIGN', 'FAILED']]);
     } finally {
       cleanup(p);
     }
