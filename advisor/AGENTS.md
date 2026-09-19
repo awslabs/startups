@@ -58,12 +58,16 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 ### `gcp-to-aws` — Google Cloud → AWS migration workflow
 
 - A SOP-style SKILL.md that runs a structured 6-phase migration (discover → clarify → design → estimate → generate → feedback), with a `references/` tree of phase guides, design refs, and shared schemas. Clarify must complete before Design, Estimate, or Generate.
-- Also migrates AI / agentic workloads (OpenAI / Gemini → Amazon Bedrock; LangChain / CrewAI / AutoGen → AWS-native frameworks).
+- Discover reads Terraform/IaC, app code, and/or GCP billing exports; it can optionally pull real AI spend from the OpenAI Admin API (read-only, consent-gated, aggregate counts only — the user must opt in and supply an Admin key).
+- Also migrates AI / agentic workloads. OpenAI sources land on the **same GPT model on Amazon Bedrock** when one exists (including OpenAI models reached via OpenRouter / LiteLLM), with Claude / Nova as the cross-family alternative; Gemini maps to closest-fit Bedrock families; LangChain / CrewAI / AutoGen → AWS-native frameworks. GCP Document AI, Vision, and Speech-to-Text calls are detected and routed to AWS traditional-AI services.
+- Estimates present Savings Plan / Reserved Instance options from a shared eligibility matrix. Only database commitments (RDS/Aurora RIs, Database Savings Plans) get a dollar sizing, and only when Design mapped a target instance class (from Terraform/IaC or live discovery — e.g. Cloud SQL `settings.tier`) with projected on-demand cost above $50/month; Compute Savings Plans are percent-only until the customer has 30–90 days of real AWS usage. Billing-only runs cannot size instances, so they show percentages only. Do not tell a user the skill "won't do RI/SP" — it declines to size what it cannot see.
+- On the infrastructure-generation route (`generation-infra.json` + `aws-design.json`), Generate emits `baseline.tf` (account security baseline: CloudTrail, GuardDuty, IAM password policy, S3 account public-access block, EBS default encryption, IAM Access Analyzer, IMDS defaults, alternate contacts, budget — plus Config and Security Hub when `compliance` includes soc2, pci, hipaa, or fedramp) alongside the app Terraform. AI-only runs (`generation-ai.json` + `aws-design-ai.json`) instead emit `bedrock_monitoring.tf`; billing-only runs emit skeleton Terraform. Neither of those two routes includes `baseline.tf` or its account security baseline.
 - Triggered by migration intent — _"migrate from GCP"_, _"move off OpenAI to Bedrock"_, _"GCP to AWS"_, etc.
 
 ### `heroku-to-aws` — Heroku → AWS migration workflow
 
 - A DSL-driven SKILL.md running the same 6-phase backbone (Dynos → Elastic Beanstalk by default; Fargate/EKS overrides, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK), with an optional what-if repricing workshop after Estimate.
+- Generate emits `baseline.tf` (same account security baseline as `gcp-to-aws`'s infrastructure route, including Config and Security Hub when `compliance` includes soc2, pci, hipaa, or fedramp) alongside the app Terraform, and the migration report carries a dedicated Savings Plans / Reserved Instances section under the same rules as `gcp-to-aws`.
 - Triggered by _"migrate from Heroku"_, _"Heroku to AWS"_, _"move off Heroku"_, etc.
 
 ### `llm-to-bedrock` — OpenAI/Gemini/Anthropic → Amazon Bedrock SDK rewrite
