@@ -792,6 +792,16 @@ _produces:
     assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
   });
 
+  it('accepts a phase with _exec: { _agent: rwx } (write + shell) when the rwx worker is shipped', () => {
+    // rwx = rw + Bash (run the tf-best-practices policy checker in-fragment); a producing
+    // phase satisfies the derived minimum (>= rw), and rwx is a recognized tier.
+    const files = withExec(goodSkill(), '_exec: { _agent: rwx }');
+    const [wp, wc] = worker('rwx');
+    files[wp] = wc;
+    const findings = validateFixture(files);
+    assert.equal(findings.length, 0, `expected clean, got: ${JSON.stringify(findings)}`);
+  });
+
   it('rejects an _exec._agent that is not a recognized tier', () => {
     const files = withExec(goodSkill(), '_exec: { _agent: superuser }');
     const findings = validateFixture(files);

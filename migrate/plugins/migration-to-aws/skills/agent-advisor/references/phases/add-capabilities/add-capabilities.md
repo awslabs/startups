@@ -15,6 +15,8 @@ _preconditions:
 _postconditions:
   - _check_file_exists: capabilities-recommendation.md
     _on_failure: _halt_and_inform
+  - _assert: "A completed recommendation enabling Registry records its intended Region and current-run verified Registry availability. Cached or unavailable Regions cannot satisfy this check; if the user instead omits a requested Registry, record that decision."
+    _on_failure: _halt_and_inform
   - _assert: "capabilities-recommendation.md lists the current runtime, the services to enable (with what/why + Identity-is-free), the native-vs-bring-your-own outcome per capability, integration pointers for the current runtime, a suggested enablement order, and the freshness footer (MCP-verified vs cached)"
     _on_failure: _halt_and_inform
 ---
@@ -43,6 +45,10 @@ stated it in their opening message, skip this question.)
 Identity, Gateway, Memory, Policy, Observability, Managed KB, Code Interpreter, Browser,
 Web Search, Sandbox. For each selected, load the relevant section of
 `${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/references/decision-refs/agentcore.md`.
+Also offer AWS Agent Registry when the user requests a shared catalog, resource discovery, or
+approval-based governance. Use the service card's conditional-service guidance: a single agent
+can need Registry, while multiple agents alone do not justify it. Load the Registry section
+when selected and keep the recommendation conditional until Step 4 verifies its Region.
 
 ## Step 3 — Native vs bring-your-own
 
@@ -55,6 +61,10 @@ Load `${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/references/decision-refs/freshn
 branch has no winning runtime profile, so verify the relevant "Hard limits" facts from
 `agentcore.md` directly (per freshness.md Procedure step 1). Follow its anti-fabrication rule:
 only list a fact as MCP-verified if you actually called the MCP this run; otherwise it's cached.
+If Registry is selected, apply freshness.md's AWS Agent Registry availability procedure,
+including identifying its intended Region and handling unavailable or unverified Regions.
+This check also applies when the existing runtime is ECS, EKS, Lambda, or another runtime;
+this branch does not pass through Design's Region check.
 
 ## Step 5 — Output
 

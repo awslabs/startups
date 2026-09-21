@@ -34,10 +34,11 @@ _produces:
   - README.md
   - migration-report.html
   - generation-warnings.json
+  - validation-report.json
 _advances_to: complete
 _interactive: false
 _exec:
-  _agent: rw
+  _agent: rwx
 _preconditions:
   - _check_phase_completed: estimate
     _on_failure: _halt_and_inform
@@ -48,7 +49,7 @@ _preconditions:
   - _validate_json: [aws-design.json, estimation-infra.json, preferences.json, heroku-resource-inventory.json]
     _on_failure: _unrecoverable
 _postconditions:
-  - _check_file_exists: [terraform/main.tf, terraform/baseline.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json]
+  - _check_file_exists: [terraform/main.tf, terraform/baseline.tf, terraform/variables.tf, terraform/outputs.tf, terraform/security.tf, terraform/.gitignore, terraform/terraform.tfvars.example, MIGRATION_GUIDE.md, README.md, migration-report.html, generation-warnings.json, validation-report.json]
     _on_failure: _halt_and_inform
   - _assert: "terraform/main.tf has valid provider configuration; terraform/variables.tf declares at least an aws_region variable"
     _on_failure: _halt_and_inform
@@ -57,6 +58,10 @@ _postconditions:
   - _assert: "terraform/baseline.tf has the Compliance-Conditional section (aws_config_* recorder/delivery/status, aws_securityhub_account, FSBP standards subscription) exactly when the normalized preferences compliance array contains soc2, pci, hipaa, or fedramp; a PCI DSS standards subscription exists only when it contains pci; no NIST 800-53 standards subscription exists regardless of compliance values"
     _on_failure: _halt_and_inform
   - _assert: "terraform/variables.tf declares operations_email, billing_email, and security_email with no defaults and placeholder-rejecting validation blocks, and terraform/terraform.tfvars.example lists all three with TODO placeholders"
+    _on_failure: _halt_and_inform
+  - _validate_json: [validation-report.json]
+    _on_failure: _halt_and_inform
+  - _assert: "validation-report.json has $schema 'validation-report/v2' and its policy_status is 'POLICY_OK' (produced by the assembler after every Terraform-producing fragment, including conditional eks-generate, completed; a not_run placeholder is never accepted). POLICY_FAIL or not_run fails closed. TRUST BOUNDARY: this gate reads the worker-written verdict and trusts its provenance claim (the worker MUST NOT invent POLICY_OK — see generate-assemble.md); it does NOT independently re-run the checker to re-derive the result. This is the same trust level as every other _postconditions _assert here (each reads what the worker wrote). This gate is READ-ONLY: do not run the checker, edit .tf, or edit the verdict here."
     _on_failure: _halt_and_inform
   - _assert: "at least one domain .tf file exists beyond the core files"
     _on_failure: _halt_and_inform
@@ -90,7 +95,11 @@ _forbids_files:
 Transform the design + estimate into migration artifacts in `$MIGRATION_DIR/`: a
 `terraform/` directory, `MIGRATION_GUIDE.md`, `README.md`, `migration-report.html`
 (stakeholder summary + optional what-if scenarios), database migration scripts,
-and `generation-warnings.json`. Terraform for each Elastic Beanstalk web service
+`generation-warnings.json`, and `validation-report.json` (the Terraform
+policy-gate verdict the assembler produces after all fragments — it runs the
+tf-best-practices policy checker against the final `terraform/` directory, and
+the read-only completion gate then reads that verdict).
+Terraform for each Elastic Beanstalk web service
 is intentionally incomplete until the customer supplies that app's required
 application port and health check path. Non-web Elastic Beanstalk services do not
 require those web-only inputs. This is the multi-artifact phase.
@@ -118,4 +127,8 @@ FORBIDDEN — Do NOT include ANY of:
 - Discovering new Heroku resources (Phase 1 is done)
 - Feedback collection (Phase 6 handles this)
 
-**Your ONLY job: Transform the design into migration artifacts. Nothing else.**
+**Your ONLY job: Transform the design into migration artifacts. Nothing else.** Running the
+tf-best-practices policy checker and applying its `fix_hint`s to the generated `terraform/` is
+part of _producing_ the artifacts, so it happens in the assembler after all
+Terraform-producing fragments (Generate is dispatched at `_exec._agent: rwx`,
+which grants the scoped shell the checker needs). Design/estimate decisions stay final.
