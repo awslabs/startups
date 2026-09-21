@@ -338,3 +338,34 @@ describe('consent step wording', () => {
     );
   });
 });
+
+// Cursor registration: the manifest must point at the Cursor hooks file, and every
+// command must reach the emitter through ${CURSOR_PLUGIN_ROOT}, the form Cursor's own
+// plugins use; a plugin-root-relative path is not documented to resolve.
+describe('cursor registration', () => {
+  const PLUGIN = join(import.meta.dirname, '../..');
+  const manifest = JSON.parse(readText(join(PLUGIN, '.cursor-plugin/plugin.json'), 'utf8'));
+  const hooks = JSON.parse(readText(join(PLUGIN, 'hooks/telemetry/cursor/hooks.json'), 'utf8'));
+
+  it('wires the manifest to the Cursor hooks file and the marketplace to the plugin', () => {
+    // Act + Assert
+    assert.equal(manifest.hooks, 'hooks/telemetry/cursor/hooks.json');
+    assert.ok(existsSync(join(PLUGIN, manifest.hooks)));
+    const marketplace = JSON.parse(readText(join(PLUGIN, '../../../.cursor-plugin/marketplace.json'), 'utf8'));
+    const entry = marketplace.plugins.find((p: { name: string }) => p.name === manifest.name);
+    assert.ok(entry, 'the root marketplace lists this plugin');
+    assert.ok(existsSync(join(PLUGIN, '../../..', entry.source, '.cursor-plugin/plugin.json')));
+  });
+
+  it('reaches the emitter through CURSOR_PLUGIN_ROOT in every hook command', () => {
+    // Act + Assert
+    assert.equal(hooks.version, 1);
+    const modes: Record<string, string> = { afterFileEdit: '--reconcile', stop: '--reconcile', sessionEnd: '--session-end' };
+    assert.deepEqual(Object.keys(hooks.hooks).sort(), Object.keys(modes).sort());
+    for (const [event, flag] of Object.entries(modes)) {
+      for (const hook of hooks.hooks[event]) {
+        assert.equal(hook.command, `node "\${CURSOR_PLUGIN_ROOT}/hooks/telemetry/emit.mjs" ${flag}`);
+      }
+    }
+  });
+});
