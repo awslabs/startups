@@ -58,7 +58,9 @@
     {
       "key": "identity_consent_portal_regions",
       "verification_key": "agentcore.identity_oauth",
-      "value": "all commercial regions where AgentCore Identity is available",
+      "value": [],
+      "as_of": "2026-09-17",
+      "source": "https://aws.amazon.com/about-aws/whats-new/2026/09/amazon-bedrock-agentcore/",
       "verify_via_mcp": true
     },
     {
