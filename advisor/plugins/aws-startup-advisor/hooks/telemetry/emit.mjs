@@ -499,14 +499,14 @@ function deriveAttributes(runDir, skill, event) {
 // "complete" and returns cannot mint a second terminal event.
 function diffEvents(status, snapshot) {
   const events = [];
-  if (!snapshot) events.push({ eventName: "RUN_STARTED" });
+  if (!snapshot || snapshot.started === false) events.push({ eventName: "RUN_STARTED" });
   const before = snapshot?.phases ?? {};
   for (const [name, state] of Object.entries(status.phases ?? {})) {
     if (before[name] === state) continue;
     const mapped = RESOLVED_STATUS[String(state).toLowerCase()];
     const phase = String(name).toUpperCase();
     if (!mapped || !PHASES.has(phase)) continue;
-    events.push({ eventName: "PHASE_COMPLETED", phase, status: mapped });
+    events.push({ eventName: "PHASE_COMPLETED", phase, status: mapped, key: name });
   }
   if (status.current_phase === "complete" && !snapshot?.completed) {
     const runMode = mapEnum(RUN_MODE, status.run_mode);
@@ -558,11 +558,14 @@ async function post(endpoint, body) {
   }
 }
 
-// The service answers 403 while its launch gate is closed (and a WAF rate limit
-// answers the same). Nothing was accepted, so this is not the loss the design
-// tolerates: the snapshot is left alone and the run is reported in full on a
-// later trigger, exactly as with a disabled endpoint.
-const REFUSED_STATUS = 403;
+// Statuses that mean the service did not take the event but may later: 403
+// (a closed launch gate, or a WAF rate limit), 429 (throttled) and 5xx. Such an
+// event is not recorded as reported, so it is sent again on a later trigger,
+// exactly as with a disabled endpoint. Anything else, including a 400 the
+// event would earn again and a network failure, is the loss the design
+// tolerates: a retry queue is what it refuses.
+const isHeld = (result) =>
+  result.status === "fulfilled" && (result.value === 403 || result.value === 429 || result.value >= 500);
 
 // ------------------------------------------------------------------ per run
 
@@ -635,7 +638,21 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     // design: a retry queue is unbounded local state for data that is
     // loss-tolerant in aggregate.
     const results = await Promise.allSettled(events.map((event) => post(endpoint, buildRequest(event, ctx))));
-    if (results.some((r) => r.status === "fulfilled" && r.value === REFUSED_STATUS)) return;
+    const held = new Set(events.filter((_, i) => isHeld(results[i])));
+    if (held.size === events.length) return; // nothing taken: nothing recorded
+
+    // The snapshot records exactly what the service took. A held phase keeps
+    // its previous state so only that transition is re-sent; a held RUN_STARTED
+    // or RUN_COMPLETED is re-sent alone. Accepted events are never repeated,
+    // even when a later trigger replays the held ones.
+    const phases = { ...(status.phases ?? {}) };
+    for (const event of held) {
+      if (event.eventName !== "PHASE_COMPLETED") continue;
+      if (event.key in (snapshot?.phases ?? {})) phases[event.key] = snapshot.phases[event.key];
+      else delete phases[event.key];
+    }
+    const runStarted = events.find((e) => e.eventName === "RUN_STARTED");
+    const runCompleted = events.find((e) => e.eventName === "RUN_COMPLETED");
 
     // via/updatedAt are the hook-liveness tag: an instruction-driven caller can
     // read them to skip its call when a hook reported recently, and the
@@ -643,8 +660,9 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     writeJson(snapshotFile, {
       runId,
       sessionId: ctx.sessionId ?? snapshot?.sessionId,
-      phases: status.phases ?? {},
-      completed: Boolean(snapshot?.completed) || status.current_phase === "complete",
+      started: !(runStarted && held.has(runStarted)),
+      phases,
+      completed: Boolean(snapshot?.completed) || Boolean(runCompleted && !held.has(runCompleted)),
       via: viaMode(),
       updatedAt: new Date().toISOString(),
     });

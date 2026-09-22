@@ -28,17 +28,19 @@ type Received = { body: any };
 let server: Server;
 let endpoint: string;
 const received: Received[] = [];
-// What the stub answers; a test flips it to 403 to stand in for the service's
-// closed launch gate.
+// What the stub answers; a test flips it to 403 or 429 to stand in for the
+// service's closed launch gate or a throttle, or decides per request body.
 let respondWith = 200;
+let respondFor: (body: any) => number = () => respondWith;
 
 before(async () => {
   server = createServer((req, res) => {
     const chunks: Buffer[] = [];
     req.on('data', (c) => chunks.push(c));
     req.on('end', () => {
-      received.push({ body: JSON.parse(Buffer.concat(chunks).toString('utf8')) });
-      res.writeHead(respondWith).end();
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      received.push({ body });
+      res.writeHead(respondFor(body)).end();
     });
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -279,6 +281,53 @@ describe('telemetry emitter', () => {
       assert.equal(snapshotOf(p).runId, RUN_ID);
     } finally {
       respondWith = 200;
+      cleanup(p);
+    }
+  });
+
+  it('re-sends only the throttled events of a batch, never the accepted ones', async () => {
+    // Arrange: RUN_STARTED is accepted, the phase event in the same batch gets a 429
+    const p = makeProject(phaseStatus());
+    try {
+      respondFor = (body) => (activity(body).eventName === 'PHASE_COMPLETED' ? 429 : 200);
+      const first = await reconcile(p);
+      respondFor = () => 200;
+
+      // Act
+      const replay = await reconcile(p);
+      const again = await reconcile(p);
+
+      // Assert
+      assert.equal(first.length, 2, 'both were attempted');
+      assert.deepEqual(
+        replay.map((b) => [activity(b).eventName, activity(b).phase]),
+        [['PHASE_COMPLETED', 'DISCOVER']],
+        'only the throttled event is sent again',
+      );
+      assert.deepEqual(again, []);
+      assert.equal(snapshotOf(p).phases.discover, 'completed');
+    } finally {
+      respondFor = () => respondWith;
+      cleanup(p);
+    }
+  });
+
+  it('re-sends RUN_STARTED alone when it was the one refused', async () => {
+    // Arrange: the phase event is accepted, RUN_STARTED gets a 503
+    const p = makeProject(phaseStatus());
+    try {
+      respondFor = (body) => (activity(body).eventName === 'RUN_STARTED' ? 503 : 200);
+      await reconcile(p);
+      respondFor = () => 200;
+
+      // Act
+      const replay = await reconcile(p);
+
+      // Assert
+      assert.deepEqual(replay.map((b) => activity(b).eventName), ['RUN_STARTED']);
+      assert.equal(snapshotOf(p).started, true);
+    } finally {
+      respondFor = () => respondWith;
       cleanup(p);
     }
   });
