@@ -121,13 +121,6 @@ Execute Estimate per **Inner runs** above. Overwrite
 6. Update `index.json`: append scenario, set `active_scenario_id`, set
    `preferences.workshop.active_scenario_id` to match; write preferences.
 
-### 6b. Shareable calculator link (best-effort, never blocks)
-
-Follow `references/vendored/workshop/workshop-invariants.md` § 6 with
-`{SKILL_LABEL}` = "Heroku" — probe once, prefer `build_estimate` on the
-scenario's Balanced-tier services, store the URL as
-`estimation_summary.calculator_url`, null + one chat note on any failure.
-
 ### 7. Hand back
 
 Return to `workshop.md` → run `workshop-compare.md`.

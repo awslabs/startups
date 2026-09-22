@@ -6,7 +6,7 @@ freshness lookups carry ONLY public service, feature, model, or region names (e.
 file contents, prompts, architecture details, or anything else from the workspace
 or the run directory in an outbound request — the answer never depends on it.
 
-## Fields to verify at runtime via the awsknowledge MCP
+## Fields to verify at runtime via the AWS MCP Server
 
 - AgentCore microVMs session cap (currently 8h) and Instances session cap (currently 14d)
 - AgentCore microVMs compute cap (2 vCPU / 8 GB; Instances lifts it via EC2 choice)
@@ -16,12 +16,12 @@ or the run directory in an outbound request — the answer never depends on it.
   (`registry_regions` in `references/runtimes/agentcore.json`; see the procedure below)
 - Lambda MicroVMs launch TPS (5, not adjustable)
 - FedRAMP certification status for AgentCore and Lambda MicroVMs
-- Any Bedrock model price (defer to the `llm-to-bedrock` skill's pricing cache; never hardcode here)
+- Any Bedrock model price (defer to migration-to-aws pricing cache; never hardcode here)
 
 ## Temporal (design.md — Freshness, temporal units only)
 
-Volatile facts to re-verify when the Temporal branch generates a plan. The awsknowledge
-MCP does not cover Temporal-side facts; each fact below names its actual verification
+Volatile facts to re-verify when the Temporal branch generates a plan. The AWS MCP Server
+does not cover Temporal-side facts; each fact below names its actual verification
 channel. Whatever cannot be verified this run stays cached and the footer must say so.
 
 **Public Temporal documentation:** use WebFetch (or the host's web-reading tool) to
@@ -85,14 +85,14 @@ observed this run may be listed as verified.
    Check Registry facts only when `registry` is selected. In the main skill, include
    `registry_regions` from `references/runtimes/agentcore.json` even if the winning runtime is
    ECS, EKS, Lambda, or another runtime. In add-capabilities, use the Registry Hard limits entry.
-2. Attempt an awsknowledge MCP lookup for each.
+2. Attempt an AWS MCP Server lookup for each.
 3. On success (the MCP call returned a value THIS run), use the fresh value and list the field as
    verified.
 4. On failure OR if you did not call the MCP at all (unavailable, skipped), use the cached
    `value` and list the field as fallen-back.
 
 **Anti-fabrication rule (do not skip):** Never claim verification you did not perform,
-whether via AWS Knowledge MCP or public web. A fact may appear in its channel's verified
+whether via the AWS MCP Server or public web. A fact may appear in its channel's verified
 list ONLY if you actually made that channel's lookup this run and observed evidence for
 the fact. A skipped, unavailable, failed, or inconclusive lookup goes in the cached/unverified
 list with the original snapshot date. If a channel was not called, its verified list is
@@ -104,7 +104,7 @@ Apply this check whenever Registry is selected, regardless of the agent's runtim
 
 1. Identify the intended Registry deployment Region. Use the user's stated Region; ask if it
    is missing, unknown, `multi`, or `global`. Do not silently choose a Region.
-2. Refresh Registry availability via awsknowledge MCP using the procedure above. A Runtime
+2. Refresh Registry availability via the AWS MCP Server using the procedure above. A Runtime
    availability result cannot verify Registry. Keep the observed source and verification date
    with the result; on failure retain the cached snapshot date and mark availability unconfirmed.
 3. If this run confirms availability in the intended Region, proceed. If unavailable, ask the
@@ -125,14 +125,14 @@ in `capabilities-recommendation.md`. Only a lookup observed this run counts as v
 List only facts actually verified this run under their observed channel. Use `none`
 for an empty list; omit the public-web sentence when no Temporal units exist.
 
-> _Generated `<DATE>`. Facts verified via AWS Knowledge MCP: `<list or none>`.
+> _Generated `<DATE>`. Facts verified via AWS MCP Server: `<list or none>`.
 > Facts verified via public web (Temporal docs / AWS Marketplace): `<facts with source URLs
 > and verification dates, or none>`. Cached values used (not verified this run):
 > `<facts with original snapshot dates, or none>`. Limits and pricing change —
 > verify against the official sources before committing._
 
 If neither channel verified any facts, say that all facts are cached values. An unavailable
-AWS Knowledge MCP does not make successfully web-verified Temporal facts cached.
+AWS MCP Server does not make successfully web-verified Temporal facts cached.
 
 The footer is a summary, not the only place a date belongs. A cached number quoted in the body —
 a service limit, a scaling ceiling, a price anchor — carries its own snapshot date at the point of
