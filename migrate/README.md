@@ -139,11 +139,12 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 
 ## MCP Servers
 
-| Server            | Purpose                                                                                                                                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **awsknowledge**  | AWS documentation, regional availability, architecture guidance                                                                                                                                                       |
-| **awspricing**    | Real-time AWS service pricing for cost estimates                                                                                                                                                                      |
-| **temporal-docs** | Temporal Knowledge Base, operated by kapa.ai (queries are sent to that third-party service). Used only by the agent-advisor Temporal branch; one-time login via `/mcp`, falls back to a public-web lookup if declined |
+| Server           | Purpose                                                         |
+| ---------------- | --------------------------------------------------------------- |
+| **awsknowledge** | AWS documentation, regional availability, architecture guidance |
+| **awspricing**   | Real-time AWS service pricing for cost estimates                |
+
+The `agent-advisor` Temporal branch reads public Temporal documentation directly, with no login. If a lookup fails, it uses dated cached values marked unverified.
 
 ## Requirements
 

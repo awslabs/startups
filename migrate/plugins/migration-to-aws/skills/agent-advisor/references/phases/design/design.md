@@ -162,30 +162,22 @@ Write the `temporal` block when temporal units exist:
 `temporal.server_current` is read from `context-signals.json.temporal.server` (discover's
 output; "unknown" on the declared no-code path). `serverless_workers_status` is set from
 this run's freshness check (see freshness.md) — currently `"Public Preview"` — and MUST
-NOT be auto-upgraded to GA from a docs label or MCP echo alone.
+NOT be auto-upgraded to GA from a docs label alone.
 
 ### Freshness (temporal units only)
 
 Load `references/decision-refs/freshness.md` and run its Temporal section.
 
-**Verification channel for Temporal feature statuses (auth-gated MCP → WebFetch
-fallback):** freshness.md's Temporal section names the Temporal Knowledge Base MCP
-(`temporal-docs`, which ships in this plugin's `.mcp.json`) as the preferred source,
-and defines the auth-gate procedure — follow it exactly. In short: check whether
-`temporal-docs` is authenticated this session; if authenticated, query it first; if
-registered-but-not-authenticated, **STOP and ask via AskUserQuestion** whether to
-authenticate (per freshness.md), and if the user says yes, direct them to `/mcp` and
-**wait** for them to finish before continuing. Only if the user declines → WebFetch
-the docs.temporal.io page. Ask at most once per run. Pausing here is safe: this step
-is a read-only freshness check that resumes cleanly. (The Marketplace listing fact
-stays WebFetch-only; the KB MCP does not cover it.)
+Use the public Temporal documentation pages and AWS Marketplace page named there.
+Follow its web lookup and cached-fallback procedure without an authentication pause.
+Preserve each result's source and date in `design.json.volatile_facts` for the freshness footer.
 
 Non-negotiable regardless of channel: **Serverless Workers is Public Preview, not GA**
 — the docs label has moved before without a GA announcement (it read "Available" in
 2026-07); do not trust it at face value, re-verify this run and label the output
 Public Preview until GA evidence appears. Workflow Streams and External Payload
 Storage are Preview. The anti-fabrication rule applies:
-only claim verified (whether via MCP or WebFetch) for calls actually made and results
+only claim web-verified for calls actually made and results
 observed this run.
 
 ## Step 5 — Assemble design.json

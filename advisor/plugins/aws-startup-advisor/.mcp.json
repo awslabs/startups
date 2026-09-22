@@ -22,10 +22,6 @@
         "get_pricing"
       ]
     },
-    "temporal-docs": {
-      "type": "http",
-      "url": "https://temporal.mcp.kapa.ai"
-    },
     "aws-pricing-calculator": {
       "command": "npx",
       "args": [

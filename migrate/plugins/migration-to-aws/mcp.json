@@ -21,10 +21,6 @@
         "get_pricing_attribute_values",
         "get_pricing"
       ]
-    },
-    "temporal-docs": {
-      "type": "http",
-      "url": "https://temporal.mcp.kapa.ai"
     }
   }
 }
