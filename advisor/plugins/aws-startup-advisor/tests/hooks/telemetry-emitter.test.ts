@@ -313,8 +313,9 @@ describe('telemetry emitter', () => {
 
 // The consent step is written out in two places: the shared interpreter's _init,
 // which the DSL-governed skills run, and gcp-to-aws's own discover.md, which does
-// its run setup without the interpreter. AppSec approves one wording, so the two
-// must not drift. Compared from "Locate the emitter" to the ordering sentence,
+// its run setup without the interpreter. Customers must see one wording wherever
+// the step appears, so the two must not drift. Compared from "Locate the emitter"
+// to the ordering sentence,
 // with indentation removed, since the two files nest the step differently.
 describe('consent step wording', () => {
   const SKILLS = join(import.meta.dirname, '../../skills');
