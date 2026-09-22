@@ -131,7 +131,7 @@ matrix does NOT make the same-model path unavailable for GPT-5.6 — it means us
 id, with the data-residency implications of cross-region routing. For GPT-5.5 / GPT-5.4 the mantle matrix is a hard
 gate: no CRIS, no fallback.
 
-Verify current footprints per model card / `get_regional_availability` — the CRIS lists move faster than this file.
+Verify current footprints per model card / `aws___get_regional_availability` (AWS MCP Server) — the CRIS lists move faster than this file.
 
 ## Pricing
 
@@ -176,8 +176,8 @@ A workload above 272K context must be priced at the long-context tier.
 > **The Luna "blog discrepancy" resolved differently than first recorded.** The AWS News Blog's 0.20 / 1.20 is not
 > an error — it is the **Global CRIS** rate, now published on the Luna card. An earlier revision of this file said
 > global pricing was unpublished and treated the blog figure as wrong; both statements are corrected here.
-> Separately, the **AWS Price List API still carries no GPT-5.x rows** (checked 2026-08-04): the `awspricing` MCP
-> cannot price these models, and an empty result must not be read as "model unavailable."
+> Separately, the **AWS Price List API still carries no GPT-5.x rows** (checked 2026-08-04):
+> a missing or empty price-list result must not be read as "model unavailable."
 
 ### Prompt caching — GPT-5.6 only
 

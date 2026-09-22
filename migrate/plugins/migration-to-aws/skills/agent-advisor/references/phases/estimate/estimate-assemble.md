@@ -10,7 +10,7 @@ _produces:
 # Estimate — Assemble estimate.json
 
 > **Assembler unit.** The Estimate phase reads `design.json`, applies the layered
-> pricing source (cached anchors, awspricing MCP fallback), computes a coarse
+> pricing source (cached anchors), computes a coarse
 > monthly magnitude, and writes `estimate.json` inline within `estimate.md`
 > (Step 4). This unit records the artifact-level contract for the phase: it is
 > the single creator of `estimate.json`, and its postconditions (declared on the

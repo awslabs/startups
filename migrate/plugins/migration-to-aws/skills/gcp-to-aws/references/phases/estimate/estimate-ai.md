@@ -11,9 +11,7 @@ The parent `estimate.md` selects the pricing mode before loading this file.
 **Price lookup order:**
 
 1. **`shared/pricing-cache.md` (primary)** — Look up Bedrock model pricing and source provider pricing by table. Set `pricing_source: "cached"`.
-2. **MCP (secondary)** — If a model is NOT in pricing-cache.md and MCP is available, query `get_pricing("AmazonBedrock", ...)` with model filter and the user's target region. Set `pricing_source: "live"`.
-3. **Cache after MCP failure** — If MCP was attempted but failed, and the model IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`.
-4. **Unavailable** — If a model is NOT in the cache AND MCP failed, set `pricing_source: "unavailable"` and warn the user.
+2. **Unavailable** — If a model is NOT in the cache, set `pricing_source: "unavailable"` and warn the user. An `_unverified_` cache cell is blocking — do not use it as if it were a confirmed price.
 
 For typical migrations (Claude, Llama, Nova, Mistral, DeepSeek, Gemma, OpenAI gpt-oss, Gemini source pricing), ALL prices are in `pricing-cache.md`. Zero MCP calls needed.
 
@@ -124,7 +122,7 @@ Reference `aws-design-ai.json` → `honest_assessment`. If `"recommend_stay"`, p
 
 **Non-cost benefits to present:** usage counting toward existing AWS commitments, IAM/VPC/PrivateLink/KMS/CloudTrail governance, in-region processing for data residency, prompt caching (Claude, and GPT-5.6 at 90% off cached input with cached tokens exempt from the input-TPM quota), model flexibility (100+ models), AWS ecosystem (Guardrails, Knowledge Bases, AgentCore), and — for a same-model move — the elimination of behavior-delta and prompt-regression risk.
 
-**Pricing source caveat (all providers):** a `pricing-cache.md` cell marked `_unverified_` is **blocking for any quoted figure, whatever the provider** — resolve it from the Bedrock pricing page or the model card before the row enters `model_comparison` or the ROI table; never substitute a guess or a same-tier sibling's rate. The most common cause is the AWS Price List API: it does not carry the proprietary GPT-5.x models (so the `awspricing` MCP returns no rows for them) and it lags new Anthropic frontier launches. An empty MCP result is **not** evidence the model is unavailable or free. See `shared/openai-on-bedrock.md`.
+**Pricing source caveat (all providers):** a `pricing-cache.md` cell marked `_unverified_` is **blocking for any quoted figure, whatever the provider** — resolve it from the Bedrock pricing page or the model card before the row enters `model_comparison` or the ROI table; never substitute a guess or a same-tier sibling's rate. An `_unverified_` cache cell is not evidence the model is unavailable or free — it means the rate was not confirmed when the cache was last updated. See `shared/openai-on-bedrock.md`.
 
 **Unverified gate (all providers, not just OpenAI):** any cell marked `_unverified_` in `shared/pricing-cache.md` — including Anthropic batch cells for models not yet on the [batch-supported models table](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html) (Sonnet 5, Opus 4.8 as of 2026-09-02) — is blocking for any quoted figure that depends on it. Do not apply a batch discount to an `_unverified_` batch cell; price on-demand and note batch as a possible future saving, or resolve the rate from the Bedrock pricing page first.
 
