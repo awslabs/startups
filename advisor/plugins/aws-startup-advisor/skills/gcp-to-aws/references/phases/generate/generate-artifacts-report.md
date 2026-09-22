@@ -651,6 +651,14 @@ These move from "example in the fixture" to enforced gate. See `references/share
     `exec-share` after the TOC using only decision-summary facts. It contains
     one standalone paragraph, no buttons or JavaScript, no new calculations,
     and no stronger certainty than the underlying estimate.
+19. **Rounded monthly figures (enforces rule 2).** A monthly-scale dollar
+    figure (whole-dollar part `$2` or higher) never renders with cents —
+    round to the nearest whole dollar. Cents remain only on genuinely
+    sub-dollar precision (`$1.50`, `$0.40`) or a per-unit rate (`$0.018/hr`,
+    `$21.18` per 1-/6-month commitment unit-hour). The validator fails on a
+    `$X.YY` figure `>= $2.00` with no adjacent rate suffix — this is the
+    regression class where raw unrounded arithmetic (`$25,684.89/mo`) reaches
+    the reader and overflows fixed-width metric cards.
 
 > **Section IDs are stable anchors, not placement hints.** Some `appendix-*` IDs render in the executive flow on purpose (notably `appendix-assumptions`). Do not rename IDs to match position — the validator and TOC key on them.
 
@@ -686,6 +694,9 @@ After generating the HTML file, verify:
 20. **Cost Optimization section**: When `optimization_opportunities[]` is
     non-empty, `exec-optimization` and `appendix-optimization` are present
     and TOC-linked. Do not bury the opportunity table only in Appendix B.
+21. **Whole-dollar monthly figures**: No monthly-scale dollar figure
+    (`$2.00` or higher) renders with cents unless it is a per-unit/hourly
+    rate — see rule 19 above.
 
 **Run automated validator (mandatory when HTML was written):**
 
