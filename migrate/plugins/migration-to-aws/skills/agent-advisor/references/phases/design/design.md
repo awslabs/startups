@@ -168,17 +168,10 @@ NOT be auto-upgraded to GA from a docs label or MCP echo alone.
 
 Load `references/decision-refs/freshness.md` and run its Temporal section.
 
-**Verification channel for Temporal feature statuses (auth-gated MCP → WebFetch
-fallback):** freshness.md's Temporal section names the Temporal Knowledge Base MCP
-(`temporal-docs`, which ships in this plugin's `.mcp.json`) as the preferred source,
-and defines the auth-gate procedure — follow it exactly. In short: check whether
-`temporal-docs` is authenticated this session; if authenticated, query it first; if
-registered-but-not-authenticated, **STOP and ask via AskUserQuestion** whether to
-authenticate (per freshness.md), and if the user says yes, direct them to `/mcp` and
-**wait** for them to finish before continuing. Only if the user declines → WebFetch
-the docs.temporal.io page. Ask at most once per run. Pausing here is safe: this step
-is a read-only freshness check that resumes cleanly. (The Marketplace listing fact
-stays WebFetch-only; the KB MCP does not cover it.)
+**Verification channel for Temporal feature statuses (WebFetch):**
+freshness.md's Temporal section names WebFetch of the relevant `docs.temporal.io`
+page as the primary (and only) channel — follow it. There is no MCP auth-gate step.
+(The Marketplace listing fact stays WebFetch-only as before.)
 
 Non-negotiable regardless of channel: **Serverless Workers is Public Preview, not GA**
 — the docs label has moved before without a GA announcement (it read "Available" in

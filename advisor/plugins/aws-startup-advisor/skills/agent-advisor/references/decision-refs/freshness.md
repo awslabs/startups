@@ -24,33 +24,18 @@ Volatile facts to re-verify when the Temporal branch generates a plan. The awskn
 MCP does not cover Temporal-side facts; each fact below names its actual verification
 channel. Whatever cannot be verified this run stays cached and the footer must say so.
 
-**Temporal Knowledge Base MCP (preferred channel for Temporal-side facts):**
-Temporal's hosted knowledge-base MCP server (`temporal-docs` →
-`https://temporal.mcp.kapa.ai`, real-time answers compiled from Temporal docs, forum,
-and Slack) **ships in this plugin's `.mcp.json`** — it is already registered for every
-install. It is the preferred source for the **Feature statuses** fact below. It needs a
-one-time OAuth login to actually connect. **Auth-gate procedure (run BEFORE any Temporal
-feature-status lookup):**
+**WebFetch (primary and only channel for Temporal-side facts):**
+Use WebFetch to retrieve the relevant `docs.temporal.io` page directly. This is the
+primary (and only) channel for the **Feature statuses** fact below — no MCP server,
+no auth step. Tradeoff accepted: the former `temporal-docs` kapa.ai MCP synthesized
+answers across Temporal docs, forum, and Slack; WebFetch reads a single docs page —
+a slightly narrower source, but the feature-status facts needed here live on
+`docs.temporal.io`. The anti-fabrication rule applies: a fact counts as verified
+only if the WebFetch actually returned it this run.
 
-1. Check whether the `temporal-docs` MCP is connected AND authenticated this session.
-2. **If authenticated** → query it first for feature statuses.
-3. **If registered but NOT authenticated** → STOP and ask with AskUserQuestion (do not
-   silently fall through): "The Temporal docs MCP (`temporal-docs`) gives the freshest
-   feature-status answers but needs a one-time Google/GitHub login. Authenticate now?"
-   with options:
-   - **"Yes — I'll authenticate"** → tell the user to run `/mcp` → `temporal-docs` →
-     Authenticate, and **wait** for them to confirm it's done; then re-check and query
-     the MCP. (Step 4 is a read-only freshness check — pausing here is safe and resumes
-     cleanly.)
-   - **"No — use public web instead"** → fall back to the WebFetch channel named on the
-     fact for this run.
-4. Only ask once per run; if the user declined this run, do not re-prompt.
-
-- The anti-fabrication rule applies to the MCP identically: a fact counts as verified
-  only if the MCP (or the WebFetch) actually returned it this run.
-- Scope note: the MCP covers Temporal **platform** knowledge only. The Marketplace
-  listing / commercial-terms fact below is AWS buyer-side and stays WebFetch-only — do
-  not route it through the Temporal KB MCP.
+- Scope note: WebFetch covers Temporal **platform** knowledge only. The Marketplace
+  listing / commercial-terms fact below is AWS buyer-side and stays WebFetch-only —
+  fetch that page separately from `docs.temporal.io`.
 
 **Verifiable this run (attempt these):**
 
@@ -59,16 +44,13 @@ feature-status lookup):**
   Confirm: listing resolves (not 404/redirect to search), product name still
   "Temporal Cloud (Pay-as-you-Go)", the $0.01/action pricing dimension, free trial.
   (The Marketplace Catalog API cannot do this — it is seller-scoped; the public page is
-  the only buyer-side channel. The Temporal KB MCP does NOT cover this — it is
-  Temporal-platform-scoped, not AWS Marketplace.)
+  the only buyer-side channel.)
 - **Feature statuses** (Serverless Workers, Workflow Streams, External Payload Storage,
-  Worker Versioning) — **preferred:** query the Temporal KB MCP (above). **Fallback:**
-  fetch the relevant docs.temporal.io page. CAUTION for Serverless Workers regardless of
-  channel: the docs label has moved before without a GA announcement (it read "Available"
-  in 2026-07 while the feature was still pre-release; it reads "Public Preview" as of
-  2026-08) — a docs label — or an MCP answer echoing it — alone does NOT upgrade it to
-  GA — keep the Public Preview label until the user shows GA evidence (e.g. a GA
-  announcement post).
+  Worker Versioning) — WebFetch the relevant `docs.temporal.io` page. CAUTION for
+  Serverless Workers: the docs label has moved before without a GA announcement (it read
+  "Available" in 2026-07 while the feature was still pre-release; it reads "Public
+  Preview" as of 2026-08) — a docs label alone does NOT upgrade it to GA — keep the
+  Public Preview label until the user shows GA evidence (e.g. a GA announcement post).
 
 **Not verifiable (always cached):**
 

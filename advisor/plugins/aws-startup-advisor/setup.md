@@ -98,14 +98,13 @@ The migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-ad
 - **`awsknowledge`** (HTTP) — current AWS documentation lookups.
 - **`awspricing`** (stdio via `uvx`) — live pricing data for cost estimates. **Requires [`uv`/`uvx`](https://docs.astral.sh/uv/) on your machine**; without it, estimates fall back to cached rates.
 - **`aws-pricing-calculator`** (stdio via `npx`) — builds shareable AWS Pricing Calculator estimates.
-- **`temporal-docs`** (HTTP) — Temporal documentation for `agent-advisor`'s Temporal-worker flow.
 
 The knowledge-base, prompt-library, architect, and start-building skills do not require MCP servers.
 
 **Provisioning depends on which install path you used in Step 2:**
 
 - **Step 2A (Claude Code plugin install)** — MCP servers are provisioned automatically; nothing further to do.
-- **Step 2B (`npx skills add`)** — MCP servers are **not** configured by this command, for any agent. The skills still work: `awspricing` falls back to cached pricing (±5-25% accuracy) and `awsknowledge`/`aws-pricing-calculator`/`temporal-docs` lookups are simply unavailable until configured. If the user wants live pricing and current AWS docs, add the servers from this plugin's `.mcp.json` to their agent's own MCP config:
+- **Step 2B (`npx skills add`)** — MCP servers are **not** configured by this command, for any agent. The skills still work: `awspricing` falls back to cached pricing (±5-25% accuracy) and `awsknowledge`/`aws-pricing-calculator` lookups are simply unavailable until configured. If the user wants live pricing and current AWS docs, add the servers from this plugin's `.mcp.json` to their agent's own MCP config:
   - **Kiro**: add the `mcpServers` block to `.kiro/settings/mcp.json` (workspace) or `~/.kiro/settings/mcp.json` (user).
   - **Cursor**: add it to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global).
   - **Codex**: `codex mcp add awsknowledge --url https://knowledge-mcp.global.api.aws` and `codex mcp add awspricing -- uvx awslabs.aws-pricing-mcp-server@latest`.

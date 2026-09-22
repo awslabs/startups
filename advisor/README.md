@@ -41,7 +41,6 @@ The migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-ad
 - **AWS Knowledge** (`awsknowledge`, HTTP) — current AWS documentation lookups.
 - **AWS Pricing** (`awspricing`, stdio via `uvx awslabs.aws-pricing-mcp-server`) — live pricing data for cost estimates. Requires [`uv`/`uvx`](https://docs.astral.sh/uv/) on the user's machine. Migration skills probe this **once on cold start** and continue with cached pricing if missing (they do not hard-stop Discover/Clarify).
 - **AWS Pricing Calculator** (`aws-pricing-calculator`, stdio via `npx sample-aws-pricing-calculator-mcp`) — builds shareable AWS Pricing Calculator estimates.
-- **Temporal Docs** (`temporal-docs`, HTTP) — Temporal documentation lookups for `agent-advisor`'s Temporal-worker flow.
 
 The knowledge-base, prompt-library, architect, and start-building skills do not require MCP servers.
 

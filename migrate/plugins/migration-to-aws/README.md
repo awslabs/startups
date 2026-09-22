@@ -170,11 +170,10 @@ Pass `--estimation-infra` / `--estimation-ai` / `--aws-design` only when those f
 
 ### MCP Servers
 
-| Server            | Purpose                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **awsknowledge**  | AWS documentation, regional availability, architecture guidance                                                                                                                                                                                                                                                                                                                                                  |
-| **awspricing**    | Real-time AWS service pricing for cost estimates                                                                                                                                                                                                                                                                                                                                                                 |
-| **temporal-docs** | Temporal Knowledge Base (feature statuses for the Temporal Worker migration branch), operated by kapa.ai — queries are sent to that third-party service, not to Temporal, AWS, or your machine. Needs a one-time Google/GitHub login via `/mcp`; when the branch needs it and it isn't authenticated, the skill pauses and asks whether to authenticate, falling back to a public-web lookup only if you decline |
+| Server           | Purpose                                                         |
+| ---------------- | --------------------------------------------------------------- |
+| **awsknowledge** | AWS documentation, regional availability, architecture guidance |
+| **awspricing**   | Real-time AWS service pricing for cost estimates                |
 
 ## llm-to-bedrock
 
@@ -253,7 +252,7 @@ command that creates, changes, or deletes anything. If you also have `heroku_*`
 Terraform, the agent cross-checks it against your live account and reports drift.
 
 - **For AI execution (llm-to-bedrock skill):** Python 3.10+, `uv`, and Bedrock model access enabled
-- **For agent-advisor:** `uv` (deterministic runtime scoring); source code when deploying/migrating existing agents (an idea-only run needs none); the Temporal branch uses the `temporal-docs` MCP (one-time login, or public-web fallback)
+- **For agent-advisor:** `uv` (deterministic runtime scoring); source code when deploying/migrating existing agents (an idea-only run needs none); the Temporal branch fetches feature statuses via WebFetch from `docs.temporal.io`
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
 ## Architecture & contributing
