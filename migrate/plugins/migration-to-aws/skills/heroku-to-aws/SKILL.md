@@ -17,7 +17,7 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 - **Flat resource model**: Heroku resources are organized per-app without dependency graphs or clustering. No topological sorting, typed edges, or cluster formation logic. Resources are processed as a flat list in input order.
 - **Deterministic mappings**: Core services use fixed lookup tables (Dyno Type Table, Postgres Plan Table, Redis Plan Table, Kafka Plan Table). Common add-ons use the Fast-Path Table. Unknown add-ons hit the specialist gate.
 - **DMS has Heroku constraints**: AWS DMS cannot perform continuous replication (CDC) with Heroku Postgres because Heroku does not grant the REPLICATION role. DMS is for one-time bulk migration with a cutover window only. The skill must surface this constraint when DMS is selected.
-- **What-if after Estimate**: After costs are computed, SAs can enter an optional what-if workshop sidebar (`references/phases/workshop/workshop.md`) to change region, HA, compute target, or CPU architecture (x86 vs Graviton), refresh Design + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Region dollar deltas need awspricing MCP; without it, rates stay us-east-1-cache-based. Workshop arch defaults to **x86_64** here (EB tables historically x86-first).
+- **What-if after Estimate**: After costs are computed, SAs can enter an optional what-if workshop sidebar (`references/phases/workshop/workshop.md`) to change region, HA, compute target, or CPU architecture (x86 vs Graviton), refresh Design + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Rates are cache-based (us-east-1 anchor; regional deltas are noted qualitatively). Workshop arch defaults to **x86_64** here (EB tables historically x86-first).
 
 ---
 
@@ -86,19 +86,16 @@ uv --version 2>/dev/null || echo "UV_MISSING"
 uvx --version 2>/dev/null || echo "UVX_MISSING"
 ```
 
-- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that live `awspricing`
-  MCP estimates (and region dollar deltas in the what-if workshop) need
-  [`uv` / `uvx`](https://docs.astral.sh/uv/). Continue Discover → Clarify →
-  Design. At Estimate / workshop, price from the us-east-1 cache and set each
+- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that
+  [`uv` / `uvx`](https://docs.astral.sh/uv/) is required for the `llm-to-bedrock`
+  and `agent-advisor` scripts. Continue Discover → Clarify → Design.
+  At Estimate / workshop, price from the us-east-1 cache and set each
   service's `pricing_source.status` per the hierarchy in
   `references/vendored/estimate/pricing-mode.md` — `"cached"` for services the
   cache covers (`"cached_stale"` past the staleness threshold per Step 0a), and
-  the row 4/5 buckets (`"estimated"` / `"unavailable"`) for services it doesn't.
-  Do not use `"cached_fallback"`; that value is reserved for "MCP attempted and
-  failed", and the MCP was never attempted on this path. **Do not hard-stop** an
-  infrastructure migration for missing `uv`.
-- If both are present: proceed without nagging. Live pricing still depends on
-  the `awspricing` MCP being configured.
+  `"estimated"` / `"unavailable"` for services it doesn't.
+  **Do not hard-stop** an infrastructure migration for missing `uv`.
+- If both are present: proceed without nagging.
 - Soft-warn once if `python3` is missing (Heroku report validation at Generate
   uses `$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py`). Generate can
   still complete, but the validator must still be attempted and its exit code
@@ -130,11 +127,13 @@ The `.migration/` directory is protected by a `.gitignore` created at init.
 
 ## MCP Servers
 
-**awspricing** (for cost estimation):
+**aws-mcp** (AWS documentation and regional availability):
 
-- Provides `get_pricing`, `get_pricing_service_codes`, `get_pricing_service_attributes` tools
-- Only needed during Estimate phase. Discover and Design do not require it.
-- Primary pricing source: `references/vendored/pricing/aws-infra-pricing.json` (cached AWS infrastructure rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the pricing file.
+- Provides `aws___search_documentation`, `aws___read_documentation`, `aws___list_regions`,
+  `aws___get_regional_availability`, `aws___retrieve_skill` tools
+- Used for volatile-fact lookups (regional availability, service limits).
+- Primary pricing source: `references/vendored/pricing/aws-infra-pricing.json` (cached AWS
+  infrastructure rates, ±5-10% for infrastructure).
 
 ---
 
@@ -192,13 +191,13 @@ heroku-to-aws/
 │   └── fast-path-addons.json                   # Add-on → AWS deterministic mappings (13+ entries)
 ```
 
-| Condition                                                | Action                                                                                                                                                                    |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                    |
-| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `references/vendored/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`. |
-| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                                          |
-| Dyno type not in selected compute sizing table           | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                                         |
-| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                                |
+| Condition                                                | Action                                                                                                                                                                                 |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                                 |
+| Service not in pricing cache                             | Display user warning about ±5-10% accuracy. Use `references/vendored/pricing/aws-infra-pricing.json`. Add `pricing_source: "unavailable"` to `estimation-infra.json` for that service. |
+| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                                                       |
+| Dyno type not in selected compute sizing table           | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                                                      |
+| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                                             |
 
 ## Defaults
 

@@ -45,7 +45,7 @@ RDS (MySQL/PostgreSQL/MariaDB), Aurora, ElastiCache, OpenSearch, and MSK all sup
 | e2-micro / e2-small           | t3.micro / t3.small      | t4g.micro / t4g.small   |
 | e2-medium                     | t3.medium                | t4g.medium              |
 
-Verify exact pricing per target via `pricing-cache.md` (dev-tier rows) or the `awspricing` MCP for any family/size not cached.
+Verify exact pricing per target via `pricing-cache.md` (dev-tier rows); set `pricing_source: "unavailable"` for any family/size not cached.
 
 ---
 
@@ -71,7 +71,7 @@ Branch on `preferences.design_constraints.cpu_architecture`:
 
 ### Estimate (`estimate-infra.md`)
 
-Model **only** the hourly price discount. Use `pricing-cache.md` Graviton rows when present; otherwise query the `awspricing` MCP for both the Graviton SKU and its x86 equivalent. Emit an `architecture_comparison` block (schema in `schema-graviton.md`). Do **not** add Graviton as a fourth pricing tier — it is the architecture within Balanced/Premium/Optimized. Balanced tier uses Graviton pricing when selected.
+Model **only** the hourly price discount. Use `pricing-cache.md` Graviton rows when present; otherwise set `pricing_source: "unavailable"` for the affected rows. Emit an `architecture_comparison` block (schema in `schema-graviton.md`). Do **not** add Graviton as a fourth pricing tier — it is the architecture within Balanced/Premium/Optimized. Balanced tier uses Graviton pricing when selected.
 
 ### Known limitations (v1 — tracked follow-ups)
 

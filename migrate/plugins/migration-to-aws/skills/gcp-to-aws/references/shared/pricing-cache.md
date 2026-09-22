@@ -5,8 +5,8 @@
 **Currency:** USD
 **Accuracy:** ±5-10% for infrastructure services (sourced from AWS Price List API), ±15-25% for AI models (sourced from public pricing pages)
 
-> Prices may vary by region and change over time. Use for estimation only. For real-time pricing, fall back to the AWS Pricing MCP server. **Amazon Nova** figures in the Bedrock subsection often reference **US East (Ohio)** and **inference mode** (global vs geo); other services in this file default to **us-east-1** unless noted.
-> **Staleness warning:** If today's date is more than 30 days after the **Last updated** date above, treat AI model prices as potentially stale (±15-25% accuracy may widen). Infrastructure prices (Fargate, RDS, S3, etc.) change rarely and remain reliable longer. When staleness is detected, keep `pricing_source.status: "cached"` (the schema enum is `cached | live | cached_fallback | unavailable` — there is no `cached_stale` status) and record the staleness in the dedicated `pricing_source.fallback_staleness` object: set `is_stale: true` and `staleness_warning: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or [aws.amazon.com/bedrock/pricing](https://aws.amazon.com/bedrock/pricing/)."` Surface that same warning to the user in the estimate output.
+> Prices may vary by region and change over time. Use for estimation only; there is no live pricing lookup — for the latest rates, check the public AWS pricing pages (e.g. https://aws.amazon.com/bedrock/pricing). **Amazon Nova** figures in the Bedrock subsection often reference **US East (Ohio)** and **inference mode** (global vs geo); other services in this file default to **us-east-1** unless noted.
+> **Staleness warning:** If today's date is more than 30 days after the **Last updated** date above, treat AI model prices as potentially stale (±15-25% accuracy may widen). Infrastructure prices (Fargate, RDS, S3, etc.) change rarely and remain reliable longer. When staleness is detected, keep `pricing_source.status: "cached"` (the schema enum is `cached | live | cached_fallback | unavailable` — there is no `cached_stale` status) and record the staleness in the dedicated `pricing_source.fallback_staleness` object: set `is_stale: true` and `staleness_warning: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify against [aws.amazon.com/bedrock/pricing](https://aws.amazon.com/bedrock/pricing/)."` Surface that same warning to the user in the estimate output.
 >
 > **Lifecycle is not a cached price field.** The `Status` column below is a dated snapshot, not permission to skip the lifecycle check. Before selecting any model, call `GetFoundationModel` or `ListFoundationModels` and read `modelLifecycle.status`. For a model launched on or after 2026-09-07, also read its model card: its Legacy period may be 45 days rather than 6 months, and it will never appear in the Legacy/EOL table. See `vendored/ai/ai-model-lifecycle.md`.
 
@@ -79,7 +79,7 @@ Worker nodes billed separately as EC2 or Fargate.
 
 ### EC2 (On-Demand, Linux, Graviton/ARM64)
 
-~15–20% below the x86 equivalent at the same vCPU/memory. Dev-tier rows cached below; query the `awspricing` MCP for any family or size not listed.
+~15–20% below the x86 equivalent at the same vCPU/memory. Dev-tier rows cached below; set `pricing_source: "unavailable"` for any family or size not listed.
 
 | Instance   | $/hour | $/month | x86 equivalent |
 | ---------- | ------ | ------- | -------------- |
@@ -593,8 +593,8 @@ see `openai-on-bedrock.md`). GovCloud GPT-5.4 is 3.30 / 19.80.
 
 > **One source conflict.** These models are absent
 > from the AWS Price List API entirely: querying `AmazonBedrock` returns only `gpt-oss` and GPT OSS Safeguard, and
-> filtering on `GPT-5` or a `gpt-5` usage type returns zero rows (price-list publication 2026-08-04). The `awspricing`
-> MCP cannot price them, and an empty result is **not** evidence the model is unavailable. (An earlier revision also
+> filtering on `GPT-5` or a `gpt-5` usage type returns zero rows (price-list publication 2026-08-04). An empty
+> price-list result is **not** evidence the model is unavailable. (An earlier revision also
 > flagged the AWS News Blog's Luna 0.20 / 1.20 as conflicting; it is the Global CRIS rate, not an error.)
 
 **Prompt caching (GPT-5.6 only):** cached input read at a 90% discount, cache write at 1.25x uncached input, minimum

@@ -1,25 +1,14 @@
 {
   "mcpServers": {
-    "awsknowledge": {
+    "aws-mcp": {
       "type": "http",
-      "url": "https://knowledge-mcp.global.api.aws"
-    },
-    "awspricing": {
-      "command": "uvx",
-      "args": [
-        "awslabs.aws-pricing-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR",
-        "AWS_REGION": "us-east-1"
-      },
-      "timeout": 120000,
-      "type": "stdio",
+      "url": "https://aws-mcp.us-east-1.api.aws/mcp",
       "autoApprove": [
-        "get_pricing_service_codes",
-        "get_pricing_service_attributes",
-        "get_pricing_attribute_values",
-        "get_pricing"
+        "aws___search_documentation",
+        "aws___read_documentation",
+        "aws___list_regions",
+        "aws___get_regional_availability",
+        "aws___retrieve_skill"
       ]
     }
   }

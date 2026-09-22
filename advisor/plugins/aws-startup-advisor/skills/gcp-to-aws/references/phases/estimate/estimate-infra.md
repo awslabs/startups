@@ -10,10 +10,8 @@ The parent `estimate.md` determines pricing source before loading this file.
 
 **Price lookup order for each AWS service in `aws-design.json`:**
 
-1. **`shared/pricing-cache.md` (primary)** — Read once. Set `pricing_source.status: "cached"`. **Before using, check staleness:** compute `days_since_cache = today − cache "Last updated" date`. If `days_since_cache > 30`, keep `status: "cached"` (the schema enum is `cached | live | cached_fallback | unavailable`; there is no `cached_stale` status) and flag staleness in `pricing_source.fallback_staleness` — set `is_stale: true` and `staleness_warning: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or aws.amazon.com/bedrock/pricing."` — then prepend that warning to the estimate output. Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable; only AI model prices are affected by staleness. If `days_since_cache ≤ 30`, use the price directly with `is_stale: false`.
-2. **MCP with recipes (secondary)** — If a service is NOT in pricing-cache.md and MCP is available, use the Pricing Recipes table below. Set `pricing_source: "live"`.
-3. **Cache after MCP failure** — If MCP was attempted but failed, and the service IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`.
-4. **Unavailable** — If a service is NOT in the cache AND MCP failed, set `pricing_source: "unavailable"`. Add to `services_with_missing_fallback` and warn the user.
+1. **`shared/pricing-cache.md` (primary)** — Read once. Set `pricing_source.status: "cached"`. **Before using, check staleness:** compute `days_since_cache = today − cache "Last updated" date`. If `days_since_cache > 30`, keep `status: "cached"` (the schema enum is `cached | live | cached_fallback | unavailable`; there is no `cached_stale` status) and flag staleness in `pricing_source.fallback_staleness` — set `is_stale: true` and `staleness_warning: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify against aws.amazon.com/bedrock/pricing."` — then prepend that warning to the estimate output. Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable; only AI model prices are affected by staleness. If `days_since_cache ≤ 30`, use the price directly with `is_stale: false`.
+2. **Unavailable** — If a service is NOT in the cache, set `pricing_source: "unavailable"`. Add to `services_with_missing_fallback` and warn the user.
 
 For typical migrations (Fargate, Aurora/RDS, Aurora Serverless v2, S3, ALB, NAT Gateway, Lambda, Secrets Manager, CloudWatch, ElastiCache, DynamoDB), ALL prices are in `pricing-cache.md`. Zero MCP calls needed.
 
@@ -31,10 +29,10 @@ Before pricing queries, validate `aws-design.json`:
 
 If all validations pass, proceed to Part 1.
 
-## Pricing Recipes (MCP Fallback Only)
+## Pricing Recipes (Reference Only — Cache Is Primary)
 
-Only use these recipes when a service is NOT in `pricing-cache.md` and MCP is available.
-Do NOT call get_pricing_service_codes, get_pricing_service_attributes, or get_pricing_attribute_values — go directly to get_pricing.
+Pricing is cache-only. The table below is retained as a reference for service codes but
+should NOT be used to call any live pricing MCP (none is configured).
 
 | AWS Service          | service_code      | filters                                                                                                                                                                                                                                  | output_options                                                                                                                                     |
 | -------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,7 +135,7 @@ This ensures the comparison is GCP list price vs. AWS on-demand (both uncommitte
 
 ## Part 2: Calculate Projected AWS Costs
 
-**Security baseline coverage (always required):** Add a `security_baseline` entry to `projected_costs.breakdown` with `service: "AWS Security Baseline (Tier 1)"`, low/mid/high estimates of $3/$15/$30 per month, `accuracy: "±25%"`, and a `components` sub-object breaking down CloudTrail S3 storage (~$1.50/mo mid), GuardDuty (~~$13/mo mid after free trial), AWS Budgets ($0), and the free controls. If `preferences.json.compliance` contains any of `soc2`, `pci`, `hipaa`, `fedramp`, also add a sibling `security_baseline_compliance` entry with low/mid/high estimates of $3/$14/$25 per month, `accuracy: "±25%"`, `emission_reason` field citing the declared compliance values, and a `components` sub-object breaking down AWS Config (~$6/mo mid continuous), Config S3 storage (~~ $0.50/mo mid), Security Hub + FSBP (~$7/mo mid after free trial), and extra standards (free). Per-unit rates are grounded in the AWS Pricing API for us-east-1 as of 2026-05-04 (Config pricing effective 2025-09-01, Security Hub effective 2026-03-01). Cite source as `references/shared/pricing-cache.md § Security Baseline` or live `get_pricing` calls for `AmazonGuardDuty`, `AWSConfig`, and `AWSSecurityHub` service codes. Both line items are added as flat additives to each tier total (Premium/Balanced/Optimized) rather than being tier-dependent.
+**Security baseline coverage (always required):** Add a `security_baseline` entry to `projected_costs.breakdown` with `service: "AWS Security Baseline (Tier 1)"`, low/mid/high estimates of $3/$15/$30 per month, `accuracy: "±25%"`, and a `components` sub-object breaking down CloudTrail S3 storage (~$1.50/mo mid), GuardDuty (~~$13/mo mid after free trial), AWS Budgets ($0), and the free controls. If `preferences.json.compliance` contains any of `soc2`, `pci`, `hipaa`, `fedramp`, also add a sibling `security_baseline_compliance` entry with low/mid/high estimates of $3/$14/$25 per month, `accuracy: "±25%"`, `emission_reason` field citing the declared compliance values, and a `components` sub-object breaking down AWS Config (~$6/mo mid continuous), Config S3 storage (~~ $0.50/mo mid), Security Hub + FSBP (~$7/mo mid after free trial), and extra standards (free). Per-unit rates are grounded in the AWS Pricing API for us-east-1 as of 2026-05-04 (Config pricing effective 2025-09-01, Security Hub effective 2026-03-01). Cite source as `references/shared/pricing-cache.md § Security Baseline`. Both line items are added as flat additives to each tier total (Premium/Balanced/Optimized) rather than being tier-dependent.
 
 For each service in `aws-design.json`, calculate monthly cost using rates from `pricing-cache.md`. Track `pricing_source` per service.
 

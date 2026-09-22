@@ -39,7 +39,7 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 Read target region from `preferences.json` → `design_constraints.target_region` (default: `us-east-1`).
 
-Call `get_regional_availability` from the `awsknowledge` MCP server for:
+Call `aws___get_regional_availability` from the AWS MCP Server for:
 
 1. Each Bedrock model ID being considered (from the loaded model mapping tables)
 2. If `agentic_profile.is_agentic == true`: check `bedrock-agentcore` (Runtime)
@@ -51,7 +51,7 @@ Call `get_regional_availability` from the `awsknowledge` MCP server for:
 - Note in user summary with alternative region suggestion
 - Do NOT block the design — proceed with the recommendation and flag the constraint
 
-**If MCP call fails after 3 attempts:** Use the static table in `references/vendored/ai/ai-migration-guardrails.md` as fallback. Add `"regional_validation": "fallback_static"` to output metadata.
+**If MCP call fails:** Use the static table in `references/vendored/ai/ai-migration-guardrails.md` as fallback. Add `"regional_validation": "fallback_static"` to output metadata.
 
 ---
 
@@ -82,7 +82,7 @@ Read `preferences.json` → `design_constraints.compliance` (from full-flow Q2 o
 
 | Compliance value | Constraint applied in this design                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hipaa`          | Candidate models restricted to **BAA-eligible Bedrock models** — verify eligibility per model via the AWS Documentation MCP server before shortlisting. Add to the code migration plan (Part 5): Bedrock invocation logging keeps ORIGINAL content in CloudWatch (Guardrails PII masking does not apply to logs) — require KMS encryption + restricted IAM on the log group. Prefer us-east-1/us-west-2.                                                                |
+| `hipaa`          | Candidate models restricted to **BAA-eligible Bedrock models** — verify eligibility per model via `aws___search_documentation` (AWS MCP Server) before shortlisting. Add to the code migration plan (Part 5): Bedrock invocation logging keeps ORIGINAL content in CloudWatch (Guardrails PII masking does not apply to logs) — require KMS encryption + restricted IAM on the log group. Prefer us-east-1/us-west-2.                                                   |
 | `fedramp`        | Target region forced to **GovCloud** (us-gov-east-1/us-gov-west-1); re-run Step 0.5 regional validation against GovCloud — the model catalog is materially smaller, and a `regional_warnings[]` entry is REQUIRED for every candidate model not available there.                                                                                                                                                                                                        |
 | `gdpr`           | Target region restricted to EU (eu-west-1, eu-central-1); model IDs must use **geographic `eu.` inference profiles** — `global.` profiles route outside the EU boundary and are forbidden. Note the GCP-EU → AWS-EU transfer in the summary. Exclude any candidate with no `eu.` Geo profile, including Fable 5 / 5.1 and Mythos. Fable 5's in-region access is limited to `bedrock-mantle` in us-east-1; both use `us.` / `global.` profiles on `bedrock-runtime`.     |
 | `pci`            | Part 5 plan must include: no cardholder data in prompts without tokenization; CloudTrail on Bedrock API calls; scoped IAM (no `bedrock:*`).                                                                                                                                                                                                                                                                                                                             |
