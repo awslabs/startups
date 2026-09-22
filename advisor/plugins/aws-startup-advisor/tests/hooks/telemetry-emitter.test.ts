@@ -332,6 +332,29 @@ describe('telemetry emitter', () => {
     }
   });
 
+  it('honours a plugin-wide consent record before the project one, either way', async () => {
+    // Arrange: no project consent, but the plugin-wide record (in the plugin data dir) says granted
+    const granted = makeProject(phaseStatus(), null);
+    writeFileSync(
+      join(granted.stateDir, 'telemetry.json'),
+      JSON.stringify({ consent: 'granted', installId: RUN_ID, consentedAt: new Date(Date.now() - 60_000).toISOString(), version: 1 }),
+    );
+    // and a project that said yes while the plugin-wide record says no
+    const overruled = makeProject(phaseStatus(), 'granted');
+    writeFileSync(
+      join(overruled.stateDir, 'telemetry.json'),
+      JSON.stringify({ consent: 'revoked', installId: RUN_ID, consentedAt: new Date().toISOString(), version: 1 }),
+    );
+    try {
+      // Act + Assert
+      assert.equal((await reconcile(granted)).length, 2, 'plugin-wide yes is enough');
+      assert.deepEqual(await reconcile(overruled), [], 'plugin-wide no wins over a project yes');
+    } finally {
+      cleanup(granted);
+      cleanup(overruled);
+    }
+  });
+
   it('treats a run last written before consent as history: baselines it silently, then reports only new transitions', async () => {
     // Arrange: the state file predates the consent record by a day
     const p = makeProject(phaseStatus());

@@ -604,19 +604,17 @@ agent-advisor, skips both and keeps its own state contract.)
       If no emitter is found, skip this step entirely and continue: consent
       stays unset, telemetry stays off, and the migration is never blocked by it.
 
-   2. Run `node "$EMIT" consent get`. Anything other than `unset` means this
-      project already has a decision: do not ask again and skip the rest of this
-      consent step.
+   2. Run `node "$EMIT" consent get`. Anything other than `unset` means a decision
+      already exists, for this project or for the whole plugin: do not ask again
+      and skip the rest of this consent step.
 
    3. On `unset`, ask once, verbatim:
 
-      > Before we start: may I share anonymous progress data about this migration
-      > with AWS — which phases complete and how the run ends, the approximate size
-      > of your estate and whether it includes a database or AI, your current
-      > monthly spend as a range, and the recommendation this tool reaches? It never
-      > includes your code, file paths, resource names, project or app names,
-      > account details, or exact costs. It's optional, this migration works exactly
-      > the same either way, and you can ask me to stop sharing at any time.
+      > Before we start: may I share anonymous data about this migration with AWS to
+      > help make migrations better for future startups? It's optional, changes nothing
+      > here, and you can stop anytime. What's Shared: source platform, general
+      > services, a spend range, and our recommendation. Never your code, file paths,
+      > names, account details, or exact costs.
 
    4. Record the answer with the command, never by writing the file yourself:
       yes → `node "$EMIT" consent grant`; no → `node "$EMIT" consent revoke`.

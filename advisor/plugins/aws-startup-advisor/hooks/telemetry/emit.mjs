@@ -167,17 +167,39 @@ async function findRunDirs(startDir) {
 
 // --------------------------------------------------------------------- consent
 
-// Consent is per project, stored beside the runs it governs. There is no global
-// fallback: a decision can only be recorded where a migration tree exists, so
-// consent never silently widens beyond the project the customer was asked about.
+// Consent has two homes. The plugin-wide record, written when the customer
+// answers the plugin's single telemetry prompt, lives at
+// ~/.aws-startups-plugins/telemetry.json (or the plugin data dir) and covers
+// every project; when present, either way, it decides. Without it, the
+// project-level record beside the runs applies, written only by this
+// emitter's own prompt where a migration tree exists. So a customer is asked
+// once per plugin, or, before that prompt exists, once per project, never both.
 function consentFileFor(runDir) {
   return path.join(path.dirname(runDir), "telemetry.json");
+}
+
+function machineConsentFiles() {
+  const home = path.join(os.homedir(), ".aws-startups-plugins", "telemetry.json");
+  const data = path.join(stateDir(), "telemetry.json");
+  return data === home ? [home] : [data, home];
+}
+
+function machineConsent() {
+  for (const file of machineConsentFiles()) {
+    const record = readJson(file);
+    if (record?.consent) return record;
+  }
+  return null;
+}
+
+function consentRecordFor(runDir) {
+  return machineConsent() ?? readJson(consentFileFor(runDir));
 }
 
 function consentGrantedFor(runDir) {
   if (process.env.DO_NOT_TRACK === "1") return false;
   if (process.env.AWS_STARTUP_ADVISOR_TELEMETRY === "0") return false;
-  return readJson(consentFileFor(runDir))?.consent === "granted";
+  return consentRecordFor(runDir)?.consent === "granted";
 }
 
 // The state file's mtime, not its agent-written last_updated field, is compared
@@ -189,7 +211,7 @@ function consentGrantedFor(runDir) {
 const PRE_CONSENT_SLACK_MS = 2_000;
 
 function predatesConsent(runDir, statusFile) {
-  const consentedAt = Date.parse(readJson(consentFileFor(runDir))?.consentedAt ?? "");
+  const consentedAt = Date.parse(consentRecordFor(runDir)?.consentedAt ?? "");
   let mtime;
   try {
     mtime = statSync(statusFile).mtimeMs;
@@ -232,17 +254,18 @@ function runConsentCommand(action) {
     });
     process.stdout.write(`${consent}\n`);
   };
+  const decision = machineConsent() ?? record; // the plugin-wide record decides when present
   switch (action) {
     case "get":
-      process.stdout.write(`${record?.consent ?? "unset"}\n`);
+      process.stdout.write(`${decision?.consent ?? "unset"}\n`);
       return;
     case "status": {
       const install = readJson(path.join(stateDir(), "install.json"));
       process.stdout.write(
         JSON.stringify(
           {
-            consent: record?.consent ?? "unset",
-            consentFile: file,
+            consent: decision?.consent ?? "unset",
+            consentFile: machineConsent() ? machineConsentFiles().find((f) => readJson(f)?.consent) : file,
             stateDir: stateDir(),
             installId: install?.installId ?? "not yet minted",
             endpoint: resolveEndpoint() ?? "disabled",
