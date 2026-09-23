@@ -19,7 +19,7 @@ Claude Sonnet 5's $2 / $10 launch rate became the standard price on Sep 1, 2026 
 
 Older Claude models — Claude 3.5 Haiku, Claude 3 Sonnet, Claude 3.5 Sonnet (v1/v2), Claude 3 Haiku, and Claude 3.7 Sonnet — are past EOL or within the 90-day exclusion window. Do **not** recommend them as migration targets. See `shared/ai-model-lifecycle.md` for authoritative status (recomputed each run).
 
-**Recommendation:** Default new Bedrock targets to **Claude Sonnet 5** (flagship) / **Claude Opus 4.8** (hardest reasoning) / **Claude Haiku 4.5** (cost/speed). Converse API call shape is identical across generations. Do **not** default to any Claude Fable / Mythos frontier model — Fable 5, Fable 5.1, or a later 5.x (frontier / Mythos-class pricing; opt-in Covered Models requiring an account-level data-retention mode).
+**Recommendation:** Default new Bedrock targets to **Claude Sonnet 5** (flagship) / **Claude Opus 5.5** (hardest reasoning, more capable/efficient than Opus 4.8/5, lower per-token price and cheaper cache reads) / **Claude Haiku 4.5** (cost/speed); Claude Opus 4.8 remains a valid alternative. Converse API call shape is identical across generations. Do **not** default to any Claude Fable / Mythos frontier model — Fable 5, Fable 5.1, or a later 5.x (frontier / Mythos-class pricing; opt-in Covered Models requiring an account-level data-retention mode).
 
 ---
 
