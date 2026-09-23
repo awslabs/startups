@@ -120,10 +120,16 @@ Emit in tier order — network, identity, and secrets first, then data, then com
 then edge. That is the same tiering the clusters carry, which is why the tiering
 replaced topological depth: Generate's sequencing is what the ordering is _for_.
 
-## Status — skeleton (build step 1)
+## Status — implemented (build step: Generate)
 
-Wiring only: three artifact fragments and an assembler, with the full artifact floor
-and the postcondition contract declared.
+The three artifact fragments and the assembler are wired AND their emitters are
+implemented: `generate-artifacts-infra.md` emits Terraform, `generate-artifacts-docs.md`
+the docs, `generate-artifacts-report.md` the stakeholder report (rendered from
+`references/shared/report-decision-core.md`, full mode, validated by
+`scripts/validate-migration-report.py`), and `generate-artifacts-ai.md` the AI-migration
+pack when an AI design exists. The phase runs infra, AI-only (app-code-only), or both —
+`_produces` and the pre/postconditions are conditional on which track exists. Read each
+fragment's own `## Status`, not this line, for its emitter detail.
 
 | Lands in | What                                                                  |
 | -------- | --------------------------------------------------------------------- |

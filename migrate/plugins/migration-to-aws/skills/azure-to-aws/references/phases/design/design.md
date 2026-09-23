@@ -143,8 +143,8 @@ structurally parallel to `## CPU Architecture`.
 disposition table; eight rubrics are on disk — `compute.md`, `database.md`,
 `networking.md`, `messaging.md`, `analytics.md`, `storage.md`, `identity.md` and
 `fast-path.md`. A resource routed by `index.md` to a category file that is **not** on disk
-still halts rather than being improvised; only `licensing.md`, `gpu-hpc.md`, `ai.md` and
-`patterns.md` are still to come.
+still halts rather than being improvised; `ai.md` is on disk (the AI-workload rubric);
+only `licensing.md`, `gpu-hpc.md` and `patterns.md` are still to come.
 
 **Check the filesystem, not this paragraph.** A status list in prose goes stale the moment a
 file lands, and the halt decision reads from disk. If this list and `ls` disagree, `ls` is
