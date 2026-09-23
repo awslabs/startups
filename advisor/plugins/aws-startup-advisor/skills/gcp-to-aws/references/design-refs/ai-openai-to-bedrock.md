@@ -136,7 +136,7 @@ See "Cost-optimized cross-family alternatives" below for the numbers.
 
 All figures per 1M tokens. Percentages are blended savings at a 2:1 input-to-output ratio. **Both sides of these
 comparisons are now Bedrock prices** where the OpenAI model is on Bedrock — this is a Bedrock-vs-Bedrock model
-choice, not a provider comparison. Verify rates via `shared/pricing-cache.md` or the AWS Pricing MCP, noting that
+choice, not a provider comparison. Verify rates via `shared/pricing-cache.md`, noting that
 the Pricing MCP does not carry GPT-5.x (see `shared/openai-on-bedrock.md`).
 
 ### Against Tier 0 models (same-model baseline vs cross-family)

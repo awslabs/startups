@@ -43,7 +43,7 @@ export interface CheckItem {
  * phase runs inline in the main window, as today.
  */
 export interface ExecSpec {
-  agent: string | null; // _agent — the capability tier the phase's work runs at (closed enum: ro | rw | git)
+  agent: string | null; // _agent — the capability tier the phase's work runs at (closed enum: ro | rw | rwx | git)
   unknownKeys: string[]; // sub-keys not in the closed _exec vocab
 }
 

@@ -104,7 +104,7 @@ export function check(skill: BoundSkill): Finding[] {
     // _init state setup, and the state transition in the main window. Structural
     // checks only (the tier's runtime ENFORCEMENT is platform-dependent — see the doc):
     //   (1) unknown _exec sub-keys (typo catch);
-    //   (2) _agent is present and ∈ the closed tier set (ro|rw|git);
+    //   (2) _agent is present and ∈ the closed tier set (ro|rw|rwx|git);
     //   (3) derived-minimum: a phase that _produces ≥1 artifact does WRITE work, so its
     //       tier cannot be 'ro' (read-only) — the author-declared tier must be ≥ the
     //       minimum derivable from what the phase produces (declare-but-verify, the same

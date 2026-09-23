@@ -6,7 +6,7 @@ Shared warnings and constraints for all agentic migration paths. Loaded once by 
 
 ## AgentCore Regional Availability
 
-AgentCore services have different regional footprints. Always validate via `get_regional_availability` from the `awsknowledge` MCP server before recommending.
+AgentCore services have different regional footprints. Always validate via `aws___get_regional_availability` from the AWS MCP Server before recommending.
 
 **As of July 2026:**
 
@@ -18,7 +18,7 @@ AgentCore services have different regional footprints. Always validate via `get_
 | AgentCore Gateway (GA) | All commercial regions | Same as Runtime                                                                                                                                                                                 |
 | AgentCore Policy (GA)  | 13 regions             | us-east-1, us-east-2, us-west-2, us-west-1, ap-southeast-1, ap-southeast-2, ap-northeast-1, ap-south-1, eu-central-1, eu-west-1, eu-west-2, eu-north-1, ca-central-1                            |
 
-**IMPORTANT:** These lists go stale. The `get_regional_availability` MCP call is the source of truth. Use the table above only as a fallback if the MCP call fails.
+**IMPORTANT:** These lists go stale. The `aws___get_regional_availability` call (AWS MCP Server) is the source of truth. Use the table above only as a fallback if the call fails.
 
 **If target region is unavailable for a recommended service:**
 
@@ -126,8 +126,7 @@ Before recommending any Bedrock model in an agentic design:
 For agentic workload cost estimation:
 
 1. **Primary:** `references/shared/pricing-cache.md` (±5-10% accuracy)
-2. **Secondary:** `awspricing` MCP server (±5-10%, real-time)
-3. **Tertiary:** `references/shared/pricing-fallback.md` (±15-25%, broad coverage)
+2. **Fallback:** `references/shared/pricing-fallback.md` (cache-miss → `estimated`/`unavailable`)
 
 AgentCore Runtime and Harness pricing: consumption-based, no upfront cost. Include in estimate only if the user selects Harness or Strands path.
 

@@ -71,6 +71,21 @@ Generate `$MIGRATION_DIR/terraform/` with the following file organization. Only 
 
 ---
 
+## Step 0: Apply AWS authoring posture (before writing any `.tf`)
+
+**Before generating any Terraform, invoke the `tf-best-practices` skill for its authoring posture** — it is the single source of truth for "what good AWS Terraform looks like." Treat it as a **black box**: pass the caller context below and emit Terraform that satisfies every rule it returns. Do **not** reach into its files or re-specify its rules here — it evolves independently.
+
+> Invoke the **`tf-best-practices`** skill, telling it you are **about to author `terraform/`** (the pre-generation context).
+
+**Pass the caller context** (heroku-to-aws supplies these; the skill reads none of our artifacts):
+
+- **`compliance`** — the normalized compliance array (see Step 1.5 item 0 for the scalar/absent/`"none"`/`"unknown"` normalization). Empty ⇒ no compliance-conditional hardening.
+- **`aws_config` values** — instance classes, CPU/memory, storage, engine versions from each service's `aws_config` in `aws-design.json`. The posture constrains the shape, not the numbers.
+
+The Elastic Beanstalk / Fargate / RDS / ElastiCache / MSK wiring in the steps below is heroku-to-aws's source glue (value population + EB `setting` blocks); the _security posture_ on those resources is owned by the skill. Following the posture makes the Step 12 policy gate pass by construction.
+
+---
+
 ## Step 1: Generate `main.tf`
 
 ```hcl
@@ -1577,12 +1592,21 @@ resource "aws_iam_role_policy" "codepipeline_policy_<app_name>" {
         Effect = "Allow"
         Action = [
           "elasticbeanstalk:CreateApplicationVersion",
-          "elasticbeanstalk:CreateStorageLocation",
           "elasticbeanstalk:DescribeApplications",
           "elasticbeanstalk:DescribeApplicationVersions",
           "elasticbeanstalk:DescribeEnvironments",
           "elasticbeanstalk:UpdateEnvironment"
         ]
+        Resource = [
+          "arn:aws:elasticbeanstalk:${var.aws_region}:${data.aws_caller_identity.current.account_id}:application/<app_name>",
+          "arn:aws:elasticbeanstalk:${var.aws_region}:${data.aws_caller_identity.current.account_id}:applicationversion/<app_name>/*",
+          "arn:aws:elasticbeanstalk:${var.aws_region}:${data.aws_caller_identity.current.account_id}:environment/<app_name>/*"
+        ]
+      },
+      {
+        # AWS does not support resource-level permissions for this action.
+        Effect   = "Allow"
+        Action   = "elasticbeanstalk:CreateStorageLocation"
         Resource = "*"
       }
     ]
@@ -2223,6 +2247,18 @@ After all files are written:
 6. **Security baseline**: `baseline.tf` exists and contains the full always-on resource list from Step 1.5 (three `aws_account_alternate_contact`, password policy, S3 account PAB, EBS default encryption, Access Analyzer, IMDSv2 account default, CloudTrail + log bucket, budget, GuardDuty); its `locals.cloudtrail_retention_days` is a positive integer; the compliance-conditional section is present exactly when the normalized `compliance` array contains soc2/pci/hipaa/fedramp; the three contact email variables are declared without defaults and with placeholder-rejecting validation blocks
 7. **Elastic Beanstalk web runtime inputs**: For every EB web service, verify its per-app `eb_application_port_<app>_web` and `eb_health_check_path_<app>_web` variables are declared without defaults, include the required validation blocks, and are referenced directly by that app's `PORT` and `HealthCheckPath` settings. Verify non-web EB services do not require these variables. Do not report an EB web configuration as ready to plan until the customer has supplied both values for every web app.
 
-**Note:** Full `terraform validate` requires `terraform init` (provider download). The generated configuration SHOULD pass `terraform validate` when run with network access. If validation cannot run (no Terraform binary, no network), log a note but do NOT block generation.
+8. **Defer the authoritative Terraform policy check to the assembler.** Author
+   `terraform/` to satisfy the Step 0 posture, but do not write
+   `validation-report.json` here. The assembler runs after every fragment,
+   including conditional `eks-generate`, and owns the checker, retry loop, and
+   canonical v2 report (see `generate-assemble.md` Step 3).
 
-When all files are written, control returns to `generate.md` (then the phase assembler `generate-assemble.md`), which runs the phase completion handoff gate per its `_postconditions`.
+> Scope note: `validate-terraform-policy.py` inspects standalone `aws_lb_listener` blocks. An
+> Elastic Beanstalk **LoadBalanced** environment's ALB is provisioned by EB from
+> `aws_elastic_beanstalk_environment` `setting` blocks, which the static checker does not read —
+> so a pure-EB design passes the ALB rules vacuously (there is no standalone listener to inspect).
+> That is a known limitation, not a bypass: EB TLS/listener posture is authoring-only here.
+
+When this fragment's files are written, control returns to `generate.md`. After all
+other fragments finish, `generate-assemble.md` validates the final Terraform
+directory and runs the phase completion handoff gate per its `_postconditions`.

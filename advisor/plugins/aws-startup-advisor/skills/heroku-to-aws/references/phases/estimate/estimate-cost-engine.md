@@ -660,9 +660,9 @@ write `estimation-infra.json`, run the handoff gate, and update phase status.
 
 ---
 
-## Pricing Recipes (MCP Fallback Only)
+## Pricing Recipes (Reference Only)
 
-Only use these recipes when a service is NOT in `references/vendored/pricing/aws-infra-pricing.json` and MCP is available. Do NOT call `get_pricing_service_codes` or `get_pricing_service_attributes` — go directly to `get_pricing`.
+These recipes are reference documentation for services not in `references/vendored/pricing/aws-infra-pricing.json`. No live MCP pricing is available; use cached rates and set `pricing_source: "unavailable"` for any service missing from the cache.
 
 | AWS Service       | service_code      | filters                                                                                                     | output_options                                                                                                                                     |
 | ----------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |

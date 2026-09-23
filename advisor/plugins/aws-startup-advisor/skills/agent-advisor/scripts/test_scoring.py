@@ -750,22 +750,59 @@ def test_pool_keys_cover_every_selectable_model():
 
 
 def _legacy_or_excluded_rows():
+    """Every line in the lifecycle file that marks a model as unsafe to select:
+    a pipe-table row tagged `legacy`/`excluded`, OR a bulleted entry in the
+    **Removed** section. Removed models are past EOL — a stronger violation
+    than "excluded" (the file's own text: "Never recommend or invoke a model
+    listed in Removed") — so they must be caught here too, not just the two
+    still-in-the-table statuses. A model that ages out of the table entirely
+    into Removed must not silently stop being flagged."""
     text = _LIFECYCLE_FILE.read_text().lower()
-    return [line for line in text.splitlines()
+    lines = text.splitlines()
+    rows = [line for line in lines
             if line.strip().startswith("|") and ("legacy" in line or "excluded" in line)]
+    in_removed = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("**removed"):
+            in_removed = True
+            continue
+        if in_removed and stripped.startswith(">"):
+            # The "AWS page lag" blockquote follows the Removed bullets and ends
+            # the section — stop before any later, unrelated bulleted list.
+            in_removed = False
+            continue
+        if in_removed and stripped.startswith("- "):
+            rows.append(line)
+    return rows
 
 
 def test_drift_mechanism_actually_fires_on_a_known_legacy_model():
-    # Self-proof: the file lists Nova Sonic v1 as legacy. The matcher MUST see its id
-    # fragment — otherwise a 0-match "pass" below would be vacuous (Active models are
-    # simply absent from the legacy table, so the check only means something if it can
-    # actually match a legacy id when one appears).
+    # Self-proof: the file lists Claude Opus 4.1 as legacy (still in the table).
+    # The matcher MUST see its id fragment — otherwise a 0-match "pass" below
+    # would be vacuous (Active models are simply absent from the legacy table,
+    # so the check only means something if it can actually match a legacy id
+    # when one appears).
+    if not _LIFECYCLE_FILE.exists():
+        pytest.xfail("lifecycle file not reachable — drift check skipped")
+    bad_rows = _legacy_or_excluded_rows()
+    assert any("claude-opus-4-1" in r for r in bad_rows), (
+        "expected Claude Opus 4.1 in a legacy row — lifecycle file format changed; "
+        "the drift matcher may no longer work and needs updating")
+
+
+def test_drift_mechanism_actually_fires_on_a_known_removed_model():
+    # Self-proof for the Removed section specifically (distinct from the table
+    # self-proof above): the file lists Nova Sonic v1 as Removed (past EOL, no
+    # longer even in the table). The matcher MUST see its id fragment there too
+    # — this is the exact case that silently stopped being caught when a model
+    # ages out of the table into the bulleted Removed list.
     if not _LIFECYCLE_FILE.exists():
         pytest.xfail("lifecycle file not reachable — drift check skipped")
     bad_rows = _legacy_or_excluded_rows()
     assert any("nova-sonic-v1" in r for r in bad_rows), (
-        "expected Nova Sonic v1 in a legacy row — lifecycle file format changed; "
-        "the drift matcher may no longer work and needs updating")
+        "expected Nova Sonic v1 in a Removed row — lifecycle file format changed; "
+        "the Removed-section matcher may no longer work and needs updating")
 
 
 def test_no_pool_model_is_legacy_or_excluded():

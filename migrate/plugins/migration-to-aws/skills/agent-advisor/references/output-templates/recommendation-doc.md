@@ -76,7 +76,7 @@ creates real, billable AWS resources).>
 
 ## 12. Freshness footer
 
-<from freshness.md template: date, MCP-verified vs cached fields, verify disclaimer.>
+<from freshness.md template: date; AWS MCP Server-verified fields; public-web-verified Temporal / AWS Marketplace facts with source URLs and verification dates when Temporal units exist; cached fields with original snapshot dates; verify disclaimer.>
 
 ## Maturity and launch readiness
 
