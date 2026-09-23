@@ -5,6 +5,13 @@ description: "Migrate workloads from Google Cloud Platform to AWS — including 
 
 # GCP-to-AWS Migration Skill
 
+## Telemetry routing
+
+Load `references/vendored/telemetry/PROTOCOL.md` before starting or resuming this
+skill. Claude Code and Cursor use hooks only; do not invoke the reporting CLI
+on those hosts. Other agents report after state is written at the specified
+boundaries. Existing consent commands remain available on every host.
+
 ## Philosophy
 
 - **Re-platform by default**: Select AWS services that match GCP workload types (e.g., Cloud Run → Fargate, Cloud SQL → RDS).
@@ -142,7 +149,7 @@ Load `references/shared/handoff-gates.md` when executing any phase completion st
 1. **Single `$MIGRATION_DIR`**: Use one run directory for the entire migration. Do not mix artifacts across `.migration/*/` sessions.
 2. **Re-read from disk**: Before each phase (and before each handoff gate), Read required artifacts from `$MIGRATION_DIR/`. Do not rely on chat memory.
 3. **Advance only on `HANDOFF_OK`**: A phase is complete only when its orchestrator emits `HANDOFF_OK | phase=<name> | artifacts=...`. Do not load the next phase without it.
-4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Tell the user which phase to re-run.
+4. **On `GATE_FAIL`**: Output the failure line(s) to the user in plain language. **Do NOT modify artifacts** to pass the gate. **Do NOT continue** to the next phase. Record the failure per `handoff-gates.md`. Tell the user which phase to re-run.
 5. **Re-entry**: Re-running an earlier phase after downstream phases completed requires explicit user confirmation; downstream phases must be reset to `"pending"`. See `handoff-gates.md` re-entry table.
 
 Generate phase additionally loads `references/shared/validate-artifacts.md` before writing `migration-report.html`, then `references/shared/validate-migration-report.md` after the HTML is written.
@@ -209,6 +216,9 @@ Use **read-merge-write** updates for `.phase-status.json`:
 3. Keep prior completed phases unchanged.
 4. Set `current_phase` to the next deterministic phase — or `complete` after Generate, **or** after Estimate when the user chose Decision-gate **A** (`run_mode: "decide"`; Generate stays pending).
 5. Write the full file in the same turn as your final phase work message.
+6. Report the saved transition per `references/vendored/telemetry/PROTOCOL.md`
+   before advancing or returning, including decision-only completion and sidebar
+   updates. Claude Code and Cursor skip this reporting call; other agents perform it.
 
 Example — after completing the Clarify phase, write `$MIGRATION_DIR/.phase-status.json` with:
 
@@ -370,7 +380,10 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 1. **Load phase status**: Read `.phase-status.json` from `.migration/*/`.
    - If missing: Initialize for Phase 1 (Discover)
-   - If exists: Determine current phase using deterministic rules in **State Machine**
+   - If exists: Determine current phase using deterministic rules in **State Machine**.
+     After selecting and validating the run, reconcile telemetry per
+     `references/vendored/telemetry/PROTOCOL.md` before continuing. Claude Code
+     and Cursor skip this reporting call; other agents perform it.
 
 2. **Determine phase to execute**:
    - If `current_phase` exists: execute that phase.
@@ -383,7 +396,7 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 5. **Validate outputs**: Confirm all required output files exist with correct schema before proceeding. Phase orchestrators run **Completion Handoff Gate** checks per `shared/handoff-gates.md`.
 
-6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `shared/handoff-gates.md`. On `GATE_FAIL`, stop — do not update phase status or load the next phase.
+6. **Handoff gate**: Emit `HANDOFF_OK` or `GATE_FAIL` per `shared/handoff-gates.md`. On `GATE_FAIL`, stop — record the failure, do not update phase status or load the next phase.
 
 7. **Update phase status**: Only after `HANDOFF_OK`. Use the Phase Status Update Protocol (read-merge-write) in the same turn as the phase's final output message.
 

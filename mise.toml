@@ -69,6 +69,7 @@ run = [
   "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts",
   "node --test advisor/plugins/aws-startup-advisor/tests/tools/frontmatter-validator.test.ts",
   "node --test advisor/plugins/aws-startup-advisor/tests/hooks/telemetry-emitter.test.ts",
+  "node --test advisor/plugins/aws-startup-advisor/tests/hooks/telemetry-cli.test.ts",
   "node --test tests/heroku-eb-runtime-settings.test.ts",
 ]
 

@@ -42,30 +42,16 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
 4. **Telemetry consent (once, before any state is written).** This is the one
    place run setup waits for an answer:
 
-   1. Locate the emitter. `CLAUDE_PLUGIN_ROOT` is set by Claude Code only, so
-      other hosts fall through to the search; `find -L` because a local install
-      is often a symlink, and the wildcard after the plugin name because a
-      marketplace install interposes a version directory.
+   1. Locate the emitter. Set `$SKILL_ROOT` to the absolute directory containing this skill's
+      `SKILL.md`, and `$REPO` to the project root containing `.migration/`.
+      Locate the bundled emitter and run consent commands from `$REPO`:
 
       ```bash
-      EMIT="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/hooks/telemetry/emit.mjs}"
-      if [ ! -f "$EMIT" ]; then
-        for base in "$HOME/.cursor/plugins" "$HOME/.claude/plugins"; do
-          [ -d "$base" ] || continue
-          EMIT=$(find -L "$base" -maxdepth 8 -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' 2>/dev/null | head -1)
-          [ -n "$EMIT" ] && break
-        done
-      fi
-      if [ ! -f "$EMIT" ]; then
-        HOMEDIR=$(cd -P "$HOME" 2>/dev/null && pwd)
-        EMIT=$(find "${HOMEDIR:-$HOME}" -maxdepth 10 \
-          \( -name node_modules -o -name Library -o -name .git -o -name .Trash -o -name .cache \) -prune -o \
-          -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' -print 2>/dev/null | head -1)
-      fi
+      EMIT="$SKILL_ROOT/references/vendored/telemetry/emit.mjs"
       ```
 
-      If no emitter is found, skip this step entirely and continue: consent
-      stays unset, telemetry stays off, and the migration is never blocked by it.
+      If the emitter or Node.js is unavailable, skip telemetry and continue.
+      Never grant consent implicitly or block the migration on telemetry.
 
    2. Run `node "$EMIT" consent get`. Anything other than `unset` means a decision
       already exists, for this project or for the whole plugin: do not ask again
@@ -115,6 +101,8 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
    `run_id` is minted once here: run `uuidgen` (or an equivalent random UUID source) and write its output verbatim; never copy a value from an example or a previous run. It is never changed or reused across runs; unlike `migration_id` it carries no timestamp, so it uniquely identifies this run for telemetry and for the plugin-to-web handoff. `owning_skill` is always `GCP_TO_AWS`. If another skill invoked this run (llm-to-bedrock does, for Assess), also set `initiated_by` to that skill's identifier, e.g. `"initiated_by": "LLM_TO_BEDROCK"`.
 
 6. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before proceeding to Step 1.
+7. Report the initial state per `references/vendored/telemetry/PROTOCOL.md`.
+   Claude Code and Cursor skip this reporting call; other agents perform it.
 
 ## Step 1: Scan for Input Sources and Run Sub-Discoveries
 

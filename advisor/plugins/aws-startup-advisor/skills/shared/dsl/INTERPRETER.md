@@ -70,7 +70,10 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
      backbone phase on a sidebar being `"completed"` (e.g. Generate requires
      `phases.workshop == "completed"`), honor that gate while walking.
 3. **Validate state before proceeding.** See § State-file validation below. STOP
-   on any inconsistency rather than guessing.
+   on any inconsistency rather than guessing. On resume under the default
+   `.migration/` root, reconcile telemetry per
+   `references/vendored/telemetry/PROTOCOL.md` after validating the selected run.
+   Claude Code and Cursor skip this reporting call; other agents perform it.
 4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
    `references/phases/<phase>/<phase>.md`. Load it in full and read its
    frontmatter first. (Sidebar resume from step 2 loads the sidebar
@@ -95,9 +98,9 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
      default).
 6. **Advance only on `HANDOFF_OK`.** A phase is complete ONLY when its completion
    gate emits the `HANDOFF_OK` line (§ Gate protocol). On `GATE_FAIL`, STOP — do
-   not update `.phase-status.json`, do not load the next phase; tell the user
-   which phase to re-run. Never load the next phase from a completion message that
-   lacks `HANDOFF_OK`.
+   not update `.phase-status.json`, do not load the next phase; record the failure
+   (§ Gate protocol) and tell the user which phase to re-run. Never load the next
+   phase from a completion message that lacks `HANDOFF_OK`.
 7. **Update state.** After `HANDOFF_OK`, apply the phase-status update protocol
    below, then load the next phase — the current phase's `_advances_to` — and
    repeat from step 4. When `_advances_to` is a terminal (`complete`), the
@@ -127,6 +130,10 @@ Update `.phase-status.json` with read-merge-write, never a blind overwrite:
 4. Set `current_phase` to the next phase (the completed phase's `_advances_to`),
    or the terminal (`complete`) when the backbone is exhausted.
 5. Write the full file in the same turn as the phase's final output message.
+6. Under the default `.migration/` root, report the saved transition per
+   `references/vendored/telemetry/PROTOCOL.md` before advancing or returning,
+   including a decision-only terminal and sidebar updates. Claude Code and
+   Cursor skip this reporting call; other agents perform it.
 
 Status values progress `"pending"` → `"in_progress"` → `"completed"` and never go
 backward (except a confirmed re-entry reset — see § `_re_entry_guard`). A
@@ -221,8 +228,9 @@ all required when the guard is present:
    GATE_FAIL | phase=<this phase's _phase> | field=<_stale_artifact> | reason=stale_downstream
    ```
 
-   Do NOT modify artifacts. Do NOT update `.phase-status.json`. Tell the user the
-   downstream work may be stale and they must confirm the re-run.
+   Do NOT modify artifacts. Do NOT update `.phase-status.json`. Record the failure
+   (§ Gate protocol, "Recording a failed gate"). Tell the user the downstream work
+   may be stale and they must confirm the re-run.
 3. If the user HAS explicitly confirmed the re-run (`_on_confirm:
    reset_downstream_to_pending`): before proceeding, set every phase downstream of
    this one (its `_advances_to` and everything after it on the backbone) back to
@@ -449,7 +457,8 @@ relevant artifacts from disk** (do not trust chat memory), then run each
   ```
 
   Do NOT modify artifacts to force a gate to pass. Do NOT update
-  `.phase-status.json`. Do NOT advance. Tell the user which phase to re-run.
+  `.phase-status.json`. Do NOT advance. Record the failure (below). Tell the user
+  which phase to re-run.
 
 - **On all-pass:** emit exactly:
 
@@ -463,6 +472,35 @@ relevant artifacts from disk** (do not trust chat memory), then run each
 `phase=` is reconstructed from the phase's own `_phase` (not stored in each check).
 The orchestrator (SKILL.md) MUST NOT load the next phase until it sees the
 `HANDOFF_OK` line; a completion message without it is not a valid handoff.
+
+### Recording a failed gate
+
+A gate failure is where a run stalls, and the telemetry hooks can only report what
+is on disk, so every `GATE_FAIL` line (completion gate or re-entry guard) is also
+recorded in `$MIGRATION_DIR/.gate-failures.json`. It is a separate file because a
+failed gate is not a phase transition: `.phase-status.json` keeps its rule that a
+status never moves backwards. The file is an object keyed by phase name (the same
+names as `phases` in `.phase-status.json`), one entry per phase; on a repeat
+failure overwrite that phase's entry and keep the others:
+
+```json
+{
+  "<this phase's _phase>": {
+    "reason": "<missing|invalid|stale_downstream>",
+    "field": "<the field= value>",
+    "at": "<ISO 8601 now>"
+  }
+}
+```
+
+`reason` and `field` are the same values as the `GATE_FAIL` line. The file never
+leaves the customer's machine; telemetry reports only the phase and the reason,
+once per phase per run, and a later `HANDOFF_OK` for that phase is reported as
+its own success. Do not delete the file when the phase later passes. Default run
+root only: a skill that declares its own run root records nothing.
+After writing the failure record, report it per
+`references/vendored/telemetry/PROTOCOL.md` before returning to the user.
+Claude Code and Cursor skip this reporting call; other agents perform it.
 
 ### `_forbids_files` — scope boundary
 
@@ -579,30 +617,16 @@ agent-advisor, skips both and keeps its own state contract.)
    written).** Skip this step if the skill declares its own run root: nothing is
    ever reported for such runs, so there is nothing to consent to. Otherwise:
 
-   1. Locate the emitter. `CLAUDE_PLUGIN_ROOT` is set by Claude Code only, so
-      other hosts fall through to the search; `find -L` because a local install
-      is often a symlink, and the wildcard after the plugin name because a
-      marketplace install interposes a version directory.
+   1. Locate the emitter. Set `$SKILL_ROOT` to the absolute directory containing this skill's
+      `SKILL.md`, and `$REPO` to the project root containing `.migration/`.
+      Locate the bundled emitter and run consent commands from `$REPO`:
 
       ```bash
-      EMIT="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/hooks/telemetry/emit.mjs}"
-      if [ ! -f "$EMIT" ]; then
-        for base in "$HOME/.cursor/plugins" "$HOME/.claude/plugins"; do
-          [ -d "$base" ] || continue
-          EMIT=$(find -L "$base" -maxdepth 8 -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' 2>/dev/null | head -1)
-          [ -n "$EMIT" ] && break
-        done
-      fi
-      if [ ! -f "$EMIT" ]; then
-        HOMEDIR=$(cd -P "$HOME" 2>/dev/null && pwd)
-        EMIT=$(find "${HOMEDIR:-$HOME}" -maxdepth 10 \
-          \( -name node_modules -o -name Library -o -name .git -o -name .Trash -o -name .cache \) -prune -o \
-          -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' -print 2>/dev/null | head -1)
-      fi
+      EMIT="$SKILL_ROOT/references/vendored/telemetry/emit.mjs"
       ```
 
-      If no emitter is found, skip this step entirely and continue: consent
-      stays unset, telemetry stays off, and the migration is never blocked by it.
+      If the emitter or Node.js is unavailable, skip telemetry and continue.
+      Never grant consent implicitly or block the migration on telemetry.
 
    2. Run `node "$EMIT" consent get`. Anything other than `unset` means a decision
       already exists, for this project or for the whole plugin: do not ask again
@@ -645,4 +669,6 @@ agent-advisor, skips both and keeps its own state contract.)
    optional and may be left unset.
 
 6. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
-   running the phase's fragments.
+   running the phase's fragments. Under the default `.migration/` root, report
+   the initial state per `references/vendored/telemetry/PROTOCOL.md` now.
+   Claude Code and Cursor skip this reporting call; other agents perform it.

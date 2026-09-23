@@ -5,6 +5,13 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 
 # Heroku-to-AWS Migration Skill
 
+## Telemetry routing
+
+Load `references/vendored/telemetry/PROTOCOL.md` before starting or resuming this
+skill. Claude Code and Cursor use hooks only; do not invoke the reporting CLI
+on those hosts. Other agents report after state is written at the specified
+boundaries. Existing consent commands remain available on every host.
+
 ## Philosophy
 
 - **Full platform exit by default**: Heroku is in sustaining engineering (KTLO) — stability and support only, no new investment. Enterprise contracts are no longer sold to new customers. This skill assumes complete departure from Heroku (compute, data, and add-ons) within a user-defined window. Do not recommend indefinite continued use of Heroku.
