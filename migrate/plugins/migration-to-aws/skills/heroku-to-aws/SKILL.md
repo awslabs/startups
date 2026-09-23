@@ -17,7 +17,7 @@ description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from He
 - **Flat resource model**: Heroku resources are organized per-app without dependency graphs or clustering. No topological sorting, typed edges, or cluster formation logic. Resources are processed as a flat list in input order.
 - **Deterministic mappings**: Core services use fixed lookup tables (Dyno Type Table, Postgres Plan Table, Redis Plan Table, Kafka Plan Table). Common add-ons use the Fast-Path Table. Unknown add-ons hit the specialist gate.
 - **DMS has Heroku constraints**: AWS DMS cannot perform continuous replication (CDC) with Heroku Postgres because Heroku does not grant the REPLICATION role. DMS is for one-time bulk migration with a cutover window only. The skill must surface this constraint when DMS is selected.
-- **What-if after Estimate**: After costs are computed, SAs can enter an optional what-if workshop sidebar (`references/phases/workshop/workshop.md`) to change region, HA, compute target, or CPU architecture (x86 vs Graviton), refresh Design + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Region dollar deltas need awspricing MCP; without it, rates stay us-east-1-cache-based. Workshop arch defaults to **x86_64** here (EB tables historically x86-first).
+- **What-if after Estimate**: After costs are computed, SAs can enter an optional what-if workshop sidebar (`references/phases/workshop/workshop.md`) to change region, HA, compute target, or CPU architecture (x86 vs Graviton), refresh Design + Estimate, and compare up to 5 priced scenarios — without re-running Discover. Rates are cache-based (us-east-1 anchor; regional deltas are noted qualitatively). Workshop arch defaults to **x86_64** here (EB tables historically x86-first).
 
 ---
 
@@ -86,19 +86,16 @@ uv --version 2>/dev/null || echo "UV_MISSING"
 uvx --version 2>/dev/null || echo "UVX_MISSING"
 ```
 
-- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that live `awspricing`
-  MCP estimates (and region dollar deltas in the what-if workshop) need
-  [`uv` / `uvx`](https://docs.astral.sh/uv/). Continue Discover → Clarify →
-  Design. At Estimate / workshop, price from the us-east-1 cache and set each
+- If `UV_MISSING` or `UVX_MISSING`: warn the user **once** that
+  [`uv` / `uvx`](https://docs.astral.sh/uv/) is required for the `llm-to-bedrock`
+  and `agent-advisor` scripts. Continue Discover → Clarify → Design.
+  At Estimate / workshop, price from the us-east-1 cache and set each
   service's `pricing_source.status` per the hierarchy in
   `references/vendored/estimate/pricing-mode.md` — `"cached"` for services the
   cache covers (`"cached_stale"` past the staleness threshold per Step 0a), and
-  the row 4/5 buckets (`"estimated"` / `"unavailable"`) for services it doesn't.
-  Do not use `"cached_fallback"`; that value is reserved for "MCP attempted and
-  failed", and the MCP was never attempted on this path. **Do not hard-stop** an
-  infrastructure migration for missing `uv`.
-- If both are present: proceed without nagging. Live pricing still depends on
-  the `awspricing` MCP being configured.
+  `"estimated"` / `"unavailable"` for services it doesn't.
+  **Do not hard-stop** an infrastructure migration for missing `uv`.
+- If both are present: proceed without nagging.
 - Soft-warn once if `python3` is missing (Heroku report validation at Generate
   uses `$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py`). Generate can
   still complete, but the validator must still be attempted and its exit code
@@ -130,11 +127,13 @@ The `.migration/` directory is protected by a `.gitignore` created at init.
 
 ## MCP Servers
 
-**awspricing** (for cost estimation):
+**aws-mcp** (AWS documentation and regional availability):
 
-- Provides `get_pricing`, `get_pricing_service_codes`, `get_pricing_service_attributes` tools
-- Only needed during Estimate phase. Discover and Design do not require it.
-- Primary pricing source: `references/vendored/pricing/aws-infra-pricing.json` (cached AWS infrastructure rates, ±5-10% for infrastructure). MCP is secondary — used only for services not found in the pricing file.
+- Provides `aws___search_documentation`, `aws___read_documentation`, `aws___list_regions`,
+  `aws___get_regional_availability`, `aws___retrieve_skill` tools
+- Used for volatile-fact lookups (regional availability, service limits).
+- Primary pricing source: `references/vendored/pricing/aws-infra-pricing.json` (cached AWS
+  infrastructure rates, ±5-10% for infrastructure).
 
 ---
 
@@ -192,13 +191,13 @@ heroku-to-aws/
 │   └── fast-path-addons.json                   # Add-on → AWS deterministic mappings (13+ entries)
 ```
 
-| Condition                                                | Action                                                                                                                                                                    |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                    |
-| awspricing unavailable after 3 attempts                  | Display user warning about ±5-10% accuracy. Use `references/vendored/pricing/aws-infra-pricing.json`. Add `pricing_source: "cached_fallback"` to `estimation-infra.json`. |
-| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                                          |
-| Dyno type not in selected compute sizing table           | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                                         |
-| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                                |
+| Condition                                                | Action                                                                                                                                                                                 |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.phase-status.json` missing phase gate                  | Stop. Output: "Cannot enter Phase X: Phase Y-1 not completed. Start from Phase Y or resume Phase Y-1."                                                                                 |
+| Service not in pricing cache                             | Display user warning about ±5-10% accuracy. Use `references/vendored/pricing/aws-infra-pricing.json`. Add `pricing_source: "unavailable"` to `estimation-infra.json` for that service. |
+| User skips questions or says "use defaults for the rest" | Apply documented defaults for remaining questions. Phase 2 completes either way.                                                                                                       |
+| Dyno type not in selected compute sizing table           | Reject mapping for that formation. Output: "Unsupported dyno type: {type}. Cannot map to target compute service."                                                                      |
+| Add-on not in Fast-Path Table                            | Mark as "Deferred — specialist engagement". No automated mapping produced.                                                                                                             |
 
 ## Defaults
 
@@ -228,11 +227,16 @@ contract). Both are `_kind: sidebar` — off-backbone, trigger-entered, never
 - **After Discover**: No prompt. Proceed directly to Clarify.
 
 - **After Estimate**: First offer the what-if workshop sidebar per
-  `estimate-assemble.md` (Enter workshop / Proceed toward Generate). Outer
+  `estimate-assemble.md` (Enter workshop / Proceed to the decision). Outer
   Estimate keeps `current_phase: estimate` until workshop is resolved (entered
   then exited via `workshop-assemble.md`, or declined). If the user enters
-  workshop, follow `references/phases/workshop/workshop.md`. Then, if
-  `phases.feedback` is `"pending"`:
+  workshop, follow `references/phases/workshop/workshop.md`. Once the
+  workshop is resolved, present the **Decision gate** per
+  `estimate-assemble.md` § "Post-Estimate: Decision Gate" — do **not** fall
+  through to Generate or to the feedback prompt below without it. The
+  feedback prompt below fires only after the Decision gate resolves (choice A
+  → decide-complete; choice C → proceeding to Generate); it is not a
+  substitute for the Decision gate.
 
   ```
   Would you like to share quick feedback? (5 optional questions +
@@ -240,25 +244,65 @@ contract). Both are `_kind: sidebar` — off-backbone, trigger-entered, never
   account IDs)
 
   [A] Yes, share feedback
-  [B] No thanks, continue to Generate
+  [B] No thanks, continue
   ```
 
-  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`. Continue to Generate.
-  - If user picks **B** → Set `phases.feedback` to `"completed"`. Continue to Generate.
+  - If user picks **A** → Load `references/phases/feedback/feedback.md`, execute it. Set `phases.feedback` to `"completed"`.
+  - If user picks **B** → Set `phases.feedback` to `"completed"`.
+
+  After either choice: if the Decision gate set `run_mode: "decide_and_execute"`
+  (choice C), continue to Generate. If it set `run_mode: "decide"` (choice A),
+  end the turn in the decide-complete state — do not load Generate.
 
 - **Workshop resume (mandatory):** If `current_phase == "estimate"` AND
   `phases.estimate == "completed"` AND `phases.workshop` is `"pending"` or
   `"in_progress"`, **do not recompute Estimate**. If `"pending"`, re-present the
   post-Estimate workshop offer from `estimate-assemble.md`. If `"in_progress"`,
-  load `references/phases/workshop/workshop.md`. Generate must wait until
-  `phases.workshop == "completed"` (entered+exited or declined).
+  load `references/phases/workshop/workshop.md`. The Decision gate — and
+  therefore Generate — must wait until `phases.workshop == "completed"`
+  (entered+exited or declined).
+
+- **Gate-presented resume (mandatory):** If `current_phase == "estimate"` AND
+  `phases.estimate == "completed"` AND `phases.workshop == "completed"` AND
+  `run_mode` is **absent**, the user reached the Decision gate but has not yet
+  picked A or C (e.g. closed the session at the gate). **Do not recompute
+  Estimate.** Re-present the post-Estimate Decision gate from
+  `estimate-assemble.md` § "Post-Estimate: Decision Gate" — options **[A] Done
+  for now** and **[C] Generate** only (the workshop is already resolved, so omit
+  B). This is what makes decide-the-default hold across a walk-away, not just at
+  the moment of the gate.
+
+- **Decision gate resume (mandatory):** If `current_phase == "complete"` AND
+  `run_mode == "decide"` AND `phases.generate == "pending"`, this is the
+  decide-complete terminal state (not an incomplete run). Follow
+  `estimate-assemble.md` § "Decide-complete resume" — offer to generate the
+  execution pack; never auto-load `generate.md` and never re-run Estimate.
+
+- **Generate is opt-in (HARD RULE):** Do not load
+  `references/phases/generate/generate.md` unless the user chose option **C**
+  at the post-Estimate Decision gate, accepted the decide-complete resume
+  offer, or the user's current-turn message is an explicit request to produce
+  Terraform / migration scripts (not merely mentioning Terraform). Never
+  auto-chain into Generate after Estimate, the workshop, or feedback "to be
+  helpful." On every path that leads to Generate, `run_mode` must already be
+  `"decide_and_execute"` in `.phase-status.json` before `generate.md` loads.
 
 - **Warm start / explicit what-if**: If the user says "what if", "reprice",
   "workshop mode", or "compare scenarios" and Estimate artifacts already exist,
   load `references/phases/workshop/workshop.md` directly (respect Generate
-  `_re_entry_guard` when Terraform was already produced). Knobs on the pilot
-  sheet: region, HA, compute target, cost optimization, CPU architecture
-  (x86 vs Graviton). There is no traffic-multiplier knob in v1.
+  `_re_entry_guard` when Terraform was already produced — `workshop.md` §
+  Entry step 2 never deletes what Generate wrote; a prior execution pack may
+  legitimately remain on disk). If this reopens any of the stale
+  decide/execute states `workshop.md` § Entry step 2 defines (`phases.generate`
+  completed or in-progress, `current_phase == "generate"` with `run_mode`
+  set, or a resolved `current_phase == "complete"` with `run_mode` set — see
+  that file for the exact list), that file's Entry steps 2-3 reset
+  `current_phase` to `"estimate"` and clear `run_mode` first, for every one of
+  those states, not only the terminal one. This is what lets the gate re-fire
+  on exit instead of the run falling through to a re-run of Estimate or a
+  re-selection of Generate. Knobs on the pilot sheet: region, HA, compute
+  target, cost optimization, CPU architecture (x86 vs Graviton). There is no
+  traffic-multiplier knob in v1.
 
 - **After Generate**: No prompt. If `phases.feedback` is still `"pending"`, set it to `"completed"` and mark the migration complete.
 

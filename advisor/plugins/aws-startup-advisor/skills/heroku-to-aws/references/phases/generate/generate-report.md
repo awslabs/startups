@@ -11,6 +11,13 @@ _contributes:
 > clone — decision + costs + optional what-if scenarios, then point at
 > `MIGRATION_GUIDE.md` for procedure. Runs **after** docs so the guide exists
 > when the report links to it.
+>
+> **This file is the single source of truth for `decision-summary` /
+> `decision-basis` / `exec-costs` / `what-if-scenarios` content rules.**
+> `references/shared/report-decision-core.md` (loaded by the Decision gate,
+> `estimate-assemble.md` choice A) reuses these same rules to render
+> `decision-report.html` — it does not restate them. If you change a section's
+> content rule here, it applies to both outputs.
 
 **Execute ALL steps in order. Do not skip.**
 
@@ -136,9 +143,7 @@ Render, in order:
 | -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
 
 - Mark the active row (`index.active_scenario_id`).
-- For each scenario with a non-null `estimation_summary.calculator_url`,
-  render the scenario name as a link (or an adjacent "open in AWS Pricing
-  Calculator" link) — stakeholders can open and edit the estimate there.
+- `estimation_summary.calculator_url` is always `null`; no calculator link is rendered.
 - Under the table: active vs baseline knob deltas; any `region_note`; remind
   inventory is frozen and Terraform matches the **active** scenario only.
 
@@ -214,7 +219,7 @@ Optional (non-blocking): if
 
 ```
 python3 scripts/validate-heroku-migration-report.py \
-  "$MIGRATION_DIR/migration-report.html" --migration-dir "$MIGRATION_DIR"
+  "$MIGRATION_DIR/migration-report.html" --mode full --migration-dir "$MIGRATION_DIR"
 ```
 
 Exit 0 (`REPORT_OK`) → continue. Non-zero (`REPORT_FAIL | ...`) → repair the

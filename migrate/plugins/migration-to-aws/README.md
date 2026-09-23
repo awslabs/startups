@@ -41,15 +41,15 @@ Point this plugin at your Heroku account (via your authenticated Heroku CLI, rea
 
 **AI/Agentic:**
 
-| Capability               | Base LLM                          | This Plugin                                                                                                                |
-| ------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with pricing, honest stay-or-migrate recommendation per model                                  |
-| Agentic migration        | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges |
-| Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage          |
-| Framework gotchas        | Not covered                       | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion     |
-| Regional validation      | Outdated region lists             | Live `get_regional_availability` MCP call — catches "AgentCore Harness isn't in your target region" before you commit      |
-| Generated code           | Generic templates                 | Your model IDs, your tool names, your system prompts, your region — in runnable scripts                                    |
-| Incremental migration    | Not suggested                     | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident    |
+| Capability               | Base LLM                          | This Plugin                                                                                                                              |
+| ------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with pricing, honest stay-or-migrate recommendation per model                                                |
+| Agentic migration        | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges               |
+| Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage                        |
+| Framework gotchas        | Not covered                       | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion                   |
+| Regional validation      | Outdated region lists             | Live `aws___get_regional_availability` (AWS MCP Server) call — catches "AgentCore Harness isn't in your target region" before you commit |
+| Generated code           | Generic templates                 | Your model IDs, your tool names, your system prompts, your region — in runnable scripts                                                  |
+| Incremental migration    | Not suggested                     | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident                  |
 
 ## Plugins
 
@@ -170,11 +170,13 @@ Pass `--estimation-infra` / `--estimation-ai` / `--aws-design` only when those f
 
 ### MCP Servers
 
-| Server            | Purpose                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **awsknowledge**  | AWS documentation, regional availability, architecture guidance                                                                                                                                                                                                                                                                                                                                                  |
-| **awspricing**    | Real-time AWS service pricing for cost estimates                                                                                                                                                                                                                                                                                                                                                                 |
-| **temporal-docs** | Temporal Knowledge Base (feature statuses for the Temporal Worker migration branch), operated by kapa.ai — queries are sent to that third-party service, not to Temporal, AWS, or your machine. Needs a one-time Google/GitHub login via `/mcp`; when the branch needs it and it isn't authenticated, the skill pauses and asks whether to authenticate, falling back to a public-web lookup only if you decline |
+| Server      | Purpose                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| **aws-mcp** | AWS documentation, regional availability, architecture guidance (the unified AWS MCP Server) |
+
+> **Auth note:** unlike the previous zero-auth knowledge endpoint, connecting to the AWS MCP Server may require a one-time AWS sign-in (OAuth 2.1) or SigV4 via a local proxy (`mcp-proxy-for-aws`); the doc/regional-availability tools themselves need no IAM permissions.
+
+The `agent-advisor` Temporal branch reads public Temporal documentation directly, with no login. If a lookup fails, it uses dated cached values marked unverified.
 
 ## llm-to-bedrock
 
@@ -214,13 +216,13 @@ See [skills/agent-advisor/SKILL.md](skills/agent-advisor/SKILL.md) for the full 
 
 Before a long Clarify interview, make sure these are available on the machine (skills also probe `uv`/`uvx` once on cold start):
 
-| Need                                                   | Why                                                                   | If missing                                                                                                                                                                              |
-| ------------------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Agent host (Claude Code / Cursor / Codex / Kiro, etc.) | Runs the skills                                                       | Install your agent                                                                                                                                                                      |
-| **Python 3**                                           | Terraform policy gate (gcp infra) + report validators at Generate     | gcp infra Generate cannot reach `POLICY_OK` — install before Generate                                                                                                                   |
-| **`uv` / `uvx`**                                       | Live `awspricing` MCP + llm-to-bedrock / agent-advisor scripts        | Infra Estimate degrades to **cached** rates and continues; `llm-to-bedrock` and `agent-advisor` **cannot run** without it. Install from [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
-| AWS CLI credentials                                    | Optional for some paths; needed for live AWS checks / Bedrock execute | Configure when those paths run                                                                                                                                                          |
-| At least one discovery input                           | Live `gcloud` / `heroku`, Terraform, app code, and/or billing         | Skill stops if nothing can produce artifacts                                                                                                                                            |
+| Need                                                   | Why                                                                   | If missing                                                                                                                                                         |
+| ------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Agent host (Claude Code / Cursor / Codex / Kiro, etc.) | Runs the skills                                                       | Install your agent                                                                                                                                                 |
+| **Python 3**                                           | Terraform policy gate (gcp infra) + report validators at Generate     | gcp infra Generate cannot reach `POLICY_OK` — install before Generate                                                                                              |
+| **`uv` / `uvx`**                                       | `llm-to-bedrock` / `agent-advisor` scripts                            | Infra Estimate uses **cached** rates; `llm-to-bedrock` and `agent-advisor` **cannot run** without it. Install from [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
+| AWS CLI credentials                                    | Optional for some paths; needed for live AWS checks / Bedrock execute | Configure when those paths run                                                                                                                                     |
+| At least one discovery input                           | Live `gcloud` / `heroku`, Terraform, app code, and/or billing         | Skill stops if nothing can produce artifacts                                                                                                                       |
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
 - AWS CLI configured with appropriate credentials
@@ -253,8 +255,7 @@ command that creates, changes, or deletes anything. If you also have `heroku_*`
 Terraform, the agent cross-checks it against your live account and reports drift.
 
 - **For AI execution (llm-to-bedrock skill):** Python 3.10+, `uv`, and Bedrock model access enabled
-- **For agent-advisor:** `uv` (deterministic runtime scoring); source code when deploying/migrating existing agents (an idea-only run needs none); the Temporal branch uses the `temporal-docs` MCP (one-time login, or public-web fallback)
-- **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
+- **For agent-advisor:** `uv` (deterministic runtime scoring); source code when deploying/migrating existing agents (an idea-only run needs none); Temporal feature checks use public documentation, with dated, unverified cached values when web access is unavailable
 
 ## Architecture & contributing
 

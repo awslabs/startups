@@ -93,23 +93,24 @@ If any skill failed to install, show the error output to the user and suggest th
 
 ## MCP servers (migration skills)
 
-The migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-advisor`) use MCP servers, declared in the plugin's `.mcp.json`, for live data. They are enhancements, not hard dependencies — the skills run without them, with pricing falling back to a bundled cache and docs lookups skipped:
+The migration skills (`gcp-to-aws`, `heroku-to-aws`, `llm-to-bedrock`, `agent-advisor`) use MCP servers, declared in the plugin's `.mcp.json`, for live AWS data. They are enhancements, not hard dependencies — the skills run without them, with pricing falling back to a bundled cache and AWS docs lookups skipped:
 
-- **`awsknowledge`** (HTTP) — current AWS documentation lookups.
-- **`awspricing`** (stdio via `uvx`) — live pricing data for cost estimates. **Requires [`uv`/`uvx`](https://docs.astral.sh/uv/) on your machine**; without it, estimates fall back to cached rates.
-- **`aws-pricing-calculator`** (stdio via `npx`) — builds shareable AWS Pricing Calculator estimates.
-- **`temporal-docs`** (HTTP) — Temporal documentation for `agent-advisor`'s Temporal-worker flow.
+- **`aws-mcp`** (HTTP) — AWS documentation, regional availability, and architecture guidance (the unified AWS MCP Server).
+
+> **Auth note:** unlike the previous zero-auth knowledge endpoint, connecting to the AWS MCP Server may require a one-time AWS sign-in (OAuth 2.1) or SigV4 via a local proxy (`mcp-proxy-for-aws`). The documentation and regional-availability tools themselves need no IAM permissions, but the connection is not anonymous.
+
+The `agent-advisor` Temporal-worker flow reads public Temporal documentation directly, with no login. If a lookup fails, it uses dated cached values marked unverified.
 
 The knowledge-base, prompt-library, architect, and start-building skills do not require MCP servers.
 
 **Provisioning depends on which install path you used in Step 2:**
 
 - **Step 2A (Claude Code plugin install)** — MCP servers are provisioned automatically; nothing further to do.
-- **Step 2B (`npx skills add`)** — MCP servers are **not** configured by this command, for any agent. The skills still work: `awspricing` falls back to cached pricing (±5-25% accuracy) and `awsknowledge`/`aws-pricing-calculator`/`temporal-docs` lookups are simply unavailable until configured. If the user wants live pricing and current AWS docs, add the servers from this plugin's `.mcp.json` to their agent's own MCP config:
+- **Step 2B (`npx skills add`)** — MCP servers are **not** configured by this command, for any agent. The skills still work: pricing uses the bundled cache regardless, and `aws-mcp` doc/regional-availability lookups are simply unavailable until configured. If the user wants current AWS docs, add the server from this plugin's `.mcp.json` to their agent's own MCP config:
   - **Kiro**: add the `mcpServers` block to `.kiro/settings/mcp.json` (workspace) or `~/.kiro/settings/mcp.json` (user).
   - **Cursor**: add it to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global).
-  - **Codex**: `codex mcp add awsknowledge --url https://knowledge-mcp.global.api.aws` and `codex mcp add awspricing -- uvx awslabs.aws-pricing-mcp-server@latest`.
-  - **Claude Code** (if installed via `npx skills add` instead of Step 2A): `claude mcp add --transport http awsknowledge https://knowledge-mcp.global.api.aws` and `claude mcp add awspricing -- uvx awslabs.aws-pricing-mcp-server@latest`.
+  - **Codex**: `codex mcp add aws-mcp --url https://aws-mcp.us-east-1.api.aws/mcp`.
+  - **Claude Code** (if installed via `npx skills add` instead of Step 2A): `claude mcp add --transport http aws-mcp https://aws-mcp.us-east-1.api.aws/mcp`.
   - **Any other agent**: copy the `mcpServers` object from [`.mcp.json`](.mcp.json) into that agent's MCP config file; consult the agent's own MCP docs for the path.
 
   This is optional and does not block Step 3. Do not tell the user MCP servers are configured after a Step 2B install unless they've done this themselves.
