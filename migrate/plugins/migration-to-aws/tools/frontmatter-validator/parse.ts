@@ -38,7 +38,7 @@ const GUARD_KEYS = new Set([
 /** The closed vocabulary of `_exec` sub-keys. */
 const EXEC_KEYS = new Set(["_agent"]);
 /** The closed vocabulary of `_exec._agent` capability tiers (ordered least→most privileged). */
-export const EXEC_TIERS = ["ro", "rw", "git"] as const;
+export const EXEC_TIERS = ["ro", "rw", "rwx", "git"] as const;
 export const EXEC_TIER_SET = new Set<string>(EXEC_TIERS);
 const FRAGMENT_KEYS = new Set(["_fragment", "_of_phase", "_contributes"]);
 const ASSEMBLER_KEYS = new Set(["_assemble", "_of_phase", "_reads", "_produces", "_knowledge"]);

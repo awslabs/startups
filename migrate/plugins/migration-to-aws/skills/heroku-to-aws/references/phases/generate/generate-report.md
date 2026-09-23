@@ -11,6 +11,13 @@ _contributes:
 > clone — decision + costs + optional what-if scenarios, then point at
 > `MIGRATION_GUIDE.md` for procedure. Runs **after** docs so the guide exists
 > when the report links to it.
+>
+> **This file is the single source of truth for `decision-summary` /
+> `decision-basis` / `exec-costs` / `what-if-scenarios` content rules.**
+> `references/shared/report-decision-core.md` (loaded by the Decision gate,
+> `estimate-assemble.md` choice A) reuses these same rules to render
+> `decision-report.html` — it does not restate them. If you change a section's
+> content rule here, it applies to both outputs.
 
 **Execute ALL steps in order. Do not skip.**
 
@@ -20,7 +27,7 @@ _contributes:
 
 | Artifact                                                                                                                       | Use                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `estimation-infra.json`                                                                                                        | Recommendation path, three cost tiers, complexity                                                                                                                               |
+| `estimation-infra.json`                                                                                                        | Recommendation path, three cost tiers, complexity, `optimization_opportunities[]`                                                                                               |
 | `aws-design.json`                                                                                                              | Short service count / primary compute target                                                                                                                                    |
 | `preferences.json`                                                                                                             | Region, HA, arch (active scenario = working tree)                                                                                                                               |
 | `scenarios/index.json` + manifests **+ each scenario's `scenarios/scenario-NNN.preferences.json` / `.aws-design.json` copies** | What-if table when ≥2 scenarios — manifests carry the cost tiers/complexity; the per-scenario Region/HA/Compute/Arch columns come from the scenario's preferences/design copies |
@@ -51,11 +58,12 @@ service count.
 Write a **self-contained** HTML file to `$MIGRATION_DIR/migration-report.html`
 (inline CSS only). Required section IDs:
 
-| Section ID         | Content                                                                                                                                                                                                                                                                                      |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `decision-summary` | Typography-first verdict (see below), cost one-liner, next action                                                                                                                                                                                                                            |
-| `exec-costs`       | Heroku-vs-AWS side-by-side when a Heroku baseline exists (`current_costs.source != "unavailable"`); otherwise the AWS three-tier table with a one-line note that no Heroku baseline was available. Estimated monthly; Balanced primary                                                       |
-| `next-steps`       | Ordered list pointing to `MIGRATION_GUIDE.md` phases (not a procedure dump). Include one bullet noting the Terraform ships with `baseline.tf` (account security baseline — GuardDuty, CloudTrail, budget alerts) and that three contact emails must be set in tfvars before `terraform plan` |
+| Section ID          | Content                                                                                                                                                                                                                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `decision-summary`  | Typography-first verdict (see below), cost one-liner, next action                                                                                                                                                                                                                            |
+| `exec-costs`        | Heroku-vs-AWS side-by-side when a Heroku baseline exists (`current_costs.source != "unavailable"`); otherwise the AWS three-tier table with a one-line note that no Heroku baseline was available. Estimated monthly; Balanced primary                                                       |
+| `cost-optimization` | Reserved Instance / Savings Plan opportunities table, or the explicit no-eligible-commitment statement — see below. Always present, never omitted                                                                                                                                            |
+| `next-steps`        | Ordered list pointing to `MIGRATION_GUIDE.md` phases (not a procedure dump). Include one bullet noting the Terraform ships with `baseline.tf` (account security baseline — GuardDuty, CloudTrail, budget alerts) and that three contact emails must be set in tfvars before `terraform plan` |
 
 ### `decision-summary` content (REQUIRED)
 
@@ -100,6 +108,27 @@ either order is fine as long as the confidence pointer's href resolves):
 
 Omit the section when `decision_basis` is absent (pre-extension artifacts).
 
+### `cost-optimization` (REQUIRED — always render, never omit)
+
+Render `<section id="cost-optimization">` after `exec-costs` (before
+`what-if-scenarios` when present, otherwise before `next-steps`). Source:
+`estimation-infra.json` → `optimization_opportunities[]`, per the eligibility
+rules and three-state model in
+`references/vendored/estimate/ri-sp-eligibility.md`.
+
+- **When `optimization_opportunities` is non-empty:** render a table with
+  columns Optimization, Target Services, Monthly Savings, Commitment, Effort.
+  Below the table, one line: "Activate credits don't cover RI/Savings Plan
+  upfront costs — they apply only to the ongoing discounted hourly rate."
+- **When `optimization_opportunities` is empty:** do not omit the section or
+  leave it blank. Render one sentence: "No 1-year/3-year commitment product
+  applies to this architecture." When Bedrock is part of the design, add:
+  "Bedrock inference has a separate mechanism (Provisioned Throughput, 1- or
+  6-month commitment), evaluated separately from Reserved Instances/Savings
+  Plans."
+
+Heading: `Cost Optimization Opportunities` (plain title — never "Section N").
+
 ### Conditional — `what-if-scenarios`
 
 When `scenarios/index.json` exists and `scenarios[]` has **≥ 2** entries,
@@ -114,9 +143,7 @@ Render, in order:
 | -------- | ------ | -- | ------- | ---- | ------------ | ------------- | -------------- | ---------- |
 
 - Mark the active row (`index.active_scenario_id`).
-- For each scenario with a non-null `estimation_summary.calculator_url`,
-  render the scenario name as a link (or an adjacent "open in AWS Pricing
-  Calculator" link) — stakeholders can open and edit the estimate there.
+- `estimation_summary.calculator_url` is always `null`; no calculator link is rendered.
 - Under the table: active vs baseline knob deltas; any `region_note`; remind
   inventory is frozen and Terraform matches the **active** scenario only.
 
@@ -158,6 +185,7 @@ stakeholders, not a design system.
     <section id="decision-summary">…</section>
     <!-- <section id="decision-basis"> when recommendation.decision_basis exists -->
     <section id="exec-costs">…</section>
+    <section id="cost-optimization">…</section>
     <!-- <section id="what-if-scenarios"> when ≥2 scenarios -->
     <section id="next-steps">…</section>
     <footer>Generated by Heroku to AWS Migration Advisor — draft for review; verify figures before executive sign-off.</footer>
@@ -173,12 +201,14 @@ stakeholders, not a design system.
 Before returning:
 
 1. File exists and is non-empty.
-2. Contains `decision-summary`, `exec-costs`, `next-steps`, and `draft for review`.
+2. Contains `decision-summary`, `exec-costs`, `cost-optimization`, `next-steps`, and `draft for review`.
 3. When `recommendation.outcome` exists: `decision-summary` contains the
    `outcome_label` text (or a `verdict-headline` element) — not a row of colored
    pill badges as the sole verdict carrier.
 4. When `recommendation.decision_basis` exists: contains `decision-basis`.
 5. If `scenarios/index.json` has ≥2 scenarios, contains `what-if-scenarios`.
+6. `cost-optimization` is non-empty — either the table or the explicit
+   no-eligible-commitment sentence, never a blank section.
 
 On failure: fix and rewrite — do **not** leave a stub. Report generation is
 part of Generate for heroku-to-aws (stakeholder deliverable), but a report
@@ -189,7 +219,7 @@ Optional (non-blocking): if
 
 ```
 python3 scripts/validate-heroku-migration-report.py \
-  "$MIGRATION_DIR/migration-report.html" --migration-dir "$MIGRATION_DIR"
+  "$MIGRATION_DIR/migration-report.html" --mode full --migration-dir "$MIGRATION_DIR"
 ```
 
 Exit 0 (`REPORT_OK`) → continue. Non-zero (`REPORT_FAIL | ...`) → repair the

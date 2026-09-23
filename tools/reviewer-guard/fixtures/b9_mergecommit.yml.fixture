@@ -1,0 +1,4 @@
+jobs:
+  review:
+    steps:
+      - run: git fetch origin ${{ github.event.pull_request.merge_commit_sha }} && echo ${{ github.event.pull_request.base.ref }}

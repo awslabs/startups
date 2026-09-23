@@ -26,7 +26,9 @@ in-block literal evidence, so a valid stack is never falsely blocked):
     IPv6-only or dual-stack VPC is exposed by ::/0 exactly as IPv4 is by
     0.0.0.0/0.
   - no_wildcard_iam: a literal IAM policy document with Effect "Allow" must not
-    use Action "*" or Resource "*" (fail-open on aws_iam_policy_document data
+    use Action "*" or Resource "*", except an isolated
+    elasticbeanstalk:CreateStorageLocation statement because AWS provides no
+    resource-level permission for it (fail-open on aws_iam_policy_document data
     sources, whose statements are not visible as literal JSON here).
   - rds_encryption_at_rest: aws_db_instance / aws_rds_cluster must set
     storage_encrypted = true (RDS defaults to UNENCRYPTED). Fail-open when
@@ -755,8 +757,28 @@ def _iam_key_is_wildcard(body: str, key: str) -> bool:
     return False
 
 
+def _remove_allowed_resource_wildcard_statements(body: str) -> str:
+    """Remove narrowly-approved IAM statements whose actions require Resource "*".
+
+    Keep this allowlist statement-shaped rather than action-token-shaped so an
+    approved action cannot hide a second, over-broad action in the same statement.
+    """
+    return re.sub(
+        r"""
+        \{\s*
+        "?Effect"?\s*[:=]\s*"Allow"\s*,?\s*
+        "?Action"?\s*[:=]\s*"elasticbeanstalk:CreateStorageLocation"\s*,?\s*
+        "?Resource"?\s*[:=]\s*"\*"\s*,?\s*
+        \}
+        """,
+        "",
+        body,
+        flags=re.DOTALL | re.VERBOSE,
+    )
+
+
 def check_no_wildcard_iam(tf_files: list[tuple[str, str]]) -> list[Violation]:
-    """Flag literal IAM policy JSON with an Allow statement using Action/Resource "*".
+    """Flag literal IAM policy JSON with an unsafe Allow Action/Resource "*".
 
     Fail-open: only literal `policy = jsonencode({...})` / heredoc JSON inside
     aws_iam_policy, aws_iam_role_policy, or *_inline_policy blocks is scanned.
@@ -775,7 +797,10 @@ def check_no_wildcard_iam(tf_files: list[tuple[str, str]]) -> list[Violation]:
                 # ({...}) (Effect = "Allow") forms — the separator is : or =.
                 if not re.search(r'"?Effect"?\s*[:=]\s*"Allow"', body):
                     continue
-                if _iam_key_is_wildcard(body, "Action") or _iam_key_is_wildcard(body, "Resource"):
+                body_without_allowed = _remove_allowed_resource_wildcard_statements(body)
+                if _iam_key_is_wildcard(body, "Action") or _iam_key_is_wildcard(
+                    body_without_allowed, "Resource"
+                ):
                     violations.append(
                         Violation(
                             check="policy",
@@ -789,7 +814,7 @@ def check_no_wildcard_iam(tf_files: list[tuple[str, str]]) -> list[Violation]:
                             ),
                             fix_hint=(
                                 "Scope the policy to specific actions and resource ARNs; "
-                                "replace \"*\" with the minimal set the workload needs"
+                                "isolate any documented action that requires Resource \"*\""
                             ),
                         )
                     )

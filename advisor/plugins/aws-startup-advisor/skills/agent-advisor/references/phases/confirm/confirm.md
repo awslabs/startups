@@ -85,8 +85,11 @@ evaluations, optimization). Multi-select, seeded from `agentcore_services`:
   Sandbox.
 - **Conditional (mention only when signals fit — not by default):** Payments (agent pays /
   transacts on the user's behalf — surface if high-risk/transactional actions are detected) and
-  Registry (multi-agent discovery / orchestration — surface if `multi_agent == "yes"`). If
-  neither signal is present, leave them out rather than listing them.
+  AWS Agent Registry (`registry`: shared catalog, resource discovery, or approval-based governance
+  requested by the user or identified in the workload). Registry can fit a single agent;
+  `multi_agent == "yes"` alone does not justify it. If neither service's signal is present,
+  leave it out. A Registry selection remains conditional until Design checks its Region
+  availability per `freshness.md`; Registry discovers resources, not orchestrates their execution.
   For any selected service that can front external tools/data (Gateway, Managed KB, Web Search,
   Memory), **ask** whether they already use a third-party tool for it (e.g. Tavily, Pinecone,
   Browserbase, a REST/MCP server) — do NOT assume greenfield. If yes: switch to AgentCore native,
@@ -99,6 +102,8 @@ These run the agent on non-AgentCore compute. Still ask which AgentCore **add-on
 they want for THIS unit (services run on any runtime). Record them under this unit. This branch
 is the fallthrough for EVERY non-agentcore runtime — including `lambda_microvms` picked from a
 co_recommend tie in Step 4 — so no runtime pick skips its services/tool_choices confirm.
+Apply Step 2's conditional-service rules here too, including Registry's discovery/governance
+trigger and pending Region verification; its availability is independent of the compute runtime.
 
 ## Step 4 — If a unit's verdict is co_recommend or no_viable_runtime
 

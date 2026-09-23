@@ -6,49 +6,43 @@ freshness lookups carry ONLY public service, feature, model, or region names (e.
 file contents, prompts, architecture details, or anything else from the workspace
 or the run directory in an outbound request — the answer never depends on it.
 
-## Fields to verify at runtime via the awsknowledge MCP
+## Fields to verify at runtime via the AWS MCP Server
 
 - AgentCore microVMs session cap (currently 8h) and Instances session cap (currently 14d)
 - AgentCore microVMs compute cap (2 vCPU / 8 GB; Instances lifts it via EC2 choice)
 - AgentCore / AgentCore Instances / Lambda MicroVMs region availability (Instances
   launched 2026-08 in a limited region set)
+- AWS Agent Registry region availability when Registry is selected, independently of runtime
+  (`registry_regions` in `references/runtimes/agentcore.json`; see the procedure below)
 - Lambda MicroVMs launch TPS (5, not adjustable)
 - FedRAMP certification status for AgentCore and Lambda MicroVMs
 - Any Bedrock model price (defer to migration-to-aws pricing cache; never hardcode here)
 
 ## Temporal (design.md — Freshness, temporal units only)
 
-Volatile facts to re-verify when the Temporal branch generates a plan. The awsknowledge
-MCP does not cover Temporal-side facts; each fact below names its actual verification
+Volatile facts to re-verify when the Temporal branch generates a plan. The AWS MCP Server
+does not cover Temporal-side facts; each fact below names its actual verification
 channel. Whatever cannot be verified this run stays cached and the footer must say so.
 
-**Temporal Knowledge Base MCP (preferred channel for Temporal-side facts):**
-Temporal's hosted knowledge-base MCP server (`temporal-docs` →
-`https://temporal.mcp.kapa.ai`, real-time answers compiled from Temporal docs, forum,
-and Slack) **ships in this plugin's `.mcp.json`** — it is already registered for every
-install. It is the preferred source for the **Feature statuses** fact below. It needs a
-one-time OAuth login to actually connect. **Auth-gate procedure (run BEFORE any Temporal
-feature-status lookup):**
+**Public Temporal documentation:** use WebFetch (or the host's web-reading tool) to
+read the official pages below directly. These lookups require no Temporal account,
+MCP connection, or authentication prompt. Temporal documents this access method at
+`https://docs.temporal.io/with-ai.md`.
 
-1. Check whether the `temporal-docs` MCP is connected AND authenticated this session.
-2. **If authenticated** → query it first for feature statuses.
-3. **If registered but NOT authenticated** → STOP and ask with AskUserQuestion (do not
-   silently fall through): "The Temporal docs MCP (`temporal-docs`) gives the freshest
-   feature-status answers but needs a one-time Google/GitHub login. Authenticate now?"
-   with options:
-   - **"Yes — I'll authenticate"** → tell the user to run `/mcp` → `temporal-docs` →
-     Authenticate, and **wait** for them to confirm it's done; then re-check and query
-     the MCP. (Step 4 is a read-only freshness check — pausing here is safe and resumes
-     cleanly.)
-   - **"No — use public web instead"** → fall back to the WebFetch channel named on the
-     fact for this run.
-4. Only ask once per run; if the user declined this run, do not re-prompt.
+Use the official access guidance above and `https://docs.temporal.io/llms.txt` to
+discover current documentation pages. The feature URLs below are current entry points,
+not permanent identifiers. Prefer Markdown; if an entry point moves, returns 404, or
+cannot be read, try the HTML page or rediscover the feature page through the index.
+A missing page does not establish that a feature was removed. An index entry is only
+a discovery result: fetch the linked feature page and observe the fact before marking
+it verified. If web access is unavailable, rediscovery or retrieval fails, or the page
+does not establish the fact, continue with the cached value and its original snapshot
+date, marked unverified. Do not pause the flow to install a server or request a login.
 
-- The anti-fabrication rule applies to the MCP identically: a fact counts as verified
-  only if the MCP (or the WebFetch) actually returned it this run.
-- Scope note: the MCP covers Temporal **platform** knowledge only. The Marketplace
-  listing / commercial-terms fact below is AWS buyer-side and stays WebFetch-only — do
-  not route it through the Temporal KB MCP.
+Only a fact actually fetched and observed this run counts as verified. Record each
+Temporal result in `design.json.volatile_facts` with `source: "web"` and its source URL
+and verification date, or `source: "cached"` and its original snapshot date, so Generate
+can report the evidence accurately.
 
 **Verifiable this run (attempt these):**
 
@@ -57,14 +51,19 @@ feature-status lookup):**
   Confirm: listing resolves (not 404/redirect to search), product name still
   "Temporal Cloud (Pay-as-you-Go)", the $0.01/action pricing dimension, free trial.
   (The Marketplace Catalog API cannot do this — it is seller-scoped; the public page is
-  the only buyer-side channel. The Temporal KB MCP does NOT cover this — it is
-  Temporal-platform-scoped, not AWS Marketplace.)
+  the only buyer-side channel used here; Temporal platform documentation does not verify
+  AWS Marketplace terms.)
 - **Feature statuses** (Serverless Workers, Workflow Streams, External Payload Storage,
-  Worker Versioning) — **preferred:** query the Temporal KB MCP (above). **Fallback:**
-  fetch the relevant docs.temporal.io page. CAUTION for Serverless Workers regardless of
-  channel: the docs label has moved before without a GA announcement (it read "Available"
+  Worker Versioning) — use these current entry points, rediscovering through the official
+  index above when needed:
+  - Serverless Workers on AWS Lambda: `https://docs.temporal.io/serverless-workers/aws-lambda.md`
+  - Workflow Streams: `https://docs.temporal.io/workflow-streams.md`
+  - External Payload Storage: `https://docs.temporal.io/external-storage.md`
+  - Worker Versioning: `https://docs.temporal.io/worker-versioning.md`
+
+  CAUTION for Serverless Workers: the docs label has moved before without a GA announcement (it read "Available"
   in 2026-07 while the feature was still pre-release; it reads "Public Preview" as of
-  2026-08) — a docs label — or an MCP answer echoing it — alone does NOT upgrade it to
+  2026-08) — a docs label alone does NOT upgrade it to
   GA — keep the Public Preview label until the user shows GA evidence (e.g. a GA
   announcement post).
 
@@ -83,28 +82,57 @@ observed this run may be listed as verified.
    (`verify_via_mcp: true`) from the winning runtime's profile JSON; for **add-capabilities**
    (which has no winning runtime profile), the "Hard limits" facts in the relevant service card
    (agentcore.md) instead.
-2. Attempt an awsknowledge MCP lookup for each.
+   Check Registry facts only when `registry` is selected. In the main skill, include
+   `registry_regions` from `references/runtimes/agentcore.json` even if the winning runtime is
+   ECS, EKS, Lambda, or another runtime. In add-capabilities, use the Registry Hard limits entry.
+2. Attempt an AWS MCP Server lookup for each.
 3. On success (the MCP call returned a value THIS run), use the fresh value and list the field as
    verified.
 4. On failure OR if you did not call the MCP at all (unavailable, skipped), use the cached
    `value` and list the field as fallen-back.
 
-**Anti-fabrication rule (do not skip):** a field may appear in the "verified via MCP" list ONLY
-if you actually made an MCP call this run and observed its result. If you did not call the MCP
-for a field — for any reason — it goes in the cached/fell-back list. Never claim verification you
-did not perform. If the MCP was not called at all, the verified list is empty and every field is
-cached.
+**Anti-fabrication rule (do not skip):** Never claim verification you did not perform,
+whether via the AWS MCP Server or public web. A fact may appear in its channel's verified
+list ONLY if you actually made that channel's lookup this run and observed evidence for
+the fact. A skipped, unavailable, failed, or inconclusive lookup goes in the cached/unverified
+list with the original snapshot date. If a channel was not called, its verified list is
+empty; successful verification via the other channel remains valid.
+
+## AWS Agent Registry availability
+
+Apply this check whenever Registry is selected, regardless of the agent's runtime:
+
+1. Identify the intended Registry deployment Region. Use the user's stated Region; ask if it
+   is missing, unknown, `multi`, or `global`. Do not silently choose a Region.
+2. Refresh Registry availability via the AWS MCP Server using the procedure above. A Runtime
+   availability result cannot verify Registry. Keep the observed source and verification date
+   with the result; on failure retain the cached snapshot date and mark availability unconfirmed.
+3. If this run confirms availability in the intended Region, proceed. If unavailable, ask the
+   user to omit Registry or explicitly choose a supported Region after considering data
+   residency. Do not silently move Registry or change the compute runtime.
+4. If availability cannot be verified, keep Registry conditional and include an availability
+   warning; do not present it as available or ready to deploy. Ask whether to omit Registry or
+   leave the recommendation as a draft pending verification. Do not complete Design or
+   add-capabilities while a selected Registry's intended Region remains unavailable or unverified.
+
+The main flow records the result in `design.json.volatile_facts.registry_regions` and appends
+any warning, with the affected unit and Region, to `warnings` and `region_availability_note`.
+The add-capabilities branch records the Region, verification result, and any unresolved warning
+in `capabilities-recommendation.md`. Only a lookup observed this run counts as verified.
 
 ## Freshness footer template (append to every recommendation doc)
 
-Choose the wording that matches what actually happened:
+List only facts actually verified this run under their observed channel. Use `none`
+for an empty list; omit the public-web sentence when no Temporal units exist.
 
-- If some fields were MCP-verified this run:
-  > _Generated `<DATE>`. Facts verified via AWS Knowledge MCP: `<list verified>`. Cached values used
-  > for: `<list cached>`. Limits and pricing change — verify against AWS docs before committing._
-- If the MCP was not called / unavailable:
-  > _Generated `<DATE>`. AWS Knowledge MCP not called this run; all facts are cached values —
-  > verify against AWS docs before committing._
+> _Generated `<DATE>`. Facts verified via AWS MCP Server: `<list or none>`.
+> Facts verified via public web (Temporal docs / AWS Marketplace): `<facts with source URLs
+> and verification dates, or none>`. Cached values used (not verified this run):
+> `<facts with original snapshot dates, or none>`. Limits and pricing change —
+> verify against the official sources before committing._
+
+If neither channel verified any facts, say that all facts are cached values. An unavailable
+AWS MCP Server does not make successfully web-verified Temporal facts cached.
 
 The footer is a summary, not the only place a date belongs. A cached number quoted in the body —
 a service limit, a scaling ceiling, a price anchor — carries its own snapshot date at the point of

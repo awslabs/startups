@@ -14,7 +14,7 @@ Point this plugin at your GCP project or Heroku account, your Terraform files, a
 **For infrastructure migrations:**
 
 - **Maps your GCP resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora (based on availability requirements), GKE → EKS, Cloud Storage → S3, VPC → VPC, and more
-- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
+- **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with account-wide security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration (GCR → ECR), secrets migration (GCP Secret Manager → AWS Secrets Manager), and post-migration validation
 - **Estimates monthly costs across three tiers** — Premium, Balanced, and Optimized — using real-time AWS pricing, compared against your current GCP spend
@@ -119,15 +119,15 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 
 **AI/Agentic:**
 
-| Capability               | Base LLM                          | This Plugin                                                                                                                |
-| ------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with estimated monthly costs, honest stay-or-migrate recommendation per model                  |
-| Agentic migration        | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges |
-| Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage          |
-| Framework gotchas        | Not covered                       | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion     |
-| Regional validation      | Outdated region lists             | Live `get_regional_availability` MCP call — catches "AgentCore Harness isn't in your target region" before you commit      |
-| Generated code           | Generic templates                 | Your model IDs, your tool names, your system prompts, your region — in runnable scripts                                    |
-| Incremental migration    | Not suggested                     | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident    |
+| Capability               | Base LLM                          | This Plugin                                                                                                                              |
+| ------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Model recommendation     | Generic "use Bedrock"             | Your specific models mapped with estimated monthly costs, honest stay-or-migrate recommendation per model                                |
+| Agentic migration        | "Swap ChatOpenAI for ChatBedrock" | Detects your framework, agents, tools, orchestration pattern; recommends retarget vs Harness vs Strands with effort ranges               |
+| Multi-model coordination | Generic advice                    | Warns about re-embedding requirements, cascade pair testing, tiered strategies — based on your actual model usage                        |
+| Framework gotchas        | Not covered                       | LangGraph checkpointer incompatibility, CrewAI hierarchical failures with smaller models, async thread pool exhaustion                   |
+| Regional validation      | Outdated region lists             | Live `aws___get_regional_availability` (AWS MCP Server) call — catches "AgentCore Harness isn't in your target region" before you commit |
+| Generated code           | Generic templates                 | Your model IDs, your tool names, your system prompts, your region — in runnable scripts                                                  |
+| Incremental migration    | Not suggested                     | Run existing OpenAI models on AgentCore infrastructure today, A/B test with Bedrock per-invocation, swap when confident                  |
 
 ## Agent Skill Triggers
 
@@ -139,11 +139,13 @@ GCP/Heroku migrations write a `.migration/<session>/` directory; agent-advisor w
 
 ## MCP Servers
 
-| Server            | Purpose                                                                                                                                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **awsknowledge**  | AWS documentation, regional availability, architecture guidance                                                                                                                                                       |
-| **awspricing**    | Real-time AWS service pricing for cost estimates                                                                                                                                                                      |
-| **temporal-docs** | Temporal Knowledge Base, operated by kapa.ai (queries are sent to that third-party service). Used only by the agent-advisor Temporal branch; one-time login via `/mcp`, falls back to a public-web lookup if declined |
+| Server      | Purpose                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| **aws-mcp** | AWS documentation, regional availability, architecture guidance (the unified AWS MCP Server) |
+
+> **Auth note:** unlike the previous zero-auth knowledge endpoint, connecting to the AWS MCP Server may require a one-time AWS sign-in (OAuth 2.1) or SigV4 via a local proxy (`mcp-proxy-for-aws`); the doc/regional-availability tools themselves need no IAM permissions.
+
+The `agent-advisor` Temporal branch reads public Temporal documentation directly, with no login. If a lookup fails, it uses dated cached values marked unverified.
 
 ## Requirements
 

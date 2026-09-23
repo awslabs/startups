@@ -264,11 +264,12 @@ Every check's `_on_failure` names one of these. Two STOP, two CONTINUE:
 `_agent` names the tier that work runs at. Ordered, closed vocabulary (least → most
 privileged):
 
-| Tier  | Grants                                   | For                                          |
-| ----- | ---------------------------------------- | -------------------------------------------- |
-| `ro`  | read-only (Read / Grep / Glob / ro Bash) | analysis phases that produce NO artifact     |
-| `rw`  | `ro` + Write / Edit                      | a phase that writes its `_produces`          |
-| `git` | `rw` + git ops                           | a phase that mutates the user's repo history |
+| Tier  | Grants                                                      | For                                                                  |
+| ----- | ----------------------------------------------------------- | -------------------------------------------------------------------- |
+| `ro`  | read-only (Read / Grep / Glob / ro Bash)                    | analysis phases that produce NO artifact                             |
+| `rw`  | `ro` + Write / Edit                                         | a phase that writes its `_produces`                                  |
+| `rwx` | `rw` + a scoped shell (run the tf policy checker); no `git` | a producing phase that runs the Terraform policy checker in-fragment |
+| `git` | `rw` + git ops                                              | a phase that mutates the user's repo history                         |
 
 The author DECLARES the tier; CI verifies it is not below the minimum derivable from
 what the phase produces (a producing phase can't be `ro`), that the tier's

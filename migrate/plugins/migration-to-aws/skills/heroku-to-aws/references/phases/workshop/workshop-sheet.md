@@ -35,9 +35,9 @@ fields here.
 
 **Region / pricing honesty (always show under the table):**
 
-> Region repricing needs the awspricing MCP for true regional rates. Without it,
-> numbers stay based on the us-east-1 pricing cache (see any `region_note` on the
-> estimate). Arch, HA, and compute knobs reprice from cache/design tables.
+> Region repricing uses the us-east-1 pricing cache (see any `region_note` on the
+> estimate for qualitative regional notes). Arch, HA, and compute knobs reprice from
+> cache/design tables.
 
 Actions (exactly one):
 

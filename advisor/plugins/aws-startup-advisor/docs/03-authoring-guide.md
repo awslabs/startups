@@ -206,7 +206,7 @@ phase:
 ```yaml
 _interactive: false # affirm the work does not prompt the user (REQUIRED to dispatch)
 _exec:
-  _agent: rw # capability tier: ro | rw | git
+  _agent: rw # capability tier: ro | rw | rwx | git
 ```
 
 Pick the LEAST tier that covers the work (`rw` for a phase that writes artifacts). You

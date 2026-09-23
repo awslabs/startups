@@ -59,18 +59,24 @@ def run_validator(
     html_path: Path,
     estimation_infra: Path | None = None,
     estimation_ai: Path | None = None,
+    aws_design: Path | None = None,
     *,
     require_toc: bool = True,
     readability: bool = True,
     migration_dir: Path | None = None,
+    mode: str | None = None,
 ) -> tuple[int, str]:
     cmd = [sys.executable, str(SCRIPT), str(html_path)]
     if estimation_infra:
         cmd.extend(["--estimation-infra", str(estimation_infra)])
     if estimation_ai:
         cmd.extend(["--estimation-ai", str(estimation_ai)])
+    if aws_design:
+        cmd.extend(["--aws-design", str(aws_design)])
     if migration_dir:
         cmd.extend(["--migration-dir", str(migration_dir)])
+    if mode:
+        cmd.extend(["--mode", mode])
     if not require_toc:
         cmd.append("--no-require-toc")
     if not readability:
@@ -870,3 +876,801 @@ def test_full_mode_unaffected_by_decision_additions(tmp_path: Path) -> None:
     assert code == 0, out
     assert "REPORT_OK | structure=complete" in out
     assert "mode=" not in out
+
+
+OPTIMIZATION_SECTION = """
+<section id="exec-optimization">
+<h2>Cost Optimization</h2>
+<p>Incremental to Balanced on-demand. Do not add these savings on top of Optimized — that tier already embeds reservation assumptions.</p>
+<table>
+<caption>Commitment options</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td><td>1-year</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+
+APPENDIX_OPTIMIZATION_SECTION = """
+<section id="appendix-optimization">
+<h2>Savings Plans and Reserved Instances</h2>
+<table>
+<caption>Opportunity table</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Monthly savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody>
+<tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td><td>1-year</td><td>Low</td></tr>
+<tr><td>Database Savings Plans</td><td>RDS</td><td>~20%</td><td>1-year</td><td>Low</td></tr>
+</tbody>
+</table>
+</section>
+"""
+
+
+def _write_opportunities(path: Path, rows: list[dict]) -> Path:
+    path.write_text(
+        json.dumps({"optimization_opportunities": rows, "projected_costs": {"aws_monthly_balanced": 100}}),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_optimization_section_not_required_when_opportunities_empty(tmp_path: Path) -> None:
+    path = tmp_path / "report.html"
+    path.write_text(MINIMAL_PASS, encoding="utf-8")
+    est = _write_opportunities(tmp_path / "estimation-infra.json", [])
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 0, out
+
+
+def test_optimization_section_required_when_opportunities_exist(tmp_path: Path) -> None:
+    path = tmp_path / "report.html"
+    path.write_text(MINIMAL_PASS, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [{"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]}],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 1, out
+    assert "exec-optimization" in out
+    assert "appendix-optimization" in out
+
+
+def test_buried_appendix_costs_table_does_not_satisfy_gate(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        '<section id="appendix-costs">',
+        '<section id="appendix-costs"><h3>Optimization opportunities</h3>'
+        "<table><thead><tr><th>Optimization</th><th>Target</th>"
+        "<th>Est. savings</th><th>Commitment</th><th>Effort</th></tr></thead>"
+        "<tbody><tr><td>Compute Savings Plans</td><td>Fargate</td>"
+        "<td>20%</td><td>1-year</td><td>Low</td></tr></tbody></table>",
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [{"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]}],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 1, out
+    assert "buried only in appendix-costs" in out or "exec-optimization" in out
+
+
+def test_optimization_sections_pass_when_present(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "</body>",
+        OPTIMIZATION_SECTION + APPENDIX_OPTIMIZATION_SECTION + "</body>",
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [
+            {"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]},
+            {"opportunity": "Database Savings Plans", "target_services": ["RDS"]},
+        ],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 0, out
+
+
+def test_optimization_table_requires_columns(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "</body>",
+        OPTIMIZATION_SECTION
+        + """
+<section id="appendix-optimization">
+<h2>Savings Plans</h2>
+<table><caption>x</caption>
+<thead><tr><th scope="col">Name</th></tr></thead>
+<tbody><tr><td>Compute Savings Plans</td></tr></tbody>
+</table>
+</section>
+</body>""",
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [{"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]}],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 1, out
+    assert "Commitment" in out and "Effort" in out
+
+
+def test_missing_savings_plan_row_when_fargate_in_design(tmp_path: Path) -> None:
+    html = MINIMAL_PASS.replace(
+        "</body>",
+        """
+<section id="exec-optimization">
+<h2>Cost Optimization</h2>
+<p>Incremental to Balanced. Do not add these on top of Optimized — already embeds Spot.</p>
+<table>
+<caption>opts</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th>
+<th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>S3 Intelligent-Tiering</td><td>S3</td><td>38%</td><td>None</td><td>Low</td></tr></tbody>
+</table>
+</section>
+<section id="appendix-optimization">
+<h2>Opportunities</h2>
+<table>
+<caption>opts</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th>
+<th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>S3 Intelligent-Tiering</td><td>S3</td><td>38%</td><td>None</td><td>Low</td></tr></tbody>
+</table>
+</section>
+</body>""",
+        1,
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [{"opportunity": "S3 Intelligent-Tiering", "target_services": ["S3"]}],
+    )
+    design = tmp_path / "aws-design.json"
+    design.write_text(
+        json.dumps({"clusters": [{"resources": [{"aws_service": "Amazon ECS on Fargate"}]}]}),
+        encoding="utf-8",
+    )
+    code, out = run_validator(path, est, aws_design=design, require_toc=False)
+    assert code == 1, out
+    assert "Savings Plans" in out or "Reserved" in out
+
+
+def test_decision_mode_requires_exec_optimization_not_appendix(tmp_path: Path) -> None:
+    html = DECISION_PASS.replace("</body>", OPTIMIZATION_SECTION + "</body>", 1)
+    path = tmp_path / "decision-report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [{"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]}],
+    )
+    code, out = run_validator(path, est, require_toc=False, mode="decision")
+    assert code == 0, out
+
+    with_appendix = html.replace(
+        "</body>",
+        APPENDIX_OPTIMIZATION_SECTION + "</body>",
+        1,
+    )
+    path.write_text(with_appendix, encoding="utf-8")
+    code, out = run_validator(path, est, require_toc=False, mode="decision")
+    assert code == 1, out
+    assert "forbids" in out and "appendix-optimization" in out
+
+
+# ---------------------------------------------------------------------------
+# Review follow-up regressions (PR #277 round 2)
+# ---------------------------------------------------------------------------
+
+POSTURE_TABLE = """
+<table>
+<caption>Posture comparison</caption>
+<thead><tr><th scope="col">Posture</th><th scope="col">Est. monthly</th><th scope="col">vs Balanced</th><th scope="col">What you commit to</th></tr></thead>
+<tbody><tr><td>Balanced on-demand</td><td>Est. $150</td><td>—</td><td>No term commitment.</td></tr></tbody>
+</table>
+"""
+
+
+def test_decision_mode_posture_table_before_opportunity_table_passes(tmp_path: Path) -> None:
+    """exec-optimization may render the posture table before the opportunity table.
+
+    _has_optimization_columns previously inspected only the section's first
+    <thead>. A decision-mode report that puts the (differently-columned)
+    posture table first was wrongly rejected even though the opportunity
+    table right after it has every required column.
+    """
+    section_with_posture_first = (
+        '\n<section id="exec-optimization">\n<h2>Cost Optimization</h2>\n'
+        + POSTURE_TABLE
+        + '<table>\n<caption>Commitment options</caption>\n'
+        '<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th>'
+        '<th scope="col">Est. savings</th><th scope="col">Commitment</th>'
+        '<th scope="col">Effort</th></tr></thead>\n'
+        "<tbody><tr><td>Compute Savings Plans</td><td>Fargate</td><td>20–40%</td>"
+        "<td>1-year</td><td>Low</td></tr></tbody>\n</table>\n"
+        "<p>Balanced on-demand baseline. Do not add these savings on top of "
+        "Optimized — already embeds reservation assumptions.</p>\n</section>\n"
+    )
+    html = DECISION_PASS.replace("</body>", section_with_posture_first + "</body>", 1)
+    path = tmp_path / "decision-report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [{"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]}],
+    )
+    code, out = run_validator(path, est, require_toc=False, mode="decision")
+    assert code == 0, out
+
+
+def test_optimization_gate_requires_data_row_not_just_heading_text(tmp_path: Path) -> None:
+    """Removing every commitment-discount data row must fail, even if the
+    heading/caveat prose still names Savings Plans and Reserved Instances.
+    """
+    section_no_rows = """
+<section id="exec-optimization">
+<h2>Cost Optimization</h2>
+<p>Savings Plans and Reserved Instances are incremental to Balanced on-demand. Do not add these on top of Optimized — already embeds reservation assumptions.</p>
+<table>
+<caption>Commitment options</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>S3 Intelligent-Tiering</td><td>S3</td><td>38%</td><td>None</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    appendix_no_rows = """
+<section id="appendix-optimization">
+<h2>Savings Plans and Reserved Instances</h2>
+<table>
+<caption>Opportunity table</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Monthly savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>S3 Intelligent-Tiering</td><td>S3</td><td>38%</td><td>None</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    html = MINIMAL_PASS.replace(
+        "</body>", section_no_rows + appendix_no_rows + "</body>", 1
+    )
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [
+            {"opportunity": "Compute Savings Plans", "target_services": ["Fargate"]},
+            {"opportunity": "Database Savings Plans", "target_services": ["RDS"]},
+        ],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 1, out
+    assert "Savings Plans" in out
+    assert "data row" in out
+
+
+def test_negative_description_does_not_misclassify_opportunity_as_savings_plan(
+    tmp_path: Path,
+) -> None:
+    """An opportunity whose `description` states a Savings Plan does NOT
+    apply (the ElastiCache Reserved Nodes template from estimate-infra.md)
+    must not be classified as a Savings Plan opportunity. A report that
+    renders only the Reserved Nodes row — with no "Savings Plan" text
+    anywhere, including headings — must pass without being told it is
+    missing a Savings Plans mention.
+    """
+    section = """
+<section id="exec-optimization">
+<h2>Cost Optimization</h2>
+<p>Incremental to Balanced on-demand. Do not add these savings on top of Optimized — already embeds reservation assumptions.</p>
+<table>
+<caption>Commitment options</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Est. savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>ElastiCache Reserved Nodes</td><td>ElastiCache</td><td>30-55%</td><td>1-year</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    appendix = """
+<section id="appendix-optimization">
+<h2>Reserved Nodes and Other Commitments</h2>
+<table>
+<caption>Opportunity table</caption>
+<thead><tr><th scope="col">Optimization</th><th scope="col">Target</th><th scope="col">Monthly savings</th><th scope="col">Commitment</th><th scope="col">Effort</th></tr></thead>
+<tbody><tr><td>ElastiCache Reserved Nodes</td><td>ElastiCache</td><td>30-55%</td><td>1-year</td><td>Low</td></tr></tbody>
+</table>
+</section>
+"""
+    html = MINIMAL_PASS.replace("</body>", section + appendix + "</body>", 1)
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    assert "Savings Plan" not in html
+    est = _write_opportunities(
+        tmp_path / "estimation-infra.json",
+        [
+            {
+                "opportunity": "ElastiCache Reserved Nodes",
+                "type": "elasticache_reserved_nodes",
+                "target_services": ["ElastiCache"],
+                "savings_percent": "30-55%",
+                "description": (
+                    "Database Savings Plans do not cover ElastiCache for Redis OSS "
+                    "or Memcached — Reserved Nodes are the commitment lever for "
+                    "this target engine on a node-based cluster."
+                ),
+            }
+        ],
+    )
+    code, out = run_validator(path, est, require_toc=False)
+    assert code == 0, out
+
+
+def _reference_report_html() -> str:
+    return FIXTURE.read_text(encoding="utf-8")
+
+
+def _replace_section_tbody(html: str, section_id: str, new_tbody_inner: str) -> str:
+    """Replace the first <tbody> inside the named section only."""
+    section_re = re.compile(
+        rf'(<section\b[^>]*\bid="{re.escape(section_id)}"[^>]*>)(.*?)(</section>)',
+        re.DOTALL | re.IGNORECASE,
+    )
+    match = section_re.search(html)
+    assert match, f"section {section_id} not found in reference report"
+    body = re.sub(
+        r"<tbody\b[^>]*>.*?</tbody>",
+        f"<tbody>{new_tbody_inner}</tbody>",
+        match.group(2),
+        count=1,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    return html[: match.start()] + match.group(1) + body + match.group(3) + html[match.end() :]
+
+
+def test_empty_appendix_opportunity_table_fails_even_with_exec_posture_rows(
+    tmp_path: Path,
+) -> None:
+    """Variant 1 (reviewer): emptying only the appendix-optimization <tbody>
+    must fail, even though the exec-optimization posture table still names
+    Savings Plans in its cells. The presence check binds to the opportunity
+    table's data rows, so the posture table cannot substitute for it.
+    """
+    html = _replace_section_tbody(_reference_report_html(), "appendix-optimization", "")
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "Savings Plans" in out
+
+
+def test_removing_savings_plan_option_rows_fails_despite_posture_caveat(
+    tmp_path: Path,
+) -> None:
+    """Variant 2 (reviewer): removing the actual Compute/Database Savings Plan
+    opportunity rows from both optimization sections must fail, even though the
+    Optimized posture row's caveat ("already embeds ... 1-year Savings Plan
+    assumptions") still names the product. Only opportunity-table rows count.
+    """
+    html = _reference_report_html()
+    # Drop the Savings Plan opportunity rows from the appendix opportunity table,
+    # leaving the remaining (non-SP) opportunity rows and the exec posture table.
+    html = re.sub(
+        r"<tr>\s*<td>(?:Compute|Database) Savings Plans</td>.*?</tr>\s*",
+        "",
+        html,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    assert "Compute Savings Plans</td>" not in html
+    assert "Database Savings Plans</td>" not in html
+    path = tmp_path / "report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "Savings Plans" in out
+
+
+# --- Currency formatting (rule 2: monthly figures render as whole dollars) ---
+
+
+def test_reference_fixture_has_no_currency_formatting_violations() -> None:
+    """The committed fixture's small sub-dollar figures ($0.06, $0.40, $1.50,
+    etc.) must not trip the check — they are genuinely sub-dollar precision."""
+    html = FIXTURE.read_text(encoding="utf-8")
+    path = FIXTURE
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_monthly_figure_with_cents_fails(tmp_path: Path) -> None:
+    # Regression: a multi-thousand-dollar monthly figure rendered with cents
+    # (the exact SF Beach report drift) must fail, not silently pass.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $25,684.89/mo AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "currency formatting" in out
+    assert "$25,684.89" in out
+
+
+def test_small_monthly_total_under_two_dollars_with_cents_passes(tmp_path: Path) -> None:
+    # $1.50, $0.40 etc. are the skill rule's own examples of meaningful
+    # sub-dollar precision and must not be flagged regardless of context.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $1.50/mo AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_hourly_rate_with_cents_passes(tmp_path: Path) -> None:
+    # A per-hour instance rate legitimately carries cents even when the
+    # whole-dollar part is >= 2 — the /hr suffix exempts it.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $23.50/hr AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_per_unit_commitment_rate_with_cents_passes(tmp_path: Path) -> None:
+    # A provisioned-throughput style rate ("$21.18 (1-mo commit)") is a
+    # per-unit rate, not a rounded monthly total.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $21.18 (1-mo commit) AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_per_policy_rate_with_cents_passes(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $5.00/mo per policy AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_multiple_bad_monthly_figures_all_reported(tmp_path: Path) -> None:
+    # Each distinct offending token is reported once, even when several
+    # different bad figures appear in the same report.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $1,371.82/mo AWS vs $80.30/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$1,371.82" in out
+    assert "$80.30" in out
+
+
+def test_repeated_bad_figure_reported_once(tmp_path: Path) -> None:
+    # The same offending token appearing multiple times (e.g. a total quoted
+    # in both a metric card and a table) is reported once, not once per
+    # occurrence.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $999.99/mo AWS vs $999.99/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert out.count("$999.99") == 1
+
+
+def test_currency_formatting_check_ignores_css_declarations(tmp_path: Path) -> None:
+    # CSS values inside <style> must never be mistaken for cost figures (this
+    # check only scans the <body>, matching _readability_scope's behavior).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "</style>",
+        "/* fake, never a real cost figure */ .fake { margin: $999.12; }\n</style>",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_percentages_and_versions_never_trigger_currency_check(tmp_path: Path) -> None:
+    # Sanity: numbers with a decimal point but no leading $ (percentages,
+    # version numbers, RTO hours) are never in scope for this check.
+    html = FIXTURE.read_text(encoding="utf-8") + (
+        "<!-- appended smoke content, never actually rendered by the browser "
+        "since it's after </html>, but exercises the regex path -->\n"
+        "<p>Terraform 1.15.2, 82.5% reduction, RTO 4.5 hours.</p>\n"
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_bad_monthly_figure_spelled_slash_month_fails(tmp_path: Path) -> None:
+    # Regression: "month" alone must not exempt a figure the way "/hr" does —
+    # it's exactly the unit an ordinary monthly total is denominated in, not
+    # evidence of a per-unit rate. Same underlying $25,684.89 regression as
+    # test_monthly_figure_with_cents_fails, spelled "/month" instead of "/mo".
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $25,684.89/month AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$25,684.89" in out
+
+
+def test_bad_monthly_figure_spelled_per_month_fails(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $25,684.89 per month AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$25,684.89" in out
+
+
+def test_bad_monthly_figure_spelled_monthly_fails(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $25,684.89 monthly AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$25,684.89" in out
+
+
+def test_hourly_rate_split_by_inline_tag_still_recognized(tmp_path: Path) -> None:
+    # Regression: raw-HTML regex matching saw </strong> between the amount and
+    # its unit and failed to recognize the rate suffix, sending an otherwise
+    # valid report to the .incomplete.html path. A decoded-text extraction
+    # must treat inline markup as transparent to a reader.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. <strong>$23.50</strong>/hr AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_hourly_rate_with_nbsp_before_unit_still_recognized(tmp_path: Path) -> None:
+    # Regression: an HTML entity separator between the amount and its unit
+    # must decode before the rate-suffix match, not read as literal "&nbsp;"
+    # text that breaks the adjacency check.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $23.50&nbsp;/hr AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_commented_out_raw_figure_never_flagged(tmp_path: Path) -> None:
+    # Regression: an HTML comment is never rendered by a browser, so a raw,
+    # unrounded figure left in a comment (e.g. an authoring note) must not be
+    # flagged — a plain substring/regex scan over raw HTML source cannot tell
+    # comment text apart from real content.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $112/mo AWS vs $165/mo GCP infra"
+        "<!-- raw estimate $25,684.89/mo -->",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_numeric_character_reference_dollar_sign_still_flagged(tmp_path: Path) -> None:
+    # Regression: the reverse direction of the entity-decoding gap — a
+    # numeric character reference for "$" (&#36;) is real, VISIBLE content
+    # once decoded, and must not silently pass just because the raw source
+    # never spells the amount with a literal "$".
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. &#36;25,684.89/mo AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$25,684.89" in out
+
+
+def test_calculation_notes_column_rate_arithmetic_not_flagged(tmp_path: Path) -> None:
+    # Regression: Appendix B's documented Calculation/Notes column
+    # (generate-artifacts-report.md: "Service Category, AWS Service, Monthly
+    # Cost (Balanced), Calculation/Notes") legitimately renders per-unit rate
+    # arithmetic with no adjacent unit suffix at all, e.g. "1 vCPU × $23.50 ×
+    # 511 hrs" — the reference fixture's own real Calculation/notes column
+    # uses this exact shape. Replacing its sub-$2 rate with one >= $2 must
+    # still pass, since it's rate context by table structure, not by suffix.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "1 vCPU &times; $0.04048 &times; 511 hrs",
+        "1 vCPU &times; $23.50 &times; 511 hrs",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_calc_notes_column_monthly_component_amount_still_flagged(
+    tmp_path: Path,
+) -> None:
+    # Regression: the Calculation/Notes column exemption was scoped to the
+    # WHOLE cell, so an ordinary monthly component amount summed alongside a
+    # real rate ("ALB $22 + NAT $33 for VPC-attached Fargate/RDS") was
+    # exempted too, even though it is not itself a per-unit rate. Only a
+    # figure immediately followed by a multiplication marker (×, x, times)
+    # is a rate operand; a plain summed component amount must still be
+    # checked for whole-dollar rounding.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "ALB $22 + NAT $33 for VPC-attached Fargate/RDS",
+        "ALB $22.49 + NAT $33 for VPC-attached Fargate/RDS",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$22.49" in out
+
+
+def test_calc_notes_column_calculated_monthly_result_still_flagged(
+    tmp_path: Path,
+) -> None:
+    # Regression: the calculated monthly RESULT of the shown arithmetic
+    # ("... = $12,008.50/mo") is not itself a rate operand either — it is
+    # exactly the kind of unrounded monthly total this rule exists to catch,
+    # even though it sits in the same Calculation/Notes cell as a legitimate
+    # rate. The rate operand ($23.50, followed by ×) must still pass; the
+    # trailing result must still fail.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "1 vCPU &times; $0.04048 &times; 511 hrs",
+        "1 instance &times; $23.50 &times; 511 hrs = $12,008.50/mo",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$12,008.50" in out
+    assert "$23.50" not in out
+
+
+def test_calc_notes_column_rate_operand_before_marker_not_flagged(
+    tmp_path: Path,
+) -> None:
+    # Regression: the rate can be the RIGHT operand of the multiplication
+    # ("511 hrs × $23.50"), not only the left ("$23.50 × 511 hrs"). The
+    # exemption originally checked only for a multiplication marker TRAILING
+    # the figure, so a rate written as "<quantity> × $<rate>" was wrongly
+    # flagged. A rate operand preceded by × (or x / times) in the
+    # Calculation/Notes column must pass, exactly like the trailing-marker
+    # form does.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "1 vCPU &times; $0.04048 &times; 511 hrs",
+        "511 hrs &times; $23.50",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "currency formatting" not in out
+
+
+def test_calc_notes_column_capital_x_in_word_not_treated_as_marker(
+    tmp_path: Path,
+) -> None:
+    # Regression: the bare "x" multiplication-marker alternative matched the
+    # capital "X" that merely opens an unrelated service name like "X-Ray",
+    # wrongly exempting an adjacent summed component amount ("$1 + $22.49
+    # X-Ray tracing") as if $22.49 were a rate operand. A capital X that
+    # continues a word (followed by a letter or hyphen, not whitespace/a
+    # digit/"$") is not a multiplication marker, so the summed component
+    # amount must still be flagged.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "ALB $22 + NAT $33 for VPC-attached Fargate/RDS",
+        "Logs $1 + $22.49 X-Ray tracing",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$22.49" in out
+
+
+def test_same_rate_figure_outside_calculation_column_still_flagged(tmp_path: Path) -> None:
+    # Control for the above: the SAME rate figure, in a Monthly Cost cell
+    # (NOT the Calculation/Notes column), must still be flagged — the
+    # exemption is scoped to the documented column, not to any number that
+    # merely looks like a rate.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        "Est. $112/mo AWS vs $165/mo GCP infra",
+        "Est. $23.50/mo AWS vs $165/mo GCP infra",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "$23.50" in out
+
+
+def test_bad_monthly_figure_not_exempted_by_next_cells_rate_word(
+    tmp_path: Path,
+) -> None:
+    # Regression: a block-level boundary (a table cell/row end) was emitted
+    # as a single separating space, which does not itself stop a word-based
+    # regex — an unrelated word that happens to open the NEXT cell (e.g.
+    # "Hourly") was readable as the FIRST cell's own rate suffix. A bad
+    # monthly figure followed, across a real <td> boundary, by a note
+    # starting with "Hourly" must still fail — that word belongs to a
+    # different cell's text, not this figure's own unit.
+    html = MINIMAL_PASS.replace(
+        '<section id="exec-costs"><h2>Costs</h2></section>',
+        '<section id="exec-costs"><h2>Costs</h2>'
+        "<table><tbody><tr><td>$25,684.89</td>"
+        "<td>Hourly rates unchanged</td></tr></tbody></table></section>",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "$25,684.89" in out
+
+
+def test_bad_monthly_figure_still_flagged_with_unrelated_neighbor_cell(
+    tmp_path: Path,
+) -> None:
+    # Control for the above: the same boundary case but the neighboring
+    # cell's text does NOT start with a rate word, confirming the fix isn't
+    # accidentally over-broad (e.g. blocking ANY text after a boundary).
+    html = MINIMAL_PASS.replace(
+        '<section id="exec-costs"><h2>Costs</h2></section>',
+        '<section id="exec-costs"><h2>Costs</h2>'
+        "<table><tbody><tr><td>$25,684.89</td>"
+        "<td>Rates unchanged</td></tr></tbody></table></section>",
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, require_toc=False)
+    assert code == 1, out
+    assert "$25,684.89" in out

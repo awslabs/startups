@@ -1,0 +1,14 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target: {paths: ['solution-architecture/**']}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions: {id-token: write, statuses: write}
+    steps:
+      - name: Log the branch under review
+        run: |
+          set -euo pipefail
+          # GITHUB_HEAD_REF is the FORK's branch name. Refnames may contain ; $ ( ) & |
+          echo "reviewing branch: $GITHUB_HEAD_REF"
+          eval "echo $GITHUB_HEAD_REF"

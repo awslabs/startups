@@ -1,0 +1,23 @@
+name: AgentCore Reviewer
+on:
+  pull_request_target:
+    paths: ['solution-architecture/**']
+permissions:
+  contents: none
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      statuses: write
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Materialise the contribution
+        run: |
+          set -euo pipefail
+          # refs/pull/N/head lives in the BASE repo, so the fork's tree is one API call away.
+          gh api "repos/${GITHUB_REPOSITORY}/tarball/${HEAD_SHA}" > src.tgz
+          mkdir src && tar xzf src.tgz -C src --strip-components=1
+          cd src && npm install --ignore-scripts=false

@@ -5,6 +5,8 @@ title: "One year of Auth0, free for eligible startups"
 
 ## One year of Auth0, free for eligible startups
 
+### Estimated offer value: One year of Auth0 free
+
 Ready to launch and grow your startup with Auth0? Auth0 is an easy-to-implement, adaptable authentication and authorization platform. From improving customer experience through seamless sign-on to making MFA as easy as a click of a button – your login box must find the right balance between user convenience, privacy, and security.
 
 - **Get your application to market faster**: Get up and running quickly with pre-built flows and low and no-code extensibility features. We offer 50+ Integrations, 60+ SDKs, and 50+ Social & IdP Connections.

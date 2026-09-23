@@ -13,23 +13,13 @@ Read `shared/pricing-cache.md`. Check the `Last updated` date in the header:
 - If <= 90 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the cache. Proceed to Step 1.
 - If > 90 days old: Cache is stale. Attempt MCP (Step 0b) for fresh prices; use stale cache as fallback.
 
-### Step 0b: MCP Availability Check (only if cache stale or service not listed)
-
-Attempt to reach awspricing with **up to 2 retries** (3 total attempts):
-
-1. **Attempt 1**: Call `get_pricing_service_codes()`
-2. **If timeout/error**: Wait 1 second, retry (Attempt 2)
-3. **If still fails**: Wait 2 seconds, retry (Attempt 3)
-4. **If all 3 attempts fail**: Use cached prices with staleness warning
-
-### Step 0c: MCP Preflight — Surface Status to User (ALWAYS run)
+### Step 0b: Surface Status to User (ALWAYS run)
 
 **Before any sub-estimate file runs**, display the pricing mode to the user so they know what to expect:
 
-- **If cache ≤ 90 days and MCP not needed**: "Pricing source: cached (updated [date], ±5-25% accuracy). Live pricing API not required."
-- **If cache > 90 days and MCP available**: "Pricing source: live API (awspricing MCP). Cache is stale ([date]) — using real-time pricing."
-- **If cache > 90 days and MCP unavailable**: "⚠️ Pricing source: stale cache only (updated [date]). The awspricing MCP server is unreachable — ensure `uvx` is installed (`pip install uv` or `brew install uv`) and AWS credentials are configured. Proceeding with cached pricing; accuracy may be ±15-25% for AI models."
-- **If cache ≤ 90 days but a required service is NOT in cache and MCP unavailable**: "⚠️ Some services not in pricing cache and MCP unreachable. Those services will show `pricing_source: unavailable` in the estimate."
+- **If cache ≤ 90 days**: "Pricing source: cached (updated [date], ±5-25% accuracy). No live pricing API required."
+- **If cache > 90 days**: "⚠️ Pricing source: stale cache only (updated [date]). Proceeding with cached pricing; accuracy may be ±15-25% for AI models."
+- **If a required service is NOT in cache**: "⚠️ Some services not in pricing cache. Those services will show `pricing_source: unavailable` in the estimate."
 
 This prevents silent failures — the user sees the pricing constraint upfront, not after 5 minutes of estimation work.
 
@@ -38,20 +28,16 @@ This prevents silent failures — the user sees the pricing constraint upfront, 
 Each sub-estimate file uses this lookup order per service:
 
 1. **`shared/pricing-cache.md`** (primary) — Cached prices (±5-25% accuracy). Set `pricing_source: "cached"`. Used first because it requires zero API calls and covers most common services.
-2. **MCP API** (secondary) — Real-time pricing for services NOT in pricing-cache.md (±5-10% accuracy, more precise). Set `pricing_source: "live"`. Only called when the cache lacks the needed service or model. **Region note:** The `.mcp.json` sets `AWS_REGION=us-east-1` as the MCP server default, but each `get_pricing()` call accepts a `region` parameter that overrides it. Always pass the user's target region (from `preferences.json`) in MCP queries.
-3. **Cache after MCP failure** — If MCP was attempted but failed (timeout, error), and the service IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`. This distinguishes intentional cache use from MCP failure recovery.
-4. **Unavailable** — If a service is NOT in the cache AND MCP is unavailable, set `pricing_source: "unavailable"` for that service. Add the service to `services_with_missing_fallback` and display a warning to the user: "Pricing unavailable for [service] — not in cache and MCP unreachable. Exclude from totals or provide a manual estimate."
+2. **Unavailable** — If a service is NOT in the cache, set `pricing_source: "unavailable"` for that service. Add the service to `services_with_missing_fallback` and display a warning to the user: "Pricing unavailable for [service] — not in cache. Exclude from totals or provide a manual estimate."
 
 **`pricing_source` values summary:**
 
-| Value               | Meaning                                                   |
-| ------------------- | --------------------------------------------------------- |
-| `"cached"`          | Found in pricing-cache.md (normal path)                   |
-| `"live"`            | Retrieved from MCP API in real-time                       |
-| `"cached_fallback"` | MCP was attempted but failed; fell back to cache          |
-| `"unavailable"`     | Not in cache AND MCP failed; service excluded from totals |
+| Value           | Meaning                                    |
+| --------------- | ------------------------------------------ |
+| `"cached"`      | Found in pricing-cache.md (normal path)    |
+| `"unavailable"` | Not in cache; service excluded from totals |
 
-If cache is > 90 days old and MCP is unavailable:
+If cache is > 90 days old:
 
 - Add warning: "Cached pricing data is >90 days old; accuracy may be significantly degraded"
 - **Display to user**: Add visible warning with staleness notice
@@ -193,6 +179,8 @@ commit." Suggest at most one.
      per that file's decision-mode rules (no appendices, no Terraform, CTA
      footer). Validate with
      `python3 "$PLUGIN_ROOT/scripts/validate-migration-report.py" "$MIGRATION_DIR/decision-report.html" --mode decision`
+     and pass `--estimation-infra` / `--estimation-ai` / `--aws-design` when
+     those files exist so the Cost Optimization gate can fire
      (absolute paths — cwd must not be load-bearing) and fix failures before
      presenting.
   2. Set `run_mode: "decide"` and `current_phase: "complete"` in

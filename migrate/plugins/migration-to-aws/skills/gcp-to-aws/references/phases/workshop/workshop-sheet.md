@@ -48,8 +48,8 @@ Show knob → current value. Invite confirm-or-change per row.
 
 **Region / pricing honesty:**
 
-> Region repricing needs the awspricing MCP for true regional rates. Without it,
-> numbers stay based on the us-east-1 pricing cache.
+> Region repricing uses the us-east-1 pricing cache; regional deltas are noted
+> qualitatively.
 
 Actions (exactly one):
 

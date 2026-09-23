@@ -39,8 +39,9 @@ share a generation with a future `Sol`.
 > both sources. Re-check on refresh; if AWS corrects the blog, the cards still win.
 
 **Not on Bedrock (as of this refresh):** GPT-4o, GPT-4.1, GPT-4 / GPT-4 Turbo, GPT-3.5 Turbo, the o-series
-(o1/o3/o4-mini), GPT-5 / GPT-5.1 / GPT-5.2, and the `*-Pro` variants (GPT-5.5 Pro, GPT-5.4 Pro). Sources whose model
-is on this list have no same-model landing target — see `ai-openai-to-bedrock.md` for the two-option path.
+(o1/o3/o4-mini), GPT-5 / GPT-5.1 / GPT-5.2, Codex (unverified — see the Codex note below), and the `*-Pro` variants
+(GPT-5.5 Pro, GPT-5.4 Pro). Sources whose model is on this list have no same-model landing target — see
+`ai-openai-to-bedrock.md` for the two-option path.
 
 ---
 
@@ -130,7 +131,7 @@ matrix does NOT make the same-model path unavailable for GPT-5.6 — it means us
 id, with the data-residency implications of cross-region routing. For GPT-5.5 / GPT-5.4 the mantle matrix is a hard
 gate: no CRIS, no fallback.
 
-Verify current footprints per model card / `get_regional_availability` — the CRIS lists move faster than this file.
+Verify current footprints per model card / `aws___get_regional_availability` (AWS MCP Server) — the CRIS lists move faster than this file.
 
 ## Pricing
 
@@ -175,8 +176,8 @@ A workload above 272K context must be priced at the long-context tier.
 > **The Luna "blog discrepancy" resolved differently than first recorded.** The AWS News Blog's 0.20 / 1.20 is not
 > an error — it is the **Global CRIS** rate, now published on the Luna card. An earlier revision of this file said
 > global pricing was unpublished and treated the blog figure as wrong; both statements are corrected here.
-> Separately, the **AWS Price List API still carries no GPT-5.x rows** (checked 2026-08-04): the `awspricing` MCP
-> cannot price these models, and an empty result must not be read as "model unavailable."
+> Separately, the **AWS Price List API still carries no GPT-5.x rows** (checked 2026-08-04):
+> a missing or empty price-list result must not be read as "model unavailable."
 
 ### Prompt caching — GPT-5.6 only
 
@@ -240,8 +241,14 @@ days for automated abuse detection; retained inputs/outputs are stored and proce
 OpenAI unless the customer opts in. Prompts and completions are not used to train models. Calls run under the
 customer's IAM policies, inside their VPC, logged to CloudTrail, and in-region inference keeps data in-region.
 
-**Codex on Bedrock is GA** with pay-per-token pricing, inference through Bedrock, and usage counting toward AWS
-commitments — relevant when the source workload is a coding agent.
+**Codex on Bedrock: unverified — do not price it.** An earlier revision of this file stated Codex is GA on Bedrock
+with pay-per-token pricing. As of 2026-09-02, Codex does not appear on the
+[OpenAI model card index](https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards-openai.html), and no
+Codex rate exists on the Bedrock pricing page, in `pricing-cache.md`, or in `bedrock_pricing.py`'s static table.
+When the source workload is a coding agent, re-check the model card index first; if Codex is still absent, treat it
+as "a model not in the catalog above" (see the table in this section): plan a cross-family target (GPT-5.6 Sol /
+Terra are the coding-agent tier fits) and price that target — or report `pricing_source: "unverified"` with no
+dollar figure. Never attach a fabricated Codex rate to an estimate.
 
 ---
 

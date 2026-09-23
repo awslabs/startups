@@ -26,6 +26,8 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: design.json
     _on_failure: _halt_and_inform
+  - _assert: "Every unit selecting registry records its intended Registry Region and current-run verified Registry availability; cached or unavailable Regions cannot satisfy this check. A user-confirmed omission is reflected in both confirm.json and design.json service lists, including the primary-unit mirrors."
+    _on_failure: _halt_and_inform
   - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_compute_type, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; every agentcore-verdict unit carries agentcore_compute_type (microvms or instances) verbatim from its scoring result and every non-agentcore unit carries null — the compute type is never re-derived in Design; every model-bearing unit's model_recommendation is derived from the matching model-recommendation.json workload entry and accepted confirm.model_decision, including model_identity, model, api_path, invocation_model_id, source, source_analysis, feature_assessment, compatibility, architecture_impacts, additional_targets (separate-modality target contracts, carried verbatim when present), blocks, tuning, migration_deltas, evaluation, rollout, provisional verification, and live_verification when model-verification.json exists; no model was independently selected from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled Public Preview regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
     _on_failure: _halt_and_inform
 ---
@@ -63,8 +65,11 @@ Load ALL THREE files (each is required; do not skip any — Step 4's lock-in che
 ## Step 3 — Refresh volatile facts
 
 Load `${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/references/decision-refs/freshness.md` and follow its procedure:
-read the winning profile's `volatile_facts`, try awsknowledge MCP for each, fall back to cached
+read the winning profile's `volatile_facts`, try the AWS MCP Server for each, fall back to cached
 values on failure. Record which succeeded vs fell back (for the freshness footer).
+When any unit selects `registry`, also load the AgentCore service card and the
+`registry_regions` fact from `references/runtimes/agentcore.json`, even for non-AgentCore
+runtime winners. Apply `freshness.md`'s Registry availability procedure in Step 4d.
 
 ## Step 4 — Provider lock-in check
 
@@ -93,7 +98,7 @@ so omit the $0-I/O-wait claim and let the scoring warning carry the pricing cave
 
 If the user's `compliance` includes `fedramp`: AgentCore's FedRAMP authorization is **in progress
 (WIP)** — do NOT hard-eliminate AgentCore for it. Verify the current status per `freshness.md`
-(the `fedramp` volatile fact, via awsknowledge MCP). Then surface an honest note: "AgentCore's
+(the `fedramp` volatile fact, via the AWS MCP Server). Then surface an honest note: "AgentCore's
 FedRAMP authorization is in progress — verify the current status before committing. If you need
 FedRAMP-authorized compute **today**, GovCloud on ECS/EKS is the safe fallback." Record
 `fedramp_note = true` in design.json when this fires. (HIPAA/SOC/PCI/etc. are unaffected —
@@ -101,14 +106,25 @@ AgentCore is eligible for those.)
 
 ## Step 4d — Region gating (availability + CRIS/GDPR)
 
-Read `region` from answers. Region does NOT change the verdict — it gates two things:
+Read `region` from answers. Region does NOT change the verdict — it gates the following:
 
 1. **Availability:** if the winning runtime is `agentcore` (or the chosen deployment model is
-   Harness), verify it's available in the user's region via the awsknowledge MCP (per
+   Harness), verify it's available in the user's region via the AWS MCP Server (per
    `freshness.md`; the profile's `regions` volatile fact). If unavailable, surface a note with the
    nearest supported region and — if the gap is blocking — the container fallback. Do NOT silently
    recommend a runtime the user's region can't run. Record `region_availability_note` when it fires.
-2. **CRIS / data residency:** if `region` is `multi`/`global` OR the user is in the EU OR
+2. **Registry availability:** for each unit with `registry` in its confirmed `agentcore_services`,
+   apply `freshness.md`'s AWS Agent Registry availability procedure independently of that unit's
+   runtime, including ECS/EKS/Lambda. Check the intended Registry Region, not merely Runtime
+   availability. Preserve the user's confirmed decision to omit Registry or use a supported
+   Region in that unit's design rationale and mirror the primary unit at the top level. Record
+   the intended Registry Region in each selected unit's rationale even when it matches the
+   workload Region. If the user omits Registry, also update
+   `confirm.json.units[unit_id].agentcore_services` (and the top-level primary mirror) so
+   downstream POC generation cannot re-enable it from the earlier selection. An unavailable or
+   unverified Registry must not appear as an available, ready-to-deploy service. Append its
+   warning to existing `warnings` and `region_availability_note`; do not overwrite Runtime notes.
+3. **CRIS / data residency:** if `region` is `multi`/`global` OR the user is in the EU OR
    `compliance` includes `gdpr`, surface the CRIS choice: **geo-CRIS keeps inference within the
    region (data-residency-safe)** vs **global-CRIS may route cross-region (a GDPR risk)**. Present
    it as a compliance decision, not a silent default. Record `cris_note = true`. Exact CRIS/region
@@ -146,30 +162,22 @@ Write the `temporal` block when temporal units exist:
 `temporal.server_current` is read from `context-signals.json.temporal.server` (discover's
 output; "unknown" on the declared no-code path). `serverless_workers_status` is set from
 this run's freshness check (see freshness.md) — currently `"Public Preview"` — and MUST
-NOT be auto-upgraded to GA from a docs label or MCP echo alone.
+NOT be auto-upgraded to GA from a docs label alone.
 
 ### Freshness (temporal units only)
 
 Load `references/decision-refs/freshness.md` and run its Temporal section.
 
-**Verification channel for Temporal feature statuses (auth-gated MCP → WebFetch
-fallback):** freshness.md's Temporal section names the Temporal Knowledge Base MCP
-(`temporal-docs`, which ships in this plugin's `.mcp.json`) as the preferred source,
-and defines the auth-gate procedure — follow it exactly. In short: check whether
-`temporal-docs` is authenticated this session; if authenticated, query it first; if
-registered-but-not-authenticated, **STOP and ask via AskUserQuestion** whether to
-authenticate (per freshness.md), and if the user says yes, direct them to `/mcp` and
-**wait** for them to finish before continuing. Only if the user declines → WebFetch
-the docs.temporal.io page. Ask at most once per run. Pausing here is safe: this step
-is a read-only freshness check that resumes cleanly. (The Marketplace listing fact
-stays WebFetch-only; the KB MCP does not cover it.)
+Use the public Temporal documentation pages and AWS Marketplace page named there.
+Follow its web lookup and cached-fallback procedure without an authentication pause.
+Preserve each result's source and date in `design.json.volatile_facts` for the freshness footer.
 
 Non-negotiable regardless of channel: **Serverless Workers is Public Preview, not GA**
 — the docs label has moved before without a GA announcement (it read "Available" in
 2026-07); do not trust it at face value, re-verify this run and label the output
 Public Preview until GA evidence appears. Workflow Streams and External Payload
 Storage are Preview. The anti-fabrication rule applies:
-only claim verified (whether via MCP or WebFetch) for calls actually made and results
+only claim web-verified for calls actually made and results
 observed this run.
 
 ## Step 5 — Assemble design.json

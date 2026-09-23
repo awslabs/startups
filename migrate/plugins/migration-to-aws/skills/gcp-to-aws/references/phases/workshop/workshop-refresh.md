@@ -75,16 +75,6 @@ workshop reprice. Chat note after Estimate:
    feeds the compare view's Outcome column and flip callout.
 7. Update index + `workshop.active_scenario_id`.
 
-### 6b. Shareable calculator link (best-effort, never blocks)
-
-Follow the canonical procedure in
-`references/vendored/workshop/workshop-invariants.md` § 6 with
-`{SKILL_LABEL}` = "GCP" — probe once, prefer `build_estimate` on the
-scenario's Balanced-tier services, store the URL as
-`estimation_summary.calculator_url`, null + one chat note on any failure.
-(Aligns with #49's Estimate-phase calculator integration — same server,
-same degradation rules.)
-
 ### 7. Hand back
 
 Return to `workshop.md` → `workshop-compare.md`.

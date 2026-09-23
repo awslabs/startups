@@ -984,6 +984,7 @@ This directory contains all artifacts needed to migrate your Heroku application(
 | `MIGRATION_GUIDE.md` | Step-by-step migration procedure |
 | `README.md` | This file — artifact listing and quick start |
 | `migration-report.html` | Stakeholder summary (costs + optional what-if scenarios); draft for review |
+| `validation-report.json` | Terraform validation + policy-gate verdict (`status`, `policy_status`); reviewed at the completion gate |
 {{IF has_postgres}}
 | `scripts/migrate-postgres.sh` | PostgreSQL data migration script |
 {{ENDIF}}
