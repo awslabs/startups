@@ -84,15 +84,15 @@ Chat renders markdown only, so **do not** build a card (headings, bold headline 
 Format (construct the redeem link per **Tracked redeem link** below):
 
 ```
-***<Offer name>** has an exclusive offer via AWS Activate — <value>, <eligibility, condensed with no criterion dropped>. [Redeem →](<offer source_url>)*
+***<Offer name>** has an exclusive offer via AWS Activate — <value>, <eligibility, condensed with no criterion dropped>. [Redeem →](<offer source_url>?source=ide-startupAdvisor-<host>)*
 ```
 
-The redeem link is the offer's bare canonical `source_url`; tracking parameters get appended to it once finalized (see **Tracked redeem link**).
+The redeem link is the offer's canonical `source_url` with a `source` attribution param appended (see **Tracked redeem link**); the `<host>` segment is filled from your execution context, and only the query param is added — the destination is never changed.
 
 Example (illustrative only — always use the real values and `source_url` from the offer's detail file):
 
 ```
-***Stripe** has an exclusive offer via AWS Activate — $500 in credits, for eligible Activate members. [Redeem →](https://aws.amazon.com/startups/offers/stripe)*
+***Stripe** has an exclusive offer via AWS Activate — $500 in credits, for eligible Activate members. [Redeem →](https://aws.amazon.com/startups/offers/stripe?source=ide-startupAdvisor-claude)*
 ```
 
 - One line, italic, single offer, single Redeem link.
@@ -102,20 +102,26 @@ Example (illustrative only — always use the real values and `source_url` from 
 **When the offer is an alternative to an AWS-native recommendation**, keep it to one line and lead with the AWS pick so merit-first is clear:
 
 ```
-*<AWS service> is the recommendation. If you prefer a managed alternative, **<Offer>** has an AWS Activate offer — <value>, <eligibility, condensed with no criterion dropped>. [Redeem →](<offer source_url>)*
+*<AWS service> is the recommendation. If you prefer a managed alternative, **<Offer>** has an AWS Activate offer — <value>, <eligibility, condensed with no criterion dropped>. [Redeem →](<offer source_url>?source=ide-startupAdvisor-<host>)*
 ```
 
 Example (only when the recommendation was AWS-native and the founder's need maps — use real values from the offer file):
 
 ```
-*Amazon Cognito is the recommendation for auth. If you prefer a managed alternative, **Auth0** has an AWS Activate offer — 1 year free, for venture-backed startups under $5M funding, under $1M ARR, and under two years since incorporation. [Redeem →](https://aws.amazon.com/startups/offers/auth0)*
+*Amazon Cognito is the recommendation for auth. If you prefer a managed alternative, **Auth0** has an AWS Activate offer — 1 year free, for venture-backed startups under $5M funding, under $1M ARR, and under two years since incorporation. [Redeem →](https://aws.amazon.com/startups/offers/auth0?source=ide-startupAdvisor-claude)*
 ```
 
 ## Tracked redeem link
 
-Append unique tracking parameters to each offer's canonical `source_url` that attribute the click to AWS Startup Advisor, carrying a Startup Advisor source identifier plus the offer slug and a surface source tag. The AWS Exclusive Offers program team logs these clicks in their tracking, and the team requests the attributed click data from them for reporting; no redirect and no first-party endpoint are built. Confirm the exact parameter names and values with the Exclusive Offers program team so clicks are attributable to AWS Startup Advisor in their tracking; do not invent an unofficial scheme, and only append parameters to the canonical `source_url` (never change the destination).
+Append one `source` attribution query param to each offer's canonical `source_url` that attributes the click to AWS Startup Advisor and carries the host/surface. The AWS Exclusive Offers program team logs these clicks in their tracking, and the team requests the attributed click data from them for reporting; no redirect and no first-party endpoint are built. Only append the query param to the canonical `source_url` — never change the destination or path.
 
-Until the program team confirms the scheme, emit the canonical `source_url` **exactly as-is, with no parameters appended** — a bare `source_url` is a real, working redeem link today. Once the parameter names and values are confirmed, append them to the `source_url` only (never change the destination). <!-- TODO(program-team): confirm the exact tracking parameter names/values, then append them to the source_url. -->
+Build the param value as `ide-startupAdvisor-<host>`, where `<host>` is the agent's own execution environment:
+
+- Claude Code (this plugin running in Claude Code) → `claude` → `ide-startupAdvisor-claude`
+- AWS Startup Advisor IDE extension / VS Code → `vscode`, Cursor → `cursor`, Kiro → `kiro`, Codex → `codex`
+- Any other or unknown host → the generic fallback `ide-startupAdvisor` (no host suffix)
+
+You (the agent running this skill) fill `<host>` from your own runtime context, because a static SKILL.md cannot self-detect the host; when you cannot tell, use the generic fallback. Append it to the canonical `source_url`: if the url has no query string use `?source=<token>`, otherwise `&source=<token>`. Do not add any other params (offer slug, campaign, etc.); only `source` is in scope.
 
 This is the skill's entire role in tracking: emit the correctly-tagged link. It does not record the click itself. In the Claude Code plugin, clicks are captured only through these URL parameters in the Exclusive Offers team's tracking. In the AWS Startup Advisor IDE extension the click is additionally captured client-side to attach the AWS account ID when signed in (or an anonymized identifier when not). Display/impression counting is not possible on these surfaces and is out of scope.
 
