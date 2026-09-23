@@ -60,8 +60,9 @@ Bedrock**.
 | GPT-5.4       | GPT-5.4        | `openai.gpt-5.4` (mantle only)                          | `strong_migrate` — same model, ~10% over OpenAI std                                                                  |
 
 Then apply the **region gate** below. Record `model_change: false` and the chosen path in
-`aws-design-ai.json` → `ai_architecture.code_migration`: `migration_path: "mantle_openai_responses"` for the
-in-region mantle endpoint, or `migration_path: "runtime_openai_cris"` when a GPT-6 Astra / GPT-5.6 target is served via
+`aws-design-ai.json` → `ai_architecture.code_migration`: `migration_path: "mantle_openai_chat"` for
+Astra sources using Chat Completions, or `"mantle_openai_responses"` for a selected Mantle Responses
+path. Use `migration_path: "runtime_openai_cris"` when a GPT-6 Astra / GPT-5.6 target is served via
 `bedrock-runtime` with a CRIS id (the model cards recommend runtime for new applications).
 
 Report the assessment honestly: `strong_migrate` here means "low-risk, well-supported move", not "cheaper".
@@ -228,8 +229,8 @@ This is the common case and needs no cost justification.
 - The source model is not on Bedrock (see the region and catalog lists in `shared/openai-on-bedrock.md`)
 - The user's priority is cost and they accept a model change — note that the cheapest option is often Nova, and that
   GPT-5.6 Luna already beats Claude Haiku 4.5 on price
-- Bedrock-native features are required that mantle does not expose (Guardrails, Knowledge Bases, invocation logging,
-  Converse-based tooling) — these need a Bedrock-native model or gpt-oss
+- Required features cannot be served by a supported same-model path. Astra / GPT-5.6 have runtime CRIS
+  options for applicable governance features; check their capability matrix before proposing a model change
 
 **Consider staying on OpenAI's own API only if:**
 
@@ -253,25 +254,25 @@ rather than dismissing it. For a long-context (>272K) workload the gap is much w
 
 ## Feature Migration
 
-| OpenAI Feature                             | Bedrock Equivalent                                          | Notes                                                                                                |
-| ------------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| OpenAI SDK (direct)                        | Same model on mantle Responses API                          | Base URL + credential + model ID change; see `shared/openai-on-bedrock.md` for the `/openai/v1` path |
-| Responses API                              | Mantle Responses API                                        | Closest to a drop-in; still verify the path and model ID                                             |
-| Chat Completions                           | Reshape to Responses                                        | Unverified for GPT-5.x — probe before committing                                                     |
-| Function calling                           | Supported on GPT-5.x via mantle; Claude tools via Converse  | Same-model keeps tool semantics identical                                                            |
-| Reasoning effort                           | `reasoning={"effort": ...}` on mantle                       | `none` / `low` / `medium` / `high` / `xhigh` / `max`                                                 |
-| Prompt caching                             | GPT-5.6 only (90% off cached input)                         | Not listed for GPT-5.5 / 5.4; Claude has its own caching                                             |
-| Streaming                                  | Supported                                                   | Verify per surface                                                                                   |
-| Vision                                     | GPT-5.x (image input) or Claude / Llama 4                   | Same-model preserves behavior                                                                        |
-| JSON mode                                  | Claude (excellent), Nova Pro (good)                         | Most models via prompt                                                                               |
-| Embeddings (ada-002, `text-embedding-3-*`) | Titan Embeddings v2                                         | No OpenAI embedding model on Bedrock; must re-embed all documents                                    |
-| DALL-E / gpt-image                         | Stability AI                                                | Nova Canvas v1 is Legacy; see `ai-model-lifecycle.md`                                                |
-| Whisper (STT)                              | Amazon Transcribe                                           | Different service, API, and pricing model                                                            |
-| TTS                                        | Amazon Polly / Nova 2 Sonic                                 | Different pricing model                                                                              |
-| Assistants API                             | See decision tree below                                     | Path depends on which features are used                                                              |
-| Realtime API                               | No equivalent                                               | Stay on OpenAI for this                                                                              |
-| Codex                                      | Not verified on Bedrock — see `shared/openai-on-bedrock.md` | Do not price; re-check the OpenAI model card index first                                             |
-| Guardrails / KB / invocation logging       | Bedrock-native model or gpt-oss                             | Not available through the mantle GPT path                                                            |
+| OpenAI Feature                             | Bedrock Equivalent                                                              | Notes                                                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| OpenAI SDK (direct)                        | Same model on mantle Responses API                                              | Base URL + credential + model ID change; see `shared/openai-on-bedrock.md` for the `/openai/v1` path |
+| Responses API                              | Mantle Responses API                                                            | Closest to a drop-in; still verify the path and model ID                                             |
+| Chat Completions                           | Preserve on Astra Mantle when selected; otherwise follow the planned API change | GPT-5.x support remains model/endpoint-specific; verify before committing                            |
+| Function calling                           | Supported on GPT-5.x via mantle; Claude tools via Converse                      | Same-model keeps tool semantics identical                                                            |
+| Reasoning effort                           | `reasoning={"effort": ...}` on mantle                                           | `none` / `low` / `medium` / `high` / `xhigh` / `max`                                                 |
+| Prompt caching                             | GPT-5.6 only (90% off cached input)                                             | Not listed for GPT-5.5 / 5.4; Claude has its own caching                                             |
+| Streaming                                  | Supported                                                                       | Verify per surface                                                                                   |
+| Vision                                     | GPT-5.x (image input) or Claude / Llama 4                                       | Same-model preserves behavior                                                                        |
+| JSON mode                                  | Claude (excellent), Nova Pro (good)                                             | Most models via prompt                                                                               |
+| Embeddings (ada-002, `text-embedding-3-*`) | Titan Embeddings v2                                                             | No OpenAI embedding model on Bedrock; must re-embed all documents                                    |
+| DALL-E / gpt-image                         | Stability AI                                                                    | Nova Canvas v1 is Legacy; see `ai-model-lifecycle.md`                                                |
+| Whisper (STT)                              | Amazon Transcribe                                                               | Different service, API, and pricing model                                                            |
+| TTS                                        | Amazon Polly / Nova 2 Sonic                                                     | Different pricing model                                                                              |
+| Assistants API                             | See decision tree below                                                         | Path depends on which features are used                                                              |
+| Realtime API                               | No equivalent                                                                   | Stay on OpenAI for this                                                                              |
+| Codex                                      | Not verified on Bedrock — see `shared/openai-on-bedrock.md`                     | Do not price; re-check the OpenAI model card index first                                             |
+| Guardrails / KB / invocation logging       | Bedrock-native model or gpt-oss                                                 | Not available through the mantle GPT path                                                            |
 
 ---
 
