@@ -517,7 +517,8 @@ def test_elasticache_cluster_redis_unencrypted_fails() -> None:
 
 
 def test_elasticache_cluster_redis_encrypted_passes() -> None:
-    # Redis aws_elasticache_cluster with both encryption flags on must pass.
+    # Redis aws_elasticache_cluster with transit_encryption_enabled on must pass
+    # (at_rest_encryption_enabled is not valid on this resource).
     code, out = run_policy_validator(GOOD_ELASTICACHE_CLUSTER_REDIS_ENCRYPTED)
     assert code == 0, out
     assert "POLICY_OK" in out

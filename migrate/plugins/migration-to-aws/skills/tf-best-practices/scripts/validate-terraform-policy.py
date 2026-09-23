@@ -35,7 +35,10 @@ in-block literal evidence, so a valid stack is never falsely blocked):
     variable-driven. S3 is intentionally NOT checked: buckets have default
     SSE-S3 since Jan 2023, so a missing SSE block is not an unencrypted bucket.
   - elasticache_encryption_at_rest: aws_elasticache_replication_group must set
-    at_rest_encryption_enabled = true. Fail-open when variable-driven.
+    at_rest_encryption_enabled = true; a standalone Redis aws_elasticache_cluster
+    must set transit_encryption_enabled = true (at_rest_encryption_enabled is not
+    a valid argument on that resource — at-rest requires a replication group).
+    Fail-open when variable-driven.
 
 Usage:
   python3 validate-terraform-policy.py /path/to/terraform [--json report.json]
@@ -900,17 +903,22 @@ def check_elasticache_cluster_encryption(tf_files: list[tuple[str, str]]) -> lis
     """Flag single-node Redis aws_elasticache_cluster resources without encryption.
 
     aws_elasticache_cluster is the standalone (non-replication-group) cache form.
-    A Redis-engine cluster (engine = "redis") that is NOT a member of a
-    replication group (no replication_group_id) DOES support and MUST set both
-    at_rest_encryption_enabled = true and transit_encryption_enabled = true; a
-    missing or literally-false value is a violation.
+    Per the AWS provider schema, this resource exposes ONLY
+    transit_encryption_enabled — at_rest_encryption_enabled is NOT a valid
+    argument on aws_elasticache_cluster (it lives on
+    aws_elasticache_replication_group). So for a Redis-engine cluster
+    (engine = "redis") that is NOT a member of a replication group (no
+    replication_group_id) we require transit_encryption_enabled = true, and the
+    fix for at-rest is to move the cache into an encrypted
+    aws_elasticache_replication_group — never to add a nonexistent cluster
+    argument (which would produce Terraform that fails to apply).
 
     Exempt (fail open), matching the replication-group check's style:
     - engine == "memcached" (does not support these attributes),
     - a variable-driven engine or an absent engine (cannot evaluate literally),
     - a cluster that carries replication_group_id (encryption is enforced on the
       owning aws_elasticache_replication_group).
-    A variable-driven encryption attribute also fails open per-attribute.
+    A variable-driven encryption attribute also fails open.
     """
     violations: list[Violation] = []
     for rel_path, content in tf_files:
@@ -920,32 +928,33 @@ def check_elasticache_cluster_encryption(tf_files: list[tuple[str, str]]) -> lis
                 continue  # memcached / variable-driven / absent engine → exempt
             if _has_own_attr(body, "replication_group_id"):
                 continue  # node of a replication group — encryption enforced there
-            for attr in ("at_rest_encryption_enabled", "transit_encryption_enabled"):
-                val = _attr_string(body, attr)
-                has_attr = _has_own_attr(body, attr)
-                if has_attr and val is None:
-                    continue  # variable-driven — fail open
-                if val == "true":
-                    continue
-                violations.append(
-                    Violation(
-                        check="policy",
-                        rule="elasticache_encryption_at_rest",
-                        file=rel_path,
-                        line=line,
-                        severity="error",
-                        summary=(
-                            f"aws_elasticache_cluster '{name}' (engine = redis) does "
-                            f"not set {attr} = true"
-                        ),
-                        fix_hint=(
-                            "Set at_rest_encryption_enabled = true and "
-                            "transit_encryption_enabled = true on the Redis cluster "
-                            "(or move it into an encrypted "
-                            "aws_elasticache_replication_group)"
-                        ),
-                    )
+            # Only transit_encryption_enabled is a valid argument on this resource.
+            val = _attr_string(body, "transit_encryption_enabled")
+            has_attr = _has_own_attr(body, "transit_encryption_enabled")
+            if has_attr and val is None:
+                continue  # variable-driven — fail open
+            if val == "true":
+                continue
+            violations.append(
+                Violation(
+                    check="policy",
+                    rule="elasticache_encryption_at_rest",
+                    file=rel_path,
+                    line=line,
+                    severity="error",
+                    summary=(
+                        f"aws_elasticache_cluster '{name}' (engine = redis) does "
+                        "not set transit_encryption_enabled = true"
+                    ),
+                    fix_hint=(
+                        "Set transit_encryption_enabled = true on the Redis "
+                        "aws_elasticache_cluster. For at-rest encryption, move the "
+                        "cache into an aws_elasticache_replication_group with "
+                        "at_rest_encryption_enabled = true — at_rest_encryption_enabled "
+                        "is not a valid argument on aws_elasticache_cluster."
+                    ),
                 )
+            )
     return violations
 
 

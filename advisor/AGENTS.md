@@ -58,7 +58,7 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 ### `azure-to-aws` — Microsoft Azure → AWS migration workflow
 
 - A DSL-driven SKILL.md running a 7-phase backbone (discover → clarify → design → estimate → generate, plus `workshop` and `feedback` sidebars): App Service → Elastic Beanstalk, AKS → EKS, VMs → EC2, Flexible Server → RDS/Aurora, Cosmos DB → DynamoDB/DocumentDB/Keyspaces/Neptune by API, Blob → S3. Clarify must complete before Design, Estimate, or Generate, and **Generate is opt-in** — it runs only after the user picks Execute at the post-Estimate decision gate.
-- Discovers from Terraform (`azurerm_*`), Bicep, ARM templates, a read-only consent-gated live `az` capture, an optional Resource Discovery for Azure report, app code, and billing exports. Mapping tables key off canonical `Microsoft.*` ARM types, never Terraform types.
+- Discovers from Terraform (`azurerm_*`) and application code today; Bicep, ARM templates, a read-only consent-gated live `az` capture, and an optional Resource Discovery for Azure report are advertised targets whose extractors are not yet on this branch (a Bicep/ARM/live-only workspace halts rather than guessing — they land as sequenced follow-ups). Mapping tables key off canonical `Microsoft.*` ARM types, never Terraform types.
 - Two things that differ from the sibling migration skills and will look like bugs if you do not know them: the CPU-architecture default is **x86_64**, not Graviton (Windows/.NET prevalence), and an App Service **Plan** is the compute unit while its apps are deployments onto it — mapping each app separately multiplies the estimate.
 - Triggered by _"migrate from Azure"_, _"Azure to AWS"_, _"move off Azure"_, _"migrate AKS to EKS"_, etc.
 

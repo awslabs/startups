@@ -61,7 +61,13 @@ For every `resource "azurerm_<x>" "<local_name>" { … }`:
 2. **Resolve `name`** from the block's `name` attribute. When it is an expression
    (`"${var.prefix}-app"`, a `format()` call, a `random_*` reference), record the
    expression verbatim in `config.name_expression` and set `name` to the Terraform
-   local name prefixed `tf:` (e.g. `tf:api`). Do not attempt to evaluate it. A guessed
+   local name prefixed `tf:` **and qualified by the module address when the resource is
+   inside a module** (e.g. `tf:api` at the root, `tf:module.web_east.this` for a
+   `this`-named resource in module invocation `web_east`). Two invocations of the same
+   module with the same expression-driven name would otherwise both reduce to `tf:this`
+   in the same resource group and reconstruct the SAME `azure_id`, so the assembler
+   would collapse two real resources into one and understate the estate and cost. Do
+   not attempt to evaluate it. A guessed
    name breaks the drift comparison against a live capture. Add a
    `name_expression_unresolved` warning: the reconstructed `azure_id` then carries a
    `tf:` segment and is **not** a real ARM resource ID, so that resource cannot be
@@ -93,12 +99,19 @@ For every `resource "azurerm_<x>" "<local_name>" { … }`:
    is what lets Generate emit replacement Terraform that resembles what the customer
    already maintains.
 
-   **`config.tf_address` is `<azurerm_type>.<local_name>`** (e.g.
-   `azurerm_subnet.data`), and it is the identity field — `tf_resource_name` alone is
-   NOT unique. Terraform namespaces local names per type, so a single module routinely
-   contains `azurerm_resource_group.data` and `azurerm_subnet.data`, or
-   `azurerm_linux_web_app.storefront` and `azurerm_application_insights.storefront`.
-   Anything keyed on the bare local name silently collapses those pairs into one.
+   **`config.tf_address` is the FULL module-qualified address**:
+   `<azurerm_type>.<local_name>` at the root, and
+   `module.<invocation>[.module.<nested>].<azurerm_type>.<local_name>` for a resource
+   inside a module (matching `terraform plan`'s address form). It is the identity field
+   — `tf_resource_name` alone is NOT unique, and neither is the un-prefixed
+   `<type>.<local_name>`. Terraform namespaces local names per type, so a single module
+   routinely contains `azurerm_resource_group.data` and `azurerm_subnet.data`; and TWO
+   invocations of the same module each contain `azurerm_service_plan.this`, distinct
+   only by their `module.<invocation>` prefix. Anything keyed on the bare local name or
+   the module-less `<type>.<local_name>` silently collapses those into one. Keep
+   `config.tf_module` as provenance, but the module prefix MUST also be part of
+   `tf_address` (and of the `tf:` unresolved-name segment in rule 2) so the
+   reconstructed identity of two module invocations stays distinct.
 7. **Copy the sizing and routing attributes** the mapping tables need — see § Per-type
    attributes.
 8. **Extract edges** — see § Edges.
@@ -252,6 +265,7 @@ endpoints, App Insights) were added after exactly that happened.
 | `Microsoft.Compute/virtualMachineScaleSets`                  | `sku`, `instances`, `os_type`, `image_*`, **`os_disk`**                                                                                                                                                                                | as above, plus the ASG mapping and the launch template's root volume                                                                                                          |
 | `Microsoft.Compute/disks`                                    | `storage_account_type`, `disk_size_gb`, `disk_iops_read_write`                                                                                                                                                                         | the gp3 → io2 breakpoint                                                                                                                                                      |
 | `Microsoft.ContainerService/managedClusters`                 | `kubernetes_version`, `default_node_pool` (`vm_size`, `node_count`, `min_count`, `max_count`), `network_plugin`                                                                                                                        | EKS node sizing                                                                                                                                                               |
+| `Microsoft.ContainerService/managedClusters/agentPools`      | `vm_size`, `node_count`, `min_count`, `max_count`, `mode` (System/User), `node_taints`                                                                                                                                                 | a separately-declared `azurerm_kubernetes_cluster_node_pool` is a distinct EKS node group; its capacity would otherwise be lost, understating cluster sizing                  |
 | `Microsoft.DBforPostgreSQL/flexibleServers` / `...MySQL/...` | `sku_name`, `storage_mb`, `version`, `high_availability`, `zone`, `backup_retention_days`                                                                                                                                              | RDS vs Aurora, and the availability override gate                                                                                                                             |
 | `Microsoft.Sql/servers/databases`                            | `sku_name`, `max_size_gb`, `elastic_pool_id`, `zone_redundant`                                                                                                                                                                         | an `elastic_pool_id` routes to the specialist gate                                                                                                                            |
 | `Microsoft.DocumentDB/databaseAccounts`                      | `kind`, `capabilities`, `consistency_level`, `throughput`, `geo_locations`                                                                                                                                                             | `kind` + `capabilities` select the per-API target (Core/Mongo/Cassandra/Gremlin/Table)                                                                                        |
@@ -259,6 +273,9 @@ endpoints, App Insights) were added after exactly that happened.
 | `Microsoft.Storage/storageAccounts`                          | `account_tier`, `account_replication_type`, `account_kind`, `static_website`                                                                                                                                                           | S3 mapping; `static_website` is a `static-site-api` pattern signal                                                                                                            |
 | `Microsoft.Storage/.../fileServices/shares`                  | `enabled_protocol`, `quota`                                                                                                                                                                                                            | **the EFS-vs-FSx discriminator** — `NFS` → EFS, `SMB` → FSx for Windows File Server                                                                                           |
 | `Microsoft.EventHub/namespaces`                              | `sku`, `capacity`, `kafka_enabled`, `partition_count`                                                                                                                                                                                  | **the MSK-vs-Kinesis discriminator** — `kafka_enabled` → MSK                                                                                                                  |
+| `Microsoft.ServiceBus/namespaces`                            | `sku` (Basic/Standard/Premium), `capacity`                                                                                                                                                                                             | Premium is the 100 MB / VNet tier; the SKU bounds message size and routing                                                                                                    |
+| `Microsoft.ServiceBus/namespaces/queues`                     | `requires_session`, `max_message_size_in_kilobytes`, `default_message_ttl`, `requires_duplicate_detection`, `duplicate_detection_history_time_window`, `max_delivery_count`                                                            | `requires_session` → SQS FIFO (session id → message group id); the size/TTL/dedup fields drive the SQS vs Amazon MQ vs claim-check eliminators in `messaging.md`              |
+| `Microsoft.ServiceBus/namespaces/topics`                     | `requires_duplicate_detection`, `max_message_size_in_kilobytes`, `default_message_ttl`, subscription count                                                                                                                             | a topic with subscriptions is the SNS-vs-EventBridge decision; the same size/TTL boundaries apply as for queues                                                               |
 | `Microsoft.CognitiveServices/accounts`                       | `kind`, `sku_name`                                                                                                                                                                                                                     | `kind: OpenAI` is the Azure OpenAI signal, routed to the shared OpenAI→Bedrock guide                                                                                          |
 | `Microsoft.CognitiveServices/accounts/deployments`           | `cognitive_account_id`, inline `model` (`format`, `name`, `version`), inline `sku` (`name`, `capacity`)                                                                                                                                | the model name is the IaC-only AI profile's model evidence; the account link establishes Azure OpenAI provenance                                                              |
 | `Microsoft.MachineLearningServices/workspaces`               | `sku_name`, `application_insights_id`, `key_vault_id`, `storage_account_id`, `container_registry_id`, `identity` type                                                                                                                  | workspace presence is a strong custom-ML signal; linked infrastructure explains the migration boundary                                                                        |

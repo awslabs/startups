@@ -29,11 +29,11 @@ itself, and exits cleanly when it finds none.
 
 Record each independently — a repo may carry all three.
 
-| Dialect     | Detection                                                                  |
-| ----------- | -------------------------------------------------------------------------- |
-| `terraform` | a `**/*.tf` or `**/*.tf.json` file containing a `resource "azurerm_` block |
-| `bicep`     | a `**/*.bicep` file                                                        |
-| `arm`       | a `**/*.json` file whose top-level `$schema` contains `deploymentTemplate` |
+| Dialect     | Detection                                                                                                                                                                                                                                                                    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `terraform` | a `**/*.tf` or `**/*.tf.json` file containing a `resource "azurerm_` block, a `resource "azapi_` block, or a `module "` block whose source resolves to Azure resources (including `.terraform/modules/` downloaded module source) — `extract-terraform.md` handles all three |
+| `bicep`     | a `**/*.bicep` file                                                                                                                                                                                                                                                          |
+| `arm`       | a `**/*.json` file whose top-level `$schema` contains `deploymentTemplate`                                                                                                                                                                                                   |
 
 Exclude `.terraform/`, `**/node_modules/`, `**/.git/`, and anything under
 `$MIGRATION_DIR` from all three scans.

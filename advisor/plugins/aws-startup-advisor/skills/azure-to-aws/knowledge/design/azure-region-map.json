@@ -66,10 +66,10 @@
     "australiacentral": { "aws": "ap-southeast-2", "same_country": true, "geo": "Canberra -> Sydney, Australia" },
     "indonesiacentral": { "aws": "ap-southeast-3", "same_country": true, "geo": "Jakarta, Indonesia" },
     "newzealandnorth": {
-      "aws": "ap-southeast-2",
-      "same_country": false,
-      "geo": "Auckland -> Sydney",
-      "note": "No AWS region in New Zealand."
+      "aws": "ap-southeast-6",
+      "same_country": true,
+      "geo": "Auckland, New Zealand",
+      "note": "AWS Asia Pacific (New Zealand), ap-southeast-6, GA since 2025-09-30. Same-country default; confirm the specific services needed are available there and the account has opted in, otherwise fall back to ap-southeast-2 (Sydney)."
     },
     "chinanorth3": {
       "aws": null,
