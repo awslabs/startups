@@ -50,9 +50,11 @@ run = [
   "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/heroku-to-aws",
   "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/agent-advisor",
   "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/gcp-to-aws",
+  "node migrate/plugins/migration-to-aws/tools/frontmatter-validator/validate.ts migrate/plugins/migration-to-aws/skills/azure-to-aws",
   "node advisor/plugins/aws-startup-advisor/tools/frontmatter-validator/validate.ts advisor/plugins/aws-startup-advisor/skills/heroku-to-aws",
   "node advisor/plugins/aws-startup-advisor/tools/frontmatter-validator/validate.ts advisor/plugins/aws-startup-advisor/skills/agent-advisor",
   "node advisor/plugins/aws-startup-advisor/tools/frontmatter-validator/validate.ts advisor/plugins/aws-startup-advisor/skills/gcp-to-aws",
+  "node advisor/plugins/aws-startup-advisor/tools/frontmatter-validator/validate.ts advisor/plugins/aws-startup-advisor/skills/azure-to-aws",
 ]
 
 [tasks."lint:types"]
@@ -117,6 +119,13 @@ run = [
   "node advisor/plugins/aws-startup-advisor/tools/pricing-staleness.ts advisor/plugins/aws-startup-advisor",
 ]
 
+[tasks."pricing:coverage"]
+description = "Hard gate: every AWS service the design can emit must be priced, declared in _absent_services, or declared in _no_cost_services in aws-infra-pricing.json — closes the silent-pricing-floor bug class (RDS/EC2/EKS/ECR). Both plugins."
+run = [
+  "node migrate/plugins/migration-to-aws/tools/pricing-coverage.ts migrate/plugins/migration-to-aws",
+  "node advisor/plugins/aws-startup-advisor/tools/pricing-coverage.ts advisor/plugins/aws-startup-advisor",
+]
+
 [tasks.lint]
 description = "Run all linters"
 run = [
@@ -129,6 +138,7 @@ run = [
   { task = "fixtures:assert" },
   { task = "fixtures:check" },
   { task = "pricing:staleness" },
+  { task = "pricing:coverage" },
   { task = "test" },
 ]
 

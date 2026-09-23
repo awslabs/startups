@@ -53,6 +53,7 @@ The output should show 9 installed skills:
 
 - `agent-advisor`
 - `architect-for-startups`
+- `azure-to-aws`
 - `gcp-to-aws`
 - `heroku-to-aws`
 - `knowledge-base-for-startups`
@@ -86,6 +87,7 @@ If any skill failed to install, show the error output to the user and suggest th
 - **architect-for-startups** — Stage-aware architecture advice that adjusts recommendations based on whether you're pre-revenue, seed, Series A, or Series B+. Factors in team size, runway, credits, and timeline.
 - **start-building-for-startups** — Interactive discovery workflow. Scans your codebase, asks about your goals and constraints, then writes an AWS architectural scaffold directly into your project.
 - **gcp-to-aws** — 6-phase migration from Google Cloud (and AI providers like OpenAI, Gemini, LangChain) to AWS. Discovers resources, designs architecture, estimates costs, generates Terraform artifacts.
+- **azure-to-aws** — 7-phase migration from Microsoft Azure (and Azure OpenAI / agentic AI workloads) to AWS. Discovers from Terraform/Bicep/ARM + a consent-gated read-only `az` capture + app code, designs architecture, estimates costs (1:1 lift and right-sized), optionally reprices what-if scenarios, generates Terraform artifacts.
 - **heroku-to-aws** — 6-phase migration from Heroku to AWS (Dynos → Elastic Beanstalk by default; Fargate/EKS overrides, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK), with an optional what-if repricing workshop.
 - **llm-to-bedrock** — Executes an OpenAI/Gemini/Anthropic → Amazon Bedrock SDK rewrite: assesses the codebase, rewrites call sites, evaluates output quality, and delivers a ready-to-merge branch. Delegates assessment to `gcp-to-aws`, installed alongside it by this Step 2B command.
 - **agent-advisor** — Picks an AWS runtime for AI agents (AgentCore vs ECS/EKS/Lambda), generates a migration plan for existing agent workloads (needs `gcp-to-aws`, installed alongside it by this Step 2B command; degrades gracefully without it), and can build a deployable POC. Also covers Temporal workers.
