@@ -68,6 +68,26 @@ def is_mantle_model(model_id: str) -> bool:
     return (mid.startswith("openai.gpt-5") or mid == "openai.gpt-6-astra") and "oss" not in mid
 
 
+
+def normalize_api_path(plan_path: str | None, model_ids: list[str]) -> str:
+    """Resolve a missing legacy path once for evaluator and rewriter dispatch.
+
+    Explicit plans retain their chosen API. Legacy bare proprietary GPT targets
+    use Mantle Responses; runtime targets retain the existing Converse default.
+    A mixed legacy target set needs an explicit plan rather than an unsafe guess.
+    """
+    if plan_path:
+        return plan_path
+    if not model_ids:
+        raise ValueError("No validated target model IDs to resolve an API path")
+    mantle = [is_mantle_model(mid) for mid in model_ids]
+    if all(mantle):
+        return "mantle_openai_responses"
+    if any(mantle):
+        raise ValueError("Mixed Mantle and runtime targets require an explicit migration plan")
+    return "converse"
+
+
 def classify_mantle_error(status: int | None, message: str) -> dict:
     """Pure: map an OpenAI-SDK HTTP status from the mantle endpoint to a verdict.
 

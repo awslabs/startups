@@ -147,3 +147,36 @@ def test_api_handoff_paths_and_real_evaluator_classifier_are_consistent():
     assert preflight_bedrock.is_mantle_model("openai.gpt-6-astra")
     assert not preflight_bedrock.is_mantle_model("global.openai.gpt-6-astra")
     assert "from preflight_bedrock import is_mantle_model" in EVALUATOR.read_text()
+
+
+@pytest.mark.parametrize("path,ids,expected", [
+    (None, ["openai.gpt-6-astra"], "mantle_openai_responses"),
+    ("", ["openai.gpt-5.6-sol"], "mantle_openai_responses"),
+    (None, ["us.openai.gpt-6-astra"], "converse"),
+    (None, ["global.openai.gpt-6-astra"], "converse"),
+    ("mantle_openai_chat", ["openai.gpt-6-astra"], "mantle_openai_chat"),
+    ("mantle_openai_responses", ["openai.gpt-6-astra"], "mantle_openai_responses"),
+    ("runtime_openai_cris", ["us.openai.gpt-6-astra"], "runtime_openai_cris"),
+    ("mantle_messages", ["anthropic.claude-sonnet-5"], "mantle_messages"),
+])
+def test_dispatch_and_resume_share_api_default(path, ids, expected):
+    selected = preflight_bedrock.normalize_api_path(path, ids)
+    assert selected == expected
+    assert preflight_bedrock.normalize_api_path(path, ids) == selected
+
+
+def test_mixed_or_empty_legacy_targets_require_resolution():
+    with pytest.raises(ValueError, match="Mixed Mantle and runtime"):
+        preflight_bedrock.normalize_api_path(None, ["openai.gpt-6-astra", "amazon.nova-lite-v1:0"])
+    with pytest.raises(ValueError, match="No validated target"):
+        preflight_bedrock.normalize_api_path(None, [])
+
+
+def test_c3_and_c5_use_shared_normalization_instructions():
+    skill = (PLUGIN / "skills/llm-to-bedrock/SKILL.md").read_text()
+    before_dispatch = skill.split("### C0", 1)[0]
+    gate = skill.split("**Gate (a.5)", 1)[1].split("**Gate (b)", 1)[0]
+    assert "normalize_api_path" in before_dispatch
+    assert "Target API path: <resolved_api_path" in before_dispatch
+    assert "Reuse" in gate and "resolved_api_path" in gate
+    assert 'field is\nabsent), set `rewrite_strategy = "converse"`' not in gate

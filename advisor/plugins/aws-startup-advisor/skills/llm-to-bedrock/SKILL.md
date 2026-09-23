@@ -430,6 +430,23 @@ uv run --project $SCRIPTS python $SCRIPTS/validate_result.py --schema <analysis|
 
 ### The context block (instantiated at every dispatch)
 
+Before any C1–C6 dispatch, normalize the API path from the saved plan and the validated
+`$TARGET_MODELS` using `preflight_bedrock.normalize_api_path` from `$SCRIPTS`:
+
+```python
+import sys
+sys.path.insert(0, "<absolute path to $SCRIPTS>")
+from preflight_bedrock import normalize_api_path
+resolved_api_path = normalize_api_path(plan_migration_path, validated_target_model_ids)
+```
+
+An explicit `migration_path` is preserved. With no path, an all-bare proprietary GPT target
+set (including Astra) resolves to `mantle_openai_responses`; runtime targets use `converse`.
+A mixed legacy target set is `model_unresolvable`: stop before evaluation and request an
+explicit plan instead of guessing. Recompute the same value on every dispatch/resume from
+the same saved inputs; the existing target-model and `assess_design_sha256` checks detect
+changed inputs. Do not let C3 and C5 choose separate missing-path defaults.
+
 Build this exact line format (agents parse the labels). Omit lines marked optional when empty:
 
 ```
@@ -437,7 +454,7 @@ Repository: <$REPO>
 AWS region: <$REGION>
 AWS profile (pass as --profile / AWS_PROFILE= inline on every aws/boto3 invocation): <$AWS_PROFILE_CHOICE — omit line if default>
 Target Bedrock model(s): <comma-joined $TARGET_MODELS, with any resolved overrides already applied>
-Target API path: <ai_architecture.code_migration.migration_path from the saved plan; unspecified if absent>
+Target API path: <resolved_api_path from normalize_api_path above>
 Migration plan dir: <$MIGRATION_DIR>
 Resolved target model id: <override for the primary chat model — omit if none>
 Scripts directory (pinned uv toolchain): <$SCRIPTS>
@@ -609,17 +626,12 @@ Below, AskUserQuestion:
   invalidates ANALYSIS/EVAL and execution resumes at C1). Cap: 2 retries.
 - **Abort** → stop, no code touched.
 
-**Gate (a.5) — Rewrite strategy (from migration plan).** Read `migration_path` from
-`$MIGRATION_DIR/aws-design-ai.json` → `ai_architecture.code_migration.migration_path`.
-If the value **starts with** `"mantle"` (`"mantle"`, `"mantle_openai_responses"`), set
-`rewrite_strategy = "mantle"`. Otherwise (value is `"converse"`, `"gpt-oss"`, or the field is
-absent), set `rewrite_strategy = "converse"`.
-No user question needed — the decision was already made during the Assess/Design phase.
-
-Match on the prefix, not on equality: Design writes the more specific
-`"mantle_openai_responses"` for a same-model OpenAI migration, and an equality check against
-`"mantle"` would silently route those runs down the Converse path — rewriting working
-same-model code into a boto3 Converse client against a model that has no Converse surface.
+**Gate (a.5) — Rewrite strategy (from the normalized API path).** Reuse
+`resolved_api_path` from the context-block normalization above. If it starts with `mantle`,
+set `rewrite_strategy = "mantle"`; otherwise set `rewrite_strategy = "converse"`.
+An absent legacy plan field is not a second Converse default here: a validated bare Astra
+plan without that field has already resolved to Mantle Responses before C3. Explicit
+`mantle_openai_chat`, `mantle_openai_responses`, and runtime CRIS choices stay unchanged.
 
 **Gate (b) — Behavior-delta resolution.** For each `analysis.behavior_deltas[]` with
 `user_visible == true`, AskUserQuestion with the options from the `behavior-delta-detection`
@@ -650,7 +662,7 @@ When `rewrite_strategy == "mantle"`, C5's context block ALSO includes:
   `ai_architecture.bedrock_models[]` entries (each `source_model` → `aws_model_id` pair).
 - `Mantle base path: /openai/v1` for bare proprietary GPT targets (`openai.gpt-5*`
   excluding gpt-oss, or `openai.gpt-6-astra`). Do not use `/v1` for Astra.
-- `Mantle surface: chat_completions` when the saved plan selects `mantle_openai_chat`;
+- `Mantle surface: chat_completions` when `resolved_api_path` is `mantle_openai_chat`;
   otherwise `Mantle surface: responses` for the proprietary GPT Mantle path. Astra supports
   both surfaces in Oregon. Preserve the selected API; do not reshape Astra Chat solely
   because it is a proprietary GPT model. Older GPT-5.x targets retain their dated API checks.
@@ -659,7 +671,7 @@ When `rewrite_strategy == "mantle"`, C5's context block ALSO includes:
   `false` and still requires quality evaluation. This flag does not establish parameter parity;
   Astra sampling, `n`, and hosted-state behavior require the selected API's evidence.
 
-Rebuild these context lines from the saved plan on every dispatch/resume. The existing
+Rebuild these context lines from the same normalized path on every dispatch/resume. The existing
 `assess_design_sha256` run-context check detects a changed model/API decision. If a bare
 Astra id is paired with a runtime path, or a CRIS id with Mantle, stop and correct the plan;
 do not switch endpoints or invent another profile. See the resolver's Case C and
