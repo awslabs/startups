@@ -15,7 +15,7 @@
 //
 // Zero-dep: runs under Node 24 native TS type-stripping (same as the validator).
 
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
 // Repo-root-relative locations. The script is invoked from the repo root (mise task).
@@ -49,6 +49,32 @@ function vendoringSkills(): string[] {
 
 const problems: string[] = [];
 let synced = 0;
+
+// Telemetry must travel with each individually installable migration skill.
+// Explicit targets also let check mode detect a missing entire vendored tree.
+const telemetryRoot = join(CANONICAL, "telemetry");
+if (existsSync(telemetryRoot)) {
+  const manifest = JSON.parse(readFileSync(join(PLUGIN, ".claude-plugin/plugin.json"), "utf8"));
+  const versionFile = join(telemetryRoot, "version.json");
+  const version = JSON.stringify({ version: manifest.version }, null, 2) + "\n";
+  if (!existsSync(versionFile) || readFileSync(versionFile, "utf8") !== version) {
+    if (write) writeFileSync(versionFile, version);
+    else problems.push(`${versionFile}: missing or differs from the plugin manifest; run shared:sync`);
+  }
+  for (const skill of ["gcp-to-aws", "heroku-to-aws", "llm-to-bedrock"]) {
+    for (const rel of ["emit.mjs", "PROTOCOL.md", "version.json"]) {
+      const target = join(SKILLS_DIR, skill, VENDORED_SUBPATH, "telemetry", rel);
+      if (existsSync(target)) continue;
+      if (write) {
+        mkdirSync(dirname(target), { recursive: true });
+        copyFileSync(join(telemetryRoot, rel), target);
+        synced++;
+      } else {
+        problems.push(`${target}: required standalone telemetry file is missing; run shared:sync`);
+      }
+    }
+  }
+}
 
 for (const skill of vendoringSkills()) {
   const vendoredRoot = join(SKILLS_DIR, skill, VENDORED_SUBPATH);

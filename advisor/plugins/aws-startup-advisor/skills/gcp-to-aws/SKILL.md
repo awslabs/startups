@@ -5,6 +5,13 @@ description: "Migrate workloads from Google Cloud Platform to AWS — including 
 
 # GCP-to-AWS Migration Skill
 
+## Telemetry routing
+
+Load `references/vendored/telemetry/PROTOCOL.md` before starting or resuming this
+skill. Claude Code and Cursor use hooks only; do not invoke the reporting CLI
+on those hosts. Other agents report after state is written at the specified
+boundaries. Existing consent commands remain available on every host.
+
 ## Philosophy
 
 - **Re-platform by default**: Select AWS services that match GCP workload types (e.g., Cloud Run → Fargate, Cloud SQL → RDS).
@@ -209,6 +216,9 @@ Use **read-merge-write** updates for `.phase-status.json`:
 3. Keep prior completed phases unchanged.
 4. Set `current_phase` to the next deterministic phase — or `complete` after Generate, **or** after Estimate when the user chose Decision-gate **A** (`run_mode: "decide"`; Generate stays pending).
 5. Write the full file in the same turn as your final phase work message.
+6. Report the saved transition per `references/vendored/telemetry/PROTOCOL.md`
+   before advancing or returning, including decision-only completion and sidebar
+   updates. Claude Code and Cursor skip this reporting call; other agents perform it.
 
 Example — after completing the Clarify phase, write `$MIGRATION_DIR/.phase-status.json` with:
 
@@ -370,7 +380,10 @@ When invoked, the agent **MUST follow this exact sequence**:
 
 1. **Load phase status**: Read `.phase-status.json` from `.migration/*/`.
    - If missing: Initialize for Phase 1 (Discover)
-   - If exists: Determine current phase using deterministic rules in **State Machine**
+   - If exists: Determine current phase using deterministic rules in **State Machine**.
+     After selecting and validating the run, reconcile telemetry per
+     `references/vendored/telemetry/PROTOCOL.md` before continuing. Claude Code
+     and Cursor skip this reporting call; other agents perform it.
 
 2. **Determine phase to execute**:
    - If `current_phase` exists: execute that phase.

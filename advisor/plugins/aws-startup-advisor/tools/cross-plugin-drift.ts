@@ -65,17 +65,21 @@ const ALLOWLIST: Record<string, Set<string>> = {
   // the migrate canonical copy (migrate has no offers catalog to mirror it into).
   "gcp-to-aws": new Set([
     "SKILL.md",
+    "references/vendored/telemetry/version.json", // generated from each plugin's own version
   ]),
   "heroku-to-aws": new Set([
     "SKILL.md",
+    "references/vendored/telemetry/version.json",
     "references/vendored/dsl/INTERPRETER.md",
     "references/vendored/estimate/estimation-infra.schema.json",
     "references/vendored/state/phase-status.schema.json",
   ]),
   "llm-to-bedrock": new Set([
     "SKILL.md",
+    "references/vendored/telemetry/version.json",
   ]),
   "shared": new Set([
+    "telemetry/version.json",
     "dsl/INTERPRETER.md",
     "estimate/estimation-infra.schema.json",
     "state/phase-status.schema.json",

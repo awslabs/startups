@@ -21,6 +21,13 @@ emits at load time. Call it `<SKILL_BASE>`. Derived paths:
 
 ---
 
+## Telemetry routing
+
+Load `references/vendored/telemetry/PROTOCOL.md` before starting or resuming this
+skill. Claude Code and Cursor use hooks only; do not invoke the reporting CLI
+on those hosts. Other agents report after state is written at the specified
+boundaries. Existing consent commands remain available on every host.
+
 ## Step 0 — Check prerequisites
 
 ### 0a. Check that `uv` is available
@@ -286,6 +293,10 @@ migration appears in the usage funnel under its own name. It declares its own st
    run-level events (`RUN_STARTED`, `RUN_COMPLETED`) leave the machine for this run; the AI
    journey's entry point is already visible through the delegated run's events, which carry
    `initiatingSkill`.
+
+3. After creating or validating the resumed Bedrock run, report its state per
+   `references/vendored/telemetry/PROTOCOL.md`. Claude Code and Cursor skip
+   this reporting call; other agents perform it.
 
 ---
 
@@ -707,6 +718,9 @@ user's own pre-existing branch and deleting it would destroy their work):
 **Close this skill's run state** (read-merge-write on `$BEDROCK_RUN_DIR/.phase-status.json`):
 set `phases.execute` to `"completed"`, `current_phase` to `"complete"`, and update
 `last_updated`. This is what marks the AI migration finished in the usage funnel.
+After writing the terminal state, report it per
+`references/vendored/telemetry/PROTOCOL.md`. Claude Code and Cursor skip this
+reporting call; other agents perform it.
 
 ---
 

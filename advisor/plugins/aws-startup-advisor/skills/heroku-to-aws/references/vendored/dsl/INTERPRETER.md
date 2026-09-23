@@ -70,7 +70,10 @@ are all DERIVED from the phase files' frontmatter (never hardcoded here).
      backbone phase on a sidebar being `"completed"` (e.g. Generate requires
      `phases.workshop == "completed"`), honor that gate while walking.
 3. **Validate state before proceeding.** See § State-file validation below. STOP
-   on any inconsistency rather than guessing.
+   on any inconsistency rather than guessing. On resume under the default
+   `.migration/` root, reconcile telemetry per
+   `references/vendored/telemetry/PROTOCOL.md` after validating the selected run.
+   Claude Code and Cursor skip this reporting call; other agents perform it.
 4. **Load the phase orchestrator.** A phase's orchestrator file is, by convention,
    `references/phases/<phase>/<phase>.md`. Load it in full and read its
    frontmatter first. (Sidebar resume from step 2 loads the sidebar
@@ -127,6 +130,10 @@ Update `.phase-status.json` with read-merge-write, never a blind overwrite:
 4. Set `current_phase` to the next phase (the completed phase's `_advances_to`),
    or the terminal (`complete`) when the backbone is exhausted.
 5. Write the full file in the same turn as the phase's final output message.
+6. Under the default `.migration/` root, report the saved transition per
+   `references/vendored/telemetry/PROTOCOL.md` before advancing or returning,
+   including a decision-only terminal and sidebar updates. Claude Code and
+   Cursor skip this reporting call; other agents perform it.
 
 Status values progress `"pending"` → `"in_progress"` → `"completed"` and never go
 backward (except a confirmed re-entry reset — see § `_re_entry_guard`). A
@@ -491,6 +498,9 @@ leaves the customer's machine; telemetry reports only the phase and the reason,
 once per phase per run, and a later `HANDOFF_OK` for that phase is reported as
 its own success. Do not delete the file when the phase later passes. Default run
 root only: a skill that declares its own run root records nothing.
+After writing the failure record, report it per
+`references/vendored/telemetry/PROTOCOL.md` before returning to the user.
+Claude Code and Cursor skip this reporting call; other agents perform it.
 
 ### `_forbids_files` — scope boundary
 
@@ -607,30 +617,16 @@ agent-advisor, skips both and keeps its own state contract.)
    written).** Skip this step if the skill declares its own run root: nothing is
    ever reported for such runs, so there is nothing to consent to. Otherwise:
 
-   1. Locate the emitter. `CLAUDE_PLUGIN_ROOT` is set by Claude Code only, so
-      other hosts fall through to the search; `find -L` because a local install
-      is often a symlink, and the wildcard after the plugin name because a
-      marketplace install interposes a version directory.
+   1. Locate the emitter. Set `$SKILL_ROOT` to the absolute directory containing this skill's
+      `SKILL.md`, and `$REPO` to the project root containing `.migration/`.
+      Locate the bundled emitter and run consent commands from `$REPO`:
 
       ```bash
-      EMIT="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/hooks/telemetry/emit.mjs}"
-      if [ ! -f "$EMIT" ]; then
-        for base in "$HOME/.cursor/plugins" "$HOME/.claude/plugins"; do
-          [ -d "$base" ] || continue
-          EMIT=$(find -L "$base" -maxdepth 8 -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' 2>/dev/null | head -1)
-          [ -n "$EMIT" ] && break
-        done
-      fi
-      if [ ! -f "$EMIT" ]; then
-        HOMEDIR=$(cd -P "$HOME" 2>/dev/null && pwd)
-        EMIT=$(find "${HOMEDIR:-$HOME}" -maxdepth 10 \
-          \( -name node_modules -o -name Library -o -name .git -o -name .Trash -o -name .cache \) -prune -o \
-          -path '*aws-startup-advisor*/hooks/telemetry/emit.mjs' -print 2>/dev/null | head -1)
-      fi
+      EMIT="$SKILL_ROOT/references/vendored/telemetry/emit.mjs"
       ```
 
-      If no emitter is found, skip this step entirely and continue: consent
-      stays unset, telemetry stays off, and the migration is never blocked by it.
+      If the emitter or Node.js is unavailable, skip telemetry and continue.
+      Never grant consent implicitly or block the migration on telemetry.
 
    2. Run `node "$EMIT" consent get`. Anything other than `unset` means a decision
       already exists, for this project or for the whole plugin: do not ask again
@@ -673,4 +669,6 @@ agent-advisor, skips both and keeps its own state contract.)
    optional and may be left unset.
 
 6. Confirm both `.migration/.gitignore` and `.phase-status.json` exist before
-   running the phase's fragments.
+   running the phase's fragments. Under the default `.migration/` root, report
+   the initial state per `references/vendored/telemetry/PROTOCOL.md` now.
+   Claude Code and Cursor skip this reporting call; other agents perform it.
