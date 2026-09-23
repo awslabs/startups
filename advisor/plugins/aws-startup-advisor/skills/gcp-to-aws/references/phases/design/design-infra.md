@@ -103,28 +103,28 @@ For each SECONDARY resource:
 2. Apply fast-path (most secondaries have deterministic mappings)
 3. If rubric needed: apply the **BigQuery specialist gate** (Pass 2 step 0) first when `gcp_type` starts with `google_bigquery_`; otherwise apply the same 6-criteria approach as Pass 2
 
-## Step 3.5: Validate AWS Architecture (using awsknowledge)
+## Step 3.5: Validate AWS Architecture (using AWS MCP Server)
 
 If `aws_service` is **`Deferred — specialist engagement`**, **do not** validate against concrete AWS analytics SKUs; add a `warnings[]` entry that specialist engagement is required.
 
-**Validation checks** (if awsknowledge available):
+**Validation checks** (if AWS MCP Server available):
 
 For each mapped AWS service, verify:
 
 1. **Regional Availability**: Is the service available in the target region (e.g., `us-east-1`)?
-   - Use awsknowledge to check regional support
+   - Use `aws___get_regional_availability` to check regional support
    - If unavailable: add warning, suggest fallback region
 
 2. **Feature Parity**: Do required features exist in AWS service?
    - Match GCP features from `preferences.json` design_constraints
-   - Check AWS feature availability via awsknowledge
+   - Check AWS feature availability via `aws___search_documentation`
    - If feature missing: add warning, suggest alternative service
 
 3. **Service Compatibility**: Are there known issues or constraints?
-   - Check best practices and gotchas via awsknowledge
+   - Check best practices and gotchas via `aws___search_documentation`
    - Add to warnings if applicable
 
-**If awsknowledge unavailable:**
+**If AWS MCP Server unavailable:**
 
 - Set `validation_status: "skipped"` in output
 - Note in summary: "Architecture validation unavailable (non-critical)"

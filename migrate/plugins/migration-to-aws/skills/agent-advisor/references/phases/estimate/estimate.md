@@ -26,7 +26,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: estimate.json
     _on_failure: _halt_and_inform
-  - _assert: "estimate.json states a monthly_magnitude_usd band (never a precise total), records pricing_source (cached|cached_stale|mcp), and lists every assumption behind the magnitude; estimate.json has a units{} entry per costed unit and a total band; top-level fields mirror the primary unit; each costed unit carries a breakdown {compute, model_tokens, other}; drivers[] cites only levers from cost-levers.md"
+  - _assert: "estimate.json states a monthly_magnitude_usd band (never a precise total), records pricing_source (cached|cached_stale), and lists every assumption behind the magnitude; estimate.json has a units{} entry per costed unit and a total band; top-level fields mirror the primary unit; each costed unit carries a breakdown {compute, model_tokens, other}; drivers[] cites only levers from cost-levers.md"
     _on_failure: _halt_and_inform
 ---
 
@@ -45,21 +45,21 @@ Read `$RUN_DIR/design.json` and `$RUN_DIR/answers.json`. Extract `primary_unit` 
 and the `units[]` array from design.json. Each unit has `id`, `workload_class`, `verdict`, and
 (for agent units) `deployment_model`.
 
-## Step 2 — Pricing source (layered, same as migration-to-aws)
+## Step 2 — Pricing source (cached, same as migration-to-aws)
 
 1. Primary: a small cached rate table (inline below — AgentCore vCPU/GB-hour, Fargate, Lambda,
    plus the model default's token rates as order-of-magnitude). Carry a "last updated" date.
-2. Fallback for anything missing: the `awspricing` MCP if available.
-3. Record `pricing_source`: `cached` | `cached_stale` (if >30 days old) | `mcp`.
+2. Record `pricing_source`: `cached` | `cached_stale` (if >90 days old).
 
-Cached anchors (order-of-magnitude, us-east-1, verify; last updated 2025-07-14 — refresh via awspricing MCP when >30 days old):
+Cached anchors (order-of-magnitude, us-east-1, verify; last updated 2025-07-14):
 
 - AgentCore (microVMs compute type): ~$0.0895/vCPU-hour (active CPU only), ~$0.00945/GB-hour
 - AgentCore (Instances compute type, `agentcore_compute_type: "instances"` in design.json):
   EC2 On-Demand rate for the chosen instance type (user's Savings Plans / ODCRs apply) PLUS
   an AgentCore management fee — NOT consumption-based and NOT $0 during I/O wait. No cached
-  anchor here: pull the EC2 rate via the awspricing MCP (instance type comes from the user's
-  instance_type_requirement answer, else assume a mid-size general-purpose type and say so).
+  anchor here: use the instance type from the user's `instance_type_requirement` answer (else
+  assume a mid-size general-purpose type and say so), and set `pricing_source: cached_stale`
+  for that component with a note to verify the EC2 rate before committing.
 - Lambda MicroVMs: ~$0.0997/vCPU-hour, ~$0.0132/GB-hour
 - Fargate: ~$0.04048/vCPU-hour, ~$0.004445/GB-hour
 - Bedrock model token rates: defer to migration-to-aws pricing cache for exact figures
@@ -81,8 +81,8 @@ Karpenter / Spot / GPU → EC2 instance pricing for the stated instance type (Sp
 stated); reusing an existing cluster → near-zero marginal cost ONLY when the user stated there is
 spare capacity to absorb the workload — otherwise Karpenter/ASG adds nodes and the full
 incremental node cost applies, so price the added EC2/Fargate capacity the workload needs. State
-the capacity-type assumption (and whether spare capacity was assumed). When the capacity type or
-instance is unknown, fall through to the awspricing MCP rather than assuming Fargate. A W1
+the capacity-type assumption (and whether spare capacity was assumed). When the capacity type or instance is unknown, set `pricing_source: cached_stale` and note the
+assumption; do not assume Fargate. A W1
 "existing cluster reuse" verdict or a consolidation onto EKS can land a service/batch unit here —
 this rule governs it, NOT the class default below.
 
@@ -91,7 +91,7 @@ this rule governs it, NOT the class default below.
   %). Apply the cached anchors from Step 2 (AgentCore vCPU/GB, Lambda MicroVMs, Fargate) plus
   Bedrock model token rates. For a `lambda` runtime use Lambda request pricing (invocations ×
   duration × memory). For `eks`, apply the EKS pricing rule above. Any runtime missing a cached
-  anchor falls through to the awspricing MCP.
+  anchor: set `pricing_source: cached_stale` and state the assumption.
   For answers, read `answers.json.units[<unit_id>]` (which is already fully resolved — system +
   unit dims merged).
 
@@ -124,8 +124,7 @@ this rule governs it, NOT the class default below.
     can run into hundreds–thousands of $/month, not "tens". State the node-capacity assumption.
   - `effective_runtime == "serverless_workers"` → Temporal Serverless Workers is **Public
     Preview, not GA** (labeled so regardless of any docs claim — the label has moved before
-    without a GA announcement). Do NOT invent a cached anchor: try the awspricing MCP for its
-    published rate; if unavailable or unverified, give a **qualitative fallback** (state
+    without a GA announcement). Do NOT invent a cached anchor: give a **qualitative fallback** (state
     "Serverless Workers pricing is Public Preview / unverified — treated as a scale-to-zero
     execution-billed tier; confirm the published rate before committing") rather than a
     fabricated dollar band. Every other cost line for the unit still gets its band; only the SW
@@ -147,12 +146,12 @@ this rule governs it, NOT the class default below.
 
   The temporal cost table below:
 
-  | Cost line                                                                          | Magnitude                                                                                                                                                      | Note                                                                                                                  |
-  | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-  | Polling tier (worker fleet: ECS / EKS / Serverless Workers)                        | tens of $/mo on ECS-Fargate; EKS priced by node capacity (EC2/Spot/GPU can be hundreds+); Serverless Workers Public Preview → MCP rate or qualitative fallback | small only on Fargate — size per the EKS pricing rule when effective_runtime==eks; SW rate unverified until confirmed |
-  | Execution tier = the ACTIVITY units' own costs (already their own units{} entries) | usually dominant — but compare, do NOT re-add                                                                                                                  | same tokens as today; counted ONCE via the Activity units — never folded into the worker unit; compare vs polling     |
-  | Temporal Cloud actions (system-level orchestration)                                | derive from the user's volume × $0.01/action                                                                                                                   | new line vs self-hosted; or unchanged if already on Cloud                                                             |
-  | What it replaces                                                                   | qualitative only                                                                                                                                               | self-hosted cluster ops burden — no dollar figure                                                                     |
+  | Cost line                                                                          | Magnitude                                                                                                                                          | Note                                                                                                                  |
+  | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+  | Polling tier (worker fleet: ECS / EKS / Serverless Workers)                        | tens of $/mo on ECS-Fargate; EKS priced by node capacity (EC2/Spot/GPU can be hundreds+); Serverless Workers Public Preview → qualitative fallback | small only on Fargate — size per the EKS pricing rule when effective_runtime==eks; SW rate unverified until confirmed |
+  | Execution tier = the ACTIVITY units' own costs (already their own units{} entries) | usually dominant — but compare, do NOT re-add                                                                                                      | same tokens as today; counted ONCE via the Activity units — never folded into the worker unit; compare vs polling     |
+  | Temporal Cloud actions (system-level orchestration)                                | derive from the user's volume × $0.01/action                                                                                                       | new line vs self-hosted; or unchanged if already on Cloud                                                             |
+  | What it replaces                                                                   | qualitative only                                                                                                                                   | self-hosted cluster ops burden — no dollar figure                                                                     |
 
   One takeaway sentence: on ECS-Fargate the execution tier dominates and the polling tier is
   noise — but on EKS with EC2/GPU nodes (or under low Activity volume) the polling fleet can be
@@ -175,7 +174,7 @@ them into the total: `compute` (runtime/request pricing: AgentCore or Lambda Mic
 Fargate, Lambda requests), `model_tokens` (Bedrock token costs — `null` for units that call no
 models), and `other` (everything else: ALB, storage). Every component is a band, never precise —
 EXCEPT when a component's rate is genuinely unverifiable (a Serverless Workers Public Preview
-polling tier whose rate the awspricing MCP could not confirm): set that component to the string
+polling tier with no published cached rate): set that component to the string
 `"unverified"` instead of a fabricated band, and reflect it in `monthly_magnitude_usd` — if the
 unverified component is the only compute line, the unit's `monthly_magnitude_usd` is the band of
 its remaining priced components plus a `"+ unverified SW polling"` suffix (e.g. `"40-120 +
@@ -303,7 +302,7 @@ Also emit `total_compute`, `total_model`, `total_other` — the per-column sums 
 `breakdown.compute` / `model_tokens` / `other` bands (Generate renders these as the cost table's
 Total row). **Unverified handling (uniform across all three column totals AND
 `total_monthly_magnitude_usd`):** when a component is the string `"unverified"` (a Serverless
-Workers Public Preview rate the MCP could not confirm) or `null`, EXCLUDE it from the numeric sum
+Workers Public Preview rate with no published cached anchor) or `null`, EXCLUDE it from the numeric sum
 and append a `"+ unverified"` suffix to that total's band (e.g. `total_compute` = `"20-55 +
 unverified"`, and `total_monthly_magnitude_usd` likewise carries `"+ unverified SW polling"`).
 Never coerce an unverified component to $0 — an excluded-and-flagged band, never a silent drop.

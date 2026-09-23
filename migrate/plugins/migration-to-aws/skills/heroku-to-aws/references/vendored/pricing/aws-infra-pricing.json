@@ -47,7 +47,7 @@
       "db.x2g.16xlarge": 18.05
     },
     "storage_per_gb_month": 0.23,
-    "_instances_note": "Multi-AZ on-demand hourly, us-east-1. t4g.* verified from the pricing cache; m6g/r6g/x2g families added to MATCH the instance classes the postgres design table can emit \u2014 approximate (~2x single-AZ), verify via the AWS Pricing MCP for a large estimate. Every rds_instance_class the design can emit MUST have a rate here (no unpriced production DBs)."
+    "_instances_note": "Multi-AZ on-demand hourly, us-east-1. t4g.* verified from the pricing cache; m6g/r6g/x2g families added to MATCH the instance classes the postgres design table can emit \u2014 approximate (~2x single-AZ), verify against the public AWS pricing pages for a large estimate. Every rds_instance_class the design can emit MUST have a rate here (no unpriced production DBs)."
   },
   "aurora_postgresql": {
     "multi_az_handling": "intrinsic",

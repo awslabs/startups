@@ -5,8 +5,10 @@
 **Currency:** USD
 **Accuracy:** ±5-10% for infrastructure services (sourced from AWS Price List API), ±15-25% for AI models (sourced from public pricing pages)
 
-> Prices may vary by region and change over time. Use for estimation only. For real-time pricing, fall back to the AWS Pricing MCP server. **Amazon Nova** figures in the Bedrock subsection often reference **US East (Ohio)** and **inference mode** (global vs geo); other services in this file default to **us-east-1** unless noted.
-> **Staleness warning:** If today's date is more than 30 days after the **Last updated** date above, treat AI model prices as potentially stale (±15-25% accuracy may widen). Infrastructure prices (Fargate, RDS, S3, etc.) change rarely and remain reliable longer. When staleness is detected, keep `pricing_source.status: "cached"` (the schema enum is `cached | live | cached_fallback | unavailable` — there is no `cached_stale` status) and record the staleness in the dedicated `pricing_source.fallback_staleness` object: set `is_stale: true` and `staleness_warning: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or [aws.amazon.com/bedrock/pricing](https://aws.amazon.com/bedrock/pricing/)."` Surface that same warning to the user in the estimate output.
+> Prices may vary by region and change over time. Use for estimation only; there is no live pricing lookup — for the latest rates, check the public AWS pricing pages (e.g. https://aws.amazon.com/bedrock/pricing). **Amazon Nova** figures in the Bedrock subsection often reference **US East (Ohio)** and **inference mode** (global vs geo); other services in this file default to **us-east-1** unless noted.
+> **Staleness warning:** If today's date is more than 30 days after the **Last updated** date above, treat AI model prices as potentially stale (±15-25% accuracy may widen). Infrastructure prices (Fargate, RDS, S3, etc.) change rarely and remain reliable longer. When staleness is detected, keep `pricing_source.status: "cached"` (the schema enum is `cached | live | cached_fallback | unavailable` — there is no `cached_stale` status) and record the staleness in the dedicated `pricing_source.fallback_staleness` object: set `is_stale: true` and `staleness_warning: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify against [aws.amazon.com/bedrock/pricing](https://aws.amazon.com/bedrock/pricing/)."` Surface that same warning to the user in the estimate output.
+>
+> **Lifecycle is not a cached price field.** The `Status` column below is a dated snapshot, not permission to skip the lifecycle check. Before selecting any model, call `GetFoundationModel` or `ListFoundationModels` and read `modelLifecycle.status`. For a model launched on or after 2026-09-07, also read its model card: its Legacy period may be 45 days rather than 6 months, and it will never appear in the Legacy/EOL table. See `shared/ai-model-lifecycle.md`.
 
 ---
 
@@ -77,7 +79,7 @@ Worker nodes billed separately as EC2 or Fargate.
 
 ### EC2 (On-Demand, Linux, Graviton/ARM64)
 
-~15–20% below the x86 equivalent at the same vCPU/memory. Dev-tier rows cached below; query the `awspricing` MCP for any family or size not listed.
+~15–20% below the x86 equivalent at the same vCPU/memory. Dev-tier rows cached below; set `pricing_source: "unavailable"` for any family or size not listed.
 
 | Instance   | $/hour | $/month | x86 equivalent |
 | ---------- | ------ | ------- | -------------- |
@@ -415,7 +417,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Nova Pro (latency optimized)     | —                                        | Amazon    | 1.00       | 4.00        | 300K    | mid       | active                                                       |
 | Nova Lite                        | amazon.nova-lite-v1:0                    | Amazon    | 0.06       | 0.24        | 300K    | fast      | active                                                       |
 | Nova Micro                       | amazon.nova-micro-v1:0                   | Amazon    | 0.035      | 0.14        | 128K    | budget    | active                                                       |
-| Nova Premier                     | amazon.nova-premier-v1:0                 | Amazon    | 2.50       | 12.50       | 1M      | reasoning | excluded (EOL Sep 14, 2026)                                  |
+| Nova Premier                     | amazon.nova-premier-v1:0                 | Amazon    | 2.50       | 12.50       | 1M      | reasoning | EOL (2026-09-14)                                             |
 | Mistral Large 3                  | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                                                       |
 | DeepSeek-R1                      | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                                                       |
 | DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active (Sydney only)                                         |
@@ -435,8 +437,8 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | MiniMax M2                       | minimax.minimax-m2                       | MiniMax   | 0.30       | 1.20        | 1M      | mid       | active                                                       |
 | MiniMax M2.1                     | minimax.minimax-m2.1                     | MiniMax   | 0.30       | 1.20        | 196K    | mid       | active                                                       |
 | MiniMax M2.5                     | minimax.minimax-m2.5                     | MiniMax   | 0.30       | 1.20        | 196K    | mid       | active                                                       |
-| Jamba 1.5 Large                  | ai21.jamba-1-5-large-v1:0                | AI21 Labs | 2.00       | 8.00        | —       | mid       | legacy (EOL Nov 26, 2026)                                    |
-| Jamba 1.5 Mini                   | ai21.jamba-1-5-mini-v1:0                 | AI21 Labs | 0.20       | 0.40        | —       | efficient | legacy (EOL Nov 26, 2026)                                    |
+| Jamba 1.5 Large                  | ai21.jamba-1-5-large-v1:0                | AI21 Labs | 2.00       | 8.00        | —       | mid       | excluded (EOL 2026-11-26)                                    |
+| Jamba 1.5 Mini                   | ai21.jamba-1-5-mini-v1:0                 | AI21 Labs | 0.20       | 0.40        | —       | efficient | excluded (EOL 2026-11-26)                                    |
 | Jurassic-2 Mid                   | —                                        | AI21 Labs | 12.50      | 12.50       | —       | legacy    | legacy                                                       |
 | Jurassic-2 Ultra                 | —                                        | AI21 Labs | 18.80      | 18.80       | —       | legacy    | legacy                                                       |
 | Jamba-Instruct                   | —                                        | AI21 Labs | 0.50       | 0.70        | —       | mid       | active                                                       |
@@ -591,8 +593,8 @@ see `openai-on-bedrock.md`). GovCloud GPT-5.4 is 3.30 / 19.80.
 
 > **One source conflict.** These models are absent
 > from the AWS Price List API entirely: querying `AmazonBedrock` returns only `gpt-oss` and GPT OSS Safeguard, and
-> filtering on `GPT-5` or a `gpt-5` usage type returns zero rows (price-list publication 2026-08-04). The `awspricing`
-> MCP cannot price them, and an empty result is **not** evidence the model is unavailable. (An earlier revision also
+> filtering on `GPT-5` or a `gpt-5` usage type returns zero rows (price-list publication 2026-08-04). An empty
+> price-list result is **not** evidence the model is unavailable. (An earlier revision also
 > flagged the AWS News Blog's Luna 0.20 / 1.20 as conflicting; it is the Global CRIS rate, not an error.)
 
 **Prompt caching (GPT-5.6 only):** cached input read at a 90% discount, cache write at 1.25x uncached input, minimum
@@ -783,11 +785,10 @@ Per 1M tokens. **Nova 2 Omni** and **Nova 2 Pro** are **Preview**. Image column 
 | ---------------------------- | ---------------------- |
 | Amazon Nova 2 Omni (Preview) | $30.00 per 1K requests |
 | Amazon Nova 2 Pro (Preview)  | $30.00 per 1K requests |
-| Amazon Nova Premier          | $30.00 per 1K requests |
 
 #### Creative — US East (N. Virginia)
 
-> **Lifecycle note:** Nova Canvas v1 is **Legacy** (EOL Sep 30, 2026) and Nova Reel v1 is **Legacy** (EOL Sep 30, 2026). Do not recommend for new migrations. See `shared/ai-model-lifecycle.md`.
+> **Lifecycle note:** Nova Canvas v1 and Nova Reel v1 are **excluded** — both are Legacy with EOL 2026-09-30, inside the 90-day exclusion zone. Do not list them in recommendation or comparison tables. Rates are retained for users already on them. See `shared/ai-model-lifecycle.md`.
 
 **Amazon Nova Canvas** (on-demand, per image): up to **1024×1024** — Standard **$0.04**, Premium **$0.06**; up to **2048×2048** — Standard **$0.06**, Premium **$0.08**.
 
@@ -797,16 +798,16 @@ Per 1M tokens. **Nova 2 Omni** and **Nova 2 Pro** are **Preview**. Image column 
 
 #### Speech — US East (N. Virginia)
 
-> **Lifecycle note:** Nova Sonic v1 is **excluded** (EOL Sep 14, 2026, within the 90-day exclusion window). Do not recommend for new migrations. Prefer **Nova 2 Sonic**. See `shared/ai-model-lifecycle.md`.
+> **Lifecycle note:** Nova Sonic v1 reached **EOL on 2026-09-14** and its requests now fail. Rates are retained only to explain the migration to **Nova 2 Sonic**. See `shared/ai-model-lifecycle.md`.
 
 Per 1M tokens.
 
-| Model               | Modality | Input $/1M | Output $/1M | Status                      |
-| ------------------- | -------- | ---------- | ----------- | --------------------------- |
-| Amazon Nova Sonic   | Speech   | 3.40       | 13.60       | excluded (EOL Sep 14, 2026) |
-| Amazon Nova Sonic   | Text     | 0.06       | 0.24        | excluded (EOL Sep 14, 2026) |
-| Amazon Nova 2 Sonic | Speech   | 3.00       | 12.00       | active                      |
-| Amazon Nova 2 Sonic | Text     | 0.33       | 2.75        | active                      |
+| Model               | Modality | Input $/1M | Output $/1M | Status           |
+| ------------------- | -------- | ---------- | ----------- | ---------------- |
+| Amazon Nova Sonic   | Speech   | 3.40       | 13.60       | EOL (2026-09-14) |
+| Amazon Nova Sonic   | Text     | 0.06       | 0.24        | EOL (2026-09-14) |
+| Amazon Nova 2 Sonic | Speech   | 3.00       | 12.00       | active           |
+| Amazon Nova 2 Sonic | Text     | 0.33       | 2.75        | active           |
 
 #### Multimodal embeddings — US East (N. Virginia)
 

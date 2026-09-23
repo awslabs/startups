@@ -65,7 +65,7 @@ Load ALL THREE files (each is required; do not skip any — Step 4's lock-in che
 ## Step 3 — Refresh volatile facts
 
 Load `${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/references/decision-refs/freshness.md` and follow its procedure:
-read the winning profile's `volatile_facts`, try awsknowledge MCP for each, fall back to cached
+read the winning profile's `volatile_facts`, try the AWS MCP Server for each, fall back to cached
 values on failure. Record which succeeded vs fell back (for the freshness footer).
 When any unit selects `registry`, also load the AgentCore service card and the
 `registry_regions` fact from `references/runtimes/agentcore.json`, even for non-AgentCore
@@ -98,7 +98,7 @@ so omit the $0-I/O-wait claim and let the scoring warning carry the pricing cave
 
 If the user's `compliance` includes `fedramp`: AgentCore's FedRAMP authorization is **in progress
 (WIP)** — do NOT hard-eliminate AgentCore for it. Verify the current status per `freshness.md`
-(the `fedramp` volatile fact, via awsknowledge MCP). Then surface an honest note: "AgentCore's
+(the `fedramp` volatile fact, via the AWS MCP Server). Then surface an honest note: "AgentCore's
 FedRAMP authorization is in progress — verify the current status before committing. If you need
 FedRAMP-authorized compute **today**, GovCloud on ECS/EKS is the safe fallback." Record
 `fedramp_note = true` in design.json when this fires. (HIPAA/SOC/PCI/etc. are unaffected —
@@ -109,7 +109,7 @@ AgentCore is eligible for those.)
 Read `region` from answers. Region does NOT change the verdict — it gates the following:
 
 1. **Availability:** if the winning runtime is `agentcore` (or the chosen deployment model is
-   Harness), verify it's available in the user's region via the awsknowledge MCP (per
+   Harness), verify it's available in the user's region via the AWS MCP Server (per
    `freshness.md`; the profile's `regions` volatile fact). If unavailable, surface a note with the
    nearest supported region and — if the gap is blocking — the container fallback. Do NOT silently
    recommend a runtime the user's region can't run. Record `region_availability_note` when it fires.
@@ -162,30 +162,22 @@ Write the `temporal` block when temporal units exist:
 `temporal.server_current` is read from `context-signals.json.temporal.server` (discover's
 output; "unknown" on the declared no-code path). `serverless_workers_status` is set from
 this run's freshness check (see freshness.md) — currently `"Public Preview"` — and MUST
-NOT be auto-upgraded to GA from a docs label or MCP echo alone.
+NOT be auto-upgraded to GA from a docs label alone.
 
 ### Freshness (temporal units only)
 
 Load `references/decision-refs/freshness.md` and run its Temporal section.
 
-**Verification channel for Temporal feature statuses (auth-gated MCP → WebFetch
-fallback):** freshness.md's Temporal section names the Temporal Knowledge Base MCP
-(`temporal-docs`, which ships in this plugin's `.mcp.json`) as the preferred source,
-and defines the auth-gate procedure — follow it exactly. In short: check whether
-`temporal-docs` is authenticated this session; if authenticated, query it first; if
-registered-but-not-authenticated, **STOP and ask via AskUserQuestion** whether to
-authenticate (per freshness.md), and if the user says yes, direct them to `/mcp` and
-**wait** for them to finish before continuing. Only if the user declines → WebFetch
-the docs.temporal.io page. Ask at most once per run. Pausing here is safe: this step
-is a read-only freshness check that resumes cleanly. (The Marketplace listing fact
-stays WebFetch-only; the KB MCP does not cover it.)
+Use the public Temporal documentation pages and AWS Marketplace page named there.
+Follow its web lookup and cached-fallback procedure without an authentication pause.
+Preserve each result's source and date in `design.json.volatile_facts` for the freshness footer.
 
 Non-negotiable regardless of channel: **Serverless Workers is Public Preview, not GA**
 — the docs label has moved before without a GA announcement (it read "Available" in
 2026-07); do not trust it at face value, re-verify this run and label the output
 Public Preview until GA evidence appears. Workflow Streams and External Payload
 Storage are Preview. The anti-fabrication rule applies:
-only claim verified (whether via MCP or WebFetch) for calls actually made and results
+only claim web-verified for calls actually made and results
 observed this run.
 
 ## Step 5 — Assemble design.json

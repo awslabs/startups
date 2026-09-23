@@ -72,28 +72,15 @@ reprice:
 
 ## 5. Region honesty
 
-The sheet always shows: region repricing needs live pricing access (awspricing
-MCP) for true regional rates; without it, numbers stay on the us-east-1 cache
-basis and every affected estimate carries a `region_note`. Never present
-cache-based numbers as regional.
+The sheet always shows: numbers stay on the us-east-1 cache basis and every
+affected estimate carries a `region_note`. Regional dollar deltas are not
+available (no live pricing access). Never present cache-based numbers as
+regional.
 
-## 6. Shareable calculator link (best-effort, never blocks)
+## 6. Shareable calculator link
 
-After each scenario snapshot, if the `aws-pricing-calculator` MCP server is
-available (probe `get_server_info` once; no retry on failure):
+No shareable AWS Pricing Calculator link is produced. `calculator_url` is
+always `null`. No calculator MCP is configured.
 
-1. Prefer one-shot `build_estimate`: name
-   `"{SKILL_LABEL} migration — {scenario label} ({target_region})"`, services
-   from the scenario's Balanced-tier estimate breakdown (the PRIMARY outcome's
-   set where outcomes exist), each with the scenario's target region — the
-   calculator computes REGIONAL prices server-side, which the cache cannot.
-   On a structured needs-field-discovery response, resolve via
-   `get_service_fields` and retry ONCE; else fall back to
-   `create_estimate` → `add_service` → `export_estimate`.
-2. Store the URL as the manifest's `estimation_summary.calculator_url`.
-3. Any failure or unmappable service → `calculator_url: null`, one chat note,
-   continue. Workshop numbers stay authoritative; the link is a complementary
-   stakeholder artifact. Unconfigured server → silent null.
-
-Compare tables and stakeholder reports render one link line per non-null
-`calculator_url`.
+Compare tables and stakeholder reports omit the calculator link line (all
+`calculator_url` values are `null`).

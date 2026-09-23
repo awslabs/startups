@@ -636,7 +636,7 @@ These move from "example in the fixture" to enforced gate. See `references/share
    explicitly distinguish it from total cost of ownership.
 5. **Accessible tables and diagrams.** Every table has a `<caption>` and `scope="col"` on header cells. The architecture diagram is wrapped in `<figure role="img" aria-label="…">` with a `<figcaption>` text alternative.
 6. **State the verdict.** The decision summary includes a one-sentence recommendation banner (e.g. "Recommendation: Migrate in dependency order — estimated AWS run rate $497/mo, BigQuery deferred") in addition to the typography-first verdict headline and plain-text metadata.
-7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-optimization`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-optimization`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate", "workshop scenario comparison" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "awsknowledge MCP not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*`, `what-if-scenarios`, or `decision-summary` section.
+7. **Reader vocabulary in the executive flow.** Artifact filenames (`estimation-infra.json`) and Terraform resource IDs (`aws_guardduty_detector.baseline`) are internal build vocabulary. Use them only in the technical appendices (`appendix-services`, `appendix-costs`, `appendix-optimization`, `appendix-security`, `appendix-artifacts`, etc.). In the executive flow (`decision-summary`, `exec-tco`, `exec-costs`, `exec-optimization`, `exec-services`, `exec-architecture`, `exec-security-teaser`, `what-if-scenarios`, `exec-timeline`, `exec-risks`), name things by what the reader controls — "the generated security baseline", "the infrastructure cost estimate", "workshop scenario comparison" — not by the file or resource that produced them. Rewrite tooling-availability notes (e.g. "AWS MCP Server not invoked") to reader-facing impact, or drop them. The validator fails on a `*.json` artifact filename or an `aws_<resource>.<name>` Terraform ID inside any `exec-*`, `what-if-scenarios`, or `decision-summary` section.
 8. **One name per concept.** Use a single consistent label for each recommended choice across the whole report. The recommended Bedrock model and the chosen cost tier keep the same name in the verdict, tables, and appendices (always "Claude Sonnet 5 (recommended)", always "Balanced"). Do not alternate "recommended / selected target / design target / projected" for the same item — one label is how the reader keeps their bearings.
 9. **Ordered action lists.** In `decision-summary`, `Key decisions ahead` and `Next steps` MUST use `<ol class="compact">`, not `<ul>`. The validator fails when either heading is followed by a bullet list. `Migrate if` / `Stay entirely if` remain unordered lists.
 10. **Data first, explanation adjacent.** Never make the reader wade through a how-to-read paragraph or callout to reach the table it explains. Render the data first; put reading guidance in a `<details class="reading-guide">` immediately **after** the table (e.g. "How to read the three cost tiers"). Mandatory caveats that must not be collapsible (the not-comparable rule, baseline-quality labels) attach to the figure they qualify — a `.chip-warn` pill on the metric card plus one line in its `<small>` — rather than a standalone paragraph above the section's data.
@@ -651,6 +651,14 @@ These move from "example in the fixture" to enforced gate. See `references/share
     `exec-share` after the TOC using only decision-summary facts. It contains
     one standalone paragraph, no buttons or JavaScript, no new calculations,
     and no stronger certainty than the underlying estimate.
+19. **Rounded monthly figures (enforces rule 2).** A monthly-scale dollar
+    figure (whole-dollar part `$2` or higher) never renders with cents —
+    round to the nearest whole dollar. Cents remain only on genuinely
+    sub-dollar precision (`$1.50`, `$0.40`) or a per-unit rate (`$0.018/hr`,
+    `$21.18` per 1-/6-month commitment unit-hour). The validator fails on a
+    `$X.YY` figure `>= $2.00` with no adjacent rate suffix — this is the
+    regression class where raw unrounded arithmetic (`$25,684.89/mo`) reaches
+    the reader and overflows fixed-width metric cards.
 
 > **Section IDs are stable anchors, not placement hints.** Some `appendix-*` IDs render in the executive flow on purpose (notably `appendix-assumptions`). Do not rename IDs to match position — the validator and TOC key on them.
 
@@ -686,6 +694,9 @@ After generating the HTML file, verify:
 20. **Cost Optimization section**: When `optimization_opportunities[]` is
     non-empty, `exec-optimization` and `appendix-optimization` are present
     and TOC-linked. Do not bury the opportunity table only in Appendix B.
+21. **Whole-dollar monthly figures**: No monthly-scale dollar figure
+    (`$2.00` or higher) renders with cents unless it is a per-unit/hourly
+    rate — see rule 19 above.
 
 **Run automated validator (mandatory when HTML was written):**
 
