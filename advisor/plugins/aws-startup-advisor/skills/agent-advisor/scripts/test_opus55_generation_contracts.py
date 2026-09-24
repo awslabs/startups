@@ -1,5 +1,8 @@
 """Execute the shipped generation/evaluation examples against typed responses."""
 
+# Each exec below runs a fixed repository template or an AST extracted from it.
+# Clients and responses are synthetic fixtures; no customer-provided code is evaluated.
+
 import ast
 import copy
 import importlib.util
@@ -62,7 +65,7 @@ def poc_runner(reply):
     code = block(SKILLS / "agent-advisor/references/phases/poc/poc.md", "def run_prompt(")
     function = next(node for node in ast.parse(code).body if isinstance(node, ast.FunctionDef) and node.name == "run_prompt")
     namespace = {"_bedrock": Bedrock([reply]), "MODEL_ID": "global.anthropic.claude-opus-5-5", "SYSTEM_PROMPT": "Test"}
-    exec(compile(ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[])), "<poc>", "exec"), namespace)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[])), "<poc>", "exec"), namespace)  # nosec B102
     return namespace["run_prompt"]
 
 
@@ -73,7 +76,7 @@ def test_poc_and_nonstreaming_rewrite_read_all_visible_text(leading):
     assert poc_runner(reply)("prompt") == "Hello world"
     code = block(REWRITER, 'output = response.choices[0].message.content')
     namespace = {"bedrock": Bedrock([reply])}
-    exec(after_call(code, "converse"), namespace)
+    exec(after_call(code, "converse"), namespace)  # nosec B102
     assert namespace["output"] == "Hello world"
     assert namespace["assistant_message"] is reply["output"]["message"]
     assert reply == original
@@ -91,7 +94,7 @@ def test_text_only_templates_report_incomplete_or_missing_answers(blocks, stop):
         poc_runner(reply)("prompt")
     code = block(REWRITER, 'output = response.choices[0].message.content')
     with pytest.raises(ValueError, match="No complete text response"):
-        exec(after_call(code, "converse"), {"bedrock": Bedrock([reply])})
+        exec(after_call(code, "converse"), {"bedrock": Bedrock([reply])})  # nosec B102
 
 
 def test_streaming_preserves_reasoning_events_but_emits_only_text():
@@ -104,7 +107,7 @@ def test_streaming_preserves_reasoning_events_but_emits_only_text():
     ]
     original = copy.deepcopy(events)
     namespace = {"bedrock": Bedrock(events=events), "messages_bedrock_format": []}
-    exec(after_call(block(REWRITER, "bedrock.converse_stream("), "converse_stream"), namespace)
+    exec(after_call(block(REWRITER, "bedrock.converse_stream("), "converse_stream"), namespace)  # nosec B102
     assert namespace["output"] == "Hello world"
     assert namespace["stream_events"] == original
     assert events == original
@@ -118,7 +121,7 @@ def test_streaming_preserves_reasoning_events_but_emits_only_text():
 def test_streaming_rejects_empty_truncated_or_unterminated_output(events):
     namespace = {"bedrock": Bedrock(events=events), "messages_bedrock_format": []}
     with pytest.raises(ValueError, match="No complete text stream"):
-        exec(after_call(block(REWRITER, "bedrock.converse_stream("), "converse_stream"), namespace)
+        exec(after_call(block(REWRITER, "bedrock.converse_stream("), "converse_stream"), namespace)  # nosec B102
 
 
 @pytest.mark.parametrize("marker,label", [("print(\"OK:\"", "OK:"), ("print(\"VISION_OK:\"", "VISION_OK:")])
@@ -130,7 +133,7 @@ def test_access_and_vision_smoke_probes_distinguish_invocation_from_answer_quali
                 any(isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "converse"
                     for n in ast.walk(node)))
     namespace = {"c": Bedrock([response(copy.deepcopy(blocks), stop)]), "img": b"image", "sys": sys}
-    exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])), "<probe>", "exec"), namespace)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])), "<probe>", "exec"), namespace)  # nosec B102
     output = capsys.readouterr().out
     assert label in output and f"stopReason={stop}" in output
     assert "Private reasoning" not in output
@@ -159,7 +162,7 @@ def test_complete_evaluator_script_handles_typed_output(tmp_path, monkeypatch, b
     data.mkdir(parents=True)
     (tmp_path / ".saws-migrate/eval-results").mkdir()
     (data / "prompts.jsonl").write_text(json.dumps({"id": "case", "user_prompt": "Prompt", "assistant_response": "Answer"}) + "\n")
-    exec(compile(code.replace("<repo>", str(tmp_path)), "<evaluator>", "exec"), {})
+    exec(compile(code.replace("<repo>", str(tmp_path)), "<evaluator>", "exec"), {})  # nosec B102
     result = json.loads((tmp_path / ".saws-migrate/eval-results/raw_results.jsonl").read_text())
     assert result["status"].startswith(expected)
     assert "Private reasoning" not in result["bedrock_response"]
@@ -186,7 +189,7 @@ def test_auto_tool_validation_retries_with_signed_history_and_tool_results():
     second = response([copy.deepcopy(REASONING), {"toolUse": {"toolUseId": "two", "name": "Result", "input": {"answer": "valid"}}}], "tool_use")
     original = copy.deepcopy(first)
     namespace = structured_namespace([first, second])
-    exec(structured_code(), namespace)
+    exec(structured_code(), namespace)  # nosec B102
     assert namespace["result"] == {"answer": "valid"}
     requests = namespace["bedrock"].requests
     assert len(requests) == 2
@@ -200,11 +203,11 @@ def test_auto_tool_validation_retries_with_signed_history_and_tool_results():
 
 def test_auto_tool_validation_accepts_schema_valid_text_and_bounds_failures():
     namespace = structured_namespace([response([copy.deepcopy(REASONING), {"text": '{"answer":"valid"}'}])])
-    exec(structured_code(), namespace)
+    exec(structured_code(), namespace)  # nosec B102
     assert namespace["result"] == {"answer": "valid"}
     namespace = structured_namespace([response([{"text": "not JSON"}])] * 3)
     with pytest.raises(ValueError, match="three attempts"):
-        exec(structured_code(), namespace)
+        exec(structured_code(), namespace)  # nosec B102
     assert len(namespace["bedrock"].requests) == 3
 
 
@@ -212,7 +215,7 @@ def test_auto_tool_validation_accepts_schema_valid_text_and_bounds_failures():
 def test_auto_tool_validation_does_not_retry_refusal_or_truncation(stop):
     namespace = structured_namespace([response([{"text": "Partial"}], stop)])
     with pytest.raises(ValueError, match=stop):
-        exec(structured_code(), namespace)
+        exec(structured_code(), namespace)  # nosec B102
     assert len(namespace["bedrock"].requests) == 1
 
 
@@ -222,7 +225,7 @@ def test_native_vision_template_and_source_baseline_skip_thinking_blocks():
     payload = {"content": [{"type": "thinking", "thinking": "Private", "signature": "opaque"}, {"type": "text", "text": '{"answer":"valid"}'}], "stop_reason": "end_turn"}
     client = types.SimpleNamespace(invoke_model=lambda **kwargs: {"body": io.BytesIO(json.dumps(payload).encode())})
     namespace = {"get_client": lambda: client, "_normalize_image": lambda data: "image", "PROMPT": "Prompt", "settings": types.SimpleNamespace(bedrock_model_id="us.anthropic.claude-opus-5-5"), "json": json}
-    exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), "<vision>", "exec"), namespace)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), "<vision>", "exec"), namespace)  # nosec B102
     assert namespace["analyze_image"](b"image") == {"answer": "valid"}
     path = SKILLS / "llm-to-bedrock/scripts/source_baseline.py"
     spec = importlib.util.spec_from_file_location("typed_source_baseline", path)
@@ -246,11 +249,11 @@ def test_shared_guide_and_gemini_adapter_read_typed_text():
     reply = response([copy.deepcopy(REASONING), {"text": "Answer"}])
     guide = SKILLS / "shared/ai/ai-anthropic-to-bedrock.md"
     namespace = {"response": reply}
-    exec(block(guide, 'text = "".join'), namespace)
+    exec(block(guide, 'text = "".join'), namespace)  # nosec B102
     assert namespace["text"] == "Answer"
     code = block(BDD / "gemini-to-bedrock.md", 'choice = "".join')
     namespace = {"bedrock": Bedrock([reply]), "messages_bedrock": [], "inference_config": {"maxTokens": 4096}}
-    exec(after_call(code, "converse"), namespace)
+    exec(after_call(code, "converse"), namespace)  # nosec B102
     assert namespace["choice"] == "Answer"
     assert namespace["bedrock"].requests[0]["inferenceConfig"] == {"maxTokens": 4096}
 
@@ -308,7 +311,7 @@ def test_context_truncated_source_baseline_falls_back_and_retries_on_resume(tmp_
     monkeypatch.setitem(sys.modules, "botocore", fake_core)
     monkeypatch.setitem(sys.modules, "botocore.exceptions", fake_exceptions)
     code = block(EVALUATOR, 'gd_path = "<repo>/.saws-migrate/golden-dataset/prompts.jsonl"')
-    exec(compile(code.replace("<repo>", str(tmp_path)), "<evaluator>", "exec"), {})
+    exec(compile(code.replace("<repo>", str(tmp_path)), "<evaluator>", "exec"), {})  # nosec B102
     evaluated = json.loads((outputs / "raw_results.jsonl").read_text())
     assert evaluated["source_baseline_source"] == "static-unknown"
     assert evaluated["source_response"] == "Complete stored answer"

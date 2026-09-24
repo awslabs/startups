@@ -2,7 +2,8 @@
 
 import json
 from pathlib import Path
-import subprocess
+# The CLI test invokes the committed sibling script with fixed argv and no shell.
+import subprocess  # nosec B404
 import sys
 
 import pytest
@@ -42,7 +43,7 @@ def test_project_shortcut_requires_every_nonempty_mapping_to_match():
 
 def test_analyzer_cli_and_downstream_consumers_use_the_identity_gate():
     script = Path(__file__).with_name("model_identity.py")
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603
         [sys.executable, str(script), "--provider", "anthropic",
          "--source", "claude-opus-4-8", "--target", "global.anthropic.claude-opus-5-5"],
         check=True, text=True, capture_output=True,
