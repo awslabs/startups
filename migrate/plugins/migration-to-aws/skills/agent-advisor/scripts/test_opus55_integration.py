@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 import model_recommendation as mr
+import openai_model_recommendation as oai
 
 
 SKILLS = Path(mr.__file__).resolve().parents[2]
@@ -88,11 +89,21 @@ def test_explicit_disabled_thinking_cannot_silently_be_preserved():
     assert "adaptive_thinking_required" in {item["code"] for item in rec["blocks"]}
 
 
+def test_opus5_to_opus55_keeps_the_version_migration_scan():
+    rec = _recommend(source_model="claude-opus-5")
+    assert rec["source_analysis"]["detected_version"] == "5.0"
+    assert rec["source_analysis"]["target_version"] == "5.5"
+    assert "version_scan_incomplete" in {item["code"] for item in rec["blocks"]}
+
+
 def test_batch_migration_does_not_suggest_an_unsupported_opus55_batch_job():
     rec = _recommend(detected_features=["message_batches"])
     finding = next(item for item in rec["blocks"] if item["code"] == "message_batches_not_portable")
     assert "does not support Bedrock Batch" in finding["remediation"]
     assert "Opus 4.6" in finding["remediation"]
+    impact = next(item for item in rec["architecture_impacts"] if item["feature"] == "message_batches")
+    assert impact["recommendation"] == finding["remediation"]
+    assert "CreateModelInvocationJob" not in impact["recommendation"]
 
 
 def test_old_catalog_remains_usable_with_the_updated_pool():
@@ -117,6 +128,19 @@ def test_available_openai_same_model_still_outranks_cross_family_quality():
     rec = _recommend(provider="openai", source_model="gpt-5.6-sol", preserve_openai_api=False,
                      governance=["guardrails"])
     assert rec["primary_model"] == "openai.gpt-5.6-sol"
+
+
+def test_openai_quality_keeps_opus48_when_opus55_is_unavailable():
+    catalog = mr.load_openai_catalog()
+    catalog["models"]["anthropic_claude_opus_5_5"]["paths"]["runtime_converse"]["available"] = False
+    source = {"model_ids": ["gpt-4"]}
+    requirements = {"priority": "quality"}
+    chosen, unmet = oai._catalog_model_for_path(
+        catalog, "runtime_converse", [], requirements,
+        candidate_order=oai._converse_candidate_order(source, requirements),
+    )
+    assert chosen[0] == "anthropic_claude_opus_4_8"
+    assert not unmet
 
 
 @pytest.mark.parametrize("region,prefix,expected", [
@@ -206,3 +230,25 @@ def test_pricing_and_selection_share_the_verified_profile_region_matrix():
     expected = mr.load_catalog()["models"]["claude_opus_5_5"]["inference_profiles"]
     assert _script("bedrock_pricing")._OPUS55_PROFILE_REGIONS == expected
     assert mr.load_openai_catalog()["models"]["anthropic_claude_opus_5_5"]["inference_profiles"] == expected
+
+
+@pytest.mark.parametrize("cloud", ["gcp-to-aws", "azure-to-aws"])
+def test_long_context_estimates_do_not_apply_the_legacy_claude_surcharge(cloud):
+    text = (SKILLS / cloud / "references/phases/estimate/estimate-ai.md").read_text()
+    assert "**Long-context surcharge:**" not in text
+    rule = text.split("**Long-context pricing:**", 1)[1].split("\n\n", 1)[0]
+    assert "no long-context surcharge" in rule
+    assert "same per-token rates throughout its 1M context" in rule
+    assert "Global $4/$20" in rule and "GovCloud $4.80/$24" in rule
+    assert "instead of guessing" in rule
+
+
+@pytest.mark.parametrize("region,prefix,monthly", [
+    ("us-east-1", "global.", 1040),
+    ("us-east-1", "us.", 1144),
+    ("us-gov-west-1", "us.", 1248),
+])
+def test_long_context_quote_uses_the_flat_published_rate(region, prefix, monthly):
+    rate = _script("bedrock_pricing").lookup(region, prefix + MODEL)
+    cost = 60000 * rate["input_per_1k_usd"] + 40000 * rate["output_per_1k_usd"]
+    assert cost == pytest.approx(monthly)

@@ -35,7 +35,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const PLUGIN = process.argv.slice(2).find((a) => !a.startsWith("-")) ?? "advisor/plugins/aws-startup-advisor";
+const PLUGIN = process.argv.slice(2).find((a) => !a.startsWith("-")) ?? "migrate/plugins/migration-to-aws";
 const SKILLS = join(PLUGIN, "skills");
 const PRICING = join(SKILLS, "shared/pricing/aws-infra-pricing.json");
 const FASTPATH = join(SKILLS, "azure-to-aws/knowledge/design/fast-path-services.json");

@@ -182,6 +182,9 @@ def _source_version(source):
             match = re.search(pattern, normalized)
             if match:
                 return f"{int(match.group(1))}.{int(match.group(2))}"
+        major = re.search(r"claude-(?:opus|sonnet|haiku)-(\d+)(?:-latest)?$", normalized)
+        if major:
+            return f"{int(major.group(1))}.0"
     return None
 
 
@@ -524,13 +527,17 @@ def _compatibility(feature_status, requirements, path):
     }
 
 
-def _architecture_impacts(feature_status):
+def _architecture_impacts(feature_status, blocks=()):
     detected = {
         feature for feature, status in feature_status.items() if status == "detected"
     }
     impacts = []
     for feature in sorted(detected.intersection(_REARCHITECTURE_FEATURES)):
-        _, message, remediation = _BLOCK_FINDINGS[feature]
+        code, message, remediation = _BLOCK_FINDINGS[feature]
+        for finding in blocks:
+            if finding["code"] == code:
+                remediation = finding["remediation"]
+                break
         impacts.append(
             {
                 "feature": feature,
@@ -804,7 +811,7 @@ def recommend_anthropic_workload(workload, region, catalog):
         "compatibility": _compatibility(
             feature_status, workload["requirements"], path
         ),
-        "architecture_impacts": _architecture_impacts(feature_status),
+        "architecture_impacts": _architecture_impacts(feature_status, blocks),
         "migration_deltas": _migration_deltas(
             workload["source"],
             source_analysis,

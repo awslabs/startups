@@ -124,6 +124,7 @@ _CONVERSE_TIER_DEFAULT = "anthropic_claude_sonnet_5"
 _CONVERSE_TIER_ORDER = (
     "anthropic_claude_sonnet_5",
     "anthropic_claude_opus_5_5",
+    "anthropic_claude_opus_4_8",
     "anthropic_claude_haiku_4_5",
 )
 
@@ -159,6 +160,9 @@ def _converse_candidate_order(source, requirements=None):
         else _converse_tier_for_source(source)
     )
     order = [tier] + [k for k in _CONVERSE_TIER_ORDER if k != tier]
+    if tier == "anthropic_claude_opus_5_5":
+        order.remove("anthropic_claude_opus_4_8")
+        order.insert(1, "anthropic_claude_opus_4_8")
     same = _same_model_runtime_key(source)
     if same:
         # Same model outranks any cross-family tier: keeping the model removes
