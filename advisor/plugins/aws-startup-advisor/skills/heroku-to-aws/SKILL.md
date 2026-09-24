@@ -1,9 +1,16 @@
 ---
 name: heroku-to-aws
-description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Elastic Beanstalk, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to Elastic Beanstalk, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform, what-if workshop, reprice Heroku migration, compare migration scenarios, workshop mode. Runs a 6-phase process: discover Heroku resources live via the authenticated Heroku CLI (read-only, consent-gated) and/or from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. After Estimate, an optional what-if workshop can reprice region/HA/compute/Graviton scenarios without re-discovery. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Elastic Beanstalk by default, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP or Azure migrations to AWS, AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
+description: "Migrate workloads from Heroku to AWS. Triggers on: migrate from Heroku, Heroku to AWS, move off Heroku, migrate Heroku app, migrate Heroku Postgres to RDS, migrate Heroku Redis to ElastiCache, migrate Heroku Kafka to MSK, migrate dynos to Elastic Beanstalk, migrate dynos to Fargate, Heroku migration, move from Heroku to AWS, migrate Heroku Private Space, Heroku to Elastic Beanstalk, Heroku to ECS, Heroku to Fargate, leave Heroku, migrate off Heroku platform, what-if workshop, reprice Heroku migration, compare migration scenarios, workshop mode. Runs a 6-phase process: discover Heroku resources live via the authenticated Heroku CLI (read-only, consent-gated) and/or from Terraform files, Procfile/app.json, and optional billing exports, clarify migration requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect optional feedback. After Estimate, an optional what-if workshop can reprice region/HA/compute/Graviton scenarios without re-discovery. Clarify must finish before Design, Estimate, or Generate. Uses a flat resource model (no clustering or dependency graphs) with deterministic mapping tables for core services (Dynos → Elastic Beanstalk by default, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK) and a fast-path table for 13+ common add-ons. Cedar/Fir generation detection is detect-only in v1. Pipeline/Review Apps are detect-only. Do not use for: GCP migrations to AWS (see gcp-to-aws), Azure migrations to AWS (see azure-to-aws), AWS-to-Heroku reverse migration, general AWS architecture advice without migration intent, Heroku-to-Heroku refactoring, or multi-cloud deployments that do not involve migrating off Heroku."
 ---
 
 # Heroku-to-AWS Migration Skill
+
+The skill base directory is given in the "Base directory for this skill: X" line the
+harness emits at load time. Call it `<SKILL_BASE>`. The report validator lives at
+`<SKILL_BASE>/scripts/validate-heroku-migration-report.py` — resolve it relative to
+`<SKILL_BASE>`, never assume a plugin-root `scripts/` directory, since a standalone
+`npx skills add --skill heroku-to-aws` install carries only this skill's own
+directory tree, not the plugin's top-level `scripts/`.
 
 ## Philosophy
 
@@ -97,10 +104,12 @@ uvx --version 2>/dev/null || echo "UVX_MISSING"
   **Do not hard-stop** an infrastructure migration for missing `uv`.
 - If both are present: proceed without nagging.
 - Soft-warn once if `python3` is missing (Heroku report validation at Generate
-  uses `$PLUGIN_ROOT/scripts/validate-heroku-migration-report.py`). Generate can
-  still complete, but the validator must still be attempted and its exit code
-  handled per its docs — if it does not run, tell the user validation did not
-  occur. Never report an unvalidated report as passing.
+  uses `<SKILL_BASE>/scripts/validate-heroku-migration-report.py`). Earlier phases
+  (Discover → Estimate) may continue after the warning, but **Generate does not
+  complete until the report validator runs successfully** — install `python3`
+  before Generate. This matches `generate.md`'s Finish-Generate step and its
+  `report-validation-status.json` postcondition: absent or `not_run` validation is a
+  blocking `GATE_FAIL`, not a pass. Never report an unvalidated report as passing.
 
 **Clarify is mandatory (heroku policy).** Do not skip Clarify or jump straight to
 Design, Estimate, or Generate even if the user asks — there is no exception for
@@ -316,12 +325,12 @@ This is a mandatory closing step of every final recommendation — complete it b
 
 1. Read [`../knowledge-base-for-startups/references/offers.md`](../knowledge-base-for-startups/references/offers.md) — the offer index (Offer · Summary · Keywords), one row per offer.
 2. Judge relevance against what the founder actually surfaced this session. Surface an offer only if **one** holds: a **named-product match** (you recommended a specific partner product by name and it has a row); a **direct intent/component match** (an offer's Keywords directly serve a concrete workload, a component in the final recommendation, or a need the founder raised). Keep a high bar — if the match is weak, or you would be inferring an unstated need, append nothing.
-3. If (and only if) one offer clears the bar, open only its detail file `../knowledge-base-for-startups/references/offers/<slug>.md` and append exactly **one** quiet, dismissible italic line — stating the value and condensing eligibility faithfully from that file (drop no qualifying criterion; never fabricate), with the bare canonical `source_url` as the redeem link. Show one or none, never a list.
+3. If (and only if) one offer clears the bar, open only its detail file `../knowledge-base-for-startups/references/offers/<slug>.md` and append exactly **one** quiet, dismissible italic line — stating the value and condensing eligibility faithfully from that file (drop no qualifying criterion; never fabricate), with the redeem link built from the canonical `source_url` plus a `source` attribution param — append `?source=ide-startupAdvisor-<host>` (or `&source=...` if the url already has a query string), filling `<host>` from your execution environment (Claude Code → `claude`; AWS Startup Advisor IDE extension / VS Code → `vscode`; Cursor → `cursor`; Kiro → `kiro`; Codex → `codex`), or the generic `ide-startupAdvisor` when you cannot tell. Only append the query param; never change the destination. Show one or none, never a list.
 
 Standard line:
 
 ```
-***<Offer>** has an exclusive offer via AWS Activate — <value>, <eligibility>. [Redeem →](<source_url>)*
+***<Offer>** has an exclusive offer via AWS Activate — <value>, <eligibility>. [Redeem →](<source_url>?source=ide-startupAdvisor-<host>)*
 ```
 
 Caps and control: at most one offer per response and often none; no more than one per five messages and two per session; show a given offer at most once per session and never one already shown, claimed, or dismissed; if the founder has muted offers, skip this step entirely. These per-five-messages, per-session, and already-shown caps are session-state limits; in a fresh session with no prior offers they are non-binding, so do not withhold an otherwise-qualifying offer merely because you cannot verify session history. See [`../contextual-offers-for-startups/SKILL.md`](../contextual-offers-for-startups/SKILL.md) for the full rules — but perform the check inline; it must not depend on that skill being loaded.

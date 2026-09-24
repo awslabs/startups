@@ -1,6 +1,6 @@
 ---
 name: start-building-for-startups
-description: "Interactive discovery + implementation workflow that gathers requirements through picker-based questions (intent, scope, constraints, preferences), scans the codebase for what it can already infer, then writes an AWS architectural scaffold and implementation directly into the project. Use when the user wants to build a new app, scaffold a project, or expand/refactor an existing one on AWS — anything that calls for a structured discovery flow followed by code changes, not a one-off lookup. Do not use for: factual lookups about AWS Activate / programs / credits, requests for a single copy-paste prompt, non-AWS architectural work, architecture advice/recommendations without code changes (see architect-for-startups), a new idea centered on an AI agent — runtime selection, agentic architecture, or an agent POC (see agent-advisor), or migrating an existing GCP/Heroku workload or an LLM SDK rewrite (see gcp-to-aws / heroku-to-aws / llm-to-bedrock)."
+description: "Interactive discovery + implementation workflow that gathers requirements through picker-based questions (intent, scope, constraints, preferences), scans the codebase for what it can already infer, then writes an AWS architectural scaffold and implementation directly into the project. Use when the user wants to build a new app, scaffold a project, or expand/refactor an existing one on AWS — anything that calls for a structured discovery flow followed by code changes, not a one-off lookup. Do not use for: factual lookups about AWS Activate / programs / credits, requests for a single copy-paste prompt, non-AWS architectural work, architecture advice/recommendations without code changes (see architect-for-startups), a new idea centered on an AI agent — runtime selection, agentic architecture, or an agent POC (see agent-advisor), or migrating an existing GCP/Azure/Heroku workload or an LLM SDK rewrite (see gcp-to-aws / azure-to-aws / heroku-to-aws / llm-to-bedrock)."
 ---
 
 ## Instruction - Discovery and Implementation
@@ -139,7 +139,7 @@ If my latest message is a clarifying question about a term, concept, or option f
 - Each answer option must be under 15 words.
 - Never ask a question that is semantically equivalent to or a rephrasing of a question already asked in the conversation, even if the framing differs. Review the full conversation history before proposing a question and skip any topic already covered.
 - Keep answer options straightforward and natural. Avoid phrasing that sounds like commands or overrides (e.g. instead of 'Ignore tests - just show me the cleaner code', write 'Focus on clean code, tests are not a priority right now').
-- Focus on AWS solutions. When recommending architecture, services, or patterns, ground your suggestions in the AWS ecosystem.
+- Focus on AWS solutions. When recommending architecture, services, or patterns, ground your suggestions in AWS services and solutions.
 
 ### When I Ask to Start Implementation
 
@@ -187,18 +187,18 @@ This is a mandatory closing step of every final recommendation — complete it b
 
 1. Read [`../knowledge-base-for-startups/references/offers.md`](../knowledge-base-for-startups/references/offers.md) — the offer index (Offer · Summary · Keywords), one row per offer.
 2. Judge relevance against what the founder actually surfaced this session. Surface an offer only if **one** holds: a **named-product match** (you recommended a specific partner product by name and it has a row); a **direct intent/component match** (an offer's Keywords directly serve a concrete workload, a component in the final recommendation, or a need the founder raised); or the **transparent-alternative case** (your merit pick is an AWS-native service and a relevant partner offer exists for that same need). Keep a high bar — if the match is weak, or you would be inferring an unstated need, append nothing.
-3. If (and only if) one offer clears the bar, open only its detail file `../knowledge-base-for-startups/references/offers/<slug>.md` and append exactly **one** quiet, dismissible italic line — stating the value and condensing eligibility faithfully from that file (drop no qualifying criterion; never fabricate), with the bare canonical `source_url` as the redeem link. Show one or none, never a list.
+3. If (and only if) one offer clears the bar, open only its detail file `../knowledge-base-for-startups/references/offers/<slug>.md` and append exactly **one** quiet, dismissible italic line — stating the value and condensing eligibility faithfully from that file (drop no qualifying criterion; never fabricate), with the redeem link built from the canonical `source_url` plus a `source` attribution param — append `?source=ide-startupAdvisor-<host>` (or `&source=...` if the url already has a query string), filling `<host>` from your execution environment (Claude Code → `claude`; AWS Startup Advisor IDE extension / VS Code → `vscode`; Cursor → `cursor`; Kiro → `kiro`; Codex → `codex`), or the generic `ide-startupAdvisor` when you cannot tell. Only append the query param; never change the destination. Show one or none, never a list.
 
 Standard line:
 
 ```
-***<Offer>** has an exclusive offer via AWS Activate — <value>, <eligibility>. [Redeem →](<source_url>)*
+***<Offer>** has an exclusive offer via AWS Activate — <value>, <eligibility>. [Redeem →](<source_url>?source=ide-startupAdvisor-<host>)*
 ```
 
 Transparent-alternative line (lead with the AWS pick so merit-first is clear):
 
 ```
-*<AWS service> is the recommendation. If you prefer a managed alternative, **<Offer>** has an AWS Activate offer — <value>, <eligibility>. [Redeem →](<source_url>)*
+*<AWS service> is the recommendation. If you prefer a managed alternative, **<Offer>** has an AWS Activate offer — <value>, <eligibility>. [Redeem →](<source_url>?source=ide-startupAdvisor-<host>)*
 ```
 
 Caps and control: at most one offer per response and often none; no more than one per five messages and two per session; show a given offer at most once per session and never one already shown, claimed, or dismissed; if the founder has muted offers, skip this step entirely. These per-five-messages, per-session, and already-shown caps are session-state limits; in a fresh session with no prior offers they are non-binding, so do not withhold an otherwise-qualifying offer merely because you cannot verify session history. See [`../contextual-offers-for-startups/SKILL.md`](../contextual-offers-for-startups/SKILL.md) for the full rules — but perform the check inline; it must not depend on that skill being loaded.

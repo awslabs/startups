@@ -6,7 +6,7 @@ This file is loaded by `design-ai.md` when `ai-workload-profile.json` has `summa
 
 Verify all pricing against `references/shared/pricing-cache.md`.
 
-**Model lifecycle:** Before recommending any Bedrock model, check `references/shared/ai-model-lifecycle.md`. Do not recommend Legacy models as primary selections for new migrations. Legacy models are annotated below where they appear.
+**Model lifecycle:** Before recommending any Bedrock model, check `references/vendored/ai/ai-model-lifecycle.md`. Do not recommend Legacy models as primary selections for new migrations. Legacy models are annotated below where they appear.
 
 **Recommend defaults (Sep 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to any Claude Fable / Mythos frontier model.
 
@@ -26,12 +26,12 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 - Claude Sonnet 5 / Opus 4.x lead on real-world agentic tasks (GDPval evaluation) — the gap between benchmarks and production agent reliability is real
 - Claude prompt caching (90% savings on repeated content) has no Gemini equivalent
 - Claude function calling remains best-in-class for complex multi-turn tool use
-- AWS ecosystem integration (AgentCore, Knowledge Bases, Guardrails) has no Gemini equivalent
+- AWS service integration (AgentCore, Knowledge Bases, Guardrails) has no Gemini equivalent
 
 **Migration case by tier:**
 
 - Gemini 3.5 Flash → Bedrock: **strong cost case** — Nova Lite is 94% cheaper; even Claude Sonnet 5 is close at $2/$10 vs $1.50/$9.00
-- Gemini 3.1 Pro → Bedrock: driven by AWS consolidation, agentic reliability, or ecosystem; Sonnet 5 at $2/$10 adds a modest (~13%) cost edge, but the case is not cost-led and not general benchmarks
+- Gemini 3.1 Pro → Bedrock: driven by AWS consolidation, agentic reliability, or AWS service breadth; Sonnet 5 at $2/$10 adds a modest (~13%) cost edge, but the case is not cost-led and not general benchmarks
 - Gemini 3.1 Flash-Lite → Nova Lite/Micro: still 76-88% cheaper, strong cost case
 - Gemini 2.5 Pro → Bedrock: moderate case (older model)
 

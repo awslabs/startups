@@ -8,12 +8,25 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+
+
 SCRIPT = PLUGIN_ROOT / "scripts" / "validate-migration-report.py"
+
+
 FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-reference.html"
+
+
 FIXTURE_EST_INFRA = PLUGIN_ROOT / "fixtures" / "estimation-infra-reference.json"
+
+
 FIXTURE_EST_AI = PLUGIN_ROOT / "fixtures" / "estimation-ai-reference.json"
+
+
 STUB_FIXTURE = PLUGIN_ROOT / "fixtures" / "migration-report-stub.html"
+
+
 DECISION_FIXTURE = (
     PLUGIN_ROOT
     / "fixtures"
@@ -21,6 +34,7 @@ DECISION_FIXTURE = (
     / "after-decide-complete"
     / "decision-report.html"
 )
+
 
 MINIMAL_PASS = """<!DOCTYPE html>
 <html><body>
@@ -37,6 +51,7 @@ MINIMAL_PASS = """<!DOCTYPE html>
 <footer>draft for review</footer>
 </body></html>
 """
+
 
 STUB_FAIL = """<!DOCTYPE html>
 <html><body>
@@ -809,9 +824,16 @@ def test_appendix_config_passes_with_full_table(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+
+
 # Decision mode (--mode decision): decision-report.html written at the
+
+
 # post-Estimate Decision gate — exec sections + CTA, no appendices.
+
+
 # ---------------------------------------------------------------------------
+
 
 DECISION_PASS = """<!DOCTYPE html>
 <html><body>
@@ -889,6 +911,7 @@ OPTIMIZATION_SECTION = """
 </table>
 </section>
 """
+
 
 APPENDIX_OPTIMIZATION_SECTION = """
 <section id="appendix-optimization">
@@ -1065,8 +1088,13 @@ def test_decision_mode_requires_exec_optimization_not_appendix(tmp_path: Path) -
 
 
 # ---------------------------------------------------------------------------
+
+
 # Review follow-up regressions (PR #277 round 2)
+
+
 # ---------------------------------------------------------------------------
+
 
 POSTURE_TABLE = """
 <table>
@@ -1674,3 +1702,468 @@ def test_bad_monthly_figure_still_flagged_with_unrelated_neighbor_cell(
     code, out = run_validator(path, require_toc=False)
     assert code == 1, out
     assert "$25,684.89" in out
+
+
+DECISION_FIXTURE_EST_INFRA = (
+    PLUGIN_ROOT
+    / "fixtures"
+    / "gcp-decision-gate"
+    / "after-decide-complete"
+    / "estimation-infra.json"
+)
+
+
+def test_decision_fixture_passes_cost_anchor_gate_with_estimation_supplied() -> None:
+    # Regression: the decision-mode report must carry the same data-cost-key
+    # anchors as the full report. Supplying --estimation-infra activates the
+    # required-anchor check (it is skipped, fail-open, on absence) — this is
+    # the exact case that regressed when report-decision-core.md had no
+    # anchor contract while generate-artifacts-report.md did.
+    assert DECISION_FIXTURE_EST_INFRA.is_file(), "decision estimation-infra fixture missing"
+    code, out = run_validator(
+        DECISION_FIXTURE,
+        DECISION_FIXTURE_EST_INFRA,
+        require_toc=True,
+        mode="decision",
+    )
+    assert code == 0, out
+    assert 'missing data-cost-key' not in out
+
+
+def test_decision_mode_missing_balanced_anchor_fails_with_estimation_supplied(
+    tmp_path: Path,
+) -> None:
+    html = DECISION_FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">Est. $155/mo</strong>',
+        "Est. $155/mo",
+        1,
+    )
+    path = tmp_path / "decision-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(
+        path,
+        DECISION_FIXTURE_EST_INFRA,
+        require_toc=True,
+        mode="decision",
+    )
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced" anchor inside' in out
+
+
+def test_cost_figure_mismatch_fails(tmp_path: Path) -> None:
+    # P1-C: a data-cost-key-anchored figure that disagrees with estimation-infra.json fails.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<strong data-cost-key="aws_monthly_balanced">$999</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+    assert "aws_monthly_balanced" in out
+
+
+def test_cost_figure_match_passes(tmp_path: Path) -> None:
+    # The unmodified reference anchors ($112 balanced, $165 current) match the JSON.
+    code, out = run_validator(FIXTURE, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "cost figure mismatch" not in out
+
+
+def test_invisible_script_anchor_does_not_satisfy_visible_figure(tmp_path: Path) -> None:
+    # Regression (09-22 P2): an anchor inside a <script> is inert — never rendered —
+    # so its dollar token must not stand in for the visible figure. Here the script
+    # anchors $112 (matching the estimate) while the VISIBLE figure is $999.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<script type="application/json" data-cost-key="aws_monthly_balanced">"$112/mo"</script>'
+        '<strong>$999/mo</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    # The script anchor is ignored, so the required visible anchor is now MISSING.
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced"' in out
+
+
+def test_hidden_anchor_does_not_satisfy_visible_figure(tmp_path: Path) -> None:
+    # Regression (09-22 P2): an anchor on a `hidden` element is not rendered — must
+    # not supply the compared value while the visible $999 disagrees.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<span hidden data-cost-key="aws_monthly_balanced">$112/mo</span>'
+        '<strong>$999/mo</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced"' in out
+
+
+def test_hidden_false_is_still_hidden(tmp_path: Path) -> None:
+    # Regression (09-22 P2): `hidden="false"` is still the Hidden state in HTML
+    # (invalid-value default for a boolean attribute), so the anchor is not rendered
+    # and must not supply the compared value while the visible $999 disagrees.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<span hidden="false" data-cost-key="aws_monthly_balanced">$112/mo</span>'
+        '<strong>$999/mo</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced"' in out
+
+
+def test_two_dollar_boundary_canonicalizes_consistently(tmp_path: Path) -> None:
+    # Regression (09-22 P2): a value that rounds up across the $2 threshold must
+    # canonicalize the same on both sides. estimate 1.999 -> "2" and displayed $2 ->
+    # "2", so they match; the old raw-magnitude branch made 1.999 -> "2.00" != "2".
+    est = json.loads(FIXTURE_EST_INFRA.read_text(encoding="utf-8"))
+    est.setdefault("projected_costs", {})["aws_monthly_balanced"] = 1.999
+    est_path = tmp_path / "estimation-infra.json"
+    est_path.write_text(json.dumps(est), encoding="utf-8")
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<strong data-cost-key="aws_monthly_balanced">$2</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, est_path, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "REPORT_OK" in out
+
+
+def test_nested_recognized_anchor_is_still_checked(tmp_path: Path) -> None:
+    # Regression (09-22 P2): a nested data-cost-key inside an outer anchor must be
+    # validated on its own, not swallowed by the outer element. Here a Premium
+    # anchor rendering $999 is nested inside the Balanced anchor; Premium != 198 in
+    # the estimate, so it must be caught as a mismatch.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<span data-cost-key="aws_monthly_balanced">$112'
+        '<strong data-cost-key="aws_monthly_premium">$999/mo</strong></span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+    assert "aws_monthly_premium" in out
+
+
+def test_fractional_estimate_rounds_to_nearest_dollar_not_truncated(tmp_path: Path) -> None:
+    # Regression (09-22 P2): a fractional monthly total must compare at the emitter's
+    # display precision — nearest-dollar rounding, not int() truncation. With
+    # aws_monthly_balanced = 112.90, the correctly rounded rendered "$113" must PASS
+    # (the old int(112.90)=112 wrongly failed it).
+    est = json.loads(FIXTURE_EST_INFRA.read_text(encoding="utf-8"))
+    est["projected_costs"]["aws_monthly_balanced"] = 112.90
+    est_path = tmp_path / "estimation-infra.json"
+    est_path.write_text(json.dumps(est), encoding="utf-8")
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<strong data-cost-key="aws_monthly_balanced">$113</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, est_path, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "cost figure mismatch" not in out
+
+
+def test_cost_figure_skipped_without_estimation(tmp_path: Path) -> None:
+    # No estimation-infra.json -> the numeric cross-check is skipped (fail open on absence);
+    # a wrong anchored figure is not flagged when there is nothing to compare against.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<strong data-cost-key="aws_monthly_balanced">$999</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, estimation_infra=None, estimation_ai=FIXTURE_EST_AI)
+    assert code == 0, out  # skip means a clean pass, not merely the absence of a mismatch line
+    assert "cost figure mismatch" not in out
+
+
+def test_cost_figure_current_monthly_mismatch_fails(tmp_path: Path) -> None:
+    # The other required GCP key: current_monthly -> current_costs.gcp_monthly.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="current_monthly">$165/mo</span>',
+        '<span data-cost-key="current_monthly">$777/mo</span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+    assert "current_monthly" in out
+
+
+def test_missing_required_balanced_anchor_fails(tmp_path: Path) -> None:
+    # The core P1-C guarantee: an un-anchored (or unwrapped) balanced figure must not
+    # silently pass — a missing required anchor is a FAIL.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        "$112",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced"' in out
+
+
+def test_missing_required_current_monthly_anchor_fails(tmp_path: Path) -> None:
+    # The other required key: an un-anchored current-spend comparator must also FAIL
+    # (required-absent, symmetric to the balanced case above — not just a mismatch).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<span data-cost-key="current_monthly">$165/mo</span>',
+        "$165/mo",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="current_monthly"' in out
+
+
+def test_cost_figure_nested_markup_reads(tmp_path: Path) -> None:
+    # A figure wrapped in <strong> inside the anchor is still read (not fail-open).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<span data-cost-key="aws_monthly_balanced"><strong>$112/mo</strong></span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "cost figure mismatch" not in out
+
+
+def test_cost_figure_nested_markup_mismatch_fails(tmp_path: Path) -> None:
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<span data-cost-key="aws_monthly_balanced"><strong>$999/mo</strong></span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+
+
+def test_unknown_cost_key_ignored(tmp_path: Path) -> None:
+    # An unrecognized data-cost-key is not asserted (and does not satisfy a required key).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>'
+        '<span data-cost-key="made_up_key">$5/mo</span>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "made_up_key" not in out
+
+
+def test_non_numeric_json_value_fails_not_crash(tmp_path: Path) -> None:
+    # A non-numeric JSON value yields a named FAIL, never an uncaught traceback (exit 2).
+    est = json.loads(FIXTURE_EST_INFRA.read_text(encoding="utf-8"))
+    est["projected_costs"]["aws_monthly_balanced"] = "$112"
+    est_path = tmp_path / "estimation-infra.json"
+    est_path.write_text(json.dumps(est), encoding="utf-8")
+    code, out = run_validator(FIXTURE, est_path, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "not a numeric dollar amount" in out
+
+
+def test_cost_anchor_inside_html_comment_does_not_satisfy_requirement(tmp_path: Path) -> None:
+    # A commented-out anchor is not rendered content — it must not satisfy the
+    # required-anchor check, even if the (invisible) figure would have matched.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<!-- <span data-cost-key="aws_monthly_balanced">$112/mo</span> --> $999/mo',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced"' in out
+
+
+def test_cost_anchor_outside_exec_costs_does_not_satisfy_requirement(tmp_path: Path) -> None:
+    # A correct anchor placed in decision-summary (not exec-costs) must not let an
+    # unanchored, wrong figure inside exec-costs itself pass silently. Per
+    # generate-artifacts-report.md rule 21, the anchor is required INSIDE exec-costs.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        "$999",
+        1,
+    ).replace(
+        '<p class="verdict-headline">Go, with conditions</p>',
+        '<p class="verdict-headline">Go, with conditions</p>'
+        '<p><span data-cost-key="aws_monthly_balanced">$112/mo</span></p>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced" anchor inside' in out
+    assert "exec-costs" in out
+
+
+def test_cost_figure_split_nested_markup_reads_full_text(tmp_path: Path) -> None:
+    # A figure split across nested markup within the SAME anchored element
+    # (<span data-cost-key="x"><span>$</span>112/mo</span>) must be read as one
+    # value through the anchor's own matching close tag, not truncated at the
+    # first inner </span>.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<strong data-cost-key="aws_monthly_balanced"><span>$</span>112</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 0, out
+    assert "cost figure mismatch" not in out
+    assert "renders no dollar amount" not in out
+
+
+def test_cost_figure_trailing_text_outside_inner_tag_is_included(tmp_path: Path) -> None:
+    # Text sitting after a nested child tag, but still inside the anchor's own
+    # close tag, must be included — not dropped at the child's </strong>. Here
+    # the anchor's full rendered text is "$1120", which must NOT be truncated
+    # to "$112" (that would silently accept a wrong ten-times-off figure).
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<strong data-cost-key="aws_monthly_balanced"><span>$112</span>0</strong>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert "cost figure mismatch" in out
+    assert '"$1120"' in out
+
+
+def test_cost_anchor_inside_template_does_not_satisfy_requirement(tmp_path: Path) -> None:
+    # <template> subtree content is inert (never rendered by a browser) even
+    # though the HTML parser still walks its tags. An anchor placed there must
+    # not stand in for the visible (wrong) figure sitting right next to it.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        '<template><strong data-cost-key="aws_monthly_balanced">$112</strong></template>$999',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced"' in out
+
+
+def test_single_quoted_exec_costs_section_id_still_gates_required_anchor(
+    tmp_path: Path,
+) -> None:
+    # Regression: _section_html previously matched only a literal `id="value"`
+    # (double-quoted) regex. `<section id='exec-costs'>` is equally valid HTML,
+    # but the regex returned None for it, and the required-anchor check was
+    # gated behind `if exec_costs_html is not None:` — so a recognized
+    # exec-costs section silently skipped the required-anchor requirement
+    # entirely. Remove the Balanced anchor, keep an unanchored wrong figure,
+    # and single-quote the section's id attribute: this must still FAIL.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        "$999",
+        1,
+    ).replace(
+        '<section id="exec-costs">',
+        "<section id='exec-costs'>",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced" anchor inside' in out
+
+
+def test_whitespace_before_exec_costs_closing_angle_bracket_is_still_parsed(
+    tmp_path: Path,
+) -> None:
+    # `</section >` (whitespace before `>`) is valid HTML. The old literal
+    # `.*?</section>` regex was non-greedy, so on the real fixture it did not
+    # return None here — it silently matched through to a LATER, unrelated
+    # </section> elsewhere in the document instead, extracting the wrong
+    # (truncated/overrun) content. The new parser-based _section_html must
+    # find the exec-costs section's own true end regardless of the whitespace.
+    fixture_html = FIXTURE.read_text(encoding="utf-8")
+    exec_costs_start = fixture_html.index('<section id="exec-costs">')
+    exec_costs_end = fixture_html.index("</section>", exec_costs_start) + len(
+        "</section>"
+    )
+    exec_costs_block = fixture_html[exec_costs_start:exec_costs_end]
+    mutated_block = exec_costs_block[: -len("</section>")] + "</section >"
+    html = (
+        fixture_html[:exec_costs_start]
+        + mutated_block
+        + fixture_html[exec_costs_end:]
+    ).replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        "$999",
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced" anchor inside' in out
+
+
+def test_escaped_anchor_example_inside_section_does_not_satisfy_requirement(
+    tmp_path: Path,
+) -> None:
+    # Regression: _SectionScopeParser decodes character references
+    # (convert_charrefs=True) and previously appended the DECODED text
+    # directly into the returned section HTML. An escaped code example like
+    # `<code>&lt;span data-cost-key="x"&gt;$112&lt;/span&gt;</code>` decodes
+    # to the literal text `<span data-cost-key="x">$112</span>` — reparsing
+    # that string (as _validate_cost_figures does, via _cost_anchor_matches)
+    # then finds a "real" anchor that never actually existed in the source.
+    # Remove the real Balanced anchor, leave a visible wrong figure, and add
+    # an escaped example containing the correct anchor+value inside
+    # exec-costs: this must still FAIL, not be satisfied by the example.
+    html = FIXTURE.read_text(encoding="utf-8").replace(
+        '<strong data-cost-key="aws_monthly_balanced">$112</strong>',
+        "$999 "
+        '<code>&lt;span data-cost-key="aws_monthly_balanced"&gt;$112&lt;/span&gt;</code>',
+        1,
+    )
+    path = tmp_path / "migration-report.html"
+    path.write_text(html, encoding="utf-8")
+    code, out = run_validator(path, FIXTURE_EST_INFRA, FIXTURE_EST_AI)
+    assert code == 1, out
+    assert 'missing data-cost-key="aws_monthly_balanced" anchor inside' in out

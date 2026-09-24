@@ -53,7 +53,13 @@ and the `units[]` array from design.json. Each unit has `id`, `workload_class`, 
 
 Cached anchors (order-of-magnitude, us-east-1, verify; last updated 2025-07-14):
 
-- AgentCore (microVMs compute type): ~$0.0895/vCPU-hour (active CPU only), ~$0.00945/GB-hour
+- AgentCore microVMs: use `unit.agentcore_platform.version` to select the V1 or V2 consumption
+  rates from the `microvms_pricing` fact in `references/runtimes/agentcore.json`. Use that fact's
+  own source and `as_of` date, independently of the older anchors below; keep rates in this
+  single cache and record its original source/date. Use `pricing_source: cached` or
+  `cached_stale` under Step 2; do not issue a live price lookup. State the target-Region
+  assumption and warn when its rate is not established by the cache.
+  Missing platform on an older run requires Design resolution; never silently use V1 prices.
 - AgentCore (Instances compute type, `agentcore_compute_type: "instances"` in design.json):
   EC2 On-Demand rate for the chosen instance type (user's Savings Plans / ODCRs apply) PLUS
   an AgentCore management fee — NOT consumption-based and NOT $0 during I/O wait. No cached
@@ -185,6 +191,21 @@ unverified SW polling"`), never a made-up total. State the unverified rate in th
 > migration-to-aws, which also estimates in-skill). It is the one output that is NOT
 > script-deterministic. Acceptable for v1 (magnitude-only, every assumption stated); flagged as
 > a future candidate to move into a small deterministic script if precision is ever required.
+
+### AgentCore microVM consumption assumptions
+
+For each effective AgentCore microVM unit, carry `agentcore_platform` from Design into its
+estimate entry. CPU cost uses active vCPU-seconds; memory cost includes idle time. V1 memory
+follows the running high-water mark; V2 uses the time-varying billed footprint with reclamation.
+Read memory-billing rules from the separate `microvms_memory_billing` fact, refreshed through
+the AWS MCP Server per freshness.md. Its 2026-09-21 snapshot includes system overhead, a 128 MB
+minimum, and V2 idle-memory reclamation after 120 seconds. Do not zero memory charges during model/human waits.
+State CPU time, memory profile, session duration/count, and overhead assumptions separately.
+If memory measurements are unavailable, use explicit low/high footprint assumptions for the
+coarse band; do not claim measured savings or automatically select V1. V2 unit rates are higher,
+so a lower bill is workload-dependent. Committed-baseline discounts are not available in this
+snapshot and must not reduce the estimate without current launch/pricing evidence.
+If platform checks are pending, label the estimate conditional on the proposed version.
 
 ## Step 4 — Identify cost drivers per unit
 

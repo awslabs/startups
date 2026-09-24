@@ -3,8 +3,8 @@
 ## One-liner
 
 Agent-purpose-built runtime with two compute types: serverless microVMs (managed
-session routing, true session isolation, built-in identity, $0 billing during I/O
-wait) and Instances (AWS-managed EC2 in your account for multi-day, GPU, or
+session routing, true session isolation, built-in identity, active-CPU billing
+with memory billed separately) and Instances (AWS-managed EC2 in your account for multi-day, GPU, or
 instance-type-specific agents). Same APIs, identity, and observability across both.
 
 ## Best for
@@ -21,13 +21,18 @@ collaboration, and workloads that must pick an instance type (Instances).
 | Session cap  | 8h (`maxLifetime` ≤ 28,800s)    | 14 days (`maxLifetime` ≤ 1,209,600s)                                             |
 | Compute      | ≤ 2 vCPU / 8 GB, no GPU         | broad EC2 choice incl. GPU, ARM64/x86_64                                         |
 | Host model   | one agent per microVM           | multiple agents share host + filesystem (`/tmp/agentcore-session/<session-id>/`) |
-| Billing      | consumption; $0 during I/O wait | EC2 in YOUR account (Savings Plans / ODCRs apply) + AgentCore management fee     |
+| Billing      | active CPU + memory consumption | EC2 in YOUR account (Savings Plans / ODCRs apply) + AgentCore management fee     |
 | Idle         | scale to zero                   | session stop/restart (hibernate)                                                 |
 | Launch scope | all AgentCore regions           | Linux only; limited launch regions — verify via MCP                              |
 
 Routing (mirrors `scoring.py::_select_agentcore_compute_type`): >8h sessions, GPU or
 heavy compute, or an instance-type requirement → Instances; everything else → microVMs.
 An always-on service is still a better ECS/EKS fit — Instances sessions end at 14 days.
+
+For microVMs, default to platform V2 and apply `agentcore-platform.md` after runtime selection.
+V2 adds snapshot-based starts and memory reclamation within a session; higher CPU/memory unit
+prices mean savings depend on usage. V1 is an evidenced fallback, not a new preference question.
+The general AgentCore Region list does not establish V2 availability.
 
 ## Hard limits (verify via MCP — volatile)
 

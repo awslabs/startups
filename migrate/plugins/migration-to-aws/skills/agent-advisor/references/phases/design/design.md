@@ -26,6 +26,8 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _validate_json: design.json
     _on_failure: _halt_and_inform
+  - _assert: "Each effective AgentCore microVM unit has agentcore_platform per agentcore-platform.md, defaults to V2, and names an evidenced exception for V1; Instances and other effective runtimes have null; the primary record is mirrored at the top level; pending checks make the recommendation provisional. Runtime scores and compute-type routing are unchanged."
+    _on_failure: _halt_and_inform
   - _assert: "Every unit selecting registry records its intended Registry Region and current-run verified Registry availability; cached or unavailable Regions cannot satisfy this check. A user-confirmed omission is reflected in both confirm.json and design.json service lists, including the primary-unit mirrors."
     _on_failure: _halt_and_inform
   - _assert: "design.json has one units[] entry per inventory unit, a platform block consistent with confirm.platform_decision, and top-level legacy fields mirroring the primary unit; design.json has top-level verdict, chosen_runtime, deployment_model, agentcore_compute_type, agentcore_services, model_recommendation, and carries scores + eliminated (and blocking_constraints when present) copied verbatim from scoring-result.json; every agentcore-verdict unit carries agentcore_compute_type (microvms or instances) verbatim from its scoring result and every non-agentcore unit carries null — the compute type is never re-derived in Design; every model-bearing unit's model_recommendation is derived from the matching model-recommendation.json workload entry and accepted confirm.model_decision, including model_identity, model, api_path, invocation_model_id, source, source_analysis, feature_assessment, compatibility, architecture_impacts, additional_targets (separate-modality target contracts, carried verbatim when present), blocks, tuning, migration_deltas, evaluation, rollout, provisional verification, and live_verification when model-verification.json exists; no model was independently selected from scoring-result.json; handoff_required is true iff ANY unit's effective_runtime needs a compute handoff — one of ecs, eks, fargate, or batch (not just the primary/winning runtime; AgentCore/Lambda/Lambda MicroVMs are self-contained); when temporal units exist, design.json has a temporal block recording the Way, per-queue Tier 1 rule ids, and Serverless Workers labeled Public Preview regardless of any docs label; Workflow orchestration code is never rewritten; every unit carries a key_change line derived from its runtime's service card; every non-agent unit's verdict equals the runtime its workload-classes rule maps to (W1→eks/ecs; W2→batch; W3/W4→lambda; W5/W6→fargate) — verdict and workload_class are never contradictory; every unit carries an effective_runtime equal to platform.runtime when platform.mode is consolidated, else its own resolved runtime (a co_recommend unit resolves to its confirm chosen_runtime) — effective_runtime is always a concrete runtime enum, never the literal co_recommend"
@@ -65,7 +67,7 @@ Load ALL THREE files (each is required; do not skip any — Step 4's lock-in che
 ## Step 3 — Refresh volatile facts
 
 Load `${CLAUDE_PLUGIN_ROOT}/skills/agent-advisor/references/decision-refs/freshness.md` and follow its procedure:
-read the winning profile's `volatile_facts`, try the AWS MCP Server for each, fall back to cached
+read the winning profile's `volatile_facts`, use each fact's declared MCP channel, fall back to cached
 values on failure. Record which succeeded vs fell back (for the freshness footer).
 When any unit selects `registry`, also load the AgentCore service card and the
 `registry_regions` fact from `references/runtimes/agentcore.json`, even for non-AgentCore
@@ -81,18 +83,19 @@ all models.
 
 ## Step 4b — I/O-wait TCO differentiator (surface proactively)
 
-Most customers don't know AgentCore Runtime (and Harness) bill **$0 during I/O wait** (active
-CPU only). Surface this as a TCO advantage — WITHOUT adding a question — when it actually
+AgentCore microVMs charge for active CPU, with memory billed separately. When current-run
+evidence confirms this behavior, surface it as a TCO advantage — WITHOUT adding a question — when it actually
 matters: if `traffic_pattern` is `bursty` or `idle`, OR `session_state` is `hitl`, AND AgentCore
 is viable (winning runtime is `agentcore`, or it is in a `co_recommend` set, or it was not
 eliminated). Set `io_wait_tco_note = true` in design.json and include a short note for the doc,
-e.g.: "Your traffic is spiky / has human-in-the-loop waits — on AgentCore you pay nothing while
-the agent waits on the model or a human (active-CPU billing only), which is a real TCO edge vs
-always-on compute. Exact numbers come from the migration/pricing plugins." No dollar figures
+e.g.: "Your traffic has model or human waits: AgentCore charges no CPU fees when no CPU is
+consumed, while memory remains billable. V2 can reclaim unused memory during the session;
+savings depend on the workload and the selected platform's rates." No dollar figures
 here. If AgentCore is not viable, omit the note. **The note applies to the microVMs compute
 type only** — when `agentcore_compute_type` is `instances`, billing is EC2 in the user's
 account plus a management fee (an idle instance costs money unless the session is stopped),
-so omit the $0-I/O-wait claim and let the scoring warning carry the pricing caveat instead.
+so omit the active-CPU benefit and let the scoring warning carry the pricing caveat instead.
+If billing evidence is missing, leave `io_wait_tco_note = false` and record the check as pending.
 
 ## Step 4c — FedRAMP status (WIP, not a hard block)
 
@@ -284,6 +287,38 @@ POC dispatch) MUST read `unit.effective_runtime` as the deploy/cost/render targe
 (the `_assert` that verdict equals the workload-classes token still holds) AND
 `effective_runtime: "ecs"` (where it actually deploys). In a split run the two are equal.
 
+**AgentCore platform resolution:** after resolving `effective_runtime`, load
+`references/decision-refs/agentcore-platform.md` for each effective AgentCore unit. Write its
+`agentcore_platform` record (or null for Instances); other effective runtimes get null. Apply
+the V2 default and automatic applicability checks without changing scores or asking for a
+version preference. If platform checks are pending, append them to `warnings`. Always write
+`recommendation_status`, including on a fully verified run, using the assembled units and
+`scoring-result.json` as `scoring_result`:
+
+```python
+scored_units = scoring_result.get("units", {})
+design["recommendation_status"] = scoring_result["recommendation_status"]
+design["deferred_verification_requirements"] = scoring_result.get("deferred_verification_requirements", [])
+if scored_units:
+    design["deferred_verification_requirements"] = [
+        {**requirement, "unit_id": unit_id}
+        for unit_id, result in scored_units.items()
+        for requirement in result["deferred_verification_requirements"]
+    ]
+if any(result["recommendation_status"] == "provisional" for result in scored_units.values()) or any(
+    unit.get("agentcore_platform") is not None
+    and unit["agentcore_platform"]["status"] != "verified"
+    for unit in design["units"]
+):
+    design["recommendation_status"] = "provisional"
+```
+
+The scorer's top-level status and requirements mirror the primary unit. Aggregate the scored
+units when present, so a provisional secondary unit cannot disappear behind a final primary.
+Retain each deferred requirement with its `unit_id` for the report. A final recommendation
+requires all unit scores and applicable platforms to be verified; flat legacy scoring results
+retain their original status and requirements.
+
 Each unit also carries its `coupling` object over from `context-signals.json.units[]` (verbatim
 — `{ "mode": "queue|api|a2a|none" }`), **falling back to `answers.json.units[<id>].coupling`
 when context-signals.json is absent** (a skipped-Discover run whose unit Clarify materialized —
@@ -303,7 +338,7 @@ interconnect value describes the system.
 
 **Legacy mirror (collapse + compatibility):** the primary unit (identified by
 `answers.json.primary_unit`, chosen in Clarify) has its verdict, chosen_runtime,
-deployment_model, agentcore_services, and model_recommendation ALSO written at design.json's top
+deployment_model, agentcore_services, agentcore_platform, and model_recommendation ALSO written at design.json's top
 level, exactly as today. The top-level `chosen_runtime` is the primary unit's RESOLVED runtime:
 `confirm.json.resolved_runtimes[primary_unit]` (== the co_recommend pick when the primary's
 verdict was co_recommend, else its plain verdict). It is always set — for a single-winner verdict
@@ -325,6 +360,7 @@ considered" and the "Eliminated" line (Generate reads design.json, not scoring-r
       "coupling": { "mode": "queue | api | a2a | none (carried over from context-signals.json.units[])" },
       "deployment_model": "...",
       "agentcore_compute_type": "microvms | instances | null (verbatim from this unit's scoring result; instances = capacity-provider EC2 — >8h/GPU/heavy/instance-type workloads)",
+      "agentcore_platform": {"version": "V2", "status": "pending", "reason": "...", "checks": []},
       "agentcore_services": [...],
       "model_recommendation": {...},
       "rationale": "...",
@@ -339,6 +375,7 @@ considered" and the "Eliminated" line (Generate reads design.json, not scoring-r
   },
   "verdict": "...", "chosen_runtime": "...", "deployment_model": "...",
   "agentcore_compute_type": "microvms | instances | null",
+  "agentcore_platform": "primary unit record, or null",
   "agentcore_services": [...], "model_recommendation": {...}, "warnings": [...],
   "scores": {...}, "eliminated": {...}, "blocking_constraints": [...],
   "volatile_facts": {"microvms_session_cap": {"value": "8h", "source": "mcp|cached"},
@@ -376,6 +413,6 @@ in Step 6, independent of `handoff_required`.)
 
 ## Maturity/readiness and provisional-verification extension
 
-Load `references/decision-refs/maturity-readiness.md` with the design inputs. Copy `target_maturity`, `readiness`, `recommendation_status`, and `deferred_verification_requirements` from the run artifacts into `design.json`, preserving the release and evaluation gates applicable to the tier. A `provisional` recommendation is not a launch approval: state the unresolved constraint, verification key, owner, and blocking decision explicitly.
+Load `references/decision-refs/maturity-readiness.md` with the design inputs. Copy `target_maturity` and `readiness` from the run artifacts into `design.json`, preserving the release and evaluation gates applicable to the tier. Keep the `recommendation_status` and unit-annotated `deferred_verification_requirements` explicitly computed in Step 5; do not overwrite them with the primary-unit mirror when copying maturity/readiness fields. A `provisional` recommendation is not a launch approval: state the unresolved constraint, verification key, owner, and blocking decision explicitly.
 
 This supersedes the unconditional statement in Step 4b: include an AgentCore I/O-wait billing advantage only if the sibling `$RUN_DIR/current-run-verifications.json` artifact is schema-valid, its `run_id` matches `$RUN_DIR`, and its `agentcore.io_wait_billing` record has `status: "verified"` with a source-backed observed value from this run. Never read or write verification evidence through `answers.json`. Without validated current-run evidence, say only that the billing behavior requires current verification and do not make a comparative billing claim.
