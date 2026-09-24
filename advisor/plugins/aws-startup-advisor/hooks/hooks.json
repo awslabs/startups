@@ -52,8 +52,7 @@
             "args": [
               "${CLAUDE_PLUGIN_ROOT}/hooks/telemetry/emit.mjs",
               "--session-end"
-            ],
-            "timeout": 10
+            ]
           }
         ]
       }

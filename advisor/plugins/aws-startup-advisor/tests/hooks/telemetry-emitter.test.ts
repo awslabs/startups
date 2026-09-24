@@ -32,6 +32,9 @@ const received: Received[] = [];
 // service's closed launch gate or a throttle, or decides per request body.
 let respondWith = 200;
 let respondFor: (body: any) => number = () => respondWith;
+// How long the stub waits before answering; a test raises it to stand in for a
+// slow network.
+let delayFor: (body: any) => number = () => 0;
 
 before(async () => {
   server = createServer((req, res) => {
@@ -40,7 +43,7 @@ before(async () => {
     req.on('end', () => {
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       received.push({ body });
-      res.writeHead(respondFor(body)).end();
+      setTimeout(() => res.writeHead(respondFor(body)).end(), delayFor(body));
     });
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -77,23 +80,31 @@ function phaseStatus(overrides: Record<string, unknown> = {}) {
   };
 }
 
+// What Discover leaves behind in an ordinary GCP run; the source platform is
+// read from it.
+const GCP_INVENTORY = { resources: [{ type: 'cloud_run' }, { type: 'cloud_sql' }] };
+
 // Consent is written before the state file, the order `_init` uses (run
 // directory, consent, then phase status), so the run reads as live rather than
-// as pre-consent history.
-function makeProject(status: Record<string, unknown>, consent: 'granted' | 'revoked' | null = 'granted'): Project {
+// as pre-consent history. Artifacts are the run's own JSON files, by name.
+function makeProject(
+  status: Record<string, unknown>,
+  consent: 'granted' | 'revoked' | null = 'granted',
+  artifacts: Record<string, unknown> = { 'gcp-resource-inventory.json': GCP_INVENTORY },
+): Project {
   const root = mkdtempSync(join(tmpdir(), 'emit-project-'));
   const runDir = join(root, '.migration', '0226-1430');
   mkdirSync(runDir, { recursive: true });
   const consentFile = join(root, '.migration', 'telemetry.json');
-  if (consent) {
-    writeFileSync(
-      consentFile,
-      JSON.stringify({ consent, installId: RUN_ID, consentedAt: new Date().toISOString(), version: 1 }),
-    );
-  }
+  if (consent) writeConsent(consentFile, consent);
+  for (const [name, value] of Object.entries(artifacts)) writeFileSync(join(runDir, name), JSON.stringify(value));
   const statusFile = join(runDir, '.phase-status.json');
   writeFileSync(statusFile, JSON.stringify(status, null, 2));
   return { root, runDir, stateDir: mkdtempSync(join(tmpdir(), 'emit-state-')), statusFile, consentFile };
+}
+
+function writeConsent(file: string, consent: 'granted' | 'revoked', consentedAt = new Date()) {
+  writeFileSync(file, JSON.stringify({ consent, installId: RUN_ID, consentedAt: consentedAt.toISOString(), version: 1 }));
 }
 
 function cleanup(p: Project) {
@@ -101,25 +112,42 @@ function cleanup(p: Project) {
   rmSync(p.stateDir, { recursive: true, force: true });
 }
 
-// Run the emitter the way the Stop hook does and return only the requests this
-// invocation produced.
-async function reconcile(p: Project): Promise<any[]> {
-  const before = received.length;
+function hostEnv(p: Project) {
   const env = { ...process.env };
   delete env.DO_NOT_TRACK;
   delete env.AWS_STARTUP_ADVISOR_TELEMETRY;
   delete env.CURSOR_VERSION;
   delete env.CURSOR_PROJECT_DIR;
-  Object.assign(env, {
+  return Object.assign(env, {
     AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT: endpoint,
     CLAUDE_PLUGIN_DATA: p.stateDir,
     CLAUDECODE: '1',
   });
-  const child = spawn(process.execPath, [EMIT, '--reconcile'], { cwd: p.root, env, stdio: ['pipe', 'ignore', 'inherit'] });
-  child.stdin.end(JSON.stringify({ session_id: SESSION_ID, cwd: p.root }));
+}
+
+// Run the emitter the way a hook does (payload on stdin) and return only the
+// requests this invocation produced.
+async function run(p: Project, args: string[], payload: Record<string, unknown>): Promise<any[]> {
+  const before = received.length;
+  const child = spawn(process.execPath, [EMIT, ...args], { cwd: p.root, env: hostEnv(p), stdio: ['pipe', 'ignore', 'inherit'] });
+  child.stdin.end(JSON.stringify(payload));
   const code = await new Promise<number | null>((resolve) => child.on('close', resolve));
   assert.equal(code, 0, 'the emitter is fail-open and always exits 0');
   return received.slice(before).map((r) => r.body);
+}
+
+const reconcile = (p: Project, sessionId = SESSION_ID) => run(p, ['--reconcile'], { session_id: sessionId, cwd: p.root });
+const sessionEnd = (p: Project, sessionId = SESSION_ID) =>
+  run(p, ['--session-end'], { session_id: sessionId, cwd: p.root, reason: 'other' });
+
+// Run the consent command the way the skill instructions do, from the project
+// root, and return what it printed.
+async function consent(p: Project, action: string): Promise<string> {
+  const child = spawn(process.execPath, [EMIT, 'consent', action], { cwd: p.root, env: hostEnv(p), stdio: ['ignore', 'pipe', 'inherit'] });
+  let out = '';
+  child.stdout.on('data', (chunk) => (out += chunk));
+  await new Promise((resolve) => child.on('close', resolve));
+  return out.trim();
 }
 
 const activity = (body: any) => body.pluginTelemetryEvent.migrationActivity;
@@ -332,26 +360,32 @@ describe('telemetry emitter', () => {
     }
   });
 
-  it('honours a plugin-wide consent record before the project one, either way', async () => {
+  it('lets a recorded no anywhere win, and a plugin-wide yes stand in for a missing project one', async () => {
     // Arrange: no project consent, but the plugin-wide record (in the plugin data dir) says granted
     const granted = makeProject(phaseStatus(), null);
-    writeFileSync(
-      join(granted.stateDir, 'telemetry.json'),
-      JSON.stringify({ consent: 'granted', installId: RUN_ID, consentedAt: new Date(Date.now() - 60_000).toISOString(), version: 1 }),
-    );
-    // and a project that said yes while the plugin-wide record says no
+    writeConsent(join(granted.stateDir, 'telemetry.json'), 'granted', new Date(Date.now() - 60_000));
+    // a project that said yes while the plugin-wide record says no
     const overruled = makeProject(phaseStatus(), 'granted');
-    writeFileSync(
-      join(overruled.stateDir, 'telemetry.json'),
-      JSON.stringify({ consent: 'revoked', installId: RUN_ID, consentedAt: new Date().toISOString(), version: 1 }),
-    );
+    writeConsent(join(overruled.stateDir, 'telemetry.json'), 'revoked');
+    // and a project whose stop-sharing command ran under a plugin-wide yes
+    const stopped = makeProject(phaseStatus(), null);
+    writeConsent(join(stopped.stateDir, 'telemetry.json'), 'granted', new Date(Date.now() - 60_000));
     try {
-      // Act + Assert
+      // Act
+      const revoke = await consent(stopped, 'revoke');
+      const get = await consent(stopped, 'get');
+
+      // Assert
       assert.equal((await reconcile(granted)).length, 2, 'plugin-wide yes is enough');
       assert.deepEqual(await reconcile(overruled), [], 'plugin-wide no wins over a project yes');
+      assert.equal(revoke, 'revoked');
+      assert.equal(get, 'revoked', 'the project decision is the effective one');
+      assert.deepEqual(await reconcile(stopped), [], 'and the hook sends nothing under a plugin-wide yes');
+      assert.equal(existsSync(join(stopped.runDir, '.telemetry-snapshot.json')), false);
     } finally {
       cleanup(granted);
       cleanup(overruled);
+      cleanup(stopped);
     }
   });
 
@@ -379,6 +413,205 @@ describe('telemetry emitter', () => {
       );
     } finally {
       cleanup(p);
+    }
+  });
+
+  it('never reports transitions made while consent was revoked, even after a new grant', async () => {
+    // Arrange: a reported run; consent is withdrawn, CLARIFY completes meanwhile,
+    // consent is granted again later, then DESIGN completes
+    const p = makeProject(phaseStatus());
+    const withPhases = (phases: Record<string, string>, current_phase: string) =>
+      phaseStatus({ current_phase, phases: { ...phaseStatus().phases, ...phases } });
+    try {
+      await reconcile(p);
+      writeConsent(p.consentFile, 'revoked');
+      writeFileSync(p.statusFile, JSON.stringify(withPhases({ clarify: 'completed' }, 'design'), null, 2));
+      const tenSecondsAgo = new Date(Date.now() - 10_000);
+      utimesSync(p.statusFile, tenSecondsAgo, tenSecondsAgo);
+      const whileRevoked = await reconcile(p);
+      writeConsent(p.consentFile, 'granted');
+
+      // Act
+      const afterRegrant = await reconcile(p);
+      writeFileSync(
+        p.statusFile,
+        JSON.stringify(withPhases({ clarify: 'completed', design: 'completed' }, 'estimate'), null, 2),
+      );
+      const next = await reconcile(p);
+
+      // Assert
+      assert.deepEqual(whileRevoked, []);
+      assert.deepEqual(afterRegrant, [], 'the phase completed during revocation stays unreported');
+      assert.equal(snapshotOf(p).phases.clarify, 'completed', 'but is recorded as known');
+      assert.deepEqual(
+        next.map((b) => [activity(b).eventName, activity(b).phase, activity(b).runId]),
+        [['PHASE_COMPLETED', 'DESIGN', RUN_ID]],
+        'the next consented transition is reported once, under the same run',
+      );
+    } finally {
+      cleanup(p);
+    }
+  });
+
+  it('reports a phase that completes again after a confirmed re-entry reset, exactly once more', async () => {
+    // Arrange: DISCOVER was reported; the interpreter resets it to in_progress
+    // for a re-run, then it completes again
+    const p = makeProject(phaseStatus());
+    try {
+      await reconcile(p);
+      writeFileSync(
+        p.statusFile,
+        JSON.stringify(phaseStatus({ current_phase: 'discover', phases: { ...phaseStatus().phases, discover: 'in_progress' } }), null, 2),
+      );
+
+      // Act
+      const duringRerun = await reconcile(p);
+      const observed = snapshotOf(p).phases.discover;
+      writeFileSync(p.statusFile, JSON.stringify(phaseStatus(), null, 2));
+      const completedAgain = await reconcile(p);
+      const again = await reconcile(p);
+
+      // Assert
+      assert.deepEqual(duringRerun, [], 'a reset itself is not an event');
+      assert.equal(observed, 'in_progress', 'but it is recorded');
+      assert.deepEqual(
+        completedAgain.map((b) => [activity(b).eventName, activity(b).phase, activity(b).status]),
+        [['PHASE_COMPLETED', 'DISCOVER', 'SUCCESS']],
+      );
+      assert.deepEqual(again, []);
+    } finally {
+      cleanup(p);
+    }
+  });
+
+  it('hands a run to the session that last changed it, so that session\'s teardown reports it', async () => {
+    // Arrange: session A reported the run; session B resets a phase (an edit
+    // the hook sees), then completes it through a shell write the hook does not
+    const p = makeProject(phaseStatus());
+    const SESSION_B = 'c0ffee00-1111-4222-8333-444455556666';
+    try {
+      await reconcile(p);
+      writeFileSync(
+        p.statusFile,
+        JSON.stringify(phaseStatus({ current_phase: 'discover', phases: { ...phaseStatus().phases, discover: 'in_progress' } }), null, 2),
+      );
+      await run(p, [], { session_id: SESSION_B, cwd: p.root, tool_input: { file_path: p.statusFile } });
+      const owner = snapshotOf(p).sessionId;
+      writeFileSync(p.statusFile, JSON.stringify(phaseStatus(), null, 2));
+
+      // Act
+      const byA = await sessionEnd(p, SESSION_ID);
+      const byB = await sessionEnd(p, SESSION_B);
+
+      // Assert
+      assert.equal(owner, SESSION_B);
+      assert.deepEqual(byA, [], 'a session that no longer owns the run leaves it alone');
+      assert.deepEqual(byB.map((b) => [activity(b).eventName, activity(b).phase, activity(b).sessionId]), [
+        ['PHASE_COMPLETED', 'DISCOVER', SESSION_B],
+      ]);
+    } finally {
+      cleanup(p);
+    }
+  });
+
+  it('keeps a teardown sweep inside the host budget and never repeats what it attempted', async () => {
+    // Arrange: the service answers slower than the SessionEnd budget allows
+    const p = makeProject(phaseStatus());
+    delayFor = () => 1_900;
+    try {
+      // Act
+      const startedAt = Date.now();
+      const attempted = await sessionEnd(p);
+      const elapsed = Date.now() - startedAt;
+      delayFor = () => 0;
+      const later = await reconcile(p);
+
+      // Assert
+      assert.equal(attempted.length, 2, 'the events were attempted');
+      assert.ok(elapsed < 1_500, `the sweep finished in ${elapsed} ms, inside the 1.5 s budget`);
+      assert.equal(existsSync(join(p.runDir, '.telemetry-lock')), false, 'the lock was released');
+      assert.equal(snapshotOf(p).phases.discover, 'completed', 'and the snapshot was written');
+      assert.deepEqual(later, [], 'an attempt cut short is not repeated');
+    } finally {
+      delayFor = () => 0;
+      cleanup(p);
+    }
+  });
+
+  it('derives attributes from producer-shaped artifacts, including the AI-only route', async () => {
+    // Arrange: a completed GCP run with the artifacts Clarify and Estimate write
+    const done = (extra: Record<string, unknown> = {}) =>
+      phaseStatus({
+        current_phase: 'complete',
+        phases: { ...phaseStatus().phases, clarify: 'completed', design: 'completed', estimate: 'completed' },
+        ...extra,
+      });
+    const gcp = makeProject(done(), 'granted', {
+      'gcp-resource-inventory.json': GCP_INVENTORY,
+      'preferences.json': { metadata: { clarify_mode: 'wizard', migration_type: 'full' } },
+      'estimation-infra.json': {
+        recommendation: { outcome: 'defer_for_evidence' },
+        current_costs: { source: 'preferences', gcp_monthly_spend: 2500 },
+      },
+      'estimation-billing.json': {
+        metadata: { estimate_source: 'billing_only', pricing_source: 'cached' },
+        gcp_baseline: { source: 'billing_data', total_monthly_spend: 450 },
+      },
+    });
+    // and an AI-only run delegated from llm-to-bedrock: no infrastructure inventory
+    const aiOnly = makeProject(done({ initiated_by: 'LLM_TO_BEDROCK' }), 'granted', {
+      'ai-workload-profile.json': { summary: { ai_source: 'openai', total_models_detected: 2 } },
+      'preferences.json': { metadata: { clarify_mode: 'fast_path', migration_type: 'ai-only' } },
+    });
+    const mixed = makeProject(done(), 'granted', {
+      'ai-workload-profile.json': { summary: { ai_source: 'both', total_models_detected: 2 } },
+    });
+    const attrs = (bodies: any[], phase: string) =>
+      bodies.map(activity).find((a) => a.eventName === 'PHASE_COMPLETED' && a.phase === phase)?.attributes;
+    try {
+      // Act
+      const g = await reconcile(gcp);
+      const a = await reconcile(aiOnly);
+      const m = await reconcile(mixed);
+
+      // Assert
+      assert.deepEqual(attrs(g, 'DISCOVER'), { sourceProvider: 'GCP', resourceCount: 2, hasDatabase: true, hasAi: false });
+      assert.deepEqual(attrs(g, 'CLARIFY'), { sourceProvider: 'GCP', clarifyMode: 'WIZARD' });
+      assert.deepEqual(attrs(g, 'ESTIMATE'), {
+        sourceProvider: 'GCP',
+        recommendationOutcome: 'DEFER',
+        pricingSource: 'CACHED',
+        spendBand: 'FROM_1K_TO_10K',
+        spendBasis: 'USER_PROVIDED',
+      });
+      assert.deepEqual(attrs(a, 'DISCOVER'), { sourceProvider: 'OPENAI', hasAi: true });
+      assert.deepEqual(attrs(a, 'CLARIFY'), { sourceProvider: 'OPENAI', clarifyMode: 'AI_ONLY' });
+      assert.equal(activity(a[0]).initiatingSkill, 'LLM_TO_BEDROCK');
+      assert.equal(attrs(m, 'DISCOVER')?.sourceProvider, undefined, 'two providers is ambiguous: omitted');
+    } finally {
+      cleanup(gcp);
+      cleanup(aiOnly);
+      cleanup(mixed);
+    }
+  });
+
+  it('detects a Heroku database from the add-on service, not from the resource type', async () => {
+    // Arrange: one formation and one Postgres add-on, as heroku discover writes them
+    const heroku = (resources: unknown[]) =>
+      makeProject(phaseStatus({ owning_skill: 'HEROKU_TO_AWS' }), 'granted', {
+        'heroku-resource-inventory.json': { resources },
+      });
+    const formation = { resource_type: 'formation', config: { command: 'node web.js', dyno_type: 'standard-1x' } };
+    const withDb = heroku([formation, { resource_type: 'addon', config: { addon_service: 'heroku-postgresql', plan: 'standard-0' } }]);
+    const withoutDb = heroku([formation]);
+    const discover = (bodies: any[]) => bodies.map(activity).find((a) => a.phase === 'DISCOVER')?.attributes;
+    try {
+      // Act + Assert
+      assert.deepEqual(discover(await reconcile(withDb)), { sourceProvider: 'HEROKU', resourceCount: 2, hasDatabase: true, hasAi: false });
+      assert.deepEqual(discover(await reconcile(withoutDb)), { sourceProvider: 'HEROKU', resourceCount: 1, hasDatabase: false, hasAi: false });
+    } finally {
+      cleanup(withDb);
+      cleanup(withoutDb);
     }
   });
 });

@@ -34,6 +34,14 @@ const asUuid = (value) => (UUID_RE.test(value) ? String(value).toLowerCase() : u
 const MIGRATION_SKILLS = new Set(["GCP_TO_AWS", "HEROKU_TO_AWS", "LLM_TO_BEDROCK"]);
 const LOCK_STALE_MS = 60_000;
 const POST_TIMEOUT_MS = 3_000;
+// Claude Code gives all SessionEnd hooks one shared 1.5 s budget, and a timeout
+// declared by a plugin hook does not raise it (only the customer's own settings
+// can). A teardown sweep killed mid-flight would leave sent events unrecorded
+// and repeat them later, so the sweep bounds itself: requests get whatever is
+// left of the budget minus room to write the snapshot, and a run the deadline
+// has already passed is left for the next trigger untouched.
+const SESSION_END_BUDGET_MS = 1_500;
+const SESSION_END_RESERVE_MS = 400;
 
 // Production endpoint, compiled in so a shipped plugin needs no user setup.
 // AWS_STARTUP_ADVISOR_TELEMETRY_ENDPOINT overrides it; setting the variable to
@@ -170,10 +178,11 @@ async function findRunDirs(startDir) {
 // Consent has two homes. The plugin-wide record, written when the customer
 // answers the plugin's single telemetry prompt, lives at
 // ~/.aws-startups-plugins/telemetry.json (or the plugin data dir) and covers
-// every project; when present, either way, it decides. Without it, the
-// project-level record beside the runs applies, written only by this
-// emitter's own prompt where a migration tree exists. So a customer is asked
-// once per plugin, or, before that prompt exists, once per project, never both.
+// every project. The project-level record beside the runs is written by this
+// emitter's own consent command. Across every record found, a recorded "no"
+// wins: a plugin-wide no silences every project, and a project's stop-sharing
+// command stays effective under a plugin-wide yes. Only then does any
+// recorded "yes" count. Nothing is sent without one.
 function consentFileFor(runDir) {
   return path.join(path.dirname(runDir), "telemetry.json");
 }
@@ -184,16 +193,25 @@ function machineConsentFiles() {
   return data === home ? [home] : [data, home];
 }
 
-function machineConsent() {
-  for (const file of machineConsentFiles()) {
-    const record = readJson(file);
-    if (record?.consent) return record;
-  }
-  return null;
+// Every consent record on disk, plugin-wide ones first, each with its file.
+function consentRecords(projectFile) {
+  return [...machineConsentFiles(), projectFile]
+    .map((file) => ({ file, record: readJson(file) }))
+    .filter(({ record }) => record?.consent);
+}
+
+// The record that decides: a "revoked" anywhere, else the earliest "granted",
+// since the moment consent was first given is what pre-consent history is
+// measured against.
+function effectiveConsent(records) {
+  const at = ({ record }) => Date.parse(record.consentedAt ?? "") || Infinity;
+  return records.find(({ record }) => record.consent === "revoked") ??
+    records.filter(({ record }) => record.consent === "granted").sort((a, b) => at(a) - at(b))[0] ??
+    null;
 }
 
 function consentRecordFor(runDir) {
-  return machineConsent() ?? readJson(consentFileFor(runDir));
+  return effectiveConsent(consentRecords(consentFileFor(runDir)))?.record ?? null;
 }
 
 function consentGrantedFor(runDir) {
@@ -240,7 +258,6 @@ function findMigrationRoot(startDir) {
 function runConsentCommand(action) {
   const migrationRoot = findMigrationRoot(process.cwd());
   const file = path.join(migrationRoot, "telemetry.json");
-  const record = readJson(file);
   const write = (consent) => {
     if (!existsSync(migrationRoot)) {
       process.stdout.write("no .migration directory here; create the run first\n");
@@ -254,18 +271,18 @@ function runConsentCommand(action) {
     });
     process.stdout.write(`${consent}\n`);
   };
-  const decision = machineConsent() ?? record; // the plugin-wide record decides when present
+  const decision = effectiveConsent(consentRecords(file));
   switch (action) {
     case "get":
-      process.stdout.write(`${decision?.consent ?? "unset"}\n`);
+      process.stdout.write(`${decision?.record.consent ?? "unset"}\n`);
       return;
     case "status": {
       const install = readJson(path.join(stateDir(), "install.json"));
       process.stdout.write(
         JSON.stringify(
           {
-            consent: decision?.consent ?? "unset",
-            consentFile: machineConsent() ? machineConsentFiles().find((f) => readJson(f)?.consent) : file,
+            consent: decision?.record.consent ?? "unset",
+            consentFile: decision?.file ?? file,
             stateDir: stateDir(),
             installId: install?.installId ?? "not yet minted",
             endpoint: resolveEndpoint() ?? "disabled",
@@ -352,24 +369,37 @@ const PRICING_SOURCE = {
   unavailable: "UNAVAILABLE",
 };
 
-const RECOMMENDATION_OUTCOME = { go: "GO", conditional_go: "CONDITIONAL_GO", defer: "DEFER", stay: "STAY" };
+// defer_for_evidence is heroku's spelling of the same verdict.
+const RECOMMENDATION_OUTCOME = {
+  go: "GO",
+  conditional_go: "CONDITIONAL_GO",
+  defer: "DEFER",
+  defer_for_evidence: "DEFER",
+  stay: "STAY",
+};
 
-const CLARIFY_MODE = { fast: "FAST", wizard: "WIZARD", full: "FULL", ai_only: "AI_ONLY" };
+// preferences.json metadata.clarify_mode as the clarify phases write it.
+// simple_hybrid has no model member and is omitted.
+const CLARIFY_MODE = { wizard: "WIZARD", full: "FULL", fast_path: "FAST" };
 
 // Mirrors the `current_costs.source` vocabulary the skills write.
 // estimated_from_token_volume is the AI route (it prices tokens, not
-// infrastructure); preferences is a defaulted placeholder, kept apart from
-// USER_PROVIDED so a default is never read as the customer's own figure.
+// infrastructure); preferences is the spend band the customer stated in
+// Clarify (estimate-infra Part 1), so it is the customer's own figure.
 const SPEND_BASIS = {
   billing_data: "BILLING_DATA",
   inventory_estimate: "INVENTORY_ESTIMATE",
   live_prices_plus_cache: "LIVE_PRICES_PLUS_CACHE",
   pricing_cache: "PRICING_CACHE",
   user_provided: "USER_PROVIDED",
+  preferences: "USER_PROVIDED",
   unavailable: "UNAVAILABLE",
   estimated_from_token_volume: "TOKEN_VOLUME_ESTIMATE",
-  preferences: "DEFAULTED",
 };
+
+// ai-workload-profile.json summary.ai_source, the source for a run with no
+// infrastructure inventory. "both" names two providers and is omitted.
+const AI_SOURCE = { openai: "OPENAI", anthropic: "ANTHROPIC", gemini: "GCP", other: "OTHER" };
 
 // ------------------------------------------------------ attribute derivation
 
@@ -393,9 +423,11 @@ const AI_TYPE =
 const DB_TYPE =
   /sql|postgres|mysql|mongo|redis|firestore|spanner|bigtable|datastore|memorystore|alloydb|rds|aurora|dynamo|elasticache|documentdb/;
 
+// Heroku records an add-on as resource_type "addon" with the service under
+// config.addon_service, so that is part of a resource's type here.
 const resourceTypes = (resources) =>
   resources
-    .map((r) => String(r?.type ?? r?.resource_type ?? ""))
+    .map((r) => `${r?.type ?? r?.resource_type ?? ""} ${r?.config?.addon_service ?? ""}`)
     .join(" ")
     .toLowerCase();
 
@@ -427,6 +459,17 @@ const SKILL_INVENTORY = {
   HEROKU_TO_AWS: { inventory: "heroku-resource-inventory.json", provider: "HEROKU" },
 };
 
+// The platform being left, read from what Discover found rather than from the
+// owning skill: a gcp-to-aws run may be an AI-only workload (its own route, or
+// delegated from llm-to-bedrock) with no GCP infrastructure at all, and calling
+// that GCP would be wrong. Before Discover has written anything it is unknown
+// and omitted.
+function sourceProvider(runDir, spec) {
+  if (spec && existsSync(path.join(runDir, spec.inventory))) return spec.provider;
+  const aiProfile = readJson(path.join(runDir, "ai-workload-profile.json"));
+  return mapEnum(AI_SOURCE, aiProfile?.summary?.ai_source);
+}
+
 // Every estimation artifact present, in preference order: an AI-primary run
 // writes both infra and AI files, and each attribute is taken from the first
 // artifact that actually supplies it.
@@ -446,7 +489,8 @@ const costContainer = (estimate) => estimate.current_costs ?? estimate.gcp_basel
 function deriveAttributes(runDir, skill, event) {
   const attributes = {};
   const spec = SKILL_INVENTORY[skill];
-  if (spec) attributes.sourceProvider = spec.provider;
+  const provider = sourceProvider(runDir, spec);
+  if (provider) attributes.sourceProvider = provider;
 
   const phaseEvent = event.eventName === "PHASE_COMPLETED";
 
@@ -471,8 +515,11 @@ function deriveAttributes(runDir, skill, event) {
   }
 
   if (phaseEvent && event.phase === "CLARIFY") {
-    const preferences = readJson(path.join(runDir, "preferences.json"));
-    const clarifyMode = mapEnum(CLARIFY_MODE, preferences?.metadata?.migration_type);
+    // The AI-only route is its own mode; within it clarify_mode still records
+    // fast_path or full, which AI_ONLY supersedes.
+    const metadata = readJson(path.join(runDir, "preferences.json"))?.metadata;
+    const clarifyMode =
+      metadata?.migration_type === "ai-only" ? "AI_ONLY" : mapEnum(CLARIFY_MODE, metadata?.clarify_mode);
     if (clarifyMode) attributes.clarifyMode = clarifyMode;
   }
 
@@ -484,7 +531,10 @@ function deriveAttributes(runDir, skill, event) {
         if (outcome) attributes.recommendationOutcome = outcome;
       }
       if (!attributes.pricingSource) {
-        const pricing = toPricingSource(estimate.pricing_source ?? estimate.projected_costs?.pricing_source);
+        // The billing-only route records provenance under metadata.
+        const pricing = toPricingSource(
+          estimate.pricing_source ?? estimate.metadata?.pricing_source ?? estimate.projected_costs?.pricing_source,
+        );
         if (pricing) attributes.pricingSource = pricing;
       }
     }
@@ -564,10 +614,11 @@ function buildRequest(event, ctx) {
   };
 }
 
-// Resolves to the HTTP status; rejects on a network failure or timeout.
-async function post(endpoint, body) {
+// Resolves to the HTTP status; rejects on a network failure or timeout. The
+// wait is the shorter of the request timeout and the time left before deadline.
+async function post(endpoint, body, deadline) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), Math.min(POST_TIMEOUT_MS, deadline - Date.now()));
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -592,7 +643,8 @@ const isHeld = (result) =>
 
 // ------------------------------------------------------------------ per run
 
-async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
+async function processRun(runDir, { sessionId, sessionEndMode, endpoint, deadline }) {
+  if (Date.now() >= deadline) return; // out of budget: untouched, so the next trigger reports it
   const statusFile = path.join(runDir, ".phase-status.json");
   const status = readJson(statusFile);
   if (!status?.migration_id) return;
@@ -624,24 +676,45 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     const runId = asUuid(status.run_id) ?? asUuid(snapshot?.runId) ?? crypto.randomUUID();
     const validSessionId = asUuid(sessionId);
 
-    // Consent covers what happens from the moment it was given. A run whose
-    // state was last written before the consent record exists is history the
-    // customer never agreed to report: record it as already known and send
-    // nothing, so only transitions from here on are reported.
-    if (!snapshot && predatesConsent(runDir, statusFile)) {
+    // The snapshot mirrors the state last observed, whether or not anything
+    // was sent for it. Written only when the observation changed.
+    const observe = (phases, completed) => {
+      const same =
+        snapshot &&
+        JSON.stringify(snapshot.phases ?? {}) === JSON.stringify(phases) &&
+        Boolean(snapshot.completed) === completed;
+      if (same) return;
       writeJson(snapshotFile, {
         runId,
-        sessionId: validSessionId,
-        phases: status.phases ?? {},
-        completed: status.current_phase === "complete",
+        sessionId: validSessionId ?? snapshot?.sessionId,
+        ...(snapshot?.started === false ? { started: false } : {}),
+        phases,
+        completed,
         via: viaMode(),
         updatedAt: new Date().toISOString(),
       });
+    };
+
+    // Consent covers what happens from the moment it was given. State last
+    // written before the consent record is history the customer never agreed
+    // to report: a run that predates the first grant, or transitions made
+    // while consent was revoked and then granted again. Either way it is
+    // recorded as already known and nothing is sent, so only transitions from
+    // here on are reported.
+    if (predatesConsent(runDir, statusFile)) {
+      observe(status.phases ?? {}, Boolean(snapshot?.completed) || status.current_phase === "complete");
       return;
     }
 
     const events = diffEvents(status, snapshot);
-    if (events.length === 0) return;
+    if (events.length === 0) {
+      // No transition to report, but a phase may have been reset (a confirmed
+      // re-entry sets downstream phases back to pending) or taken over by this
+      // session: record that, or the phase's next completion would read as
+      // already reported and this session's teardown would skip the run.
+      observe(status.phases ?? {}, Boolean(snapshot?.completed));
+      return;
+    }
 
     const ctx = {
       runDir,
@@ -660,7 +733,9 @@ async function processRun(runDir, { sessionId, sessionEndMode, endpoint }) {
     // snapshot write, so the next trigger would repeat the batch. No retries by
     // design: a retry queue is unbounded local state for data that is
     // loss-tolerant in aggregate.
-    const results = await Promise.allSettled(events.map((event) => post(endpoint, buildRequest(event, ctx))));
+    const results = await Promise.allSettled(
+      events.map((event) => post(endpoint, buildRequest(event, ctx), deadline)),
+    );
     const held = new Set(events.filter((_, i) => isHeld(results[i])));
     if (held.size === events.length) return; // nothing taken: nothing recorded
 
@@ -711,6 +786,7 @@ async function main() {
   if (!endpoint) return; // explicitly disabled: nothing attempted, snapshots untouched
 
   const sessionEndMode = args.includes("--session-end");
+  const deadline = sessionEndMode ? Date.now() + SESSION_END_BUDGET_MS - SESSION_END_RESERVE_MS : Infinity;
   const payload = await readStdin();
   // Claude Code sends session_id on every hook; Cursor sends conversation_id
   // on tool, file and stop hooks.
@@ -733,7 +809,7 @@ async function main() {
     process.cwd();
 
   for (const runDir of await findRunDirs(startDir)) {
-    await processRun(runDir, { sessionId, sessionEndMode, endpoint });
+    await processRun(runDir, { sessionId, sessionEndMode, endpoint, deadline });
   }
 }
 
