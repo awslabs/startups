@@ -8,19 +8,19 @@
 >
 > Loaded by `design-ai.md` when `ai_source == "anthropic"`.
 > The user is already on Claude via the Anthropic SDK. Migration is a client swap only.
-> No model change, no prompt rewriting, no retraining required.
+> Mapping an older Claude version to a newer target is a model change. Validate
+> request controls and output behavior before cutover.
 
 ---
 
 ## Step 1: Map model IDs to Bedrock
 
-| Anthropic SDK model | Bedrock model ID                                                                   | Tier     | Input/Output per 1M                                                |
-| ------------------- | ---------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------ |
-| `claude-opus-5-5*`  | `global.anthropic.claude-opus-5-5` (Global) / `us.` `eu.` `au.` `jp.` Geo profiles | Premium  | Global $4/$20; commercial Geo/Mantle $4.40/$22; GovCloud $4.80/$24 |
-| `claude-opus-4-*`   | `anthropic.claude-opus-4-8`                                                        | Premium  | $5 / $25                                                           |
-| `claude-sonnet-5-*` | `anthropic.claude-sonnet-5`                                                        | Flagship | $2 / $10 intro†                                                    |
-| `claude-sonnet-4-*` | `anthropic.claude-sonnet-5`                                                        | Flagship | $2 / $10 intro†                                                    |
-| `claude-haiku-4-*`  | `anthropic.claude-haiku-4-5-20251001-v1:0`                                         | Fast     | $1 / $5                                                            |
+| Anthropic SDK model                    | Bedrock model ID                                                                   | Tier     | Input/Output per 1M                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------ |
+| `claude-opus-4-*` / `claude-opus-5-5*` | `global.anthropic.claude-opus-5-5` (Global) / `us.` `eu.` `au.` `jp.` Geo profiles | Premium  | Global $4/$20; commercial Geo/Mantle $4.40/$22; GovCloud $4.80/$24 |
+| `claude-sonnet-5-*`                    | `anthropic.claude-sonnet-5`                                                        | Flagship | $2 / $10 intro†                                                    |
+| `claude-sonnet-4-*`                    | `anthropic.claude-sonnet-5`                                                        | Flagship | $2 / $10 intro†                                                    |
+| `claude-haiku-4-*`                     | `anthropic.claude-haiku-4-5-20251001-v1:0`                                         | Fast     | $1 / $5                                                            |
 
 † Claude Sonnet 5 intro pricing through Aug 31, 2026; then $3 / $15 (same as Sonnet 4.6). Prefer the `us.` inference-profile prefix for on-demand invoke. Sonnet 4.6 (`anthropic.claude-sonnet-4-6`) remains Active if the customer must stay on the 4.6 SKU.
 
@@ -49,7 +49,18 @@ Key differences:
 
 - content is typed blocks [{"text": "..."}] not a plain string
 - max_tokens moves to inferenceConfig.maxTokens
-- response text at `response["output"]["message"]["content"][0]["text"]`
+- Select text blocks by their `text` key; reasoning and tool blocks can appear first.
+
+```python
+text = "".join(block["text"] for block in response["output"]["message"]["content"] if "text" in block)
+stop_reason = response.get("stopReason", "unknown")
+if not text or stop_reason in ("max_tokens", "model_context_window_exceeded", "guardrail_intervened", "content_filtered", "refusal", "tool_use"):
+    raise ValueError(f"No complete text response (stopReason={stop_reason})")
+```
+
+For tool loops, retain the original `response["output"]["message"]` in assistant history,
+including signed reasoning blocks, and handle every tool request before continuing.
+The extraction above is for calls that expect a final text answer.
 
 ---
 
@@ -109,7 +120,14 @@ For Converse, place `thinking` and `output_config` in `additionalModelRequestFie
 headroom; fewer tokens are not guaranteed on every task.
 
 **Batch is not supported.** Keep Opus 4.6 as an alternative when Batch is required,
-after checking its availability and rates. Opus 4.8 remains a prior-generation
-alternative where its verified capabilities fit. Do not infer Batch support from
+after checking its availability and rates. Do not infer Batch support from
 another Opus version. For sourced on-demand/cache rates and region/profile differences,
 use `references/shared/pricing-cache.md`.
+
+**Structured output:** Opus 5.5 rejects forced `tool_choice` types `any` and `tool`
+(including Converse `toolChoice.tool`) because thinking cannot be disabled. It also
+rejects assistant prefill and supplies no native schema guarantee. Use automatic tool
+choice or prompted JSON with application schema validation and a bounded retry policy;
+return an explicit failure if validation cannot be satisfied. If a model-enforced
+schema guarantee is mandatory, select another verified compatible target explicitly.
+Do not substitute Opus 4.8 as an automatic fallback.

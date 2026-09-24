@@ -124,7 +124,6 @@ _CONVERSE_TIER_DEFAULT = "anthropic_claude_sonnet_5"
 _CONVERSE_TIER_ORDER = (
     "anthropic_claude_sonnet_5",
     "anthropic_claude_opus_5_5",
-    "anthropic_claude_opus_4_8",
     "anthropic_claude_haiku_4_5",
 )
 
@@ -160,9 +159,6 @@ def _converse_candidate_order(source, requirements=None):
         else _converse_tier_for_source(source)
     )
     order = [tier] + [k for k in _CONVERSE_TIER_ORDER if k != tier]
-    if tier == "anthropic_claude_opus_5_5":
-        order.remove("anthropic_claude_opus_4_8")
-        order.insert(1, "anthropic_claude_opus_4_8")
     same = _same_model_runtime_key(source)
     if same:
         # Same model outranks any cross-family tier: keeping the model removes
@@ -934,9 +930,10 @@ def recommend_openai_workload(workload, region, catalog):
         finding = _finding(
             "adaptive_thinking_required",
             "[BLOCKS]" if requirements.get("thinking_enabled") is False else "[TUNE]",
-            "Opus 5.5 always uses adaptive thinking and does not support disabled thinking or manual budgets.",
+            "Opus 5.5 always uses adaptive thinking and does not support disabled thinking, manual budgets, or forced any/tool choice.",
             "Set output_config.effort as needed (default medium), and size max_tokens "
-            "for thinking plus response text. Verify billed usage on the workload.",
+            "for thinking plus response text. Use auto/none tool choice; a hard forced-tool "
+            "requirement needs a verified compatible target. Verify billed usage on the workload.",
         )
         (blocks if finding["tag"] == "[BLOCKS]" else tuning).append(finding)
 

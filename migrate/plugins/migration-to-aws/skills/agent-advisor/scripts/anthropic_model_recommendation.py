@@ -28,18 +28,19 @@ ANTHROPIC_PATHS = (
 # exists. The orchestrator sends everything non-OpenAI here, so this set is the real classification.
 ANTHROPIC_POOL = frozenset({"anthropic", "none", "unknown"})
 
+# New migrations use Opus 5.5; older Opus models are not automatic fallback candidates.
 _PRIORITY_ORDER = {
-    "quality": ["claude_opus_5_5", "claude_opus_4_8", "claude_sonnet_5", "claude_haiku_4_5"],
-    "balanced": ["claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8", "claude_haiku_4_5"],
-    "speed": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8"],
-    "cost": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8"],
-    "unknown": ["claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8", "claude_haiku_4_5"],
+    "quality": ["claude_opus_5_5", "claude_sonnet_5", "claude_haiku_4_5"],
+    "balanced": ["claude_sonnet_5", "claude_opus_5_5", "claude_haiku_4_5"],
+    "speed": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_5_5"],
+    "cost": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_5_5"],
+    "unknown": ["claude_sonnet_5", "claude_opus_5_5", "claude_haiku_4_5"],
 }
 
 _FEATURE_ORDER = {
     "agentic": [
         "claude_sonnet_5",
-        "claude_opus_5_5", "claude_opus_4_8",
+        "claude_opus_5_5",
         "claude_haiku_4_5",
     ],
 }
@@ -427,7 +428,23 @@ def _source_analysis(source, target_version):
     }
 
 
-def _migration_deltas(source, source_analysis, path, feature_status, requirements):
+def _structured_output_remediation(model=None):
+    if (model or {}).get("forced_tool_choice_supported") is False:
+        return (
+            "Opus 5.5 has no native schema guarantee and rejects forced any/tool choice, "
+            "assistant prefill, and disabled thinking. Move plain-text prefill intent into prompt "
+            "instructions without promising an exact prefix. For structured results, use automatic tool choice or prompted JSON "
+            "with application schema validation and bounded retries; fail closed on invalid output. "
+            "If model-enforced schema output is required, explicitly choose another verified target."
+        )
+    return (
+        "Use a forced tool without strict only after verifying that the selected model and "
+        "thinking mode permit it. Otherwise use automatic tool choice with application schema "
+        "validation and bounded retries; do not claim a native schema guarantee."
+    )
+
+
+def _migration_deltas(source, source_analysis, path, feature_status, requirements, model=None):
     if source["provider"] != "anthropic":
         return []
     deltas = [
@@ -469,13 +486,14 @@ def _migration_deltas(source, source_analysis, path, feature_status, requirement
     detected = {
         feature for feature, status in feature_status.items() if status == "detected"
     }
-    if "structured_output" in detected:
+    if "structured_output" in requirements.get("critical_features", []):
+        detected.add("structured_output")
+    if detected.intersection({"structured_output", "assistant_prefill"}):
         deltas.append(
             _delta(
                 "structured_output",
                 "feature",
-                "Use a forced tool without strict as the portable default; native fields "
-                "are model, path, and region dependent.",
+                _structured_output_remediation(model),
             )
         )
     if path == "runtime_converse" and (
@@ -571,15 +589,19 @@ def _evaluation_requirements(workload, feature_status):
     return {"mode": "trajectory" if trajectory else "prompt", "gates": gates}
 
 
-def _base_findings(feature_status, source_analysis):
+def _base_findings(feature_status, source_analysis, model=None, requirements=None):
     detected = {
         feature for feature, status in feature_status.items() if status == "detected"
     }
+    if "structured_output" in (requirements or {}).get("critical_features", []):
+        detected.add("structured_output")
     blocks = []
     tuning = []
     for feature in sorted(detected):
         if feature in _BLOCK_FINDINGS:
             code, message, remediation = _BLOCK_FINDINGS[feature]
+            if feature == "assistant_prefill":
+                remediation = _structured_output_remediation(model)
             blocks.append(_finding(code, "[BLOCKS]", message, remediation))
         if feature in _TUNE_FINDINGS:
             code, message, remediation = _TUNE_FINDINGS[feature]
@@ -605,8 +627,7 @@ def _base_findings(feature_status, source_analysis):
                 "structured_output_portable_pattern",
                 "[BLOCKS]",
                 "Native structured-output controls vary by model, path, and region.",
-                "Use a forced tool without strict; validate the schema subset and do not "
-                "combine structured output with citations.",
+                _structured_output_remediation(model),
             )
         )
     if "structured_output" in detected and "citations" in detected:
@@ -727,7 +748,7 @@ def recommend_anthropic_workload(workload, region, catalog):
         source_analysis["detected_version"],
         source_analysis["target_version"],
     )
-    blocks, tuning = _base_findings(feature_status, source_analysis)
+    blocks, tuning = _base_findings(feature_status, source_analysis, model, workload["requirements"])
     provider = workload["source"]["provider"]
     provider_module = "anthropic" if provider in ANTHROPIC_POOL else "generic"
     if provider_module == "generic":
@@ -757,9 +778,11 @@ def recommend_anthropic_workload(workload, region, catalog):
         finding = _finding(
             "adaptive_thinking_required",
             "[BLOCKS]" if workload["requirements"].get("thinking_enabled") is False else "[TUNE]",
-            "Opus 5.5 always uses adaptive thinking; disabled thinking and manual budgets are unsupported.",
+            "Opus 5.5 always uses adaptive thinking; disabled thinking, manual budgets, and forced any/tool choice are unsupported.",
             "Use adaptive thinking with output_config.effort (default medium). "
-            "Budget max_tokens for thinking plus response text and remeasure token usage.",
+            "Budget max_tokens for thinking plus response text and remeasure token usage. "
+            "Use auto/none tool choice; if forced tool selection is a hard requirement, "
+            "select a verified compatible target rather than silently weakening that requirement.",
         )
         (blocks if finding["tag"] == "[BLOCKS]" else tuning).append(finding)
     if model.get("batch_supported") is False:
@@ -818,6 +841,7 @@ def recommend_anthropic_workload(workload, region, catalog):
             path,
             feature_status,
             workload["requirements"],
+            model,
         ),
         "evaluation": _evaluation_requirements(workload, feature_status),
         "rollout": {

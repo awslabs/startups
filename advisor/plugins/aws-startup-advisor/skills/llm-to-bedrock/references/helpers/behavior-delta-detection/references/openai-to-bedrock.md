@@ -275,9 +275,11 @@ top_p: passed through unchanged (OpenAI default 1.0, Claude default 0.999, range
 
 ### Default selection logic
 
-Read the source code at the call site. If the call already provides a JSON schema (e.g., `response_format={"type": "json_schema", "json_schema": {"name": ..., "schema": {...}}}`), prefer **tool_use**. Otherwise (plain `"json_object"`) use **prefill**.
+Read the selected target and its thinking constraints before choosing a pattern. **Opus 5.5 must use Pattern C:** it rejects forced `any`/`tool` choice and assistant prefill, and its thinking cannot be disabled. A model-enforced schema guarantee is not available on this path; if that guarantee is mandatory, keep the migration blocked until a compatible target or an application-validation contract is explicitly accepted.
 
-#### Pattern A — tool_use (preferred when schema is defined)
+Use Pattern A only when the model and thinking mode are verified to support forced tool choice. Use Pattern B only when assistant prefill is explicitly supported. Do not assume either capability from the Claude family name. For unverified cases, use a validated Pattern C implementation or fail closed; do not automatically fall back to Opus 4.8.
+
+#### Pattern A — forced tool use (verified compatible targets only; never Opus 5.5)
 
 ```python
 # Before
@@ -298,7 +300,7 @@ tool_use_block = next(b for b in response["output"]["message"]["content"] if "to
 result = tool_use_block["toolUse"]["input"]
 ```
 
-#### Pattern B — prefill (when no schema is given)
+#### Pattern B — prefill (verified compatible targets only; never Opus 5.5)
 
 ```python
 # Before
@@ -311,9 +313,82 @@ response = client.chat.completions.create(
 # After: prefill the assistant turn with `{` to constrain the start of output.
 messages_bedrock = messages_bedrock + [{"role": "assistant", "content": [{"text": "{"}]}]
 response = bedrock.converse(modelId=..., messages=messages_bedrock, ...)
-output = "{" + response["output"]["message"]["content"][0]["text"]
+response_text = "".join(block["text"] for block in response["output"]["message"]["content"] if "text" in block)
+stop_reason = response.get("stopReason", "unknown")
+if not response_text or stop_reason in ("max_tokens", "model_context_window_exceeded", "guardrail_intervened", "content_filtered", "refusal", "tool_use"):
+    raise ValueError(f"No complete text response (stopReason={stop_reason})")
+output = "{" + response_text
 result = json.loads(output)
 ```
+
+#### Pattern C — automatic tools with application validation (Opus 5.5)
+
+Use the source schema (`{"type": "object"}` for plain JSON-object mode), validated
+`target_model_id`, and the call's adapted `inference_config`. Reuse the application's
+schema validator; this example requires `jsonschema`. It guarantees only that a
+returned value passed application validation, not that the model always emits a valid
+result. A refusal or output-limit stop fails immediately. Schema/format failures get
+at most three attempts; keep a smaller existing retry budget if the source has one.
+For Opus 5.5, the adapted configuration must omit unsupported sampling controls;
+do not forward source `temperature`, `top_p`, or `top_k` settings unchanged.
+This example is non-streaming; do not silently replace a source streaming contract
+with it. Any buffering or retry behavior change must follow the confirmed decision.
+
+```python
+import json
+import jsonschema
+
+schema = source_schema
+conversation = list(messages_bedrock)
+tool_config = {
+    "tools": [{"toolSpec": {"name": "Result", "inputSchema": {"json": schema}}}],
+    "toolChoice": {"auto": {}},
+}
+for attempt in range(3):
+    response = bedrock.converse(
+        modelId=target_model_id,
+        messages=conversation,
+        inferenceConfig=inference_config,
+        toolConfig=tool_config,
+    )
+    assistant_message = response["output"]["message"]
+    conversation.append(assistant_message)  # Preserve signed reasoning blocks unchanged.
+    stop_reason = response.get("stopReason", "unknown")
+    if stop_reason not in ("end_turn", "stop_sequence", "tool_use"):
+        raise ValueError(f"No complete structured response (stopReason={stop_reason})")
+    tool_calls = [block["toolUse"] for block in assistant_message["content"] if "toolUse" in block]
+    try:
+        if tool_calls:
+            if len(tool_calls) != 1 or tool_calls[0]["name"] != "Result":
+                raise ValueError("Expected one Result tool call")
+            result = tool_calls[0]["input"]
+        else:
+            text = "".join(block["text"] for block in assistant_message["content"] if "text" in block)
+            result = json.loads(text)
+        jsonschema.validate(result, schema)
+    except (ValueError, jsonschema.ValidationError):
+        feedback = [{"toolResult": {
+            "toolUseId": call["toolUseId"],
+            "content": [{"text": "Schema validation failed."}],
+            "status": "error",
+        }} for call in tool_calls]
+        feedback.append({"text": "Return exactly one result matching the supplied JSON schema."})
+        conversation.append({"role": "user", "content": feedback})
+        if attempt == 2:
+            raise ValueError("No schema-valid result after three attempts") from None
+        continue
+    if tool_calls:
+        conversation.append({"role": "user", "content": [{"toolResult": {
+            "toolUseId": tool_calls[0]["toolUseId"],
+            "content": [{"text": "Result accepted."}],
+            "status": "success",
+        }}]})
+    break
+```
+
+If the application continues the conversation, use this complete `conversation`
+history, including assistant reasoning and tool-result acknowledgements. Do not
+reconstruct assistant history from the displayed text or parsed `result`.
 
 ### detect_grep
 

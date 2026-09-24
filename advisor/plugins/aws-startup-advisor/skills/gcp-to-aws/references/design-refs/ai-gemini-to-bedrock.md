@@ -111,7 +111,7 @@ Gemini 3.1 Pro Preview matches or beats Opus 4.6 on most reasoning benchmarks at
 
 - If user needs **general reasoning/coding quality** → Gemini 3.1 Pro is competitive or better. Migration case is weak unless driven by AWS consolidation.
 - If user needs **agentic reliability** (real-world multi-step tasks) → **Claude Sonnet 5** still leads on GDPval. This is the honest differentiator.
-- If user needs **maximum reasoning on hardest problems** → **Claude Opus 5.5** (20% lower standard input/output token prices than Opus 5; [Anthropic reports improved token efficiency](https://claude.com/blog/what-a-task-costs-on-opus-5-5), with actual usage varying by task and effort setting) — use the latest [Claude on Bedrock](https://aws.amazon.com/bedrock/pricing/) model card for benchmark deltas vs Gemini; Opus 4.8 remains a prior-generation alternative; keep Opus 4.6 when Batch is required because Opus 5.5 has no Batch tier. Confirm regional availability before selecting either.
+- If user needs **maximum reasoning on hardest problems** → **Claude Opus 5.5** (20% lower standard input/output token prices than Opus 5; [Anthropic reports improved token efficiency](https://claude.com/blog/what-a-task-costs-on-opus-5-5), with actual usage varying by task and effort setting) — use the latest [Claude on Bedrock](https://aws.amazon.com/bedrock/pricing/) model card for benchmark deltas vs Gemini; keep Opus 4.6 when Batch is required because Opus 5.5 has no Batch tier. Confirm regional availability before selecting either.
 
 ### Speed-First
 

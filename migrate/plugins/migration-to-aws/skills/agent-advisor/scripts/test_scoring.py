@@ -719,7 +719,6 @@ _LIFECYCLE_FILE = (
 # plus every model in the dated per-provider catalogs.
 _POOL_LIFECYCLE_KEYS = {
     "claude_opus_5_5": "claude-opus-5-5",
-    "claude_opus_4_8": "claude-opus-4-8",
     "claude_sonnet_5": "claude-sonnet-5",
     "claude_haiku_4_5": "claude-haiku-4-5",
     "openai_gpt_5_6_sol": "gpt-5.6-sol",
@@ -729,7 +728,6 @@ _POOL_LIFECYCLE_KEYS = {
     "openai_gpt_5_4": "gpt-5.4",
     "anthropic_claude_sonnet_5": "claude-sonnet-5",
     "anthropic_claude_opus_5_5": "claude-opus-5-5",
-    "anthropic_claude_opus_4_8": "claude-opus-4-8",
     "anthropic_claude_haiku_4_5": "claude-haiku-4-5",
 }
 

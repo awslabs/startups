@@ -290,7 +290,11 @@ response = bedrock.converse(
     messages=[{"role": "user", "content": [{"text": "Hello"}]}],
     inferenceConfig={"maxTokens": 4096}
 )
-output = response["output"]["message"]["content"][0]["text"]
+assistant_message = response["output"]["message"]
+output = "".join(block["text"] for block in response["output"]["message"]["content"] if "text" in block)
+stop_reason = response.get("stopReason", "unknown")
+if not output or stop_reason in ("max_tokens", "model_context_window_exceeded", "guardrail_intervened", "content_filtered", "refusal", "tool_use"):
+    raise ValueError(f"No complete text response (stopReason={stop_reason})")
 ```
 
 **OpenAI Streaming → Bedrock Streaming:**
@@ -307,10 +311,29 @@ response = bedrock.converse_stream(
     messages=messages_bedrock_format,
     inferenceConfig={"maxTokens": 4096}
 )
+text_parts = []
+stream_events = []  # Retain typed events, including reasoning signatures, for tool-loop history.
+stop_reason = None
 for event in response["stream"]:
+    stream_events.append(event)
     if "contentBlockDelta" in event:
-        content = event["contentBlockDelta"]["delta"]["text"]
+        delta = event["contentBlockDelta"]["delta"]
+        if "text" in delta:
+            content = delta["text"]
+            text_parts.append(content)
+            # Forward this text delta through the source application's streaming interface.
+    elif "messageStop" in event:
+        stop_reason = event["messageStop"]["stopReason"]
+output = "".join(text_parts)
+if not output or stop_reason not in ("end_turn", "stop_sequence"):
+    raise ValueError(f"No complete text stream (stopReason={stop_reason})")
 ```
+
+For continuing tool loops, append the original `assistant_message`, not the extracted text.
+For streams, use the SDK's typed-event accumulator to reconstruct that complete message
+from `stream_events`; preserve reasoning/signature blocks unchanged. Do not pass raw
+stream events directly as assistant messages. A `tool_use` stop must dispatch tools and
+return their results; it is not a final text answer.
 
 **OpenAI Function Calling → Bedrock Tool Use:**
 

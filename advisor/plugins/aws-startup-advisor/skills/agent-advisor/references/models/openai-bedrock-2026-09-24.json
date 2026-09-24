@@ -4,7 +4,7 @@
   "verified_at": "2026-09-24",
   "verified_region": "us-east-2",
   "source": "Opus 5.5 cross-family target: https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html (retrieved 2026-09-24). OpenAI and other unchanged entries retain their evidence from openai-bedrock-2026-08-21.json.",
-  "disclaimer": "The Opus cross-family target is updated to Opus 5.5; same-model OpenAI paths and their earlier evidence remain unchanged. This is a migration target catalog, not an account-availability claim. Verify the chosen model, API, region and CRIS profile before implementation. Opus 5.5 requires CRIS on runtime, has 1M context/128K output, always-on adaptive thinking, and no Batch tier. Fable and Mythos remain excluded from default selection.",
+  "disclaimer": "The Opus cross-family target is updated to Opus 5.5; same-model OpenAI paths and their earlier evidence remain unchanged. This is a migration target catalog, not an account-availability claim. Verify the chosen model, API, region and CRIS profile before implementation. Opus 5.5 requires CRIS on runtime, has 1M context/128K output, always-on adaptive thinking, and no Batch tier. Fable and Mythos remain excluded from default selection. Opus 5.5 is the only Opus model in the automatic selection pool; older Opus snapshots and pricing records are historical references.",
   "paths": {
     "mantle_openai_responses": {
       "sdk": "openai",
@@ -260,29 +260,6 @@
         }
       }
     },
-    "anthropic_claude_opus_4_8": {
-      "display_name": "Claude Opus 4.8 (Converse tier match for GPT-5.6 Sol)",
-      "family": "anthropic_claude",
-      "generation": "bedrock_native",
-      "version": "4.8",
-      "class": "runtime_native",
-      "context_window": 1000000,
-      "output_token_ceiling": 128000,
-      "capabilities": [
-        "tool_or_function_calling",
-        "reasoning",
-        "image_input_vision"
-      ],
-      "capability_source": "anthropic-bedrock-2026-07-21 catalog (runtime_converse available; tool_use/extended_thinking/vision mapped to this provider's feature vocabulary). Frontier Claude tier \u2014 the Converse target for GPT-5.6 Sol.",
-      "paths": {
-        "runtime_converse": {
-          "available": true,
-          "model_id": "anthropic.claude-opus-4-8",
-          "requires_cris": true,
-          "evidence": "anthropic-bedrock-2026-07-21 catalog runtime_converse entry (requires CRIS profile)"
-        }
-      }
-    },
     "anthropic_claude_haiku_4_5": {
       "display_name": "Claude Haiku 4.5 (Converse tier match for GPT-5.6 Luna)",
       "family": "anthropic_claude",
@@ -397,7 +374,9 @@
         }
       },
       "generation": "bedrock_native",
-      "capability_source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html (retrieved 2026-09-24): tool use, reasoning and image input; native structured outputs unsupported."
+      "capability_source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html (retrieved 2026-09-24): tool use, reasoning and image input; native structured outputs unsupported.",
+      "forced_tool_choice_supported": false,
+      "native_structured_output_supported": false
     }
   }
 }

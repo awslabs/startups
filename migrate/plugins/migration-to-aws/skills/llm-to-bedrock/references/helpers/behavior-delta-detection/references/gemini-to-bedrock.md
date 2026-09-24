@@ -82,7 +82,10 @@ choices = [c.content.parts[0].text for c in response.candidates]
 # UI: remove the candidate-count slider/input.
 # Backend: single response from converse.
 response = bedrock.converse(modelId=..., messages=messages_bedrock, inferenceConfig={"temperature": 0.7})
-choice = response["output"]["message"]["content"][0]["text"]
+choice = "".join(block["text"] for block in response["output"]["message"]["content"] if "text" in block)
+stop_reason = response.get("stopReason", "unknown")
+if not choice or stop_reason in ("max_tokens", "model_context_window_exceeded", "guardrail_intervened", "content_filtered", "refusal", "tool_use"):
+    raise ValueError(f"No complete text response (stopReason={stop_reason})")
 
 # If the calling code expected a list of choices, change the consumer to handle a single result.
 ```

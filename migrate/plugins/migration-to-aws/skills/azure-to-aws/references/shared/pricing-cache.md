@@ -30,6 +30,10 @@ SKUs do not all use the same multiplier; confirm batch/cache and cross-region ro
 that page. See `references/vendored/ai/ai-model-lifecycle.md` for lifecycle detail — **do not
 recommend Legacy/excluded models for new migrations.**
 
+**Opus selection policy:** Recommend Opus 5.5 for new Opus migration targets. Opus 4.8
+rates are retained for existing deployments only; do not recommend it as a new target
+or automatic fallback. The separately documented Opus 4.6 Batch exception remains.
+
 **Opus 5.5 rates verified: 2026-09-24.** Source: AWS Price List API, service
 `AmazonBedrockFoundationModels`, filter `servicename = Claude Opus 5.5 (Amazon Bedrock Edition)`
 and the source `regionCode`; see [Bedrock pricing](https://aws.amazon.com/bedrock/pricing/).

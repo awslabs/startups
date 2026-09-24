@@ -79,9 +79,10 @@ def test_invalid_or_forbidden_profiles_remain_blocked(region, requirements):
     assert "inference_profile_unresolved" in {item["code"] for item in rec["blocks"]}
 
 
-def test_mantle_unavailable_region_keeps_prior_generation_alternative():
+def test_mantle_unavailable_region_does_not_restore_opus48():
     rec = _recommend("eu-west-1", preferred_api_path="mantle_messages")
-    assert rec["primary_model"] == "anthropic.claude-opus-4-8"
+    assert rec["primary_model"] == "anthropic.claude-sonnet-5"
+    assert all("opus-4-8" not in item["model"] for item in rec["alternatives"])
 
 
 def test_explicit_disabled_thinking_cannot_silently_be_preserved():
@@ -106,7 +107,7 @@ def test_batch_migration_does_not_suggest_an_unsupported_opus55_batch_job():
     assert "CreateModelInvocationJob" not in impact["recommendation"]
 
 
-def test_old_catalog_remains_usable_with_the_updated_pool():
+def test_old_catalog_does_not_restore_opus48_to_the_current_pool():
     catalog = mr.load_catalog(mr.MODELS_DIR / "anthropic-bedrock-2026-07-21.json")
     workload = {
         "workload_id": "old",
@@ -114,7 +115,7 @@ def test_old_catalog_remains_usable_with_the_updated_pool():
         "requirements": {"priority": "quality"},
     }
     rec = mr.recommend({"region": "us-east-1", "primary_unit": "old", "workloads": [workload]}, catalog)
-    assert rec["workloads"]["old"]["primary_model"] == "anthropic.claude-opus-4-8"
+    assert rec["workloads"]["old"]["primary_model"] == "anthropic.claude-sonnet-5"
 
 
 def test_openai_quality_cross_family_path_uses_the_same_opus55_contract():
@@ -130,7 +131,7 @@ def test_available_openai_same_model_still_outranks_cross_family_quality():
     assert rec["primary_model"] == "openai.gpt-5.6-sol"
 
 
-def test_openai_quality_keeps_opus48_when_opus55_is_unavailable():
+def test_openai_quality_does_not_restore_opus48_when_opus55_is_unavailable():
     catalog = mr.load_openai_catalog()
     catalog["models"]["anthropic_claude_opus_5_5"]["paths"]["runtime_converse"]["available"] = False
     source = {"model_ids": ["gpt-4"]}
@@ -139,8 +140,51 @@ def test_openai_quality_keeps_opus48_when_opus55_is_unavailable():
         catalog, "runtime_converse", [], requirements,
         candidate_order=oai._converse_candidate_order(source, requirements),
     )
-    assert chosen[0] == "anthropic_claude_opus_4_8"
+    assert chosen[0] == "anthropic_claude_sonnet_5"
     assert not unmet
+
+
+def test_current_catalogs_have_no_opus48_migration_target():
+    assert "claude_opus_4_8" not in mr.load_catalog()["models"]
+    assert "anthropic_claude_opus_4_8" not in mr.load_openai_catalog()["models"]
+    assert "anthropic_claude_opus_4_8" not in oai._CONVERSE_TIER_ORDER
+
+
+@pytest.mark.parametrize("path", ["runtime_converse", "runtime_invoke", "mantle_messages"])
+@pytest.mark.parametrize("feature", ["structured_output", "assistant_prefill"])
+def test_opus55_structured_remedies_never_prescribe_forced_tool_choice(path, feature):
+    rec = _recommend(preferred_api_path=path, detected_features=[feature])
+    assert rec["primary_model"] == MODEL
+    code = "assistant_prefill_removed" if feature == "assistant_prefill" else "structured_output_portable_pattern"
+    remedy = next(item["remediation"] for item in rec["blocks"] if item["code"] == code)
+    delta = next(item["description"] for item in rec["migration_deltas"] if item["code"] == "structured_output")
+    assert remedy == delta
+    assert "automatic tool choice" in remedy
+    assert "application schema validation and bounded retries" in remedy
+    assert "no native schema guarantee" in remedy
+    assert "Use a forced tool" not in remedy
+
+
+def test_required_structured_output_is_checked_without_a_detected_source_feature():
+    rec = _recommend(critical_features=["structured_output"])
+    assert "structured_output_portable_pattern" in {item["code"] for item in rec["blocks"]}
+
+
+@pytest.mark.parametrize("cloud", ["gcp-to-aws", "azure-to-aws"])
+def test_price_cache_preserves_existing_deployment_rates_without_recommending_opus48(cloud):
+    text = (SKILLS / cloud / "references/shared/pricing-cache.md").read_text()
+    assert "Opus 4.8" in text
+    assert "rates are retained for existing deployments only" in text
+    assert "or automatic fallback" in text
+    assert _script("bedrock_pricing").lookup("us-east-1", "anthropic.claude-opus-4-8")["available"]
+
+
+@pytest.mark.parametrize("priority", ["quality", "balanced", "speed", "cost", "unknown"])
+@pytest.mark.parametrize("path", ["runtime_converse", "runtime_invoke", "mantle_messages"])
+def test_automatic_primary_and_alternatives_never_select_opus48(priority, path):
+    rec = _recommend(priority=priority, preferred_api_path=path)
+    targets = [rec["primary_model"], *(item["model"] for item in rec["alternatives"])]
+    assert all("opus-4-8" not in target for target in targets)
 
 
 @pytest.mark.parametrize("region,prefix,expected", [
