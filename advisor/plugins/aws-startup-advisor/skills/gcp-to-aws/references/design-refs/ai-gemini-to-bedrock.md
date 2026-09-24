@@ -8,7 +8,7 @@ Verify all pricing against `references/shared/pricing-cache.md`.
 
 **Model lifecycle:** Before recommending any Bedrock model, check `references/vendored/ai/ai-model-lifecycle.md`. Do not recommend Legacy models as primary selections for new migrations. Legacy models are annotated below where they appear.
 
-**Recommend defaults (Sep 2026):** Claude Sonnet 5 (`anthropic.claude-sonnet-5`) for balanced/flagship; Claude Opus 4.8 for hardest reasoning; Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to any Claude Fable / Mythos frontier model.
+**Recommend defaults:** Claude Sonnet 5 for balanced/flagship; Claude Opus 5.5 for hardest reasoning (new enterprise workhorse, step up from Opus 5/4.8, cheaper per-token with fewer tokens used); Claude Haiku 4.5 for cost/speed. Sonnet 5 is **$2/$10** — the launch rate became the standard price on Sep 1, 2026 (the scheduled increase to $3/$15 was cancelled); comparison tables below use $2/$10. Do not default to any Claude Fable / Mythos frontier model.
 
 ---
 
@@ -110,7 +110,7 @@ Gemini 3.1 Pro Preview matches or beats Opus 4.6 on most reasoning benchmarks at
 
 - If user needs **general reasoning/coding quality** → Gemini 3.1 Pro is competitive or better. Migration case is weak unless driven by AWS consolidation.
 - If user needs **agentic reliability** (real-world multi-step tasks) → **Claude Sonnet 5** still leads on GDPval. This is the honest differentiator.
-- If user needs **maximum reasoning on hardest problems** → **Claude Opus 4.8** ($5/$25 headline on-demand, same tier as Opus 4.6) — use the latest [Claude on Bedrock](https://aws.amazon.com/bedrock/pricing/) model card for benchmark deltas vs Gemini; Opus 4.6 remains a same-price alternative where batch or regional availability matters.
+- If user needs **maximum reasoning on hardest problems** → **Claude Opus 5.5** (newest, cheaper per-token than Opus 5 with fewer tokens used) — use the latest [Claude on Bedrock](https://aws.amazon.com/bedrock/pricing/) model card for benchmark deltas vs Gemini; Opus 4.8/4.6 remain same-tier prior-generation alternatives.
 
 ### Speed-First
 
