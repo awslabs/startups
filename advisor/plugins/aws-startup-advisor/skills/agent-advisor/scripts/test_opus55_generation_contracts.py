@@ -253,3 +253,63 @@ def test_shared_guide_and_gemini_adapter_read_typed_text():
     exec(after_call(code, "converse"), namespace)
     assert namespace["choice"] == "Answer"
     assert namespace["bedrock"].requests[0]["inferenceConfig"] == {"maxTokens": 4096}
+
+
+@pytest.mark.parametrize("complete_stop", ["end_turn", "stop_sequence"])
+def test_context_truncated_source_baseline_falls_back_and_retries_on_resume(tmp_path, monkeypatch, complete_stop):
+    path = SKILLS / "llm-to-bedrock/scripts/source_baseline.py"
+    spec = importlib.util.spec_from_file_location("context_limit_source_baseline", path)
+    baseline = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(baseline)
+    data = tmp_path / ".saws-migrate/golden-dataset"
+    outputs = tmp_path / ".saws-migrate/eval-results"
+    data.mkdir(parents=True)
+    outputs.mkdir(parents=True)
+    dataset = data / "prompts.jsonl"
+    dataset.write_text(json.dumps({
+        "id": "context-limit", "user_prompt": "Prompt",
+        "assistant_response": "Complete stored answer",
+    }) + "\n")
+    env_file = tmp_path / ".source-provider-env"
+    env_file.write_text("ANTHROPIC_API_KEY=offline-test-key\n")
+    output = outputs / "source_baselines.jsonl"
+    for key, value in {
+        "SOURCE_PROVIDER": "anthropic", "SOURCE_MODEL_ID": "claude-opus-4-8",
+        "GOLDEN_DATASET_PATH": str(dataset), "OUTPUT_PATH": str(output),
+    }.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setattr(sys, "argv", [str(path), str(env_file)])
+    replies = [
+        {"content": [{"type": "thinking", "thinking": "Private", "signature": "opaque"},
+                     {"type": "text", "text": "Partial answer"}],
+         "stop_reason": "model_context_window_exceeded"},
+        {"content": [{"type": "text", "text": "Complete live answer"}],
+         "stop_reason": complete_stop},
+    ]
+    calls = []
+
+    def send(*args):
+        calls.append(args)
+        return replies.pop(0)
+
+    monkeypatch.setattr(baseline, "_send", send)
+    assert baseline.main() == 0
+    row = json.loads(output.read_text())
+    assert row["source_response"] == ""
+    assert "error:" in row["status"] and "model_context_window_exceeded" in row["status"]
+
+    fake_boto = types.ModuleType("boto3")
+    fake_boto.client = lambda *args, **kwargs: Bedrock([response([{"text": "Target answer"}])])
+    monkeypatch.setitem(sys.modules, "boto3", fake_boto)
+    code = block(EVALUATOR, 'gd_path = "<repo>/.saws-migrate/golden-dataset/prompts.jsonl"')
+    exec(compile(code.replace("<repo>", str(tmp_path)), "<evaluator>", "exec"), {})
+    evaluated = json.loads((outputs / "raw_results.jsonl").read_text())
+    assert evaluated["source_baseline_source"] == "static-unknown"
+    assert evaluated["source_response"] == "Complete stored answer"
+
+    assert baseline.main() == 0
+    assert json.loads(output.read_text()) == {
+        "id": "context-limit", "source_response": "Complete live answer", "status": "live",
+    }
+    assert baseline.main() == 0
+    assert len(calls) == 2
