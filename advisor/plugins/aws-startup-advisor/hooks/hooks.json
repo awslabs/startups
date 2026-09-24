@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat ${CLAUDE_PLUGIN_ROOT}/scripts/startup-context.txt",
+            "command": "cat ${CLAUDE_PLUGIN_ROOT}/scripts/startup-context.txt 2>/dev/null || true",
             "timeout": 5
           }
         ]
