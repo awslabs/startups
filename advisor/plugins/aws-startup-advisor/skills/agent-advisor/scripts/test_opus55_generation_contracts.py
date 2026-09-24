@@ -249,6 +249,7 @@ def test_shared_guide_and_gemini_adapter_read_typed_text():
     exec(block(guide, 'text = "".join'), namespace)
     assert namespace["text"] == "Answer"
     code = block(BDD / "gemini-to-bedrock.md", 'choice = "".join')
-    namespace = {"bedrock": Bedrock([reply]), "messages_bedrock": []}
+    namespace = {"bedrock": Bedrock([reply]), "messages_bedrock": [], "inference_config": {"maxTokens": 4096}}
     exec(after_call(code, "converse"), namespace)
     assert namespace["choice"] == "Answer"
+    assert namespace["bedrock"].requests[0]["inferenceConfig"] == {"maxTokens": 4096}

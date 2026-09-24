@@ -343,7 +343,7 @@ def _source_analysis(source, target_model=None):
     }
 
 
-def _reasoning_findings(source, requirements, target_model, path):
+def _reasoning_findings(source, requirements, target_model, path, detected_features=()):
     """Version- and surface-specific parameter findings, derived from the SELECTED
     target model and path — never from the source id, and never Anthropic's blanket
     sampling-removal rule."""
@@ -376,7 +376,22 @@ def _reasoning_findings(source, requirements, target_model, path):
         )
 
     # Sampling acceptance is a property of the TARGET model and the selected path.
-    if path == "runtime_converse":
+    if target_model and target_model.get("sampling_parameters_supported") is False:
+        remediation = (
+            "Remove temperature/top_p/top_k from requests to this target; do not rescale them "
+            "or disable thinking. Route user-visible controls through the existing "
+            "parameter_removed confirmation before changing them."
+        )
+        finding = _finding(
+            "sampling_parameters_removed",
+            "[BLOCKS]" if "sampling_params" in detected_features else "[TUNE]",
+            f"{target_name} does not support sampling controls with its required thinking mode.",
+            remediation,
+        )
+        (blocks if finding["tag"] == "[BLOCKS]" else tuning).append(finding)
+        if "sampling_params" in detected_features:
+            deltas.append(_delta("sampling_parameters_removed", "feature", remediation))
+    elif path == "runtime_converse":
         tuning.append(
             _finding(
                 "sampling_via_converse",
@@ -921,7 +936,7 @@ def recommend_openai_workload(workload, region, catalog):
     source_analysis = _source_analysis(source, model)
 
     # --- Findings (target- and path-derived) ---
-    r_blocks, r_tuning, r_deltas = _reasoning_findings(source, requirements, model, path)
+    r_blocks, r_tuning, r_deltas = _reasoning_findings(source, requirements, model, path, detected)
     f_blocks, f_tuning, f_deltas, impacts = _feature_findings(detected, requirements, path)
     blocks = r_blocks + f_blocks
     tuning = r_tuning + f_tuning

@@ -125,6 +125,22 @@ def test_openai_quality_cross_family_path_uses_the_same_opus55_contract():
     assert rec["invocation_model_id"] == "global." + MODEL
 
 
+def test_openai_sampling_remediation_uses_selected_target_constraints():
+    rec = _recommend(provider="openai", source_model="gpt-4", preserve_openai_api=False,
+                     governance=["guardrails"], detected_features=["sampling_params"])
+    assert rec["primary_model"] == MODEL
+    finding = next(item for item in rec["blocks"] if item["code"] == "sampling_parameters_removed")
+    assert "parameter_removed confirmation" in finding["remediation"]
+    assert "do not rescale" in finding["remediation"]
+    assert "sampling_via_converse" not in {item["code"] for item in rec["tuning"]}
+    model = mr.load_openai_catalog()["models"]["anthropic_claude_sonnet_5"]
+    blocks, tuning, _ = oai._reasoning_findings(
+        {"model_ids": ["gpt-4"]}, {}, model, "runtime_converse", ["sampling_params"]
+    )
+    assert "sampling_parameters_removed" not in {item["code"] for item in blocks}
+    assert "sampling_via_converse" in {item["code"] for item in tuning}
+
+
 def test_available_openai_same_model_still_outranks_cross_family_quality():
     rec = _recommend(provider="openai", source_model="gpt-5.6-sol", preserve_openai_api=False,
                      governance=["guardrails"])

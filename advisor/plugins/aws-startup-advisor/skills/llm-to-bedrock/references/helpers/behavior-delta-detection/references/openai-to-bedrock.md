@@ -12,7 +12,7 @@ In the `detect_grep` recipes below, `<REPO>` is the repository path supplied in 
 
 ## Same-model (mantle) deltas
 
-**Read this section INSTEAD of the parameter-surface sections below when the resolved target is a proprietary GPT model on `bedrock-mantle`** (`openai.gpt-5.6-sol` / `-terra` / `-luna`, `openai.gpt-5.5`, `openai.gpt-5.4`). The model is unchanged, so temperature ranges, penalty parameters, and stop-sequence limits are unchanged — do not raise those as deltas. The deltas here are about the API surface and the endpoint, not about model behavior.
+**Read this section INSTEAD of the Claude parameter-surface sections below when the resolved target is a proprietary GPT model on `bedrock-mantle`** (`openai.gpt-5.6-sol` / `-terra` / `-luna`, `openai.gpt-5.5`, `openai.gpt-5.4`). Only an exact identity match from `scripts/model_identity.py` establishes that the model is unchanged. For a GPT version change, retain comparative evaluation and verify the selected GPT version's parameters; do not apply Claude ranges or claim identical behavior. The deltas here are about the API surface and the endpoint, not about model behavior.
 
 ## chat-completions-to-responses
 
@@ -64,7 +64,29 @@ Everything below applies when the target is **not** the same model — Claude, N
 
 ---
 
+## sampling-parameters-removed
+
+Apply this rule FIRST when the selected target does not support sampling controls,
+including Opus 5.5 with its required adaptive thinking. Skip the temperature-range
+and top-p pass-through sections below for that target. Verify the target model
+and thinking mode before applying those generic sections to other models.
+
+- Source: `temperature`, `top_p` / `topP`, `top_k` / `topK`, including framework defaults.
+- Target: omit these fields from Converse `inferenceConfig`, native request bodies,
+  and `additionalModelRequestFields`. Do not clamp, rescale, or disable thinking.
+- Detect with `rg -n 'temperature|top_p|topP|top_k|topK' <REPO>`; trace request builders,
+  framework defaults, UI controls and user-editable configuration for every hit.
+- For user-visible controls, emit `resolution_kind: ux_choice` and
+  `option_set_id: parameter_removed`. All three existing options remove the field
+  from the request; the confirmed option determines how to change the control.
+- For backend constants, emit `resolution_kind: impl_path` without `option_set_id`;
+  the default removes unsupported fields and records `impl_path_default`.
+- Missing confirmation uses the existing safe-default/TODO rule. An unresolved
+  control is not a compatible completed migration. Do not restore Opus 4.8 as a fallback.
+
 ## temperature-range-mismatch
+
+**Applies only to a target and thinking mode verified to accept sampling.**
 
 - `resolution_kind`: `ux_choice`
 - `option_set_id`: `range_narrowed`
@@ -252,6 +274,8 @@ grep -rEn '[Ff]requency.*[Pp]enalty' <REPO> --include="*.py" --include="*.js" --
 ---
 
 ## top-p-default-mismatch
+
+**Applies only to a target and thinking mode verified to accept sampling.**
 
 - `resolution_kind`: `impl_path`
 - Source (OpenAI): `top_p` default `1.0`, range `[0, 1]`

@@ -298,6 +298,7 @@
         "image_input_vision"
       ],
       "adaptive_thinking_only": true,
+      "sampling_parameters_supported": false,
       "default_effort": "medium",
       "batch_supported": false,
       "inference_profiles": {
