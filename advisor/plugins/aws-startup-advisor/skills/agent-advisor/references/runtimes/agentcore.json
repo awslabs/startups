@@ -56,6 +56,14 @@
       "verify_via_mcp": true
     },
     {
+      "key": "identity_consent_portal_regions",
+      "verification_key": "agentcore.identity_oauth",
+      "value": [],
+      "as_of": "2026-09-17",
+      "source": "https://aws.amazon.com/about-aws/whats-new/2026/09/amazon-bedrock-agentcore/",
+      "verify_via_mcp": true
+    },
+    {
       "key": "registry_regions",
       "verification_key": "agent_registry.regions",
       "value": ["us-east-1", "us-west-2", "ap-northeast-1", "ap-southeast-2", "eu-west-1"],
