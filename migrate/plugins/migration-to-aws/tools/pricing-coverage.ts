@@ -35,7 +35,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const PLUGIN = process.argv.slice(2).find((a) => !a.startsWith("-")) ?? "migrate/plugins/migration-to-aws";
+const PLUGIN = process.argv.slice(2).find((a) => !a.startsWith("-")) ?? "advisor/plugins/aws-startup-advisor";
 const SKILLS = join(PLUGIN, "skills");
 const PRICING = join(SKILLS, "shared/pricing/aws-infra-pricing.json");
 const FASTPATH = join(SKILLS, "azure-to-aws/knowledge/design/fast-path-services.json");
@@ -159,3 +159,30 @@ if (unclassified.length > 0) {
 }
 
 console.log("pricing coverage: OK — every emittable service is priced, declared absent, or declared no-cost.");
+
+// Model recommendations also feed the estimator. Adding a default to the dated
+// catalog without adding a numeric rate must fail the normal build.
+const modelScript = readFileSync(join(SKILLS, "agent-advisor/scripts/model_recommendation.py"), "utf8");
+const catalogName = modelScript.match(/DEFAULT_CATALOG = MODELS_DIR \/ "([^"]+)"/)?.[1];
+if (!catalogName) throw new Error("Cannot locate the default Anthropic catalog.");
+const modelCatalog = JSON.parse(
+  readFileSync(join(SKILLS, "agent-advisor/references/models", catalogName), "utf8"),
+) as { models: Record<string, { paths: { runtime_converse: { model_id: string } } }> };
+
+for (const cloud of ["gcp-to-aws", "azure-to-aws"]) {
+  const cachePath = join(SKILLS, cloud, "references/shared/pricing-cache.md");
+  const rows = readFileSync(cachePath, "utf8").split("\n")
+    .filter((line) => line.startsWith("|"))
+    .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
+  for (const model of Object.values(modelCatalog.models)) {
+    const id = model.paths.runtime_converse.model_id;
+    const pricedModel = rows.some((row) =>
+      row.length >= 8 &&
+      row[1].replace(/^(us|eu|au|jp|global)\./, "") === id &&
+      Number(row[3]) > 0 && Number(row[4]) > 0 &&
+      /^active\b/i.test(row[7])
+    );
+    if (!pricedModel) throw new Error(`${cachePath}: selected model ${id} has no numeric Active price row.`);
+  }
+}
+console.log("model pricing coverage: OK — every Anthropic catalog candidate has an Active numeric cache row.");

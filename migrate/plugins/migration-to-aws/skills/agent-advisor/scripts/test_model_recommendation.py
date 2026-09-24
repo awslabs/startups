@@ -396,7 +396,7 @@ def test_input_and_output_match_schemas():
 def test_catalog_records_path_specific_ids_and_limits():
     catalog = model_recommendation.load_catalog()
 
-    assert catalog["verified_at"] == "2026-07-21"
+    assert catalog["verified_at"] == "2026-09-24"
     assert catalog["verified_region"] == "us-east-1"
     assert (
         catalog["models"]["claude_sonnet_5"]["paths"]["mantle_messages"][

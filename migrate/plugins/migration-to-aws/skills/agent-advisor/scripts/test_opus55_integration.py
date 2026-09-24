@@ -1,0 +1,208 @@
+"""Opus 5.5 selection, profile, pricing, and estimate-contract regressions."""
+
+import importlib.util
+from pathlib import Path
+
+import pytest
+
+import model_recommendation as mr
+
+
+SKILLS = Path(mr.__file__).resolve().parents[2]
+MODEL = "anthropic.claude-opus-5-5"
+
+
+def _recommend(region="us-east-1", provider="anthropic", source_model="claude-opus-4-8",
+               detected_features=(), **requirements):
+    workload = {
+        "workload_id": "reasoning",
+        "source": {
+            "provider": provider,
+            "model_ids": [source_model],
+            "sdk": "anthropic" if provider == "anthropic" else "openai",
+            "api_surface": "messages" if provider == "anthropic" else "responses",
+            "source_paths": ["src/app.py"],
+        },
+        "requirements": {
+            "priority": "quality",
+            "preferred_api_path": "runtime_converse",
+            "data_residency": "global_allowed",
+            **requirements,
+        },
+        "detected_features": list(detected_features),
+    }
+    return mr.recommend({
+        "schema_version": 2, "region": region, "primary_unit": "reasoning", "workloads": [workload],
+    })["workloads"]["reasoning"]
+
+
+def _script(name):
+    path = SKILLS / "llm-to-bedrock" / "scripts" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"opus55_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize("path", ["runtime_converse", "runtime_invoke", "mantle_messages"])
+def test_quality_and_thinking_select_opus55_on_each_supported_path(path):
+    rec = _recommend(preferred_api_path=path, thinking_enabled=True, min_context_tokens=1000000)
+    assert rec["primary_model"] == MODEL
+    assert rec["model_identity"]["output_token_ceiling"] == 128000
+    assert rec["invocation_model_id"] == (MODEL if path == "mantle_messages" else "global." + MODEL)
+    assert rec["verification"]["probe_status"] == "not_run"
+
+
+@pytest.mark.parametrize("region,prefix", [
+    ("us-east-1", "us"), ("eu-west-1", "eu"), ("ap-southeast-2", "au"),
+    ("ap-northeast-1", "jp"), ("us-gov-west-1", "us"),
+])
+def test_geo_ids_match_supported_source_regions(region, prefix):
+    rec = _recommend(region, data_residency="geo_required", cris_geography=prefix)
+    assert rec["primary_model"] == MODEL
+    assert rec["invocation_model_id"] == prefix + "." + MODEL
+
+
+@pytest.mark.parametrize("region,requirements", [
+    ("us-gov-west-1", {}),
+    ("us-east-1", {"data_residency": "geo_required", "cris_geography": "eu"}),
+    ("ap-southeast-1", {"data_residency": "geo_required", "cris_geography": "au"}),
+    ("us-east-1", {"inference_profile_id": "us.anthropic.claude-opus-4-8"}),
+    ("us-east-1", {"data_residency": "geo_required", "cris_geography": "us",
+                   "inference_profile_id": "global." + MODEL}),
+])
+def test_invalid_or_forbidden_profiles_remain_blocked(region, requirements):
+    rec = _recommend(region, **requirements)
+    assert rec["primary_model"] == MODEL
+    assert rec["invocation_model_id"] is None
+    assert "inference_profile_unresolved" in {item["code"] for item in rec["blocks"]}
+
+
+def test_mantle_unavailable_region_keeps_prior_generation_alternative():
+    rec = _recommend("eu-west-1", preferred_api_path="mantle_messages")
+    assert rec["primary_model"] == "anthropic.claude-opus-4-8"
+
+
+def test_explicit_disabled_thinking_cannot_silently_be_preserved():
+    rec = _recommend(thinking_enabled=False)
+    assert "adaptive_thinking_required" in {item["code"] for item in rec["blocks"]}
+
+
+def test_batch_migration_does_not_suggest_an_unsupported_opus55_batch_job():
+    rec = _recommend(detected_features=["message_batches"])
+    finding = next(item for item in rec["blocks"] if item["code"] == "message_batches_not_portable")
+    assert "does not support Bedrock Batch" in finding["remediation"]
+    assert "Opus 4.6" in finding["remediation"]
+
+
+def test_old_catalog_remains_usable_with_the_updated_pool():
+    catalog = mr.load_catalog(mr.MODELS_DIR / "anthropic-bedrock-2026-07-21.json")
+    workload = {
+        "workload_id": "old",
+        "source": {"provider": "none"},
+        "requirements": {"priority": "quality"},
+    }
+    rec = mr.recommend({"region": "us-east-1", "primary_unit": "old", "workloads": [workload]}, catalog)
+    assert rec["workloads"]["old"]["primary_model"] == "anthropic.claude-opus-4-8"
+
+
+def test_openai_quality_cross_family_path_uses_the_same_opus55_contract():
+    rec = _recommend(provider="openai", source_model="gpt-4", preserve_openai_api=False,
+                     governance=["guardrails"])
+    assert rec["primary_model"] == MODEL
+    assert rec["invocation_model_id"] == "global." + MODEL
+
+
+def test_available_openai_same_model_still_outranks_cross_family_quality():
+    rec = _recommend(provider="openai", source_model="gpt-5.6-sol", preserve_openai_api=False,
+                     governance=["guardrails"])
+    assert rec["primary_model"] == "openai.gpt-5.6-sol"
+
+
+@pytest.mark.parametrize("region,prefix,expected", [
+    ("us-east-1", "global.", (0.004, 0.020)),
+    ("us-east-1", "us.", (0.0044, 0.022)),
+    ("eu-west-1", "eu.", (0.0044, 0.022)),
+    ("ap-southeast-2", "au.", (0.0044, 0.022)),
+    ("ap-northeast-1", "jp.", (0.0044, 0.022)),
+    ("us-east-1", "", (0.0044, 0.022)),
+    ("us-gov-west-1", "us.", (0.0048, 0.024)),
+    ("us-gov-west-1", "", (0.0048, 0.024)),
+])
+def test_pricing_uses_the_region_and_profile_not_just_model_name(region, prefix, expected):
+    result = _script("bedrock_pricing").lookup(region, prefix + MODEL)
+    assert result["available"]
+    assert (result["input_per_1k_usd"], result["output_per_1k_usd"]) == expected
+    assert "2026-09-24" in result["note"]
+
+
+@pytest.mark.parametrize("region,model", [
+    ("us-gov-west-1", "global." + MODEL),
+    ("eu-west-1", MODEL),
+    ("us-east-1", "jp." + MODEL),
+    ("us-east-1", "anthropic.claude-opus-5"),
+    ("us-east-1", MODEL + "0"),
+    ("us-east-1", MODEL + "-20260922-v1:0"),
+    ("cn-north-1", "global." + MODEL),
+])
+def test_unknown_or_mismatched_price_dimensions_fail_closed_without_network(region, model):
+    result = _script("bedrock_pricing").lookup(region, model)
+    assert result["available"] is False
+    assert result["input_per_1k_usd"] is None
+
+
+@pytest.mark.parametrize("region,prefix", [("ap-southeast-2", "au"), ("ap-northeast-1", "jp")])
+def test_iam_covers_both_profile_and_foundation_model(region, prefix):
+    policy = _script("iam_policy").generate_policy([prefix + "." + MODEL], region, "123456789012")
+    resources = policy["Statement"][0]["Resource"]
+    assert f"arn:aws:bedrock:*::foundation-model/{MODEL}" in resources
+    assert f"arn:aws:bedrock:{region}:123456789012:inference-profile/{prefix}.{MODEL}" in resources
+
+
+def test_govcloud_iam_uses_the_govcloud_partition():
+    policy = _script("iam_policy").generate_policy(["us." + MODEL], "us-gov-west-1", "123456789012")
+    assert all(arn.startswith("arn:aws-us-gov:") for arn in policy["Statement"][0]["Resource"])
+
+
+def test_bare_opus55_is_mantle_for_iam_but_not_a_runtime_probe():
+    policy = _script("iam_policy").generate_policy([MODEL], "us-east-1", "123456789012")
+    assert policy["Statement"][0]["Sid"] == "BedrockMantleInference"
+    result = _script("preflight_bedrock").probe_model(None, MODEL)
+    assert result["ok"] is False
+    assert result["reason"] == "inference_profile_required"
+
+
+def test_each_anthropic_pool_model_has_a_numeric_cache_row_in_both_clouds():
+    for cloud in ("gcp-to-aws", "azure-to-aws"):
+        text = (SKILLS / cloud / "references/shared/pricing-cache.md").read_text()
+        rows = [line.split("|")[1:-1] for line in text.splitlines() if line.startswith("|")]
+        for model in mr.load_catalog()["models"].values():
+            model_id = model["paths"]["runtime_converse"]["model_id"]
+            matching = [row for row in rows if len(row) >= 8 and
+                        row[1].strip().removeprefix("global.").removeprefix("us.") == model_id]
+            assert matching, (cloud, model_id)
+            assert all(float(row[3].strip()) > 0 and float(row[4].strip()) > 0 for row in matching)
+
+
+def test_gemini_cost_comparison_uses_the_recommended_model_and_correct_denominator():
+    text = (SKILLS / "gcp-to-aws/references/design-refs/ai-gemini-to-bedrock.md").read_text()
+    assert "Claude Opus 5.5 Global ($4/$20)" in text
+    assert "$2,100" in text and "+75%" in text
+    assert "$2,310" in text and "+92.5%" in text
+    assert (150 * 4 + 75 * 20) / 1200 - 1 == 0.75
+    assert "when Batch is required because Opus 5.5 has no Batch tier" in text
+
+
+def test_new_catalog_records_batch_and_thinking_constraints():
+    for catalog, key in [(mr.load_catalog(), "claude_opus_5_5"),
+                         (mr.load_openai_catalog(), "anthropic_claude_opus_5_5")]:
+        model = catalog["models"][key]
+        assert model["batch_supported"] is False
+        assert model["adaptive_thinking_only"] is True
+        assert model["lifecycle_status"] == "active"
+
+
+def test_pricing_and_selection_share_the_verified_profile_region_matrix():
+    expected = mr.load_catalog()["models"]["claude_opus_5_5"]["inference_profiles"]
+    assert _script("bedrock_pricing")._OPUS55_PROFILE_REGIONS == expected
+    assert mr.load_openai_catalog()["models"]["anthropic_claude_opus_5_5"]["inference_profiles"] == expected

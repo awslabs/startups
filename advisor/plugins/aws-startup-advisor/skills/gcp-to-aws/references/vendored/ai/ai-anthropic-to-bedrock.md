@@ -14,12 +14,13 @@
 
 ## Step 1: Map model IDs to Bedrock
 
-| Anthropic SDK model | Bedrock model ID                           | Tier     | Input/Output per 1M |
-| ------------------- | ------------------------------------------ | -------- | ------------------- |
-| `claude-opus-4-*`   | `anthropic.claude-opus-4-8`                | Premium  | $5 / $25            |
-| `claude-sonnet-5-*` | `anthropic.claude-sonnet-5`                | Flagship | $2 / $10 intro†     |
-| `claude-sonnet-4-*` | `anthropic.claude-sonnet-5`                | Flagship | $2 / $10 intro†     |
-| `claude-haiku-4-*`  | `anthropic.claude-haiku-4-5-20251001-v1:0` | Fast     | $1 / $5             |
+| Anthropic SDK model | Bedrock model ID                                                                   | Tier     | Input/Output per 1M                                                |
+| ------------------- | ---------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------ |
+| `claude-opus-5-5*`  | `global.anthropic.claude-opus-5-5` (Global) / `us.` `eu.` `au.` `jp.` Geo profiles | Premium  | Global $4/$20; commercial Geo/Mantle $4.40/$22; GovCloud $4.80/$24 |
+| `claude-opus-4-*`   | `anthropic.claude-opus-4-8`                                                        | Premium  | $5 / $25                                                           |
+| `claude-sonnet-5-*` | `anthropic.claude-sonnet-5`                                                        | Flagship | $2 / $10 intro†                                                    |
+| `claude-sonnet-4-*` | `anthropic.claude-sonnet-5`                                                        | Flagship | $2 / $10 intro†                                                    |
+| `claude-haiku-4-*`  | `anthropic.claude-haiku-4-5-20251001-v1:0`                                         | Fast     | $1 / $5                                                            |
 
 † Claude Sonnet 5 intro pricing through Aug 31, 2026; then $3 / $15 (same as Sonnet 4.6). Prefer the `us.` inference-profile prefix for on-demand invoke. Sonnet 4.6 (`anthropic.claude-sonnet-4-6`) remains Active if the customer must stay on the 4.6 SKU.
 
@@ -88,3 +89,27 @@ Request TPM increases via Service Quotas. Cross-region inference profiles (us.* 
 - [ ] ANTHROPIC_API_KEY removed from environment/secrets
 - [ ] IAM role has bedrock:InvokeModel permission
 - [ ] Model IDs updated to Bedrock format (Claude 4.x recommended)
+
+## Opus 5.5 target contract (verified 2026-09-24)
+
+The [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html) identifies `anthropic.claude-opus-5-5` as
+Active, with a 1M-token context window and 128K maximum output. On `bedrock-runtime`,
+use a supported Geo or Global inference profile, never the bare ID. `global.` requires
+permission to route worldwide and is unavailable in GovCloud. Geo profiles are `us.`,
+`eu.`, `au.`, and `jp.`; use the model card's source-region matrix, not a guessed prefix.
+
+The bare ID is supported by **Mantle Messages** only in `us-east-1`, `ap-southeast-4`,
+and `us-gov-west-1`. It is not a runtime in-region target. Probe the selected API/profile
+in the actual account; catalog availability is not proof of account access.
+
+Thinking is always adaptive and cannot be disabled. Use `output_config.effort`
+(`low`, `medium`, `high`, `xhigh`, `max`; default `medium`), not a manual `budget_tokens`.
+For Converse, place `thinking` and `output_config` in `additionalModelRequestFields`.
+`max_tokens` includes thinking and response text. Re-evaluate token usage and output
+headroom; fewer tokens are not guaranteed on every task.
+
+**Batch is not supported.** Keep Opus 4.6 as an alternative when Batch is required,
+after checking its availability and rates. Opus 4.8 remains a prior-generation
+alternative where its verified capabilities fit. Do not infer Batch support from
+another Opus version. For sourced on-demand/cache rates and region/profile differences,
+use `references/shared/pricing-cache.md`.

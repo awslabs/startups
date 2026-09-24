@@ -29,17 +29,17 @@ ANTHROPIC_PATHS = (
 ANTHROPIC_POOL = frozenset({"anthropic", "none", "unknown"})
 
 _PRIORITY_ORDER = {
-    "quality": ["claude_opus_4_8", "claude_sonnet_5", "claude_haiku_4_5"],
-    "balanced": ["claude_sonnet_5", "claude_opus_4_8", "claude_haiku_4_5"],
-    "speed": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_4_8"],
-    "cost": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_4_8"],
-    "unknown": ["claude_sonnet_5", "claude_opus_4_8", "claude_haiku_4_5"],
+    "quality": ["claude_opus_5_5", "claude_opus_4_8", "claude_sonnet_5", "claude_haiku_4_5"],
+    "balanced": ["claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8", "claude_haiku_4_5"],
+    "speed": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8"],
+    "cost": ["claude_haiku_4_5", "claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8"],
+    "unknown": ["claude_sonnet_5", "claude_opus_5_5", "claude_opus_4_8", "claude_haiku_4_5"],
 }
 
 _FEATURE_ORDER = {
     "agentic": [
         "claude_sonnet_5",
-        "claude_opus_4_8",
+        "claude_opus_5_5", "claude_opus_4_8",
         "claude_haiku_4_5",
     ],
 }
@@ -295,7 +295,7 @@ def _path_constraints(workload):
     }
 
 
-def _build_candidates(catalog, paths, requirements):
+def _build_candidates(catalog, paths, requirements, region=None):
     model_order, driver = _candidate_order(requirements)
     required_capabilities = _required_capabilities(requirements)
     min_context = requirements.get("min_context_tokens", 0)
@@ -303,9 +303,19 @@ def _build_candidates(catalog, paths, requirements):
     candidates = []
     for path_rank, path in enumerate(paths):
         for model_rank, model_key in enumerate(model_order):
-            model = catalog["models"][model_key]
+            model = catalog["models"].get(model_key)
+            if model is None:
+                continue
             path_config = model["paths"].get(path, {})
             if path_config.get("available") is not True:
+                continue
+            regions = path_config.get("regions")
+            if regions is not None and region not in regions:
+                continue
+            profiles = model.get("inference_profiles")
+            if path_config.get("requires_cris") and profiles and not any(
+                region in regions for regions in profiles.values()
+            ):
                 continue
             if not required_capabilities.issubset(set(model["capabilities"])):
                 continue
@@ -326,11 +336,11 @@ def _build_candidates(catalog, paths, requirements):
     return sorted(candidates, key=lambda item: item["rank"])
 
 
-def _candidate_summary(candidate, requirements, reason):
+def _candidate_summary(candidate, requirements, reason, region=None):
     model = candidate["model"]
     path_config = candidate["path_config"]
     invocation_model_id = _resolve_invocation_model_id(
-        path_config["model_id"], path_config["requires_cris"], requirements
+        path_config["model_id"], path_config["requires_cris"], requirements, model, region
     )
     return {
         "model_key": candidate["model_key"],
@@ -342,24 +352,36 @@ def _candidate_summary(candidate, requirements, reason):
     }
 
 
-def _resolve_invocation_model_id(model_id, requires_cris, requirements):
+def _resolve_invocation_model_id(model_id, requires_cris, requirements, model=None, region=None):
     if not requires_cris:
         return model_id
     explicit = requirements.get("inference_profile_id")
-    if explicit:
-        return explicit
-    residency = requirements.get("data_residency", "unknown")
-    if residency == "global_allowed":
-        return f"global.{model_id}"
-    if residency == "geo_required" and requirements.get("cris_geography"):
-        return f"{requirements['cris_geography']}.{model_id}"
-    return None
+    candidate = explicit
+    if not candidate:
+        residency = requirements.get("data_residency", "unknown")
+        if residency == "global_allowed":
+            candidate = f"global.{model_id}"
+        elif residency == "geo_required" and requirements.get("cris_geography"):
+            candidate = f"{requirements['cris_geography']}.{model_id}"
+    profiles = (model or {}).get("inference_profiles")
+    if not candidate or not profiles:
+        return candidate
+    # An application profile cannot be resolved from a static catalog. Keep it
+    # unresolved until the target-account probe establishes its model and geography.
+    prefix, separator, base = candidate.partition(".")
+    if not separator or base != model_id or region not in profiles.get(prefix, []):
+        return None
+    if requirements.get("data_residency") == "geo_required":
+        geography = requirements.get("cris_geography")
+        if prefix == "global" or (geography and prefix != geography):
+            return None
+    return candidate
 
 
-def _decision_options(catalog, workload, option_paths):
+def _decision_options(catalog, workload, option_paths, region=None):
     options = []
     for path in dict.fromkeys(option_paths):
-        candidates = _build_candidates(catalog, [path], workload["requirements"])
+        candidates = _build_candidates(catalog, [path], workload["requirements"], region)
         if not candidates:
             continue
         tradeoff = (
@@ -368,7 +390,7 @@ def _decision_options(catalog, workload, option_paths):
             else "Provides runtime governance but requires rewriting the Messages integration."
         )
         options.append(
-            _candidate_summary(candidates[0], workload["requirements"], tradeoff)
+            _candidate_summary(candidates[0], workload["requirements"], tradeoff, region)
         )
     return options
 
@@ -617,7 +639,7 @@ def _verification(candidate, region, catalog, invocation_model_id):
 def _decision_required(workload, region, catalog, constraints):
     feature_status = _feature_assessment(workload, _source_version(workload["source"]), None)
     decision_options = _decision_options(
-        catalog, workload, constraints["option_paths"]
+        catalog, workload, constraints["option_paths"], region
     )
     if len(decision_options) != len(set(constraints["option_paths"])):
         raise ValueError(
@@ -681,7 +703,7 @@ def recommend_anthropic_workload(workload, region, catalog):
         return _decision_required(workload, region, catalog, constraints)
 
     candidates = _build_candidates(
-        catalog, constraints["paths"], workload["requirements"]
+        catalog, constraints["paths"], workload["requirements"], region
     )
     if not candidates:
         raise ValueError(
@@ -714,7 +736,32 @@ def recommend_anthropic_workload(workload, region, catalog):
         path_config["model_id"],
         path_config["requires_cris"],
         workload["requirements"],
+        model,
+        region,
     )
+    if model.get("inference_profiles") and path_config["requires_cris"] and not invocation_model_id:
+        blocks.append(_finding(
+            "inference_profile_unresolved", "[BLOCKS]",
+            "The selected model has no verified inference profile matching the region and residency requirements.",
+            "Choose a supported Geo or Global profile and probe it in the target account; "
+            "resolve application-profile ARNs through Bedrock before implementation.",
+        ))
+    if model.get("adaptive_thinking_only"):
+        finding = _finding(
+            "adaptive_thinking_required",
+            "[BLOCKS]" if workload["requirements"].get("thinking_enabled") is False else "[TUNE]",
+            "Opus 5.5 always uses adaptive thinking; disabled thinking and manual budgets are unsupported.",
+            "Use adaptive thinking with output_config.effort (default medium). "
+            "Budget max_tokens for thinking plus response text and remeasure token usage.",
+        )
+        (blocks if finding["tag"] == "[BLOCKS]" else tuning).append(finding)
+    if model.get("batch_supported") is False:
+        for finding in blocks:
+            if finding["code"] == "message_batches_not_portable":
+                finding["remediation"] = (
+                    "Opus 5.5 does not support Bedrock Batch. Use on-demand inference, "
+                    "or select a verified batch-capable alternative such as Opus 4.6."
+                )
     rationale = list(constraints["rationale"])
     rationale.append(
         f"{model['display_name']} is the highest-ranked {chosen['driver']} model "
@@ -725,6 +772,7 @@ def recommend_anthropic_workload(workload, region, catalog):
             candidate,
             workload["requirements"],
             "Next compatible model/path candidate after hard-constraint filtering.",
+            region,
         )
         for candidate in candidates[1:4]
     ]
@@ -773,4 +821,3 @@ def recommend_anthropic_workload(workload, region, catalog):
             chosen, region, catalog, invocation_model_id
         ),
     }
-
