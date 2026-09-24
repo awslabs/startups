@@ -300,7 +300,13 @@ def test_context_truncated_source_baseline_falls_back_and_retries_on_resume(tmp_
 
     fake_boto = types.ModuleType("boto3")
     fake_boto.client = lambda *args, **kwargs: Bedrock([response([{"text": "Target answer"}])])
+    fake_core = types.ModuleType("botocore")
+    fake_exceptions = types.ModuleType("botocore.exceptions")
+    fake_exceptions.ClientError = type("ClientError", (Exception,), {})
+    fake_core.exceptions = fake_exceptions
     monkeypatch.setitem(sys.modules, "boto3", fake_boto)
+    monkeypatch.setitem(sys.modules, "botocore", fake_core)
+    monkeypatch.setitem(sys.modules, "botocore.exceptions", fake_exceptions)
     code = block(EVALUATOR, 'gd_path = "<repo>/.saws-migrate/golden-dataset/prompts.jsonl"')
     exec(compile(code.replace("<repo>", str(tmp_path)), "<evaluator>", "exec"), {})
     evaluated = json.loads((outputs / "raw_results.jsonl").read_text())
