@@ -105,7 +105,8 @@ Traditional-AI capabilities (AWS AI service, not Bedrock): `document_extraction`
   do NOT appear here — they are `design_blocks[]` rows with `target_aws_service`.
 - **`capability_mapping`** — per capability that is `true` in the profile's
   `integration.capabilities_summary`: `{ parity: "full|partial|none", notes }`.
-- **`code_migration`** — `primary_pattern` (matches profile `integration.pattern`),
+- **`code_migration`** — `migration_path` (the selected API/endpoint path consumed by Generate),
+  `primary_pattern` (matches profile `integration.pattern`),
   `framework`, `files_to_modify[]`, `dependency_changes`, and — when the source is Azure
   OpenAI / OpenAI — `openrouter_path` when a router was detected
   (`same_model_mantle|direct|litellm|keep_openrouter`).

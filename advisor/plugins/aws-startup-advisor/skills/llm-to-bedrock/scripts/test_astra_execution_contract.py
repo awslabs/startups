@@ -122,7 +122,7 @@ def test_chat_image_helper_validates_missing_bytes():
     assert image_input.chat_message("text")["content"] == [{"type": "text", "text": "text"}]
 
 
-@pytest.mark.parametrize("source,target,expected", [(60, 60, 0), (60, 66, 10), (0, 60, None)])
+@pytest.mark.parametrize("source,target,expected", [(60, 60, 0), (60, 66, 10), (120, 60, -50), (0, 60, None)])
 @pytest.mark.parametrize("skill", ["gcp-to-aws", "azure-to-aws"])
 def test_roi_executes_rate_derived_formula(source, target, expected, skill):
     text = (PLUGIN / "skills" / skill / "references/phases/estimate/estimate-ai.md").read_text()
@@ -212,3 +212,36 @@ def test_shared_astra_paths_reach_azure_schema_and_generator():
     generator = (refs / "phases/generate/generate-artifacts-ai.md").read_text()
     row = next(line for line in generator.splitlines() if line.startswith("| `mantle_openai_responses`"))
     assert "mantle_openai_chat" in row and "migrate_to_mantle.sh" in row
+
+
+@pytest.mark.parametrize("model_id,region,allowed", [
+    ("us.openai.gpt-6-astra", "us-east-1", True),
+    ("global.openai.gpt-6-astra", "eu-west-1", True),
+    ("openai.gpt-6-astra", "us-east-1", False),
+])
+def test_azure_runtime_parent_gate_contract(model_id, region, allowed):
+    """Check real catalog witnesses against the declared parent/fragment contract.
+
+    This is a source-contract test, not execution of the natural-language DSL.
+    """
+    catalog = json.loads((PLUGIN / "skills/agent-advisor/references/models/openai-bedrock-2026-09-09.json").read_text())
+    runtime = catalog["models"]["openai_gpt_6_astra"]["paths"]["runtime_converse"]
+    witness = {"aws_model_id": model_id, "migration_path": "runtime_openai_cris", "model_change": False}
+    assert (region in runtime["inference_profile_regions"].get(witness["aws_model_id"], [])) is allowed
+    refs = PLUGIN / "skills/azure-to-aws/references"
+    for parent in ["phases/design/design.md", "phases/generate/generate.md"]:
+        text = (refs / parent).read_text().split("---", 2)[1]
+        rule = next(line for line in text.splitlines() if "runtime_openai_cris accepts documented" in line)
+        assert "bare proprietary openai.gpt-* IDs use Mantle only" in rule
+        assert "Astra us./global." in rule and "caller-region checks" in rule
+        assert "no proprietary openai.gpt-* model ID is paired" not in text
+    schema = (refs / "shared/schema-design-aws-ai.md").read_text()
+    assert "**`code_migration`** — `migration_path`" in schema
+
+
+def test_azure_final_recommendation_uses_computed_roi():
+    text = (PLUGIN / "skills/azure-to-aws/references/phases/estimate/estimate-ai.md").read_text()
+    final = text.split("## Part 7: Migration Recommendation", 1)[1].split("## Output", 1)[0]
+    assert "computed Part 5 result, not a fixed premium" in final
+    assert "source comparison is unavailable" in final
+    assert "~10% higher" not in final and "costs ~10% more" not in final

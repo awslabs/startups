@@ -53,7 +53,7 @@ load-bearing — bare `/v1` 404s), a Bedrock API key / token provider (NOT an Op
 `MAX_TOKENS` from a lookup table, default `1024`. No prompt changes when the source already uses
 `responses.create`. Preserve Astra Chat when `mantle_openai_chat` was selected; reshape only for a selected API change. Adapt Azure-specific client/deployment/API-version settings to the Bedrock client rather than relying on OPENAI_BASE_URL alone.
 
-## Step 1: `provider_adapter.{py,js,go}` (direct / gpt-oss path)
+## Step 1: `provider_adapter.{py,js,go}` (direct / gpt-oss / runtime_openai_cris path)
 
 Feature-flagged on `AI_PROVIDER` (values `azure_openai` | `bedrock` | `shadow`; **default
 `azure_openai`**). Emits methods gated on `integration.capabilities_summary`: `text_generation`→
