@@ -105,6 +105,13 @@ run = [
 description = "Fail if the migrate + advisor copies of a shared skill tree drift apart (a fix landed on one side only). Normalizes the intentional prefix/path/schema-id differences; allowlists deliberate prose divergence."
 run = "node advisor/plugins/aws-startup-advisor/tools/cross-plugin-drift.ts"
 
+[tasks."hooks:check"]
+description = "Fail if hooks/hooks.json runs a command naming a CLAUDE_PLUGIN_ROOT-relative path the plugin does not ship — the class of bug that broke the SessionStart hook in 2.0.0/2.0.1 (CI). Both plugins."
+run = [
+  "node advisor/plugins/aws-startup-advisor/tools/hooks-check.ts . migrate/plugins/migration-to-aws",
+  "node advisor/plugins/aws-startup-advisor/tools/hooks-check.ts . advisor/plugins/aws-startup-advisor",
+]
+
 [tasks."fixtures:check"]
 description = "Structural integrity of committed replay fixtures (JSON parse, asserter byte-compile, manifest file references, gitignore traps, seed phase-status vs declared phases) for both plugins"
 run = [
@@ -135,6 +142,7 @@ run = [
   { task = "lint:model-ids" },
   { task = "shared:check" },
   { task = "drift:check" },
+  { task = "hooks:check" },
   { task = "fixtures:assert" },
   { task = "fixtures:check" },
   { task = "pricing:staleness" },
