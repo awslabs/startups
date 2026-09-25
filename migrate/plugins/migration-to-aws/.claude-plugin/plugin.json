@@ -56,6 +56,17 @@
     "temporal-cloud",
     "temporal-workers",
     "temporal-to-aws",
-    "durable-execution"
+    "durable-execution",
+    "azure",
+    "azure-to-aws",
+    "aks",
+    "app-service",
+    "azure-sql",
+    "cosmos-db",
+    "azure-openai",
+    "entra-id",
+    "blob-storage",
+    "bicep",
+    "arm-template"
   ]
 }

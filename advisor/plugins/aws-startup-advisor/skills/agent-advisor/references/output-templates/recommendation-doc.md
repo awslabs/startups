@@ -17,11 +17,17 @@ way scoring-result.json states it — a bare number. The engine publishes no max
 a percentage ("40/56", "71%") asserts something it never computed.
 
 For an AgentCore verdict, name the compute type from design.json.agentcore_compute_type and what
-drove it: microvms — "serverless microVMs (8h sessions, consumption billing, $0 during I/O wait)";
+drove it: microvms — "serverless microVMs (8h sessions, active-CPU and separately billed memory consumption)";
 instances — "Instances compute type: AWS-managed EC2 via a capacity provider (sessions to 14 days,
 GPU/instance-type choice, EC2 + management-fee billing)" and name which answer routed there
 (>8h duration, GPU/heavy compute, or the instance-type requirement). Carry the scoring warning
 about the 14-day ceiling and pricing model verbatim into this section.>
+
+For each effective AgentCore microVM target, also state `agentcore_platform.version`, its
+applicability status, and any pending checks. Give the concrete reason for V1 when selected.
+Distinguish applicability from deployment evidence; the numeric runtime revision is not the
+platform version. Cost assumptions use that same platform. Instances and units consolidated
+onto another runtime have no microVM platform setting.
 
 ## 3b. System topology (multi-unit systems only — omit entirely for one unit)
 

@@ -1,4 +1,16 @@
+---
+_fragment: compute
+_of_phase: clarify
+_contributes:
+  - preferences.json (design_constraints section: compute_model, kubernetes, cpu_architecture; metadata.inventory_clarifications for Category B)
+---
+
 # Category B — Configuration Gaps + Category C — Compute Model
+
+> **Fragment unit.** See `clarify.md` for how it is composed into the phase.
+>
+> **This fragment asks nothing.** It reads the inventory, resolves what it can, assigns a
+> disposition per row, and returns rows. `clarify-assemble.md` presents them.
 
 This file covers two related categories:
 
@@ -37,7 +49,11 @@ _Fire when:_ Compute resources present (Cloud Run, Cloud Functions, GKE, GCE, Ap
 
 ## Q7b — What compute operational model do you prefer for your App Engine workloads?
 
-_Fire when:_ App Engine present in inventory (`google_app_engine_application`) AND Q5 != 1 (multi-cloud). Skip when: no App Engine in inventory, or Q5 = 1 (multi-cloud already resolved compute to EKS — App Engine routes to EKS, overriding the EB default; same portability override as Q8).
+_Fire when:_ App Engine present in inventory (`google_app_engine_application`) AND
+`clarify-global.md`'s multi-cloud row (`design_constraints.compute`) did NOT resolve to
+`"eks"`. Skip when: no App Engine in inventory, or the multi-cloud row already resolved
+compute to EKS — App Engine routes to EKS, overriding the EB default; same portability
+override as Q8 below.
 
 **Rationale:** GCP App Engine is a PaaS that can map to different AWS compute targets depending on whether the user wants to preserve the managed platform model (Elastic Beanstalk), switch to direct container control (Fargate/ECS), or go serverless (Lambda). This drives the fundamental routing decision for App Engine resources.
 
@@ -72,51 +88,53 @@ _Note: If Q5=Yes (multi-cloud), this question is skipped — `compute: "eks"` is
 
 ---
 
-## Q8 — How does your team feel about managing Kubernetes?
+## Q8 — How do you want to run your Kubernetes workloads on AWS?
 
-_Fire when:_ GKE cluster present AND Q5 != 1 (multi-cloud). Skip when: Q5 = 1 (already resolved to EKS) or no GKE in inventory.
+_Fire when:_ GKE cluster present AND Q5 != 1 (multi-cloud). Skip when: Q5 = 1 (already resolved to a Standard EKS Cluster) or no GKE in inventory.
 
-**Rationale:** When multi-cloud is not required (Q5=No) and GKE is detected, team sentiment is the deciding factor between EKS and ECS Fargate. This is subjective and cannot be inferred from IaC.
+**Rationale:** You are already on GKE, so the starting assumption is that you keep Kubernetes — the default AWS target is **EKS Auto Mode**, where AWS provisions, scales, patches, and operates the nodes for you (the same hands-off model as GKE Autopilot, and the approach AWS recommends going forward). Q8 confirms that default and offers two explicit off-ramps: manage the nodes yourself (Standard EKS Cluster), or drop Kubernetes entirely (ECS Fargate). This is subjective and cannot be inferred from IaC.
 
-**Context for user:** When asking, frame it practically so the user gives an honest answer rather than aspirational:
+**Autopilot context (read `config.autopilot_enabled` on the `google_container_cluster` from `gcp-resource-inventory.json`):**
 
-- **Love it / K8s expert** — your team writes Helm charts, debugs CrashLoopBackOff in their sleep, and actively chose K8s
-- **Neutral / Competent** — K8s works, your team can operate it, but it's not a passion project
-- **Frustrated / Steep curve** — K8s feels like overhead; your team spends more time fighting YAML than shipping features
+- **Autopilot cluster** (`autopilot_enabled: true`) → your cluster is already fully node-managed, so EKS Auto Mode (1) is the 1:1 equivalent and stays the default. Present the options neutrally and record the Autopilot→Auto Mode fit in the rationale — do not steer the question toward 1. Standard node groups (2) are a step _backward_ in operational model here; surface it only if the user asks.
+- **Standard cluster** (`autopilot_enabled: false`) → you manage node pools today. Keep 1 as the default, but give 2 (standard managed node groups) equal footing when presenting options, since it preserves your current node-management model.
+- **Unknown** (flag absent) → 1 remains the default; present 2 and 3 as equal alternatives.
 
-> Your team's Kubernetes experience determines whether we recommend EKS (Kubernetes on AWS) or ECS Fargate (simpler managed containers).
+**Context for user:** Frame the question practically and **neutrally — present all options (1/2/3) before stating the default, so an unsure user makes an actual choice rather than passively confirming a lead-in recommendation.** The default is noted last, after the options:
+
+- **Fully-managed Kubernetes** — keep Kubernetes and your manifests/Helm charts, but let AWS run the nodes (autoscaling, patching, right-sizing). Closest match to GKE Autopilot.
+- **Self-managed nodes** — keep Kubernetes and take direct control of the node groups (instance types, node pools, upgrades). A Standard EKS Cluster.
+- **Drop Kubernetes** — move to ECS Fargate: simpler managed containers, no Kubernetes control plane or manifests to operate.
+
+> Your workloads run on Kubernetes today (GKE). How would you like to run them on AWS?
 >
-> 1. Love it / Team is K8s expert
-> 2. Neutral / Competent with K8s
-> 3. Frustrated / Learning curve steep
-> 4. N/A — We don't use Kubernetes
-> 5. I don't know
+> 1. Keep Kubernetes, fully managed — EKS Auto Mode (AWS runs the nodes, like GKE Autopilot)
+> 2. Keep Kubernetes, manage the nodes yourself — Standard EKS Cluster with managed node groups
+> 3. Move off Kubernetes — simpler managed containers (ECS Fargate)
+> 4. I don't know
+>
+> _If you're unsure, we default to 1 — the closest match to how you run today and the lowest-ops way to keep Kubernetes._
 
-| Answer                   | Recommendation Impact                                                                                        |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Love it / K8s expert     | EKS recommended — preserves existing Kubernetes investment and expertise                                     |
-| Neutral / Competent      | EKS recommended with managed node groups to reduce operational burden                                        |
-| Frustrated / Steep curve | **Strong ECS Fargate recommendation** — eliminates Kubernetes management entirely; simpler operational model |
+| Answer                        | Recommendation Impact                                                                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Fully managed (Auto Mode)     | **EKS Auto Mode** — AWS provisions/scales/patches nodes; lowest-ops way to keep Kubernetes; AWS-recommended default                 |
+| Self-managed nodes (standard) | **Standard EKS Cluster with managed node groups** — preserves direct node control; you own instance types, node pools, and upgrades |
+| Drop Kubernetes               | **ECS Fargate** — eliminates the Kubernetes control plane and manifests entirely; simplest operational model                        |
 
-_Note: If Q5=Yes (multi-cloud), this question is skipped and EKS is already decided._
+_Note: If Q5=Yes (multi-cloud), this question is skipped and a Standard EKS Cluster is already decided._
 
 Interpret:
 
 ```
-1 -> kubernetes: "eks-managed" — EKS recommended, preserves K8s investment
-2 -> kubernetes: "eks-or-ecs" — EKS with managed node groups to reduce operational burden
-3 -> kubernetes: "ecs-fargate" — Strong ECS Fargate recommendation, eliminates K8s management
-4 -> (no constraint written — no K8s workloads)
-5 -> same as default — see IaC-signal default rule below
+1 -> kubernetes: "eks-auto" — EKS Auto Mode (default managed Kubernetes; AWS operates the nodes)
+2 -> kubernetes: "eks-standard" — Standard EKS Cluster with managed node groups (explicit opt-out from Auto Mode)
+3 -> kubernetes: "ecs-fargate" — ECS Fargate, drop Kubernetes
+4 -> same as default (1)
 ```
 
-**Default (IaC-signal driven):**
+**Default:** **1** (`kubernetes: "eks-auto"`). GKE usage signals Kubernetes adoption, and EKS Auto Mode is the low-ops, AWS-recommended way to keep it — so teams that answer 4 ("I don't know") or skip the question land on Auto Mode, not off Kubernetes. Standard node groups (2) and ECS Fargate (3) remain available via explicit answers. When `config.autopilot_enabled: true`, the default is an especially strong match (Autopilot → Auto Mode is the closest cross-cloud equivalent).
 
-- If `gcp-resource-inventory.json` contains `google_container_cluster` resources → Default **3** (`kubernetes: "ecs-fargate"`). Teams that answer "I don't know" are better served by Fargate's lower operational overhead; EKS remains available via explicit answers 1 and 2.
-- If no `google_container_cluster` in inventory (Cloud Run, Cloud Functions, or billing-only) → Default **3** (`kubernetes: "ecs-fargate"`). No Kubernetes signal; Fargate is the lower-ops starting point.
-- If inventory is absent (billing-only mode) → Default **3** (`kubernetes: "ecs-fargate"`).
-
-**Rationale:** Teams that answer 5 ("I don't know") have not expressed a Kubernetes preference. Defaulting to Fargate gives them a simpler, lower-ops starting point regardless of what discovery found. Teams who actively want EKS will answer 1 or 2 explicitly. EKS remains fully available via explicit answers 1 and 2.
+_Note: Q8 fires only when a `google_container_cluster` is present. Non-GKE containerized workloads (Cloud Run, Cloud Functions) are unaffected — they map to Fargate/Lambda via their own deterministic fast-path regardless of this answer._
 
 ---
 
@@ -264,3 +282,49 @@ Interpret:
 ```
 
 Default (if skipped/unsure): `{"value": "graviton", "chosen_by": "default"}` when all-ready; otherwise `{"value": "mixed", "chosen_by": "default"}`. See `references/shared/graviton.md` and `references/shared/schema-graviton.md`.
+
+## Rows returned
+
+```jsonc
+"design_constraints": {
+  "compute_model":  { "disposition": "PROPOSED", "value": null, "default": "managed_platform",
+                      "reason": "App Engine present, no multi-cloud requirement" },
+  "kubernetes":     { "disposition": "PROPOSED", "value": null, "default": "eks-auto" },
+  "websocket":      { "disposition": "PROPOSED", "value": null, "default": null },
+  "cloud_run_traffic_pattern":  { "disposition": "DETECTED", "value": "constant-24-7",
+                                   "default": "constant-24-7",
+                                   "source": "terraform:min_instance_count>0" },
+  "cloud_run_monthly_spend":    { "disposition": "PROPOSED", "value": null, "default": "$100-$500" },
+  "cpu_architecture": { "disposition": "PROPOSED", "value": null, "default": "graviton" }
+},
+"metadata": {
+  "inventory_clarifications": {
+    "cloud_sql_ha": null,
+    "cloud_run_service_count": null,
+    "memorystore_memory_gb": null,
+    "cloud_functions_generation": null
+  }
+}
+```
+
+Category B rows (`cloud_sql_ha`, `cloud_run_service_count`, `memorystore_memory_gb`,
+`cloud_functions_generation`) are recorded under `metadata.inventory_clarifications` — they
+fill inventory gaps, not design constraints, and Category B and Category C never both fire
+(Category B requires the inventory to be absent).
+
+## Who consumes these
+
+| Row                         | Consumer                                                                   |
+| --------------------------- | -------------------------------------------------------------------------- |
+| `compute_model`             | Design's App Engine → Elastic Beanstalk/Fargate/Lambda routing decision    |
+| `kubernetes`                | Design's GKE → EKS vs ECS Fargate routing decision                         |
+| `websocket`                 | Design's ALB configuration (WebSocket support)                             |
+| `cloud_run_traffic_pattern` | Estimate's migrate-vs-stay analysis for Cloud Run                          |
+| `cloud_run_monthly_spend`   | Estimate's migrate-vs-stay analysis for Cloud Run                          |
+| `cpu_architecture`          | Design's instance-family selection; Estimate's pricing; the Workshop sheet |
+
+## Status — build step 5 (restructure)
+
+Implemented. Restructured into the fragment-returns-rows pattern; no change to firing rules,
+defaults, or interpretation — only the presentation split (this fragment computes,
+`clarify-assemble.md` presents).

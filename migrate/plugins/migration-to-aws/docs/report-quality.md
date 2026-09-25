@@ -18,6 +18,17 @@ script is stdlib-only and ships with the plugin.
 - Accessibility semantics (no browser): `lang` on `<html>`, exactly one `<h1>`,
   table `<caption>` + header `scope`, figure `role="img"` / `aria-label` /
   `<figcaption>`, keyboard `:focus-visible` CSS contract
+- Cost figures (numeric cross-check): every `data-cost-key`-anchored dollar figure
+  in `exec-costs` must equal the matching `estimation-infra.json` value
+  (`aws_monthly_balanced` → `projected_costs.aws_monthly_balanced`; `current_monthly`
+  → `current_costs.gcp_monthly`; optional `aws_monthly_premium`/`_optimized`). Only
+  anchored figures are checked — untagged illustrative numbers are ignored, and the
+  check is skipped when no estimate is supplied. This asserts the rendered dollars
+  match the artifact; it does not re-run any TCO computation. A required key
+  (`aws_monthly_balanced`, plus GCP `current_monthly`) whose JSON value exists must
+  carry its anchor when `exec-costs` is present — a missing anchor fails, so an
+  un-anchored wrong figure cannot pass. (The Heroku validator asserts
+  `aws_monthly_balanced` only; its current-spend comparator is a follow-up.)
 
 ## How to run (agent / Generate phase)
 

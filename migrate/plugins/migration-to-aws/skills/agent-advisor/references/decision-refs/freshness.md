@@ -8,6 +8,16 @@ or the run directory in an outbound request — the answer never depends on it.
 
 ## Fields to verify at runtime via the AWS MCP Server
 
+- AgentCore platform V1/V2 behavior, V2-specific Regions, environment/startup limits, deployment
+  tooling, and memory-billing behavior (`platform_versions`, `v2_regions`, `v2_constraints`,
+  `microvms_memory_billing` in the runtime profile). Use the AWS MCP Server (`aws-mcp`) to
+  verify billing behavior and service constraints. Follow `agentcore-platform.md`.
+  Cached dates are source snapshots, never this run's verification. Unverified applicability
+  leaves V2 provisional; it does not automatically select V1.
+  Versioned CPU/memory unit rates remain dated cache inputs in `microvms_pricing`; do not
+  refresh prices through MCP. Estimate records their original source/date and labels them
+  `cached` or `cached_stale` under its pricing policy.
+
 - AgentCore microVMs session cap (currently 8h) and Instances session cap (currently 14d)
 - AgentCore microVMs compute cap (2 vCPU / 8 GB; Instances lifts it via EC2 choice)
 - AgentCore / AgentCore Instances / Lambda MicroVMs region availability (Instances
@@ -85,7 +95,10 @@ observed this run may be listed as verified.
    Check Registry facts only when `registry` is selected. In the main skill, include
    `registry_regions` from `references/runtimes/agentcore.json` even if the winning runtime is
    ECS, EKS, Lambda, or another runtime. In add-capabilities, use the Registry Hard limits entry.
-2. Attempt an AWS MCP Server lookup for each.
+2. Attempt the fact's `verification_channel` MCP lookup, defaulting to `aws-mcp` (the AWS MCP
+   Server) when unspecified. `microvms_memory_billing` uses `aws-mcp` for reclamation,
+   minimum billing, and overhead. `microvms_pricing` is cache-only and is not an MCP lookup.
+   Cached unit rates do not verify billing rules. Keep the actual MCP and source per fact.
 3. On success (the MCP call returned a value THIS run), use the fresh value and list the field as
    verified.
 4. On failure OR if you did not call the MCP at all (unavailable, skipped), use the cached

@@ -30,7 +30,7 @@ import { join } from "node:path";
 
 const SRC = "migrate/plugins/migration-to-aws";
 const DST = "advisor/plugins/aws-startup-advisor";
-const SKILLS = ["agent-advisor", "gcp-to-aws", "heroku-to-aws", "llm-to-bedrock", "tf-best-practices", "shared"];
+const SKILLS = ["agent-advisor", "azure-to-aws", "gcp-to-aws", "heroku-to-aws", "llm-to-bedrock", "tf-best-practices", "shared"];
 const listMode = process.argv.includes("--list");
 
 // Files that legitimately differ after normalization — the advisor copies carry
@@ -40,6 +40,23 @@ const listMode = process.argv.includes("--list");
 // are ALLOWED to disagree, so each is a place a future upstream fix could be
 // silently missed — prefer normalization rules over allowlist entries where possible.
 const ALLOWLIST: Record<string, Set<string>> = {
+  // Telemetry ships in the ADVISOR plugin only — `migrate/plugins/migration-to-aws`
+  // has no `hooks/` directory at all. So the advisor copy of a telemetry-enabled
+  // skill's SKILL.md carries a frontmatter `hooks:` block and a consent step that the
+  // migrate copy must NOT carry: the hook command would resolve to a file that does
+  // not exist, and the emitter-path search pattern names the advisor plugin, which is
+  // not one of the normalized token classes. Mirroring the block would ship a broken
+  // hook; omitting it is the correct divergence. Revisit if the migrate plugin ever
+  // ships `hooks/`.
+  "azure-to-aws": new Set([
+    "SKILL.md",
+    // Same three the heroku entry below allowlists, for the same reasons: the advisor
+    // INTERPRETER copy names the sibling skills, and the two schemas carry an added
+    // advisor-side `$comment` that normalization does not strip.
+    "references/vendored/dsl/INTERPRETER.md",
+    "references/vendored/estimate/estimation-infra.schema.json",
+    "references/vendored/state/phase-status.schema.json",
+  ]),
   "agent-advisor": new Set([
     "SKILL.md",
     "references/decision-refs/batch.md",
