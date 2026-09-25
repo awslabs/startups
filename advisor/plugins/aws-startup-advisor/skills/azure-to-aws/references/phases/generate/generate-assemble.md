@@ -10,20 +10,24 @@ _produces:
   - generation-warnings.json
   - validation-report.json
   - generation-ai.json
+  - README.md
+  - { file: MIGRATION_GUIDE.md, _when: "run has an infra track" }
 ---
 
 # Generate — Assemble and Account
 
 > **Assembler unit.** The single creator of `generation-warnings.json`. The
-> artifact-emitting fragments create their own files; this unit's job is to prove
-> nothing was dropped. See `generate.md` for how it is composed into the phase.
+> artifact-emitting fragments contribute the documents and create the other files.
+> This unit finalizes the documents after all fragments and proves nothing was dropped.
+> See `generate.md` for how it is composed into the phase.
 >
 > **`validation-report.json` — declared here, written by the orchestrator.** This unit is
 > the phase's declared owner of `validation-report.json` (the single-creator ledger), but
 > its CONTENT — the Terraform fmt/init/validate result plus the `tf-best-practices` policy
 > verdict — is authored by the orchestrator (`generate.md`) in the MAIN window after this
 > worker returns, because the file-only `rw` worker cannot invoke skills or run
-> `terraform`/`python`. This assembler itself writes only `generation-warnings.json`.
+> `terraform`/`python`. This assembler writes `generation-warnings.json` and finalizes the
+> documents as described below.
 
 **Execute the steps in order. This is the phase's accounting gate.**
 
@@ -51,6 +55,22 @@ For every `aws-design.json` `deferred[]` entry, write a `generation-warnings.jso
 with its reason and recommendation, so a specialist deferral is visible in the output and
 not only in the design.
 
+## Step 2a: Carry the current AI memory plan into the documents
+
+After all fragments finish, retain the base document content when `artifacts-docs` ran.
+For an AI-only run, create `README.md` from the AI fragment's emitted file list and usage
+instructions. When the AI fragment ran in this invocation, read its newly written `generation-ai.json`.
+For each memory-ingestion activity in `migration_plan.phases[].activities`, write an
+**AgentCore Memory** section preserving the API, rationale, application integration point,
+IAM requirements, strategy setup, extraction verification, and raw-event retention behavior.
+
+Use `MIGRATION_GUIDE.md` for an infra/mixed run and `README.md` for an AI-only run. Follow the
+current run's track, not files left by a previous run; do not create `MIGRATION_GUIDE.md` for
+AI-only runs. Replace a previously generated AgentCore Memory section rather than duplicating
+it. If the AI fragment did not run or its current plan has no memory-ingestion activity,
+omit that section and remove only
+its previously generated version, preserving the rest of the document.
+
 ## Step 3: Scans (gate failures, not warnings)
 
 Scan the emitted `.tf` files:
@@ -68,8 +88,10 @@ artifact to force a pass.
 
 ## Step 4: Do not overwrite inputs
 
-Emit only `generation-warnings.json` (and the fragments' own files). Never write a phase
-input — `generate.md`'s `_forbids_files` names the state artifacts explicitly.
+Emit `generation-warnings.json`, finalize `README.md` and the infra/mixed run's
+`MIGRATION_GUIDE.md` from fragment contributions, and retain the other fragment outputs.
+Never write a phase input — `generate.md`'s `_forbids_files` names the state artifacts
+explicitly.
 
 ## generation-warnings.json shape
 
