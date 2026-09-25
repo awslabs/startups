@@ -7,6 +7,9 @@ description: "Unified entry point for AI-agent work on AWS: evaluate and pick a 
 
 Helps startups decide how and where to run AI agents on AWS. Deterministic scoring
 recommends a runtime; the conversation adapts to the user's technical background.
+For AgentCore microVMs, default to V2 without a version-preference question; check applicability
+and retain V1 only for an evidenced exception. Design and POC load
+`references/decision-refs/agentcore-platform.md` for this policy.
 
 ## Definitions
 

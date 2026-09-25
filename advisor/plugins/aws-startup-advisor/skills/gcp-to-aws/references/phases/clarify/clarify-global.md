@@ -172,9 +172,13 @@ Canonical question: `references/vendored/clarify/clarify-multicloud.md`. **Dispo
 PROPOSED when compute resources are present; N/A otherwise. **Default:** per the canonical
 file — no constraint, full compute decision tree.
 
-GCP's early exit skips `clarify-compute.md`'s **Q8** (Kubernetes sentiment) and **Q7b**
-(App Engine compute-operational-model) — App Engine routes to EKS instead of its normal
-Elastic Beanstalk default, overriding the Q7b default the same way it overrides Q8's.
+For GCP migrations, `compute: "eks"` resolves to a **Standard EKS Cluster**, not Auto Mode —
+Auto Mode's node management is AWS-specific and is excluded when multi-cloud portability
+is required. GCP's early exit skips `clarify-compute.md`'s **Q8** (Kubernetes on AWS) and
+**Q7b** (App Engine compute-operational-model) — App Engine routes to a Standard EKS Cluster
+instead of its normal Elastic Beanstalk default, overriding the Q7b default the same way it
+overrides Q8's. On the AWS-only path, the full compute decision tree continues, with GKE
+defaulting to EKS Auto Mode and Standard EKS Cluster / ECS Fargate available through Q8.
 
 ### Q6 — Availability / downtime tolerance
 

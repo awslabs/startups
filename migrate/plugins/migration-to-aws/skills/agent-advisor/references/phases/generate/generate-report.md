@@ -70,6 +70,11 @@ rules below.
 | `unit.runner_up_runtime`      | NOT a global scalar — derived INSIDE the §3 per-unit loop for each agent_session unit: the highest-scoring runtime in THAT unit's `SCORING_RESULT.units[unit.id].scores` EXCLUDING `unit.verdict` (filter out the winner first, then take the top of the rest — never just "2nd sorted", else a co_recommend winner picked from a tie could show as its own runner-up). Each unit has its own; never shared | null (omit the Runner-up row)      |
 | `unit.runner_up_score`        | that runner-up runtime's score from the SAME `SCORING_RESULT.units[unit.id].scores` map                                                                                                                                                                                                                                                                                                                     | null                               |
 
+For each effective AgentCore microVM unit, read `unit.agentcore_platform` from Design.
+Show its version and applicability status in the recommended target and compute detail;
+include pending checks or the concrete V1 exception. Use the matching platform's estimate.
+Do not imply AWS deployment verification from this design-only report.
+
 ## Step R1 — Section spec
 
 The v3 report mirrors the reference HTML structure (report-v3-reference-multi-agent.html)

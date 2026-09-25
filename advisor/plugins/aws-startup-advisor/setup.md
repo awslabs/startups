@@ -49,11 +49,12 @@ npx --registry https://registry.npmjs.org skills add https://github.com/awslabs/
 
 ## Step 3: Confirm success
 
-The output should show 9 installed skills:
+The output should show 11 installed skills:
 
 - `agent-advisor`
 - `architect-for-startups`
 - `azure-to-aws`
+- `contextual-offers-for-startups`
 - `gcp-to-aws`
 - `heroku-to-aws`
 - `knowledge-base-for-startups`
@@ -62,9 +63,9 @@ The output should show 9 installed skills:
 - `start-building-for-startups`
 - `tf-best-practices`
 
-If all 9 appear, tell the user:
+If all 11 appear, tell the user:
 
-> "AWS Startup Advisor skills are installed. You can now ask me about credits, partner offers, architecture for your startup stage, migration from GCP or Heroku, moving your AI stack to Bedrock, or I can scaffold a new app for you.
+> "AWS Startup Advisor skills are installed. You can now ask me about credits, partner offers, architecture for your startup stage, migration from GCP, Azure, or Heroku, moving your AI stack to Bedrock, or I can scaffold a new app for you.
 >
 > Try asking:
 >
@@ -83,14 +84,16 @@ If any skill failed to install, show the error output to the user and suggest th
 ## What these skills do
 
 - **knowledge-base-for-startups** — AWS Activate credits, programs, partner offers, sample architectures, and hundreds of learn articles on topics like gen AI, cost optimization, security, and fundraising.
-- **prompt-library-for-startups** — 30 curated prompts (MVP scaffolding, RAG chatbot, security baseline, cost anomaly detection, GPU quota, EKS deployment, Well-Architected review) plus 4 downloadable agents (Migration, Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent).
+- **prompt-library-for-startups** — 29 curated prompts (MVP scaffolding, RAG chatbot, security baseline, cost anomaly detection, GPU quota, EKS deployment, Well-Architected review) plus 5 downloadable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent, Bedrock Model Availability Agent, AWS DB Advisor).
+- **contextual-offers-for-startups** — Companion skill that surfaces a single, genuinely relevant AWS Activate partner offer as optional context after another skill has finalized its recommendation. Merit-first (never changes the advice), at most one per response and often none, muteable. Reads offer content from `knowledge-base-for-startups`.
 - **architect-for-startups** — Stage-aware architecture advice that adjusts recommendations based on whether you're pre-revenue, seed, Series A, or Series B+. Factors in team size, runway, credits, and timeline.
 - **start-building-for-startups** — Interactive discovery workflow. Scans your codebase, asks about your goals and constraints, then writes an AWS architectural scaffold directly into your project.
-- **gcp-to-aws** — 6-phase migration from Google Cloud (and AI providers like OpenAI, Gemini, LangChain) to AWS. Discovers resources, designs architecture, estimates costs, generates Terraform artifacts.
-- **azure-to-aws** — 7-phase migration from Microsoft Azure (and Azure OpenAI / agentic AI workloads) to AWS. Discovers from Terraform/Bicep/ARM + a consent-gated read-only `az` capture + app code, designs architecture, estimates costs (1:1 lift and right-sized), optionally reprices what-if scenarios, generates Terraform artifacts.
-- **heroku-to-aws** — 6-phase migration from Heroku to AWS (Dynos → Elastic Beanstalk by default; Fargate/EKS overrides, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK), with an optional what-if repricing workshop.
+- **gcp-to-aws** — 6-phase migration from Google Cloud (and AI providers like OpenAI, Gemini, LangChain) to AWS. Discovers resources from Terraform, app code, and billing exports (optionally real OpenAI spend via the Admin API, consent-gated), designs architecture, estimates costs with Savings Plan / Reserved Instance options (billing-only runs surface these only as a conditional CUD-vs-AWS comparison when the export shows active commitments), generates Terraform artifacts. On the infrastructure-generation route, that includes `baseline.tf`, an account security baseline. Config and Security Hub are added only when root `preferences.json.compliance` contains soc2, pci, hipaa, or fedramp; Clarify stores the Q2 answer at `design_constraints.compliance.value` and does not set that root field, so a standard Clarify compliance answer does not include those controls. AI-only runs instead emit `bedrock_monitoring.tf`, and billing-only runs emit skeleton Terraform — neither includes the account security baseline. OpenAI workloads land on the same GPT model on Bedrock where one exists (including OpenAI models reached via OpenRouter or LiteLLM); GCP Document AI, Vision, and Speech-to-Text are detected too.
+- **azure-to-aws** — 6-phase migration from Microsoft Azure (and Azure OpenAI / agentic AI workloads) to AWS. Discovers from Terraform (`azurerm_*`) + app code, designs architecture, estimates costs (1:1 lift and right-sized), optionally reprices what-if scenarios, generates Terraform artifacts. (Bicep, ARM template, and live `az` CLI discovery are planned follow-ups, not yet available.)
+- **heroku-to-aws** — 6-phase migration from Heroku to AWS (Dynos → Elastic Beanstalk by default; Fargate/EKS overrides, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK), with an optional what-if repricing workshop. Generate also emits `baseline.tf`, an account security baseline (same always-on controls as `gcp-to-aws`'s infrastructure route, plus Config and Security Hub when `global.compliance` includes soc2, pci, hipaa, or fedramp), alongside the app Terraform.
+
 - **llm-to-bedrock** — Executes an OpenAI/Gemini/Anthropic → Amazon Bedrock SDK rewrite: assesses the codebase, rewrites call sites, evaluates output quality, and delivers a ready-to-merge branch. Delegates assessment to `gcp-to-aws`, installed alongside it by this Step 2B command.
-- **agent-advisor** — Picks an AWS runtime for AI agents (AgentCore vs ECS/EKS/Lambda), generates a migration plan for existing agent workloads (needs `gcp-to-aws`, installed alongside it by this Step 2B command; degrades gracefully without it), and can build a deployable POC. Also covers Temporal workers.
+- **agent-advisor** — Picks an AWS runtime for AI agents (AgentCore vs ECS/EKS/Lambda vs Lambda MicroVMs), generates a migration plan for existing agent workloads (needs `gcp-to-aws`, installed alongside it by this Step 2B command; degrades gracefully without it), and can build a deployable POC. Also covers Temporal workers.
 - **tf-best-practices** — Best-practice authoring guidance and a read-only policy gate for AWS Terraform generated by the migration skills.
 
 ## MCP servers (migration skills)

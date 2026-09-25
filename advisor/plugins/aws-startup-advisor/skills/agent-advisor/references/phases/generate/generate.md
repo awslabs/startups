@@ -90,6 +90,10 @@ runs HERE conditionally:
 the orchestration layer stays on Temporal. If the user asks why, answer in chat per
 decision-refs/temporal.md ("If the user asks") — do not add it to the plan.
 
+For each effective AgentCore microVM unit, carry `agentcore_platform` from Design into the
+recommendation and starter notes, including version, pending checks, or the V1 exception.
+A provisional platform must remain provisional in the mini-brief and HTML report.
+
 ## Step 4 — Lightweight scaffolding (Build paths only)
 
 **Skip this step entirely for `migrate`** (execution artifacts belong to the downstream plugins).
@@ -114,8 +118,9 @@ TO `$RUN_DIR/mini-brief.md` (a file, not just chat text; Step 5.5 re-reads it):
   `[BLOCKS]`, evaluation mode, and live verification status. Never describe model access as
   runnable unless `live_verification.status == "passed"`.
 - Any `warnings` from the scoring result (e.g. 5 TPS).
-- If `design.json` has `io_wait_tco_note == true`: the I/O-wait TCO point (AgentCore bills $0
-  during model/human waits — a cost edge for spiky/HITL traffic; no dollar figures).
+- If `design.json` has `io_wait_tco_note == true`: explain that CPU is not charged when none
+  is consumed during waits, while memory remains billable; V2 can reclaim unused memory.
+  Do not promise a lower total bill (no dollar figures here).
 - When set: `fedramp_note` (FedRAMP WIP — verify + GovCloud fallback),
   `region_availability_note` (runtime not in the user's region — nearest supported), and
   `cris_note` (geo-CRIS vs global-CRIS data-residency choice for EU/GDPR).

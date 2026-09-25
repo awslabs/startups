@@ -26,6 +26,77 @@
   "compute_types": ["microvms", "instances"],
   "volatile_facts": [
     {
+      "key": "platform_versions",
+      "verification_key": "agentcore.platform_versions",
+      "value": {
+        "service_default": "V1",
+        "explicit_parameter": "platformVersion"
+      },
+      "as_of": "2026-09-21",
+      "source": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-how-it-works.html#runtime-platform-versions",
+      "verify_via_mcp": true
+    },
+    {
+      "key": "v2_regions",
+      "verification_key": "agentcore.v2_regions",
+      "value": [
+        "us-east-1",
+        "us-east-2",
+        "us-west-2",
+        "eu-west-1",
+        "ap-northeast-1"
+      ],
+      "as_of": "2026-09-21",
+      "source": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-how-it-works.html#runtime-platform-versions",
+      "verify_via_mcp": true
+    },
+    {
+      "key": "v2_constraints",
+      "verification_key": "agentcore.v2_constraints",
+      "value": {
+        "environment_total_kb": {
+          "direct_code": 1.5,
+          "container": 2.5
+        },
+        "startup_health_seconds": 120,
+        "cloudformation_cdk_platform_setting": false
+      },
+      "as_of": "2026-09-21",
+      "source": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-how-it-works.html#runtime-platform-versions",
+      "verify_via_mcp": true
+    },
+    {
+      "key": "microvms_pricing",
+      "verification_key": "agentcore.microvms_pricing",
+      "value": {
+        "currency": "USD",
+        "V1": {
+          "vcpu_hour": 0.0895,
+          "gb_hour": 0.00945
+        },
+        "V2": {
+          "vcpu_hour": 0.1276,
+          "gb_hour": 0.0169
+        }
+      },
+      "as_of": "2026-09-21",
+      "source": "https://aws.amazon.com/bedrock/agentcore/pricing/",
+      "verify_via_mcp": false
+    },
+    {
+      "key": "microvms_memory_billing",
+      "verification_key": "agentcore.microvms_memory_billing",
+      "value": {
+        "v2_idle_memory_reclaim_seconds": 120,
+        "minimum_memory_mb": 128,
+        "includes_system_overhead": true
+      },
+      "as_of": "2026-09-21",
+      "source": "https://aws.amazon.com/bedrock/agentcore/pricing/",
+      "verification_channel": "aws-mcp",
+      "verify_via_mcp": true
+    },
+    {
       "key": "microvms_session_cap",
       "verification_key": "agentcore.microvms_session_cap",
       "value": "8h",

@@ -57,6 +57,9 @@ Sensitive key patterns to redact (case-insensitive): `password`, `passwd`, `secr
    - `config.tier` — from Terraform `settings.tier` (e.g. `db-f1-micro`).
    - `config.database_version` — from Terraform `database_version` (e.g. `POSTGRES_15`).
 
+   **GKE normalization (`google_container_cluster`)** — Clarify's Q8 default and the `compute.md` GKE rubric read these, so write them with canonical names at the top level of `config`:
+   - `config.autopilot_enabled` — boolean, from Terraform `enable_autopilot`. Write `true` when `enable_autopilot = true`; write `false` when the attribute is absent or explicitly `false` (a `google_container_cluster` without `enable_autopilot` is a Standard cluster). This is the signal that routes GKE Autopilot → EKS Auto Mode by default.
+
    **Cloud Run normalization (`google_cloud_run_v2_service` / `google_cloud_run_service`)** — the discover-preview.md authored-size gate compares a single `min_instance_count`, but v1 and v2 express it differently. Write the canonical field at the top level of `config` regardless of which form is present:
    - `config.min_instance_count` — from the v2 service-level `scaling.min_instance_count` OR the v2 revision-level `template.scaling.min_instance_count` (a v2 service can set the minimum on either; read whichever is present), OR from whichever v1 annotation is present: `template.metadata.annotations["autoscaling.knative.dev/minScale"]` or `metadata.annotations["run.googleapis.com/minScale"]` (parse the annotation's string value to an integer). Omit when none of these are set — do not guess.
 
