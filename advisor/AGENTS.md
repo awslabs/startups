@@ -55,15 +55,26 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 
 - Stage-aware architecture advice that adjusts recommendations based on startup stage (pre-revenue, seed, Series A, Series B+), team size, runway, credits, and timeline. Consulted for architecture questions that aren't a full build (`start-building-for-startups`) or a migration.
 
+### `azure-to-aws` — Microsoft Azure → AWS migration workflow
+
+- A DSL-driven SKILL.md running a 6-phase backbone (discover → clarify → design → estimate → generate, plus a `workshop` sidebar and `feedback`): App Service → Elastic Beanstalk, AKS → EKS, VMs → EC2, Flexible Server → RDS/Aurora, Cosmos DB → DynamoDB/DocumentDB/Keyspaces/Neptune by API, Blob → S3. Clarify must complete before Design, Estimate, or Generate, and **Generate is opt-in** — it runs only after the user picks Execute at the post-Estimate decision gate.
+- Discovers from Terraform (`azurerm_*`) and application code today. Bicep, ARM templates, a read-only consent-gated live `az` capture, and an optional Resource Discovery for Azure report are **not yet supported** — their extractors are planned follow-ups, and a Bicep/ARM/live-only workspace halts rather than guessing. Mapping tables key off canonical `Microsoft.*` ARM types, never Terraform types.
+- Two things that differ from the sibling migration skills and will look like bugs if you do not know them: the CPU-architecture default is **x86_64**, not Graviton (Windows/.NET prevalence), and an App Service **Plan** is the compute unit while its apps are deployments onto it — mapping each app separately multiplies the estimate.
+- Triggered by _"migrate from Azure"_, _"Azure to AWS"_, _"move off Azure"_, _"migrate AKS to EKS"_, etc.
+
 ### `gcp-to-aws` — Google Cloud → AWS migration workflow
 
 - A SOP-style SKILL.md that runs a structured 6-phase migration (discover → clarify → design → estimate → generate → feedback), with a `references/` tree of phase guides, design refs, and shared schemas. Clarify must complete before Design, Estimate, or Generate.
-- Also migrates AI / agentic workloads (OpenAI / Gemini → Amazon Bedrock; LangChain / CrewAI / AutoGen → AWS-native frameworks).
+- Discover reads Terraform/IaC, app code, and/or GCP billing exports; it can optionally pull real AI spend from the OpenAI Admin API (read-only, consent-gated, aggregate counts only — the user must opt in and supply an Admin key).
+- Also migrates AI / agentic workloads. OpenAI sources land on the **same GPT model on Amazon Bedrock** when one exists (including OpenAI models reached via OpenRouter / LiteLLM), with Claude / Nova as the cross-family alternative; Gemini maps to closest-fit Bedrock families; LangChain / CrewAI / AutoGen → AWS-native frameworks. GCP Document AI, Vision, and Speech-to-Text calls are detected and routed to AWS traditional-AI services.
+- Estimates present Savings Plan / Reserved Instance options from a shared eligibility matrix. Only database commitments (RDS/Aurora RIs, Database Savings Plans) get a dollar sizing, and only when Design mapped a target instance class (from Terraform/IaC or live discovery — e.g. Cloud SQL `settings.tier`) with projected on-demand cost above $50/month; Compute Savings Plans are percent-only until the customer has 30–90 days of real AWS usage. Billing-only runs cannot size instances and do not produce the dedicated RI/SP section: they surface commitment guidance only when the billing export shows active commitments (CUDs), as a conditional CUD-vs-AWS percentage comparison — a no-CUD billing-only run gets neither. Do not tell a user the skill "won't do RI/SP" — it declines to size what it cannot see.
+- On the infrastructure-generation route (`generation-infra.json` + `aws-design.json`), Generate emits `baseline.tf` (account security baseline: CloudTrail, GuardDuty, IAM password policy, S3 account public-access block, EBS default encryption, IAM Access Analyzer, IMDS defaults, alternate contacts, budget) alongside the app Terraform. Config and Security Hub are added only when root `preferences.json.compliance` contains soc2, pci, hipaa, or fedramp. Clarify writes the Q2 answer at `design_constraints.compliance.value` and does not set that root field, so a standard Clarify compliance answer does not include those controls. AI-only runs (`generation-ai.json` + `aws-design-ai.json`) instead emit `bedrock_monitoring.tf`; billing-only runs emit skeleton Terraform. Neither of those two routes includes `baseline.tf` or its account security baseline.
 - Triggered by migration intent — _"migrate from GCP"_, _"move off OpenAI to Bedrock"_, _"GCP to AWS"_, etc.
 
 ### `heroku-to-aws` — Heroku → AWS migration workflow
 
 - A DSL-driven SKILL.md running the same 6-phase backbone (Dynos → Elastic Beanstalk by default; Fargate/EKS overrides, Postgres → RDS/Aurora, Redis → ElastiCache, Kafka → MSK), with an optional what-if repricing workshop after Estimate.
+- Generate emits `baseline.tf` (same always-on account controls as `gcp-to-aws`'s infrastructure route, plus Config and Security Hub when `global.compliance` includes soc2, pci, hipaa, or fedramp — the field Clarify writes) alongside the app Terraform, and the migration report carries a dedicated Savings Plans / Reserved Instances section under the same rules as `gcp-to-aws`.
 - Triggered by _"migrate from Heroku"_, _"Heroku to AWS"_, _"move off Heroku"_, etc.
 
 ### `llm-to-bedrock` — OpenAI/Gemini/Anthropic → Amazon Bedrock SDK rewrite
@@ -90,7 +101,7 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 
 - Every reference file in `knowledge-base-for-startups/` and `prompt-library-for-startups/` carries a `source_url` in frontmatter — quote that, don't invent URLs.
 - Boundary queries (a user message that fits two skills) — invoke both. Example: _"how do I start with RAG on Bedrock?"_ → `knowledge-base-for-startups` for the learn article + `prompt-library-for-startups` for the starter prompt.
-- Migration intent routes to the matching skill: GCP → `gcp-to-aws`, Heroku → `heroku-to-aws`, OpenAI/Gemini/Anthropic SDK rewrite → `llm-to-bedrock`, AI-agent runtime/architecture → `agent-advisor`.
+- Migration intent routes to the matching skill: Azure → `azure-to-aws`, GCP → `gcp-to-aws`, Heroku → `heroku-to-aws`, OpenAI/Gemini/Anthropic SDK rewrite → `llm-to-bedrock`, AI-agent runtime/architecture → `agent-advisor`. `architect-for-startups`' `references/migration-azure-to-aws.md` stays for the PRE-decision advisory conversation ("should we leave Azure?"); real migration intent routes to `azure-to-aws`.
 
 ## Known limitations
 

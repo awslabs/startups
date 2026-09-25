@@ -46,6 +46,13 @@ from `references/report-help-banner.md` — never hardcode it here.
 | `LEDGER`           | Mode B only: `$RUN_DIR/poc/created-resources.json` (deployed resources)                                                                                    |
 | `RUN_ID`           | from `.phase-status.json`                                                                                                                                  |
 
+For each effective AgentCore microVM unit, show `agentcore_platform` from Design as the
+planned platform with its applicability status and reason. Read `runtime-verification.json`
+only from that unit's POC directory when produced by this deployment. Distinguish planned from
+observed platform/revision/status. Missing readback in Mode A means not deployed/verified;
+never label a local HTTP check or toolkit success as V2 verification. A preflight rejection
+retains the previous deployment's evidence; do not attribute that file to the rejected attempt.
+
 ## Step P1 — File purpose map
 
 For each file in `POC_FILES`, write a one-line purpose. Multi-unit layout: when

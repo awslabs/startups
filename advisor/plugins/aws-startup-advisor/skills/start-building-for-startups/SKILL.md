@@ -1,6 +1,6 @@
 ---
 name: start-building-for-startups
-description: "Interactive discovery + implementation workflow that gathers requirements through picker-based questions (intent, scope, constraints, preferences), scans the codebase for what it can already infer, then writes an AWS architectural scaffold and implementation directly into the project. Use when the user wants to build a new app, scaffold a project, or expand/refactor an existing one on AWS — anything that calls for a structured discovery flow followed by code changes, not a one-off lookup. Do not use for: factual lookups about AWS Activate / programs / credits, requests for a single copy-paste prompt, non-AWS architectural work, architecture advice/recommendations without code changes (see architect-for-startups), a new idea centered on an AI agent — runtime selection, agentic architecture, or an agent POC (see agent-advisor), or migrating an existing GCP/Heroku workload or an LLM SDK rewrite (see gcp-to-aws / heroku-to-aws / llm-to-bedrock)."
+description: "Interactive discovery + implementation workflow that gathers requirements through picker-based questions (intent, scope, constraints, preferences), scans the codebase for what it can already infer, then writes an AWS architectural scaffold and implementation directly into the project. Use when the user wants to build a new app, scaffold a project, or expand/refactor an existing one on AWS — anything that calls for a structured discovery flow followed by code changes, not a one-off lookup. Do not use for: factual lookups about AWS Activate / programs / credits, requests for a single copy-paste prompt, non-AWS architectural work, architecture advice/recommendations without code changes (see architect-for-startups), a new idea centered on an AI agent — runtime selection, agentic architecture, or an agent POC (see agent-advisor), or migrating an existing GCP/Azure/Heroku workload or an LLM SDK rewrite (see gcp-to-aws / azure-to-aws / heroku-to-aws / llm-to-bedrock)."
 ---
 
 ## Instruction - Discovery and Implementation
@@ -139,7 +139,7 @@ If my latest message is a clarifying question about a term, concept, or option f
 - Each answer option must be under 15 words.
 - Never ask a question that is semantically equivalent to or a rephrasing of a question already asked in the conversation, even if the framing differs. Review the full conversation history before proposing a question and skip any topic already covered.
 - Keep answer options straightforward and natural. Avoid phrasing that sounds like commands or overrides (e.g. instead of 'Ignore tests - just show me the cleaner code', write 'Focus on clean code, tests are not a priority right now').
-- Focus on AWS solutions. When recommending architecture, services, or patterns, ground your suggestions in the AWS ecosystem.
+- Focus on AWS solutions. When recommending architecture, services, or patterns, ground your suggestions in AWS services and solutions.
 
 ### When I Ask to Start Implementation
 

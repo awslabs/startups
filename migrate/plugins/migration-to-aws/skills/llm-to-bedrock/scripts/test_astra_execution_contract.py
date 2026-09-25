@@ -123,8 +123,9 @@ def test_chat_image_helper_validates_missing_bytes():
 
 
 @pytest.mark.parametrize("source,target,expected", [(60, 60, 0), (60, 66, 10), (0, 60, None)])
-def test_roi_executes_rate_derived_formula(source, target, expected):
-    text = (PLUGIN / "skills/gcp-to-aws/references/phases/estimate/estimate-ai.md").read_text()
+@pytest.mark.parametrize("skill", ["gcp-to-aws", "azure-to-aws"])
+def test_roi_executes_rate_derived_formula(source, target, expected, skill):
+    text = (PLUGIN / "skills" / skill / "references/phases/estimate/estimate-ai.md").read_text()
     roi = text.split("## Part 5: ROI Analysis", 1)[1].split("## Part 6:", 1)[0]
     code = re.search(r"```python\n(.*?)\n```", roi, re.S).group(1)
     ns = {"source_monthly": source, "bedrock_monthly": target}
@@ -142,7 +143,7 @@ def test_api_handoff_paths_and_real_evaluator_classifier_are_consistent():
     assert "## Same-vendor GPT endpoint and API deltas" in reference
     for rel in ["skills/llm-to-bedrock/SKILL.md", "skills/gcp-to-aws/references/phases/design/design-ai.md",
                 "skills/gcp-to-aws/references/phases/generate/generate-ai.md",
-                "skills/gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md"]:
+                "skills/gcp-to-aws/references/vendored/ai/ai-openai-to-bedrock.md"]:
         assert "mantle_openai_chat" in (PLUGIN / rel).read_text(), rel
     assert preflight_bedrock.is_mantle_model("openai.gpt-6-astra")
     assert not preflight_bedrock.is_mantle_model("global.openai.gpt-6-astra")
@@ -180,3 +181,34 @@ def test_c3_and_c5_use_shared_normalization_instructions():
     assert "Target API path: <resolved_api_path" in before_dispatch
     assert "Reuse" in gate and "resolved_api_path" in gate
     assert 'field is\nabsent), set `rewrite_strategy = "converse"`' not in gate
+
+
+@pytest.mark.parametrize("name", ["ai-openai-to-bedrock.md", "ai-model-lifecycle.md",
+                                  "ai-migration-guardrails.md", "bedrock-quotas.md"])
+def test_astra_shared_contract_survives_each_vendored_consumer(name):
+    canonical = (PLUGIN / "skills/shared/ai" / name).read_bytes()
+    assert b"Astra" in canonical
+    for skill in ["gcp-to-aws", "azure-to-aws"]:
+        assert (PLUGIN / "skills" / skill / "references/vendored/ai" / name).read_bytes() == canonical
+
+
+@pytest.mark.parametrize("skill", ["gcp-to-aws", "azure-to-aws"])
+def test_astra_policy_has_consumer_local_facts_and_prices(skill):
+    refs = PLUGIN / "skills" / skill / "references/shared"
+    facts = (refs / "openai-on-bedrock.md").read_text()
+    prices = (refs / "pricing-cache.md").read_text()
+    assert "openai.gpt-6-astra" in facts and "us-west-2" in facts
+    assert "30m cache write" in prices and "GPT-6 Astra" in prices
+    assert "Global CRIS" in prices and "82.50" in prices
+
+
+def test_shared_astra_paths_reach_azure_schema_and_generator():
+    refs = PLUGIN / "skills/azure-to-aws/references"
+    for relative in ["phases/design/design-ai.md", "shared/schema-design-aws-ai.md",
+                     "phases/generate/generate-artifacts-ai.md"]:
+        text = (refs / relative).read_text()
+        assert "mantle_openai_chat" in text, relative
+        assert "runtime_openai_cris" in text, relative
+    generator = (refs / "phases/generate/generate-artifacts-ai.md").read_text()
+    row = next(line for line in generator.splitlines() if line.startswith("| `mantle_openai_responses`"))
+    assert "mantle_openai_chat" in row and "migrate_to_mantle.sh" in row
