@@ -7,7 +7,7 @@ title: "LangChain for Startups - up to $10K in credits for LangSmith"
 
 ### Estimated offer value: $10,000.00
 
-**Offer Description & Benefits**
+### Offer Description & Benefits
 
 Eligible startups may receive up to $10,000 in LangSmith credits to build, test, deploy, and operate production AI agents on AWS.
 
@@ -17,18 +17,18 @@ Eligible startups may receive up to $10,000 in LangSmith credits to build, test,
 
 Qualified startups may also access LangChain startup programming and community benefits.
 
-**Offer Value**
+### Offer Value
 
 $10,000 in credits maximum per eligible startup.
 
-**Eligible Tiers**
+### Eligible Tiers
 
 - AWS Activate Eligible startups.
 - First-time LangSmith customer.
 - Pre-Series B (up to $50M in funding).
 - Additional eligibility criteria may apply.
 
-**Offer Duration**
+### Offer Duration
 
 12 months from credit activation. Approved startups receive LangSmith credits that remain available for one year from issuance.
 
