@@ -1060,3 +1060,27 @@ def test_omits_negative_source_monthly(tmp_path: Path) -> None:
 
     plan = json.loads((tmp_path / "plan.json").read_text())
     assert "sourceMonthly" not in plan["cost"]
+
+
+def test_uppercase_uuid_run_id_is_lowercased(tmp_path: Path) -> None:
+    # macOS `uuidgen` emits uppercase and the state schema accepts it verbatim; the
+    # writer must lowercase a UUID-shaped run_id at the handoff boundary so the plan
+    # matches the web-import schema's lowercase-canonical UUID pattern (else the CTA
+    # advertises a plan the import rejects).
+    upper = "8C1E4F2A-3B6D-4A7E-9F10-5D2C8B7A6E41"
+    _seed(tmp_path, run_id=upper)
+    result = _run(tmp_path)
+
+    assert result.returncode == 0
+    assert result.stdout.startswith("PLAN_OK |")
+    plan = json.loads((tmp_path / "plan.json").read_text())
+    assert plan["runId"] == upper.lower()
+
+
+def test_lowercase_uuid_run_id_is_unchanged(tmp_path: Path) -> None:
+    lower = "8c1e4f2a-3b6d-4a7e-9f10-5d2c8b7a6e41"
+    _seed(tmp_path, run_id=lower)
+    result = _run(tmp_path)
+
+    plan = json.loads((tmp_path / "plan.json").read_text())
+    assert plan["runId"] == lower

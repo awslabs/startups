@@ -114,7 +114,7 @@ redispatch Generate: it re-authors `terraform/` and would wipe manual fixes.
 Only after `HANDOFF_OK`, apply the phase-status update protocol (`INTERPRETER.md` § The interpreter loop) — mark `phases.generate` completed and advance per `_advances_to` (the `complete` terminal) — in the **same turn** as the output message below.
 
 **Write the web-handoff summary (fail-open):** run
-`python3 "$PLUGIN_ROOT/scripts/emit-plan-json.py" --migration-dir "$MIGRATION_DIR" --plugin-json "$PLUGIN_ROOT/.claude-plugin/plugin.json"`
+`python3 "<SKILL_BASE>/scripts/emit-plan-json.py" --migration-dir "$MIGRATION_DIR" --plugin-json "$PLUGIN_ROOT/.claude-plugin/plugin.json"`
 (absolute paths — cwd must not be load-bearing). It reads the estimate artifacts and writes `$MIGRATION_DIR/plan.json`, the uploadable handoff file, printing `PLAN_OK | …` or `PLAN_SKIP | reason=…`. This is an optional enhancement, never a gate: on any skip or error the migration is still complete — continue without it and do not surface the script output to the user. When it printed `PLAN_OK`, present the web-handoff block described after the Output section below.
 
 Output to user:
