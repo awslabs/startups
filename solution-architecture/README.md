@@ -12,7 +12,7 @@ Startup-specific plugins and tools from the AWS Startups Solution Architecture t
 
 `aws-dev-toolkit` was removed. Its skills and agents were overwhelmingly general-purpose AWS engineering guidance, which Agent Toolkit for AWS now owns, and that overlap is why it was deprecated. Nothing was ported.
 
-- **Startup-specific guidance:** install AWS Startup Advisor with `/plugin install aws-startup-advisor@claude-plugins-official`, or see [`advisor/`](../advisor/).
+- **Startup-specific guidance:** install AWS Startup Advisor from [Agent Toolkit for AWS](https://github.com/aws/agent-toolkit-for-aws), which is where that plugin now lives — `/plugin marketplace add aws/agent-toolkit-for-aws` then `/plugin install aws-startup-advisor@agent-toolkit-for-aws`. The [`advisor/`](../advisor/) copy in this repository is deprecated and receives no further updates.
 - **General-purpose AWS guidance:** use Agent Toolkit for AWS with `aws configure agent-toolkit` (requires AWS CLI 2.35+).
 
 Existing `aws-dev-toolkit` installs continue to function but receive no updates.

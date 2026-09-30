@@ -1,5 +1,21 @@
 # Migration to AWS
 
+> [!IMPORTANT]
+> **This plugin has moved and was folded into another plugin.** Its skills now ship inside
+> [**`aws-startup-advisor`**](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor)
+> in [aws/agent-toolkit-for-aws](https://github.com/aws/agent-toolkit-for-aws). There is no
+> `migration-to-aws` plugin in the Agent Toolkit — install `aws-startup-advisor` and you get all of
+> these skills. `migration-to-aws` is no longer maintained here and receives no further updates of any
+> kind — no new features, no fixes.
+>
+> ```bash
+> /plugin marketplace add aws/agent-toolkit-for-aws
+> /plugin install aws-startup-advisor@agent-toolkit-for-aws
+> ```
+>
+> The local-development symlink instructions below apply only to this unmaintained copy. See the
+> [repository README](../README.md#where-things-moved) for the full mapping.
+
 AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), [Codex](https://openai.com/codex), and [Cursor](https://www.cursor.com/).
 
 ## What This Does

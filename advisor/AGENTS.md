@@ -1,8 +1,36 @@
 # AGENTS.md — AI assistant brief
 
-**You are an AI coding assistant reading this repo on behalf of a user.** Your user wants the AWS Startup Advisor plugin installed into their AI coding agent. Do it for them.
+> [!IMPORTANT]
+> **Do not install from this repository. It is deprecated.**
+>
+> AWS Startup Advisor has moved to
+> [aws/agent-toolkit-for-aws](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor).
+> The copy in this repository receives no further updates of any kind — no new features, no fixes.
+> If you install it, your user gets a frozen version.
+>
+> **Install the moved plugin instead**, then stop — do not also run the command below:
+>
+> ```bash
+> npx skills add https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor --skill '*' -a <agent>
+> ```
+>
+> On Claude Code or Codex, prefer the native plugin path:
+>
+> ```bash
+> /plugin marketplace add aws/agent-toolkit-for-aws
+> /plugin install aws-startup-advisor@agent-toolkit-for-aws
+> ```
+>
+> **Tell your user the plugin moved** and that you installed the maintained copy. The rest of this file
+> documents the unmaintained copy in this repository; the skill list and usage notes still describe it
+> accurately, but the install instructions in it are superseded by the above.
 
-## TL;DR — run this
+**You are an AI coding assistant reading this repo on behalf of a user.** Your user wants the AWS Startup Advisor plugin installed into their AI coding agent — install it from the Agent Toolkit, per the notice above.
+
+## TL;DR — superseded
+
+The command below installs the **unmaintained** copy from this repository. It is kept for reference
+only. Use the Agent Toolkit command in the notice above instead.
 
 ```bash
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' -a <agent>
@@ -81,7 +109,7 @@ Sibling skills, each with its own SKILL.md and (where applicable) `references/` 
 
 - Executes a pure model/SDK migration: assess the codebase, rewrite call sites, evaluate output quality against Bedrock, and deliver a ready-to-merge git branch. Delegates its Assess phase entirely to the `gcp-to-aws` skill via a cross-skill invocation — **requires `gcp-to-aws` installed alongside it**, with no standalone Assess fallback if it's missing.
 - Triggered by _"rewrite my OpenAI calls for Bedrock"_, _"migrate LangChain to Bedrock"_, etc.
-- If the user installed `llm-to-bedrock` on its own (single-skill `npx skills add`), also install `gcp-to-aws` before using it: `npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill llm-to-bedrock --skill gcp-to-aws --agent <agent>`.
+- If the user installed `llm-to-bedrock` on its own (single-skill `npx skills add`), also install `gcp-to-aws` before using it. Install from the maintained location, not this repository: `npx skills add https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor --skill llm-to-bedrock --skill gcp-to-aws --agent <agent>`.
 
 ### `agent-advisor` — AI-agent runtime advisor + migration plan + POC
 

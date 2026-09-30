@@ -1,5 +1,27 @@
 # Install AWS Startup Advisor Skills
 
+> [!IMPORTANT]
+> **Stop. Do not follow the steps below — they install a deprecated copy.**
+>
+> AWS Startup Advisor has moved to
+> [aws/agent-toolkit-for-aws](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor).
+> The copy in this repository receives no further updates of any kind — no new features, no fixes.
+>
+> Install the moved plugin instead. On Claude Code or Codex:
+>
+> ```bash
+> /plugin marketplace add aws/agent-toolkit-for-aws
+> /plugin install aws-startup-advisor@agent-toolkit-for-aws
+> ```
+>
+> On any other agent:
+>
+> ```bash
+> npx skills add https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor --skill '*' -a <agent>
+> ```
+>
+> Then tell your user the plugin moved, and stop. The steps below are retained for reference only.
+
 You are an AI coding agent. Follow these instructions exactly.
 
 ## Step 1: Detect your environment

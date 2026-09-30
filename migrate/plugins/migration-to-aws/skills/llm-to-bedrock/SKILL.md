@@ -10,8 +10,10 @@ Single-command AI migration: OpenAI / Gemini / Anthropic → Amazon Bedrock.
 **Requires the `gcp-to-aws` skill installed alongside this one.** This skill has no
 standalone Assess implementation — Phase A below delegates Assess entirely to `gcp-to-aws`
 via a cross-skill invocation, and there is no fallback path that performs Assess itself if
-`gcp-to-aws` is missing. The normal `/plugin install migration-to-aws@startups` (or Codex/
-Cursor equivalent) installs both together; this only matters if `gcp-to-aws` was removed or
+`gcp-to-aws` is missing. Any full install of this plugin carries both together — the deprecated
+`/plugin install migration-to-aws@startups` from `awslabs/startups`, or the maintained
+`/plugin install aws-startup-advisor@agent-toolkit-for-aws` from `aws/agent-toolkit-for-aws`,
+which is where these skills now live. This only matters if `gcp-to-aws` was removed or
 excluded afterward (e.g. a partial local-development symlink).
 
 The skill base directory is given in the "Base directory for this skill: X" line the harness
@@ -51,9 +53,14 @@ under this plugin's normal install layout as well as a local-development symlink
 
   > "This migration needs the `gcp-to-aws` skill installed alongside this one — it handles
   > code scanning, AI-workload detection, and Bedrock model design; I can't do that part myself
-  > without it. Re-install this plugin with `/plugin install migration-to-aws@startups`
-  > (or the Codex/Cursor equivalent) so both skills come together, then ask me to migrate
-  > again."
+  > without it.
+  >
+  > This plugin has also moved: `migration-to-aws` is no longer maintained, and its skills now
+  > ship inside `aws-startup-advisor` in `aws/agent-toolkit-for-aws`. Installing from there gets
+  > you both skills together and a maintained version:
+  > `/plugin marketplace add aws/agent-toolkit-for-aws` then
+  > `/plugin install aws-startup-advisor@agent-toolkit-for-aws` (or the Codex/Cursor
+  > equivalent). Then ask me to migrate again."
 
   **Do not** perform the Assess phase yourself as a workaround — Phase A below is explicit that
   Assess logic lives only in `gcp-to-aws`; re-implementing it here would drift out of sync with

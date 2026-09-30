@@ -1,5 +1,21 @@
 # Agent Skills for AWS Migration
 
+> [!IMPORTANT]
+> **This plugin has moved and was folded into another plugin.** Its skills now ship inside
+> [**`aws-startup-advisor`**](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor)
+> in [aws/agent-toolkit-for-aws](https://github.com/aws/agent-toolkit-for-aws). There is no
+> `migration-to-aws` plugin in the Agent Toolkit — install `aws-startup-advisor` and you get all of
+> these skills. `migration-to-aws` is no longer maintained here and receives no further updates of any
+> kind — no new features, no fixes.
+>
+> ```bash
+> /plugin marketplace add aws/agent-toolkit-for-aws
+> /plugin install aws-startup-advisor@agent-toolkit-for-aws
+> ```
+>
+> Every install command in the Installation section below points at this unmaintained copy. See the
+> [repository README](../../../README.md#where-things-moved) for the full mapping.
+
 AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), [Codex](https://openai.com/codex), and [Cursor](https://www.cursor.com/).
 
 ## What This Does
@@ -53,11 +69,21 @@ Point this plugin at your Heroku account (via your authenticated Heroku CLI, rea
 
 ## Plugins
 
-| Plugin               | Description                                                                                                                                                                                                                                                                                                       | Status    |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku), LLM code rewrite to Bedrock (llm-to-bedrock skill), AI-agent runtime selection + POC on AWS (agent-advisor skill), and a read-only Terraform security policy gate (tf-best-practices skill) | Available |
+| Plugin               | Description                                                                                                                                                                                                                                                                                                       | Status                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku), LLM code rewrite to Bedrock (llm-to-bedrock skill), AI-agent runtime selection + POC on AWS (agent-advisor skill), and a read-only Terraform security policy gate (tf-best-practices skill) | Deprecated — moved into `aws-startup-advisor` in [aws/agent-toolkit-for-aws](https://github.com/aws/agent-toolkit-for-aws) |
 
 ## Installation
+
+> [!IMPORTANT]
+> **Every command in this section installs the deprecated copy from this repository**, which receives
+> no further updates of any kind. These skills now ship inside `aws-startup-advisor` in
+> [aws/agent-toolkit-for-aws](https://github.com/aws/agent-toolkit-for-aws) — install that instead:
+>
+> ```bash
+> /plugin marketplace add aws/agent-toolkit-for-aws
+> /plugin install aws-startup-advisor@agent-toolkit-for-aws
+> ```
 
 ### Claude Code
 

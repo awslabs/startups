@@ -54,9 +54,14 @@ under any install path — native plugin install and `npx skills add --skill '*'
   > "This migration needs the `gcp-to-aws` skill installed alongside this one — it handles
   > code scanning, AI-workload detection, and Bedrock model design; I can't do that part myself
   > without it. Install it with:
-  > `npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill gcp-to-aws --agent <agent>`
+  > `npx skills add https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor --skill gcp-to-aws --agent <agent>`
   > (use the same `--agent` and `--global`/project scope you used for this skill), restart your
-  > agent, then ask me to migrate again."
+  > agent, then ask me to migrate again.
+  >
+  > Also worth knowing: this plugin has moved to `aws/agent-toolkit-for-aws` and the copy you
+  > have installed is no longer maintained. The command above installs from the new location.
+  > To move fully, reinstall the whole plugin from there — see
+  > <https://github.com/aws/agent-toolkit-for-aws>."
 
   **Do not** perform the Assess phase yourself as a workaround — Phase A below is explicit that
   Assess logic lives only in `gcp-to-aws`; re-implementing it here would drift out of sync with
