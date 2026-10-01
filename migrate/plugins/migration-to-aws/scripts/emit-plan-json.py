@@ -55,6 +55,13 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 # Highest plan.json schema the web import page understands (kept in lock-step there).
 SCHEMA_VERSION = 1
 
+# The web-import schema types runId as a lowercase-canonical UUID. Native `uuidgen`
+# emits uppercase on macOS, and the state schema accepts it verbatim, so a UUID-shaped
+# run_id is lowercased at the handoff boundary to keep the emitted plan importable.
+_UUID_RE = re.compile(
+    r"\A[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\Z"
+)
+
 # owning_skill (telemetry id written to .phase-status.json at _init) ->
 # sourcePlatform. Not generated data: each skill records its own id at _init and
 # never changes it. LLM_TO_BEDROCK (OpenAI) is intentionally absent — it has no
@@ -378,6 +385,11 @@ def build_plan(migration_dir: Path, plugin_json_path: Path) -> tuple[dict, str, 
     run_id = status.get("run_id")
     if not isinstance(run_id, str) or not run_id.strip():
         raise SkipEmit("no usable run_id in .phase-status.json")
+    run_id = run_id.strip()
+    # A UUID-shaped run_id is canonicalized to lowercase so an uppercase native id
+    # (e.g. macOS uuidgen) still matches the web-import schema; non-UUID ids pass through.
+    if _UUID_RE.match(run_id):
+        run_id = run_id.lower()
 
     # Read whichever cost artifacts the run produced. infra and billing are mutually
     # exclusive (billing is the no-IaC fallback); AI runs independently and may

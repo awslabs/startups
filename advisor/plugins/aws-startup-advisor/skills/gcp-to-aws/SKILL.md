@@ -5,6 +5,13 @@ description: "Migrate workloads from Google Cloud Platform to AWS — including 
 
 # GCP-to-AWS Migration Skill
 
+The skill base directory is given in the "Base directory for this skill: X" line the
+harness emits at load time. Call it `<SKILL_BASE>`. The web-handoff writer lives at
+`<SKILL_BASE>/scripts/emit-plan-json.py` — resolve it relative to `<SKILL_BASE>`,
+never a plugin-root `scripts/` directory, since a standalone
+`npx skills add --skill gcp-to-aws` install carries only this skill's own directory
+tree, not the plugin's top-level `scripts/`.
+
 ## Philosophy
 
 - **Re-platform by default**: Select AWS services that match GCP workload types (e.g., Cloud Run → Fargate, Cloud SQL → RDS).
