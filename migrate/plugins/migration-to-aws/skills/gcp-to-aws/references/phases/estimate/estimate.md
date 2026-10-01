@@ -211,7 +211,7 @@ commit." Suggest at most one.
        fenced Generate produced-list which stays plain text. Substitute the run's
        `run_id` (from `.phase-status.json`) — e.g. "…and your uploadable plan at
        `plan.json` — upload it to
-       [AWS Startups Migrate](https://startups.aws.com/startups/en-US/migrate/plans/import?source=plugin&run=<run_id>)
+       [AWS Startups Migrate](https://startups.aws.com/startups/en-US/migrate/credits?source=plugin&run=<run_id>)
        for up to $1,500 in credits." Keep it in the close sentence; do not float
        it as a separate line above the What's next block.
      - **(b)** Then append the What's next block below, verbatim, replacing
@@ -228,7 +228,7 @@ commit." Suggest at most one.
      > - **Claim your credits**
      >   When you're happy with your plan, upload it below to apply for up to $1,500 in AWS migration credits.
      >
-     > [🎉 Get up to $1,500 in AWS migration credits →](https://startups.aws.com/startups/en-US/migrate/plans/import?source=plugin&run=<run_id>)
+     > [🎉 Get up to $1,500 in AWS migration credits →](https://startups.aws.com/startups/en-US/migrate/credits?source=plugin&run=<run_id>)
      >
      > Upload your plan to AWS Startups Migrate to see what you qualify for and unlock:
      >
