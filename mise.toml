@@ -5,6 +5,7 @@ min_version = "2026.2.4"
 
 [tools]
 node = "24"
+uv = "0.9.21"
 terraform = "1.13"
 "npm:markdownlint-cli2" = "0.17"
 "npm:dprint" = "0.51"
@@ -65,12 +66,16 @@ run = [
 ]
 
 [tasks.test]
-description = "Run contract, frontmatter-validator, and focused cross-plugin generation regression suites (node --test)"
+description = "Run Node regression suites and complete agent-advisor / llm-to-bedrock Python suites in both plugins"
 run = [
   "node --test migrate/plugins/migration-to-aws/tests/tools/application-source-contract.test.ts",
   "node --test migrate/plugins/migration-to-aws/tests/tools/frontmatter-validator.test.ts",
   "node --test advisor/plugins/aws-startup-advisor/tests/tools/frontmatter-validator.test.ts",
   "node --test tests/heroku-eb-runtime-settings.test.ts",
+  "cd advisor/plugins/aws-startup-advisor/skills/agent-advisor/scripts && uv run --frozen pytest -q",
+  "cd migrate/plugins/migration-to-aws/skills/agent-advisor/scripts && uv run --frozen pytest -q",
+  "cd advisor/plugins/aws-startup-advisor/skills/llm-to-bedrock/scripts && uv run --frozen pytest -q",
+  "cd migrate/plugins/migration-to-aws/skills/llm-to-bedrock/scripts && uv run --frozen pytest -q",
 ]
 
 [tasks."lint:model-ids"]
