@@ -82,7 +82,10 @@ With `$GCP_BASE` resolved per the section above, check whether
    magnitude, and the generated documents) is unaffected — only the migration plan stage is
    unavailable here. If they installed via `npx skills add`, tell them to also install
    `gcp-to-aws` (same `--agent`/scope) and restart their agent to get the plan; otherwise point
-   them at the `gcp-to-aws` skill in this plugin.
+   them at the `gcp-to-aws` skill in this plugin. Give the install source as
+   `https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor` — this
+   plugin has moved there and the `awslabs/startups` copy is no longer maintained, so installing
+   the sibling skill from the old repository would add an unmaintained skill.
 3. **Still offer Gate 2** — a missing plan does not remove the POC. Ask it exactly as Step 6
    below does (same wording, same `phases.poc = "in_progress"` persistence before poc.md loads),
    but say the POC will be **design-backed** (built from `design.json`, labelled "not

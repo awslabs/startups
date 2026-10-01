@@ -1,5 +1,20 @@
 # AWS Startup Advisor
 
+> [!IMPORTANT]
+> **This plugin has moved.** It now lives in
+> [**aws/agent-toolkit-for-aws**](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor)
+> and is no longer maintained in this repository. The install commands below still resolve, but what
+> they install receives no further updates of any kind — no new features, no fixes.
+>
+> Install from the Agent Toolkit instead:
+>
+> ```bash
+> /plugin marketplace add aws/agent-toolkit-for-aws
+> /plugin install aws-startup-advisor@agent-toolkit-for-aws
+> ```
+>
+> See the [repository README](../README.md#where-things-moved) for the full mapping.
+
 Turn your AI coding agent into an AWS advisor for startups. One plugin for Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and many others — ask it to plan and price a migration off GCP, Azure, or Heroku, rewrite your OpenAI code for Amazon Bedrock, pick the right runtime for your AI agents, scaffold a new app, or find out which AWS Activate credits and startup programs you qualify for.
 
 You don't get generic advice — you get deliverables: a costed migration plan with runnable Terraform translated from your actual config, a migration report with a dedicated Savings Plans / Reserved Instances section, a ready-to-merge git branch, a deployable proof-of-concept, an architecture recommendation tuned to your stage and runway. Processing is local; your code and data stay in your environment.
@@ -104,6 +119,20 @@ For any other agent, copy the `mcpServers` block from [`.mcp.json`](plugins/aws-
 ---
 
 ## Install
+
+> [!IMPORTANT]
+> **Every command in this section installs the deprecated copy from this repository**, which receives
+> no further updates of any kind. Install from
+> [aws/agent-toolkit-for-aws](https://github.com/aws/agent-toolkit-for-aws) instead:
+>
+> ```bash
+> # Claude Code / Codex
+> /plugin marketplace add aws/agent-toolkit-for-aws
+> /plugin install aws-startup-advisor@agent-toolkit-for-aws
+>
+> # Any other agent
+> npx skills add https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor --skill '*' -a <agent>
+> ```
 
 ### Claude Code (recommended)
 

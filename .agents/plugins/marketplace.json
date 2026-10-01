@@ -1,7 +1,7 @@
 {
   "name": "aws-startup-migration-plugins",
   "interface": {
-    "displayName": "AWS Migration Plugins"
+    "displayName": "AWS Migration Plugins (DEPRECATED — moved to aws/agent-toolkit-for-aws)"
   },
   "plugins": [
     {
