@@ -1,0 +1,24 @@
+{
+  "_comment": "Tiny sample DevOps Agent topology export for offline tests. Covers: (1) eligible service in EU region, (2) service NOT on the HIPAA snapshot, (3) eligible service in a non-EU region.",
+  "discovery_paths": ["cloudformation", "resource-explorer"],
+  "resources": [
+    {
+      "resource_id": "arn:aws:s3:::startup-phi-bucket",
+      "resource_type": "AWS::S3::Bucket",
+      "service": "amazon-s3",
+      "region": "eu-west-1"
+    },
+    {
+      "resource_id": "arn:aws:sqs:eu-west-1:111122223333:events-queue",
+      "resource_type": "AWS::SQS::Queue",
+      "service": "amazon-sqs",
+      "region": "eu-west-1"
+    },
+    {
+      "resource_id": "arn:aws:rds:us-east-1:111122223333:db:analytics",
+      "resource_type": "AWS::RDS::DBInstance",
+      "service": "amazon-rds",
+      "region": "us-east-1"
+    }
+  ]
+}
