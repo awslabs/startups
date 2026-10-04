@@ -13,6 +13,7 @@
   "include": [
     "tools/frontmatter-validator/**/*.ts",
     "tools/fixtures-check.ts",
+    "tools/hooks-check.ts",
     "tools/pricing-staleness.ts",
     "tests/tools/**/*.ts"
   ]
