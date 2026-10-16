@@ -23,12 +23,13 @@ Two neighbors own adjacent surface, and staying off theirs is the point:
 
 ## Skills
 
-Two exemplars, each chosen because neither neighbor covers it and each is a recurring field problem.
+Each skill is chosen because neither neighbor covers it and each is a recurring field problem.
 
-| Skill                    | Problem it solves                                                                                                                                                                                       |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `multi-tenant-isolation` | Tenancy model per layer, isolation enforced in IAM and the database rather than application code, per-tenant cost attribution, and what to do when one large customer demands dedicated infrastructure. |
-| `agentcore-patterns`     | Running a judgment agent inside your own CI path: what it may block, measuring verdict stability before it gates anything, confidence banding, and warm-container staleness.                            |
+| Skill                    | Problem it solves                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `multi-tenant-isolation` | Tenancy model per layer, isolation enforced in IAM and the database rather than application code, per-tenant cost attribution, and what to do when one large customer demands dedicated infrastructure.                                                                                                                                                                                                                     |
+| `agentcore-patterns`     | Running a judgment agent inside your own CI path: what it may block, measuring verdict stability before it gates anything, confidence banding, and warm-container staleness.                                                                                                                                                                                                                                                |
+| `hcls-stack-check`       | Factual HCLS readiness for an AWS stack: reads an account's resource inventory (via AWS Resource Explorer, or a local export) and reports, per resource, HIPAA Eligible Services list membership and EU region residency. A membership plus region check only, not a compliance assessment. Ships a deterministic Python core (live gated HIPAA-list parse, exact matching, fail-closed sourcing) alongside its `SKILL.md`. |
 
 `agentcore-patterns` is also the layout exemplar: a thin `SKILL.md` router with the depth in `references/`. That is the intended shape for this plugin, since solution-architecture content is mostly reference material.
 
@@ -39,7 +40,7 @@ Verified gaps: as of this writing, neither Agent Toolkit for AWS nor AWS Startup
 - **Self-hosted inference serving.** Continuous batching, paged attention and KV cache behavior, concurrency and batch tuning, choosing a serving stack, and when a self-hosted endpoint genuinely beats a managed one on cost at real utilization. Currently zero coverage of the serving mechanics in either neighbor.
 - **Scale-to-zero architectures** where an idle environment must cost approximately nothing, including which managed services have a nonzero floor and what that floor actually is.
 - **Service quota and limit strategy** ahead of a launch or traffic event, treating quota as lead-time-bound rather than instantaneous.
-- **Compliance groundwork** (SOC 2, HIPAA) implemented by a team with no compliance function, scoped to the technical controls and evidence rather than the audit process.
+- **Compliance groundwork** (SOC 2) implemented by a team with no compliance function, scoped to the technical controls and evidence rather than the audit process. (The HIPAA-eligibility and EU-residency slice is now covered by `hcls-stack-check`.)
 - **Cost regression detection** in the deploy path, so a per-unit cost increase is caught before the monthly bill.
 
 Bring your own topic if it fits the scope test above. Every contribution must pass all three criteria in the [contributing guide](../../CONTRIBUTING.md); criterion 2, no overlap with Agent Toolkit for AWS, rejects most proposals, so check the upstream skill list first.

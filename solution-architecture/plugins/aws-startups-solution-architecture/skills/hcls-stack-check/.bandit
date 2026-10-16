@@ -1,0 +1,13 @@
+# Bandit INI config, auto-discovered by `bandit -r .` (unlike bandit.yml, which
+# must be passed with -c). The repo-wide CI "catch-all" bandit pass runs with no
+# -c, so this file is what applies B101 here. Scoped to this skill directory
+# only; the rest of the repo keeps full strictness.
+#
+# B101 (assert_used): the only Python under scripts/ that uses `assert` is the
+# co-located pytest suite (test_*.py), where `assert` is pytest's assertion
+# mechanism, not production guard logic that `python -O` would strip. The
+# deterministic core (main.py, topology_*.py, hipaa_*.py, preflight.py,
+# region_lookup.py, report.py) contains no asserts, so skipping B101 here does
+# not weaken scanning of the real logic.
+[bandit]
+skips = B101
