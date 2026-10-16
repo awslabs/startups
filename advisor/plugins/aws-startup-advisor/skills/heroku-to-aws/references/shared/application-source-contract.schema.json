@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://awslabs.github.io/startups/heroku-to-aws/application-source-contract.schema.json",
   "title": "Heroku application-source request and findings",
-  "description": "Contract-only definitions for a future application-source review.",
+  "description": "Request and findings definitions for planned application-source validation.",
   "oneOf": [{ "$ref": "#/definitions/request" }, { "$ref": "#/definitions/findings" }],
   "definitions": {
     "question": {
@@ -46,7 +46,7 @@
       "type": "array",
       "maxItems": 256,
       "uniqueItems": true,
-      "items": { "$ref": "#/definitions/name" }
+      "items": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
     },
     "identifierList": {
       "type": "array",
