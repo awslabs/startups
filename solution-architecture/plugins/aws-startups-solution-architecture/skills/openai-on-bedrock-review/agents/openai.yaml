@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Bedrock Migration"
+  short_description: "Review migration to OpenAI models on Amazon Bedrock (AWS)"
+  default_prompt: "Use $aws-startups-solution-architecture:openai-on-bedrock-review for a standalone read-only review of this migration proposal or change. Check current documentation, retention, residency, managed-state portability, agreed scope, and actual verification evidence. Return prioritized findings without editing files or running the migration pipeline."

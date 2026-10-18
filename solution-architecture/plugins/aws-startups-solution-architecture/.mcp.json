@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "openaiDeveloperDocs": {
+      "type": "http",
+      "url": "https://developers.openai.com/mcp",
+      "disabled": false
+    },
+    "aws-knowledge-mcp-server": {
+      "type": "http",
+      "url": "https://knowledge-mcp.global.api.aws",
+      "disabled": false
+    }
+  }
+}
