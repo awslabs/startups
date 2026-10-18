@@ -23,7 +23,7 @@ Two neighbors own adjacent surface, and staying off theirs is the point:
 
 ## Skills
 
-Two exemplars, each chosen because neither neighbor covers it and each is a recurring field problem.
+The following examples illustrate recurring field problems within this plugin's scope. The OpenAI-on-Bedrock workflows are described separately below.
 
 | Skill                    | Problem it solves                                                                                                                                                                                       |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
