@@ -29,6 +29,10 @@
     {
       "name": "aws-agents",
       "marketplace": "claude-plugins-official"
+    },
+    {
+      "name": "aws-startup-advisor",
+      "marketplace": "claude-plugins-official"
     }
   ]
 }

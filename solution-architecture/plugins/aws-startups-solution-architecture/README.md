@@ -34,22 +34,26 @@ Two exemplars, each chosen because neither neighbor covers it and each is a recu
 
 ### OpenAI on Amazon Bedrock
 
-The OpenAI-on-Bedrock workflows assess, implement, and independently review existing model integrations moving to OpenAI models on Amazon Bedrock (AWS). They preserve the application framework where supported, separate the least-disruptive traffic cutover from optional modernization, and check current official documentation before selecting a target integration.
+These workflows add current-documentation, retention/residency, managed-state, and standalone review checks around the official AWS migration skills. They help a small team without a separate migration reviewer identify unverified release assumptions and carry explicit constraints into execution.
 
-| Skill                                                                          | Purpose                                                                                                                         |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| [`openai-on-bedrock-assessment`](skills/openai-on-bedrock-assessment/SKILL.md) | Assess compatibility, identify blockers, and plan cutover and optional modernization without changing files.                    |
-| [`openai-on-bedrock-migration`](skills/openai-on-bedrock-migration/SKILL.md)   | Implement the agreed migration, verify each selected phase, and invoke the dedicated review workflow.                           |
-| [`openai-on-bedrock-review`](skills/openai-on-bedrock-review/SKILL.md)         | Review the integration against its agreed scope, current documentation, and actual verification evidence without editing files. |
+| Skill                                                                          | Purpose                                                                                                   |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| [`openai-on-bedrock-assessment`](skills/openai-on-bedrock-assessment/SKILL.md) | Check additional release requirements without changing files or running upstream migration phases.        |
+| [`openai-on-bedrock-migration`](skills/openai-on-bedrock-migration/SKILL.md)   | Pass the agreed constraints to the official migration workflow, inspect its results, and invoke review.   |
+| [`openai-on-bedrock-review`](skills/openai-on-bedrock-review/SKILL.md)         | Review a supplied proposal or change independently, with prioritized findings and explicit evidence gaps. |
 
-All three use the shared [OpenAI on Bedrock migration playbook](references/openai-on-bedrock-migration-playbook.md). General Bedrock service guidance is delegated to `Skill("aws-core:amazon-bedrock")` when available; otherwise the workflows use the playbook's official-documentation fallback. The migration workflow invokes `openai-on-bedrock-review` after verification and reports whether a fresh reviewer or self-review was used. The plugin includes OpenAI Developer Docs and AWS Knowledge MCP connections for current compatibility evidence. Local checks and live inference results are reported separately.
+SDK migration and its evaluation/reporting pipeline belong to `Skill("aws-startup-advisor:llm-to-bedrock")`. Agent architecture and migration planning belong to `Skill("aws-startup-advisor:agent-advisor")`; general Bedrock mechanics belong to `Skill("aws-core:amazon-bedrock")`. The declared `aws-startup-advisor` dependency supplies the upstream migration skill and its assessment siblings. An unavailable dependency or incompatible installed implementation blocks delegated execution; it does not trigger a local rewrite fallback.
+
+All three workflows read the shared [OpenAI on Bedrock migration playbook](references/openai-on-bedrock-migration-playbook.md). OpenAI Developer Docs and AWS Knowledge MCP connections support current evidence, with official-web fallback. Current AWS endpoint guidance takes precedence over embedded skill preferences, subject to model/API/Region/feature compatibility. Read-only checks do not run the upstream pipeline's writes or live probes.
+
+On hosts without a native Skill tool, resolve and read the installed namespaced skill and its resources. Reading a file does not replace a native capability required by the installed upstream revision: report that limitation and use its documented manual handoff when available. Verify the actual handoff and installed dependency revision; successful plugin discovery alone does not prove migration execution. Local checks, live inference, and model-quality evidence are reported separately.
 
 Original author: Danny Wigg (`dwigg@openai.com`).
 
 For example, in Codex:
 
 ```text
-Use $aws-startups-solution-architecture:openai-on-bedrock-assessment to assess this application's migration to OpenAI models on Amazon Bedrock. Do not change files.
+Use $aws-startups-solution-architecture:openai-on-bedrock-assessment to check this migration's current documentation, retention, residency, and managed-state readiness. Do not change files.
 ```
 
 ## What to contribute
@@ -72,10 +76,11 @@ Declared in `.claude-plugin/plugin.json` and resolved automatically at install t
 
 - [`aws-core`](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-core): infrastructure-as-code authoring, core services, IAM, observability, cost management.
 - [`aws-agents`](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-agents): building, deploying, and operating AI agents on AWS.
+- [`aws-startup-advisor`](https://github.com/aws/agent-toolkit-for-aws/tree/main/plugins/aws-startup-advisor): SDK migration, its required assessment siblings, and agent architecture/migration planning.
 
-Both live in the `claude-plugins-official` marketplace, so this repo's `marketplace.json` lists that marketplace in `allowCrossMarketplaceDependenciesOn`. Without that entry, install fails with a `cross-marketplace` error. They are intentionally unversioned: version constraints resolve against `{plugin-name}--v{version}` git tags, and the upstream repo publishes none, so a semver range would fail with `no-matching-tag`. See [plugin dependencies](https://code.claude.com/docs/en/plugin-dependencies).
+All three live in the `claude-plugins-official` marketplace, so this repo's `marketplace.json` lists that marketplace in `allowCrossMarketplaceDependenciesOn`. Without that entry, install fails with a `cross-marketplace` error. They are intentionally unversioned: version constraints resolve against `{plugin-name}--v{version}` git tags, and the upstream repo publishes none, so a semver range would fail with `no-matching-tag`. See [plugin dependencies](https://code.claude.com/docs/en/plugin-dependencies).
 
-Installing this plugin also installs and enables both dependencies. The skills here defer to them for service specifics rather than duplicating that guidance.
+On Claude Code, installing this plugin resolves its declared dependencies. Disabling a required dependency can prevent the SA plugin and its skills from loading; restore that dependency before retrying. Verify their installed versions and availability in the host being used. The skills here defer to them for service specifics rather than duplicating that guidance.
 
 ## Install
 

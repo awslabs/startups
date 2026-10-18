@@ -1,4 +1,4 @@
 interface:
   display_name: "Assess Bedrock Migration"
   short_description: "Assess migration to OpenAI models on Amazon Bedrock (AWS)"
-  default_prompt: "Use $aws-startups-solution-architecture:openai-on-bedrock-assessment to plan this application's least-disruptive supported Bedrock cutover and strongly recommend optional modernization to the newest suitable supported OpenAI models with Responses API or Bedrock Managed Agents. Preserve its application framework, use current documentation, distinguish selected work from recommendations, and do not change files."
+  default_prompt: "Use $aws-startups-solution-architecture:openai-on-bedrock-assessment to check this OpenAI-on-Bedrock migration's current documentation, retention, residency, and managed-state requirements. Inspect the application and existing evidence without changing files or running live inference. Identify constraints and verification gaps for the official migration workflow."
