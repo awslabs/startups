@@ -26,7 +26,7 @@ Pull requests from forks change nothing about the ceiling, so this skill sets on
 Post one comment per pull request and update it on every push, so the thread shows the current numbers and not a history of stale ones. Use a fixed layout so the bill owner learns where to look:
 
 ```text
-Cost check: list price, on demand, before credits, Free Tier, Savings Plans and private pricing
+Cost check: list price, on demand, before credits, Free Tier, Savings Plans, Reserved Instances and private pricing
 
 Floor added by this change:    <amount>/month   threshold <amount>/month   <within | EXCEEDS>
 Stack floor after this change: <amount>/month   cap <amount>/month         <within | EXCEEDS>
