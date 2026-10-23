@@ -107,8 +107,15 @@ permissions:
 # without a maintainer gate, so a push storm would otherwise fan out one runtime
 # invocation per push. Superseding in-flight runs also means the status on a pull request
 # reflects its newest revision rather than whichever run happened to finish last.
+#
+# The group is per trigger as well as per pull request. Both triggers fire on every push,
+# and exactly one of them runs the job (see the job condition), so a shared group let the
+# skipping arm cancel the reviewing arm: fork pull requests showed a `cancelled` and
+# `skipped` pair with no review. With one group per trigger, each arm cancels only its own
+# older runs, and since only one arm reaches the runtime for a given pull request, there
+# is still at most one review in flight per pull request.
 concurrency:
-  group: agentcore-reviewer-${{ github.event.pull_request.number }}
+  group: agentcore-reviewer-${{ github.event_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
