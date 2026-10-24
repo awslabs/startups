@@ -73,6 +73,12 @@ Or load locally during development:
 claude --plugin-dir ./solution-architecture/plugins/aws-startups-solution-architecture
 ```
 
+Or install from [Neotask Construct](https://construct.neotask.ai/p/aws-startups-solution-architecture) with the Neotask CLI:
+
+```bash
+neotask construct install aws-startups-solution-architecture
+```
+
 ## License
 
 Apache-2.0
