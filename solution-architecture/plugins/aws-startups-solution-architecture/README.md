@@ -29,6 +29,7 @@ Each skill is chosen because neither neighbor covers it and each is a recurring 
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `multi-tenant-isolation`  | Tenancy model per layer, isolation enforced in IAM and the database rather than application code, per-tenant cost attribution, and what to do when one large customer demands dedicated infrastructure. |
 | `agentcore-patterns`      | Running a judgment agent inside your own CI path: what it may block, measuring verdict stability before it gates anything, confidence banding, and warm-container staleness.                            |
+| `cost-regression-check`   | Cost of an infrastructure change on its pull request, before apply: fixed floor added and cost per unit at list price before credits, against absolute thresholds from the company's own ceiling.       |
 | `self-hosted-llm-serving` | Serving an open-weight or fine-tuned LLM on vLLM or SGLang with no committed GPU fleet: a break-even against managed options, one GPU before two, adapters on one base model, and the idle floor.       |
 
 `agentcore-patterns` is also the layout exemplar: a thin `SKILL.md` router with the depth in `references/`. That is the intended shape for this plugin, since solution-architecture content is mostly reference material.
@@ -40,7 +41,6 @@ Verified gaps: as of this writing, neither Agent Toolkit for AWS nor AWS Startup
 - **Scale-to-zero architectures** where an idle environment must cost approximately nothing, including which managed services have a nonzero floor and what that floor actually is.
 - **Service quota and limit strategy** ahead of a launch or traffic event, treating quota as lead-time-bound rather than instantaneous.
 - **Compliance groundwork** (SOC 2, HIPAA) implemented by a team with no compliance function, scoped to the technical controls and evidence rather than the audit process.
-- **Cost regression detection** in the deploy path, so a per-unit cost increase is caught before the monthly bill.
 
 Bring your own topic if it fits the scope test above. Every contribution must pass all three criteria in the [contributing guide](../../CONTRIBUTING.md); criterion 2, no overlap with Agent Toolkit for AWS, rejects most proposals, so check the upstream skill list first.
 
