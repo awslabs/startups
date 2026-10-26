@@ -1,0 +1,14 @@
+[project]
+name = "hcls-stack-check-scripts"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    # boto3>=1.43 ships the resource-explorer-2 ListResources paginator used by
+    # topology_source.py (Search caps silently at 1,000 results; ListResources
+    # paginates the full inventory). botocore is pinned alongside it.
+    "boto3>=1.43,<2",
+    "botocore>=1.43,<2",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
