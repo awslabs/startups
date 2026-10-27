@@ -30,6 +30,7 @@ Each skill is chosen because neither neighbor covers it and each is a recurring 
 | `multi-tenant-isolation`  | Tenancy model per layer, isolation enforced in IAM and the database rather than application code, per-tenant cost attribution, and what to do when one large customer demands dedicated infrastructure. |
 | `agentcore-patterns`      | Running a judgment agent inside your own CI path: what it may block, measuring verdict stability before it gates anything, confidence banding, and warm-container staleness.                            |
 | `cost-regression-check`   | Cost of an infrastructure change on its pull request, before apply: fixed floor added and cost per unit at list price before credits, against absolute thresholds from the company's own ceiling.       |
+| `hcls-stack-check`        | Per-resource HIPAA Eligible Services membership and EU region residency, from an account's resource inventory (AWS Resource Explorer or a local export). A factual check, not a compliance verdict.     |
 | `self-hosted-llm-serving` | Serving an open-weight or fine-tuned LLM on vLLM or SGLang with no committed GPU fleet: a break-even against managed options, one GPU before two, adapters on one base model, and the idle floor.       |
 
 `agentcore-patterns` is also the layout exemplar: a thin `SKILL.md` router with the depth in `references/`. That is the intended shape for this plugin, since solution-architecture content is mostly reference material.
