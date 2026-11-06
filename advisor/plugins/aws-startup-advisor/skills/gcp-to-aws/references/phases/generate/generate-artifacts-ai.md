@@ -48,16 +48,16 @@ Check `preferences.json` → `ai_constraints.ai_framework.value` and `aws-design
 Normalize legacy absent/`direct`, `converse`, `gpt-oss`, and `mantle` once at this
 boundary. Reject every other unknown non-empty value. Then dispatch exactly:
 
-| `migration_path` | Artifact lane |
-| ---------------- | ------------- |
-| `runtime_openai_responses` | Runtime OpenAI setup/code preserving `responses.create` |
-| `runtime_openai_chat` | Runtime OpenAI setup/code preserving `chat.completions.create` |
-| `runtime_messages` | Runtime Anthropic setup/code preserving `messages.create` |
-| `mantle_openai_responses` | Mantle OpenAI setup/code preserving Responses |
-| `mantle_openai_chat` | Mantle OpenAI setup/code preserving Chat Completions |
-| `mantle_messages` | Mantle Anthropic setup/code preserving Messages |
-| `runtime_converse` | Bedrock-native Converse adapter |
-| `runtime_invoke` | Bedrock-native Invoke adapter |
+| `migration_path`           | Artifact lane                                                  |
+| -------------------------- | -------------------------------------------------------------- |
+| `runtime_openai_responses` | Runtime OpenAI setup/code preserving `responses.create`        |
+| `runtime_openai_chat`      | Runtime OpenAI setup/code preserving `chat.completions.create` |
+| `runtime_messages`         | Runtime Anthropic setup/code preserving `messages.create`      |
+| `mantle_openai_responses`  | Mantle OpenAI setup/code preserving Responses                  |
+| `mantle_openai_chat`       | Mantle OpenAI setup/code preserving Chat Completions           |
+| `mantle_messages`          | Mantle Anthropic setup/code preserving Messages                |
+| `runtime_converse`         | Bedrock-native Converse adapter                                |
+| `runtime_invoke`           | Bedrock-native Invoke adapter                                  |
 
 Gateway and agentic additions still follow the existing framework rules. **Step 3F runs for
 ALL paths** and emits `bedrock_monitoring.tf`.

@@ -30,14 +30,14 @@ Check `preferences.json` → `ai_constraints.ai_framework` to determine the migr
 
 **Source-SDK-preserving paths** — dispatch on the exact `migration_path`, never a prefix:
 
-| Path | Preserve | Base URL | IAM |
-| ---- | -------- | -------- | --- |
-| `runtime_openai_responses` | `responses.create` | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1` | `bedrock:InvokeModel*` |
-| `runtime_openai_chat` | `chat.completions.create` | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1` | `bedrock:InvokeModel*` |
-| `runtime_messages` | `messages.create` | `https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1` | `bedrock:InvokeModel*` |
-| `mantle_openai_responses` | `responses.create` | `https://bedrock-mantle.{region}.api.aws/openai/v1` | `bedrock-mantle:*` |
-| `mantle_openai_chat` | `chat.completions.create` | `https://bedrock-mantle.{region}.api.aws/openai/v1` | `bedrock-mantle:*` |
-| `mantle_messages` | `messages.create` | documented Mantle Anthropic base path | `bedrock-mantle:*` |
+| Path                       | Preserve                  | Base URL                                                      | IAM                    |
+| -------------------------- | ------------------------- | ------------------------------------------------------------- | ---------------------- |
+| `runtime_openai_responses` | `responses.create`        | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`    | `bedrock:InvokeModel*` |
+| `runtime_openai_chat`      | `chat.completions.create` | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`    | `bedrock:InvokeModel*` |
+| `runtime_messages`         | `messages.create`         | `https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1` | `bedrock:InvokeModel*` |
+| `mantle_openai_responses`  | `responses.create`        | `https://bedrock-mantle.{region}.api.aws/openai/v1`           | `bedrock-mantle:*`     |
+| `mantle_openai_chat`       | `chat.completions.create` | `https://bedrock-mantle.{region}.api.aws/openai/v1`           | `bedrock-mantle:*`     |
+| `mantle_messages`          | `messages.create`         | documented Mantle Anthropic base path                         | `bedrock-mantle:*`     |
 
 For every row, use an auto-refreshing short-lived Bedrock token and the endpoint-appropriate
 model-ID form. `runtime_converse` and `runtime_invoke` generate the Bedrock-native adapter.
@@ -61,19 +61,19 @@ Based on `ai-workload-profile.json` → `integration.pattern` and `integration.l
 
 **Migration patterns to include (matched to detected language and source):**
 
-| Source SDK              | Target                            | Key Change                                                                                                                                                                                             |
-| ----------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| OpenAI SDK (Responses) | Runtime or Mantle Responses | Preserve `responses.create`; change endpoint, credential, model ID, and IAM to match the exact path |
-| OpenAI SDK (Chat)      | Runtime or Mantle Chat      | Preserve `chat.completions.create` when the selected model/API supports it                            |
-| Anthropic SDK          | Runtime or Mantle Messages  | Preserve `messages.create`; use `/anthropic/v1` on Runtime                                            |
-| Vertex AI (Python)      | boto3 Bedrock Converse API        | `GenerativeModel.generate_content()` → `bedrock.converse()` |
-| Vertex AI (JS)          | @aws-sdk/client-bedrock-runtime   | `model.generateContent()` → `client.send(new ConverseCommand())` |
-| Vertex AI (Go)          | aws-sdk-go-v2 bedrockruntime      | `aiplatform` → `bedrockruntime.Converse()`                                                                                                                                                             |
-| Vertex AI (Java)        | AWS SDK BedrockRuntimeClient      | `GenerativeModel` → `BedrockRuntimeClient.converse()`                                                                                                                                                  |
-| OpenAI SDK              | boto3 Bedrock Converse API        | `client.chat.completions.create()` → `bedrock.converse()` (if Mantle unavailable)                                                                                                                      |
-| LiteLLM                 | LiteLLM config change             | `model="gpt-4o"` → `model="bedrock/anthropic.claude-sonnet-5"`, or keep the GPT family via the mantle endpoint when the source model is on Bedrock                                                     |
-| LangChain               | langchain_aws                     | `ChatOpenAI`/`ChatVertexAI` → `ChatBedrock`                                                                                                                                                            |
-| LlamaIndex              | llama_index.llms.bedrock_converse | `Vertex` → `BedrockConverse`                                                                                                                                                                           |
+| Source SDK             | Target                            | Key Change                                                                                                                                         |
+| ---------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OpenAI SDK (Responses) | Runtime or Mantle Responses       | Preserve `responses.create`; change endpoint, credential, model ID, and IAM to match the exact path                                                |
+| OpenAI SDK (Chat)      | Runtime or Mantle Chat            | Preserve `chat.completions.create` when the selected model/API supports it                                                                         |
+| Anthropic SDK          | Runtime or Mantle Messages        | Preserve `messages.create`; use `/anthropic/v1` on Runtime                                                                                         |
+| Vertex AI (Python)     | boto3 Bedrock Converse API        | `GenerativeModel.generate_content()` → `bedrock.converse()`                                                                                        |
+| Vertex AI (JS)         | @aws-sdk/client-bedrock-runtime   | `model.generateContent()` → `client.send(new ConverseCommand())`                                                                                   |
+| Vertex AI (Go)         | aws-sdk-go-v2 bedrockruntime      | `aiplatform` → `bedrockruntime.Converse()`                                                                                                         |
+| Vertex AI (Java)       | AWS SDK BedrockRuntimeClient      | `GenerativeModel` → `BedrockRuntimeClient.converse()`                                                                                              |
+| OpenAI SDK             | boto3 Bedrock Converse API        | `client.chat.completions.create()` → `bedrock.converse()` (if Mantle unavailable)                                                                  |
+| LiteLLM                | LiteLLM config change             | `model="gpt-4o"` → `model="bedrock/anthropic.claude-sonnet-5"`, or keep the GPT family via the mantle endpoint when the source model is on Bedrock |
+| LangChain              | langchain_aws                     | `ChatOpenAI`/`ChatVertexAI` → `ChatBedrock`                                                                                                        |
+| LlamaIndex             | llama_index.llms.bedrock_converse | `Vertex` → `BedrockConverse`                                                                                                                       |
 
 For each detected language and pattern, generate before/after code examples using actual model IDs from `aws-design-ai.json`.
 

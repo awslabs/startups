@@ -19,13 +19,13 @@ API continuity alone does not select Mantle. Runtime exposes the OpenAI Response
 Completions APIs and the Anthropic Messages API. Client-side tool calling and ordinary stored
 Responses continuation also work on Runtime.
 
-| API need | Default path | Mantle exception |
-| --- | --- | --- |
-| OpenAI Responses | `runtime_openai_responses` | `mantle_openai_responses` for a verified selector above |
-| OpenAI Chat Completions | `runtime_openai_chat` | `mantle_openai_chat` for a verified selector above |
-| Anthropic Messages | `runtime_messages` | `mantle_messages` for a verified selector above |
-| Shared Bedrock-native surface | `runtime_converse` | none |
-| Provider-native Bedrock body | `runtime_invoke` | none |
+| API need                      | Default path               | Mantle exception                                        |
+| ----------------------------- | -------------------------- | ------------------------------------------------------- |
+| OpenAI Responses              | `runtime_openai_responses` | `mantle_openai_responses` for a verified selector above |
+| OpenAI Chat Completions       | `runtime_openai_chat`      | `mantle_openai_chat` for a verified selector above      |
+| Anthropic Messages            | `runtime_messages`         | `mantle_messages` for a verified selector above         |
+| Shared Bedrock-native surface | `runtime_converse`         | none                                                    |
+| Provider-native Bedrock body  | `runtime_invoke`           | none                                                    |
 
 Public sources: [inference endpoint comparison](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html),
 [OpenAI Chat Completions](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html),

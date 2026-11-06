@@ -43,8 +43,8 @@ Current public model cards list both models on Runtime through Geo or Global CRI
 Mantle for in-Region inference. Both cards document Responses and Chat Completions. Runtime
 has no bare in-Region ID for these models in this snapshot.
 
-| Model | Mantle ID | Runtime CRIS IDs | OpenAI-compatible APIs |
-| ----- | --------- | ---------------- | ---------------------- |
+| Model   | Mantle ID        | Runtime CRIS IDs                             | OpenAI-compatible APIs      |
+| ------- | ---------------- | -------------------------------------------- | --------------------------- |
 | GPT-5.5 | `openai.gpt-5.5` | `us.openai.gpt-5.5`, `global.openai.gpt-5.5` | Responses, Chat Completions |
 | GPT-5.4 | `openai.gpt-5.4` | `us.openai.gpt-5.4`, `global.openai.gpt-5.4` | Responses, Chat Completions |
 
@@ -52,10 +52,10 @@ Do not generalize these rows to another model or future date. Re-read its card.
 
 ## Hosts, credentials, and IAM
 
-| Path | Base URL | ID form | IAM family |
-| ---- | -------- | ------- | ---------- |
+| Path           | Base URL                                                   | ID form                 | IAM family             |
+| -------------- | ---------------------------------------------------------- | ----------------------- | ---------------------- |
 | Runtime OpenAI | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1` | current Runtime/CRIS ID | `bedrock:InvokeModel*` |
-| Mantle OpenAI | `https://bedrock-mantle.{region}.api.aws/openai/v1` | documented bare ID | `bedrock-mantle:*` |
+| Mantle OpenAI  | `https://bedrock-mantle.{region}.api.aws/openai/v1`        | documented bare ID      | `bedrock-mantle:*`     |
 
 Use an auto-refreshing short-lived Bedrock token provider for long-running services. Never
 reuse an OpenAI API key, commit a token, pair a bare Mantle ID with Runtime, or pair a prefixed
@@ -68,10 +68,10 @@ same across Runtime and Mantle. Routing still changes price. Current cards can p
 and geographic CRIS differently from Global CRIS, and Global routing has broader data-residency
 implications. GPT-5.4 and GPT-5.5 point-in-time standard rates are:
 
-| Model | In-Region / US Geo input · output per 1M | Global CRIS input · output per 1M |
-| ----- | ---------------------------------------- | ------------------------------------ |
-| GPT-5.5 | $5.50 · $33.00 | $5.00 · $30.00 |
-| GPT-5.4 | $2.75 · $16.50 | $2.50 · $15.00 |
+| Model   | In-Region / US Geo input · output per 1M | Global CRIS input · output per 1M |
+| ------- | ---------------------------------------- | --------------------------------- |
+| GPT-5.5 | $5.50 · $33.00                           | $5.00 · $30.00                    |
+| GPT-5.4 | $2.75 · $16.50                           | $2.50 · $15.00                    |
 
 Never infer availability from a price row or price from an endpoint row. Revalidate the model
 card's pricing, context tier, API, and Region immediately before estimating. A cached amount is

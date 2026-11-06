@@ -152,16 +152,16 @@ Read the exact `Bedrock API path:` context line and dispatch by equality. Suppor
 `runtime_invoke`. If the line is absent or unknown, STOP with `unknown Bedrock API path`; never
 use a catch-all Converse branch.
 
-| Lane | Preserve | Base URL / client |
-| --- | --- | --- |
-| `runtime_openai_responses` | OpenAI SDK, Responses input/output | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1` |
-| `runtime_openai_chat` | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1` |
-| `runtime_messages` | Anthropic SDK, Messages content | `https://bedrock-runtime.<REGION>.amazonaws.com/anthropic/v1` |
-| `mantle_openai_responses` | OpenAI SDK, Responses input/output | `https://bedrock-mantle.<REGION>.api.aws/openai/v1` |
-| `mantle_openai_chat` | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-mantle.<REGION>.api.aws/openai/v1` |
-| `mantle_messages` | Anthropic SDK, Messages content | `https://bedrock-mantle.<REGION>.api.aws/anthropic/v1` |
-| `runtime_converse` | Bedrock Converse | boto3 `bedrock-runtime` client |
-| `runtime_invoke` | model-native InvokeModel payload | boto3 `bedrock-runtime` client |
+| Lane                       | Preserve                                      | Base URL / client                                             |
+| -------------------------- | --------------------------------------------- | ------------------------------------------------------------- |
+| `runtime_openai_responses` | OpenAI SDK, Responses input/output            | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1`    |
+| `runtime_openai_chat`      | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1`    |
+| `runtime_messages`         | Anthropic SDK, Messages content               | `https://bedrock-runtime.<REGION>.amazonaws.com/anthropic/v1` |
+| `mantle_openai_responses`  | OpenAI SDK, Responses input/output            | `https://bedrock-mantle.<REGION>.api.aws/openai/v1`           |
+| `mantle_openai_chat`       | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-mantle.<REGION>.api.aws/openai/v1`           |
+| `mantle_messages`          | Anthropic SDK, Messages content               | `https://bedrock-mantle.<REGION>.api.aws/anthropic/v1`        |
+| `runtime_converse`         | Bedrock Converse                              | boto3 `bedrock-runtime` client                                |
+| `runtime_invoke`           | model-native InvokeModel payload              | boto3 `bedrock-runtime` client                                |
 
 Only `runtime_converse` and `runtime_invoke` perform Bedrock-native payload/response rewrites.
 The six compatible-API lanes preserve the selected source API request and response shape. All

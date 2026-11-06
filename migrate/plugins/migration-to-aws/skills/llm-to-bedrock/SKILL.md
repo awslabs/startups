@@ -548,7 +548,7 @@ uv run --project $SCRIPTS python $SCRIPTS/validate_result.py --check-run-context
 | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------- |
 | repo_root, migration_dir, region, aws_profile, aws_account, source_provider, assess_design_sha256, schema_version, plugin_version | everything                      | —         |
 | repo_head_sha / repo_branch / repo_dirty_sha256                                                                                   | everything                      | —         |
-| target_models / bedrock_api_path / resolved_model_overrides                                                                              | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
+| target_models / bedrock_api_path / resolved_model_overrides                                                                       | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
 | log_files / max_golden_cases                                                                                                      | everything                      | —         |
 | source_key_sha256 / source_baseline_available                                                                                     | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
 

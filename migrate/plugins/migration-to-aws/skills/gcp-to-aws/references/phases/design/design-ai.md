@@ -323,13 +323,13 @@ For each model in `models[]`, record:
 - **Workload type**: text generation, embeddings, vision, code generation, custom model
 - **Integration pattern mapping**:
 
-| GCP Pattern  | AWS Pattern                                                               | Effort  |
-| ------------ | ------------------------------------------------------------------------- | ------- |
+| GCP Pattern  | AWS Pattern                                                              | Effort  |
+| ------------ | ------------------------------------------------------------------------ | ------- |
 | `direct_sdk` | Runtime OpenAI Responses/Chat or Runtime Messages (supported source API) | Minimal |
-| `direct_sdk` | Bedrock SDK (boto3 / AWS SDK)                                             | Medium  |
-| `framework`  | LangChain/LlamaIndex + Bedrock                                            | Low     |
-| `rest_api`   | Bedrock REST API                                                          | Medium  |
-| `mixed`      | Match per-model                                                           | Varies  |
+| `direct_sdk` | Bedrock SDK (boto3 / AWS SDK)                                            | Medium  |
+| `framework`  | LangChain/LlamaIndex + Bedrock                                           | Low     |
+| `rest_api`   | Bedrock REST API                                                         | Medium  |
+| `mixed`      | Match per-model                                                          | Varies  |
 
 - **Migration complexity**: Low / Medium / High
 
@@ -357,18 +357,18 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 
 **Patterns to include (matched to detected language and source):**
 
-| Pattern                         | Source                    | Target               | Key Change                                                                                           |
-| ------------------------------- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------- |
-| Direct SDK (OpenAI Responses)     | OpenAI                    | Runtime Responses API | Preserve SDK/payload; Runtime host, Bedrock token, CRIS ID, Runtime IAM                                  |
-| Direct SDK (OpenAI Chat)          | OpenAI                    | Runtime Chat API      | Preserve `chat.completions.create`; use `runtime_openai_chat` when current model/API support is verified |
-| Direct SDK (Anthropic Messages)   | Anthropic                 | Runtime Messages API  | Preserve `messages.create`; Runtime Anthropic base path and Runtime IAM                                   |
-| Direct SDK (Bedrock-native)       | Any                       | Runtime Converse      | Explicit normalized API choice or Converse-only requirement                                               |
-| Direct SDK (Vertex AI)           | Vertex AI                 | Runtime Converse     | Translate the Vertex SDK payload intentionally                                                         |
-| LangChain                       | ChatVertexAI / ChatOpenAI | ChatBedrock          | Swap import and model_id                                                                             |
-| LlamaIndex                      | Vertex / OpenAI LLM       | BedrockConverse      | Swap import                                                                                          |
-| LLM Router (LiteLLM)            | Any                       | Config change        | `model="bedrock/<model_id>"` (1 line)                                                                |
-| Embeddings                      | TextEmbeddingModel        | Titan Embeddings v2  | `invoke_model` with JSON body                                                                        |
-| Streaming                       | `stream=True`             | `converse_stream`    | Event loop over `contentBlockDelta`                                                                  |
+| Pattern                         | Source                    | Target                | Key Change                                                                                               |
+| ------------------------------- | ------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
+| Direct SDK (OpenAI Responses)   | OpenAI                    | Runtime Responses API | Preserve SDK/payload; Runtime host, Bedrock token, CRIS ID, Runtime IAM                                  |
+| Direct SDK (OpenAI Chat)        | OpenAI                    | Runtime Chat API      | Preserve `chat.completions.create`; use `runtime_openai_chat` when current model/API support is verified |
+| Direct SDK (Anthropic Messages) | Anthropic                 | Runtime Messages API  | Preserve `messages.create`; Runtime Anthropic base path and Runtime IAM                                  |
+| Direct SDK (Bedrock-native)     | Any                       | Runtime Converse      | Explicit normalized API choice or Converse-only requirement                                              |
+| Direct SDK (Vertex AI)          | Vertex AI                 | Runtime Converse      | Translate the Vertex SDK payload intentionally                                                           |
+| LangChain                       | ChatVertexAI / ChatOpenAI | ChatBedrock           | Swap import and model_id                                                                                 |
+| LlamaIndex                      | Vertex / OpenAI LLM       | BedrockConverse       | Swap import                                                                                              |
+| LLM Router (LiteLLM)            | Any                       | Config change         | `model="bedrock/<model_id>"` (1 line)                                                                    |
+| Embeddings                      | TextEmbeddingModel        | Titan Embeddings v2   | `invoke_model` with JSON body                                                                            |
+| Streaming                       | `stream=True`             | `converse_stream`     | Event loop over `contentBlockDelta`                                                                      |
 
 **Runtime-compatible API (default for OpenAI and Anthropic sources):** Preserve the source SDK
 and request/response shape. Emit `runtime_openai_responses`, `runtime_openai_chat`, or

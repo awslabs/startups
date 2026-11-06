@@ -8,7 +8,7 @@ single source of truth and is vendored into every consuming skill at
 | File                                 | What it owns                                                   |
 | ------------------------------------ | -------------------------------------------------------------- |
 | `ai-model-lifecycle.md`              | Bedrock Active/Legacy/EOL registry + the 90-day exclusion rule |
-| `ai-migration-guardrails.md`         | Endpoint selection, throughput, retry, and agentic constraints      |
+| `ai-migration-guardrails.md`         | Endpoint selection, throughput, retry, and agentic constraints |
 | `bedrock-quotas.md`                  | TPM/RPM quota-risk assessment (works without an AWS account)   |
 | `ai-openai-to-bedrock.md`            | OpenAI-protocol (incl. Azure OpenAI) → Bedrock model selection |
 | `ai-anthropic-to-bedrock.md`         | Anthropic SDK → Bedrock Converse client swap                   |

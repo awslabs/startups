@@ -25,17 +25,17 @@ Read `aws-design-ai.json → ai_architecture.code_migration.migration_path` and
 `ai-workload-profile.json → integration.languages[0]` (`python`→`.py`, `javascript`/`typescript`→
 `.js`, `go`→`.go`, else `.py`).
 
-| `migration_path` / framework                                      | Emits (in addition to the always-on set)                                  |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `runtime_openai_responses`                                        | Runtime OpenAI setup/code preserving `responses.create`                   |
-| `runtime_openai_chat`                                             | Runtime OpenAI setup/code preserving `chat.completions.create`            |
-| `runtime_messages`                                                | Runtime Anthropic setup/code preserving `messages.create`                 |
-| `mantle_openai_responses` / `mantle_openai_chat` / `mantle_messages` | endpoint-specific Mantle setup/code preserving the source API          |
-| `runtime_converse` / `runtime_invoke`                             | `ai-migration/provider_adapter.{py,js,go}` for the exact native API       |
-| gateway (`llm_router`/`api_gateway`/`voice_platform`/`framework`) | `ai-migration/gateway_config.{yaml,py,json}` — skip the adapter           |
-| agentic `migration_approach == harness`                           | `ai-migration/harness.json`, `ai-migration/deploy_harness.sh`             |
-| agentic `migration_approach == strands`                           | `ai-migration/strands_agents.py`, `ai-migration/deploy_strands.sh`        |
-| eval opted in                                                     | `ai-migration/eval-prompts.jsonl`, `ai-migration/run-evaluation.sh`       |
+| `migration_path` / framework                                         | Emits (in addition to the always-on set)                            |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `runtime_openai_responses`                                           | Runtime OpenAI setup/code preserving `responses.create`             |
+| `runtime_openai_chat`                                                | Runtime OpenAI setup/code preserving `chat.completions.create`      |
+| `runtime_messages`                                                   | Runtime Anthropic setup/code preserving `messages.create`           |
+| `mantle_openai_responses` / `mantle_openai_chat` / `mantle_messages` | endpoint-specific Mantle setup/code preserving the source API       |
+| `runtime_converse` / `runtime_invoke`                                | `ai-migration/provider_adapter.{py,js,go}` for the exact native API |
+| gateway (`llm_router`/`api_gateway`/`voice_platform`/`framework`)    | `ai-migration/gateway_config.{yaml,py,json}` — skip the adapter     |
+| agentic `migration_approach == harness`                              | `ai-migration/harness.json`, `ai-migration/deploy_harness.sh`       |
+| agentic `migration_approach == strands`                              | `ai-migration/strands_agents.py`, `ai-migration/deploy_strands.sh`  |
+| eval opted in                                                        | `ai-migration/eval-prompts.jsonl`, `ai-migration/run-evaluation.sh` |
 
 Normalize legacy absent/`direct`, `converse`, `gpt-oss`, and `mantle` once at this boundary;
 reject every other unknown non-empty value. Runtime is the default. A Mantle lane requires a

@@ -72,8 +72,8 @@ Bedrock**.
 | GPT-5.6 Sol   | GPT-5.6 Sol    | `openai.gpt-5.6-sol` / `us.` `global.` prefixed         | `strong_migrate` — same model; parity on Global CRIS, else +10% |
 | GPT-5.6 Terra | GPT-5.6 Terra  | `openai.gpt-5.6-terra` / `us.` `in.` `global.` prefixed | `strong_migrate` — same model; parity on Global CRIS, else +10% |
 | GPT-5.6 Luna  | GPT-5.6 Luna   | `openai.gpt-5.6-luna` / `us.` `in.` `global.` prefixed  | `strong_migrate` — same model; parity on Global CRIS, else +10% |
-| GPT-5.5       | GPT-5.5        | `openai.gpt-5.5` / current prefixed Runtime ID        | `strong_migrate` — same model; price by routing option       |
-| GPT-5.4       | GPT-5.4        | `openai.gpt-5.4` / current prefixed Runtime ID        | `strong_migrate` — same model; price by routing option       |
+| GPT-5.5       | GPT-5.5        | `openai.gpt-5.5` / current prefixed Runtime ID          | `strong_migrate` — same model; price by routing option          |
+| GPT-5.4       | GPT-5.4        | `openai.gpt-5.4` / current prefixed Runtime ID          | `strong_migrate` — same model; price by routing option          |
 
 Then apply the **region gate** below. Record `model_change: false` and the exact path in
 `aws-design-ai.json` → `ai_architecture.code_migration`: `runtime_openai_responses` for a
@@ -251,25 +251,25 @@ rather than dismissing it. For a long-context (>272K) workload the gap is much w
 
 ## Feature Migration
 
-| OpenAI Feature                             | Bedrock Equivalent                                          | Notes                                                                                                |
-| ------------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| OpenAI SDK (direct)                        | Same model on Runtime OpenAI API                          | Preserve Responses or Chat shape when the model supports it; use `/openai/v1`                      |
-| Responses API                              | Runtime Responses API by default                          | Stored state works on Runtime; Mantle is for a verified selector                                   |
-| Chat Completions                           | Runtime Chat Completions by default                       | Preserve the source surface when the model/API table supports it                                    |
-| Function calling                           | Client-side tools on Runtime or Mantle                    | General server-side/preconfigured tools, including Web Search, can select Mantle                    |
-| Reasoning effort                           | `reasoning={"effort": ...}` on mantle                       | `none` / `low` / `medium` / `high` / `xhigh` / `max`                                                 |
-| Prompt caching                             | GPT-5.6 only (90% off cached input)                         | Not listed for GPT-5.5 / 5.4; Claude has its own caching                                             |
-| Streaming                                  | Supported                                                   | Verify per surface                                                                                   |
-| Vision                                     | GPT-5.x (image input) or Claude / Llama 4                   | Same-model preserves behavior                                                                        |
-| JSON mode                                  | Claude (excellent), Nova Pro (good)                         | Most models via prompt                                                                               |
-| Embeddings (ada-002, `text-embedding-3-*`) | Titan Embeddings v2                                         | No OpenAI embedding model on Bedrock; must re-embed all documents                                    |
-| DALL-E / gpt-image                         | Stability AI                                                | Nova Canvas v1 is Legacy; see `ai-model-lifecycle.md`                                                |
-| Whisper (STT)                              | Amazon Transcribe                                           | Different service, API, and pricing model                                                            |
-| TTS                                        | Amazon Polly / Nova 2 Sonic                                 | Different pricing model                                                                              |
-| Assistants API                             | See decision tree below                                     | Path depends on which features are used                                                              |
-| Realtime API                               | No equivalent                                               | Stay on OpenAI for this                                                                              |
-| Codex                                      | Not verified on Bedrock — see `shared/openai-on-bedrock.md` | Do not price; re-check the OpenAI model card index first                                             |
-| Guardrails / KB / invocation logging       | Bedrock-native model or gpt-oss                             | Not available through the mantle GPT path                                                            |
+| OpenAI Feature                             | Bedrock Equivalent                                          | Notes                                                                            |
+| ------------------------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| OpenAI SDK (direct)                        | Same model on Runtime OpenAI API                            | Preserve Responses or Chat shape when the model supports it; use `/openai/v1`    |
+| Responses API                              | Runtime Responses API by default                            | Stored state works on Runtime; Mantle is for a verified selector                 |
+| Chat Completions                           | Runtime Chat Completions by default                         | Preserve the source surface when the model/API table supports it                 |
+| Function calling                           | Client-side tools on Runtime or Mantle                      | General server-side/preconfigured tools, including Web Search, can select Mantle |
+| Reasoning effort                           | `reasoning={"effort": ...}` on mantle                       | `none` / `low` / `medium` / `high` / `xhigh` / `max`                             |
+| Prompt caching                             | GPT-5.6 only (90% off cached input)                         | Not listed for GPT-5.5 / 5.4; Claude has its own caching                         |
+| Streaming                                  | Supported                                                   | Verify per surface                                                               |
+| Vision                                     | GPT-5.x (image input) or Claude / Llama 4                   | Same-model preserves behavior                                                    |
+| JSON mode                                  | Claude (excellent), Nova Pro (good)                         | Most models via prompt                                                           |
+| Embeddings (ada-002, `text-embedding-3-*`) | Titan Embeddings v2                                         | No OpenAI embedding model on Bedrock; must re-embed all documents                |
+| DALL-E / gpt-image                         | Stability AI                                                | Nova Canvas v1 is Legacy; see `ai-model-lifecycle.md`                            |
+| Whisper (STT)                              | Amazon Transcribe                                           | Different service, API, and pricing model                                        |
+| TTS                                        | Amazon Polly / Nova 2 Sonic                                 | Different pricing model                                                          |
+| Assistants API                             | See decision tree below                                     | Path depends on which features are used                                          |
+| Realtime API                               | No equivalent                                               | Stay on OpenAI for this                                                          |
+| Codex                                      | Not verified on Bedrock — see `shared/openai-on-bedrock.md` | Do not price; re-check the OpenAI model card index first                         |
+| Guardrails / KB / invocation logging       | Bedrock-native model or gpt-oss                             | Not available through the mantle GPT path                                        |
 
 ---
 

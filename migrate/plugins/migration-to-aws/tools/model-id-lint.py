@@ -90,7 +90,7 @@ def main() -> int:
         if not path.is_file() or path.suffix not in EXTS or path.resolve() == SELF:
             continue
         rel = str(path.relative_to(PLUGIN))
-        if "node_modules" in rel:
+        if "node_modules" in rel or ".venv" in path.parts:
             continue
         try:
             text = path.read_text(encoding="utf-8")

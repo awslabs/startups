@@ -135,16 +135,16 @@ Create the eval results directory and verify Bedrock connectivity against the ta
 through `<BEDROCK_API_PATH>`. Use this exact dispatch for the connectivity check, §8 same-model
 loop, §9.5 vision check, and §10 golden loop:
 
-| Exact path | Client/call | Output extraction |
-| --- | --- | --- |
-| `runtime_openai_responses` | `OpenAI(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1", api_key=<refreshing provider>).responses.create(input=...)` | `response.output_text` |
-| `runtime_openai_chat` | same Runtime OpenAI client, `.chat.completions.create(messages=...)` | `response.choices[0].message.content` |
-| `runtime_messages` | `Anthropic(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)` | `response.content[0].text` |
-| `mantle_openai_responses` | `OpenAI(base_url="https://bedrock-mantle.<REGION>.api.aws/openai/v1", api_key=<refreshing provider>).responses.create(input=...)` | `response.output_text` |
-| `mantle_openai_chat` | same Mantle OpenAI client, `.chat.completions.create(messages=...)` | `response.choices[0].message.content` |
-| `mantle_messages` | `Anthropic(base_url="https://bedrock-mantle.<REGION>.api.aws/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)` | `response.content[0].text` |
-| `runtime_converse` | `boto3.client("bedrock-runtime").converse(messages=...)` | `response["output"]["message"]["content"][0]["text"]` |
-| `runtime_invoke` | `boto3.client("bedrock-runtime").invoke_model(body=...)` | parse the selected model family's JSON response |
+| Exact path                 | Client/call                                                                                                                                         | Output extraction                                     |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `runtime_openai_responses` | `OpenAI(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1", api_key=<refreshing provider>).responses.create(input=...)`            | `response.output_text`                                |
+| `runtime_openai_chat`      | same Runtime OpenAI client, `.chat.completions.create(messages=...)`                                                                                | `response.choices[0].message.content`                 |
+| `runtime_messages`         | `Anthropic(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)` | `response.content[0].text`                            |
+| `mantle_openai_responses`  | `OpenAI(base_url="https://bedrock-mantle.<REGION>.api.aws/openai/v1", api_key=<refreshing provider>).responses.create(input=...)`                   | `response.output_text`                                |
+| `mantle_openai_chat`       | same Mantle OpenAI client, `.chat.completions.create(messages=...)`                                                                                 | `response.choices[0].message.content`                 |
+| `mantle_messages`          | `Anthropic(base_url="https://bedrock-mantle.<REGION>.api.aws/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)`        | `response.content[0].text`                            |
+| `runtime_converse`         | `boto3.client("bedrock-runtime").converse(messages=...)`                                                                                            | `response["output"]["message"]["content"][0]["text"]` |
+| `runtime_invoke`           | `boto3.client("bedrock-runtime").invoke_model(body=...)`                                                                                            | parse the selected model family's JSON response       |
 
 The refreshing provider is `lambda: provide_token(region=region)` from
 `aws_bedrock_token_generator`. Pass the exact `<TARGET_MODEL_ID>` to every call. Preserve the
