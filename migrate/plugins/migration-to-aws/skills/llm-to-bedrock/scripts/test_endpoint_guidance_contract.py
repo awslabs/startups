@@ -190,6 +190,68 @@ def test_workload_route_identity_survives_every_execution_stage():
     assert "<BEDROCK_API_PATH>" not in agents["llm2bedrock-report-generator"]
 
 
+def test_minimum_gcp_design_route_is_accepted_without_inferred_defaults():
+    from evaluation_routes import assign_case_routes
+
+    route = {
+        "source_provider": "openai",
+        "source_model": "gpt-5.4",
+        "workload_id": "wl-chat",
+        "call_sites": ["src/app.py:20"],
+        "aws_model_id": "global.openai.gpt-5.4",
+        "migration_path": "runtime_openai_chat",
+        "model_change": False,
+        "iam_features": [],
+    }
+    [assigned] = assign_case_routes(
+        [{"id": "p1", "workload_id": "wl-chat", "call_site": "src/app.py:20"}],
+        [route],
+    )
+    assert all(assigned[field] == route[field] for field in route)
+
+    gcp_design = read("gcp-to-aws/references/phases/design/design-ai.md")
+    for field in ("source_provider", "source_model", "workload_id", "call_sites[]",
+                  "model_change", "iam_features[]", "migration_path"):
+        assert field in gcp_design
+
+
+def test_standalone_generators_bundle_and_execute_iam_helper():
+    import importlib.util
+
+    for skill in ("gcp-to-aws", "azure-to-aws"):
+        helper = SKILLS / skill / "scripts/iam_policy.py"
+        assert helper.is_file()
+        spec = importlib.util.spec_from_file_location(f"{skill}_iam", helper)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        policy = module.generate_policy(
+            ["global.openai.gpt-5.4", "openai.gpt-5.5"],
+            "us-east-1", "123456789012",
+            ["runtime_openai_chat", "mantle_openai_responses"],
+            [[], ["web_search", "external_web_access"]],
+        )
+        sids = {statement["Sid"] for statement in policy["Statement"]}
+        assert {"BedrockInvokeModelScoped", "BedrockMantleInference",
+                "BedrockWebSearch"} <= sids
+        web = next(statement for statement in policy["Statement"]
+                   if statement["Sid"] == "BedrockWebSearch")
+        assert "bedrock-websearch:ExternalWebAccess" in web["Action"]
+
+        generate = read(f"{skill}/references/phases/generate/generate.md")
+        assert "$SKILL_BASE/scripts/iam_policy.py" in generate
+        assert "bedrock-iam-policy.json" in generate
+
+
+def test_evaluator_reuses_path_specific_preflight_and_vision_clients():
+    evaluator = (SKILLS.parent / "agents/llm2bedrock-prompt-evaluator.md").read_text()
+    assert "from preflight_bedrock import probe_compatible_model" in evaluator
+    assert "from preflight_bedrock import runtime_openai_client, mantle_openai_client" in evaluator
+    assert 'path = "<EXACT_MIGRATION_PATH>"' in evaluator
+    assert "BedrockOpenAI(" not in evaluator
+    assert "Runtime paths require" in evaluator
+    assert "Mantle paths require" in evaluator
+
+
 def test_generated_iam_guidance_carries_route_features():
     shared = read("shared/ai/ai-openai-to-bedrock.md")
     report = (SKILLS.parent / "agents/llm2bedrock-report-generator.md").read_text()

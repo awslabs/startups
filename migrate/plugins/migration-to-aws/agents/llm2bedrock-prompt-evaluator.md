@@ -145,8 +145,9 @@ Iterate `$BEDROCK_WORKLOAD_ROUTES` in supplied order and
 verify connectivity for every distinct `(aws_model_id, migration_path)` pair. Every golden case
 already carries `workload_id` and `call_site`; use that exact assigned route through §8, §9.5,
 and §10. A repository with Responses and Chat or OpenAI and Anthropic routes executes every
-matching lane, and records `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and
-`model_change` beside each baseline and result so reporting stays deterministic. If route
+matching lane, and records `source_provider`, `source_model`, `workload_id`, `call_site`,
+`aws_model_id`, `migration_path`, and `model_change` beside each baseline and result so reporting
+stays deterministic. If route
 attribution changes or disappears downstream, stop with the same `route_attribution` block
 rather than choosing the first model.
 
@@ -216,56 +217,46 @@ Interpret the result:
 # 6a. Compatible-API connectivity checks
 
 Use the matching compatible-API row from §6 instead of the Converse command whenever the
-current route's `migration_path` is one of the six OpenAI/Anthropic compatible paths. The following
-Responses example illustrates `mantle_openai_responses`; switch host, SDK method, request shape,
-and output extraction exactly as the table specifies for the other five paths.
+current route's `migration_path` is one of the six OpenAI/Anthropic compatible paths. Reuse the
+committed preflight helper so endpoint construction and error classification cannot drift. Run
+this once per exact `(aws_model_id, migration_path)` pair, substituting the route's exact path:
 
 ```bash
 mkdir -p <repo>/.saws-migrate/eval-results
 
-AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
-import os, sys
-from aws_bedrock_token_generator import provide_token
-from openai import BedrockOpenAI
-region = os.environ.get('AWS_REGION', 'us-east-1')
-try:
-    client = BedrockOpenAI(aws_region=region,
-                           bedrock_token_provider=lambda: provide_token(region=region),
-                           max_retries=2)
-    r = client.responses.create(model='<TARGET_MODEL_ID>', input='ping',
-                                max_output_tokens=16, store=False)
-    print('OK:', r.output_text)
-except Exception as e:
-    print(f'FAIL [{type(e).__name__}]: {e}', file=sys.stderr)
-    sys.exit(1)
+AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> BEDROCK_API_PATH=<EXACT_MIGRATION_PATH> uv run --project <scriptsDir> python - <<'PY'
+import json, os, sys
+sys.path.insert(0, "<scriptsDir>")
+from preflight_bedrock import probe_compatible_model
+
+region = os.environ.get("AWS_REGION", "us-east-1")
+path = os.environ["BEDROCK_API_PATH"]
+verdict = probe_compatible_model("<TARGET_MODEL_ID>", region, path)
+print(json.dumps(verdict))
+sys.exit(0 if verdict["ok"] else 1)
 PY
 ```
 
-Interpret the result:
+Interpret the structured verdict by exact `migration_path`:
 
-- **Exit 0 + "OK:" line** — proceed to §7.
-- **HTTP 404 / model-not-found** — the model is not available at this endpoint or
-  region. These models are **in-region only**, so there is no cross-region
-  inference profile to fall back to and `resolve-bedrock-model-id`'s
-  inference-profile ranking does not apply. Return
-  `{ blocked: { reason: 'model_unresolvable', detail: '<the exact error> — <TARGET_MODEL_ID> is not available on the bedrock-mantle endpoint in <REGION>. Mantle is in-region only; for GPT-5.6 a bedrock-runtime CRIS id (us./in./global. prefixed) may cover the region instead, while GPT-5.5/5.4 need a supported region or a different model.' } }`.
-  Use `model_unresolvable` rather than a new reason — its recovery path (user
-  picks or pastes an ID, recorded in `resolved_model_overrides`) is exactly right
-  here. For GPT-5.6 a `us.`/`in.`/`global.`-prefixed CRIS candidate is legitimate
-  (it switches the run to the Converse path); for GPT-5.5 / GPT-5.4 no prefixed
-  form exists — do not offer one.
-- **HTTP 401 / 403** — distinguish the two causes from the message. If it names
-  model access, return `{ blocked: { reason: 'model_access', ... } }` as in §6.
-  Otherwise it is IAM: the principal needs the exact `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` actions
-  (`CreateInference`, `CallWithBearerToken`), **not** `bedrock:InvokeModel`.
-  Return `{ blocked: { reason: 'authz', detail: '<exact error> — grant bedrock-mantle actions (e.g. the AmazonBedrockMantleInferenceAccess managed policy); bedrock:InvokeModel does not authorize these models.' } }`.
-- **`ModuleNotFoundError`** — the pinned scripts environment is missing `openai` or
-  `aws-bedrock-token-generator` (both are declared in `scripts/pyproject.toml`).
-  Return `{ blocked: { reason: 'mantle_deps_missing', detail: '<exact error> — re-sync the pinned environment.' } }`. Do NOT treat this as a passing check.
-- **Any other failure** — surface the exact error type and message and STOP, as in §6.
+- **`ok: true`** — proceed to §7. This includes `reason: throttled_ok`; a 429 proves access.
+- **`reason: model_unavailable`** — return `model_unresolvable` with the exact detail. For a
+  Mantle path, the detail may identify an available Runtime CRIS alternative, but never change
+  paths implicitly. For a Runtime path, keep the Runtime host and ask the user to verify the
+  exact Runtime model/API/Region combination; do not prescribe Mantle in-region recovery.
+- **`reason: model_access`** — return the `model_access` block from §6.
+- **`reason: authz`** — return `authz` using the detail verbatim. Runtime paths require
+  `bedrock:InvokeModel` on the selected model/profile. Mantle paths require the documented
+  `bedrock-mantle:CreateInference`, `GetProject`, `ListProjects`, and `CallWithBearerToken`
+  actions. Never recommend one endpoint's IAM family for the other endpoint.
+- **`reason: compatible_api_deps_missing`** — return
+  `{ blocked: { reason: 'mantle_deps_missing', detail: '<exact detail>' } }`; re-sync the pinned
+  environment. The retained control-state name is backward compatible and applies to both Runtime
+  and Mantle compatible APIs.
+- **Any other failure** — surface the exact reason/detail and STOP, as in §6.
 
 Because these targets are same-model migrations, §8's short-circuit applies right
-after §7: run each golden prompt through this same Responses client for
+after §7: run each golden prompt through this same path-specific client for
 connectivity verification rather than the Converse script in §10.
 
 # 7. Load golden dataset
@@ -361,18 +352,24 @@ Count a case as failed if the call errors or returns empty output. If a case wit
    reader, and the failure-classification table — do NOT inline the
    script here.
 
-2. Pass it:
-   - `source_provider` — from §3 inputs (`openai` / `anthropic` / `google`).
-   - `source_model_id` — the source model from §3's `source_models`, verbatim.
+2. Group assigned golden rows by exact `(source_provider, source_model)` route identity. Resolve
+   each distinct source model through the reference's Step 1.5 and invoke the baseline helper on
+   only that route's rows. Never pass one run-wide provider/model across a mixed-source dataset.
+   Pass each group:
+   - `source_provider` — the group's `source_provider`.
+   - `source_model_id` — the group's `source_model`, verbatim.
    - `golden_dataset_path` — `<GOLDEN_DATASET_PATH>`.
    - `output_path` — `<repo>/.saws-migrate/eval-results/source_baselines.jsonl`.
 
    The skill writes one JSON object per line to `output_path`, one entry per golden prompt,
-   preserving `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and `model_change`:
+   preserving `source_provider`, `source_model`, `workload_id`, `call_site`, `aws_model_id`,
+   `migration_path`, and `model_change`:
 
    ```json
    {
      "id": "<prompt id>",
+     "source_provider": "<source provider>",
+     "source_model": "<source model id>",
      "workload_id": "<workload id>",
      "call_site": "<file:line>",
      "aws_model_id": "<target id>",
@@ -469,14 +466,19 @@ except Exception as e:
     print(f"VISION_INFRA_SKIPPED [{type(e).__name__}]: {e}", file=sys.stderr)
     sys.exit(0)
 
-from aws_bedrock_token_generator import provide_token
-from openai import BedrockOpenAI
+sys.path.insert(0, "<scriptsDir>")
+from preflight_bedrock import runtime_openai_client, mantle_openai_client
 region = os.environ.get("AWS_REGION", "us-east-1")
+path = "<EXACT_MIGRATION_PATH>"
+factories = {
+    "runtime_openai_responses": runtime_openai_client,
+    "mantle_openai_responses": mantle_openai_client,
+}
+if path not in factories:
+    raise ValueError(f"Responses vision does not support path: {path}")
 data_url = "data:image/jpeg;base64," + base64.b64encode(img).decode()
 try:
-    client = BedrockOpenAI(aws_region=region,
-                           bedrock_token_provider=lambda: provide_token(region=region),
-                           max_retries=2)
+    client = factories[path](region)
     r = client.responses.create(
         model="<TARGET_MODEL_ID>",
         input=[{"role": "user", "content": [
@@ -554,6 +556,15 @@ done_rows = []
 if os.path.exists(raw_path):
     with open(raw_path) as f:
         done_rows = [json.loads(line) for line in f if line.strip()]
+identity_fields = ("source_provider", "source_model", "workload_id", "call_site",
+                   "aws_model_id", "migration_path", "model_change")
+prompt_by_id = {prompt["id"]: prompt for prompt in prompts}
+for row in done_rows:
+    prompt = prompt_by_id.get(row.get("id"))
+    if prompt and any(row.get(field) != prompt.get(field) for field in identity_fields):
+        raise ValueError(
+            f"route attribution changed for raw result {row.get('id')}; remove the stale row "
+            "and rerun evaluation")
 done_ids = {r["id"] for r in done_rows}
 original_total = len(prompts)
 prompts = [p for p in prompts if p["id"] not in done_ids]
@@ -630,7 +641,8 @@ for prompt in prompts:
     # the report so readers can tell which prompts had real side-by-side data.
     static_baseline = prompt.get("assistant_response", "")
     live = live_baselines.get(prompt["id"])
-    route_fields = ("workload_id", "call_site", "aws_model_id", "migration_path", "model_change")
+    route_fields = ("source_provider", "source_model", "workload_id", "call_site",
+                    "aws_model_id", "migration_path", "model_change")
     if live and any(live.get(field) != prompt[field] for field in route_fields):
         raise ValueError(f"route attribution changed for prompt {prompt['id']}")
     if live and live.get("status") == "live" and live.get("source_response"):
@@ -642,6 +654,8 @@ for prompt in prompts:
 
     results.append({
         "id": prompt["id"],
+        "source_provider": prompt["source_provider"],
+        "source_model": prompt["source_model"],
         "workload_id": prompt["workload_id"],
         "call_site": prompt["call_site"],
         "aws_model_id": prompt["aws_model_id"],
@@ -813,7 +827,8 @@ with open("<repo>/.saws-migrate/eval-results/raw_results.jsonl") as f:
 with open("<repo>/.saws-migrate/eval-results/scored_results.jsonl", "w") as f:
     for s in scores:
         r = raw.get(s["id"], {})
-        for field in ("workload_id", "call_site", "aws_model_id", "migration_path", "model_change"):
+        for field in ("source_provider", "source_model", "workload_id", "call_site",
+                      "aws_model_id", "migration_path", "model_change"):
             s[field] = r.get(field)
         s["baseline_response"] = r.get("baseline_response", "")
         s["source_response"] = r.get("source_response", "")
@@ -855,6 +870,8 @@ Each record MUST contain the following fields (substitute real values):
 ```json
 {
   "id": "<prompt id>",
+  "source_provider": "<source provider>",
+  "source_model": "<source model id>",
   "workload_id": "<workload id>",
   "call_site": "<file:line>",
   "aws_model_id": "<target model id>",
@@ -884,7 +901,8 @@ Each record MUST contain the following fields (substitute real values):
 
 Field rules:
 
-- `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and `model_change` MUST be copied
+- `source_provider`, `source_model`, `workload_id`, `call_site`, `aws_model_id`,
+  `migration_path`, and `model_change` MUST be copied
   unchanged from the failed golden/raw result. The rewriter matches an adaptation by workload
   and call site, never by prompt ID alone.
 - `optimization_method` MUST be exactly the string literal `"agent_adaptation"`.

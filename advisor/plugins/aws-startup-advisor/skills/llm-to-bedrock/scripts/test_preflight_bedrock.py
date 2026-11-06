@@ -384,3 +384,29 @@ def test_mixed_path_count_mismatch_fails_closed():
             "runtime_openai_responses,runtime_openai_chat",
             ["model-a", "model-b", "model-c"],
         )
+
+
+def test_runtime_compatible_failures_keep_runtime_host_and_recovery(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    created = []
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            created.append(kwargs)
+
+    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=FakeOpenAI))
+    p.runtime_openai_client("eu-west-1", token_provider=lambda: "token")
+    assert created[0]["base_url"] == (
+        "https://bedrock-runtime.eu-west-1.amazonaws.com/openai/v1")
+
+    denied = p.classify_compatible_error(403, "principal is not authorized", mantle=False)
+    assert denied["reason"] == "authz"
+    assert "bedrock:InvokeModel" in denied["detail"]
+    assert "bedrock-mantle" not in denied["detail"]
+
+    missing = p.classify_compatible_error(404, "model not found", mantle=False)
+    assert missing["reason"] == "model_unavailable"
+    assert "Runtime compatible endpoint" in missing["detail"]
+    assert "in-region only" not in missing["detail"]

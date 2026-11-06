@@ -28,9 +28,9 @@ directory supplied in your context. Substitute both before running.
   API key). The file contains a single `KEY=VALUE` line, one of:
   `OPENAI_API_KEY=...` / `ANTHROPIC_API_KEY=...` / `GEMINI_API_KEY=...`.
 - The golden dataset JSONL exists at `golden_dataset_path` and each entry
-  has `id`, `user_prompt`, `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and
-  `model_change`, with optional `system_prompt`. Missing route attribution is a hard failure
-  before any provider call.
+  has `id`, `user_prompt`, `source_provider`, `source_model`, `workload_id`, `call_site`,
+  `aws_model_id`, `migration_path`, and `model_change`, with optional `system_prompt`. Missing
+  source or target route attribution is a hard failure before any provider call.
 
 If the env file is absent, do NOT run this skill — the caller should set
 `live_source_baseline: false` and skip to static baselines.
@@ -51,9 +51,11 @@ grep -qE '^(OPENAI|ANTHROPIC|GEMINI)_API_KEY=.+' <REPO>/.saws-migrate/.source-pr
   malformed and needs re-collection in `KEY=VALUE` form. Never print the file's contents.
 - `present` + `format_ok` → continue.
 
-### Step 1.5: Resolve the source model ID against the live provider catalog
+### Step 1.5: Resolve each source route against the live provider catalog
 
-The `source_model_id` you were handed is the user's STATED source model
+Group the golden rows by exact `(source_provider, source_model)` identity. Perform this step and
+Step 2 independently for every group; never reuse one run-wide provider/model for mixed source
+routes. The `source_model_id` for the current group is the user's STATED source model
 (extracted by llm2bedrock-code-analyzer / log-ingestor from the customer's source
 code or plan). It might be a slight misspelling, a stale alias, or a
 date-suffixed variant compared to what the provider actually exposes
@@ -141,8 +143,11 @@ top-level `system`, Gemini `systemInstruction` — shapes unit-locked in
 `live` row in the output are never re-billed; failed rows are retried), and
 writes the output contract below.
 
-Pass `SOURCE_MODEL_ID`, `GOLDEN_DATASET_PATH`, `OUTPUT_PATH` via env and the
-env-file path as the argument:
+Pass `SOURCE_PROVIDER` and the resolved `SOURCE_MODEL_ID` for one filtered source-route group,
+plus `GOLDEN_DATASET_PATH` and `OUTPUT_PATH`. The runner verifies every row agrees with the
+supplied source route. Without overrides it invokes each row's own source provider/model. A
+resume keeps a live row only when every source and target identity field matches; on mismatch it
+exits before any provider call and tells the caller to remove/refetch the stale row.
 
 ```bash
 SOURCE_PROVIDER=<source_provider> \
@@ -184,6 +189,8 @@ Parse the printed `live K/N` line and inspect the JSONL.
 ```json
 {
   "id": "<prompt_id>",
+  "source_provider": "<source provider>",
+  "source_model": "<source model id>",
   "workload_id": "<workload_id>",
   "call_site": "<file:line>",
   "aws_model_id": "<target model id>",
@@ -195,6 +202,7 @@ Parse the printed `live K/N` line and inspect the JSONL.
 ```
 
 Only records with `status: "live"` carry a usable `source_response`. Every record preserves the
-five route fields from its golden case. The caller rejects a mismatch before merging the row
+seven source/target identity fields from its golden case. The caller rejects a mismatch before
+merging the row
 into `raw_results.jsonl`, and falls back to the dataset's stored `assistant_response` for any
 prompt without a live response.

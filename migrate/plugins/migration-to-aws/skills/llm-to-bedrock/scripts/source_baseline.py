@@ -5,14 +5,16 @@ Usage:
   SOURCE_MODEL_ID=<id> GOLDEN_DATASET_PATH=<jsonl> OUTPUT_PATH=<jsonl> \\
     python source_baseline.py <path/to/.source-provider-env>
 
-Writes one JSON record per prompt to OUTPUT_PATH, preserving its workload route:
-  {"id": ..., "workload_id": ..., "call_site": ..., "aws_model_id": ...,
-   "migration_path": ..., "model_change": ..., "source_response": "<text or empty>",
+Writes one JSON record per prompt to OUTPUT_PATH, preserving source and target route identity:
+  {"id": ..., "source_provider": ..., "source_model": ..., "workload_id": ...,
+   "call_site": ..., "aws_model_id": ..., "migration_path": ..., "model_change": ...,
+   "source_response": "<text or empty>",
    "status": "live | http_<code>: <reason> | error: <type>: <message>"}
 
 Partial-resume: prompts whose id already has a "live" row in OUTPUT_PATH are
-skipped (re-calling the provider would double-spend the user's budget); failed
-rows are retried.
+skipped only when every source and target identity field still matches. A stale
+row fails closed before any provider call so it cannot be silently relabeled;
+failed rows are retried.
 
 Security: the key is read from the env file into the process environment only
 and sent ONLY as an auth header to its own provider's official endpoint
@@ -213,12 +215,20 @@ def _send(url: str, headers: dict, body: dict) -> dict:
 
 
 def route_identity(prompt: dict) -> dict:
-    """Copy the stable workload route fields into every downstream row."""
-    fields = ("workload_id", "call_site", "aws_model_id", "migration_path", "model_change")
+    """Copy the stable source and target route fields into every downstream row."""
+    fields = (
+        "source_provider", "source_model", "workload_id", "call_site",
+        "aws_model_id", "migration_path", "model_change",
+    )
     missing = [field for field in fields if field not in prompt or prompt[field] in (None, "")]
     if missing:
         raise ValueError(f"prompt {prompt.get('id', '<unknown>')} missing route attribution: {missing[0]}")
     return {field: prompt[field] for field in fields}
+
+
+def _provider_key(source_provider: str, file_pairs: dict[str, str]) -> str | None:
+    key = PROVIDER_TO_KEY.get(source_provider.lower())
+    return key if key in file_pairs else None
 
 
 def main() -> int:
@@ -228,18 +238,14 @@ def main() -> int:
     file_pairs = load_env_file(sys.argv[1])
 
     try:
-        model = os.environ["SOURCE_MODEL_ID"]
         dataset_path = os.environ["GOLDEN_DATASET_PATH"]
         output_path = os.environ["OUTPUT_PATH"]
     except KeyError as e:
         print(f"FAIL: required env var {e} not set", file=sys.stderr)
         return 2
 
-    provider = pick_provider_key(file_pairs)
-    if provider is None:
-        print("FAIL: no usable provider key in the env file (check SOURCE_PROVIDER)", file=sys.stderr)
-        return 2
-    build, extract = PROVIDERS[provider]
+    file_provider = os.environ.get("SOURCE_PROVIDER", "").lower()
+    model_override = os.environ.get("SOURCE_MODEL_ID")
     secrets = [v for k, v in file_pairs.items() if k in PROVIDERS]
 
     with open(dataset_path) as f:
@@ -250,23 +256,53 @@ def main() -> int:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 2
 
+    source_routes = {
+        (identity["source_provider"].lower(), identity["source_model"])
+        for identity in identities.values()
+    }
+    if file_provider and any(provider != file_provider for provider, _ in source_routes):
+        print("FAIL: SOURCE_PROVIDER does not match every golden row in this baseline batch",
+              file=sys.stderr)
+        return 2
+    if model_override and len(source_routes) > 1:
+        print("FAIL: SOURCE_MODEL_ID override requires one source route per baseline batch",
+              file=sys.stderr)
+        return 2
+    for provider_name, _ in source_routes:
+        if _provider_key(provider_name, file_pairs) is None:
+            print(f"FAIL: no usable {provider_name} key in the env file", file=sys.stderr)
+            return 2
+
     results = []
     done_live = set()
     if os.path.exists(output_path):
         with open(output_path) as f:
             for line in f:
-                if line.strip():
-                    row = json.loads(line)
-                    if row.get("status") == "live" and row.get("id") in identities:
-                        row.update(identities[row["id"]])
-                        results.append(row)
-                        done_live.add(row["id"])
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                if row.get("status") != "live" or row.get("id") not in identities:
+                    continue
+                expected = identities[row["id"]]
+                changed = [field for field, value in expected.items() if row.get(field) != value]
+                if changed:
+                    print(
+                        f"FAIL: route attribution changed for baseline row {row['id']}: "
+                        f"{changed[0]}; remove the stale row and refetch the live baseline",
+                        file=sys.stderr,
+                    )
+                    return 2
+                results.append(row)
+                done_live.add(row["id"])
     prompts = [p for p in prompts if p["id"] not in done_live]
     if done_live:
         print(f"RESUME: {len(done_live)} live baselines kept, {len(prompts)} to fetch")
 
     for p in prompts:
         identity = route_identity(p)
+        provider = _provider_key(identity["source_provider"], file_pairs)
+        build, extract = PROVIDERS[provider]
+        model = model_override or identity["source_model"]
         try:
             url, headers, body = build(model, p.get("system_prompt") or "", p["user_prompt"])
             out = extract(_send(url, headers, body))

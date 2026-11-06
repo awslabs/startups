@@ -39,13 +39,15 @@ Read from the context block prepended to this prompt (forwarded from the analyze
 - **`<PLAN_DIR>`** — migration-plan directory.
 - **From `llm2bedrock-code-analyzer` (`AiAnalysisData`)** — key fields used here:
   - `source_provider` — `openai` / `anthropic` / `google` / `cohere` / `custom`. Drives §7.2 log-format auto-detection.
-  - `source_models` — list of model IDs the source app calls (e.g. `["gpt-4o"]`). Used as the `model` field in golden entries.
+  - `source_models` — list of model IDs the source app calls (e.g. `["gpt-4o"]`). Used with
+    the route's `source_provider` to populate canonical `source_model` on every golden entry.
   - `prompt_locations` — `["<file>:<line> : <description>"]` from §8.2 of the analyzer. Drives §8 prompt-template extraction.
   - `special_patterns` — `{streaming, function_calling, embeddings, vision}` booleans. Drives §9 path selection (text / vision / tool-call).
   - `log_files_found` — comma-joined list of paths the analyzer's §11 scan turned up, or `"none"`. Drives §7's log-availability check.
 - **Model mapping** — `<source-model> -> <bedrock-model>` pairs, threaded forward from the analyzer's returned `target_models` (the analyzer reads them from the plan dir's `aws-design-ai.json` and validates them via resolve-bedrock-model-id). Do not look for an `ai-migration/` directory or a Markdown plan table — they are not part of the plan format.
 - **`<BEDROCK_WORKLOAD_ROUTES>`** — the compact JSON from `Bedrock workload routes:`. Each
-  route has a unique `workload_id`, exact `migration_path`, `aws_model_id`, `model_change`,
+  route has a unique `workload_id`, canonical `source_provider` and `source_model`, exact
+  `migration_path`, `aws_model_id`, `model_change`,
   `iam_features[]`, and `call_sites[]`. Keep routes separate even when they share a source or
   target model.
 
@@ -135,7 +137,7 @@ Mark all such entries `source: "user_provided"` when merging into `prompts.jsonl
 Before adding any log or user-provided pair, map it to exactly one
 `<BEDROCK_WORKLOAD_ROUTES>` entry by an explicit `workload_id` or originating `call_site`.
 Provider/model alone is insufficient because one model can use Responses and Chat at different
-call sites. Copy the route's `workload_id`, one exact `call_site`, `aws_model_id`,
+call sites. Copy the route's `source_provider`, `source_model`, `workload_id`, one exact `call_site`, `aws_model_id`,
 `migration_path`, and `model_change` into the golden row.
 
 If a log row has neither field, use its trace/code metadata only when that metadata identifies
@@ -206,6 +208,8 @@ Write each entry as one JSON object per line in `<REPO>/.saws-migrate/golden-dat
 ```json
 {
   "id": "prompt_001",
+  "source_provider": "openai",
+  "source_model": "gpt-5.4",
   "workload_id": "wl-chat",
   "call_site": "src/chat.py:42",
   "aws_model_id": "global.openai.gpt-5.4",
@@ -216,7 +220,7 @@ Write each entry as one JSON object per line in `<REPO>/.saws-migrate/golden-dat
   "user_prompt": "user message text",
   "image_path": null,
   "assistant_response": "the expected baseline response",
-  "model": "<source model ID from §3>",
+  "model": "<legacy alias of source_model for existing consumers>",
   "tokens": { "prompt": null, "completion": null, "total": null },
   "source": "api_log",
   "metadata": {}
@@ -225,7 +229,8 @@ Write each entry as one JSON object per line in `<REPO>/.saws-migrate/golden-dat
 
 Field rules:
 
-- `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and `model_change` are required
+- `source_provider`, `source_model`, `workload_id`, `call_site`, `aws_model_id`,
+  `migration_path`, and `model_change` are required
   on every non-empty row and come from one exact workload route. `workload_id` is the stable key
   through baseline, evaluation, rewrite, and report artifacts.
 - `type` ∈ `"text"` / `"vision"` / `"tool_call"`.

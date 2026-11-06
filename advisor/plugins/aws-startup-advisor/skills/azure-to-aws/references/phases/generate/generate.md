@@ -139,15 +139,22 @@ fragment's own `## Status`, not this line, for its emitter detail.
 
 ## Step: Run the phase
 
-Steps 2–3 are the phase's WORK and are dispatched to the file-only `rw` worker. Step 4
-and step 5 run in the MAIN window — the worker cannot invoke skills or run
+Steps 2–3 are the phase's WORK and are dispatched to the file-only `rw` worker. Steps 4–6
+run in the MAIN window — the worker cannot invoke skills or run
 `terraform`/`python`.
 
 1. Verify the entry gate, including `run_mode`.
 2. Run each fragment whose `_trigger` holds. (worker)
 3. Run `generate-assemble.md`. (worker — emits `terraform/`, the docs, the report, and
    `generation-warnings.json`; it does NOT validate or write `validation-report.json`.)
-4. **Validate the generated Terraform and write the validation report — MAIN WINDOW,
+4. **Generate endpoint-specific AI IAM — MAIN WINDOW, when the AI fragment ran.** Read
+   `ai-migration/bedrock-iam-routes.json` and invoke the bundled standalone helper:
+   `python3 "$SKILL_BASE/scripts/iam_policy.py" --models "<aligned model IDs>" --api-path
+   "<aligned exact paths>" --features-json '<aligned feature arrays>' --region "<target region>"
+   --account-id "<confirmed target account>" --output
+   "$MIGRATION_DIR/ai-migration/bedrock-iam-policy.json"`. A nonzero exit is a gate failure.
+   Never ask the file-only worker to run Python and never depend on a sibling skill.
+5. **Validate the generated Terraform and write the validation report — MAIN WINDOW,
    after the worker returns and before `_postconditions`.** This MUST run in the main
    window because the `rw` worker cannot invoke skills or run `terraform`/`python`. This
    phase is the **caller** of the `tf-best-practices` validation protocol, exactly as
@@ -168,5 +175,5 @@ and step 5 run in the MAIN window — the worker cannot invoke skills or run
      pin the skill's raw verdict path as the report.
    - An unresolved `POLICY_FAIL` the user does not `skip`/`abort` sets `status: policy_failed`
      and blocks completion (the `_postconditions` `_assert`).
-5. Evaluate `_postconditions`. On all-pass emit `HANDOFF_OK` and advance to
+6. Evaluate `_postconditions`. On all-pass emit `HANDOFF_OK` and advance to
    `complete`; on any failure emit `GATE_FAIL` and stop.

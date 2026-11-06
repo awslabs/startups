@@ -193,15 +193,93 @@ def test_redact_catches_fragments_around_control_chars():
 
 def test_route_identity_is_preserved_in_baseline_rows():
     prompt = {
-        "id": "p1", "workload_id": "wl-chat", "call_site": "src/app.py:20",
-        "aws_model_id": "global.openai.gpt-5.4",
-        "migration_path": "runtime_openai_chat", "model_change": False,
-    }
-    assert sb.route_identity(prompt) == {
+        "id": "p1", "source_provider": "openai", "source_model": "gpt-5.4",
         "workload_id": "wl-chat", "call_site": "src/app.py:20",
         "aws_model_id": "global.openai.gpt-5.4",
         "migration_path": "runtime_openai_chat", "model_change": False,
     }
+    assert sb.route_identity(prompt) == {
+        "source_provider": "openai", "source_model": "gpt-5.4",
+        "workload_id": "wl-chat", "call_site": "src/app.py:20",
+        "aws_model_id": "global.openai.gpt-5.4",
+        "migration_path": "runtime_openai_chat", "model_change": False,
+    }
+
+
+def _baseline_row(row_id, provider, model, workload, call_site):
+    return {
+        "id": row_id, "source_provider": provider, "source_model": model,
+        "workload_id": workload, "call_site": call_site,
+        "aws_model_id": "global.openai.gpt-5.4",
+        "migration_path": "runtime_openai_chat", "model_change": False,
+        "user_prompt": "ping", "system_prompt": "",
+    }
+
+
+def _run_baseline(tmp_path, monkeypatch, rows, keys):
+    import json
+    import sys
+
+    dataset = tmp_path / "prompts.jsonl"
+    dataset.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    output = tmp_path / "source_baselines.jsonl"
+    env = tmp_path / "source.env"
+    env.write_text("".join(f"{name}={value}\n" for name, value in keys.items()))
+    monkeypatch.setenv("GOLDEN_DATASET_PATH", str(dataset))
+    monkeypatch.setenv("OUTPUT_PATH", str(output))
+    monkeypatch.delenv("SOURCE_PROVIDER", raising=False)
+    monkeypatch.delenv("SOURCE_MODEL_ID", raising=False)
+    monkeypatch.setattr(sys, "argv", ["source_baseline.py", str(env)])
+    return output
+
+
+def test_mixed_source_routes_invoke_each_declared_provider_and_model(tmp_path, monkeypatch):
+    import json
+
+    rows = [
+        _baseline_row("p1", "openai", "gpt-5.4", "wl-openai", "src/a.py:1"),
+        _baseline_row("p2", "anthropic", "claude-sonnet", "wl-anthropic", "src/b.py:2"),
+    ]
+    output = _run_baseline(
+        tmp_path, monkeypatch, rows,
+        {"OPENAI_API_KEY": "openai-test", "ANTHROPIC_API_KEY": "anthropic-test"},
+    )
+    calls = []
+
+    def fake_send(url, headers, body):
+        calls.append((url, body["model"]))
+        if "openai.com" in url:
+            return {"choices": [{"message": {"content": "openai result"}}]}
+        return {"content": [{"text": "anthropic result"}]}
+
+    monkeypatch.setattr(sb, "_send", fake_send)
+    assert sb.main() == 0
+    assert calls == [
+        ("https://api.openai.com/v1/chat/completions", "gpt-5.4"),
+        ("https://api.anthropic.com/v1/messages", "claude-sonnet"),
+    ]
+    saved = [json.loads(line) for line in output.read_text().splitlines()]
+    assert [(row["source_provider"], row["source_model"]) for row in saved] == [
+        ("openai", "gpt-5.4"), ("anthropic", "claude-sonnet")]
+
+
+def test_resume_rejects_changed_source_route_before_provider_call(
+        tmp_path, monkeypatch, capsys):
+    import json
+
+    [row] = [_baseline_row("p1", "openai", "gpt-5.5", "wl-chat", "src/a.py:1")]
+    output = _run_baseline(
+        tmp_path, monkeypatch, [row], {"OPENAI_API_KEY": "openai-test"})
+    stale = dict(row, source_model="gpt-5.4", source_response="old", status="live")
+    output.write_text(json.dumps(stale) + "\n")
+    monkeypatch.setattr(
+        sb, "_send", lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("stale resume must not make a provider call")))
+
+    assert sb.main() == 2
+    error = capsys.readouterr().err
+    assert "route attribution changed for baseline row p1: source_model" in error
+    assert "remove the stale row and refetch" in error
 
 
 def test_route_identity_fails_closed_when_attribution_is_missing():

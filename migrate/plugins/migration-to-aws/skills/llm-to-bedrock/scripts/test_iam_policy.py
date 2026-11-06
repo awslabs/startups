@@ -305,10 +305,15 @@ def test_route_features_must_match_the_selected_api():
             ["global.openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_chat",
             [["response_get"]],
         )
-    with pytest.raises(ValueError, match="OpenAI Responses path"):
+    with pytest.raises(ValueError, match="mantle_openai_responses"):
         generate_policy(
             ["openai.gpt-5.5"], REGION, ACCOUNT, "mantle_openai_chat",
             [["web_search"]],
+        )
+    with pytest.raises(ValueError, match="mantle_openai_responses"):
+        generate_policy(
+            ["global.openai.gpt-5.4"], REGION, ACCOUNT,
+            "runtime_openai_responses", [["web_search"]],
         )
     with pytest.raises(ValueError, match="requires web_search"):
         generate_policy(

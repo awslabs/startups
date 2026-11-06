@@ -5,9 +5,13 @@ SUPPORTED_PATHS = {
     "mantle_openai_responses", "mantle_openai_chat", "mantle_messages",
     "runtime_converse", "runtime_invoke",
 }
+_IAM_FEATURES = {
+    "web_search", "external_web_access", "response_get", "response_cancel",
+    "response_delete",
+}
 _ROUTE_FIELDS = (
-    "workload_id", "source_model", "aws_model_id", "migration_path", "model_change",
-    "iam_features", "call_sites",
+    "workload_id", "source_provider", "source_model", "aws_model_id", "migration_path",
+    "model_change", "iam_features", "call_sites",
 )
 
 
@@ -25,6 +29,14 @@ def _validate_routes(routes: list[dict]) -> None:
             raise ValueError("route model_change must be boolean")
         if not isinstance(route["iam_features"], list):
             raise ValueError("route iam_features must be an array")
+        unknown_features = set(route["iam_features"]) - _IAM_FEATURES
+        if unknown_features:
+            raise ValueError(f"unknown IAM route feature: {sorted(unknown_features)[0]}")
+        if "external_web_access" in route["iam_features"] and "web_search" not in route["iam_features"]:
+            raise ValueError("external_web_access requires web_search on the same route")
+        if "web_search" in route["iam_features"] and route["migration_path"] != "mantle_openai_responses":
+            raise ValueError(
+                "web_search and external_web_access require mantle_openai_responses")
         if not isinstance(route["call_sites"], list):
             raise ValueError("route call_sites must be an array")
         workload_ids.append(route["workload_id"])

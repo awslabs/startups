@@ -113,6 +113,22 @@ IF `generation-ai.json` AND `aws-design-ai.json` exist:
 
 Produces: `ai-migration/` directory
 
+Before continuing, read the ordered `bedrock_models[]` rows and run the bundled standalone helper
+in this main window:
+
+```bash
+python3 "$SKILL_BASE/scripts/iam_policy.py" \
+  --models "<comma-separated row aws_model_id values>" \
+  --api-path "<comma-separated row migration_path values>" \
+  --features-json '<JSON array of row iam_features arrays>' \
+  --region "<design_constraints.target_region>" \
+  --account-id "<confirmed target AWS account ID>" \
+  --output "$MIGRATION_DIR/ai-migration/bedrock-iam-policy.json"
+```
+
+A nonzero exit is a generation gate failure. Do not invent policy output or fall back to a sibling
+skill's helper.
+
 ### Billing Skeleton Artifacts
 
 IF `generation-billing.json` AND `aws-design-billing.json` exist:

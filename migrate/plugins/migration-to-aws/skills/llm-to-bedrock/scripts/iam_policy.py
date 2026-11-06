@@ -113,9 +113,9 @@ def generate_policy(model_ids: list[str], region: str, account_id: str,
     for _, path, flags in routes:
         if flags & response_features and path != "runtime_openai_responses":
             raise ValueError("stored-response IAM features require runtime_openai_responses")
-        if "web_search" in flags and path not in {
-                "runtime_openai_responses", "mantle_openai_responses"}:
-            raise ValueError("web_search IAM feature requires an OpenAI Responses path")
+        if "web_search" in flags and path != "mantle_openai_responses":
+            raise ValueError(
+                "web_search and external_web_access require mantle_openai_responses")
     runtime_ids = [mid for mid, path, _ in routes if path in _RUNTIME_PATHS]
     mantle_ids = [mid for mid, path, _ in routes if path in _MANTLE_PATHS]
     statements = []

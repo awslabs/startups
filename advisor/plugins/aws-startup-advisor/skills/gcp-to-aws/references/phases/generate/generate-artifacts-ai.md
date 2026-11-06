@@ -48,7 +48,10 @@ per row from its `workload_id`, `call_sites[]`, `aws_model_id`, `migration_path`
 and `iam_features[]`. Preserve row order and never merge routes that share a model/path. Generate
 the matching lane for each route; mixed Responses, Chat, and Messages
 repositories may emit several lane-specific client setups in one migration. Pass the ordered
-model IDs, paths, and JSON-encoded `iam_features` arrays to `iam_policy.py` without deduplicating.
+model IDs, paths, and JSON-encoded `iam_features` arrays to the bundled standalone helper
+`$SKILL_BASE/scripts/iam_policy.py` without deduplicating. Invoke it from this main-window phase
+and write `ai-migration/bedrock-iam-policy.json`; a standalone `gcp-to-aws` install contains this
+helper and does not depend on `llm-to-bedrock`.
 Use
 `ai_architecture.code_migration.migration_path` only for a legacy single-surface artifact whose
 rows lack paths. If a mixed artifact lacks a row path, or a call site matches zero or multiple
@@ -100,7 +103,8 @@ Generate `ai-migration/migrate_to_mantle.sh` — a shell script that configures 
 - Preserve `responses.create`, `chat.completions.create`, or `messages.create` according to the exact `mantle_*` path.
 - Print the model string change to the documented bare Mantle model ID and use an auto-refreshing short-lived Bedrock token.
 - Generate `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`,
-  `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` via `iam_policy.py`,
+  `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` via the bundled
+  `$SKILL_BASE/scripts/iam_policy.py`,
   scoped as current public documentation permits: project ARN for the first three and
   `Resource: "*"` only for `CallWithBearerToken`. For a route whose `iam_features` contains
   `web_search`, also generate `bedrock-websearch:InvokeSearch` and cached

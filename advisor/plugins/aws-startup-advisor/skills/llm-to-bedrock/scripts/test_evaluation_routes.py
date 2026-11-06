@@ -7,6 +7,7 @@ from evaluation_routes import assign_case_routes, dispatch_cases
 ROUTES = [
     {
         "workload_id": "wl-responses",
+        "source_provider": "openai",
         "source_model": "gpt-5.4",
         "aws_model_id": "global.openai.gpt-5.4",
         "migration_path": "runtime_openai_responses",
@@ -16,6 +17,7 @@ ROUTES = [
     },
     {
         "workload_id": "wl-chat",
+        "source_provider": "openai",
         "source_model": "gpt-5.4",
         "aws_model_id": "global.openai.gpt-5.4",
         "migration_path": "runtime_openai_chat",
@@ -71,3 +73,19 @@ def test_routes_cannot_be_collapsed_by_shared_model_and_path():
     duplicate_id = [dict(ROUTES[0]), dict(ROUTES[0])]
     with pytest.raises(ValueError, match="route IDs must be unique"):
         assign_case_routes([{"id": "p1", "workload_id": "wl-responses"}], duplicate_id)
+
+
+def test_runtime_responses_with_web_search_fails_before_invocation():
+    route = dict(ROUTES[0], iam_features=["web_search"])
+    called = False
+
+    def invoke(case):
+        nonlocal called
+        called = True
+
+    with pytest.raises(ValueError, match="mantle_openai_responses"):
+        dispatch_cases(
+            [{"id": "p1", "workload_id": "wl-responses"}], [route],
+            {"runtime_openai_responses": invoke},
+        )
+    assert called is False
