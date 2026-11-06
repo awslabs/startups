@@ -60,6 +60,21 @@ Before choosing, revalidate the current [Endpoint availability](https://docs.aws
 model-card Programmatic Access, and Regional tables. Cached model IDs and endpoint facts are
 hints, not proof.
 
+### Route-specific IAM
+
+Carry one `iam_features[]` list beside every workload route. Runtime routes need scoped
+`bedrock:InvokeModel` permissions; CRIS routes also need `bedrock:GetInferenceProfile`.
+Runtime Responses creation additionally needs `bedrock:InvokeModel` on
+`arn:aws:bedrock:<region>:<account>:project/default`. Add `bedrock:GetInvoke`,
+`bedrock:CancelInvoke`, and `bedrock:DeleteInvoke` only for the stored-response operations the
+application actually uses. See [inference prerequisites](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html).
+
+A route that uses Web Search needs `bedrock-websearch:InvokeSearch` and cached
+`bedrock-websearch:InvokeFetch` on `Resource: "*"`. Add
+`bedrock-websearch:ExternalWebAccess` only after the user explicitly requests uncached external
+retrieval. A denied tool call may not appear in the model response, so validate the generated
+policy before cutover. See [Web Search IAM](https://docs.aws.amazon.com/bedrock/latest/userguide/security-web-search.html).
+
 Apply in order. Stop at the first tier that resolves.
 
 ### Tier 0 — Source model is on Bedrock (default path)

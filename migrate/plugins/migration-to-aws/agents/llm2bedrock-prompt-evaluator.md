@@ -42,8 +42,9 @@ Read from prompt context (forwarded from llm2bedrock-code-analyzer, llm2bedrock-
 - **`<TARGET_MODEL_ID>`** — Bedrock target model ID from the migration plan, validated by
   llm2bedrock-code-analyzer §10. Substitute it in every Bedrock call below.
 - **`<BEDROCK_WORKLOAD_ROUTES>`** — compact JSON from the `Bedrock workload routes:` line.
-  Each route binds `workload_id`, source model, exact target model, `migration_path`, and
-  `call_sites[]`. Use the route selected for each golden case/call-site group for connectivity,
+  Each route binds a unique `workload_id`, source model, exact target model, `migration_path`,
+  `model_change`, `iam_features[]`, and `call_sites[]`. Use the route selected for each golden
+  case/call-site group for connectivity,
   vision, same-model checks, golden evaluation, parsing, throttling, and quota handling.
   Supported paths are `runtime_openai_responses`, `runtime_openai_chat`, `runtime_messages`,
   `mantle_openai_responses`, `mantle_openai_chat`, `mantle_messages`, `runtime_converse`, and
@@ -133,13 +134,21 @@ When reporting results, clearly separate which layers passed / failed / skipped.
 
 # 6. Setup + Bedrock connectivity check
 
-Create the eval results directory. Iterate `$BEDROCK_WORKLOAD_ROUTES` in supplied order and
-verify connectivity for every distinct `(aws_model_id, migration_path)` pair. Assign each golden
-case to its route by workload ID or originating call site; use that same route through §8, §9.5,
+Create the eval results directory. Before any paid call, write the compact route JSON from the
+context to `<repo>/.saws-migrate/eval-results/workload_routes.json` with the `Write` tool. Load
+`evaluation_routes.assign_case_routes` from `<scriptsDir>`, parse the golden JSONL, and assign
+all cases. The helper rejects missing/ambiguous attribution and duplicate workload IDs. On that
+failure, emit `{ blocked: { reason: "route_attribution", detail: "<exact helper error>" } }` and
+make no Bedrock or source-provider calls.
+
+Iterate `$BEDROCK_WORKLOAD_ROUTES` in supplied order and
+verify connectivity for every distinct `(aws_model_id, migration_path)` pair. Every golden case
+already carries `workload_id` and `call_site`; use that exact assigned route through §8, §9.5,
 and §10. A repository with Responses and Chat or OpenAI and Anthropic routes executes every
-matching lane, and records the route ID/path beside each raw result so reporting stays
-deterministic. If a case matches no route or more than one route, stop with
-`Unsupported or ambiguous call-site route` rather than choosing the first model.
+matching lane, and records `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and
+`model_change` beside each baseline and result so reporting stays deterministic. If route
+attribution changes or disappears downstream, stop with the same `route_attribution` block
+rather than choosing the first model.
 
 Use this exact dispatch for each route:
 
@@ -206,8 +215,8 @@ Interpret the result:
 
 # 6a. Compatible-API connectivity checks
 
-Use the matching compatible-API row from §6 instead of the Converse command whenever
-`<BEDROCK_API_PATH>` is one of the six OpenAI/Anthropic compatible paths. The following
+Use the matching compatible-API row from §6 instead of the Converse command whenever the
+current route's `migration_path` is one of the six OpenAI/Anthropic compatible paths. The following
 Responses example illustrates `mantle_openai_responses`; switch host, SDK method, request shape,
 and output extraction exactly as the table specifies for the other five paths.
 
@@ -358,10 +367,20 @@ Count a case as failed if the call errors or returns empty output. If a case wit
    - `golden_dataset_path` — `<GOLDEN_DATASET_PATH>`.
    - `output_path` — `<repo>/.saws-migrate/eval-results/source_baselines.jsonl`.
 
-   The skill writes one JSON object per line to `output_path`, one entry per golden prompt:
+   The skill writes one JSON object per line to `output_path`, one entry per golden prompt,
+   preserving `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and `model_change`:
 
    ```json
-   { "id": "<prompt id>", "source_response": "<live source-model output>", "status": "live" }
+   {
+     "id": "<prompt id>",
+     "workload_id": "<workload id>",
+     "call_site": "<file:line>",
+     "aws_model_id": "<target id>",
+     "migration_path": "<exact path>",
+     "model_change": false,
+     "source_response": "<live source-model output>",
+     "status": "live"
+   }
    ```
 
    Per-prompt failure entries use `"status": "http_<code>: <reason>"` (e.g. `http_401: Unauthorized`) or `"error: <type>: <message>"` (network/timeout), with `source_response: ""` — this is the skill's output contract. §10's merge code keys on `status == "live"` to decide live-vs-static — any other status falls through to the static baseline.
@@ -387,7 +406,7 @@ If `special_patterns.vision == false`, SKIP this section.
 
 **This section runs for same-model migrations too** (both Anthropic 1P → Claude and OpenAI → the same GPT model). §8 short-circuits scoring, not image verification: it is the only gate that proves image input works before per-case image calls, so skipping it would let a vision migration pass without ever sending an image.
 
-**Use `<BEDROCK_API_PATH>` exactly as §6 did.** The script below illustrates
+**Use each case's assigned `migration_path` exactly as §6 did.** The script below illustrates
 `runtime_converse`. For OpenAI Responses, OpenAI Chat, Anthropic Messages, Mantle, or Invoke,
 use the matching client/content shape from §6. Do not infer a vision endpoint from the model ID;
 if the selected API does not support the source image shape, record that path-specific failure.
@@ -432,7 +451,8 @@ Outcomes:
 
 # 9.5a OpenAI Responses vision example
 
-Use this shape only when `<BEDROCK_API_PATH>` is exactly `runtime_openai_responses` or
+Use this shape only when the assigned route's `migration_path` is exactly
+`runtime_openai_responses` or
 `mantle_openai_responses`; select the endpoint host from §6. Chat and Messages paths keep their
 own documented image request shapes rather than being silently converted to Responses.
 
@@ -480,11 +500,19 @@ Outcomes are the same as §9.5: `VISION_OK` → proceed; `VISION_INFRA_SKIPPED` 
 
 # 10. Run golden prompt evaluation
 
-The script below is the `runtime_converse` implementation. For every other
-`<BEDROCK_API_PATH>`, keep the same dataset merge, bounded retry, partial-resume, exact model ID,
-and result-recording logic, but replace the invocation and output extraction with the exact row
-from §6. Responses uses `input`; Chat Completions and Messages use `messages`; `runtime_invoke`
-uses the selected model family's native body. Do not use Converse as a fallback for another path.
+Build one invoker for each `migration_path` present in the assigned golden cases, using the
+exact client/call/extraction row from §6. Then call
+`evaluation_routes.dispatch_cases(cases, routes, invokers)`: it performs the final route
+assignment and invokes each case through only its assigned callback. Never select an invoker
+from a bare model ID or a run-wide API-path variable.
+
+The script below shows the bounded retry and result-recording body for a `runtime_converse`
+invoker. The other invokers keep the same dataset merge, bounded retry, partial-resume, exact
+route model ID, and result-recording logic, but replace invocation and extraction with the exact
+row from §6. Responses uses `input`; Chat Completions and Messages use `messages`;
+`runtime_invoke` uses the selected model family's native body. Do not use Converse as a fallback
+for another path. Each invoker receives the enriched case and passes
+`case["aws_model_id"]`; it must not use a global `<TARGET_MODEL_ID>`.
 
 For each prompt in the golden dataset, run the evaluation via `python` stdin (avoids the brittle nested-heredoc + escaped-quote pattern that breaks on any literal `'` inside the script):
 
@@ -498,6 +526,9 @@ import time
 import boto3
 from botocore.exceptions import ClientError
 
+sys.path.insert(0, "<scriptsDir>")
+from evaluation_routes import assign_case_routes
+
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
 gd_path = "<repo>/.saws-migrate/golden-dataset/prompts.jsonl"
@@ -507,6 +538,9 @@ if not os.path.exists(gd_path) or os.path.getsize(gd_path) == 0:
 
 with open(gd_path) as f:
     prompts = [json.loads(line) for line in f if line.strip()]
+with open("<repo>/.saws-migrate/eval-results/workload_routes.json") as f:
+    routes = json.load(f)
+prompts = assign_case_routes(prompts, routes)
 
 if not prompts:
     print("EMPTY_DATASET — golden dataset has no parseable rows. Aborting.")
@@ -567,11 +601,10 @@ for prompt in prompts:
     messages.append({"role": "user", "content": [{"text": prompt["user_prompt"]}]})
 
     try:
-        # IMPORTANT: substitute the §6-validated ID here, not the raw plan ID — if §6's
-        # `resolve-bedrock-model-id` skill ran, the plan ID was stale and the validated
-        # one is what works for converse calls.
+        # Use this case's assigned route model. The complete multi-path implementation wraps
+        # this body as the runtime_converse callback passed to dispatch_cases.
         response = converse_with_backoff(
-            modelId="<TARGET_MODEL_ID>",
+            modelId=prompt["aws_model_id"],
             messages=messages,
             system=system,
             inferenceConfig={"maxTokens": 4096}
@@ -597,6 +630,9 @@ for prompt in prompts:
     # the report so readers can tell which prompts had real side-by-side data.
     static_baseline = prompt.get("assistant_response", "")
     live = live_baselines.get(prompt["id"])
+    route_fields = ("workload_id", "call_site", "aws_model_id", "migration_path", "model_change")
+    if live and any(live.get(field) != prompt[field] for field in route_fields):
+        raise ValueError(f"route attribution changed for prompt {prompt['id']}")
     if live and live.get("status") == "live" and live.get("source_response"):
         source_response = live["source_response"]
         source_baseline_source = "live"
@@ -606,6 +642,13 @@ for prompt in prompts:
 
     results.append({
         "id": prompt["id"],
+        "workload_id": prompt["workload_id"],
+        "call_site": prompt["call_site"],
+        "aws_model_id": prompt["aws_model_id"],
+        "migration_path": prompt["migration_path"],
+        "model_change": prompt["model_change"],
+        "system_prompt": prompt.get("system_prompt", ""),
+        "user_prompt": prompt["user_prompt"],
         "status": status,
         "baseline_response": static_baseline,
         "source_response": source_response,
@@ -770,6 +813,8 @@ with open("<repo>/.saws-migrate/eval-results/raw_results.jsonl") as f:
 with open("<repo>/.saws-migrate/eval-results/scored_results.jsonl", "w") as f:
     for s in scores:
         r = raw.get(s["id"], {})
+        for field in ("workload_id", "call_site", "aws_model_id", "migration_path", "model_change"):
+            s[field] = r.get(field)
         s["baseline_response"] = r.get("baseline_response", "")
         s["source_response"] = r.get("source_response", "")
         s["bedrock_response"] = r.get("bedrock_response", "")
@@ -810,6 +855,11 @@ Each record MUST contain the following fields (substitute real values):
 ```json
 {
   "id": "<prompt id>",
+  "workload_id": "<workload id>",
+  "call_site": "<file:line>",
+  "aws_model_id": "<target model id>",
+  "migration_path": "<exact path>",
+  "model_change": true,
   "original_prompt": "<unchanged user_prompt from golden dataset>",
   "adapted_prompt": "<final adapted version>",
   "optimization_method": "agent_adaptation",
@@ -834,6 +884,9 @@ Each record MUST contain the following fields (substitute real values):
 
 Field rules:
 
+- `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and `model_change` MUST be copied
+  unchanged from the failed golden/raw result. The rewriter matches an adaptation by workload
+  and call site, never by prompt ID alone.
 - `optimization_method` MUST be exactly the string literal `"agent_adaptation"`.
 - `original_score` / `optimized_score` keys MUST match the 6-dim rubric from §11 plus any custom metric keys used in §11.2. Both dicts MUST share the exact same key set so deltas are comparable.
 
@@ -875,6 +928,9 @@ These mutually-exclusive control states replace the normal eval object when they
   - `model_unresolvable` — the target model id cannot be resolved even after `resolve-bedrock-model-id` (§6), **or** a mantle target returned 404 in this region (§6a). Put the exact error message + the model id you tried in `detail`; for the mantle case also state that these models are in-region only.
   - `authz` — IAM denies inference (§6 `AccessDeniedException` on `bedrock:InvokeModel*`, or §6a 401/403 that does not name model access). Name the action set to grant in `detail`: `bedrock:InvokeModel*` for Converse targets, the exact `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` actions for mantle targets. Keep this distinct from `model_access` — they have different fixes.
   - `mantle_deps_missing` — the pinned scripts environment lacks `openai` / `aws-bedrock-token-generator`, so a mantle target could not be probed (§6a `ModuleNotFoundError`). Say access was NOT verified and that the env needs re-syncing.
+  - `route_attribution` — a golden case cannot be mapped to exactly one workload route, or its
+    route identity changed between ingestion, baseline, and evaluation. Name the case/workload
+    or call site and make no further paid calls.
 - **`partial`** — the run was throttle-truncated. Return `{ partial: { completed: <N scored>, total: <M total>, reason: 'throttled' } }` when the 429 retry budget (§10) is exhausted with cases still unscored.
 
 ## What goes in the eval object's fields

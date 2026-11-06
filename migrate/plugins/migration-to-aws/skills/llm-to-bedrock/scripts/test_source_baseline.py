@@ -189,3 +189,22 @@ def test_redact_catches_fragments_around_control_chars():
     secret = "sk-live-SECRET\nKEY123456"
     out = sb.redact("provider said sk-live-SECRET then KEY123456 rejected", [secret])
     assert "sk-live-SECRET" not in out and "KEY123456" not in out
+
+
+def test_route_identity_is_preserved_in_baseline_rows():
+    prompt = {
+        "id": "p1", "workload_id": "wl-chat", "call_site": "src/app.py:20",
+        "aws_model_id": "global.openai.gpt-5.4",
+        "migration_path": "runtime_openai_chat", "model_change": False,
+    }
+    assert sb.route_identity(prompt) == {
+        "workload_id": "wl-chat", "call_site": "src/app.py:20",
+        "aws_model_id": "global.openai.gpt-5.4",
+        "migration_path": "runtime_openai_chat", "model_change": False,
+    }
+
+
+def test_route_identity_fails_closed_when_attribution_is_missing():
+    import pytest
+    with pytest.raises(ValueError, match="missing route attribution"):
+        sb.route_identity({"id": "p1"})

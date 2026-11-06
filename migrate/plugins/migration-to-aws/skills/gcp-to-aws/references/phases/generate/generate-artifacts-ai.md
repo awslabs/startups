@@ -44,9 +44,12 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 ## Step 0: Determine Artifact Path
 
 Read `aws-design-ai.json → ai_architecture.bedrock_models[]` and build one artifact route
-per row from its `workload_id`, `call_sites[]`, `aws_model_id`, and `migration_path`. Preserve
-row order and generate the matching lane for each route; mixed Responses, Chat, and Messages
-repositories may emit several lane-specific client setups in one migration. Use
+per row from its `workload_id`, `call_sites[]`, `aws_model_id`, `migration_path`, `model_change`,
+and `iam_features[]`. Preserve row order and never merge routes that share a model/path. Generate
+the matching lane for each route; mixed Responses, Chat, and Messages
+repositories may emit several lane-specific client setups in one migration. Pass the ordered
+model IDs, paths, and JSON-encoded `iam_features` arrays to `iam_policy.py` without deduplicating.
+Use
 `ai_architecture.code_migration.migration_path` only for a legacy single-surface artifact whose
 rows lack paths. If a mixed artifact lacks a row path, or a call site matches zero or multiple
 rows, STOP with `Unsupported or ambiguous call-site route` rather than applying a run-wide path.
@@ -96,10 +99,16 @@ Generate `ai-migration/migrate_to_mantle.sh` — a shell script that configures 
 - Print the endpoint-appropriate base path. OpenAI paths use `https://bedrock-mantle.{region}.api.aws/openai/v1`; Anthropic Messages uses the currently documented Mantle Anthropic base path.
 - Preserve `responses.create`, `chat.completions.create`, or `messages.create` according to the exact `mantle_*` path.
 - Print the model string change to the documented bare Mantle model ID and use an auto-refreshing short-lived Bedrock token.
-- Generate only `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`,
+- Generate `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`,
   `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` via `iam_policy.py`,
   scoped as current public documentation permits: project ARN for the first three and
-  `Resource: "*"` only for `CallWithBearerToken`; do not emit Runtime actions for this lane.
+  `Resource: "*"` only for `CallWithBearerToken`. For a route whose `iam_features` contains
+  `web_search`, also generate `bedrock-websearch:InvokeSearch` and cached
+  `bedrock-websearch:InvokeFetch` on `Resource: "*"`. Add
+  `bedrock-websearch:ExternalWebAccess` only when the route explicitly includes
+  `external_web_access`; Web Search alone does not authorize uncached external retrieval.
+  See [Web Search IAM](https://docs.aws.amazon.com/bedrock/latest/userguide/security-web-search.html).
+  Do not emit Runtime actions for a Mantle-only lane.
 - **Add a warning comment** about `max_tokens`: OpenAI SDK users migrating via Mantle carry over their existing `max_tokens` value unchanged. If the existing value is 4096 (OpenAI default), this reduces Bedrock concurrency by 5–8x on TPM quota. Instruct users to audit `max_tokens` before production and include the workload-type lookup table (see Step 1M max_tokens guidance above).
 - Note: "The source SDK and selected API shape are preserved; endpoint, credential, model ID, and IAM change."
 - Reference [Mantle documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) for API key generation
@@ -177,7 +186,14 @@ Generate `ai-migration/setup_bedrock.sh`.
 
 - Dry-run by default (`--execute` flag to run for real)
 - Step 1 — Request model access: List each model from `aws-design-ai.json` → `bedrock_models[].aws_model_id` and the embedding model
-- Step 2 — Create endpoint-specific IAM. Runtime-compatible and Converse/Invoke paths use `bedrock:InvokeModel` plus `bedrock:InvokeModelWithResponseStream` when streaming, scoped to the selected model or inference profile. Mantle paths use the documented `bedrock-mantle` actions and resources. Never combine an endpoint with the other endpoint's IAM family.
+- Step 2 — Create endpoint-specific IAM from each ordered route's exact path and
+  `iam_features[]`. Runtime-compatible and Converse/Invoke paths use `bedrock:InvokeModel` plus
+  `bedrock:InvokeModelWithResponseStream` when streaming, scoped to the selected model or
+  inference profile; CRIS adds `bedrock:GetInferenceProfile`, and Runtime Responses also needs
+  `bedrock:InvokeModel` on the default project. Stored-response actions are included only when
+  detected. Mantle paths use the documented `bedrock-mantle` actions and resources. Web Search
+  adds `bedrock-websearch:InvokeSearch` and cached `InvokeFetch`; external access remains an
+  explicit opt-in. Never combine an endpoint with the other endpoint's IAM family.
 - Compliance carry-through: if `preferences.json` → `design_constraints.compliance` is set and not `none`/`unknown` (full-flow Q2 / AI-only Q1.5), the script and its printed notes MUST reflect the design's Step 0.7 constraints — `AWS_REGION` from the compliance-constrained region (GovCloud for fedramp, EU for gdpr), `eu.` inference-profile model IDs for gdpr, and for hipaa a printed warning that Bedrock invocation logs retain original content (KMS-encrypt + restrict IAM on the log group before enabling)
 - Step 3 — Print required environment variables: `AWS_REGION`, `AI_PROVIDER=bedrock`, model IDs
 - Step 4 — Check quota: Query current TPM quota for the primary model via `aws service-quotas get-service-quota`. If `aws-design-ai.json` → `ai_architecture.quota_risk` is `"high"` or `"medium"`, print warning: "⚠️ Your token volume may exceed default Bedrock quotas. Request a quota increase via Service Quotas console (allow 1–5 business days)." Include the `aws service-quotas request-service-quota-increase` command template.

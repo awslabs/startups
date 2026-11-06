@@ -168,3 +168,42 @@ def test_known_stale_or_private_claims_are_absent():
     )
     for phrase in forbidden:
         assert phrase not in text
+
+
+def test_workload_route_identity_survives_every_execution_stage():
+    skill = read("llm-to-bedrock/SKILL.md")
+    agents = {
+        name: (SKILLS.parent / f"agents/{name}.md").read_text()
+        for name in (
+            "llm2bedrock-code-analyzer", "llm2bedrock-log-ingestor",
+            "llm2bedrock-prompt-evaluator", "llm2bedrock-code-rewriter",
+            "llm2bedrock-report-generator",
+        )
+    }
+    for field in ("workload_id", "model_change", "iam_features"):
+        assert field in skill
+        assert all(field in text for text in agents.values())
+    assert "never merge" in skill.lower()
+    assert "assign_case_routes" in agents["llm2bedrock-prompt-evaluator"]
+    assert "dispatch_cases" in agents["llm2bedrock-prompt-evaluator"]
+    assert "prompt id alone" in agents["llm2bedrock-code-rewriter"].lower()
+    assert "<BEDROCK_API_PATH>" not in agents["llm2bedrock-report-generator"]
+
+
+def test_generated_iam_guidance_carries_route_features():
+    shared = read("shared/ai/ai-openai-to-bedrock.md")
+    report = (SKILLS.parent / "agents/llm2bedrock-report-generator.md").read_text()
+    for skill in ("gcp-to-aws", "azure-to-aws"):
+        design = read(f"{skill}/references/phases/design/design-ai.md")
+        generate = read(f"{skill}/references/phases/generate/generate-artifacts-ai.md")
+        assert "iam_features" in design
+        assert "iam_features" in generate
+        for action in ("InvokeSearch", "InvokeFetch", "ExternalWebAccess"):
+            assert action in generate
+    for text in (shared, report):
+        assert "bedrock:GetInferenceProfile" in text
+        assert "project/default" in text
+        assert "bedrock-websearch:InvokeSearch" in text
+        assert "bedrock-websearch:InvokeFetch" in text
+        assert "bedrock-websearch:ExternalWebAccess" in text
+        assert "security-web-search.html" in text

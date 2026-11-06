@@ -33,9 +33,13 @@ defaults (prefer managed Bedrock, no latency constraint, no budget cap).
 
 **Endpoint selection gate:** Read `integration.source_api_surface` and
 `ai_constraints.ai_endpoint_requirements.value`. Select and record a path independently for
-every confirmed workload/call-site group; write it on that workload's
-`ai_architecture.bedrock_models[].migration_path` row together with `workload_id` and
-`call_sites[]`. Verify the selected model's current Endpoint availability,
+every confirmed workload/call-site group; write one distinct
+`ai_architecture.bedrock_models[]` row with `workload_id`, `call_sites[]`, `model_change`, and
+`iam_features[]` in addition to `migration_path`. Never merge rows that share a model/path.
+Derive `iam_features` per route: include `web_search` when that route uses the preconfigured
+tool; include `response_get`, `response_cancel`, or `response_delete` only for detected stored
+Responses operations; include `external_web_access` only after explicit user intent, not from
+Web Search alone. Verify the selected model's current Endpoint availability,
 Programmatic Access, API compatibility, and Region data. Default to
 `runtime_openai_responses`, `runtime_openai_chat`, or `runtime_messages` for the matching
 supported source API. Choose a `mantle_*` path only when a confirmed requirement

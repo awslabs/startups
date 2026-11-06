@@ -33,9 +33,9 @@ Read from the context block prepended to this prompt:
 - **AWS region** — the `AWS region:` line. Used for Bedrock validation in §10.
 - **AWS profile** — the `AWS profile` line, when present. Pass it to the resolve-bedrock-model-id skill and add `--profile` to any aws CLI call you run; omit when absent.
 - **Bedrock workload routes** — parse the compact JSON from the `Bedrock workload routes:`
-  line. Every object binds one workload/model/call-site group to its exact `migration_path`.
-  This is authoritative for endpoint and request-surface selection; never infer a path from a
-  model ID and never apply one route to all call sites.
+  line. Every object binds one workload/model/call-site group to its exact `migration_path`,
+  `model_change`, and `iam_features[]`. Require unique workload IDs and keep one object per
+  workload row even when models and paths match.
 - **Model mapping** — the `Target Bedrock model(s):` line (and the `Resolved target model id:` line, if present), plus the model-mapping artifacts in the plan directory. Drives §7 framework detection and §10 ID validation.
 
 # 4. Helper references to Read
@@ -73,6 +73,8 @@ Extract `ai_architecture.bedrock_models[]` — an array of objects:
     "aws_model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
     "use_case": "primary",
     "migration_path": "runtime_openai_responses",
+    "model_change": false,
+    "iam_features": [],
     "workload_id": "wl-chat",
     "call_sites": ["src/chat.py:42"]
   },

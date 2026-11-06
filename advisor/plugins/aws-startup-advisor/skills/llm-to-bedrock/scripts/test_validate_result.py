@@ -146,6 +146,7 @@ def test_special_patterns_requires_all_four_booleans():
     ("analysis", "model_access"), ("analysis", "model_unresolvable"),
     ("analysis", "assess_output_missing"),
     ("eval", "model_access"), ("eval", "source_key_auth"), ("eval", "model_unresolvable"),
+    ("eval", "route_attribution"),
     ("rewrite", "model_access"), ("rewrite", "source_key_auth"), ("rewrite", "model_unresolvable"),
 ])
 def test_blocked_reasons_in_own_schema(name, reason):

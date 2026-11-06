@@ -20,9 +20,13 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 **Endpoint selection gate:** Read `integration.source_api_surface` and the confirmed
 `ai_constraints.ai_endpoint_requirements.value` array. Select and record a path independently
-for every confirmed workload/call-site group; write it on that workload's
-`ai_architecture.bedrock_models[].migration_path` row together with `workload_id` and
-`call_sites[]`. Check the selected model's current Endpoint availability, Programmatic Access, API compatibility, and Region data. Emit
+for every confirmed workload/call-site group; write one distinct
+`ai_architecture.bedrock_models[]` row with `workload_id`, `call_sites[]`, `model_change`, and
+`iam_features[]` in addition to `migration_path`. Never merge rows that share a model/path.
+Derive `iam_features` per call-site group: include `web_search` when that route uses the
+preconfigured tool; include `response_get`, `response_cancel`, or `response_delete` only when
+those stored-Responses operations are detected; include `external_web_access` only after
+explicit user intent, never merely because Web Search is present. Check the selected model's current Endpoint availability, Programmatic Access, API compatibility, and Region data. Emit
 `runtime_openai_responses`, `runtime_openai_chat`, or `runtime_messages` by default for the
 matching supported source API. Emit `mantle_openai_responses`, `mantle_openai_chat`, or
 `mantle_messages` only when a confirmed requirement (`background_inference`,

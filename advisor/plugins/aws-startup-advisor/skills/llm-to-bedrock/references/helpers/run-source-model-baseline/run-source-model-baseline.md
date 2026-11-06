@@ -28,7 +28,9 @@ directory supplied in your context. Substitute both before running.
   API key). The file contains a single `KEY=VALUE` line, one of:
   `OPENAI_API_KEY=...` / `ANTHROPIC_API_KEY=...` / `GEMINI_API_KEY=...`.
 - The golden dataset JSONL exists at `golden_dataset_path` and each entry
-  has at least `id`, `user_prompt`, optionally `system_prompt`.
+  has `id`, `user_prompt`, `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and
+  `model_change`, with optional `system_prompt`. Missing route attribution is a hard failure
+  before any provider call.
 
 If the env file is absent, do NOT run this skill — the caller should set
 `live_source_baseline: false` and skip to static baselines.
@@ -182,12 +184,17 @@ Parse the printed `live K/N` line and inspect the JSONL.
 ```json
 {
   "id": "<prompt_id>",
+  "workload_id": "<workload_id>",
+  "call_site": "<file:line>",
+  "aws_model_id": "<target model id>",
+  "migration_path": "<exact path>",
+  "model_change": false,
   "source_response": "<text or empty>",
   "status": "live | http_<code>: <reason> | error: <type>: <message>"
 }
 ```
 
-Only records with `status: "live"` carry a usable `source_response`. The
-caller (llm2bedrock-prompt-evaluator Step 4) merges these into `raw_results.jsonl`
-and falls back to the dataset's stored `assistant_response` for any
+Only records with `status: "live"` carry a usable `source_response`. Every record preserves the
+five route fields from its golden case. The caller rejects a mismatch before merging the row
+into `raw_results.jsonl`, and falls back to the dataset's stored `assistant_response` for any
 prompt without a live response.

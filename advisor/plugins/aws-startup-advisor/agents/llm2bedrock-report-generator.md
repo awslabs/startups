@@ -35,9 +35,10 @@ Read accumulated state from prompt context (forwarded from every prior Track 2 p
 - **AWS profile** — the `AWS profile` line, when present: prepend `AWS_PROFILE=<profile>` inline to the §6.1 pricing-script invocation and any other aws/boto3 command; omit when absent.
 - **`<scriptsDir>`** — the pinned-toolchain scripts directory, the `Scripts directory (pinned uv toolchain):` line in your context. Used to run `bedrock_pricing.py`.
 - **`<BEDROCK_WORKLOAD_ROUTES>`** — the ordered objects from the `Bedrock workload routes:`
-  context line. Report one deterministic row per route, including source call-site group,
-  target model, endpoint/API path, and pricing status. Pass aligned model/path lists to IAM
-  generation; never infer a route from the model ID or collapse mixed routes into one.
+  context line. Report one deterministic row per route, including its stable `workload_id`,
+  source call-site group, target model, endpoint/API path, `model_change`, and `iam_features[]`.
+  Derive aligned model, path, and feature lists from this one route list for IAM generation;
+  never infer a route from the model ID or collapse mixed routes into one.
 - **From `llm2bedrock-code-analyzer` (`AiAnalysisData`)** — `source_provider`, `ai_framework`, `source_models`, `target_models` (`<source-model> -> <bedrock-model>` pairs), `coverage_level`, `use_case_type`, `errors`.
 - **From `llm2bedrock-log-ingestor` (`LogIngestionData`)** — `total_golden_cases`, `coverage_level`, `gaps`. Drives the Risk Assessment + Coverage sections.
 - **From `llm2bedrock-prompt-evaluator` (`EvalData` + `notes` prefixes)** — top-level fields:
@@ -224,19 +225,35 @@ When writing the final report, include `pricing_source` per model (the `note` fi
 
 Generate a least-privilege IAM policy scoped to the exact model ARNs selected during this migration. Run the bundled helper:
 
+Before invoking the helper, derive these values from the same ordered
+`$BEDROCK_WORKLOAD_ROUTES` array: `$IAM_MODELS` is the comma-joined `aws_model_id` list,
+`$IAM_PATHS` is the aligned comma-joined `migration_path` list, and `$IAM_FEATURES_JSON` is a
+JSON array whose element at each index is that route's `iam_features[]`. Do not deduplicate or
+sort any of the three arrays.
+
 ```bash
 uv run --project <scriptsDir> python <scriptsDir>/iam_policy.py \
-  --models <comma-separated target model ids> \
-  --api-path <BEDROCK_API_PATH> \
+  --models "$IAM_MODELS" \
+  --api-path "$IAM_PATHS" \
+  --features-json "$IAM_FEATURES_JSON" \
   --region <REGION> \
   --account-id <AWS account id from run-context> \
   --output <repo>/.saws-migrate/iam-policy.json
 ```
 
-The script classifies IAM from `<BEDROCK_API_PATH>`, not from model-family inference. Runtime
-Responses, Chat Completions, Messages, Converse, and Invoke paths emit
-`bedrock:InvokeModel*` resources for the exact foundation model or inference profile. Mantle
-Responses, Chat, and Messages paths emit the project/bearer-token statements. For an all-Mantle
+The script classifies IAM per exact aligned route. Runtime routes emit scoped
+`bedrock:InvokeModel*`; prefixed Runtime targets also emit `bedrock:GetInferenceProfile`.
+Runtime Responses additionally grants `bedrock:InvokeModel` on
+`arn:aws:bedrock:<region>:<account>:project/default`, and emits
+`GetInvoke`, `CancelInvoke`, or `DeleteInvoke` only when the matching response operation is in
+that route's `iam_features`. Mantle
+Responses, Chat, and Messages paths emit the project/bearer-token statements. A `web_search`
+route adds `bedrock-websearch:InvokeSearch` and cached `bedrock-websearch:InvokeFetch` on
+`Resource: "*"`; `bedrock-websearch:ExternalWebAccess` is added only when that explicit feature
+is present. See the public
+[inference prerequisites](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html)
+and [Web Search IAM](https://docs.aws.amazon.com/bedrock/latest/userguide/security-web-search.html).
+For an all-Mantle
 run, absence of `BedrockInvokeModelScoped` is correct. Mantle authorizes at project granularity;
 if model restrictions are needed, state that separately. Never describe Runtime-compatible APIs
 as requiring Mantle IAM simply because their model ID contains `openai.gpt-5`.
@@ -360,9 +377,9 @@ banner. Do NOT use the plain ✅ banner just because
 
 ### Model Mapping
 
-| Source Model     | Bedrock Model     | Notes   |
-| ---------------- | ----------------- | ------- |
-| <source_model_1> | <bedrock_model_1> | <notes> |
+| Workload      | Call Site   | Source Model     | Bedrock Model     | API Path         | Model Change | Notes   |
+| ------------- | ----------- | ---------------- | ----------------- | ---------------- | ------------ | ------- |
+| <workload_id> | <file:line> | <source_model_1> | <bedrock_model_1> | <migration_path> | <true/false> | <notes> |
 
 ### Overall Status: <READY TO MERGE / NEEDS REVIEW / BLOCKED>
 
@@ -411,9 +428,13 @@ If `no_golden_cases: true` from the evaluator's notes (Case 1 banner above), SKI
 
 Otherwise:
 
-| Prompt ID | Description | Baseline                                                                         | Avg           | Min       | Status           |
-| --------- | ----------- | -------------------------------------------------------------------------------- | ------------- | --------- | ---------------- |
-| <id>      | <desc>      | <live / static-api_log / static-user_provided / static-code_synthetic_confirmed> | <avg 1.0-5.0> | <min 1-5> | PASS/REVIEW/FAIL |
+| Workload      | Call Site   | API Path         | Prompt ID | Description | Baseline                                                                         | Avg           | Min       | Status           |
+| ------------- | ----------- | ---------------- | --------- | ----------- | -------------------------------------------------------------------------------- | ------------- | --------- | ---------------- |
+| <workload_id> | <file:line> | <migration_path> | <id>      | <desc>      | <live / static-api_log / static-user_provided / static-code_synthetic_confirmed> | <avg 1.0-5.0> | <min 1-5> | PASS/REVIEW/FAIL |
+
+Every row comes from the route fields preserved in `scored_results.jsonl`. If any scored row
+lacks `workload_id`, `call_site`, or `migration_path`, show it as a data-integrity risk rather
+than assigning it to another route.
 
 `Baseline` shows where the response Bedrock was scored against came from.
 `live` means a fresh source-model run during evaluation (real

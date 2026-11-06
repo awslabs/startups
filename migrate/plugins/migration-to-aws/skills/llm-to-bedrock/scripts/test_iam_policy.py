@@ -179,8 +179,11 @@ def test_gpt_oss_stays_on_the_runtime_path():
 def test_selected_runtime_path_overrides_bare_gpt_legacy_inference():
     policy = generate_policy(
         ["openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_responses")
-    assert {stmt["Sid"] for stmt in policy["Statement"]} == {"BedrockInvokeModelScoped"}
-    assert policy["Statement"][0]["Resource"] == [
+    assert {stmt["Sid"] for stmt in policy["Statement"]} == {
+        "BedrockInvokeModelScoped", "BedrockResponsesDefaultProject"}
+    invoke = next(stmt for stmt in policy["Statement"]
+                  if stmt["Sid"] == "BedrockInvokeModelScoped")
+    assert invoke["Resource"] == [
         "arn:aws:bedrock:*::foundation-model/openai.gpt-5.4"]
 
 
@@ -205,3 +208,110 @@ def test_cli_accepts_selected_api_path():
     )
     assert result.returncode == 0
     assert json.loads(result.stdout)["Statement"][0]["Sid"] == "BedrockInvokeModelScoped"
+
+
+def test_cris_route_gets_profile_permission():
+    policy = generate_policy(
+        ["global.openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_chat")
+    profile = next(stmt for stmt in policy["Statement"]
+                   if stmt["Sid"] == "BedrockGetInferenceProfile")
+    assert profile["Action"] == ["bedrock:GetInferenceProfile"]
+    assert profile["Resource"] == [
+        f"arn:aws:bedrock:{REGION}:{ACCOUNT}:inference-profile/global.openai.gpt-5.4"]
+
+
+def test_runtime_responses_gets_default_project_but_other_runtime_paths_do_not():
+    response_policy = generate_policy(
+        ["global.openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_responses")
+    project = next(stmt for stmt in response_policy["Statement"]
+                   if stmt["Sid"] == "BedrockResponsesDefaultProject")
+    assert project["Action"] == ["bedrock:InvokeModel"]
+    assert project["Resource"] == f"arn:aws:bedrock:{REGION}:{ACCOUNT}:project/default"
+
+    for path in ("runtime_openai_chat", "runtime_messages", "runtime_converse", "runtime_invoke"):
+        policy = generate_policy(["global.openai.gpt-5.4"], REGION, ACCOUNT, path)
+        assert "BedrockResponsesDefaultProject" not in {
+            stmt["Sid"] for stmt in policy["Statement"]}
+
+
+def test_stored_response_actions_are_feature_gated():
+    policy = generate_policy(
+        ["global.openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_responses",
+        [["response_get", "response_delete"]],
+    )
+    stored = next(stmt for stmt in policy["Statement"]
+                  if stmt["Sid"] == "BedrockStoredResponses")
+    assert stored["Action"] == ["bedrock:DeleteInvoke", "bedrock:GetInvoke"]
+
+    plain = generate_policy(
+        ["global.openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_responses")
+    assert "BedrockStoredResponses" not in {stmt["Sid"] for stmt in plain["Statement"]}
+
+
+def test_web_search_actions_are_route_feature_gated():
+    policy = generate_policy(
+        ["openai.gpt-5.5"], REGION, ACCOUNT, "mantle_openai_responses",
+        [["web_search"]],
+    )
+    web = next(stmt for stmt in policy["Statement"] if stmt["Sid"] == "BedrockWebSearch")
+    assert web["Action"] == [
+        "bedrock-websearch:InvokeSearch", "bedrock-websearch:InvokeFetch"]
+    assert web["Resource"] == "*"
+    assert web["Condition"] == {"StringEquals": {"aws:RequestedRegion": REGION}}
+
+
+def test_external_web_access_requires_explicit_feature():
+    cached = generate_policy(
+        ["openai.gpt-5.5"], REGION, ACCOUNT, "mantle_openai_responses",
+        [["web_search"]],
+    )
+    external = generate_policy(
+        ["openai.gpt-5.5"], REGION, ACCOUNT, "mantle_openai_responses",
+        [["web_search", "external_web_access"]],
+    )
+    assert "bedrock-websearch:ExternalWebAccess" not in next(
+        stmt for stmt in cached["Statement"] if stmt["Sid"] == "BedrockWebSearch")["Action"]
+    assert "bedrock-websearch:ExternalWebAccess" in next(
+        stmt for stmt in external["Statement"] if stmt["Sid"] == "BedrockWebSearch")["Action"]
+
+
+def test_cli_emits_mixed_runtime_mantle_and_web_search_statements():
+    result = subprocess.run(  # nosec B603
+        [sys.executable, str(Path(__file__).parent / "iam_policy.py"),
+         "--models", "global.openai.gpt-5.4,openai.gpt-5.5",
+         "--api-path", "runtime_openai_chat,mantle_openai_responses",
+         "--features-json", '[[],["web_search"]]',
+         "--region", REGION, "--account-id", ACCOUNT],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    sids = {stmt["Sid"] for stmt in json.loads(result.stdout)["Statement"]}
+    assert {"BedrockInvokeModelScoped", "BedrockGetInferenceProfile",
+            "BedrockMantleInference", "BedrockMantleCallWithBearerToken",
+            "BedrockWebSearch"} <= sids
+
+
+def test_unknown_route_feature_fails_closed():
+    with pytest.raises(ValueError, match="unknown IAM route feature"):
+        generate_policy(
+            ["openai.gpt-5.5"], REGION, ACCOUNT, "mantle_openai_responses",
+            [["unverified_feature"]],
+        )
+
+
+def test_route_features_must_match_the_selected_api():
+    with pytest.raises(ValueError, match="stored-response IAM features"):
+        generate_policy(
+            ["global.openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_chat",
+            [["response_get"]],
+        )
+    with pytest.raises(ValueError, match="OpenAI Responses path"):
+        generate_policy(
+            ["openai.gpt-5.5"], REGION, ACCOUNT, "mantle_openai_chat",
+            [["web_search"]],
+        )
+    with pytest.raises(ValueError, match="requires web_search"):
+        generate_policy(
+            ["openai.gpt-5.5"], REGION, ACCOUNT, "mantle_openai_responses",
+            [["external_web_access"]],
+        )

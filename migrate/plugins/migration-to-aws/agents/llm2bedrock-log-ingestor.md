@@ -44,6 +44,10 @@ Read from the context block prepended to this prompt (forwarded from the analyze
   - `special_patterns` — `{streaming, function_calling, embeddings, vision}` booleans. Drives §9 path selection (text / vision / tool-call).
   - `log_files_found` — comma-joined list of paths the analyzer's §11 scan turned up, or `"none"`. Drives §7's log-availability check.
 - **Model mapping** — `<source-model> -> <bedrock-model>` pairs, threaded forward from the analyzer's returned `target_models` (the analyzer reads them from the plan dir's `aws-design-ai.json` and validates them via resolve-bedrock-model-id). Do not look for an `ai-migration/` directory or a Markdown plan table — they are not part of the plan format.
+- **`<BEDROCK_WORKLOAD_ROUTES>`** — the compact JSON from `Bedrock workload routes:`. Each
+  route has a unique `workload_id`, exact `migration_path`, `aws_model_id`, `model_change`,
+  `iam_features[]`, and `call_sites[]`. Keep routes separate even when they share a source or
+  target model.
 
 # 4. Skills to load
 
@@ -126,6 +130,21 @@ If the pairs reference local image files (a vision manifest), copy the reference
 
 Mark all such entries `source: "user_provided"` when merging into `prompts.jsonl`.
 
+## 7.4 Attribute every case to one workload route
+
+Before adding any log or user-provided pair, map it to exactly one
+`<BEDROCK_WORKLOAD_ROUTES>` entry by an explicit `workload_id` or originating `call_site`.
+Provider/model alone is insufficient because one model can use Responses and Chat at different
+call sites. Copy the route's `workload_id`, one exact `call_site`, `aws_model_id`,
+`migration_path`, and `model_change` into the golden row.
+
+If a log row has neither field, use its trace/code metadata only when that metadata identifies
+one listed call site exactly. Otherwise exclude the row, increment the excluded count, and add
+`"unattributed log cases excluded: <N> — no unique workload_id/call_site"` to `gaps` and
+`errors`. Never assign an unattributed row to the first route. If every real row is excluded,
+create route-attributed synthetic cases from the actual prompt template under §9 when allowed;
+otherwise return zero cases and disclose the attribution gap.
+
 # 8. Extract prompts from code
 
 Read each file from `prompt_locations` (using `Read`) and extract:
@@ -146,7 +165,7 @@ Run **every** path whose condition matches `special_patterns` from §3 — a sin
 
 If `special_patterns.vision == false` AND `special_patterns.function_calling == false` AND fewer than 5 cases came from §7 (logs / user-provided pairs):
 
-1. Generate enough synthetic test cases consistent with the prompt template and use case from §6 to bring the total to 5–10.
+1. Generate enough synthetic test cases consistent with the prompt template and use case from §6 to bring the total to 5–10. Generate cases per workload route and preserve the originating `call_site`; do not reuse one case across API surfaces.
 2. Include them. Mark `source: "code_synthetic_confirmed"`.
 
 (When §7 already produced 5+ real cases, skip this path — synthetic cases add nothing on top of real data.)
@@ -187,6 +206,11 @@ Write each entry as one JSON object per line in `<REPO>/.saws-migrate/golden-dat
 ```json
 {
   "id": "prompt_001",
+  "workload_id": "wl-chat",
+  "call_site": "src/chat.py:42",
+  "aws_model_id": "global.openai.gpt-5.4",
+  "migration_path": "runtime_openai_responses",
+  "model_change": false,
   "type": "text",
   "system_prompt": "system message or empty string",
   "user_prompt": "user message text",
@@ -201,6 +225,9 @@ Write each entry as one JSON object per line in `<REPO>/.saws-migrate/golden-dat
 
 Field rules:
 
+- `workload_id`, `call_site`, `aws_model_id`, `migration_path`, and `model_change` are required
+  on every non-empty row and come from one exact workload route. `workload_id` is the stable key
+  through baseline, evaluation, rewrite, and report artifacts.
 - `type` ∈ `"text"` / `"vision"` / `"tool_call"`.
 - `image_path` — local path (`<REPO>/.saws-migrate/golden-dataset/images/<file>`) for vision, `null` for text.
 - `source` — exactly one of:
@@ -225,7 +252,7 @@ If the file is 0 bytes, re-write it once; if it is still 0 bytes after the retry
 
 # 12. Deduplicate
 
-If multiple golden entries have identical `system_prompt + user_prompt + image_path`, they're duplicates. Run a one-shot Python script via `Bash`:
+If multiple golden entries have identical `workload_id + call_site + system_prompt + user_prompt + image_path`, they're duplicates. Do not deduplicate across workload routes: the same prompt on Responses and Chat is two distinct paid evaluations. Run a one-shot Python script via `Bash`:
 
 ```bash
 # Stdlib-only dedupe — no boto3, so bare python3 is fine here (no pinned env needed).
@@ -241,7 +268,8 @@ with open(p) as f:
     for line in f:
         if not line.strip(): continue
         e = json.loads(line)
-        key = (e.get('system_prompt',''), e.get('user_prompt',''), e.get('image_path') or '')
+        key = (e.get('workload_id',''), e.get('call_site',''), e.get('system_prompt',''),
+               e.get('user_prompt',''), e.get('image_path') or '')
         if key in seen: continue
         seen.add(key); out.append(e)
 with open(p, 'w') as f:

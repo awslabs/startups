@@ -269,8 +269,11 @@ artifacts Phase B needs are actually present before Execute reads them.)
 Read `$MIGRATION_DIR/aws-design-ai.json` and extract
 `ai_architecture.bedrock_models[]`. Each executable row MUST carry
 `source_model` (normalize `source_model_id` or `gcp_model_id` to this key), `aws_model_id`,
-`use_case`, and its exact `migration_path`; retain
-`workload_id` and `call_sites[]` when present. Normalize legacy paths on each row: absent,
+`use_case`, its exact `migration_path`, `model_change`, and `iam_features[]`; retain
+`workload_id` and `call_sites[]`. `iam_features` uses only `web_search`,
+`external_web_access`, `response_get`, `response_cancel`, and `response_delete`. The latter
+four are operation-specific: never infer external web access or stored-response operations.
+Normalize legacy paths on each row: absent,
 `"converse"`, or `"gpt-oss"` → `runtime_converse`; `"mantle"` →
 `mantle_openai_responses`. Accept only `runtime_openai_responses`,
 `runtime_openai_chat`, `runtime_messages`, `mantle_openai_responses`,
@@ -283,13 +286,15 @@ surfaces or providers are present and any row lacks an exact path, STOP:
 `Unsupported mixed API surfaces — rerun Design so every bedrock_models row has migration_path.`
 Never apply one run-wide path to mixed rows.
 
-Build `$BEDROCK_WORKLOAD_ROUTES` in the plan's stable row order. Each route is
-`{workload_id, source_model, aws_model_id, use_case, migration_path, call_sites}`. Merge only
-rows with the same `(aws_model_id, migration_path)`, preserving first occurrence and sorting
-the merged call-site list. Match each discovered call site to exactly one route by workload ID,
+Build `$BEDROCK_WORKLOAD_ROUTES` in the plan's stable row order, with exactly one route for
+each `bedrock_models[]` row. Each route is
+`{workload_id, source_model, aws_model_id, use_case, migration_path, model_change, iam_features, call_sites}`.
+Do not merge routes that share a model or path: their workload identity, API surface, behavior
+delta, and IAM features can differ. Require unique non-empty `workload_id` values and sort each
+route's call-site list. Match each discovered call site to exactly one route by workload ID,
 source model, and source API surface. If a call site matches zero or multiple routes, STOP with
 `Unsupported or ambiguous call-site route` and name the file/line; do not guess. Derive aligned
-`$TARGET_MODELS` and `$BEDROCK_API_PATHS` arrays from these routes.
+`$TARGET_MODELS`, `$BEDROCK_API_PATHS`, and `$BEDROCK_IAM_FEATURES` arrays from these routes.
 
 Read `$MIGRATION_DIR/ai-workload-profile.json` and extract:
 
@@ -459,7 +464,7 @@ Repository: <$REPO>
 AWS region: <$REGION>
 AWS profile (pass as --profile / AWS_PROFILE= inline on every aws/boto3 invocation): <$AWS_PROFILE_CHOICE — omit line if default>
 Target Bedrock model(s): <comma-joined $TARGET_MODELS, with any resolved overrides already applied>
-Bedrock workload routes: <compact JSON $BEDROCK_WORKLOAD_ROUTES; each object keeps migration_path beside its model and call_sites>
+Bedrock workload routes: <compact JSON $BEDROCK_WORKLOAD_ROUTES; each object keeps workload_id, migration_path, model_change, iam_features, and call_sites beside its model>
 Migration plan dir: <$MIGRATION_DIR>
 Resolved target model id: <override for the primary chat model — omit if none>
 Scripts directory (pinned uv toolchain): <$SCRIPTS>
@@ -509,8 +514,8 @@ Bedrock at their expense, capped at 200 cases.
   "repo_head_sha": "<git -C $REPO rev-parse HEAD>",
   "repo_branch": "<git -C $REPO rev-parse --abbrev-ref HEAD>",
   "repo_dirty_sha256": "<sha256 of: git status --porcelain + git diff + git diff --cached, EACH with pathspecs -- . ':(exclude).saws-migrate' ':(exclude).migration' ':(exclude)MIGRATION_REPORT_*.md'; \"\" when all three are empty>",
-  "target_models": [{"source_model": "...", "aws_model_id": "...", "use_case": "...", "migration_path": "...", "call_sites": ["..."]}],
-  "bedrock_workload_routes": [{"workload_id": "...", "source_model": "...", "aws_model_id": "...", "use_case": "...", "migration_path": "...", "call_sites": ["..."]}],
+  "target_models": [{"workload_id": "...", "source_model": "...", "aws_model_id": "...", "use_case": "...", "migration_path": "...", "model_change": false, "iam_features": [], "call_sites": ["..."]}],
+  "bedrock_workload_routes": [{"workload_id": "...", "source_model": "...", "aws_model_id": "...", "use_case": "...", "migration_path": "...", "model_change": false, "iam_features": [], "call_sites": ["..."]}],
   "resolved_model_overrides": {},
   "source_provider": "<from B1>",
   "source_baseline_available": <true|false from B3>,
@@ -634,7 +639,9 @@ Below, AskUserQuestion:
 
 **Gate (a.5) — Bedrock workload routes (from migration plan).** Re-read every
 `ai_architecture.bedrock_models[]` row and rebuild `$BEDROCK_WORKLOAD_ROUTES` with the exact B1
-normalization and validation. Each model/call-site group keeps its own exact path. A mixed
+normalization and validation. Keep one route per workload row, including its stable unique
+`workload_id`, `model_change`, `iam_features[]`, and `call_sites[]`; never merge routes that
+happen to share a model/path. A mixed
 Responses+Chat or OpenAI+Anthropic repository therefore dispatches both lanes in stable plan
 order; no run-wide path is inferred. Unknown non-empty paths, missing per-row paths in a mixed
 artifact, and call sites that cannot be assigned to exactly one route stop before C5 with the
@@ -674,8 +681,8 @@ block lists all four phase-result file paths.
 
 C5 always receives `Bedrock workload routes: <$BEDROCK_WORKLOAD_ROUTES>` in the shared
 context block. It assigns every analyzed call site to exactly one route and uses that route's
-exact lane; it never applies one lane to all models. For any Mantle route, the route object
-itself carries the source-model to Bedrock-model mapping and `model_change`. A false
+exact lane; it never applies one lane to all models. Every route carries the stable workload ID,
+source-model to Bedrock-model mapping, `model_change`, and `iam_features`. A false
 `model_change` keeps model parameters untouched; only endpoint, credentials, model ID, and an
 explicitly selected API surface may change.
 

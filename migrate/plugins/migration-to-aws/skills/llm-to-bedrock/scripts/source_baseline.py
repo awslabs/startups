@@ -5,8 +5,9 @@ Usage:
   SOURCE_MODEL_ID=<id> GOLDEN_DATASET_PATH=<jsonl> OUTPUT_PATH=<jsonl> \\
     python source_baseline.py <path/to/.source-provider-env>
 
-Writes one JSON record per prompt to OUTPUT_PATH:
-  {"id": ..., "source_response": "<text or empty>",
+Writes one JSON record per prompt to OUTPUT_PATH, preserving its workload route:
+  {"id": ..., "workload_id": ..., "call_site": ..., "aws_model_id": ...,
+   "migration_path": ..., "model_change": ..., "source_response": "<text or empty>",
    "status": "live | http_<code>: <reason> | error: <type>: <message>"}
 
 Partial-resume: prompts whose id already has a "live" row in OUTPUT_PATH are
@@ -211,6 +212,15 @@ def _send(url: str, headers: dict, body: dict) -> dict:
         return json.loads(resp.read())
 
 
+def route_identity(prompt: dict) -> dict:
+    """Copy the stable workload route fields into every downstream row."""
+    fields = ("workload_id", "call_site", "aws_model_id", "migration_path", "model_change")
+    missing = [field for field in fields if field not in prompt or prompt[field] in (None, "")]
+    if missing:
+        raise ValueError(f"prompt {prompt.get('id', '<unknown>')} missing route attribution: {missing[0]}")
+    return {field: prompt[field] for field in fields}
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__.strip().splitlines()[2].strip(), file=sys.stderr)
@@ -234,6 +244,11 @@ def main() -> int:
 
     with open(dataset_path) as f:
         prompts = [json.loads(line) for line in f if line.strip()]
+    try:
+        identities = {prompt["id"]: route_identity(prompt) for prompt in prompts}
+    except (KeyError, ValueError) as exc:
+        print(f"FAIL: {exc}", file=sys.stderr)
+        return 2
 
     results = []
     done_live = set()
@@ -242,7 +257,8 @@ def main() -> int:
             for line in f:
                 if line.strip():
                     row = json.loads(line)
-                    if row.get("status") == "live":
+                    if row.get("status") == "live" and row.get("id") in identities:
+                        row.update(identities[row["id"]])
                         results.append(row)
                         done_live.add(row["id"])
     prompts = [p for p in prompts if p["id"] not in done_live]
@@ -250,17 +266,19 @@ def main() -> int:
         print(f"RESUME: {len(done_live)} live baselines kept, {len(prompts)} to fetch")
 
     for p in prompts:
+        identity = route_identity(p)
         try:
             url, headers, body = build(model, p.get("system_prompt") or "", p["user_prompt"])
             out = extract(_send(url, headers, body))
-            results.append({"id": p["id"], "source_response": out, "status": "live"})
+            results.append({"id": p["id"], **identity,
+                            "source_response": out, "status": "live"})
         except urllib.error.HTTPError as e:
             detail = error_detail(e, secrets)
             status = f"http_{e.code}: {e.reason}" + (f" — {detail}" if detail else "")
-            results.append({"id": p["id"], "source_response": "",
+            results.append({"id": p["id"], **identity, "source_response": "",
                             "status": redact(status, secrets)})
         except Exception as e:  # noqa: BLE001 — every row must land in the JSONL
-            results.append({"id": p["id"], "source_response": "",
+            results.append({"id": p["id"], **identity, "source_response": "",
                             "status": redact(f"error: {type(e).__name__}: {e}", secrets)})
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

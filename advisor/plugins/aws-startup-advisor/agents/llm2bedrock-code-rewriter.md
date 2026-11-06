@@ -146,8 +146,10 @@ Conservative scope — only universally-junk patterns; `.venv/` / `node_modules/
 
 ## Strategy selection (check FIRST)
 
-Read and parse the compact JSON from `Bedrock workload routes:`. Assign every analyzed source
-call site to exactly one route by `workload_id`, source model/API surface, and `call_sites[]`.
+Read and parse the compact JSON from `Bedrock workload routes:`. Require one route per workload
+row with a unique `workload_id`; never merge routes that share a model/path. Assign every analyzed
+source call site to exactly one route by `workload_id`, source model/API surface, and
+`call_sites[]`. Each route must carry `model_change` and `iam_features[]`.
 Process routes in supplied order and call sites in sorted file/line order. Dispatch each call
 site by exact equality on its route's `migration_path`; a mixed repository may use several lanes
 in one rewrite. Supported lanes are
@@ -449,7 +451,7 @@ For EACH file in the `files_to_modify` list from llm2bedrock-code-analyzer:
 
 1. Read the current file with the `Read` tool (or `Bash`: `cat <SOURCE_PATH>/<file>`).
 
-2. Plan the changes: apply the §8 strategy for this file's framework (covers imports / client init / API calls / response parsing / model IDs from `target_models`). Inject adapted prompts where applicable: detect via `test -s <repo>/.saws-migrate/eval-results/adapted_prompts.jsonl && echo HAS_ADAPTED || echo NO_ADAPTED` — `HAS_ADAPTED` means parse the JSONL and override prompt text for any matching `id`; `NO_ADAPTED` (file missing or empty — eval phase skipped or all prompts passed unchanged) means keep the original prompts as-is.
+2. Plan the changes: apply the §8 strategy for this file's framework (covers imports / client init / API calls / response parsing / model IDs from `target_models`). Inject adapted prompts where applicable: detect via `test -s <repo>/.saws-migrate/eval-results/adapted_prompts.jsonl && echo HAS_ADAPTED || echo NO_ADAPTED` — `HAS_ADAPTED` means parse the JSONL and apply a record only when its `workload_id` and `call_site` match the current route and source call site (the `id` is secondary audit metadata); `NO_ADAPTED` (file missing or empty — eval phase skipped or all prompts passed unchanged) means keep the original prompts as-is. If an adapted record lacks route attribution or disagrees with the supplied route, STOP with `Unsupported or ambiguous call-site route`; never inject it by prompt ID alone.
 
 3. Write the modified file using the `Edit` tool (for surgical changes) or `Write` tool (to replace whole files).
 

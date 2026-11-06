@@ -38,7 +38,14 @@
           "properties": {
             "reason": {
               "type": "string",
-              "enum": ["model_access", "source_key_auth", "model_unresolvable", "authz", "mantle_deps_missing"]
+              "enum": [
+                "model_access",
+                "source_key_auth",
+                "model_unresolvable",
+                "authz",
+                "mantle_deps_missing",
+                "route_attribution"
+              ]
             },
             "detail": { "type": "string" }
           }
