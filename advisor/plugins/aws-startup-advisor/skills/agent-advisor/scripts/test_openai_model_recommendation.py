@@ -54,29 +54,28 @@ def _delta_codes(rec):
 
 # --- 11.1 Provider and path selection -------------------------------------
 
-def test_responses_source_with_continuity_recommends_mantle_responses():
+def test_responses_source_with_continuity_recommends_runtime_responses():
     rec = _recommend(
         _workload(requirements={"api_continuity": "required"})
     )
     assert rec["provider_module"] == "openai"
     assert rec["decision_status"] == "recommended"
-    assert rec["api_path"] == "mantle_openai_responses"
-    assert rec["primary_model"] == "openai.gpt-5.6-sol"
+    assert rec["api_path"] == "runtime_openai_responses"
+    assert rec["primary_model"] == "openai.gpt-5.4"
 
 
-def test_chat_completions_gpt5_target_selects_responses_not_chat():
+def test_chat_completions_gpt5_target_selects_runtime_chat():
     rec = _recommend(
         _workload(
             source={"api_surface": "chat_completions"},
             requirements={"api_continuity": "required"},
         )
     )
-    assert rec["api_path"] == "mantle_openai_responses"
-    assert rec["api_path"] != "mantle_openai_chat"
-    assert "chat_completions_to_responses_required" in _codes(rec["blocks"])
+    assert rec["api_path"] == "runtime_openai_chat"
+    assert "chat_completions_to_responses_required" not in _codes(rec["blocks"])
 
 
-def test_chat_completions_case_includes_full_reshape_deltas():
+def test_chat_completions_runtime_path_does_not_emit_reshape_deltas():
     rec = _recommend(
         _workload(
             source={"api_surface": "chat_completions"},
@@ -85,10 +84,8 @@ def test_chat_completions_case_includes_full_reshape_deltas():
         )
     )
     codes = _delta_codes(rec)
-    assert "chat_to_responses_request" in codes
-    assert "chat_to_responses_response" in codes
-    assert "chat_to_responses_tools" in codes
-    assert "chat_to_responses_state" in codes
+    assert "chat_to_responses_request" not in codes
+    assert "chat_to_responses_response" not in codes
 
 
 def test_governance_selects_runtime_converse():
@@ -97,7 +94,7 @@ def test_governance_selects_runtime_converse():
     )
     assert rec["decision_status"] == "recommended"
     assert rec["api_path"] == "runtime_converse"
-    assert rec["primary_model"] == "anthropic.claude-sonnet-5"
+    assert rec["primary_model"] == "openai.gpt-5.4"
 
 
 def test_continuity_plus_runtime_only_returns_decision_required():
@@ -127,7 +124,55 @@ def test_decision_options_explain_tradeoffs():
     )
     reasons = {o["api_path"]: o["reason"] for o in rec["decision_options"]}
     assert "OpenAI SDK" in reasons["mantle_openai_responses"]
-    assert "Bedrock-native" in reasons["runtime_converse"]
+    assert "SAME-MODEL" in reasons["runtime_converse"]
+
+
+@pytest.mark.parametrize(
+    "requirements,features,reason",
+    [
+        ({"background_inference": True}, [], "background_inference"),
+        ({"server_side_tools": True}, [], "server_side_tools"),
+        ({"customer_projects": True}, [], "customer_projects"),
+        ({"verified_mantle_only_model_api": True}, [], "verified_mantle_only_model_api"),
+        ({}, ["web_search"], "web_search"),
+    ],
+)
+def test_each_verified_mantle_selector(requirements, features, reason):
+    rec = _recommend(
+        _workload(requirements=requirements, detected_features=features)
+    )
+
+    assert rec["api_path"] == "mantle_openai_responses"
+    assert reason in rec["rationale"][0]
+
+
+def test_runtime_logging_preserves_api_continuity():
+    rec = _recommend(
+        _workload(
+            requirements={
+                "api_continuity": "required",
+                "governance": ["invocation_logging", "cloudwatch"],
+            }
+        )
+    )
+
+    assert rec["decision_status"] == "recommended"
+    assert rec["api_path"] == "runtime_openai_responses"
+
+
+def test_gpt54_and_gpt55_resolve_public_runtime_cris_ids():
+    for source_id, expected in (
+        ("gpt-5.4", "global.openai.gpt-5.4"),
+        ("gpt-5.5", "global.openai.gpt-5.5"),
+    ):
+        rec = _recommend(
+            _workload(
+                source={"model_ids": [source_id]},
+                requirements={"data_residency": "global_allowed"},
+            )
+        )
+        assert rec["api_path"] == "runtime_openai_responses"
+        assert rec["invocation_model_id"] == expected
 
 
 # --- 11.2 Model-generation analysis ---------------------------------------
@@ -215,11 +260,11 @@ def _impact_features(rec):
     return {a["feature"] for a in rec["architecture_impacts"]}
 
 
-def test_hosted_web_search_not_reported_as_live_native_search():
+def test_web_search_selects_live_mantle_server_tool():
     rec = _recommend(_workload(detected_features=["web_search"]))
-    impacts = {a["feature"]: a["impact"] for a in rec["architecture_impacts"]}
-    assert "web_search" in impacts
-    assert "passthrough" in impacts["web_search"].lower()
+    assert rec["api_path"] == "mantle_openai_responses"
+    assert "web_search" in rec["compatibility"]["native"]
+    assert "web_search" not in _impact_features(rec)
 
 
 def test_file_search_and_vector_stores_produce_retrieval_impacts():
@@ -261,20 +306,18 @@ def test_unknown_limits_do_not_pass_hard_numeric_requirement():
     # Fail-closed invariant: an unknown catalog limit cannot satisfy a hard numeric
     # need. output_token_ceiling is "unknown" on every entry as of 2026-08-21, so it
     # probes the invariant the way min_context_tokens no longer can.
-    rec = _recommend(_workload(requirements={"expected_output_tokens": 100000}))
+    rec = _recommend(_workload(requirements={"expected_output_tokens": 200000}))
     assert rec["decision_status"] == "decision_required"
     assert "unverified_capacity" in _codes(rec["blocks"])
 
 
-def test_cris_only_path_with_unresolvable_residency_blocks_explicitly():
-    # GPT-5.6 on bedrock-runtime is CRIS-only. A residency posture permitting
-    # neither Global nor Geo CRIS must surface an explicit block, not a silent
-    # invocation_model_id: None.
+def test_in_region_requirement_selects_mantle_for_cris_only_runtime_model():
     rec = _recommend(_workload(
-        source={"model_ids": ["gpt-5.6-terra"], "api_surface": "responses"},
-        requirements={"governance": ["guardrails"], "data_residency": "in_region_required"},
+        source={"model_ids": ["gpt-5.4"], "api_surface": "responses"},
+        requirements={"data_residency": "in_region_required"},
     ))
-    assert "cris_residency_unresolved" in _codes(rec["blocks"])
+    assert rec["api_path"] == "mantle_openai_responses"
+    assert rec["invocation_model_id"] == "openai.gpt-5.4"
 
 def test_no_aws_account_leaves_probe_not_run_and_provisional():
     rec = _recommend()
@@ -370,7 +413,7 @@ def test_g01_runtime_target_is_not_reported_as_gpt5():
     # A Bedrock-native (Nova) target must not carry target_version gpt-5.x.
     rec = _recommend(_workload(requirements={"governance": ["guardrails"]}))
     assert rec["api_path"] == "runtime_converse"
-    assert rec["source_analysis"]["target_version"] == "5"  # Claude Sonnet 5, not gpt-5.x
+    assert rec["source_analysis"]["target_version"] == "5.4"
     assert rec["source_analysis"]["target_version"] != "gpt-5.x"
 
 
@@ -390,16 +433,15 @@ def test_g01_legacy_source_to_reasoning_target_marks_generation_change():
     assert rec["source_analysis"]["version_changed"] is True
 
 
-def test_g02_runtime_selection_fails_closed_on_unproven_capability():
-    # No runtime_converse candidate has streaming evidence in the catalog, so a
-    # workload requiring it must NOT get a silent native claim — it fails closed.
+def test_g02_runtime_selection_uses_public_capability_evidence():
     rec = _recommend(
         _workload(
             requirements={"governance": ["guardrails"], "critical_features": ["streaming"]}
         )
     )
-    assert rec["decision_status"] == "decision_required"
-    assert "unverified_capability" in _codes(rec["blocks"])
+    assert rec["decision_status"] == "recommended"
+    assert rec["primary_model"] == "openai.gpt-5.4"
+    assert "streaming" in rec["compatibility"]["native"]
 
 
 def test_g02_native_only_lists_catalog_evidenced_features():
@@ -427,7 +469,7 @@ def test_g02_vision_requirement_selects_the_evidenced_candidate():
         )
     )
     assert rec["decision_status"] == "recommended"
-    assert rec["primary_model"] == "openai.gpt-5.6-sol"
+    assert rec["primary_model"] == "openai.gpt-5.4"
     assert "image_input_vision" in rec["compatibility"]["native"]
 
 
@@ -559,7 +601,7 @@ def test_n03_tool_requirement_never_lands_on_unevidenced_nova():
         )
     )
     assert rec["decision_status"] == "recommended"
-    assert rec["primary_model"] == "anthropic.claude-sonnet-5"
+    assert rec["primary_model"] == "openai.gpt-5.4"
     assert "tool_or_function_calling" in rec["compatibility"]["native"]
 
 
@@ -626,7 +668,7 @@ def test_tier_map_terra_and_55_sources_map_to_sonnet_on_converse():
         _workload(source={"model_ids": ["gpt-5.5"]},
                   requirements={"governance": ["guardrails"]})
     )
-    assert rec_55["primary_model"] == "anthropic.claude-sonnet-5"
+    assert rec_55["primary_model"] == "openai.gpt-5.5"
 
 def test_tier_map_falls_back_across_tiers_on_capability_evidence():
     # The capability-evidence fallback mechanism: when the first candidate in the

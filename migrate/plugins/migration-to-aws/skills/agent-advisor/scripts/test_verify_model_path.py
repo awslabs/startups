@@ -1,5 +1,7 @@
 import json
 import pathlib
+import sys
+import types
 
 import jsonschema
 
@@ -79,7 +81,10 @@ def _verify(requirements=None, **kwargs):
 
 def test_mantle_probe_uses_recommended_clean_id():
     client = FakeMantleClient()
-    result = _verify(mantle_client_factory=lambda region: client)
+    result = _verify(
+        {"customer_workspaces": True},
+        mantle_client_factory=lambda region: client,
+    )
     verification = result["workloads"]["support-agent"]
 
     assert verification["status"] == "passed"
@@ -138,7 +143,10 @@ def test_unresolved_runtime_cris_does_not_create_client():
 
 def test_probe_failure_is_structured():
     client = FakeMantleClient(FakeMessages(error=PermissionError("denied")))
-    result = _verify(mantle_client_factory=lambda region: client)
+    result = _verify(
+        {"customer_workspaces": True},
+        mantle_client_factory=lambda region: client,
+    )
     verification = result["workloads"]["support-agent"]
 
     assert verification["status"] == "failed"
@@ -151,7 +159,7 @@ def test_probe_failure_is_structured():
 def test_decision_required_is_not_probed():
     result = _verify(
         {
-            "preserve_messages_api": True,
+            "customer_workspaces": True,
             "governance": ["guardrails"],
         }
     )
@@ -160,7 +168,10 @@ def test_decision_required_is_not_probed():
 
 
 def test_verification_output_matches_schema():
-    result = _verify(mantle_client_factory=lambda region: FakeMantleClient())
+    result = _verify(
+        {"customer_workspaces": True},
+        mantle_client_factory=lambda region: FakeMantleClient(),
+    )
     schema = json.loads(
         (
             pathlib.Path(verify_model_path.__file__).parent
@@ -182,7 +193,7 @@ def test_verification_output_matches_schema():
 class FakeResponses:
     def __init__(self, response=None, error=None):
         self.calls = []
-        self.response = response or type("Resp", (), {"model": "openai.gpt-5.6-sol"})()
+        self.response = response or type("Resp", (), {"model": "openai.gpt-5.4"})()
         self.error = error
 
     def create(self, **kwargs):
@@ -192,9 +203,19 @@ class FakeResponses:
         return self.response
 
 
+class FakeCompletions:
+    def __init__(self):
+        self.calls = []
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return type("Resp", (), {"model": kwargs["model"]})()
+
+
 class FakeOpenAIClient:
     def __init__(self, responses=None):
         self.responses = responses or FakeResponses()
+        self.chat = types.SimpleNamespace(completions=FakeCompletions())
 
 
 def _openai_input(requirements=None):
@@ -231,30 +252,96 @@ def _verify_openai(requirements=None, **kwargs):
 def test_mantle_responses_probe_calls_responses_create_with_exact_id():
     client = FakeOpenAIClient()
     result = _verify_openai(
-        {"api_continuity": "required"},
+        {"data_residency": "in_region_required"},
         openai_responses_client_factory=lambda region: client,
     )
     verification = result["workloads"]["openai-svc"]
 
     assert verification["status"] == "passed"
     assert verification["api_path"] == "mantle_openai_responses"
-    assert client.responses.calls[0]["model"] == "openai.gpt-5.6-sol"
+    assert client.responses.calls[0]["model"] == "openai.gpt-5.4"
     assert client.responses.calls[0]["input"]
-    assert verification["response_model_id"] == "openai.gpt-5.6-sol"
+    assert verification["response_model_id"] == "openai.gpt-5.4"
 
 
 def test_mantle_responses_failure_does_not_substitute_model():
     client = FakeOpenAIClient(FakeResponses(error=RuntimeError("access denied")))
     result = _verify_openai(
-        {"api_continuity": "required"},
+        {"data_residency": "in_region_required"},
         openai_responses_client_factory=lambda region: client,
     )
     verification = result["workloads"]["openai-svc"]
 
     assert verification["status"] == "failed"
-    assert verification["invocation_model_id"] == "openai.gpt-5.6-sol"
+    assert verification["invocation_model_id"] == "openai.gpt-5.4"
     # Only the exact selected model was ever probed.
-    assert [c["model"] for c in client.responses.calls] == ["openai.gpt-5.6-sol"]
+    assert [c["model"] for c in client.responses.calls] == ["openai.gpt-5.4"]
+
+
+def test_runtime_messages_probe_uses_exact_cris_id():
+    client = FakeMantleClient()
+    result = _verify(
+        {"data_residency": "global_allowed"},
+        runtime_messages_client_factory=lambda region: client,
+    )
+
+    verification = result["workloads"]["support-agent"]
+    assert verification["api_path"] == "runtime_messages"
+    assert client.messages.calls[0]["model"] == "global.anthropic.claude-sonnet-5"
+
+
+def test_runtime_responses_and_chat_probe_exact_ids():
+    responses_client = FakeOpenAIClient()
+    responses = _verify_openai(
+        {"data_residency": "global_allowed"},
+        runtime_openai_client_factory=lambda region: responses_client,
+    )
+    assert responses["workloads"]["openai-svc"]["api_path"] == "runtime_openai_responses"
+    assert responses_client.responses.calls[0]["model"] == "global.openai.gpt-5.4"
+
+    chat_client = FakeOpenAIClient()
+    recommendation = model_recommendation.recommend(
+        _openai_input(
+            {"data_residency": "geo_required", "cris_geography": "us"}
+        )
+    )
+    recommendation["workloads"]["openai-svc"]["source"]["api_surface"] = "chat_completions"
+    recommendation = model_recommendation.recommend({
+        **_openai_input({"data_residency": "geo_required", "cris_geography": "us"}),
+        "workloads": [{
+            **_openai_input()["workloads"][0],
+            "source": {**_openai_input()["workloads"][0]["source"], "api_surface": "chat_completions"},
+            "requirements": _openai_input({"data_residency": "geo_required", "cris_geography": "us"})["workloads"][0]["requirements"],
+        }],
+    })
+    chat = verify_model_path.verify_recommendation(
+        recommendation,
+        now=NOW,
+        runtime_openai_client_factory=lambda region: chat_client,
+    )
+    assert chat["workloads"]["openai-svc"]["api_path"] == "runtime_openai_chat"
+    assert chat_client.chat.completions.calls[0]["model"] == "us.openai.gpt-5.4"
+
+
+def test_runtime_factories_use_documented_base_paths(monkeypatch):
+    created = []
+
+    class RecordingClient:
+        def __init__(self, **kwargs):
+            created.append(kwargs)
+
+    monkeypatch.setitem(sys.modules, "openai", types.SimpleNamespace(OpenAI=RecordingClient))
+    monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=RecordingClient))
+    monkeypatch.setitem(
+        sys.modules,
+        "aws_bedrock_token_generator",
+        types.SimpleNamespace(provide_token=lambda region: "token"),
+    )
+    verify_model_path._default_runtime_openai_client("us-west-2")
+    verify_model_path._default_runtime_messages_client("us-west-2")
+
+    assert created[0]["base_url"] == "https://bedrock-runtime.us-west-2.amazonaws.com/openai/v1"
+    assert created[1]["base_url"] == "https://bedrock-runtime.us-west-2.amazonaws.com/anthropic"
 
 
 def test_openai_decision_required_is_not_probed():

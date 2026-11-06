@@ -448,7 +448,7 @@ compile is a defect — this step is not optional. **Clean up compile byproducts
   (from `<repo>`), generated as a disposable deployment-proof — your original repo was not
   modified"; (b) the list of applied changes and any deferred/drifted ones; (c) "For the
   authoritative in-repo migration (git branch, generated tests, behavior-delta review,
-  quality eval), run `/aws-startup-advisor:llm-to-bedrock`" — the POC does not replace it;
+  quality eval), run the sibling `llm-to-bedrock` skill" — the POC does not replace it;
   (d) the local-dev note for the original UI.
 
 Then skip 3a–3d and continue at Step 4 (Mode B) or Step 5.
@@ -462,17 +462,41 @@ calls the recommended Bedrock model and answers the AgentCore entrypoint contrac
 ### 3a. `agent.py` — minimal runnable agent
 
 - Implements the AgentCore entrypoint contract: `POST /invocations` (read prompt from the
-  request body, call Bedrock `Converse` with the resolved model id, return the text) and
-  `GET /ping` (return 200 for health).
-- Uses `boto3` bedrock-runtime. Region from an env var (`AWS_REGION`), no hardcoded creds.
+  request body, call the exact selected Bedrock API path with the resolved model id, return the
+  text) and `GET /ping` (return 200 for health).
+- Uses the selected path's client library. Region comes from `AWS_REGION`; credentials are
+  short-lived or SDK-refreshed and never hardcoded.
 - Include a one-line system prompt and echo the model's reply — enough to prove the loop works.
 
 **Code-path branch (per unit):** read
-`design.json.units[<unit-id>].model_recommendation.api_path`. For `mantle_messages`, generate an
-`AnthropicBedrockMantle` Messages client. For `runtime_converse`, use the boto3 Converse
-template. For `runtime_invoke`, use boto3 InvokeModel with the provider-native body. Future
-`mantle_openai_chat` and `mantle_openai_responses` paths use their matching OpenAI-compatible
-clients. Never branch on one run-wide `migration_path` string.
+`design.json.units[<unit-id>].model_recommendation.api_path` and generate exactly one of these
+`run_prompt` implementations inside the existing `/invocations` and `/ping` HTTP wrapper. Every
+branch reads `AWS_REGION` and `BEDROCK_MODEL_ID` for that unit. Runtime compatible APIs use a
+short-lived token from `aws-bedrock-token-generator`; do not embed an API key or a token produced
+at generation time.
+
+- `runtime_messages`: `Anthropic(base_url=f"https://bedrock-runtime.{REGION}.amazonaws.com/anthropic",
+  api_key=provide_token(region=REGION)).messages.create(...)`; return the first text content block.
+- `runtime_openai_responses`: `OpenAI(base_url=f"https://bedrock-runtime.{REGION}.amazonaws.com/openai/v1",
+  api_key=provide_token(region=REGION)).responses.create(model=MODEL_ID, input=prompt)`; return
+  `response.output_text`.
+- `runtime_openai_chat`: use the same Runtime OpenAI client and call
+  `client.chat.completions.create(model=MODEL_ID, messages=[{"role": "system", "content":
+  SYSTEM_PROMPT}, {"role": "user", "content": prompt}])`; return
+  `response.choices[0].message.content`.
+- `mantle_messages`: use the Anthropic client with
+  `https://bedrock-mantle.{REGION}.api.aws/anthropic` and the selected path's supported credential
+  provider.
+- `mantle_openai_responses` / `mantle_openai_chat`: use the exact model-card base prefix on
+  `bedrock-mantle`, then call the matching OpenAI SDK method.
+- `runtime_converse`: use the boto3 Converse template below.
+- `runtime_invoke`: use boto3 InvokeModel with the provider-native body.
+
+Add `anthropic` and `aws-bedrock-token-generator` only for a Messages branch; add `openai` and
+`aws-bedrock-token-generator` only for an OpenAI-compatible branch; keep `boto3` for Converse or
+Invoke. Generate credentials when the client is created so normal credential refresh remains
+possible. Never branch on a run-wide `migration_path`, change the selected model ID, or paste a
+Converse call into another path.
 
 The template below applies only to `runtime_converse`. Use it verbatim for that path,
 substituting `<MODEL_ID>` with the Step 2 invocation ID **for this unit** (or the
@@ -544,7 +568,8 @@ if __name__ == "__main__":
 
 ### 3b. `requirements.txt`
 
-- `boto3` (bedrock-runtime), plus the minimal web server deps for the entrypoint contract.
+- Add only the selected path's client dependencies described in 3a, plus the minimal web server
+  dependencies for the entrypoint contract.
 - Pin nothing exotic; keep it a starter.
 
 ### 3c. Deployment config

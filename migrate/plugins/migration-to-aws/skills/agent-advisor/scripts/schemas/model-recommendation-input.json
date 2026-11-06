@@ -124,6 +124,21 @@
               "newest_anthropic_betas": {
                 "type": "boolean"
               },
+              "background_inference": {
+                "type": "boolean"
+              },
+              "server_side_tools": {
+                "type": "boolean"
+              },
+              "customer_projects": {
+                "type": "boolean"
+              },
+              "customer_workspaces": {
+                "type": "boolean"
+              },
+              "verified_mantle_only_model_api": {
+                "type": "boolean"
+              },
               "api_continuity": {
                 "enum": ["required", "preferred", "not_required", "unknown"]
               },
@@ -154,6 +169,9 @@
                   "mantle_messages",
                   "mantle_openai_chat",
                   "mantle_openai_responses",
+                  "runtime_openai_responses",
+                  "runtime_openai_chat",
+                  "runtime_messages",
                   "runtime_converse",
                   "runtime_invoke"
                 ]
@@ -170,7 +188,7 @@
                 "type": "boolean"
               },
               "data_residency": {
-                "enum": ["global_allowed", "geo_required", "unknown"]
+                "enum": ["global_allowed", "geo_required", "in_region_required", "unknown"]
               },
               "cris_geography": {
                 "enum": ["us", "eu", "jp", "au"]

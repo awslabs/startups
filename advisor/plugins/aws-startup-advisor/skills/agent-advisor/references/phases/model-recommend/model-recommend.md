@@ -72,32 +72,39 @@ Map existing answers into each row's `requirements`:
 For Anthropic sources, ask one batched clarification only for requirements not established by
 code or prior answers:
 
-- preserve the first-party Messages API?
-- require newest Anthropic beta features?
-- require Bedrock Guardrails, invocation logging, or CloudWatch integration?
-- require a shared multi-model Converse surface?
+- preserve the first-party Messages API request and response surface?
+- require background inference or general server-side/preconfigured tools?
+- require a customer-created Workspace?
+- is the required model/API pair verified as Mantle-only?
+- require Bedrock Guardrails or a shared multi-model Converse surface?
 - require a provider-native Bedrock request body?
 - minimum context window and expected output-token ceiling?
 - use thinking?
-- allow Global CRIS, or require a geography-scoped CRIS profile?
+- allow Global/Geo CRIS, or require strict in-Region processing?
 
-For OpenAI and Azure OpenAI sources, ask instead for the provider-neutral requirements (never
-reuse the Anthropic `preserve_messages_api` switch):
+For OpenAI and Azure OpenAI sources, ask instead:
 
-- `api_continuity`: `required | preferred | not_required | unknown` — must the OpenAI SDK and
-  API surface be preserved?
-- require Bedrock Guardrails, invocation logging, or a shared multi-model Converse surface?
-- does the code use `n` (multiple candidates), hosted state (Assistants/Threads,
-  `previous_response_id`), hosted web/file search, Files API, or vector stores?
+- `api_continuity`: `required | preferred | not_required | unknown`;
+- require background inference, server-side/preconfigured tools including Web Search, or a
+  customer-created Project?
+- is the required model/API pair verified as Mantle-only?
+- require Guardrails or a shared multi-model Converse surface?
+- does the code use `n`, stored continuation, Assistants/Threads, Files API, or vector stores?
 - minimum context window and expected output-token ceiling?
-- allow Global CRIS or require a geography-scoped profile (runtime Converse only)?
+- allow Global/Geo CRIS, or require strict in-Region processing?
 
-OpenAI is handled by a dedicated provider module (`openai-bedrock-2026-08-21.json` catalog):
-GPT-5.x on Mantle is Responses-only, so a Chat Completions source is reshaped, not routed to
-`mantle_openai_chat`. GPT-5.6 sources additionally carry a SAME-MODEL `runtime_converse`
-candidate via CRIS ids (verified 2026-08-21) — governance requirements no longer force a
-family switch for them, while GPT-5.5/5.4 remain mantle-only. Azure OpenAI remains an
-explicit `provider_module_pending` generic result.
+Record these booleans with their direct names: `background_inference`, `server_side_tools`,
+`customer_projects`, `customer_workspaces`, and `verified_mantle_only_model_api`. Record strict
+single-Region residency as `data_residency: in_region_required`.
+
+The default is the source-compatible Runtime path: `runtime_messages` for Anthropic Messages,
+`runtime_openai_responses` for OpenAI Responses, and `runtime_openai_chat` for OpenAI Chat
+Completions. Select a Mantle path only for a verified selector above. API continuity, ordinary
+client-side tools, and stored Responses continuation do not select Mantle. Unknown model/API or
+Region support remains unresolved rather than being guessed. The public basis is the
+[endpoint comparison](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html),
+[Messages guide](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html),
+and [Chat Completions guide](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html).
 
 **OpenRouter/LiteLLM-sourced OpenAI models still use the OpenAI module.** Discover records the
 underlying `provider` (e.g. `openai`) even when the calls transit a gateway — see `discover.md`'s
@@ -182,6 +189,10 @@ Write `$RUN_DIR/model-recommendation-input.json` with this shape:
         "priority": "balanced",
         "critical_features": ["tool_use"],
         "preserve_messages_api": true,
+        "background_inference": false,
+        "server_side_tools": false,
+        "customer_workspaces": false,
+        "verified_mantle_only_model_api": false,
         "governance": [],
         "min_context_tokens": 200000,
         "expected_output_tokens": 16000,
@@ -247,20 +258,23 @@ edit the output, or mark this phase completed while any workload remains unresol
 
 Offer a live target-account probe after all workloads are `recommended`. This is optional and
 separate from recommendation acceptance because it uses AWS credentials and invokes a billable
-model. Run it only with explicit approval:
+model.
+
+**Each API path needs its matching client library.** Runtime and Mantle OpenAI-compatible paths
+use `openai`; Runtime and Mantle Messages use `anthropic`; compatible Runtime clients also use
+`aws-bedrock-token-generator` for short-lived credentials. Install the needed packages for the
+selected workloads:
 
 ```bash
-uv run --with boto3 --with anthropic python "$SCRIPTS/verify_model_path.py" \
+uv run --with boto3 --with anthropic --with openai --with aws-bedrock-token-generator \
+  python "$SCRIPTS/verify_model_path.py" \
   "$RUN_DIR/model-recommendation.json" \
   --output "$RUN_DIR/model-verification.json"
 ```
 
-**Each API path needs its own client library.** The line above covers the Anthropic and runtime
-paths. A workload on `mantle_openai_responses` additionally needs `--with openai --with
-aws-bedrock-token-generator`; without them that workload comes back `failed` with a
-`RuntimeError` naming the missing package, while every other workload still probes normally. So a
-`failed` status here can mean "the dependency was absent", not "the model is unavailable" — read
-the error type before treating it as a capability finding.
+The verifier constructs the exact endpoint base path for `runtime_messages`,
+`runtime_openai_responses`, `runtime_openai_chat`, each Mantle path, Converse, or Invoke. A missing
+package is reported as `failed`; inspect the error type before treating it as model unavailability.
 
 The verifier must call only the recorded `invocation_model_id`; it never substitutes another
 model. Runtime recommendations with an unresolved CRIS profile produce `needs_resolution`.

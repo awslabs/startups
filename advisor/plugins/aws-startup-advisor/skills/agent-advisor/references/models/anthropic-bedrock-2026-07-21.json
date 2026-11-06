@@ -3,8 +3,8 @@
   "provider": "anthropic",
   "verified_at": "2026-07-21",
   "verified_region": "us-east-1",
-  "source": "AWS Bedrock userguide Anthropic model cards (retrieved 2026-07-21) for Claude Sonnet 5; internal migration reference, Anthropic path (2026-06-24 live probes) for the path metadata and the Opus 4.8 / Haiku 4.5 entries",
-  "disclaimer": "Point-in-time capability data. Re-probe every selected model and API path in the target account and region before implementation. Claude Sonnet 5 (launched 2026-06-30, after the reference snapshot) replaces Sonnet 4.6 in the recommendation pool: per its AWS model card it supports Messages on bedrock-mantle as well as Converse/Invoke on bedrock-runtime, with 1M context / 128K output and Global+geo CRIS. Claude Fable 5 / Fable 5.1 and Claude Mythos 5 / Mythos 5.1 — and any later Fable or Mythos release — are deliberately NOT pool candidates (Status `restricted` in pricing-cache.md). Fable 5 and 5.1 are Covered Models that require the account-level aws_review data-retention opt-in (prompts retained up to 30 days for AWS review) — a compliance decision, not a default recommendation; Fable 5.1 (GA 2026-09-01) is additionally CRIS-only in commercial regions. Mythos 5 and 5.1 are gated Previews for vetted cybersecurity and life-sciences research organizations (provider_data_share retention) — no account-level opt-in reaches them. Evidence: AWS model cards model-card-anthropic-claude-fable-5, -fable-5-1, -mythos-5, -mythos-5-1, read 2026-09-03; this file's 2026-07-21 snapshot predates Fable 5.1.",
+  "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html and public Amazon Bedrock model cards (retrieved 2026-07-21)",
+  "disclaimer": "Point-in-time capability data from public AWS documentation. Re-probe every selected model and API path in the target account and region before implementation. Endpoint, API, model, and Region support can change independently.",
   "paths": {
     "mantle_messages": {
       "sdk": "anthropic[bedrock]",
@@ -20,6 +20,23 @@
         "Bedrock Guardrails and runtime invocation logging are not available",
         "Use a forced tool without strict for portable structured output",
         "Availability must be probed in the target account and region"
+      ]
+    },
+    "runtime_messages": {
+      "sdk": "anthropic",
+      "client": "Anthropic(base_url=bedrock-runtime)",
+      "endpoint": "https://bedrock-runtime.{region}.amazonaws.com/anthropic",
+      "api": "messages",
+      "iam_action": "bedrock:InvokeModel",
+      "model_id_strategy": "cris_inference_profile",
+      "supports_cris": true,
+      "strengths": [
+        "Recommended endpoint for new Anthropic Messages integrations",
+        "Preserves the Anthropic SDK request and response surface",
+        "Supports runtime IAM and invocation logging"
+      ],
+      "constraints": [
+        "Availability and the exact invocation ID must be probed in the target account and region"
       ]
     },
     "runtime_converse": {
@@ -77,6 +94,11 @@
           "model_id": "anthropic.claude-opus-4-8",
           "requires_cris": false
         },
+        "runtime_messages": {
+          "available": true,
+          "model_id": "anthropic.claude-opus-4-8",
+          "requires_cris": true
+        },
         "runtime_converse": {
           "available": true,
           "model_id": "anthropic.claude-opus-4-8",
@@ -109,6 +131,11 @@
           "model_id": "anthropic.claude-sonnet-5",
           "requires_cris": false
         },
+        "runtime_messages": {
+          "available": true,
+          "model_id": "anthropic.claude-sonnet-5",
+          "requires_cris": true
+        },
         "runtime_converse": {
           "available": true,
           "model_id": "anthropic.claude-sonnet-5",
@@ -137,6 +164,11 @@
           "available": true,
           "model_id": "anthropic.claude-haiku-4-5",
           "requires_cris": false
+        },
+        "runtime_messages": {
+          "available": true,
+          "model_id": "anthropic.claude-haiku-4-5-20251001-v1:0",
+          "requires_cris": true
         },
         "runtime_converse": {
           "available": true,

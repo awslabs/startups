@@ -11,6 +11,16 @@ For AgentCore microVMs, default to V2 without a version-preference question; che
 and retain V1 only for an evidenced exception. Design and POC load
 `references/decision-refs/agentcore-platform.md` for this policy.
 
+Model/API endpoint selection follows the public Amazon Bedrock Runtime-first policy in
+`references/decision-refs/model-selection.md`. Runtime Responses, Runtime Chat Completions, and
+Runtime Messages are the defaults when the selected model/API pair is supported. Mantle requires
+an explicit, verified need for background inference, server-side or preconfigured tools including
+Web Search, customer-created Projects/Workspaces, a Mantle-only model/API pair, or strict
+in-Region processing when Runtime is CRIS-only. API continuity, client-side tools, and ordinary
+stored Responses continuation do not select Mantle. Every result remains provisional until the
+exact model, API path, and Region pass a live target-account probe. See the public
+[endpoint comparison](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html).
+
 ## Definitions
 
 - **"Load"** = Read the file with the Read tool and follow it. Do not summarize or skip.

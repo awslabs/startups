@@ -61,25 +61,23 @@ def _codes(items):
     return {item["code"] for item in items}
 
 
-def test_default_anthropic_messages_prefers_mantle_and_sonnet5():
-    # Sonnet 5 (launched 2026-06-30) supports Mantle Messages, so the balanced
-    # priority no longer has to escalate to Opus for Messages continuity.
+def test_default_anthropic_messages_uses_runtime_messages_and_sonnet5():
     rec = _recommend()
 
     assert rec["decision_status"] == "recommended"
     assert rec["primary_model"] == "anthropic.claude-sonnet-5"
-    assert rec["api_path"] == "mantle_messages"
-    assert rec["invocation_model_id"] == "anthropic.claude-sonnet-5"
+    assert rec["api_path"] == "runtime_messages"
+    assert rec["invocation_model_id"] is None
     assert rec["model_identity"]["path_model_id"] == rec["primary_model"]
     assert rec["verification"]["probe_status"] == "not_run"
 
 
-def test_cost_priority_on_messages_uses_clean_mantle_haiku_id():
+def test_cost_priority_on_messages_uses_runtime_haiku_id():
     rec = _recommend(_workload(requirements={"priority": "cost"}))
 
-    assert rec["api_path"] == "mantle_messages"
-    assert rec["primary_model"] == "anthropic.claude-haiku-4-5"
-    assert rec["model_identity"]["requires_cris"] is False
+    assert rec["api_path"] == "runtime_messages"
+    assert rec["primary_model"] == "anthropic.claude-haiku-4-5-20251001-v1:0"
+    assert rec["model_identity"]["requires_cris"] is True
 
 
 def test_governance_selects_runtime_converse_when_messages_is_a_preference():
@@ -94,7 +92,7 @@ def test_governance_selects_runtime_converse_when_messages_is_a_preference():
     assert rec["primary_model"] == "anthropic.claude-sonnet-5"
 
 
-def test_required_messages_and_governance_require_user_decision():
+def test_messages_continuity_and_guardrails_select_runtime_converse():
     rec = _recommend(
         _workload(
             requirements={
@@ -104,20 +102,14 @@ def test_required_messages_and_governance_require_user_decision():
         )
     )
 
-    assert rec["decision_status"] == "decision_required"
-    assert rec["primary_model"] is None
-    assert rec["api_path"] is None
-    assert {option["api_path"] for option in rec["decision_options"]} == {
-        "mantle_messages",
-        "runtime_converse",
-    }
-    assert "model_path_decision_required" in _codes(rec["blocks"])
+    assert rec["decision_status"] == "recommended"
+    assert rec["api_path"] == "runtime_converse"
 
 
-def test_conflicting_paths_without_catalog_candidates_are_rejected():
+def test_conflicting_mantle_and_runtime_requirements_without_candidates_are_rejected():
     workload = _workload(
         requirements={
-            "preserve_messages_api": True,
+            "customer_workspaces": True,
             "governance": ["guardrails"],
             "min_context_tokens": 2000000,
         }
@@ -221,7 +213,7 @@ def test_detected_version_features_emit_blocks_and_tuning():
 @pytest.mark.parametrize(
     "requirements,expected_path",
     [
-        ({"preserve_messages_api": True}, "mantle_messages"),
+        ({"preserve_messages_api": True}, "runtime_messages"),
         ({"governance": ["guardrails"]}, "runtime_converse"),
     ],
 )
@@ -300,6 +292,34 @@ def test_runtime_cris_resolution(requirements, expected):
     assert rec["api_path"] == "runtime_converse"
     assert rec["invocation_model_id"] == expected
     assert rec["verification"]["invocation_model_id"] == expected
+
+
+@pytest.mark.parametrize(
+    "requirements,reason",
+    [
+        ({"background_inference": True}, "background_inference"),
+        ({"server_side_tools": True}, "server_side_tools"),
+        ({"customer_workspaces": True}, "customer_workspaces"),
+        (
+            {"verified_mantle_only_model_api": True},
+            "verified_mantle_only_model_api",
+        ),
+        ({"data_residency": "in_region_required"}, "in_region_required"),
+    ],
+)
+def test_verified_mantle_selectors_choose_mantle_messages(requirements, reason):
+    rec = _recommend(_workload(requirements=requirements))
+
+    assert rec["api_path"] == "mantle_messages"
+    assert reason in rec["rationale"][0]
+
+
+def test_messages_continuity_alone_never_selects_mantle():
+    rec = _recommend(
+        _workload(requirements={"preserve_messages_api": True})
+    )
+
+    assert rec["api_path"] == "runtime_messages"
 
 
 # The intended treatment of every provider the input schema allows, written here rather than derived

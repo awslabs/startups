@@ -6,6 +6,9 @@
         "mantle_messages",
         "mantle_openai_chat",
         "mantle_openai_responses",
+        "runtime_openai_responses",
+        "runtime_openai_chat",
+        "runtime_messages",
         "runtime_converse",
         "runtime_invoke"
       ]
