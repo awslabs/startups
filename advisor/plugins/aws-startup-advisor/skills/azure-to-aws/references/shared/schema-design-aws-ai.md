@@ -114,13 +114,20 @@ Traditional-AI capabilities (AWS AI service, not Bedrock): `document_extraction`
 
 ## migration_path vocabulary
 
-`mantle_openai_responses` (Azure OpenAI / OpenAI source, model on Bedrock, region carries it —
-keep the SDK, `model_change: false`) · `converse` (Bedrock-native Converse/`bedrock-runtime`;
-set `model_change: true` when a proprietary GPT model must move off mantle for Guardrails /
-Knowledge Bases / logging / an unsupported region) · `gpt-oss` (OpenAI-lineage model on the
-Bedrock-native runtime) · `direct` (framework-agnostic Bedrock SDK swap). A proprietary
-`openai.gpt-*` model ID is NEVER paired with a `converse`/`bedrock-runtime` path — those models
-are mantle-only.
+Exact values:
+
+- `runtime_openai_responses` — preserve OpenAI Responses on Runtime.
+- `runtime_openai_chat` — preserve OpenAI Chat Completions on Runtime.
+- `runtime_messages` — preserve Anthropic Messages on Runtime.
+- `mantle_openai_responses`, `mantle_openai_chat`, `mantle_messages` — preserve the source API
+  on Mantle only for a verified endpoint requirement.
+- `runtime_converse`, `runtime_invoke` — explicit Bedrock-native API choices.
+
+Legacy absent/`direct`, `converse`, `gpt-oss`, and `mantle` values normalize at the consumer
+boundary to the matching exact path. Unknown non-empty values are rejected. Every row must pair
+the endpoint host, base path, credential method, IAM actions, and model-ID form for that exact
+path. Current GPT-5.4/GPT-5.5 cards can use prefixed Runtime CRIS IDs; bare IDs remain Mantle
+forms. Revalidate model/API/Region support before emitting.
 
 ## regional_validation
 
@@ -169,8 +176,8 @@ rubric file (`ai.md`, `ai-azure-openai-to-bedrock.md`, or a `vendored/ai/*` ref)
       `price_comparison`.
 - [ ] `honest_assessment` overall is the weakest across `bedrock_models[]`; if
       `recommend_stay`, `honest_assessment_reason` names a non-cost blocker.
-- [ ] No `bedrock_models[]` entry pairs a proprietary `openai.gpt-*` model ID with a
-      `converse`/`bedrock-runtime` migration path (mantle-only).
+- [ ] Every `migration_path` is in the exact vocabulary and its endpoint host, base path,
+      credential method, IAM actions, and model-ID form match.
 - [ ] If `ai_source` is `azure_openai` or `openai`: every source model that is available on
       Bedrock and carried by the target region maps to ITSELF with `model_change: false` — not
       to a Claude/Nova substitute.

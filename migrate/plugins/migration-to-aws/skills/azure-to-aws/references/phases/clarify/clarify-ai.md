@@ -31,6 +31,14 @@ Read from `ai-workload-profile.json`:
 Present an **AI Context Summary** row for the assembler to show: `ai_source`, profile origin,
 models detected, capabilities, integration pattern + SDK, gateway/router, frameworks.
 
+Create an `ai_endpoint_requirements` row from
+`integration.endpoint_sensitive_features` and show it for confirmation. Allowed values:
+`background_inference`, `server_side_tools`, `web_search`, `projects`, `workspaces`,
+`required_model_api`, `strict_in_region`. Use `[]` when none were detected. Ordinary client-side
+tools and stored Responses state are not endpoint requirements. Persist the confirmed array at
+`ai_constraints.ai_endpoint_requirements`; it is the only Clarify input that can justify a
+Mantle exception.
+
 ## Step 2: The rows
 
 ### Category F — AI / Bedrock (fires when `ai-workload-profile.json` exists)

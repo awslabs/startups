@@ -29,62 +29,53 @@ Older Claude models — Claude 3.5 Haiku, Claude 3 Sonnet, Claude 3.5 Sonnet (v1
 
 ---
 
-## Step 2: Rewrite client
+## Step 2: Select the endpoint and API
 
-Before: `anthropic.Anthropic(api_key=...)`
-After: `boto3.client("bedrock-runtime", region_name="us-east-1")`
+Use `bedrock-runtime` with the Anthropic Messages API for a supported model in a supported
+Region. This is the default for new migrations because it preserves the source SDK and
+Messages request/response shape. Select `bedrock-mantle` only after current public documentation
+verifies a requirement for a customer-created Workspace, background inference, a general
+server-side/preconfigured tool, a model/API combination unavailable on Runtime, or strict
+in-Region processing when Runtime is CRIS-only. Ordinary client-side tools and Messages API
+continuity do not select Mantle.
 
-Remove ANTHROPIC_API_KEY. Use IAM role with bedrock:InvokeModel.
-
----
-
-## Step 3: Rewrite API calls
-
-Before: `client.messages.create(model=..., max_tokens=1024, messages=[{"role": "user", "content": "Hello"}])`
-
-After: `client.converse(modelId="anthropic.claude-sonnet-5", messages=[{"role": "user", "content": [{"text": "Hello"}]}], inferenceConfig={"maxTokens": 1024})`
-
-Key differences:
-
-- content is typed blocks [{"text": "..."}] not a plain string
-- max_tokens moves to inferenceConfig.maxTokens
-- response text at `response["output"]["message"]["content"][0]["text"]`
+Before selecting a path, check the current [Endpoint availability](https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html),
+[API compatibility](https://docs.aws.amazon.com/bedrock/latest/userguide/models-api-compatibility.html),
+model card Programmatic Access table, and Regional table. Record `runtime_messages` by default
+or `mantle_messages` only for a verified selector.
 
 ---
 
-## Step 4: System prompts
+## Step 3: Preserve the Anthropic client on Runtime
 
-Before: `system="You are helpful"` as a string param
-After: `system=[{"text": "You are helpful"}]` as a list of blocks
+Keep `client.messages.create(...)` and its payload shape. Change the base URL to
+`https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1`, replace the source API key with
+an auto-refreshing short-lived Bedrock token provider, and use the Runtime model or CRIS
+inference-profile ID selected from the current model card. Do not commit source API keys or
+short-lived tokens.
 
----
-
-## Step 5: Streaming
-
-Before: `client.messages.stream()` context manager
-After: `client.converse_stream()` — iterate `response["stream"]` for `contentBlockDelta` events
-
----
-
-## Step 6: IAM permissions
-
-Add bedrock:InvokeModel and bedrock:InvokeModelWithResponseStream on arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-*
+Use `boto3` Converse only when the user explicitly chooses the normalized Bedrock-native API
+or needs a Converse-only feature. That is the `runtime_converse` path and requires translating
+content blocks, parameter names, streaming events, and response parsing.
 
 ---
 
-## Step 7: Request Bedrock quota
+## Step 4: IAM and quotas
 
-Request TPM increases via Service Quotas. Cross-region inference profiles (us.* prefix) have higher shared limits.
+Runtime Messages uses `bedrock:InvokeModel` and, for streaming,
+`bedrock:InvokeModelWithResponseStream`, scoped to the selected model or inference profile.
+Mantle Messages uses the documented `bedrock-mantle` action family instead. Runtime has
+per-model token quotas and model-specific RPM quotas where applicable; check Service Quotas
+for the exact model and inference profile.
 
 ---
 
 ## Validation checklist
 
-- [ ] anthropic.Anthropic() replaced with boto3.client("bedrock-runtime")
-- [ ] client.messages.create() replaced with client.converse()
-- [ ] content blocks use typed format [{"text": "..."}]
-- [ ] max_tokens moved to inferenceConfig.maxTokens
-- [ ] Streaming uses converse_stream with contentBlockDelta events
-- [ ] ANTHROPIC_API_KEY removed from environment/secrets
-- [ ] IAM role has bedrock:InvokeModel permission
-- [ ] Model IDs updated to Bedrock format (Claude 4.x recommended)
+- [ ] Current Endpoint availability, API compatibility, Programmatic Access, and Region data were checked
+- [ ] `runtime_messages` is used unless a verified Mantle selector applies
+- [ ] `client.messages.create()` and the Anthropic payload shape are preserved on Runtime
+- [ ] Runtime base URL includes `/anthropic/v1`
+- [ ] Credentials are short-lived and auto-refreshing; the source API key is removed
+- [ ] IAM actions and model-ID form match the selected endpoint
+- [ ] The exact selected model and path were probed in the target account and Region

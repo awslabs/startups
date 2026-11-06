@@ -90,6 +90,8 @@ One per detected model. **Field names are exact** (the §13.3b drift class):
   "languages": ["python"],
   "pattern": "direct_sdk", // direct_sdk | framework | rest_api | mixed | unknown
   "gateway_type": null, // llm_router | api_gateway | voice_platform | framework | direct | null
+  "source_api_surface": "openai_chat", // openai_responses | openai_chat | anthropic_messages | converse | invoke | unknown
+  "endpoint_sensitive_features": [], // background_inference | server_side_tools | web_search | projects | workspaces | required_model_api | strict_in_region
   "capabilities_summary": { // boolean map
     "text_generation": true,
     "streaming": false,

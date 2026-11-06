@@ -70,7 +70,7 @@ _postconditions:
     _on_failure: _halt_and_inform
   - _assert: "no secret VALUE from the inventory appears in any generated artifact; secrets are emitted as Secrets Manager references"
     _on_failure: _halt_and_inform
-  - _assert: "WHEN aws-design-ai.json exists AND run_mode is decide_and_execute: generation-ai.json exists and validates, its rollback_plan.mechanism is 'feature_flag' with flag_name 'AI_PROVIDER' and default_value 'azure_openai'; an ai-migration/ directory was produced (setup_bedrock.sh, test_comparison.py, bedrock_monitoring.tf on every path; migrate_to_mantle.sh for the mantle path OR provider_adapter.* for the direct/gpt-oss path, not both); and no proprietary openai.gpt-* model ID is paired with a converse/bedrock-runtime path. When aws-design-ai.json is absent this is vacuously satisfied"
+  - _assert: "WHEN aws-design-ai.json exists AND run_mode is decide_and_execute: generation-ai.json exists and validates, its rollback_plan.mechanism is 'feature_flag' with flag_name 'AI_PROVIDER' and default_value 'azure_openai'; an ai-migration/ directory was produced (setup_bedrock.sh, test_comparison.py, bedrock_monitoring.tf on every path; source-SDK setup/code for runtime_openai_responses/runtime_openai_chat/runtime_messages or mantle_openai_responses/mantle_openai_chat/mantle_messages, and an adapter for runtime_converse/runtime_invoke); and every endpoint host, API, IAM family, and model-ID form matches migration_path. When aws-design-ai.json is absent this is vacuously satisfied"
     _on_failure: _halt_and_inform
 _forbids_files:
   - azure-resource-inventory.json

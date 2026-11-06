@@ -31,6 +31,16 @@ Read `$MIGRATION_DIR/ai-workload-profile.json`:
 Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If absent, use
 defaults (prefer managed Bedrock, no latency constraint, no budget cap).
 
+**Endpoint selection gate:** Read `integration.source_api_surface` and
+`ai_constraints.ai_endpoint_requirements`. Verify the selected model's current Endpoint availability,
+Programmatic Access, API compatibility, and Region data. Default to
+`runtime_openai_responses`, `runtime_openai_chat`, or `runtime_messages` for the matching
+supported source API. Choose a `mantle_*` path only when a confirmed requirement
+(`background_inference`, `server_side_tools`, `web_search`, `projects`, `workspaces`,
+`required_model_api`, or `strict_in_region`) is verified as unavailable on Runtime for that
+model/API/Region. API continuity, client-side tools, stored Responses state, and endpoint
+availability alone do not imply Mantle. Unknown non-empty paths halt.
+
 **Load the source-specific design reference based on `ai_source`:**
 
 - `"azure_openai"` or `"openai"` → load `references/vendored/ai/ai-openai-to-bedrock.md`
@@ -40,7 +50,7 @@ defaults (prefer managed Bedrock, no latency constraint, no budget cap).
   a cross-family swap. `azure_openai` routes IDENTICALLY to `openai`; the distinct label is
   kept only for report wording and provenance (§19.9(b)).
 - `"anthropic"` → load `references/vendored/ai/ai-anthropic-to-bedrock.md` (Anthropic SDK →
-  Bedrock Converse client swap).
+  Runtime Messages by default; Converse only for an explicit Bedrock-native API choice).
 - `"both"` → load `references/vendored/ai/ai-openai-to-bedrock.md` and, if an Anthropic model
   is also present, `ai-anthropic-to-bedrock.md`.
 - `"other"` or absent → load `references/design-refs/ai.md` (traditional-ML rubric — Azure AI
@@ -161,9 +171,11 @@ Partial/None.
 
 ## Part 3: Integration pattern → effort
 
-Map `integration.pattern`: `direct_sdk` (Azure OpenAI/OpenAI, model on Bedrock, region carries
-it) → Mantle Responses API, minimal; `direct_sdk` → Bedrock SDK/Converse, medium; `framework`
-→ LangChain/LlamaIndex + Bedrock, low; `rest_api` → Bedrock REST, medium; `mixed` → per-model.
+Map `integration.pattern`: `direct_sdk` with a supported OpenAI source API → Runtime OpenAI
+Responses/Chat, minimal; supported Anthropic Messages → Runtime Messages, minimal;
+`direct_sdk` with an explicit Bedrock-native API choice → Runtime Converse/Invoke, medium;
+`framework` → LangChain/LlamaIndex + Bedrock, low; `rest_api` → Bedrock REST, medium; `mixed` →
+per-model.
 
 ## Part 4: Infrastructure mapping
 
@@ -180,17 +192,27 @@ Map Azure AI infrastructure to AWS:
 
 ## Part 5: Code migration plan
 
-Generate before/after examples per detected `integration.pattern` and `ai_source`. For an
-`azure_openai`/`openai` source with the model on Bedrock, the **Mantle Responses API** is the
-primary path (`migration_path: "mantle_openai_responses"`, `model_change: false`): the app
-keeps the OpenAI SDK; only the base URL (`.../openai/v1/responses`), credential (a Bedrock API
-key/token provider), model ID, and IAM (`bedrock-mantle:*`) change. Read
-`references/shared/openai-on-bedrock.md` for exact values. If the source uses Chat Completions,
-plan a reshape to `responses.create`. No Converse fallback exists for proprietary GPT models
-(mantle-only, in-region only): needing Guardrails/Knowledge Bases/logging/an unsupported region
-forces a `converse` path with `model_change: true` to a Bedrock-native model (or `gpt-oss`).
-Anthropic-SDK sources → boto3 Converse client swap. Record `code_migration.openrouter_path`
-when a router was detected (`same_model_mantle|direct|litellm|keep_openrouter`).
+Generate before/after examples per detected `integration.pattern` and `ai_source`. Preserve
+the detected API surface whenever the current model/API/Region supports it:
+
+- `runtime_openai_responses`: OpenAI SDK, Runtime `/openai/v1`, short-lived Bedrock token,
+  Runtime/CRIS model ID, and `bedrock:InvokeModel*` IAM.
+- `runtime_openai_chat`: the same Runtime setup while preserving
+  `chat.completions.create(...)`.
+- `runtime_messages`: Anthropic SDK, Runtime `/anthropic/v1`, short-lived Bedrock token, and
+  Runtime IAM while preserving `messages.create(...)`.
+- `mantle_openai_responses`, `mantle_openai_chat`, or `mantle_messages`: only for a verified
+  `ai_endpoint_requirements` selector; use the Mantle host, bare model ID, and
+  `bedrock-mantle:*` IAM. Web Search is a supported preconfigured server-side tool on Mantle
+  for documented models.
+- `runtime_converse` or `runtime_invoke`: only for an explicit Bedrock-native API choice or
+  required feature; translate payloads intentionally.
+
+Current public GPT-5.4/GPT-5.5 cards include Runtime CRIS and Responses/Chat support, but all
+model/API/Region metadata must be revalidated live. Do not reshape Chat to Responses solely due
+to endpoint selection and do not translate a Runtime-compatible path to Converse. Record
+`code_migration.openrouter_path` when a router was detected
+(`same_model_runtime|same_model_mantle|direct|litellm|keep_openrouter`).
 
 ## Part 6: Write output
 

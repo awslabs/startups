@@ -48,6 +48,24 @@ Every row carries one of four dispositions, and the distinction is load-bearing:
 different facts, and the report distinguishes them — "we checked your estate for SQL
 licensing exposure and found none" is a different statement from silence.
 
+## AI endpoint requirements
+
+When an AI profile exists, `preferences.json` MUST include:
+
+```jsonc
+"ai_constraints": {
+  "ai_endpoint_requirements": {
+    "disposition": "DETECTED", // or PROPOSED after the assumption-sheet flow
+    "value": [],
+    "default": []
+  }
+}
+```
+
+Allowed values are `background_inference`, `server_side_tools`, `web_search`, `projects`,
+`workspaces`, `required_model_api`, and `strict_in_region`. Ordinary client-side tools and
+stored Responses state are excluded. Preserve the existing disposition/source rules.
+
 ## Shape
 
 ```jsonc

@@ -30,6 +30,13 @@ wording are Azure-swapped (Azure OpenAI, no Gemini).
 > **Integration:** [`integration.pattern`] via [`integration.primary_sdk`] ·
 > **Gateway/router:** [`integration.gateway_type`, or "None (direct SDK)"]
 
+Before the fast-path check, derive and confirm
+`ai_constraints.ai_endpoint_requirements` from `integration.endpoint_sensitive_features`.
+Allowed values: `background_inference`, `server_side_tools`, `web_search`, `projects`,
+`workspaces`, `required_model_api`, `strict_in_region`. Use `[]` only through the existing
+assumption/default flow. Ordinary client-side tools and stored Responses state do not belong in
+this array. Keep this row on the fast path because it controls Runtime versus Mantle selection.
+
 ## Step 1.5: Fast-path check
 
 If the AI usage looks simple (single model, non-agentic, no multi-provider/multi-model routing):
@@ -97,9 +104,10 @@ running). → `ai_constraints.cross_cloud`. Default `"latency-acceptable"`.
 | Claude (Anthropic SDK)                    | Same model on Bedrock                  | client swap only — no model change         |
 | Other / multiple / don't know             | ask / infer                            | —                                          |
 
-**Same-model rows first.** GPT-5.6/5.5/5.4 run on Bedrock via `bedrock-mantle` (Responses,
-in-region only) — the case is AWS commitments/governance/residency, not savings, and not parity
-(~10% above OpenAI standard). For sources with no Bedrock equivalent, present a same-vendor
+**Same-model rows first.** GPT-5.6/5.5/5.4 run on Bedrock. Prefer Runtime Responses or
+Chat Completions when current model/API/Region data supports it; select Mantle only for a
+confirmed endpoint requirement. Price the exact in-Region, Geo, or Global routing option from
+the current model card. For sources with no Bedrock equivalent, present a same-vendor
 upgrade AND a cross-family option. → `ai_model_baseline`.
 
 **After Batch 1:** interpret answers, write `preferences-draft.json` (`metadata.draft: true`,

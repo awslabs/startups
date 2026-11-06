@@ -22,6 +22,11 @@ _knowledge:
 
 **Schema reference**: `references/shared/schema-preferences.md`.
 
+When the AI fragment fires, write `ai_constraints.ai_endpoint_requirements` as the confirmed
+array. Allowed values: `background_inference`, `server_side_tools`, `web_search`, `projects`,
+`workspaces`, `required_model_api`, `strict_in_region`. Write `[]` when none apply, and preserve
+all unrelated rows and defaults.
+
 ## This unit owns the conversation
 
 Fragments compute rows. **The assembler is the only thing that talks to the user**, and it

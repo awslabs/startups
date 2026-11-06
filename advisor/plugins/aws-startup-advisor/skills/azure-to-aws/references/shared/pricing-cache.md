@@ -55,8 +55,8 @@ recommend Legacy/excluded models for new migrations.**
 | GPT-5.6 Sol       | openai.gpt-5.6-sol                       | OpenAI    | 4.40       | 22.00       | 272K    | frontier  | active (mantle in-region + runtime CRIS; 1M tier 8.80/33.00)                                   |
 | GPT-5.6 Terra     | openai.gpt-5.6-terra                     | OpenAI    | 2.20       | 13.20       | 272K    | flagship  | active (mantle in-region + runtime CRIS; 1M tier 4.40/19.80)                                   |
 | GPT-5.6 Luna      | openai.gpt-5.6-luna                      | OpenAI    | 0.22       | 1.32        | 272K    | fast      | active (mantle in-region + runtime CRIS; 1M tier 0.44/1.98)                                    |
-| GPT-5.5           | openai.gpt-5.5                           | OpenAI    | 5.50       | 33.00       | 272K    | frontier  | active (mantle only; no 1M tier)                                                               |
-| GPT-5.4           | openai.gpt-5.4                           | OpenAI    | 2.75       | 16.50       | 272K    | flagship  | active (mantle only; no 1M tier)                                                               |
+| GPT-5.5           | openai.gpt-5.5                           | OpenAI    | 5.50       | 33.00       | 272K    | frontier  | active (Mantle in-Region + Runtime CRIS; revalidate pricing)                                        |
+| GPT-5.4           | openai.gpt-5.4                           | OpenAI    | 2.75       | 16.50       | 272K    | flagship  | active (Mantle in-Region + Runtime CRIS; revalidate pricing)                                        |
 
 _Quick-reference rows use **—** for **model ID** and **context**; resolve in the Bedrock console
 or AWS model documentation. This is a curated subset for migration selection — see the Bedrock
@@ -111,11 +111,12 @@ Per 1M tokens unless noted.
 
 ### OpenAI on Bedrock — the same-model path
 
-The proprietary GPT-5.x models on Bedrock are priced at OpenAI's **data-residency tier ≈ 1.10x**
-the OpenAI standard rates below, and run **`bedrock-mantle` only, in-region only** (no
-`bedrock-runtime`, no cross-region inference profile for GPT-5.5/5.4). `gpt-oss` DOES support
-`bedrock-runtime`. For endpoint paths, region matrix, quotas, and prompt-caching detail see
-`references/shared/openai-on-bedrock.md` (the fact base the mapping guide reads).
+Current proprietary GPT model cards can expose both Mantle in-Region and Runtime CRIS paths.
+The cached rows above show in-Region/US-Geo rates; Global CRIS can have a different rate and
+broader routing. For the same model and routing option, endpoint choice does not change the
+per-token price. Revalidate the selected model card's Endpoint availability, Programmatic
+Access, API, Region, context tier, and routing price before estimating. See
+`references/shared/openai-on-bedrock.md`.
 
 ## Source Provider Pricing (for Migration Comparison)
 

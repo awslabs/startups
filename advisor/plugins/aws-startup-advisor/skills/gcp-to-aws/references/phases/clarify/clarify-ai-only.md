@@ -47,6 +47,17 @@ Check `$MIGRATION_DIR/` for existing state:
 
 ---
 
+## Endpoint requirements
+
+Before Fast Path, derive and confirm `ai_constraints.ai_endpoint_requirements` from
+`integration.endpoint_sensitive_features`. Allowed values: `background_inference`,
+`server_side_tools`, `web_search`, `projects`, `workspaces`, `required_model_api`, and
+`strict_in_region`. Default to `[]` only through the existing assumption-sheet/default behavior.
+Do not add ordinary client-side tools or stored Responses state. This row remains in the fast
+path because it controls Runtime versus Mantle selection.
+
+---
+
 ## Step 1.5: Fast-Path Check
 
 If `migration-preview.json` exists and `ai_complexity_signal == "likely_simple"` (single model, non-agentic, no multi-provider, no multi-model routing):
@@ -200,7 +211,7 @@ _Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` **wi
 | o-series      | GPT-5.6 Sol/Terra; or Sonnet 5 | Not on Bedrock — offer both        |
 | Claude (any)  | Same model on Bedrock          | Client swap only — no model change |
 
-**Same-model rows first.** GPT-5.6 / 5.5 / 5.4 run on Bedrock, so those sources map to themselves. Cost is ~10% ABOVE OpenAI standard (Bedrock in-region is priced at OpenAI's data-residency tier), so the case is AWS commitments, governance, and residency — not savings, and not parity. They are `bedrock-mantle` / Responses-only and in-region only; see `references/shared/openai-on-bedrock.md`. For sources with no Bedrock equivalent, present both a same-vendor upgrade and a cross-family option rather than pre-picking.
+**Same-model rows first.** GPT-5.6 / 5.5 / 5.4 run on Bedrock, so those sources map to themselves. Prefer Runtime Responses or Chat Completions when the current model/API/Region tables support it. Select Mantle only for a confirmed endpoint requirement. Price the exact in-Region, Geo, or Global routing option from the current model card; do not promise parity or savings. For sources with no Bedrock equivalent, present both a same-vendor upgrade and a cross-family option rather than pre-picking.
 
 Override examples: GPT-4 + Q2=cost → Haiku; Flash + Q10=extended thinking → Sonnet; GPT-4o + Q10=speech → Nova 2 Sonic; GPT-5.5 + Q2=cost → Sonnet 5.
 

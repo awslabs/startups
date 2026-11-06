@@ -34,12 +34,10 @@ Two consequences that invert the previous decision logic:
 1. **When the source model is on Bedrock, keep it.** A same-model move has no behavior delta to validate, no prompt
    re-engineering, and no eval regression risk — the migration is an endpoint and credential change, not a model
    change. This is the default recommendation.
-2. **The cost of a same-model move depends on the inference option — state it conditionally.** In-Region and Geo
-   CRIS are priced at OpenAI's _data residency_ tier, exactly 1.10x the standard list price, so those moves cost
-   ~10% more. **GPT-5.6 on Global CRIS is priced at the standard list price — cost parity** — available only when
-   the workload has no data-residency constraint (GPT-5.5 / GPT-5.4 have no CRIS at all). See
-   `shared/openai-on-bedrock.md`. The non-cost case — AWS commitments, IAM/VPC/CloudTrail governance, residency,
-   prompt caching, one vendor relationship — carries the in-region path; never present that path as free or neutral.
+2. **Price the selected routing option, not the endpoint name.** Public endpoint guidance says
+   the same model and routing option has the same per-token price on Runtime and Mantle. In-Region,
+   geographic CRIS, and Global CRIS can have different rates and residency implications. Recheck
+   the current model card; do not assume GPT-5.4 or GPT-5.5 lacks Runtime CRIS.
 
 Cross-family mapping (to Claude / Nova / DeepSeek) is still the right answer in two situations: the source model has
 no Bedrock equivalent, or the user's priority is cost and is willing to accept a model change to get it. Both are
@@ -48,6 +46,19 @@ covered below — but neither is the default.
 ---
 
 ## Selection Policy
+
+Use `bedrock-runtime` for most new applications. Preserve the source API with
+`runtime_openai_responses` or `runtime_openai_chat` when the selected model supports that API.
+Select Mantle only for a verified requirement: background inference, general server-side or
+preconfigured tools including Web Search, customer-created Projects, a required model/API
+combination unavailable on Runtime, or strict in-Region processing where Runtime is CRIS-only.
+API continuity, ordinary client-side tools, stored Responses state, and endpoint availability
+alone do not select Mantle.
+
+Before choosing, revalidate the current [Endpoint availability](https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html),
+[API compatibility](https://docs.aws.amazon.com/bedrock/latest/userguide/models-api-compatibility.html),
+model-card Programmatic Access, and Regional tables. Cached model IDs and endpoint facts are
+hints, not proof.
 
 Apply in order. Stop at the first tier that resolves.
 
@@ -61,13 +72,14 @@ Bedrock**.
 | GPT-5.6 Sol   | GPT-5.6 Sol    | `openai.gpt-5.6-sol` / `us.` `global.` prefixed         | `strong_migrate` — same model; parity on Global CRIS, else +10% |
 | GPT-5.6 Terra | GPT-5.6 Terra  | `openai.gpt-5.6-terra` / `us.` `in.` `global.` prefixed | `strong_migrate` — same model; parity on Global CRIS, else +10% |
 | GPT-5.6 Luna  | GPT-5.6 Luna   | `openai.gpt-5.6-luna` / `us.` `in.` `global.` prefixed  | `strong_migrate` — same model; parity on Global CRIS, else +10% |
-| GPT-5.5       | GPT-5.5        | `openai.gpt-5.5` (mantle only)                          | `strong_migrate` — same model, ~10% over OpenAI std             |
-| GPT-5.4       | GPT-5.4        | `openai.gpt-5.4` (mantle only)                          | `strong_migrate` — same model, ~10% over OpenAI std             |
+| GPT-5.5       | GPT-5.5        | `openai.gpt-5.5` / current prefixed Runtime ID        | `strong_migrate` — same model; price by routing option       |
+| GPT-5.4       | GPT-5.4        | `openai.gpt-5.4` / current prefixed Runtime ID        | `strong_migrate` — same model; price by routing option       |
 
-Then apply the **region gate** below. Record `model_change: false` and the chosen path in
-`aws-design-ai.json` → `ai_architecture.code_migration`: `migration_path: "mantle_openai_responses"` for the
-in-region mantle endpoint, or `migration_path: "runtime_openai_cris"` when a GPT-5.6 target is served via
-`bedrock-runtime` with a CRIS id (the model cards recommend runtime for new applications).
+Then apply the **region gate** below. Record `model_change: false` and the exact path in
+`aws-design-ai.json` → `ai_architecture.code_migration`: `runtime_openai_responses` for a
+supported Responses source, `runtime_openai_chat` for a supported Chat Completions source,
+or a Mantle path only when a verified selector applies. Runtime uses the current model card's
+prefixed CRIS ID when required; Mantle uses the documented bare model ID.
 
 Report the assessment honestly: `strong_migrate` here means "low-risk, well-supported move", not "cheaper".
 
@@ -75,22 +87,14 @@ Report the assessment honestly: `strong_migrate` here means "low-risk, well-supp
 
 The gate differs by family (see `shared/openai-on-bedrock.md` § Regional Availability):
 
-**GPT-5.6 Sol / Terra / Luna:** rarely blocked. If the target region is in the mantle in-region matrix, either
-endpoint works. If not, the `bedrock-runtime` CRIS path (Geo `us.`/`in.`, Global `global.`) covers most commercial
-regions — offer it, stating the data-residency implication of cross-region routing (Geo stays within the geography;
-Global routes anywhere and is the cost-parity option). Only a workload that requires strictly in-region processing
-in a region outside the mantle matrix falls through to Tier 1.
-
-**GPT-5.5 / GPT-5.4:** hard gate. Mantle in-region only, no CRIS, no fallback. If the target region is not in the
-matrix:
-
-1. Prefer offering a **region change** to a supported region, if no data-residency constraint pins the workload.
-   This preserves the zero-behavior-delta benefit, which is the whole point of Tier 0.
-2. If the region is fixed, also offer **upgrading within the vendor to GPT-5.6** (which reaches the region via
-   CRIS) alongside the cross-family option — a generation change, but same vendor and prompt idioms.
-3. Otherwise fall through to Tier 1 and say why explicitly — a region constraint, not a model judgment.
-
-Record the outcome in `regional_warnings[]`.
+Check the selected model's current Endpoint availability, Programmatic Access, API
+compatibility, and Regional tables. Runtime is the default when the model and source API are
+supported. If Runtime is CRIS-only, choose the permitted geographic or Global profile and
+state its routing and residency implications. Select Mantle for strict single-Region processing
+only when its in-Region form is documented for that model and Region. If neither endpoint
+supports the required model/API/Region combination, offer a Region change, a same-vendor model
+change, and a cross-family option; do not silently substitute one. Record the outcome in
+`regional_warnings[]`.
 
 ### Tier 1 — Source model is not on Bedrock (present two options, do not pre-pick)
 
@@ -249,10 +253,10 @@ rather than dismissing it. For a long-context (>272K) workload the gap is much w
 
 | OpenAI Feature                             | Bedrock Equivalent                                          | Notes                                                                                                |
 | ------------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| OpenAI SDK (direct)                        | Same model on mantle Responses API                          | Base URL + credential + model ID change; see `shared/openai-on-bedrock.md` for the `/openai/v1` path |
-| Responses API                              | Mantle Responses API                                        | Closest to a drop-in; still verify the path and model ID                                             |
-| Chat Completions                           | Reshape to Responses                                        | Unverified for GPT-5.x — probe before committing                                                     |
-| Function calling                           | Supported on GPT-5.x via mantle; Claude tools via Converse  | Same-model keeps tool semantics identical                                                            |
+| OpenAI SDK (direct)                        | Same model on Runtime OpenAI API                          | Preserve Responses or Chat shape when the model supports it; use `/openai/v1`                      |
+| Responses API                              | Runtime Responses API by default                          | Stored state works on Runtime; Mantle is for a verified selector                                   |
+| Chat Completions                           | Runtime Chat Completions by default                       | Preserve the source surface when the model/API table supports it                                    |
+| Function calling                           | Client-side tools on Runtime or Mantle                    | General server-side/preconfigured tools, including Web Search, can select Mantle                    |
 | Reasoning effort                           | `reasoning={"effort": ...}` on mantle                       | `none` / `low` / `medium` / `high` / `xhigh` / `max`                                                 |
 | Prompt caching                             | GPT-5.6 only (90% off cached input)                         | Not listed for GPT-5.5 / 5.4; Claude has its own caching                                             |
 | Streaming                                  | Supported                                                   | Verify per surface                                                                                   |
@@ -271,17 +275,20 @@ rather than dismissing it. For a long-context (>272K) workload the gap is much w
 
 ## Common Migration Paths
 
-### Same model on Bedrock (Tier 0) — smallest possible change
+### Same model on Bedrock Runtime (Tier 0) — default smallest change
 
-The application keeps the OpenAI SDK and the same model. Changes are limited to:
+For a model/API combination supported on Runtime, the application keeps the OpenAI SDK, its
+Responses or Chat Completions call shape, and the same logical model. Changes are limited to:
 
-1. Base URL → `https://bedrock-mantle.{region}.api.aws/openai/v1` (note the `openai/v1` segment)
-2. Credentials → Bedrock API key or the auto-refreshing `BedrockOpenAI` token provider, **not** an OpenAI key
-3. Model ID → the `openai.gpt-*` form
-4. IAM → `bedrock-mantle:*` actions, e.g. via `AmazonBedrockMantleInferenceAccess`
+1. Base URL → `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`
+2. Credentials → an auto-refreshing short-lived Bedrock token provider, **not** an OpenAI key
+3. Model ID → the current model card's Runtime or CRIS inference-profile form
+4. IAM → `bedrock:InvokeModel` and streaming action when needed, scoped to the selected target
 
-Full snippet and prerequisites in `shared/openai-on-bedrock.md`. No prompt changes, no eval regression expected —
-but still run the eval harness to confirm, because infrastructure and tokenizer-adjacent behavior can differ.
+Use the matching `runtime_openai_responses` or `runtime_openai_chat` path. Mantle keeps the
+same source API shape but changes the host, bare model-ID form, and IAM action family; choose it
+only for a verified selector. Always run the eval harness because endpoint configuration,
+supported parameters, and model versions can still differ.
 
 ### Assistants API → migration decision tree
 
@@ -308,12 +315,12 @@ and closed to new customers as of July 30, 2026.
 
 ### When to prefer a Bedrock-native model over the mantle GPT path
 
-Choose Claude / Nova via Converse when the workload needs Knowledge Bases, intelligent prompt routing, structured
-outputs, or application inference profiles — none of which the GPT path offers. Note what no longer forces a family
-switch for GPT-5.6: its `bedrock-runtime` CRIS path provides cross-region inference, invocation logs, and
-Guardrails (Converse API only; prompt caching is Responses-only on runtime). For GPT-5.5 / GPT-5.4, Guardrails,
-logging, and cross-region reach still require a different model. The mantle GPT path is the smallest change; the
-Bedrock-native path remains the most feature-complete.
+Choose a Bedrock-native model or Runtime Converse/Invoke only when the workload requires a
+feature unavailable through the selected OpenAI-compatible API. Runtime Responses/Chat support,
+Guardrails, logging, caching, structured outputs, and inference-profile support are model- and
+API-specific. Check the current model card for GPT-5.4, GPT-5.5, GPT-5.6, or any newer model;
+do not infer capability from a family-wide rule. Keep Runtime OpenAI APIs as the default when
+they satisfy the requirement, and use Mantle only for a verified selector.
 
 ### High-spend tiering
 
@@ -330,12 +337,14 @@ complex (10%) → Claude Sonnet 5 / GPT-5.6 Sol. Mixing families across tiers is
 **Medium (1–10M tokens/day):** present the cost comparison. For Tier 0 the comparison is against the cross-family
 alternative, not against the source provider.
 
-**High (10–100M tokens/day):** consider tiering. Enable GPT-5.6 prompt caching first — cached input is both 90%
-cheaper and exempt from the input-TPM quota, which relieves the binding constraint on mantle.
+**High (10–100M tokens/day):** consider tiering. Check the selected Runtime model's combined
+token quota and any model-specific RPM quota. For Mantle, check separate input/output TPM,
+then use token-aware admission, bounded concurrency and queues, and caching only where the
+selected model/API documents it.
 
-**Very high (>100M tokens/day):** tiering plus caching. Check TPM headroom per model per region early; there is no
-RPM quota and no `bedrock-runtime` fallback for GPT models, so quota increases are the scaling lever. See
-`shared/ai-migration-guardrails.md`.
+**Very high (>100M tokens/day):** tiering plus the same endpoint-specific controls. Honor
+`Retry-After`, use exponential backoff with jitter under a finite retry budget, and reduce
+load when capacity errors persist. Request quota increases early; approval is not automatic.
 
 ---
 

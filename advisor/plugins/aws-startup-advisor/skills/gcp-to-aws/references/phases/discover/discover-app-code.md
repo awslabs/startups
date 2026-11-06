@@ -511,6 +511,18 @@ Build the **capabilities summary** — a flat boolean map of which AI capabiliti
 
 A capability is `true` only if there is evidence from code analysis that it is actively used.
 
+### Endpoint-sensitive API detection
+
+Record `integration.source_api_surface` as one of `openai_responses`, `openai_chat`,
+`anthropic_messages`, `converse`, `invoke`, or `unknown`, based on the actual call site. Record
+`integration.endpoint_sensitive_features` as an array containing only detected values from:
+`background_inference`, `server_side_tools`, `web_search`, `projects`, `workspaces`,
+`required_model_api`, `strict_in_region`. Detect `background=true`, preconfigured/server-side
+tool declarations (including Web Search), explicit project/workspace headers or IDs, and code
+or configuration that pins a model/API or single processing Region. Ordinary client-side tool
+definitions and `store`/`previous_response_id` are not endpoint-sensitive requirements.
+Preserve call-site evidence; use an empty array when none are detected.
+
 ---
 
 ## Step 6.5: Extract Tool Manifest (Only if `is_agentic: true`)

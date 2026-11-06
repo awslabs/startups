@@ -186,7 +186,18 @@ Cognitive SDK), `sdk_version`, `frameworks[]` (LangChain/LlamaIndex/Semantic Ker
 `languages[]`, `pattern` (`direct_sdk`/`framework`/`rest_api`/`mixed`), `gateway_type`
 (`llm_router` for LiteLLM/OpenRouter/Portkey/Helicone — including an `azure/<deployment>` litellm
 model string; `api_gateway`; `voice_platform`; `framework`; `direct`; or null — do NOT read secret
-values, only key presence), and the boolean `capabilities_summary` map. `## Step 6.5` tool manifest
+values, only key presence), and the boolean `capabilities_summary` map.
+
+Also record the source API and endpoint-sensitive features. Set
+`integration.source_api_surface` to `openai_responses`, `openai_chat`, `anthropic_messages`,
+`converse`, `invoke`, or `unknown` from the actual call site. Set
+`integration.endpoint_sensitive_features` to detected values from `background_inference`,
+`server_side_tools`, `web_search`, `projects`, `workspaces`, `required_model_api`, and
+`strict_in_region`. `background=true`, preconfigured/server-side tools including Web Search,
+project/workspace IDs, and explicit model/API or single-Region pins count. Ordinary client-side
+tools and stored Responses state do not. Use `[]` when none are detected.
+
+`## Step 6.5` tool manifest
 (only if agentic): per tool `name`, `file`, `line`, `transport` (`function`/`api`/`mcp`/`unknown`),
 `auth_hint` (`none`/`api_key`/`oauth`/`iam`/`unknown`), `used_by_agents[]`.
 

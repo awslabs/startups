@@ -45,29 +45,52 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 
 Check `preferences.json` → `ai_constraints.ai_framework.value` and `aws-design-ai.json` → `ai_architecture.code_migration.migration_path`:
 
-- `migration_path` = `"mantle"` → Generate Mantle setup (Step 1M) + setup (Step 3) + test harness (Step 2). Skip provider adapter (Step 1).
-- `migration_path` = `"gpt-oss"` → Generate provider adapter (Step 1) targeting the gpt-oss model on Bedrock via the Converse API + setup (Step 3) + test harness (Step 2). Use the Bedrock model ID from `aws-design-ai.json` → `ai_architecture.bedrock_models[].aws_model_id` (the gpt-oss model ID). Do NOT generate a Mantle script — gpt-oss uses the Converse API directly.
-- `"direct"` or absent → Generate provider adapter (Step 1) + setup (Step 3) + test harness (Step 2)
-- `"llm_router"`, `"api_gateway"`, `"voice_platform"`, or `"framework"` → Skip Step 1, generate gateway config (Step 3B) instead
+Normalize legacy absent/`direct`, `converse`, `gpt-oss`, and `mantle` once at this
+boundary. Reject every other unknown non-empty value. Then dispatch exactly:
 
-**Step 3F runs for ALL paths** (direct, mantle, gpt-oss, gateway, harness, strands) — generate `bedrock_monitoring.tf` regardless of migration path.
+| `migration_path` | Artifact lane |
+| ---------------- | ------------- |
+| `runtime_openai_responses` | Runtime OpenAI setup/code preserving `responses.create` |
+| `runtime_openai_chat` | Runtime OpenAI setup/code preserving `chat.completions.create` |
+| `runtime_messages` | Runtime Anthropic setup/code preserving `messages.create` |
+| `mantle_openai_responses` | Mantle OpenAI setup/code preserving Responses |
+| `mantle_openai_chat` | Mantle OpenAI setup/code preserving Chat Completions |
+| `mantle_messages` | Mantle Anthropic setup/code preserving Messages |
+| `runtime_converse` | Bedrock-native Converse adapter |
+| `runtime_invoke` | Bedrock-native Invoke adapter |
+
+Gateway and agentic additions still follow the existing framework rules. **Step 3F runs for
+ALL paths** and emits `bedrock_monitoring.tf`.
 
 **Determine language** (direct SDK users only): Read `ai-workload-profile.json` → `integration.languages` array. Use the first entry: `"python"` → `.py`, `"javascript"`/`"typescript"` → `.js`, `"go"` → `.go`, other/unknown → `.py`.
 
 ---
 
-## Step 1M: Generate Mantle Migration Script (OpenAI SDK via Mantle)
+## Step 1R: Generate Runtime-compatible client setup
+
+For `runtime_openai_responses` and `runtime_openai_chat`, generate source-SDK code with
+`https://bedrock-runtime.{region}.amazonaws.com/openai/v1`, an auto-refreshing short-lived
+Bedrock token, the selected prefixed Runtime/CRIS ID, and `bedrock:InvokeModel*` IAM. Preserve
+the selected Responses or Chat method and payload shape.
+
+For `runtime_messages`, generate source-SDK code with
+`https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1`, the same credential posture,
+the selected Runtime/CRIS ID, and Runtime IAM. Preserve `messages.create`. Do not also emit the
+Bedrock-native provider adapter for these lanes.
+
+## Step 1M: Generate Mantle Migration Script (source SDK via Mantle)
 
 Generate `ai-migration/migrate_to_mantle.sh` — a shell script that configures the OpenAI SDK to use Bedrock's Mantle endpoints.
 
 **Requirements:**
 
 - Dry-run by default (`--execute` flag to apply)
-- Print the environment variables to set: `OPENAI_BASE_URL=https://bedrock-mantle.{region}.api.aws/v1`, `OPENAI_API_KEY=<bedrock-api-key>`
-- Print the model string change: current model ID → Bedrock model ID from `aws-design-ai.json`
-- Include a quick verification call using the OpenAI SDK against the Mantle endpoint
+- Print the endpoint-appropriate base path. OpenAI paths use `https://bedrock-mantle.{region}.api.aws/openai/v1`; Anthropic Messages uses the currently documented Mantle Anthropic base path.
+- Preserve `responses.create`, `chat.completions.create`, or `messages.create` according to the exact `mantle_*` path.
+- Print the model string change to the documented bare Mantle model ID and use an auto-refreshing short-lived Bedrock token.
+- Generate `bedrock-mantle:*` IAM scoped as current public documentation permits; do not emit Runtime actions for this lane.
 - **Add a warning comment** about `max_tokens`: OpenAI SDK users migrating via Mantle carry over their existing `max_tokens` value unchanged. If the existing value is 4096 (OpenAI default), this reduces Bedrock concurrency by 5–8x on TPM quota. Instruct users to audit `max_tokens` before production and include the workload-type lookup table (see Step 1M max_tokens guidance above).
-- Note: "No code changes required. Your existing OpenAI SDK calls work unchanged."
+- Note: "The source SDK and selected API shape are preserved; endpoint, credential, model ID, and IAM change."
 - Reference [Mantle documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) for API key generation
 - **Set `max_tokens` default to 1024** in the generated migration script with an explanatory comment. Do NOT inherit the caller's existing `max_tokens` value (often 4096 from OpenAI defaults) — this reduces concurrency by 5–8x on Bedrock's TPM quota. Include a workload-type lookup table as a comment so users tune before production:
 
@@ -143,11 +166,11 @@ Generate `ai-migration/setup_bedrock.sh`.
 
 - Dry-run by default (`--execute` flag to run for real)
 - Step 1 — Request model access: List each model from `aws-design-ai.json` → `bedrock_models[].aws_model_id` and the embedding model
-- Step 2 — Create IAM role: Trust policy for the compute platform (Lambda, ECS, or EC2 based on `aws-design.json` if present). Bedrock policy: `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` scoped to `arn:aws:bedrock:*::foundation-model/*`
+- Step 2 — Create endpoint-specific IAM. Runtime-compatible and Converse/Invoke paths use `bedrock:InvokeModel` plus `bedrock:InvokeModelWithResponseStream` when streaming, scoped to the selected model or inference profile. Mantle paths use the documented `bedrock-mantle` actions and resources. Never combine an endpoint with the other endpoint's IAM family.
 - Compliance carry-through: if `preferences.json` → `design_constraints.compliance` is set and not `none`/`unknown` (full-flow Q2 / AI-only Q1.5), the script and its printed notes MUST reflect the design's Step 0.7 constraints — `AWS_REGION` from the compliance-constrained region (GovCloud for fedramp, EU for gdpr), `eu.` inference-profile model IDs for gdpr, and for hipaa a printed warning that Bedrock invocation logs retain original content (KMS-encrypt + restrict IAM on the log group before enabling)
 - Step 3 — Print required environment variables: `AWS_REGION`, `AI_PROVIDER=bedrock`, model IDs
 - Step 4 — Check quota: Query current TPM quota for the primary model via `aws service-quotas get-service-quota`. If `aws-design-ai.json` → `ai_architecture.quota_risk` is `"high"` or `"medium"`, print warning: "⚠️ Your token volume may exceed default Bedrock quotas. Request a quota increase via Service Quotas console (allow 1–5 business days)." Include the `aws service-quotas request-service-quota-increase` command template.
-- Step 5 — Verification: Test Bedrock access with a simple `converse` call using the primary model
+- Step 5 — Verification: invoke the exact selected API path with the exact model ID in the target account and Region; do not verify a Runtime-compatible path through Converse or substitute another model
 - If `$MIGRATION_DIR/terraform/` exists, print coordination note: "Ensure the IAM role is referenced in compute.tf task definitions"
 - Use region from `preferences.json` → `design_constraints.target_region`
 

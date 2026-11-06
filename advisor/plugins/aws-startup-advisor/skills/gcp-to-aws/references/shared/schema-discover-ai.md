@@ -82,6 +82,8 @@ Focused profile of AI/ML workloads including models, capabilities, integration p
     "languages": ["python"],
     "pattern": "direct_sdk",
     "gateway_type": "llm_router|api_gateway|voice_platform|framework|direct|null",
+    "source_api_surface": "openai_responses|openai_chat|anthropic_messages|converse|invoke|unknown",
+    "endpoint_sensitive_features": ["background_inference", "web_search"],
     "capabilities_summary": {
       "text_generation": true,
       "streaming": true,

@@ -45,7 +45,12 @@ Use the **Recommendation Impact** row for the selected answer from the category 
 }
 ```
 
-`ai_constraints` omitted when no AI artifacts. `startup_constraints` optional (Q27).
+`ai_constraints` omitted when no AI artifacts. When present it MUST include
+`ai_endpoint_requirements` as a wrapper object whose `value` is an array containing only
+`background_inference`, `server_side_tools`, `web_search`, `projects`, `workspaces`,
+`required_model_api`, or `strict_in_region`; `[]` means no endpoint-sensitive requirement was
+confirmed. Ordinary client-side tools and stored Responses state are excluded.
+`startup_constraints` optional (Q27).
 
 ---
 

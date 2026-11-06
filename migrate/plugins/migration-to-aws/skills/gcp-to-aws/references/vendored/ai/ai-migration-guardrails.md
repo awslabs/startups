@@ -34,9 +34,39 @@ AgentCore services have different regional footprints. Always validate via `get_
 
 ---
 
-## Bedrock Mantle Throughput Limits
+## Bedrock Endpoint and Throughput Guardrails
 
-Bedrock Mantle serves OpenAI-compatible and Anthropic-compatible APIs on Bedrock.
+Use `bedrock-runtime` for most new applications. Select `bedrock-mantle` only after current
+public documentation verifies a requirement for background inference, general server-side or
+preconfigured tools such as Web Search, customer-created Projects or Workspaces, a model/API
+combination available only on Mantle, or strict in-Region processing when Runtime is CRIS-only.
+API continuity, ordinary client-side tools, stored Responses state, and endpoint availability
+alone do not select Mantle.
+
+Before selection, check the current [endpoint comparison](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html),
+[Endpoint availability](https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html),
+[API compatibility](https://docs.aws.amazon.com/bedrock/latest/userguide/models-api-compatibility.html),
+the model card's Programmatic Access table, and Regional availability. Static model and Region
+tables are hints only.
+
+### Runtime throughput
+
+Runtime applies combined per-model token quotas and model-specific RPM quotas where applicable.
+Check Service Quotas for the selected model, inference profile, account, and Region. Do not
+assume every Runtime model has an RPM quota or that a quota-increase request will be approved.
+
+### Mantle throughput
+
+Mantle has no RPM quota. Where quotas are published, it uses separate per-model, per-Region
+input and output TPM quotas. No published per-account TPM value does not mean unlimited
+throughput; capacity controls and transient throttling can still apply. Use token-aware
+admission, bounded concurrency and request queues, honor `Retry-After`, and use exponential
+backoff with jitter under a finite retry budget. Reduce offered load when capacity errors
+persist instead of retrying indefinitely.
+
+See the public [Runtime quotas](https://docs.aws.amazon.com/bedrock/latest/userguide/quotas-runtime.html),
+[Mantle quotas](https://docs.aws.amazon.com/bedrock/latest/userguide/quotas-mantle.html), and
+[scaling best practices](https://docs.aws.amazon.com/bedrock/latest/userguide/scaling-throughput-best-practices.html).
 
 ### OpenAI proprietary models (GPT-5.6 / 5.5 / 5.4) — TPM only, no RPM
 
@@ -48,7 +78,11 @@ Inference on `bedrock-mantle` for these models is governed by **two per-model, p
 | Medium          | Medium     | Monitor 429s against **token** throughput, not request rate; enable prompt caching                 |
 | High            | High       | Enable prompt caching first (cached input is exempt from input TPM), then request a quota increase |
 
-**The `bedrock-runtime` fallback exists only for GPT-5.6.** GPT-5.5 and GPT-5.4 are `bedrock-mantle` only and in-region only — for them, "switch to `bedrock-runtime`" requires moving to a different model (Bedrock-native or `gpt-oss`), a model change with its own eval cost. GPT-5.6 Sol/Terra/Luna DO have a `bedrock-runtime` path via CRIS inference profiles (`us.`/`in.`/`global.` prefixed ids; the model cards recommend runtime for new applications) — a legitimate endpoint option with its own quota family, and on Global CRIS it is also the cost-parity option. Scaling levers on the mantle path, in order:
+**Runtime support is model-specific and changes over time.** Current GPT model cards can list
+Runtime CRIS paths for GPT-5.4, GPT-5.5, and GPT-5.6 as well as bare-ID Mantle paths. Never
+infer endpoint support from the model family or a dated table. Compare the model card's Endpoint
+availability, Programmatic Access, API compatibility, and Region data, then keep the selected
+endpoint, API, and model-ID form together. Scaling levers on a Mantle path include:
 
 1. Prompt caching (GPT-5.6 only) — 90% off cached input and exempt from the input-TPM quota
 2. Exponential backoff with a bounded retry count (`max_retries` on the OpenAI SDK)
@@ -78,7 +112,7 @@ Claude models on Mantle have an additional **output TPM cap** that differs by mo
 **Impact for migration decisions:**
 
 - For Claude migrations at medium/high volume: the 2M output TPM cap on Claude 4.7+ is the binding constraint
-- For OpenAI proprietary GPT targets: this Claude cap does not apply. Their mantle constraint is the per-model input/output TPM quota described above; for GPT-5.6 the `bedrock-runtime`/CRIS path is an available alternative (its own quota family), while GPT-5.5/5.4 have no runtime path
+- For proprietary GPT targets: check the current model card. Runtime CRIS and Mantle can expose different quota families, model-ID forms, API support, and residency behavior.
 - For `gpt-oss` targets: these do run on `bedrock-runtime`, so standard account TPM limits and the Converse-path mitigations apply
 - When output-heavy workloads (long JSON, tool outputs, multi-step reasoning) are detected, flag the relevant cap prominently; recommend `bedrock-runtime` for production **only** when the target model actually has a `bedrock-runtime` path
 

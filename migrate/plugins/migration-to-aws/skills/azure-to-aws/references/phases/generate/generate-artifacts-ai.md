@@ -27,30 +27,46 @@ Read `aws-design-ai.json → ai_architecture.code_migration.migration_path` and
 
 | `migration_path` / framework                                      | Emits (in addition to the always-on set)                                  |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `mantle_openai_responses`                                         | `ai-migration/migrate_to_mantle.sh` — **skip the provider adapter**       |
-| `direct` (or absent)                                              | `ai-migration/provider_adapter.{py,js,go}`                                |
-| `gpt-oss`                                                         | `ai-migration/provider_adapter.{py,js,go}` targeting gpt-oss via Converse |
+| `runtime_openai_responses`                                        | Runtime OpenAI setup/code preserving `responses.create`                   |
+| `runtime_openai_chat`                                             | Runtime OpenAI setup/code preserving `chat.completions.create`            |
+| `runtime_messages`                                                | Runtime Anthropic setup/code preserving `messages.create`                 |
+| `mantle_openai_responses` / `mantle_openai_chat` / `mantle_messages` | endpoint-specific Mantle setup/code preserving the source API          |
+| `runtime_converse` / `runtime_invoke`                             | `ai-migration/provider_adapter.{py,js,go}` for the exact native API       |
 | gateway (`llm_router`/`api_gateway`/`voice_platform`/`framework`) | `ai-migration/gateway_config.{yaml,py,json}` — skip the adapter           |
 | agentic `migration_approach == harness`                           | `ai-migration/harness.json`, `ai-migration/deploy_harness.sh`             |
 | agentic `migration_approach == strands`                           | `ai-migration/strands_agents.py`, `ai-migration/deploy_strands.sh`        |
 | eval opted in                                                     | `ai-migration/eval-prompts.jsonl`, `ai-migration/run-evaluation.sh`       |
 
+Normalize legacy absent/`direct`, `converse`, `gpt-oss`, and `mantle` once at this boundary;
+reject every other unknown non-empty value. Runtime is the default. A Mantle lane requires a
+verified endpoint requirement from the design.
+
 **Always emit (every path):** `ai-migration/setup_bedrock.sh`, `ai-migration/test_comparison.py`
 (always Python), `ai-migration/bedrock_monitoring.tf`.
 
-> **Mantle is the PRIMARY path for Azure.** Azure OpenAI apps use the OpenAI SDK, so a same-model
-> move keeps the SDK and changes only base URL, credential, model ID, and IAM — `migrate_to_mantle.sh`,
-> not a rewritten adapter. The `direct` adapter path is the exception (cross-family swap, or a
-> Converse feature the mantle models cannot serve), not the default.
+> **Runtime is the default path for Azure OpenAI and Anthropic SDK migrations.** Preserve the
+> detected Responses, Chat Completions, or Messages API when the current model/API/Region
+> supports it. Mantle is selected only for a verified endpoint requirement.
 
-## Step 1M: `migrate_to_mantle.sh` (mantle path)
+## Step 1R: Runtime-compatible source SDK paths
 
-Shell script, **dry-run by default** with an `--execute` flag. Sets
-`OPENAI_BASE_URL=https://bedrock-mantle.{region}.api.aws/openai/v1` (the `/openai/v1` segment is
-load-bearing — bare `/v1` 404s), a Bedrock API key / token provider (NOT an OpenAI key), the
-`openai.gpt-*` model ID, and IAM needing `bedrock-mantle:*` (not `bedrock:InvokeModel`). Per-workload
-`MAX_TOKENS` from a lookup table, default `1024`. No prompt changes when the source already uses
-`responses.create`; a Chat Completions source needs a reshape (flag it in the script comments).
+- `runtime_openai_responses` and `runtime_openai_chat`: use
+  `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`, an auto-refreshing short-lived
+  Bedrock token, the selected prefixed Runtime/CRIS ID, and `bedrock:InvokeModel*` IAM.
+- `runtime_messages`: use
+  `https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1` with the same credential and IAM
+  posture.
+- Preserve the exact source method and payload. Do not reshape Chat to Responses or Messages to
+  Converse merely because the endpoint changed.
+
+## Step 1M: Mantle-compatible source SDK paths
+
+Shell/code setup, **dry-run by default** with an `--execute` flag. OpenAI lanes use
+`OPENAI_BASE_URL=https://bedrock-mantle.{region}.api.aws/openai/v1`; Messages uses the current
+public Mantle Anthropic base path. Use a short-lived Bedrock token provider, the documented bare
+model ID, and `bedrock-mantle:*` IAM. Preserve the exact Responses, Chat Completions, or Messages
+method selected by `migration_path`. Per-workload `MAX_TOKENS` comes from a lookup table,
+default `1024`.
 
 ## Step 1: `provider_adapter.{py,js,go}` (direct / gpt-oss path)
 
@@ -68,7 +84,10 @@ diffs outputs, so the user validates behavior before cutover.
 
 ## Step 3: `setup_bedrock.sh`
 
-Enables the chosen Bedrock model(s), sets up IAM, and (mantle path) the Bedrock API key.
+Enables the chosen model(s), creates endpoint-specific IAM, and emits only the credentials and
+base path required by the exact migration path. Runtime uses `bedrock:InvokeModel*`; Mantle uses
+`bedrock-mantle:*`. Verification invokes the exact selected API and model ID in the target
+account and Region.
 
 ## Step 3B: `gateway_config.{yaml,py,json}` (gateway users)
 
@@ -133,12 +152,11 @@ is AWS-only and ports from gcp unchanged.
 ## Step: Self-Check
 
 - [ ] `AI_PROVIDER` default is `azure_openai` everywhere (adapter flag + rollback default).
-- [ ] The mantle path emitted `migrate_to_mantle.sh` and NO provider adapter; the direct/gpt-oss
-      path emitted the adapter and NO mantle script.
+- [ ] Every exact path emitted its matching source-SDK or Bedrock-native artifact lane.
 - [ ] `bedrock_monitoring.tf` present on every path; budget is a computed integer ≥ 10.
 - [ ] No secret VALUE in any emitted file; credentials are env-var references.
-- [ ] No proprietary `openai.gpt-*` model ID paired with a Converse/`bedrock-runtime` path
-      (mantle-only).
+- [ ] Endpoint host, base path, credential method, IAM family, and model-ID form match
+      `migration_path`; GPT-5.4/GPT-5.5 Runtime CRIS combinations are allowed when current docs verify them.
 - [ ] Plugin attribution strings say "Azure-to-AWS".
 - [ ] `generation-ai.json` validates; `rollback_plan.mechanism == "feature_flag"`.
 
