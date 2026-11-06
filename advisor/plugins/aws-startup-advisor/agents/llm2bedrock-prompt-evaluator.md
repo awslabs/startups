@@ -39,7 +39,14 @@ Read from prompt context (forwarded from llm2bedrock-code-analyzer, llm2bedrock-
 
 - **`<GOLDEN_DATASET_PATH>`** — `<repo>/.saws-migrate/golden-dataset/prompts.jsonl` (from T2-2). May be empty if T2-2 took the abort / paste / vision-no-images / embeddings path.
 - **`<TEMPLATE_PATH>`** — `<repo>/.saws-migrate/golden-dataset/templates/prompt_template.txt` (from T2-2).
-- **`<TARGET_MODEL_ID>`** — Bedrock target model ID from the migration plan, validated by llm2bedrock-code-analyzer §10. Substitute it in every Bedrock call below. **It also selects the API path:** a bare `openai.gpt-5*` id (excluding `-oss`) is mantle-served and must use the Responses client in §6a; a `us.`/`in.`/`global.`-prefixed `openai.gpt-5.6-*` CRIS id is a `bedrock-runtime` target and uses `boto3.converse` like any other profile; everything else uses `boto3.converse`. See the table at the top of §6.
+- **`<TARGET_MODEL_ID>`** — Bedrock target model ID from the migration plan, validated by
+  llm2bedrock-code-analyzer §10. Substitute it in every Bedrock call below.
+- **`<BEDROCK_API_PATH>`** — the exact `Bedrock API path:` value. It selects every target
+  connectivity, vision, same-model, golden-evaluation, parsing, throttling, and quota path.
+  Supported values are `runtime_openai_responses`, `runtime_openai_chat`, `runtime_messages`,
+  `mantle_openai_responses`, `mantle_openai_chat`, `mantle_messages`, `runtime_converse`, and
+  `runtime_invoke`. Do not infer the endpoint from `<TARGET_MODEL_ID>` and do not fall through
+  to Converse for an unknown value; emit a blocked result naming the unsupported path.
 - **`<REGION>`** — AWS region for Bedrock (the `AWS region:` line in your context).
 - **From `llm2bedrock-code-analyzer` (`AiAnalysisData`)** — key fields:
   - `source_provider` — `openai` / `anthropic` / `google` / `cohere` / `custom`. Drives §9 baseline gating. (Vertex AI customers are emitted as `google` here; the analyzer's `errors` field carries the `vertex AI auth detected` signal that gates baseline collection upstream — by the time you reach §9, `source_baseline_available` already reflects that.)
@@ -124,27 +131,31 @@ When reporting results, clearly separate which layers passed / failed / skipped.
 
 # 6. Setup + Bedrock connectivity check
 
-Create the eval results directory and verify Bedrock connectivity against the
-target model using the SAME API path the evaluation will use.
+Create the eval results directory and verify Bedrock connectivity against the target model
+through `<BEDROCK_API_PATH>`. Use this exact dispatch for the connectivity check, §8 same-model
+loop, §9.5 vision check, and §10 golden loop:
 
-**First, pick the API path from `<TARGET_MODEL_ID>` — this decides every Bedrock
-call in §6, §9.5 and §10:**
+| Exact path | Client/call | Output extraction |
+| --- | --- | --- |
+| `runtime_openai_responses` | `OpenAI(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1", api_key=<refreshing provider>).responses.create(input=...)` | `response.output_text` |
+| `runtime_openai_chat` | same Runtime OpenAI client, `.chat.completions.create(messages=...)` | `response.choices[0].message.content` |
+| `runtime_messages` | `Anthropic(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)` | `response.content[0].text` |
+| `mantle_openai_responses` | `OpenAI(base_url="https://bedrock-mantle.<REGION>.api.aws/openai/v1", api_key=<refreshing provider>).responses.create(input=...)` | `response.output_text` |
+| `mantle_openai_chat` | same Mantle OpenAI client, `.chat.completions.create(messages=...)` | `response.choices[0].message.content` |
+| `mantle_messages` | `Anthropic(base_url="https://bedrock-mantle.<REGION>.api.aws/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)` | `response.content[0].text` |
+| `runtime_converse` | `boto3.client("bedrock-runtime").converse(messages=...)` | `response["output"]["message"]["content"][0]["text"]` |
+| `runtime_invoke` | `boto3.client("bedrock-runtime").invoke_model(body=...)` | parse the selected model family's JSON response |
 
-| `<TARGET_MODEL_ID>` matches                       | API path         | Connectivity | Vision smoke | Golden eval              |
-| ------------------------------------------------- | ---------------- | ------------ | ------------ | ------------------------ |
-| bare `openai.gpt-5*` (not `-oss`)                 | Mantle Responses | §6a          | §9.5a        | §8 loop (same-model)     |
-| `us.`/`in.`/`global.` + `openai.gpt-5.6-*` (CRIS) | `boto3.converse` | §6           | §9.5         | §8 loop (same-model)     |
-| anything else (Claude, Nova, `openai.gpt-oss-*`)  | `boto3.converse` | §6           | §9.5         | §10, or §8 if same-model |
+The refreshing provider is `lambda: provide_token(region=region)` from
+`aws_bedrock_token_generator`. Pass the exact `<TARGET_MODEL_ID>` to every call. Preserve the
+selected source-compatible request shape: Responses uses `input`, Chat Completions uses
+`messages`, and Messages uses Anthropic `messages`. Only Converse and Invoke use Bedrock-native
+payload shapes. Use the same path-specific IAM interpretation as preflight: Runtime paths need
+`bedrock:InvokeModel*`; Mantle paths need the documented `bedrock-mantle` actions. A 429 is
+proof of access and enters the bounded backoff/partial flow regardless of path.
 
-The proprietary OpenAI GPT models are served ONLY on the `bedrock-mantle`
-endpoint. Calling `boto3.converse` against one fails, so running the Converse
-check below for a mantle target would abort this agent before it ever reached
-§8's same-model short-circuit. Route those to §6a instead.
-
-This choice is made once and holds for every Bedrock call in the run. It is
-independent of `same_model_family`: the short-circuit decides whether to _score_,
-while this table decides _how to call_. A same-model Anthropic run still uses
-Converse, and a same-model OpenAI run still needs its vision smoke test.
+The `runtime_converse` connectivity command is shown below. For every other path, translate only
+the call and extraction according to the table; do not run this Converse snippet as a fallback.
 
 ```bash
 mkdir -p <repo>/.saws-migrate/eval-results
@@ -185,10 +196,12 @@ Interpret the result:
   `bedrock_provider_available` from the orchestrator context (it is a
   rewrite-strategy flag, not an account-capability flag).
 
-# 6a. Mantle connectivity check (proprietary OpenAI GPT targets)
+# 6a. Compatible-API connectivity checks
 
-Use this INSTEAD of §6 when `<TARGET_MODEL_ID>` matches `openai.gpt-5*` (excluding
-`-oss`). Same purpose, different endpoint and SDK.
+Use the matching compatible-API row from §6 instead of the Converse command whenever
+`<BEDROCK_API_PATH>` is one of the six OpenAI/Anthropic compatible paths. The following
+Responses example illustrates `mantle_openai_responses`; switch host, SDK method, request shape,
+and output extraction exactly as the table specifies for the other five paths.
 
 ```bash
 mkdir -p <repo>/.saws-migrate/eval-results
@@ -253,7 +266,9 @@ If `same_model_family: true` — either Anthropic 1P → Bedrock Claude, or Open
 
 - Skip rubric generation and scoring (no parameter-surface drift to score against).
 - Just verify each prompt works on Bedrock (connectivity + response format): run each prompt, check for errors, verify response is non-empty.
-- **Use the API path §6 selected, not §10's script.** For an Anthropic 1P → Claude run that is `boto3.converse`. For an `openai.gpt-5*` run it is the Mantle Responses client from §6a — `client.responses.create(model='<TARGET_MODEL_ID>', input=<prompt>, max_output_tokens=<n>, store=False)`, reading `r.output_text`. §10's script is Converse-only and will fail against a mantle target; do not call it here.
+- **Use the exact API path selected in §6.** Responses and Chat paths preserve OpenAI request
+  and response shapes; Messages paths preserve Anthropic request and response shapes;
+  Converse/Invoke use their Bedrock-native shapes. Never infer this choice from the model ID.
 - Output pass / fail per prompt; count successes as `success_count`.
 - Compute `pass_rate = success_count / total_cases` (connectivity-only ratio) and write `failures = total_cases - success_count`.
 - In §14, set `live_source_baseline: false` (no live comparison ran) and add `notes` prefix `same_model_family: true — connectivity-only verification, no rubric scoring`. T2-6 reads that prefix to render the report banner with "connectivity verified" instead of "judge scored X/Y prompts". Set `source_baseline_quality: 'unknown'` (no live baseline ran).
@@ -364,7 +379,10 @@ If `special_patterns.vision == false`, SKIP this section.
 
 **This section runs for same-model migrations too** (both Anthropic 1P → Claude and OpenAI → the same GPT model). §8 short-circuits scoring, not image verification: it is the only gate that proves image input works before per-case image calls, so skipping it would let a vision migration pass without ever sending an image.
 
-**Pick the API path exactly as §6 did.** The script below uses `boto3.converse` and is valid for Converse targets. For a mantle-only `openai.gpt-5*` target use §9.5a instead — the GPT-5.x model cards list image input as supported, but it goes through the Responses API, not Converse.
+**Use `<BEDROCK_API_PATH>` exactly as §6 did.** The script below illustrates
+`runtime_converse`. For OpenAI Responses, OpenAI Chat, Anthropic Messages, Mantle, or Invoke,
+use the matching client/content shape from §6. Do not infer a vision endpoint from the model ID;
+if the selected API does not support the source image shape, record that path-specific failure.
 
 Otherwise, run a one-shot Bedrock call against a public Wikipedia image to prove the SDK accepts image input before §10 attempts it on every golden prompt. If the public CDN isn't reachable, the smoke is INCONCLUSIVE — do NOT attempt an inline-fixture fallback (tiny synthetic JPEGs trip Claude's minimum-dimension validators and produce false `VISION_FAIL` even when the SDK is fine):
 
@@ -404,9 +422,11 @@ Outcomes:
 - **`VISION_INFRA_SKIPPED`** — image download failed (DNS / proxy / air-gapped machine). Bedrock vision was NOT exercised; the test is inconclusive at this layer. Add to `notes`: `vision_smoke_skipped: CDN unreachable — Bedrock vision SDK path not exercised at smoke layer`. Proceed to §10 — golden cases carry their own images from T2-2, which will exercise the SDK directly.
 - **`VISION_FAIL`** — Bedrock rejected the image (`ValidationException`, `AccessDeniedException`, etc.). Surface the exact error in your result file's `notes`, STOP — golden vision eval will fail the same way. (If the failure is an `AccessDeniedException` on model access, route it through `{ blocked: { reason: 'model_access', detail: ... } }` per §6.)
 
-# 9.5a Mantle vision smoke test (proprietary OpenAI GPT targets)
+# 9.5a OpenAI Responses vision example
 
-Use this INSTEAD of §9.5 when `<TARGET_MODEL_ID>` matches `openai.gpt-5*` (excluding `-oss`) AND `special_patterns.vision == true`. Same purpose and same three outcomes; the image travels as a base64 data URL on the Responses API rather than as Converse image bytes.
+Use this shape only when `<BEDROCK_API_PATH>` is exactly `runtime_openai_responses` or
+`mantle_openai_responses`; select the endpoint host from §6. Chat and Messages paths keep their
+own documented image request shapes rather than being silently converted to Responses.
 
 ```bash
 AWS_REGION=<REGION> <prepend AWS_PROFILE=<profile> when your context has an `AWS profile` line> uv run --project <scriptsDir> python - <<'PY'
@@ -452,11 +472,11 @@ Outcomes are the same as §9.5: `VISION_OK` → proceed; `VISION_INFRA_SKIPPED` 
 
 # 10. Run golden prompt evaluation
 
-> **Converse-only.** The script below calls `boto3.converse` and is valid only for
-> the API path §6 selected. A `openai.gpt-5*` target never reaches this section —
-> §8's same-model short-circuit fires first and verifies prompts through the Mantle
-> Responses client from §6a. If you somehow arrive here with a mantle target,
-> stop and report the contradiction rather than running a call that cannot work.
+The script below is the `runtime_converse` implementation. For every other
+`<BEDROCK_API_PATH>`, keep the same dataset merge, bounded retry, partial-resume, exact model ID,
+and result-recording logic, but replace the invocation and output extraction with the exact row
+from §6. Responses uses `input`; Chat Completions and Messages use `messages`; `runtime_invoke`
+uses the selected model family's native body. Do not use Converse as a fallback for another path.
 
 For each prompt in the golden dataset, run the evaluation via `python` stdin (avoids the brittle nested-heredoc + escaped-quote pattern that breaks on any literal `'` inside the script):
 

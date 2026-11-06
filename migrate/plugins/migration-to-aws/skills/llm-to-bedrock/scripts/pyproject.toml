@@ -11,6 +11,7 @@ dependencies = [
     # these, probe_mantle_model cannot run and preflight cannot verify
     # endpoint/model/IAM access for any openai.gpt-5* target.
     "openai>=2.45.0,<3",
+    "anthropic>=0.75,<1",
     "aws-bedrock-token-generator>=1,<2",
 ]
 

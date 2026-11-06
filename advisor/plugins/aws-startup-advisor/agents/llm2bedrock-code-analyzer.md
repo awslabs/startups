@@ -32,6 +32,8 @@ Read from the context block prepended to this prompt:
 - **Migration plan dir** — the `Migration plan dir:` line. Used by §6 (read plan) and §10 (validate target model IDs).
 - **AWS region** — the `AWS region:` line. Used for Bedrock validation in §10.
 - **AWS profile** — the `AWS profile` line, when present. Pass it to the resolve-bedrock-model-id skill and add `--profile` to any aws CLI call you run; omit when absent.
+- **Bedrock API path** — the exact `Bedrock API path:` line. This is authoritative for
+  endpoint and request-surface selection; never infer it from the model ID.
 - **Model mapping** — the `Target Bedrock model(s):` line (and the `Resolved target model id:` line, if present), plus the model-mapping artifacts in the plan directory. Drives §7 framework detection and §10 ID validation.
 
 # 4. Helper references to Read
@@ -244,7 +246,13 @@ If `source_provider ∈ {openai, google}` AND `same_model_family == false`, scan
 
 For any other source_provider (`anthropic`, `cohere`, `custom`) OR `same_model_family == true`, set `behavior_deltas: []` and skip the rest of this section.
 
-**Exception — OpenAI same-model on mantle.** When `source_provider == openai` AND `same_model_family == true` (every target is a proprietary `openai.gpt-5*` model), do NOT emit `behavior_deltas: []` wholesale. The model is unchanged, so the parameter-surface deltas (temperature range, penalties, stop sequences) genuinely do not apply — but the **API surface** can still change. Read only the "Same-model (mantle) deltas" section of the reference's `openai-to-bedrock.md` and emit those: Chat Completions → Responses, reasoning items round-tripping, endpoint path and credential, and prompt-caching availability. Skipping these would leave a `chat.completions.create` call pointed at a model that does not verifiably accept it.
+If `source_provider == openai` AND `same_model_family == true`, select API-surface deltas from
+`Bedrock API path:` rather than from the model ID. For `runtime_openai_chat` and
+`mantle_openai_chat`, Chat Completions is preserved and no Chat-to-Responses delta applies. For
+`runtime_openai_responses` and `mantle_openai_responses`, emit the API-surface deltas from the
+reference that apply to a source surface change. For all other selected paths, use only deltas
+that apply to that exact target surface. Never label a Runtime path as Mantle merely because the
+model ID contains `openai.gpt-5`.
 
 1. Read the `behavior-delta-detection` reference at the absolute path given in your
    context block's `behavior-delta-detection reference:` line. Call that file's directory

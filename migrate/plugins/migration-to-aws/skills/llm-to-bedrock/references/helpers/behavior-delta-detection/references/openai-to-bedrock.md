@@ -10,16 +10,24 @@ In the `detect_grep` recipes below, `<REPO>` is the repository path supplied in 
 
 ---
 
-## Same-model (mantle) deltas
+## Same-model OpenAI endpoint/API deltas
 
-**Read this section INSTEAD of the parameter-surface sections below when the resolved target is a proprietary GPT model on `bedrock-mantle`** (`openai.gpt-5.6-sol` / `-terra` / `-luna`, `openai.gpt-5.5`, `openai.gpt-5.4`). The model is unchanged, so temperature ranges, penalty parameters, and stop-sequence limits are unchanged — do not raise those as deltas. The deltas here are about the API surface and the endpoint, not about model behavior.
+Read this section when the resolved target keeps the same OpenAI model. The exact
+`migration_path`, not the bare ID, selects Runtime versus Mantle and Responses versus Chat
+Completions. The model is unchanged, so do not raise cross-family temperature, penalty, or stop
+sequence deltas.
 
 ## chat-completions-to-responses
 
 - `resolution_kind`: `ux_choice`
 - Source (OpenAI): `client.chat.completions.create(...)`, `messages=[...]`, reads `choices[0].message.content`
-- Target (mantle GPT): `client.responses.create(...)`, `input=...`, reads `output_text`
-- Chat Completions support is **unverified** for these models — every AWS sample uses Responses, and no GPT model card lists Chat Completions as supported. Treat a Chat Completions source as requiring a reshape, and probe the target account before committing to either surface.
+- Target Responses paths (`runtime_openai_responses` or `mantle_openai_responses`):
+  `client.responses.create(...)`, `input=...`, reads `output_text`
+- Target Chat paths (`runtime_openai_chat` or `mantle_openai_chat`): preserve
+  `client.chat.completions.create(...)`, `messages=[...]`, and
+  `choices[0].message.content`; no surface delta applies
+- Emit this delta only when the source is Chat Completions and the selected path is Responses.
+  Do not force a reshape for documented Runtime or Mantle Chat Completions.
 
 ### detect_grep
 
@@ -46,15 +54,20 @@ grep -rEn 'function_call_output|tool_call' <REPO> --include="*.py" --include="*.
 ## endpoint-path-and-credential
 
 - `resolution_kind`: `impl_path`
-- Base URL must be `https://bedrock-mantle.{region}.api.aws/openai/v1` — the `openai/v1` segment is required and differs from the `v1` path other mantle models use. A hardcoded `/v1` returns 404.
-- The API key must be a Bedrock API key or an auto-refreshing token provider, **not** an existing OpenAI key. A long-lived `OPENAI_API_KEY` read from the environment will fail authentication.
-- IAM must grant `bedrock-mantle:*` actions; `bedrock:InvokeModel` does not authorize these models.
+- Base URL is path-specific:
+  - Runtime OpenAI paths: `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`
+  - Mantle OpenAI paths: `https://bedrock-mantle.{region}.api.aws/openai/v1`
+- Credentials must come from a short-lived Bedrock token provider, not an OpenAI key. Use an
+  auto-refreshing provider for long-running processes.
+- Runtime paths need `bedrock:InvokeModel*`; Mantle paths need the documented
+  `bedrock-mantle` actions. Never choose IAM from the model ID alone.
 - Not user-visible — always `user_visible: false`, `resolution_kind: impl_path`. Apply without prompting.
 
 ## prompt-caching-availability
 
 - `resolution_kind`: `impl_path`
-- Prompt caching is listed as supported on GPT-5.6 only. Do not emit caching configuration for `openai.gpt-5.5` or `openai.gpt-5.4`.
+- Prompt caching depends on the exact model/API path verified in the target account. Do not
+  infer availability from a bare GPT tier or claim that support is permanent.
 
 ---
 

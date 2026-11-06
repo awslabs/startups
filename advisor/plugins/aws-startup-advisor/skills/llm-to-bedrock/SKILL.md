@@ -269,9 +269,16 @@ artifacts Phase B needs are actually present before Execute reads them.)
 Read `$MIGRATION_DIR/aws-design-ai.json` and extract:
 
 - `ai_architecture.bedrock_models[]` → array of `{source_model, aws_model_id, use_case}`
+- `ai_architecture.code_migration.migration_path` → `$BEDROCK_API_PATH`. Normalize an absent
+  value or legacy `"converse"` / `"gpt-oss"` to `runtime_converse`, and legacy `"mantle"`
+  to `mantle_openai_responses`. Otherwise accept only these exact values:
+  `runtime_openai_responses`, `runtime_openai_chat`, `runtime_messages`,
+  `mantle_openai_responses`, `mantle_openai_chat`, `mantle_messages`,
+  `runtime_converse`, or `runtime_invoke`. If a non-empty value is not in that list, STOP:
+  `Unknown Bedrock API path '<value>' — rerun Design with a supported migration_path.`
 - Collect all `aws_model_id` values into `$TARGET_MODELS` (array). Keep the `use_case` of each:
-  the preflight script probes each model by the right API automatically (Converse for chat,
-  InvokeModel for embeddings), but the evaluator's quality scoring only applies to chat models —
+  the preflight script probes embeddings with InvokeModel and all other targets through the
+  exact selected API path; the evaluator's quality scoring only applies to chat models —
   embedding targets get format/dimension validation only.
 
 Read `$MIGRATION_DIR/ai-workload-profile.json` and extract:
@@ -390,7 +397,7 @@ reliably visible, and even that must be materialized to the file for the baselin
 ### B4 — Bedrock preflight
 
 ```bash
-uv run --project $SCRIPTS python $SCRIPTS/preflight_bedrock.py --region $REGION --models <comma-separated $TARGET_MODELS> --dataset-size 200
+uv run --project $SCRIPTS python $SCRIPTS/preflight_bedrock.py --region $REGION --models <comma-separated $TARGET_MODELS> --api-path $BEDROCK_API_PATH --dataset-size 200
 ```
 
 (`--dataset-size 200` matches the golden-dataset cap, so the quota warning reflects the worst case. Prefix with `AWS_PROFILE=$AWS_PROFILE_CHOICE` if B2 chose a non-default profile.)
@@ -442,6 +449,7 @@ Repository: <$REPO>
 AWS region: <$REGION>
 AWS profile (pass as --profile / AWS_PROFILE= inline on every aws/boto3 invocation): <$AWS_PROFILE_CHOICE — omit line if default>
 Target Bedrock model(s): <comma-joined $TARGET_MODELS, with any resolved overrides already applied>
+Bedrock API path: <$BEDROCK_API_PATH>
 Migration plan dir: <$MIGRATION_DIR>
 Resolved target model id: <override for the primary chat model — omit if none>
 Scripts directory (pinned uv toolchain): <$SCRIPTS>
@@ -492,6 +500,7 @@ Bedrock at their expense, capped at 200 cases.
   "repo_branch": "<git -C $REPO rev-parse --abbrev-ref HEAD>",
   "repo_dirty_sha256": "<sha256 of: git status --porcelain + git diff + git diff --cached, EACH with pathspecs -- . ':(exclude).saws-migrate' ':(exclude).migration' ':(exclude)MIGRATION_REPORT_*.md'; \"\" when all three are empty>",
   "target_models": [{"source_model": "...", "aws_model_id": "...", "use_case": "..."}],
+  "bedrock_api_path": "<$BEDROCK_API_PATH>",
   "resolved_model_overrides": {},
   "source_provider": "<from B1>",
   "source_baseline_available": <true|false from B3>,
@@ -539,7 +548,7 @@ uv run --project $SCRIPTS python $SCRIPTS/validate_result.py --check-run-context
 | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------- |
 | repo_root, migration_dir, region, aws_profile, aws_account, source_provider, assess_design_sha256, schema_version, plugin_version | everything                      | —         |
 | repo_head_sha / repo_branch / repo_dirty_sha256                                                                                   | everything                      | —         |
-| target_models / resolved_model_overrides                                                                                          | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
+| target_models / bedrock_api_path / resolved_model_overrides                                                                              | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
 | log_files / max_golden_cases                                                                                                      | everything                      | —         |
 | source_key_sha256 / source_baseline_available                                                                                     | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
 
@@ -613,17 +622,22 @@ Below, AskUserQuestion:
   invalidates ANALYSIS/EVAL and execution resumes at C1). Cap: 2 retries.
 - **Abort** → stop, no code touched.
 
-**Gate (a.5) — Rewrite strategy (from migration plan).** Read `migration_path` from
-`$MIGRATION_DIR/aws-design-ai.json` → `ai_architecture.code_migration.migration_path`.
-If the value **starts with** `"mantle"` (`"mantle"`, `"mantle_openai_responses"`), set
-`rewrite_strategy = "mantle"`. Otherwise (value is `"converse"`, `"gpt-oss"`, or the field is
-absent), set `rewrite_strategy = "converse"`.
-No user question needed — the decision was already made during the Assess/Design phase.
+**Gate (a.5) — Bedrock API path (from migration plan).** Re-read
+`ai_architecture.code_migration.migration_path` and apply the exact B1 normalization and
+validation. Dispatch only the normalized `$BEDROCK_API_PATH`; never infer an endpoint from a
+model ID and never use a catch-all `else` branch. The supported paths are:
 
-Match on the prefix, not on equality: Design writes the more specific
-`"mantle_openai_responses"` for a same-model OpenAI migration, and an equality check against
-`"mantle"` would silently route those runs down the Converse path — rewriting working
-same-model code into a boto3 Converse client against a model that has no Converse surface.
+- `runtime_openai_responses` → Runtime OpenAI Responses
+- `runtime_openai_chat` → Runtime OpenAI Chat Completions
+- `runtime_messages` → Runtime Anthropic Messages
+- `mantle_openai_responses` → Mantle OpenAI Responses
+- `mantle_openai_chat` → Mantle OpenAI Chat Completions
+- `mantle_messages` → Mantle Anthropic Messages
+- `runtime_converse` → Bedrock Runtime Converse
+- `runtime_invoke` → Bedrock Runtime InvokeModel
+
+An absent legacy value retains the previous Converse fallback. An unknown non-empty value stops
+before C5 with the named `Unknown Bedrock API path` error.
 
 **Gate (b) — Behavior-delta resolution.** For each `analysis.behavior_deltas[]` with
 `user_visible == true`, AskUserQuestion with the options from the `behavior-delta-detection`
@@ -646,20 +660,14 @@ C5's context block includes the `Confirmed behavior-delta decisions file` line a
 `Report date suffix` line (from run-context, NOT today's date on a resume). C6's context
 block lists all four phase-result file paths.
 
-When `rewrite_strategy == "mantle"`, C5's context block ALSO includes:
+C5 always receives `Bedrock API path: <$BEDROCK_API_PATH>` in the shared context block. It
+uses the exact matching lane and no endpoint-family fallback. For any Mantle path, also include:
 
-- `Rewrite strategy: mantle` (omit this line entirely for Converse — its absence is the
-  signal for the default Converse path)
 - `Mantle model map: <source-model> -> <bedrock-model-id>` — sourced from the plan's
   `ai_architecture.bedrock_models[]` entries (each `source_model` → `aws_model_id` pair).
-- `Mantle surface: responses` and `Mantle base path: /openai/v1` when any mapped
-  `aws_model_id` is a proprietary GPT model (`openai.gpt-5*`). These are served only on the
-  `/openai/v1` path via the Responses API — distinct from the `v1` path other mantle models
-  use — so the rewriter must not emit a `/v1` base URL or a Chat Completions call for them.
-  See `gcp-to-aws/references/shared/openai-on-bedrock.md`.
-- `Same model: true` when `bedrock_models[].model_change` is `false`. Signals the rewriter to
-  keep model parameters untouched and limit changes to the endpoint, credential, model id, and
-  (if the source used Chat Completions) the surface reshape.
+- `Same model: true` when `bedrock_models[].model_change` is `false`. This keeps model
+  parameters untouched; only endpoint, credentials, model ID, and an explicitly selected API
+  surface may change.
 
 ### C7 — Render summary
 

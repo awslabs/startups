@@ -34,6 +34,9 @@ Read accumulated state from prompt context (forwarded from every prior Track 2 p
 - **`<REGION>`** — AWS region for Bedrock (the `AWS region:` line in your context).
 - **AWS profile** — the `AWS profile` line, when present: prepend `AWS_PROFILE=<profile>` inline to the §6.1 pricing-script invocation and any other aws/boto3 command; omit when absent.
 - **`<scriptsDir>`** — the pinned-toolchain scripts directory, the `Scripts directory (pinned uv toolchain):` line in your context. Used to run `bedrock_pricing.py`.
+- **`<BEDROCK_API_PATH>`** — exact value from the `Bedrock API path:` context line. Use it
+  to label endpoint/API separately from routing option and pass it to IAM generation; never
+  infer Mantle versus Runtime from the model ID.
 - **From `llm2bedrock-code-analyzer` (`AiAnalysisData`)** — `source_provider`, `ai_framework`, `source_models`, `target_models` (`<source-model> -> <bedrock-model>` pairs), `coverage_level`, `use_case_type`, `errors`.
 - **From `llm2bedrock-log-ingestor` (`LogIngestionData`)** — `total_golden_cases`, `coverage_level`, `gaps`. Drives the Risk Assessment + Coverage sections.
 - **From `llm2bedrock-prompt-evaluator` (`EvalData` + `notes` prefixes)** — top-level fields:
@@ -129,7 +132,17 @@ The pricing script only covers Bedrock models. For the source provider (OpenAI, 
 | claude-3-5-sonnet (1P API) | 3.00           | 15.00           |
 | claude-3-haiku (1P API)    | 0.25           | 1.25            |
 
-**Same-model pair cost depends on the inference option — state it conditionally, never as a flat figure.** In-Region and Geo CRIS are priced at OpenAI's _data residency_ tier (1.10x standard), so those moves cost ~10% more — quote the increase plainly and carry the non-cost justification (commitments, governance, residency, prompt caching, no behaviour delta). **GPT-5.6 on Global CRIS is priced at the standard rate — cost parity** — applicable only when the workload has no data-residency constraint; when the plan's `migration_path` is `runtime_openai_cris` with a `global.` id, report parity, not a premium. GPT-5.5/5.4 have no CRIS, so the ~10% figure always applies to them. **If a pair's workload exceeds 272K context**, price the Bedrock side at the GPT-5.6 long-context tier — 2.0x input, 1.5x output per option — and show that line separately; GPT-5.5/5.4 have no long-context tier so their usable window is 272K.
+**Report endpoint and routing independently.** The selected API path says whether the endpoint
+is Bedrock Runtime or Mantle and whether the API is Responses, Chat Completions, Messages,
+Converse, or InvokeModel. A model ID prefix says which Runtime routing option was selected:
+In-Region, Geo CRIS, or Global CRIS. Do not call a Runtime CRIS target “Mantle,” do not describe
+a bare Mantle target as a CRIS route, and do not claim that any GPT model or API will remain
+exclusive to one endpoint.
+
+Same-model cost depends on the routing option. Use the exact result from `bedrock_pricing.py`:
+Geo routing can differ from Global routing, and incomplete IDs return unavailable rather than
+inheriting another tier's rate. Describe rates as current public rates, not permanent pricing or
+support guarantees.
 
 If the source model is not in this table (likely for any model released after the table's last update — check the provider's public pricing page if you know current rates), note it as a gap in the Risk Assessment section, label the figure "(estimated from `<similar model>`)", and estimate using the closest listed model's pricing.
 
@@ -211,17 +224,19 @@ Generate a least-privilege IAM policy scoped to the exact model ARNs selected du
 ```bash
 uv run --project <scriptsDir> python <scriptsDir>/iam_policy.py \
   --models <comma-separated target model ids> \
+  --api-path <BEDROCK_API_PATH> \
   --region <REGION> \
   --account-id <AWS account id from run-context> \
   --output <repo>/.saws-migrate/iam-policy.json
 ```
 
-The script handles the dual-ARN pattern: foundation-model ARNs for plain model IDs and inference-profile ARNs for geo-prefixed IDs (e.g. `us.anthropic.claude-sonnet-4-6`). The output is a ready-to-use IAM policy JSON file.
-
-**Mantle targets get different actions.** When any target is a proprietary OpenAI GPT model (`openai.gpt-5*`), the script also emits `bedrock-mantle:CreateInference` / `Get*` / `List*` scoped to `arn:aws:bedrock-mantle:<region>:<account>:project/*`, plus `bedrock-mantle:CallWithBearerToken` on `*` (AWS does not permit narrowing that one). `bedrock:InvokeModel` alone does **not** authorize these models. Two consequences to carry into the report:
-
-- For an all-mantle run there is no `BedrockInvokeModelScoped` statement, because those models have no foundation-model or inference-profile ARN to scope to. That absence is correct, not a generation failure.
-- Mantle authorizes at project granularity, so the policy cannot be scoped to specific model IDs. If the reader needs to restrict the model set, say so explicitly and point them at a service control policy.
+The script classifies IAM from `<BEDROCK_API_PATH>`, not from model-family inference. Runtime
+Responses, Chat Completions, Messages, Converse, and Invoke paths emit
+`bedrock:InvokeModel*` resources for the exact foundation model or inference profile. Mantle
+Responses, Chat, and Messages paths emit the project/bearer-token statements. For an all-Mantle
+run, absence of `BedrockInvokeModelScoped` is correct. Mantle authorizes at project granularity;
+if model restrictions are needed, state that separately. Never describe Runtime-compatible APIs
+as requiring Mantle IAM simply because their model ID contains `openai.gpt-5`.
 
 If the account ID is unavailable (run-context `aws_account` is empty), skip this step and note it in the Risk Assessment section as "IAM policy not generated — AWS account ID unavailable".
 

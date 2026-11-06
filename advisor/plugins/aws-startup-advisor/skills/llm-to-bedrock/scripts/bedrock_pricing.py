@@ -65,12 +65,19 @@ STATIC_FALLBACK = {
     #     price — cost PARITY, for workloads with no residency constraint
     # The GPT-5.6 family also has a LONG-CONTEXT (1M) tier at 2.0x input / 1.5x
     # output per option, NOT represented here — a >272K workload priced from this
-    # table is understated. GPT-5.5 and GPT-5.4: mantle-only, no CRIS, no 1M tier.
+    # table is understated. GPT-5.4/GPT-5.5 Runtime CRIS and mantle forms are
+    # represented separately because routing option changes the rate.
     "openai.gpt-5.6-sol":                           {"input_per_1k_usd": 0.0044, "output_per_1k_usd": 0.022},
     "openai.gpt-5.6-terra":                         {"input_per_1k_usd": 0.0022, "output_per_1k_usd": 0.0132},
     "openai.gpt-5.6-luna":                          {"input_per_1k_usd": 0.00022, "output_per_1k_usd": 0.00132},
     "openai.gpt-5.5":                               {"input_per_1k_usd": 0.0055, "output_per_1k_usd": 0.033},
     "openai.gpt-5.4":                               {"input_per_1k_usd": 0.00275, "output_per_1k_usd": 0.0165},
+    # GPT-5.4/GPT-5.5 Runtime CRIS forms. Geo routing uses the data-residency
+    # rate; Global routing uses the standard rate.
+    "us.openai.gpt-5.5":                            {"input_per_1k_usd": 0.0055, "output_per_1k_usd": 0.033},
+    "global.openai.gpt-5.5":                        {"input_per_1k_usd": 0.005, "output_per_1k_usd": 0.030},
+    "us.openai.gpt-5.4":                            {"input_per_1k_usd": 0.00275, "output_per_1k_usd": 0.0165},
+    "global.openai.gpt-5.4":                        {"input_per_1k_usd": 0.0025, "output_per_1k_usd": 0.015},
     # GPT-5.6 CRIS profile ids (bedrock-runtime). Geo = data-residency tier
     # (same as in-region); Global = standard-price parity.
     "us.openai.gpt-5.6-sol":                        {"input_per_1k_usd": 0.0044, "output_per_1k_usd": 0.022},

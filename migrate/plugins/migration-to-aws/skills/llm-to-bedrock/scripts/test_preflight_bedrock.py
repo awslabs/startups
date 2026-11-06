@@ -256,4 +256,68 @@ def test_mantle_deps_are_declared_in_pinned_env():
     import pathlib
     toml = (pathlib.Path(__file__).resolve().parent / "pyproject.toml").read_text()
     assert "openai>=2.45.0" in toml
+    assert "anthropic>=" in toml
     assert "aws-bedrock-token-generator" in toml
+
+
+def test_normalize_api_path_fails_closed_for_unknown_nonempty_value():
+    import pytest
+    assert p.normalize_api_path(None) is None
+    assert p.normalize_api_path("converse") == "runtime_converse"
+    with pytest.raises(ValueError, match="unknown Bedrock API path"):
+        p.normalize_api_path("runtime_openai")
+
+
+def test_explicit_runtime_paths_override_model_family_inference():
+    calls = []
+
+    class Responses:
+        def create(self, **kwargs):
+            calls.append(("responses", kwargs))
+            return object()
+
+    class Completions:
+        def create(self, **kwargs):
+            calls.append(("chat", kwargs))
+            return object()
+
+    class Messages:
+        def create(self, **kwargs):
+            calls.append(("messages", kwargs))
+            return object()
+
+    openai_client = type("OpenAIClient", (), {
+        "responses": Responses(),
+        "chat": type("Chat", (), {"completions": Completions()})(),
+    })()
+    messages_client = type("MessagesClient", (), {"messages": Messages()})()
+
+    assert p.probe_compatible_model(
+        "global.openai.gpt-5.4", "us-east-1", "runtime_openai_responses",
+        client_factory=lambda region: openai_client)["ok"]
+    assert p.probe_compatible_model(
+        "us.openai.gpt-5.4", "us-east-1", "runtime_openai_chat",
+        client_factory=lambda region: openai_client)["ok"]
+    assert p.probe_compatible_model(
+        "global.anthropic.claude-sonnet-5", "us-east-1", "runtime_messages",
+        client_factory=lambda region: messages_client)["ok"]
+    assert [name for name, _ in calls] == ["responses", "chat", "messages"]
+    assert [kwargs["model"] for _, kwargs in calls] == [
+        "global.openai.gpt-5.4", "us.openai.gpt-5.4",
+        "global.anthropic.claude-sonnet-5",
+    ]
+
+
+def test_runtime_invoke_uses_invoke_model_for_chat_model():
+    class Recorder:
+        called = None
+        def invoke_model(self, **kwargs):
+            self.called = kwargs
+            return {}
+        def converse(self, **kwargs):
+            raise AssertionError("runtime_invoke must not use Converse")
+
+    client = Recorder()
+    verdict = p.probe_model(client, "anthropic.claude-sonnet-5", "runtime_invoke")
+    assert verdict["ok"] is True
+    assert client.called["modelId"] == "anthropic.claude-sonnet-5"

@@ -168,3 +168,34 @@ def test_gpt_oss_stays_on_the_runtime_path():
     pol = generate_policy(["openai.gpt-oss-120b-1:0"], "us-east-1", "111122223333")
     sids = {s["Sid"] for s in pol["Statement"]}
     assert sids == {"BedrockInvokeModelScoped"}
+
+
+def test_selected_runtime_path_overrides_bare_gpt_legacy_inference():
+    policy = generate_policy(
+        ["openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai_responses")
+    assert {stmt["Sid"] for stmt in policy["Statement"]} == {"BedrockInvokeModelScoped"}
+    assert policy["Statement"][0]["Resource"] == [
+        "arn:aws:bedrock:*::foundation-model/openai.gpt-5.4"]
+
+
+def test_selected_mantle_path_overrides_non_gpt_legacy_inference():
+    policy = generate_policy(
+        ["anthropic.claude-sonnet-5"], REGION, ACCOUNT, "mantle_messages")
+    assert {stmt["Sid"] for stmt in policy["Statement"]} == {
+        "BedrockMantleInference", "BedrockMantleCallWithBearerToken"}
+
+
+def test_unknown_selected_path_fails_closed():
+    with pytest.raises(ValueError, match="unknown Bedrock API path"):
+        generate_policy(["openai.gpt-5.4"], REGION, ACCOUNT, "runtime_openai")
+
+
+def test_cli_accepts_selected_api_path():
+    result = subprocess.run(  # nosec B603
+        [sys.executable, str(Path(__file__).parent / "iam_policy.py"),
+         "--models", "openai.gpt-5.4", "--api-path", "runtime_openai_chat",
+         "--region", REGION, "--account-id", ACCOUNT],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert json.loads(result.stdout)["Statement"][0]["Sid"] == "BedrockInvokeModelScoped"

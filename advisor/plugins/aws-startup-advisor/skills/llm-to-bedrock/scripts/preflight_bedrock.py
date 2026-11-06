@@ -1,148 +1,253 @@
 # preflight_bedrock.py
-"""Bedrock fail-fast preflight: authorization, region/model availability, quota.
+"""Bedrock fail-fast preflight for an explicitly selected invocation API.
 
-Usage: python preflight_bedrock.py --region <r> --models <id,id,...> [--dataset-size N]
-Prints a JSON verdict to stdout; exit 0 if all models pass, 1 otherwise.
-Always prints JSON — including for missing credentials / bad region — so the
-caller can parse the verdict instead of a traceback. On failure the top level
-carries `reason`/`detail`/`failing_models` lifted from the first failing model.
-Chat models are probed via Converse; embedding models (which don't speak
-Converse) via InvokeModel with their family's request body. Bare OpenAI
-proprietary GPT ids are mantle-served and probed via the OpenAI Responses API;
-GPT-5.6 CRIS profile ids (us./in./global. prefixed) are bedrock-runtime targets
-and take the normal Converse probe.
-The 1-token probe costs a fraction of a cent (noted in output).
+The selected API path is authoritative. Legacy callers that omit ``--api-path``
+retain model-family inference, while an unknown non-empty path fails closed.
+Every probe uses the requested Region and exact model ID.
 """
-import argparse, json, sys
+import argparse
+import json
+import sys
+
+
+API_PATHS = {
+    "runtime_openai_responses",
+    "runtime_openai_chat",
+    "runtime_messages",
+    "mantle_openai_responses",
+    "mantle_openai_chat",
+    "mantle_messages",
+    "runtime_converse",
+    "runtime_invoke",
+}
+LEGACY_PATHS = {
+    "converse": "runtime_converse",
+    "gpt-oss": "runtime_converse",
+    "mantle": "mantle_openai_responses",
+}
+
+
+def normalize_api_path(api_path: str | None) -> str | None:
+    """Normalize documented legacy values; reject unknown non-empty values."""
+    if api_path is None or not api_path.strip():
+        return None
+    path = api_path.strip()
+    path = LEGACY_PATHS.get(path, path)
+    if path not in API_PATHS:
+        raise ValueError(f"unknown Bedrock API path: {api_path}")
+    return path
 
 
 def classify_invoke_error(code: str, message: str) -> dict:
-    """Pure: map a botocore error code to a structured preflight verdict."""
-    if code in ("AccessDeniedException",):
-        # Bedrock raises AccessDeniedException for two distinct problems:
-        # (a) model access not enabled in the Bedrock console (message mentions
-        #     model access / "use the model"), fixed in the console, not IAM;
-        # (b) the IAM principal lacks bedrock:InvokeModel, fixed in IAM.
-        # Sending the user to the wrong fix wastes their time — disambiguate
-        # on the message text.
+    """Map a botocore error code to a structured preflight verdict."""
+    if code == "AccessDeniedException":
         lowered = message.lower()
         if ("model access" in lowered or "access to the model" in lowered
                 or "use the model" in lowered or "model is not" in lowered):
             return {"ok": False, "reason": "model_access",
                     "detail": f"Bedrock model access not enabled for this model — {message}. "
-                              f"Enable it in the Bedrock console (Model access page); "
-                              f"this is separate from IAM."}
+                              "Enable it in the Bedrock console (Model access page); "
+                              "this is separate from IAM."}
         return {"ok": False, "reason": "authz",
                 "detail": f"IAM denies bedrock:InvokeModel — {message}. "
-                          f"Grant bedrock:InvokeModel to this principal."}
+                          "Grant bedrock:InvokeModel to this principal."}
     if code in ("ValidationException", "ResourceNotFoundException"):
         return {"ok": False, "reason": "model_unavailable",
                 "detail": f"Model not available in this region — {message}. "
-                          f"Try a cross-region inference profile (e.g. us.<model-id>)."}
+                          "Try a cross-region inference profile (e.g. us.<model-id>)."}
     if code in ("ThrottlingException", "ServiceQuotaExceededException"):
-        # We got far enough to be throttled => we are authorized.
         return {"ok": True, "reason": "throttled_ok",
                 "detail": "Authorized (probe throttled, which still proves access)."}
     if code in ("UnrecognizedClientException", "InvalidSignatureException",
                 "ExpiredTokenException", "ExpiredToken"):
         return {"ok": False, "reason": "credentials",
                 "detail": f"AWS credentials invalid or expired — {message}. "
-                          f"Run 'aws configure', refresh your SSO session, or set AWS_PROFILE."}
+                          "Run 'aws configure', refresh your SSO session, or set AWS_PROFILE."}
     return {"ok": False, "reason": "unknown", "detail": f"{code}: {message}"}
 
 
-def is_embedding_model(model_id: str) -> bool:
-    """Pure: embedding models don't speak the Converse API."""
-    return "embed" in model_id.lower()
-
-
-def is_mantle_model(model_id: str) -> bool:
-    """Pure: ids that must be probed via the mantle Responses API rather than
-    Converse/InvokeModel. Matches the BARE proprietary GPT ids (`openai.gpt-5*`),
-    which are mantle-served. Deliberately does NOT match:
-    - gpt-oss ids (Converse-capable on bedrock-runtime), and
-    - GPT-5.6 CRIS profile ids (`us.`/`in.`/`global.` prefixed) — those are
-      bedrock-runtime targets where Converse IS supported, so falling through to
-      the standard Converse probe is the correct behavior, not an accident."""
-    mid = model_id.lower()
-    return mid.startswith("openai.gpt-5") and "oss" not in mid
-
-
-def classify_mantle_error(status: int | None, message: str) -> dict:
-    """Pure: map an OpenAI-SDK HTTP status from the mantle endpoint to a verdict.
-
-    Mirrors classify_invoke_error's contract but for the mantle surface, where the
-    remedies differ: IAM needs bedrock-mantle:* actions (not bedrock:InvokeModel),
-    and mantle itself has no cross-region form — though for GPT-5.6 a
-    bedrock-runtime CRIS id can cover the region instead."""
+def classify_compatible_error(status: int | None, message: str, mantle: bool = False) -> dict:
+    """Classify HTTP errors from OpenAI- and Anthropic-compatible endpoints."""
     if status in (401, 403):
         lowered = message.lower()
         if ("model access" in lowered or "access to the model" in lowered
                 or "use the model" in lowered or "not authorized to use" in lowered):
             return {"ok": False, "reason": "model_access",
                     "detail": f"Bedrock model access not enabled for this model — {message}. "
-                              f"Enable it in the Bedrock console (Model access page); "
-                              f"this is separate from IAM."}
+                              "Enable it in the Bedrock console (Model access page); "
+                              "this is separate from IAM."}
+        if mantle:
+            return {"ok": False, "reason": "authz",
+                    "detail": f"IAM denies mantle inference — {message}. Grant bedrock-mantle "
+                              "actions (for example CreateInference and CallWithBearerToken); "
+                              "bedrock:InvokeModel does NOT authorize this endpoint."}
         return {"ok": False, "reason": "authz",
-                "detail": f"IAM denies mantle inference — {message}. Grant bedrock-mantle "
-                          f"actions (e.g. the AmazonBedrockMantleInferenceAccess managed "
-                          f"policy); bedrock:InvokeModel does NOT authorize these models."}
+                "detail": f"IAM denies Bedrock Runtime compatible-API inference — {message}. "
+                          "Grant bedrock:InvokeModel for the selected model/profile."}
     if status == 404:
+        endpoint = "mantle endpoint" if mantle else "Runtime compatible endpoint"
         return {"ok": False, "reason": "model_unavailable",
-                "detail": f"Model not available at this mantle endpoint/region — {message}. "
-                          f"Mantle is in-region only; for GPT-5.6 try a bedrock-runtime CRIS "
-                          f"id (us./in./global. prefixed) instead, for GPT-5.5/5.4 switch to "
-                          f"a supported region or a different model."}
+                "detail": f"Model not available at this {endpoint}/region — {message}. "
+                          "Verify the exact model ID, API support, and selected Region."}
     if status == 429:
-        # Reaching a token-per-minute ceiling still proves we are authorized.
         return {"ok": True, "reason": "throttled_ok",
-                "detail": "Authorized (probe throttled on a TPM quota, which still proves access)."}
+                "detail": "Authorized (probe throttled, which still proves access)."}
     return {"ok": False, "reason": "unknown", "detail": f"{status}: {message}"}
 
 
-def probe_mantle_model(model_id: str, region: str) -> dict:
-    """Real minimal probe against the mantle Responses API.
-
-    Fails CLOSED when the OpenAI SDK is missing. This deliberately does NOT follow
-    the `embedding_unprobed` precedent: that one passes because an unrecognized
-    embedding family is a rare edge case, whereas a missing SDK here would be the
-    normal path for every run if the dependency were absent — returning ok=True
-    would turn a fail-fast preflight into an unconditional green light and let the
-    migration proceed with endpoint, model, and IAM access never checked. Both
-    packages are declared in pyproject.toml, so reaching this branch means the
-    pinned environment is broken and the operator needs to know."""
-    try:
-        from aws_bedrock_token_generator import provide_token
-        from openai import BedrockOpenAI
-    except ImportError as e:
-        return {"ok": False, "reason": "mantle_deps_missing",
-                "detail": f"Cannot probe mantle-only model {model_id}: {e}. This needs "
-                          f"'openai>=2.45.0' and 'aws-bedrock-token-generator', both declared "
-                          f"in scripts/pyproject.toml — re-sync the pinned environment "
-                          f"(`uv sync --project <scripts dir>`). Access was NOT verified; "
-                          f"preflight fails closed rather than assuming it works."}
-    try:
-        client = BedrockOpenAI(
-            aws_region=region,
-            bedrock_token_provider=lambda: provide_token(region=region),
-            max_retries=0,
+def classify_mantle_error(status: int | None, message: str) -> dict:
+    """Backward-compatible mantle classifier."""
+    result = classify_compatible_error(status, message, mantle=True)
+    if status == 404:
+        result["detail"] = (
+            f"Model not available at this mantle endpoint/region — {message}. Mantle is "
+            "in-region only; verify the exact model/API pair or select a supported Runtime "
+            "CRIS ID (us./in./global. when available). GPT-5.5/5.4 Runtime availability must "
+            "be checked in the target account."
         )
-        client.responses.create(model=model_id, input="ping", max_output_tokens=16, store=False)
-        return {"ok": True, "reason": "ok", "detail": "Mantle Responses API authorized."}
-    except Exception as e:  # noqa: BLE001 - SDK raises many types; status is what matters
-        status = getattr(e, "status_code", None)
-        if status is None:
-            resp = getattr(e, "response", None)
-            status = getattr(resp, "status_code", None)
+    if status == 429:
+        result["detail"] = (
+            "Authorized (probe throttled on a token quota, which still proves access)."
+        )
+    return result
+
+
+def is_embedding_model(model_id: str) -> bool:
+    return "embed" in model_id.lower()
+
+
+def is_mantle_model(model_id: str) -> bool:
+    """Legacy inference used only when no explicit API path is supplied."""
+    mid = model_id.lower()
+    return mid.startswith("openai.gpt-5") and "oss" not in mid
+
+
+def _status_code(exc) -> int | None:
+    status = getattr(exc, "status_code", None)
+    if status is None:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+    return int(status) if status is not None else None
+
+
+def _token_provider(region: str):
+    from aws_bedrock_token_generator import provide_token
+    return lambda: provide_token(region=region)
+
+
+def runtime_openai_client(region: str, token_provider=None):
+    from openai import OpenAI
+    provider = token_provider or _token_provider(region)
+    return OpenAI(
+        base_url=f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1",
+        api_key=provider,
+        max_retries=0,
+    )
+
+
+def mantle_openai_client(region: str, token_provider=None):
+    from openai import OpenAI
+    provider = token_provider or _token_provider(region)
+    return OpenAI(
+        base_url=f"https://bedrock-mantle.{region}.api.aws/openai/v1",
+        api_key=provider,
+        max_retries=0,
+    )
+
+
+def runtime_messages_client(region: str, token_provider=None):
+    from anthropic import Anthropic
+    provider = token_provider or _token_provider(region)
+    return Anthropic(
+        base_url=f"https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1",
+        auth_token=provider,
+        max_retries=0,
+    )
+
+
+def mantle_messages_client(region: str, token_provider=None):
+    from anthropic import Anthropic
+    provider = token_provider or _token_provider(region)
+    return Anthropic(
+        base_url=f"https://bedrock-mantle.{region}.api.aws/anthropic/v1",
+        auth_token=provider,
+        max_retries=0,
+    )
+
+
+def probe_openai_responses(client, model_id: str) -> dict:
+    response = client.responses.create(
+        model=model_id, input="ping", max_output_tokens=16, store=False)
+    return {"ok": True, "reason": "ok", "detail": "OpenAI Responses API authorized.",
+            "response": response}
+
+
+def probe_openai_chat(client, model_id: str) -> dict:
+    response = client.chat.completions.create(
+        model=model_id,
+        messages=[{"role": "user", "content": "ping"}],
+        max_tokens=16,
+    )
+    return {"ok": True, "reason": "ok", "detail": "OpenAI Chat Completions API authorized.",
+            "response": response}
+
+
+def probe_messages(client, model_id: str) -> dict:
+    response = client.messages.create(
+        model=model_id,
+        max_tokens=16,
+        messages=[{"role": "user", "content": "ping"}],
+    )
+    return {"ok": True, "reason": "ok", "detail": "Anthropic Messages API authorized.",
+            "response": response}
+
+
+def probe_compatible_model(model_id: str, region: str, api_path: str,
+                           client_factory=None) -> dict:
+    """Probe one compatible API path; factories are injectable for no-network tests."""
+    mantle = api_path.startswith("mantle_")
+    factories = {
+        "runtime_openai_responses": runtime_openai_client,
+        "runtime_openai_chat": runtime_openai_client,
+        "runtime_messages": runtime_messages_client,
+        "mantle_openai_responses": mantle_openai_client,
+        "mantle_openai_chat": mantle_openai_client,
+        "mantle_messages": mantle_messages_client,
+    }
+    probes = {
+        "runtime_openai_responses": probe_openai_responses,
+        "runtime_openai_chat": probe_openai_chat,
+        "runtime_messages": probe_messages,
+        "mantle_openai_responses": probe_openai_responses,
+        "mantle_openai_chat": probe_openai_chat,
+        "mantle_messages": probe_messages,
+    }
+    try:
+        client = (client_factory or factories[api_path])(region)
+        verdict = probes[api_path](client, model_id)
+        verdict.pop("response", None)
+        return verdict
+    except ImportError as exc:
+        return {"ok": False, "reason": "compatible_api_deps_missing",
+                "detail": f"Cannot probe {api_path}: {exc}. Re-sync the pinned scripts environment; "
+                          "access was NOT verified."}
+    except Exception as exc:  # noqa: BLE001 - compatible SDK exception families vary
+        status = _status_code(exc)
         if status is None:
             return {"ok": False, "reason": "credentials",
-                    "detail": f"{type(e).__name__}: {e}. Check AWS credentials, the region "
-                              f"name, and network access to the bedrock-mantle endpoint."}
-        return classify_mantle_error(int(status), str(e))
+                    "detail": f"{type(exc).__name__}: {exc}. Check AWS credentials, Region, "
+                              "and network access to the selected Bedrock endpoint."}
+        return classify_compatible_error(status, str(exc), mantle=mantle)
+
+
+def probe_mantle_model(model_id: str, region: str) -> dict:
+    """Backward-compatible legacy mantle Responses probe."""
+    verdict = probe_compatible_model(model_id, region, "mantle_openai_responses")
+    if verdict["reason"] == "compatible_api_deps_missing":
+        verdict["reason"] = "mantle_deps_missing"
+    return verdict
 
 
 def _embed_request_body(model_id: str) -> dict | None:
-    """Pure: minimal valid request body per embedding-model family; None if unknown."""
     parts = model_id.split(".")
     vendor = parts[1] if parts[0] in ("us", "eu", "apac", "global") and len(parts) > 1 else parts[0]
     if vendor == "amazon":
@@ -152,74 +257,72 @@ def _embed_request_body(model_id: str) -> dict | None:
     return None
 
 
-def probe_model(client, model_id: str) -> dict:
-    """Real minimal probe: Converse for chat models, InvokeModel for embeddings."""
+def _invoke_request_body(model_id: str) -> dict:
+    if is_embedding_model(model_id):
+        return _embed_request_body(model_id) or {}
+    return {"anthropic_version": "bedrock-2023-05-31", "max_tokens": 1,
+            "messages": [{"role": "user", "content": "ping"}]}
+
+
+def probe_model(client, model_id: str, api_path: str = "runtime_converse") -> dict:
+    """Probe Runtime Converse or InvokeModel with the exact model ID."""
     from botocore.exceptions import BotoCoreError, ClientError
     try:
         if is_embedding_model(model_id):
             body = _embed_request_body(model_id)
             if body is None:
-                # Unknown embedding family — probing with a wrong body would
-                # produce a ValidationException indistinguishable from a real
-                # availability problem. Pass with an explicit caveat instead.
                 return {"ok": True, "reason": "embedding_unprobed",
                         "detail": "Embedding model from an unrecognized family — access not "
                                   "verified by preflight; confirm in the Bedrock console."}
             client.invoke_model(modelId=model_id, body=json.dumps(body),
                                 contentType="application/json", accept="application/json")
             return {"ok": True, "reason": "ok", "detail": "InvokeModel (embedding) authorized."}
+        if api_path == "runtime_invoke":
+            client.invoke_model(modelId=model_id, body=json.dumps(_invoke_request_body(model_id)),
+                                contentType="application/json", accept="application/json")
+            return {"ok": True, "reason": "ok", "detail": "InvokeModel authorized."}
         client.converse(
             modelId=model_id,
             messages=[{"role": "user", "content": [{"text": "ping"}]}],
             inferenceConfig={"maxTokens": 1},
         )
-        return {"ok": True, "reason": "ok", "detail": "InvokeModel authorized."}
-    except ClientError as e:
-        code = e.response.get("Error", {}).get("Code", "Unknown")
-        msg = e.response.get("Error", {}).get("Message", str(e))
+        return {"ok": True, "reason": "ok", "detail": "Converse authorized."}
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code", "Unknown")
+        msg = exc.response.get("Error", {}).get("Message", str(exc))
         return classify_invoke_error(code, msg)
-    except BotoCoreError as e:
-        # NoCredentialsError, EndpointConnectionError, SSO token errors, etc.
-        # These are config problems on the caller's machine, not Bedrock verdicts.
+    except BotoCoreError as exc:
         return {"ok": False, "reason": "credentials",
-                "detail": f"{type(e).__name__}: {e}. "
-                          f"Run 'aws configure', refresh your SSO session, or check the region name."}
+                "detail": f"{type(exc).__name__}: {exc}. Run 'aws configure', refresh your "
+                          "SSO session, or check the region name."}
 
 
 def aggregate_failure(results: list) -> dict:
-    """Pure: lift the first failing model's reason/detail to the top level so the
-    orchestrator can branch on a single top-level `reason` (its documented contract)."""
-    failing = [r for r in results if not r["ok"]]
+    failing = [result for result in results if not result["ok"]]
     if not failing:
         return {}
     return {"reason": failing[0]["reason"], "detail": failing[0]["detail"],
-            "failing_models": [r["model_id"] for r in failing]}
+            "failing_models": [result["model_id"] for result in failing]}
 
 
 def quota_rpm(quotas: list, model_id: str) -> int | None:
-    """Best-effort on-demand requests-per-minute quota for this model from a
-    pre-fetched quota list; None if no match. Quota names follow the form
-    'On-demand model inference requests per minute for <Model Display Name>',
-    so we match per-minute inference quotas whose name shares a token with the
-    model id (e.g. 'claude', 'nova', 'titan')."""
-    tokens = [t for t in model_id.lower().replace(":", ".").split(".") if t]
+    tokens = [token for token in model_id.lower().replace(":", ".").split(".") if token]
     name_tokens = set()
-    for t in tokens:
-        name_tokens.update(p for p in t.split("-") if p and not p.isdigit())
+    for token in tokens:
+        name_tokens.update(part for part in token.split("-") if part and not part.isdigit())
     lowest = None
-    for q in quotas:
-        name = q.get("QuotaName", "").lower()
+    for quota in quotas:
+        name = quota.get("QuotaName", "").lower()
         if "per minute" not in name or "request" not in name:
             continue
-        if not any(tok in name for tok in name_tokens):
+        if not any(token in name for token in name_tokens):
             continue
-        v = int(q.get("Value", 0))
-        lowest = v if lowest is None else min(lowest, v)
+        value = int(quota.get("Value", 0))
+        lowest = value if lowest is None else min(lowest, value)
     return lowest
 
 
 def fetch_bedrock_quotas(region: str) -> list:
-    """Fetch all Bedrock service quotas once; empty list on any failure."""
     import boto3
     from botocore.exceptions import BotoCoreError, ClientError
     try:
@@ -232,62 +335,80 @@ def fetch_bedrock_quotas(region: str) -> list:
         return []
 
 
-def main(argv=None) -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--region", required=True)
-    ap.add_argument("--models", required=True, help="comma-separated model ids")
-    ap.add_argument("--dataset-size", type=int, default=0)
-    args = ap.parse_args(argv)
+def _quota_note(api_path: str) -> str:
+    if api_path.startswith("mantle_"):
+        return ("Mantle quotas are per-model input/output tokens per minute with no RPM quota; "
+                "pace on token throughput and retry 429 responses with backoff.")
+    if api_path in {"runtime_openai_responses", "runtime_openai_chat", "runtime_messages"}:
+        return ("The selected Runtime compatible API uses Bedrock model/profile request and "
+                "token quotas; monitor token throughput and retry throttling with backoff.")
+    return ("Bedrock Runtime quotas can include requests and tokens per minute for the selected "
+            "model/profile; pace evaluation traffic and retry throttling with backoff.")
 
-    model_ids = [m.strip() for m in args.models.split(",") if m.strip()]
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--region", required=True)
+    parser.add_argument("--models", required=True, help="comma-separated model ids")
+    parser.add_argument("--api-path", help="selected migration_path; omitted for legacy inference")
+    parser.add_argument("--dataset-size", type=int, default=0)
+    args = parser.parse_args(argv)
+
+    model_ids = [model.strip() for model in args.models.split(",") if model.strip()]
     if not model_ids:
         print(json.dumps({"ok": False, "region": args.region, "models": [],
                           "reason": "no_models",
-                          "detail": "--models resolved to an empty list; nothing to probe."},
-                         indent=2))
+                          "detail": "--models resolved to an empty list; nothing to probe."}, indent=2))
+        return 1
+    try:
+        selected_path = normalize_api_path(args.api_path)
+    except ValueError as exc:
+        print(json.dumps({"ok": False, "region": args.region, "models": [],
+                          "reason": "unknown_api_path", "detail": str(exc)}, indent=2))
         return 1
 
     import boto3
     from botocore.exceptions import BotoCoreError
     try:
-        client = boto3.client("bedrock-runtime", region_name=args.region)
-    except BotoCoreError as e:
+        runtime_client = boto3.client("bedrock-runtime", region_name=args.region)
+    except BotoCoreError as exc:
         print(json.dumps({"ok": False, "region": args.region, "models": [],
-                          "reason": "credentials",
-                          "detail": f"{type(e).__name__}: {e}"}, indent=2))
+                          "reason": "credentials", "detail": f"{type(exc).__name__}: {exc}"}, indent=2))
         return 1
 
     quotas = fetch_bedrock_quotas(args.region)
     results = []
     all_ok = True
     for model_id in model_ids:
-        if is_mantle_model(model_id):
+        legacy_inference = selected_path is None
+        path = selected_path
+        if path is None:
+            path = "mantle_openai_responses" if is_mantle_model(model_id) else "runtime_converse"
+        if legacy_inference and is_mantle_model(model_id):
             verdict = probe_mantle_model(model_id, args.region)
-            verdict["model_id"] = model_id
-            # Mantle enforces per-model input/output TPM quotas and has no RPM
-            # quota, so an RPM-derived pacing warning would be meaningless here.
-            verdict["rpm_quota"] = None
-            verdict["quota_note"] = (
-                "Mantle quotas are per-model input/output tokens per minute; there is no RPM "
-                "quota. Pace on token throughput, and note that prompt-cached input tokens are "
-                "exempt from the input-TPM quota.")
+        elif is_embedding_model(model_id):
+            verdict = probe_model(runtime_client, model_id, "runtime_invoke")
+        elif path in {"runtime_converse", "runtime_invoke"}:
+            verdict = probe_model(runtime_client, model_id, path)
         else:
-            verdict = probe_model(client, model_id)
-            rpm = quota_rpm(quotas, model_id)
-            verdict["model_id"] = model_id
-            verdict["rpm_quota"] = rpm
-            if rpm is not None and args.dataset_size > rpm:
-                verdict["quota_warning"] = (
-                    f"Dataset ({args.dataset_size}) exceeds ~{rpm} RPM quota — "
-                    f"Eval will pace with backoff and may be slow.")
+            verdict = probe_compatible_model(model_id, args.region, path)
+        verdict["model_id"] = model_id
+        verdict["api_path"] = path
+        verdict["rpm_quota"] = None if path.startswith("mantle_") else quota_rpm(quotas, model_id)
+        verdict["quota_note"] = _quota_note(path)
+        rpm = verdict["rpm_quota"]
+        if rpm is not None and args.dataset_size > rpm:
+            verdict["quota_warning"] = (
+                f"Dataset ({args.dataset_size}) exceeds ~{rpm} RPM quota — "
+                "Eval will pace with backoff and may be slow.")
         all_ok = all_ok and verdict["ok"]
         results.append(verdict)
 
-    out = {"ok": all_ok, "region": args.region,
-           "probe_cost_note": "1-token InvokeModel probe per model (~$0.00001 each)",
-           "models": results}
-    out.update(aggregate_failure(results))
-    print(json.dumps(out, indent=2))
+    output = {"ok": all_ok, "region": args.region, "api_path": selected_path,
+              "probe_cost_note": "Minimal selected-API probe per model; usage is billable.",
+              "models": results}
+    output.update(aggregate_failure(results))
+    print(json.dumps(output, indent=2))
     return 0 if all_ok else 1
 
 
