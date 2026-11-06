@@ -87,9 +87,10 @@ Bedrock token, the selected prefixed Runtime/CRIS ID, and `bedrock:InvokeModel*`
 the selected Responses or Chat method and payload shape.
 
 For `runtime_messages`, generate source-SDK code with
-`https://bedrock-runtime.{region}.amazonaws.com/anthropic`, the same credential posture,
-the selected Runtime/CRIS ID, and Runtime IAM. Preserve `messages.create`; the Anthropic SDK
-appends `/v1/messages`, so the final path is `/anthropic/v1/messages`. Do not also emit the
+`https://bedrock-runtime.{region}.amazonaws.com/anthropic`, the selected Runtime/CRIS ID, and
+Runtime IAM. Anthropic `auth_token` is string-only, so recreate the client with a newly minted
+string token at each request boundary. Preserve `messages.create`; the Anthropic SDK appends
+`/v1/messages`, so the final path is `/anthropic/v1/messages`. Do not also emit the
 Bedrock-native provider adapter for these lanes.
 
 ## Step 1M: Generate Mantle Migration Script (source SDK via Mantle)
@@ -101,7 +102,7 @@ Generate `ai-migration/migrate_to_mantle.sh` — a shell script that configures 
 - Dry-run by default (`--execute` flag to apply)
 - Print the endpoint-appropriate base path. OpenAI paths use `https://bedrock-mantle.{region}.api.aws/openai/v1`; Anthropic Messages uses the currently documented Mantle Anthropic base path.
 - Preserve `responses.create`, `chat.completions.create`, or `messages.create` according to the exact `mantle_*` path.
-- Print the model string change to the documented bare Mantle model ID and use an auto-refreshing short-lived Bedrock token.
+- Print the model string change to the documented bare Mantle model ID. OpenAI clients use the SDK's callable short-lived token support; Anthropic Messages clients are recreated per request with a newly minted string `auth_token`.
 - Generate `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`,
   `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` via the bundled
   `$SKILL_BASE/scripts/iam_policy.py`,

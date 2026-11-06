@@ -273,6 +273,7 @@ def main() -> int:
             print(f"FAIL: no usable {provider_name} key in the env file", file=sys.stderr)
             return 2
 
+    preserved = []
     results = []
     done_live = set()
     if os.path.exists(output_path):
@@ -281,7 +282,10 @@ def main() -> int:
                 if not line.strip():
                     continue
                 row = json.loads(line)
-                if row.get("status") != "live" or row.get("id") not in identities:
+                if row.get("id") not in identities:
+                    preserved.append(row)
+                    continue
+                if row.get("status") != "live":
                     continue
                 expected = identities[row["id"]]
                 changed = [field for field, value in expected.items() if row.get(field) != value]
@@ -319,7 +323,7 @@ def main() -> int:
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
-        for r in results:
+        for r in preserved + results:
             f.write(json.dumps(r) + "\n")
 
     ok = sum(1 for r in results if r["status"] == "live")

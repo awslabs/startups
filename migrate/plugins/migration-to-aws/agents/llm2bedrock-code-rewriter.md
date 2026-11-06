@@ -173,8 +173,12 @@ catch-all Converse branch and never reuse another route's path.
 Only `runtime_converse` and `runtime_invoke` perform Bedrock-native payload/response rewrites.
 The six compatible-API lanes preserve the selected source API request and response shape for
 the call sites assigned to that route. All
-compatible-API examples for servers, workers, and scheduled jobs MUST use an auto-refreshing
-provider, `lambda: provide_token(region=region)`, rather than storing a bearer token.
+compatible-API examples for servers, workers, and scheduled jobs MUST refresh credentials.
+OpenAI clients use the SDK's callable API-key support,
+`lambda: provide_token(region=region)`. Anthropic's `auth_token` accepts only a string, so
+Messages lanes MUST create a new Anthropic client with
+`auth_token=provide_token(region=region)` at each request boundary; never pass a callback as
+`auth_token` and never retain one client past the token lifetime.
 
 ### Source-compatible OpenAI and Anthropic lanes
 
@@ -219,11 +223,14 @@ Anthropic Messages lane example:
 
 ```python
 from anthropic import Anthropic
-client = Anthropic(
-    base_url=f"https://bedrock-runtime.{region}.amazonaws.com/anthropic",
-    auth_token=lambda: provide_token(region=region),
-)
-response = client.messages.create(
+
+def messages_client():
+    return Anthropic(
+        base_url=f"https://bedrock-runtime.{region}.amazonaws.com/anthropic",
+        auth_token=provide_token(region=region),
+    )
+
+response = messages_client().messages.create(
     model="<TARGET_MODEL_ID>", max_tokens=512,
     messages=[{"role": "user", "content": "Hello"}],
 )
@@ -295,12 +302,14 @@ import anthropic
 client = anthropic.Anthropic()
 
 # After (Mantle — same SDK)
-import os
+from aws_bedrock_token_generator import provide_token
 import anthropic
-client = anthropic.Anthropic(
-    base_url="https://bedrock-mantle.us-east-1.api.aws/anthropic",
-    auth_token=lambda: provide_token(region="us-east-1"),
-)
+
+def messages_client():
+    return anthropic.Anthropic(
+        base_url="https://bedrock-mantle.us-east-1.api.aws/anthropic",
+        auth_token=provide_token(region="us-east-1"),
+    )
 ```
 
 Do not rewrite request/response parsing in a source-compatible lane unless the exact selected
@@ -457,20 +466,23 @@ For EACH file in the `files_to_modify` list from llm2bedrock-code-analyzer:
 
 4. Confirm the file looks right (`Read` it back, or `head` via `Bash`) before moving on.
 
-# 11. Update auth patterns
+# 11. Update auth patterns by exact route
 
-Replace source provider API key auth with AWS credentials:
+Find source-provider key references, then update each call site according to its exact
+`migration_path`; do not apply one run-wide auth rule.
 
-```bash
-# Find API key references
-grep -rn "OPENAI_API_KEY\|ANTHROPIC_API_KEY\|GOOGLE_API_KEY\|GEMINI_API_KEY" . --include="*.py" --include="*.js" --include="*.ts" --include="*.env*" --include="*.yaml" --include="*.json" | grep -v node_modules
-```
+- Compatible OpenAI paths retain the OpenAI SDK, remove `OPENAI_API_KEY`, and use the OpenAI
+  SDK's callable `api_key=lambda: provide_token(region=region)` support.
+- Compatible Messages paths retain the Anthropic SDK and remove `ANTHROPIC_API_KEY`.
+  Anthropic `auth_token` is string-only: create a new client with
+  `auth_token=provide_token(region=region)` at each request boundary.
+- `runtime_converse` and `runtime_invoke` use the boto3 default credential chain and remove the
+  source SDK/key only when no compatible route still needs that package or configuration.
+- Mixed repositories retain every source SDK required by a compatible route while adding boto3
+  for native routes. Never delete a dependency or environment entry still used by another lane.
 
-Replace with AWS credential configuration:
-
-- Remove `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` env var usage
-- Use boto3 default credential chain (env vars, IAM role, etc.)
-- Add `AWS_REGION` and `AWS_DEFAULT_REGION` to config
+All paths add `AWS_REGION` or `AWS_DEFAULT_REGION`. Token generation and boto3 use the default
+AWS credential chain; never copy a source-provider key or generated bearer token into config.
 
 # 12. Update dependencies (manifest + lockfile)
 
@@ -489,7 +501,13 @@ Pick the source-of-truth manifest using these rules. **Apply EVERY matching rule
 - **`requirements.txt` only** (no `.in`, no `pyproject.toml`) → edit `requirements.txt`. No lock to regenerate.
 - **`package.json` exists** → edit `package.json` (in addition to any Python rule above). The lockfile (if any) is `package-lock.json` / `pnpm-lock.yaml` / `yarn.lock`.
 
-Read each matching manifest and apply the dependency swap (e.g. remove `openai>=1.0`, add `boto3>=1.34`; remove `langchain-openai`, add `langchain-aws`). Use the `Edit` / `Write` tools. **Track every directory you edited** by appending its path to `/tmp/edited-manifest-dirs.txt` — §12.3 iterates only over those. Reset the file first to clear stale entries from any prior session:
+Read each matching manifest and apply dependency edits by exact route. Compatible OpenAI paths
+retain `openai`; compatible Messages paths retain `anthropic`; both add
+`aws-bedrock-token-generator`. Native Converse/Invoke paths add `boto3` or the selected framework
+adapter and remove a source package only when no compatible route still imports it. A mixed
+repository keeps the union required by all routes. Use the `Edit` / `Write` tools. **Track every
+directory you edited** by appending its path to `/tmp/edited-manifest-dirs.txt` — §12.3 iterates
+only over those. Reset the file first to clear stale entries from any prior session:
 
 ```bash
 rm -f /tmp/edited-manifest-dirs.txt && touch /tmp/edited-manifest-dirs.txt
@@ -599,28 +617,12 @@ Example: `notes: "poetry lock failed: SolverProblemError on package langchain-co
 
 # 13. Update environment variable template
 
-Create or update `.env.example` (use the `Write` tool):
-
-```
-# AWS Configuration (required for Bedrock)
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
-# Or use IAM role / SSO — boto3 will auto-detect
-
-# Bedrock Model Configuration
-BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6
-```
-
-**Mantle express lane exception:** when this run used the Mantle express lane (§8), Mantle authenticates with a bearer token, not SigV4. Write `.env.example` with the token instead of the access-key pair:
-
-```
-# Bedrock (Mantle endpoint — bearer-token auth)
-AWS_REGION=us-east-1
-# Obtain a bearer token via the aws-bedrock-token-generator package, or
-# `aws bedrock get-bearer-token` — export it as:
-AWS_BEARER_TOKEN_BEDROCK=your-bedrock-bearer-token
-```
+Create or update `.env.example` by exact route. Every route includes `AWS_REGION` and
+`BEDROCK_MODEL_ID`. Compatible routes document that `aws-bedrock-token-generator` uses the
+default AWS credential chain; native routes document boto3's default chain. Do not emit
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or a generated bearer-token value. In a mixed repository,
+document the union of route configuration without duplicating variables or replacing one lane's
+credential mechanism with another.
 
 # 14. Commit code-only changes; verify clean working tree
 
@@ -871,15 +873,25 @@ git branch -d test-clean-checkout
 
 The `--force` fallback handles `.venv` / `node_modules` that confuse `git worktree remove`. The follow-up `rm -rf` ensures the directory itself is gone — `worktree remove` may leave the directory behind in some edge cases. The temporary `test-clean-checkout` branch (created in §15) was already merged into `bedrock-migration` in §20, so `git branch -d` deletes it cleanly. The clean-checkout worktree's purpose is done.
 
-# 22. Verify no source SDK residuals
+# 22. Verify route-specific SDK and auth residuals
 
-```bash
-grep -rl "from openai\|import openai\|require.*openai\|from anthropic\|import anthropic\|from google\.generativeai\|import google\.generativeai\|from google\.genai\|import google\.genai\|from cohere\|import cohere" . --include="*.py" --include="*.js" --include="*.ts" | grep -v node_modules | grep -v __pycache__ || echo "CLEAN: No source SDK references found"
-```
+Dispatch this final guard by exact `migration_path`, using the same call-site assignment as §8:
 
-If any files still contain source SDK references, fix them before proceeding. Test directories are NOT excluded from this scan on purpose: the source SDK package is being removed from the manifest, so a leftover `import openai` in a customer test means `pytest` ImportErrors on the customer's machine — §18.0 should have migrated those tests; if one appears here, go back and fix it.
+- For `runtime_openai_responses`, `runtime_openai_chat`, `mantle_openai_responses`, and
+  `mantle_openai_chat`, require the OpenAI dependency/import to remain. Verify every assigned
+  client has the selected lane's exact base URL, callable token provider, and model ID.
+- For `runtime_messages` and `mantle_messages`, require the Anthropic dependency/import to
+  remain. Verify every assigned request creates a client on the exact base URL with a newly
+  minted string `auth_token`; reject callback objects and process-start token capture.
+- For `runtime_converse` and `runtime_invoke`, reject source-SDK imports only in files/call sites
+  assigned exclusively to native routes, and verify the expected boto3 or framework provider.
+- For mixed compatible/native repositories, retain the union of required SDKs and apply the
+  checks per assigned call site. A source-SDK import is not itself a residual failure.
 
-**Mantle express lane exception:** when this run used the Mantle express lane (§8, `Rewrite strategy: mantle`), the source-SDK imports are EXPECTED to remain — Mantle keeps the original SDK, so this residual scan does NOT apply. Verify instead that every client init sets the Mantle `base_url` and the `AWS_BEARER_TOKEN_BEDROCK` credential, and that model IDs were swapped to their Mantle forms.
+Also verify removed source API-key names are absent from migrated call sites and environment
+examples, and that no dependency required by another route was removed. If any check fails,
+return to the relevant route rewrite; never convert a compatible path to Converse to satisfy
+this guard.
 
 # 23. Verify all files were written
 

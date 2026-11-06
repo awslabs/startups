@@ -166,30 +166,47 @@ def mantle_openai_client(region: str, token_provider=None):
     )
 
 
+class _RefreshingMessagesClient:
+    """Create an Anthropic client with a fresh bearer token per request."""
+
+    def __init__(self, anthropic_cls, base_url: str, token_provider, http_client=None):
+        self._anthropic_cls = anthropic_cls
+        self._base_url = base_url
+        self._token_provider = token_provider
+        self._http_client = http_client
+        self.messages = self
+
+    def create(self, **request):
+        kwargs = {
+            "base_url": self._base_url,
+            "auth_token": self._token_provider(),
+            "max_retries": 0,
+        }
+        if self._http_client is not None:
+            kwargs["http_client"] = self._http_client
+        return self._anthropic_cls(**kwargs).messages.create(**request)
+
+
 def runtime_messages_client(region: str, token_provider=None, http_client=None):
     from anthropic import Anthropic
     provider = token_provider or _token_provider(region)
-    kwargs = {
-        "base_url": f"https://bedrock-runtime.{region}.amazonaws.com/anthropic",
-        "auth_token": provider,
-        "max_retries": 0,
-    }
-    if http_client is not None:
-        kwargs["http_client"] = http_client
-    return Anthropic(**kwargs)
+    return _RefreshingMessagesClient(
+        Anthropic,
+        f"https://bedrock-runtime.{region}.amazonaws.com/anthropic",
+        provider,
+        http_client,
+    )
 
 
 def mantle_messages_client(region: str, token_provider=None, http_client=None):
     from anthropic import Anthropic
     provider = token_provider or _token_provider(region)
-    kwargs = {
-        "base_url": f"https://bedrock-mantle.{region}.api.aws/anthropic",
-        "auth_token": provider,
-        "max_retries": 0,
-    }
-    if http_client is not None:
-        kwargs["http_client"] = http_client
-    return Anthropic(**kwargs)
+    return _RefreshingMessagesClient(
+        Anthropic,
+        f"https://bedrock-mantle.{region}.api.aws/anthropic",
+        provider,
+        http_client,
+    )
 
 
 def probe_openai_responses(client, model_id: str) -> dict:

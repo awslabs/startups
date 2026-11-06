@@ -263,6 +263,38 @@ def test_mixed_source_routes_invoke_each_declared_provider_and_model(tmp_path, m
         ("openai", "gpt-5.4"), ("anthropic", "claude-sonnet")]
 
 
+def test_sequential_source_groups_preserve_earlier_baselines(tmp_path, monkeypatch):
+    import json
+
+    first = _baseline_row("p1", "openai", "gpt-5.4", "wl-openai", "src/a.py:1")
+    second = _baseline_row(
+        "p2", "anthropic", "claude-sonnet", "wl-anthropic", "src/b.py:2")
+    output = _run_baseline(
+        tmp_path, monkeypatch, [first],
+        {"OPENAI_API_KEY": "openai-test", "ANTHROPIC_API_KEY": "anthropic-test"},
+    )
+
+    def fake_send(url, headers, body):
+        if "openai.com" in url:
+            return {"choices": [{"message": {"content": "openai result"}}]}
+        return {"content": [{"text": "anthropic result"}]}
+
+    monkeypatch.setattr(sb, "_send", fake_send)
+    monkeypatch.setenv("SOURCE_PROVIDER", "openai")
+    assert sb.main() == 0
+
+    dataset = tmp_path / "prompts.jsonl"
+    dataset.write_text(json.dumps(second) + "\n")
+    monkeypatch.setenv("SOURCE_PROVIDER", "anthropic")
+    assert sb.main() == 0
+
+    saved = [json.loads(line) for line in output.read_text().splitlines()]
+    assert [(row["id"], row["source_provider"], row["source_model"]) for row in saved] == [
+        ("p1", "openai", "gpt-5.4"),
+        ("p2", "anthropic", "claude-sonnet"),
+    ]
+
+
 def test_resume_rejects_changed_source_route_before_provider_call(
         tmp_path, monkeypatch, capsys):
     import json

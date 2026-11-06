@@ -21,9 +21,10 @@ budget seed), `ai-workload-profile.json`, `preferences.json`. Missing a REQUIRED
 ## Step 0: Determine the artifact path
 
 Read `aws-design-ai.json → ai_architecture.bedrock_models[]` and build one artifact route per
-row from `workload_id`, `call_sites[]`, `aws_model_id`, `migration_path`, `model_change`, and
-`iam_features[]`. Preserve row order, never merge routes that share a model/path, and emit every
-matching lane; mixed Responses, Chat, and Messages repositories can use several
+row from `source_provider`, `source_model`, `workload_id`, `call_sites[]`, `aws_model_id`,
+`migration_path`, `model_change`, and `iam_features[]`. Preserve row order, never infer either
+source identity field, never merge routes that share a model/path, and emit every matching lane;
+mixed Responses, Chat, and Messages repositories can use several
 setups. The file-only worker writes the ordered route manifest to
 `ai-migration/bedrock-iam-routes.json`; it does not run Python. The main-window step in
 `generate.md` passes its aligned model IDs, paths, and JSON-encoded `iam_features` arrays to the
@@ -64,9 +65,10 @@ verified endpoint requirement from the design.
   `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`, an auto-refreshing short-lived
   Bedrock token, the selected prefixed Runtime/CRIS ID, and `bedrock:InvokeModel*` IAM.
 - `runtime_messages`: use
-  `https://bedrock-runtime.{region}.amazonaws.com/anthropic` with the same credential and IAM
-  posture. The Anthropic SDK appends `/v1/messages`, so the final request path is
-  `/anthropic/v1/messages`.
+  `https://bedrock-runtime.{region}.amazonaws.com/anthropic` and Runtime IAM. Anthropic
+  `auth_token` accepts a string, not a callback, so create a new Anthropic client with a freshly
+  generated token at each request boundary. The SDK appends `/v1/messages`, so the final request
+  path is `/anthropic/v1/messages`.
 - Preserve the exact source method and payload. Do not reshape Chat to Responses or Messages to
   Converse merely because the endpoint changed.
 
@@ -74,8 +76,10 @@ verified endpoint requirement from the design.
 
 Shell/code setup, **dry-run by default** with an `--execute` flag. OpenAI lanes use
 `OPENAI_BASE_URL=https://bedrock-mantle.{region}.api.aws/openai/v1`; Messages uses the current
-public Mantle Anthropic base path. Use a short-lived Bedrock token provider, the documented bare
-model ID, and `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`,
+public Mantle Anthropic base path. OpenAI uses its callable short-lived Bedrock token provider;
+Messages recreates the Anthropic client at each request boundary with a newly minted string
+`auth_token`. Use the documented bare model ID, and `bedrock-mantle:CreateInference`,
+`bedrock-mantle:GetProject`,
 `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` in the route manifest;
 the main window generates them with `$SKILL_BASE/scripts/iam_policy.py`. Scope the first three to the project ARN and use `Resource: "*"` only for
 `CallWithBearerToken`. When `iam_features` contains `web_search`, also add
@@ -114,8 +118,12 @@ account and Region.
 
 Format by framework: `llm_router` → `gateway_config.yaml` (LiteLLM); `framework` →
 `gateway_config.py`; `voice_platform` → `gateway_config.json`; `api_gateway` → `gateway_config.yaml`.
-OpenRouter branches on `code_migration.openrouter_path` (`same_model_mantle` → run Step 1M;
-`direct` → adapter; `litellm` → yaml; `keep_openrouter` → json; absent → litellm).
+OpenRouter branches on `code_migration.openrouter_path`: `same_model_runtime` selects the
+matching Runtime route in `bedrock_models[]` and runs Step 1R with its prefixed Runtime/CRIS ID,
+refresh-capable credential, and Runtime IAM; `same_model_mantle` selects the matching Mantle route
+and runs Step 1M; `direct` emits the adapter; `litellm` emits yaml; `keep_openrouter` emits json;
+absent defaults to litellm. Never route `same_model_runtime` through LiteLLM or infer a path not
+present in its route row.
 
 ## Step 3C / 3E: agentic artifacts
 

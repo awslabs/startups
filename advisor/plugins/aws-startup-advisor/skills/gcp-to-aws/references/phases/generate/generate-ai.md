@@ -40,8 +40,10 @@ Check `preferences.json` → `ai_constraints.ai_framework` to determine the migr
 | `mantle_openai_chat`       | `chat.completions.create` | `https://bedrock-mantle.{region}.api.aws/openai/v1`        | `CreateInference`/`GetProject`/`ListProjects` plus `CallWithBearerToken` |
 | `mantle_messages`          | `messages.create`         | documented Mantle Anthropic base path                      | `CreateInference`/`GetProject`/`ListProjects` plus `CallWithBearerToken` |
 
-For every row, use an auto-refreshing short-lived Bedrock token and the endpoint-appropriate
-model-ID form. `runtime_converse` and `runtime_invoke` generate the Bedrock-native adapter.
+For every row, use the endpoint-appropriate model-ID form. OpenAI-compatible rows use the SDK's
+callable short-lived token provider. Anthropic Messages rows recreate the client at each request
+boundary with a newly minted string `auth_token`; the Anthropic SDK does not accept a callback
+for that parameter. `runtime_converse` and `runtime_invoke` generate the Bedrock-native adapter.
 Normalize legacy absent/`direct`, `converse`, `gpt-oss`, and `mantle` at the boundary; reject
 any other non-empty path. Do not reshape Chat to Responses or Messages to Converse solely due
 to endpoint selection.

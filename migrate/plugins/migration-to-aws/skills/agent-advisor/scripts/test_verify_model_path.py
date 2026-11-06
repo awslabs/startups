@@ -341,7 +341,24 @@ def test_runtime_factories_use_documented_base_paths(monkeypatch):
     verify_model_path._default_runtime_messages_client("us-west-2")
 
     assert created[0]["base_url"] == "https://bedrock-runtime.us-west-2.amazonaws.com/openai/v1"
+    assert created[0]["api_key"] == "token"
     assert created[1]["base_url"] == "https://bedrock-runtime.us-west-2.amazonaws.com/anthropic"
+    assert created[1]["auth_token"] == "token"
+    assert "api_key" not in created[1]
+
+
+def test_generated_poc_refreshes_compatible_tokens_after_expiry():
+    poc = (
+        pathlib.Path(__file__).resolve().parents[1]
+        / "references/phases/poc/poc.md"
+    ).read_text()
+
+    assert "api_key=lambda: provide_token(region=REGION)" in poc
+    assert "inside `run_prompt`, create" in poc
+    assert "auth_token=provide_token(region=REGION)" in poc
+    assert "recreating the client at each" in poc
+    assert "request boundary obtains a fresh token after expiry" in poc
+    assert "api_key=provide_token(region=REGION)" not in poc
 
 
 def test_openai_decision_required_is_not_probed():

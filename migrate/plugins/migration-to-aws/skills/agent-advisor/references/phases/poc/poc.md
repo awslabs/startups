@@ -475,18 +475,22 @@ branch reads `AWS_REGION` and `BEDROCK_MODEL_ID` for that unit. Runtime compatib
 short-lived token from `aws-bedrock-token-generator`; do not embed an API key or a token produced
 at generation time.
 
-- `runtime_messages`: `Anthropic(base_url=f"https://bedrock-runtime.{REGION}.amazonaws.com/anthropic",
-  api_key=provide_token(region=REGION)).messages.create(...)`; return the first text content block.
-- `runtime_openai_responses`: `OpenAI(base_url=f"https://bedrock-runtime.{REGION}.amazonaws.com/openai/v1",
-  api_key=provide_token(region=REGION)).responses.create(model=MODEL_ID, input=prompt)`; return
-  `response.output_text`.
+- `runtime_messages`: inside `run_prompt`, create
+  `Anthropic(base_url=f"https://bedrock-runtime.{REGION}.amazonaws.com/anthropic",
+  auth_token=provide_token(region=REGION))` and call `.messages.create(...)`; return the first
+  text content block. Anthropic's `auth_token` is string-only, so recreating the client at each
+  request boundary obtains a fresh token after expiry.
+- `runtime_openai_responses`: create
+  `OpenAI(base_url=f"https://bedrock-runtime.{REGION}.amazonaws.com/openai/v1",
+  api_key=lambda: provide_token(region=REGION))`, then call
+  `.responses.create(model=MODEL_ID, input=prompt)`; return `response.output_text`.
 - `runtime_openai_chat`: use the same Runtime OpenAI client and call
   `client.chat.completions.create(model=MODEL_ID, messages=[{"role": "system", "content":
   SYSTEM_PROMPT}, {"role": "user", "content": prompt}])`; return
   `response.choices[0].message.content`.
-- `mantle_messages`: use the Anthropic client with
-  `https://bedrock-mantle.{REGION}.api.aws/anthropic` and the selected path's supported credential
-  provider.
+- `mantle_messages`: inside `run_prompt`, create the Anthropic client with
+  `https://bedrock-mantle.{REGION}.api.aws/anthropic` and a newly minted string token for each
+  request; never pass a callback through Anthropic's string-only `auth_token` parameter.
 - `mantle_openai_responses` / `mantle_openai_chat`: use the exact model-card base prefix on
   `bedrock-mantle`, then call the matching OpenAI SDK method.
 - `runtime_converse`: use the boto3 Converse template below.
@@ -494,9 +498,10 @@ at generation time.
 
 Add `anthropic` and `aws-bedrock-token-generator` only for a Messages branch; add `openai` and
 `aws-bedrock-token-generator` only for an OpenAI-compatible branch; keep `boto3` for Converse or
-Invoke. Generate credentials when the client is created so normal credential refresh remains
-possible. Never branch on a run-wide `migration_path`, change the selected model ID, or paste a
-Converse call into another path.
+Invoke. Generate credentials at the request boundary: OpenAI uses its callable API-key support, while
+Anthropic clients are recreated with a new string token for each Messages request. Never branch
+on a run-wide `migration_path`, change the selected model ID, or paste a Converse call into
+another path.
 
 The template below applies only to `runtime_converse`. Use it verbatim for that path,
 substituting `<MODEL_ID>` with the Step 2 invocation ID **for this unit** (or the

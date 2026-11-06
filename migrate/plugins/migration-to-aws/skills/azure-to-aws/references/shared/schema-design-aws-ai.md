@@ -100,7 +100,7 @@ Traditional-AI capabilities (AWS AI service, not Bedrock): `document_extraction`
   null for low/medium.
 - **`bedrock_models[]`** — one route per confirmed workload/call-site group, preserving
   workload order and never merged by model/path: `workload_id`, `call_sites[]`,
-  `source_model_id`, `aws_model_id`, `migration_path`, `model_change` (bool), and
+  `source_provider`, `source_model`, `aws_model_id`, `migration_path`, `model_change` (bool), and
   `iam_features[]`, followed by `capabilities_matched[]`, `capability_gaps[]`,
   `honest_assessment`, `source_provider_price`, `bedrock_price`, `price_comparison`,
   `migration_complexity`, and `quota_risk` (`low|medium|high`). `iam_features` contains only
@@ -113,7 +113,7 @@ Traditional-AI capabilities (AWS AI service, not Bedrock): `document_extraction`
 - **`code_migration`** — `primary_pattern` (matches profile `integration.pattern`),
   `framework`, `files_to_modify[]`, `dependency_changes`, and — when the source is Azure
   OpenAI / OpenAI — `openrouter_path` when a router was detected
-  (`same_model_mantle|direct|litellm|keep_openrouter`).
+  (`same_model_runtime|same_model_mantle|direct|litellm|keep_openrouter`).
 - **`infrastructure[]`** — Azure AI infra resource → AWS equivalent, with confidence.
 - **`services_to_migrate[]`** — Azure AI service → AWS service, effort, notes.
 
@@ -181,9 +181,10 @@ rubric file (`ai.md`, `ai-azure-openai-to-bedrock.md`, or a `vendored/ai/*` ref)
       `price_comparison`.
 - [ ] `honest_assessment` overall is the weakest across `bedrock_models[]`; if
       `recommend_stay`, `honest_assessment_reason` names a non-cost blocker.
-- [ ] Every `bedrock_models[]` route has a unique `workload_id`, `call_sites[]`, `model_change`,
-      `iam_features[]`, and an exact `migration_path`; mixed API surfaces/providers remain
-      separate even when model/path values match, and each call site maps once.
+- [ ] Every `bedrock_models[]` route has a unique `workload_id`, `call_sites[]`, canonical
+      `source_provider` and `source_model`, `model_change`, `iam_features[]`, and an exact
+      `migration_path`; mixed API surfaces/providers remain separate even when model/path values
+      match, and each call site maps once.
 - [ ] Every `migration_path` is in the exact vocabulary and its endpoint host, base path,
       credential method, IAM actions, and model-ID form match.
 - [ ] If `ai_source` is `azure_openai` or `openai`: every source model that is available on

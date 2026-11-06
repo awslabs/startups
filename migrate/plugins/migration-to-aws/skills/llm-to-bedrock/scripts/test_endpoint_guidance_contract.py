@@ -215,6 +215,74 @@ def test_minimum_gcp_design_route_is_accepted_without_inferred_defaults():
         assert field in gcp_design
 
 
+def test_minimum_azure_design_route_is_consumable_without_inferred_defaults():
+    from evaluation_routes import assign_case_routes
+
+    route = {
+        "source_provider": "openai",
+        "source_model": "gpt-5.4",
+        "workload_id": "wl-chat",
+        "call_sites": ["src/app.py:20"],
+        "aws_model_id": "global.openai.gpt-5.4",
+        "migration_path": "runtime_openai_chat",
+        "model_change": False,
+        "iam_features": [],
+    }
+    [assigned] = assign_case_routes(
+        [{"id": "p1", "workload_id": "wl-chat", "call_site": "src/app.py:20"}],
+        [route],
+    )
+    assert all(assigned[field] == route[field] for field in route)
+
+    schema = read("azure-to-aws/references/shared/schema-design-aws-ai.md")
+    generate = read("azure-to-aws/references/phases/generate/generate-artifacts-ai.md")
+    for field in ("source_provider", "source_model", "workload_id", "call_sites[]",
+                  "model_change", "iam_features[]", "migration_path"):
+        assert field in schema
+        assert field in generate
+    assert "source_model_id`" not in schema
+
+
+def test_azure_openrouter_same_model_routes_dispatch_to_exact_endpoint_lane():
+    fixtures = [
+        {
+            "openrouter_path": "same_model_runtime",
+            "aws_model_id": "global.openai.gpt-5.4",
+            "migration_path": "runtime_openai_chat",
+        },
+        {
+            "openrouter_path": "same_model_mantle",
+            "aws_model_id": "openai.gpt-5.4",
+            "migration_path": "mantle_openai_chat",
+        },
+    ]
+    schema = read("azure-to-aws/references/shared/schema-design-aws-ai.md")
+    generate = read("azure-to-aws/references/phases/generate/generate-artifacts-ai.md")
+    for fixture in fixtures:
+        assert fixture["openrouter_path"] in schema
+        assert fixture["openrouter_path"] in generate
+        assert fixture["migration_path"] in generate
+    assert "same_model_runtime` selects the" in generate
+    assert "runs Step 1R" in generate
+    assert "same_model_mantle` selects the" in generate
+    assert "runs Step 1M" in generate
+    assert "Never route `same_model_runtime` through LiteLLM" in generate
+
+
+def test_rewriter_final_guards_preserve_compatible_sdks_per_route():
+    rewriter = (SKILLS.parent / "agents/llm2bedrock-code-rewriter.md").read_text()
+    for path in (
+        "runtime_openai_responses", "runtime_openai_chat", "runtime_messages",
+        "mantle_openai_responses", "mantle_openai_chat", "mantle_messages",
+    ):
+        assert path in rewriter
+    assert "require the OpenAI dependency/import to remain" in rewriter
+    assert "require the Anthropic dependency/import to" in rewriter
+    assert "mixed compatible/native repositories" in rewriter
+    assert "A source-SDK import is not itself a residual failure" in rewriter
+    assert "reject source-SDK imports only" in rewriter
+
+
 def test_standalone_generators_bundle_and_execute_iam_helper():
     import importlib.util
 

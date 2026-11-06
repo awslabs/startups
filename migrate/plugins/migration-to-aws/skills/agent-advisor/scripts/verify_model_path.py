@@ -50,7 +50,7 @@ def _default_runtime_messages_client(region):
         raise RuntimeError("Runtime Messages verification requires anthropic") from exc
     return Anthropic(
         base_url=f"https://bedrock-runtime.{region}.amazonaws.com/anthropic",
-        api_key=_bedrock_token(region),
+        auth_token=_bedrock_token(region),
     )
 
 
