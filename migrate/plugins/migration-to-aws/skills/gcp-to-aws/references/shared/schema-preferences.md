@@ -50,6 +50,27 @@ Use the **Recommendation Impact** row for the selected answer from the category 
 `background_inference`, `server_side_tools`, `web_search`, `projects`, `workspaces`,
 `required_model_api`, or `strict_in_region`; `[]` means no endpoint-sensitive requirement was
 confirmed. Ordinary client-side tools and stored Responses state are excluded.
+
+Schema-valid examples for the endpoint row:
+
+```json
+{
+  "value": [],
+  "chosen_by": "derived",
+  "prompt": "Confirmed endpoint requirements",
+  "design_consequence": "Runtime remains the default endpoint"
+}
+```
+
+```json
+{
+  "value": ["web_search"],
+  "chosen_by": "user",
+  "prompt": "Which endpoint-specific capabilities are required?",
+  "design_consequence": "Design verifies a Mantle Web Search path"
+}
+```
+
 `startup_constraints` optional (Q27).
 
 ---

@@ -34,9 +34,10 @@ Read accumulated state from prompt context (forwarded from every prior Track 2 p
 - **`<REGION>`** — AWS region for Bedrock (the `AWS region:` line in your context).
 - **AWS profile** — the `AWS profile` line, when present: prepend `AWS_PROFILE=<profile>` inline to the §6.1 pricing-script invocation and any other aws/boto3 command; omit when absent.
 - **`<scriptsDir>`** — the pinned-toolchain scripts directory, the `Scripts directory (pinned uv toolchain):` line in your context. Used to run `bedrock_pricing.py`.
-- **`<BEDROCK_API_PATH>`** — exact value from the `Bedrock API path:` context line. Use it
-  to label endpoint/API separately from routing option and pass it to IAM generation; never
-  infer Mantle versus Runtime from the model ID.
+- **`<BEDROCK_WORKLOAD_ROUTES>`** — the ordered objects from the `Bedrock workload routes:`
+  context line. Report one deterministic row per route, including source call-site group,
+  target model, endpoint/API path, and pricing status. Pass aligned model/path lists to IAM
+  generation; never infer a route from the model ID or collapse mixed routes into one.
 - **From `llm2bedrock-code-analyzer` (`AiAnalysisData`)** — `source_provider`, `ai_framework`, `source_models`, `target_models` (`<source-model> -> <bedrock-model>` pairs), `coverage_level`, `use_case_type`, `errors`.
 - **From `llm2bedrock-log-ingestor` (`LogIngestionData`)** — `total_golden_cases`, `coverage_level`, `gaps`. Drives the Risk Assessment + Coverage sections.
 - **From `llm2bedrock-prompt-evaluator` (`EvalData` + `notes` prefixes)** — top-level fields:
@@ -97,7 +98,9 @@ this command is to stop guessing.
 
 ## 6.1 Look up Bedrock pricing via the bundled script
 
-Look up live Bedrock pricing for ALL target Bedrock models in the migration plan in a single call by running the bundled `bedrock_pricing.py` script through the pinned toolchain:
+Look up live Bedrock pricing for ALL target Bedrock models in `$BEDROCK_WORKLOAD_ROUTES` in a
+single call, preserving route order, by running the bundled `bedrock_pricing.py` script through
+the pinned toolchain:
 
 ```bash
 uv run --project <scriptsDir> python <scriptsDir>/bedrock_pricing.py --region <REGION> --models <comma-separated target model ids>

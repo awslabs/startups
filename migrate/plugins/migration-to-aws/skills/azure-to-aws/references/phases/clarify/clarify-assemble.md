@@ -22,10 +22,12 @@ _knowledge:
 
 **Schema reference**: `references/shared/schema-preferences.md`.
 
-When the AI fragment fires, write `ai_constraints.ai_endpoint_requirements` as the confirmed
-array. Allowed values: `background_inference`, `server_side_tools`, `web_search`, `projects`,
-`workspaces`, `required_model_api`, `strict_in_region`. Write `[]` when none apply, and preserve
-all unrelated rows and defaults.
+When the AI fragment fires, write `ai_constraints.ai_endpoint_requirements` as the existing
+Azure row object, with the confirmed array in its `value` field and the applicable
+`disposition`, `default`, and justification fields. Allowed values: `background_inference`,
+`server_side_tools`, `web_search`, `projects`, `workspaces`, `required_model_api`,
+`strict_in_region`. Write `value: []` when none apply, and preserve all unrelated rows and
+defaults.
 
 ## This unit owns the conversation
 

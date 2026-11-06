@@ -38,6 +38,18 @@ def normalize_api_path(api_path: str | None) -> str | None:
     return path
 
 
+def normalize_api_paths(api_paths: str | None, model_ids: list[str]) -> list[str | None]:
+    """Align one path per model, allowing one shared legacy path for compatibility."""
+    if api_paths is None or not api_paths.strip():
+        return [None] * len(model_ids)
+    supplied = [value.strip() for value in api_paths.split(",") if value.strip()]
+    if len(supplied) == 1:
+        supplied *= len(model_ids)
+    if len(supplied) != len(model_ids):
+        raise ValueError("API path count must be one or match the model count")
+    return [normalize_api_path(path) for path in supplied]
+
+
 def classify_invoke_error(code: str, message: str) -> dict:
     """Map a botocore error code to a structured preflight verdict."""
     if code == "AccessDeniedException":
@@ -154,24 +166,30 @@ def mantle_openai_client(region: str, token_provider=None):
     )
 
 
-def runtime_messages_client(region: str, token_provider=None):
+def runtime_messages_client(region: str, token_provider=None, http_client=None):
     from anthropic import Anthropic
     provider = token_provider or _token_provider(region)
-    return Anthropic(
-        base_url=f"https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1",
-        auth_token=provider,
-        max_retries=0,
-    )
+    kwargs = {
+        "base_url": f"https://bedrock-runtime.{region}.amazonaws.com/anthropic",
+        "auth_token": provider,
+        "max_retries": 0,
+    }
+    if http_client is not None:
+        kwargs["http_client"] = http_client
+    return Anthropic(**kwargs)
 
 
-def mantle_messages_client(region: str, token_provider=None):
+def mantle_messages_client(region: str, token_provider=None, http_client=None):
     from anthropic import Anthropic
     provider = token_provider or _token_provider(region)
-    return Anthropic(
-        base_url=f"https://bedrock-mantle.{region}.api.aws/anthropic/v1",
-        auth_token=provider,
-        max_retries=0,
-    )
+    kwargs = {
+        "base_url": f"https://bedrock-mantle.{region}.api.aws/anthropic",
+        "auth_token": provider,
+        "max_retries": 0,
+    }
+    if http_client is not None:
+        kwargs["http_client"] = http_client
+    return Anthropic(**kwargs)
 
 
 def probe_openai_responses(client, model_id: str) -> dict:
@@ -350,7 +368,10 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--region", required=True)
     parser.add_argument("--models", required=True, help="comma-separated model ids")
-    parser.add_argument("--api-path", help="selected migration_path; omitted for legacy inference")
+    parser.add_argument(
+        "--api-path",
+        help="one selected migration_path or comma-separated paths aligned to --models; omitted for legacy inference",
+    )
     parser.add_argument("--dataset-size", type=int, default=0)
     args = parser.parse_args(argv)
 
@@ -361,7 +382,7 @@ def main(argv=None) -> int:
                           "detail": "--models resolved to an empty list; nothing to probe."}, indent=2))
         return 1
     try:
-        selected_path = normalize_api_path(args.api_path)
+        selected_paths = normalize_api_paths(args.api_path, model_ids)
     except ValueError as exc:
         print(json.dumps({"ok": False, "region": args.region, "models": [],
                           "reason": "unknown_api_path", "detail": str(exc)}, indent=2))
@@ -379,7 +400,7 @@ def main(argv=None) -> int:
     quotas = fetch_bedrock_quotas(args.region)
     results = []
     all_ok = True
-    for model_id in model_ids:
+    for model_id, selected_path in zip(model_ids, selected_paths):
         legacy_inference = selected_path is None
         path = selected_path
         if path is None:
@@ -404,9 +425,15 @@ def main(argv=None) -> int:
         all_ok = all_ok and verdict["ok"]
         results.append(verdict)
 
-    output = {"ok": all_ok, "region": args.region, "api_path": selected_path,
-              "probe_cost_note": "Minimal selected-API probe per model; usage is billable.",
-              "models": results}
+    normalized_paths = [result["api_path"] for result in results]
+    output = {
+        "ok": all_ok,
+        "region": args.region,
+        "api_path": normalized_paths[0] if len(set(normalized_paths)) == 1 else None,
+        "api_paths": normalized_paths,
+        "probe_cost_note": "Minimal selected-API probe per model; usage is billable.",
+        "models": results,
+    }
     output.update(aggregate_failure(results))
     print(json.dumps(output, indent=2))
     return 0 if all_ok else 1

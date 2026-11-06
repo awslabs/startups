@@ -95,7 +95,44 @@ def test_runtime_messages_lane_preserves_shape_and_refreshing_token(monkeypatch)
         messages=[{"role": "user", "content": "ping"}],
     )
 
-    assert created[0]["base_url"] == "https://bedrock-runtime.eu-west-1.amazonaws.com/anthropic/v1"
+    assert created[0]["base_url"] == "https://bedrock-runtime.eu-west-1.amazonaws.com/anthropic"
     assert created[0]["auth_token"]() == "fresh-token"
     assert messages.calls[0]["messages"][0]["content"] == "ping"
     assert response.content[0].text == "messages output"
+
+
+def test_messages_clients_send_exact_anthropic_v1_messages_path():
+    import httpx
+
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        return httpx.Response(
+            200,
+            json={
+                "id": "msg_test",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "pong"}],
+                "model": "anthropic.claude-sonnet-5",
+                "stop_reason": "end_turn",
+                "stop_sequence": None,
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+            request=request,
+        )
+
+    token = "test-token"
+    for factory in (lanes.runtime_messages_client, lanes.mantle_messages_client):
+        transport = httpx.MockTransport(handler)
+        with httpx.Client(transport=transport) as http_client:
+            client = factory("us-east-1", token_provider=token, http_client=http_client)
+            response = client.messages.create(
+                model="anthropic.claude-sonnet-5",
+                max_tokens=16,
+                messages=[{"role": "user", "content": "ping"}],
+            )
+            assert response.content[0].text == "pong"
+
+    assert seen == ["/anthropic/v1/messages", "/anthropic/v1/messages"]

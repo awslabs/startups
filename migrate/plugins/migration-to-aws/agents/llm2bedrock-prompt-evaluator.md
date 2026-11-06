@@ -41,12 +41,14 @@ Read from prompt context (forwarded from llm2bedrock-code-analyzer, llm2bedrock-
 - **`<TEMPLATE_PATH>`** — `<repo>/.saws-migrate/golden-dataset/templates/prompt_template.txt` (from T2-2).
 - **`<TARGET_MODEL_ID>`** — Bedrock target model ID from the migration plan, validated by
   llm2bedrock-code-analyzer §10. Substitute it in every Bedrock call below.
-- **`<BEDROCK_API_PATH>`** — the exact `Bedrock API path:` value. It selects every target
-  connectivity, vision, same-model, golden-evaluation, parsing, throttling, and quota path.
-  Supported values are `runtime_openai_responses`, `runtime_openai_chat`, `runtime_messages`,
+- **`<BEDROCK_WORKLOAD_ROUTES>`** — compact JSON from the `Bedrock workload routes:` line.
+  Each route binds `workload_id`, source model, exact target model, `migration_path`, and
+  `call_sites[]`. Use the route selected for each golden case/call-site group for connectivity,
+  vision, same-model checks, golden evaluation, parsing, throttling, and quota handling.
+  Supported paths are `runtime_openai_responses`, `runtime_openai_chat`, `runtime_messages`,
   `mantle_openai_responses`, `mantle_openai_chat`, `mantle_messages`, `runtime_converse`, and
-  `runtime_invoke`. Do not infer the endpoint from `<TARGET_MODEL_ID>` and do not fall through
-  to Converse for an unknown value; emit a blocked result naming the unsupported path.
+  `runtime_invoke`. Do not infer endpoints from model IDs or use the first route globally. If a
+  case cannot be assigned to exactly one route, emit a blocked result naming the ambiguity.
 - **`<REGION>`** — AWS region for Bedrock (the `AWS region:` line in your context).
 - **From `llm2bedrock-code-analyzer` (`AiAnalysisData`)** — key fields:
   - `source_provider` — `openai` / `anthropic` / `google` / `cohere` / `custom`. Drives §9 baseline gating. (Vertex AI customers are emitted as `google` here; the analyzer's `errors` field carries the `vertex AI auth detected` signal that gates baseline collection upstream — by the time you reach §9, `source_baseline_available` already reflects that.)
@@ -131,20 +133,26 @@ When reporting results, clearly separate which layers passed / failed / skipped.
 
 # 6. Setup + Bedrock connectivity check
 
-Create the eval results directory and verify Bedrock connectivity against the target model
-through `<BEDROCK_API_PATH>`. Use this exact dispatch for the connectivity check, §8 same-model
-loop, §9.5 vision check, and §10 golden loop:
+Create the eval results directory. Iterate `$BEDROCK_WORKLOAD_ROUTES` in supplied order and
+verify connectivity for every distinct `(aws_model_id, migration_path)` pair. Assign each golden
+case to its route by workload ID or originating call site; use that same route through §8, §9.5,
+and §10. A repository with Responses and Chat or OpenAI and Anthropic routes executes every
+matching lane, and records the route ID/path beside each raw result so reporting stays
+deterministic. If a case matches no route or more than one route, stop with
+`Unsupported or ambiguous call-site route` rather than choosing the first model.
 
-| Exact path                 | Client/call                                                                                                                                         | Output extraction                                     |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `runtime_openai_responses` | `OpenAI(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1", api_key=<refreshing provider>).responses.create(input=...)`            | `response.output_text`                                |
-| `runtime_openai_chat`      | same Runtime OpenAI client, `.chat.completions.create(messages=...)`                                                                                | `response.choices[0].message.content`                 |
-| `runtime_messages`         | `Anthropic(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)` | `response.content[0].text`                            |
-| `mantle_openai_responses`  | `OpenAI(base_url="https://bedrock-mantle.<REGION>.api.aws/openai/v1", api_key=<refreshing provider>).responses.create(input=...)`                   | `response.output_text`                                |
-| `mantle_openai_chat`       | same Mantle OpenAI client, `.chat.completions.create(messages=...)`                                                                                 | `response.choices[0].message.content`                 |
-| `mantle_messages`          | `Anthropic(base_url="https://bedrock-mantle.<REGION>.api.aws/anthropic/v1", auth_token=<refreshing provider>).messages.create(messages=...)`        | `response.content[0].text`                            |
-| `runtime_converse`         | `boto3.client("bedrock-runtime").converse(messages=...)`                                                                                            | `response["output"]["message"]["content"][0]["text"]` |
-| `runtime_invoke`           | `boto3.client("bedrock-runtime").invoke_model(body=...)`                                                                                            | parse the selected model family's JSON response       |
+Use this exact dispatch for each route:
+
+| Exact path                 | Client/call                                                                                                                                      | Output extraction                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| `runtime_openai_responses` | `OpenAI(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1", api_key=<refreshing provider>).responses.create(input=...)`         | `response.output_text`                                |
+| `runtime_openai_chat`      | same Runtime OpenAI client, `.chat.completions.create(messages=...)`                                                                             | `response.choices[0].message.content`                 |
+| `runtime_messages`         | `Anthropic(base_url="https://bedrock-runtime.<REGION>.amazonaws.com/anthropic", auth_token=<refreshing provider>).messages.create(messages=...)` | `response.content[0].text`                            |
+| `mantle_openai_responses`  | `OpenAI(base_url="https://bedrock-mantle.<REGION>.api.aws/openai/v1", api_key=<refreshing provider>).responses.create(input=...)`                | `response.output_text`                                |
+| `mantle_openai_chat`       | same Mantle OpenAI client, `.chat.completions.create(messages=...)`                                                                              | `response.choices[0].message.content`                 |
+| `mantle_messages`          | `Anthropic(base_url="https://bedrock-mantle.<REGION>.api.aws/anthropic", auth_token=<refreshing provider>).messages.create(messages=...)`        | `response.content[0].text`                            |
+| `runtime_converse`         | `boto3.client("bedrock-runtime").converse(messages=...)`                                                                                         | `response["output"]["message"]["content"][0]["text"]` |
+| `runtime_invoke`           | `boto3.client("bedrock-runtime").invoke_model(body=...)`                                                                                         | parse the selected model family's JSON response       |
 
 The refreshing provider is `lambda: provide_token(region=region)` from
 `aws_bedrock_token_generator`. Pass the exact `<TARGET_MODEL_ID>` to every call. Preserve the
@@ -239,7 +247,7 @@ Interpret the result:
   form exists — do not offer one.
 - **HTTP 401 / 403** — distinguish the two causes from the message. If it names
   model access, return `{ blocked: { reason: 'model_access', ... } }` as in §6.
-  Otherwise it is IAM: the principal needs the `bedrock-mantle:*` actions
+  Otherwise it is IAM: the principal needs the exact `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` actions
   (`CreateInference`, `CallWithBearerToken`), **not** `bedrock:InvokeModel`.
   Return `{ blocked: { reason: 'authz', detail: '<exact error> — grant bedrock-mantle actions (e.g. the AmazonBedrockMantleInferenceAccess managed policy); bedrock:InvokeModel does not authorize these models.' } }`.
 - **`ModuleNotFoundError`** — the pinned scripts environment is missing `openai` or
@@ -865,7 +873,7 @@ These mutually-exclusive control states replace the normal eval object when they
   - `model_access` — Bedrock model access not enabled for the account (§6 `AccessDeniedException`, or a §9.5 vision access denial). Put the console URL + exact error in `detail`.
   - `source_key_auth` — the source-provider API key returned 401/403 (§9 all-401/403). Put the provider name + that a new key (or skip) is needed in `detail`. NEVER put the key value in `detail`.
   - `model_unresolvable` — the target model id cannot be resolved even after `resolve-bedrock-model-id` (§6), **or** a mantle target returned 404 in this region (§6a). Put the exact error message + the model id you tried in `detail`; for the mantle case also state that these models are in-region only.
-  - `authz` — IAM denies inference (§6 `AccessDeniedException` on `bedrock:InvokeModel*`, or §6a 401/403 that does not name model access). Name the action set to grant in `detail`: `bedrock:InvokeModel*` for Converse targets, the `bedrock-mantle:*` actions for mantle targets. Keep this distinct from `model_access` — they have different fixes.
+  - `authz` — IAM denies inference (§6 `AccessDeniedException` on `bedrock:InvokeModel*`, or §6a 401/403 that does not name model access). Name the action set to grant in `detail`: `bedrock:InvokeModel*` for Converse targets, the exact `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` actions for mantle targets. Keep this distinct from `model_access` — they have different fixes.
   - `mantle_deps_missing` — the pinned scripts environment lacks `openai` / `aws-bedrock-token-generator`, so a mantle target could not be probed (§6a `ModuleNotFoundError`). Say access was NOT verified and that the env needs re-syncing.
 - **`partial`** — the run was throttle-truncated. Return `{ partial: { completed: <N scored>, total: <M total>, reason: 'throttled' } }` when the 429 retry budget (§10) is exhausted with cases still unscored.
 

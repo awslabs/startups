@@ -147,10 +147,16 @@ def test_mantle_bearer_token_is_scoped_to_star():
     assert bearer["Action"] == ["bedrock-mantle:CallWithBearerToken"]
 
 
-def test_mantle_inference_scoped_to_account_and_region():
+def test_mantle_inference_uses_only_documented_exact_actions():
     pol = generate_policy(["openai.gpt-5.5"], "us-west-2", "999988887777")
     inf = [s for s in pol["Statement"] if s["Sid"] == "BedrockMantleInference"][0]
     assert inf["Resource"] == "arn:aws:bedrock-mantle:us-west-2:999988887777:project/*"
+    assert inf["Action"] == [
+        "bedrock-mantle:CreateInference",
+        "bedrock-mantle:GetProject",
+        "bedrock-mantle:ListProjects",
+    ]
+    assert all("*" not in action for action in inf["Action"])
 
 
 def test_mixed_targets_emit_both_runtime_and_mantle_statements():

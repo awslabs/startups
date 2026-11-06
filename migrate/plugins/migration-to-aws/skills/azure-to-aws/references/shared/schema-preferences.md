@@ -64,7 +64,30 @@ When an AI profile exists, `preferences.json` MUST include:
 
 Allowed values are `background_inference`, `server_side_tools`, `web_search`, `projects`,
 `workspaces`, `required_model_api`, and `strict_in_region`. Ordinary client-side tools and
-stored Responses state are excluded. Preserve the existing disposition/source rules.
+stored Responses state are excluded. Both empty and non-empty values keep the row wrapper:
+
+```json
+{
+  "ai_constraints": {
+    "ai_endpoint_requirements": { "disposition": "PROPOSED", "value": [], "default": [] }
+  }
+}
+```
+
+```json
+{
+  "ai_constraints": {
+    "ai_endpoint_requirements": {
+      "disposition": "DETECTED",
+      "value": ["web_search"],
+      "default": [],
+      "source": "ai-profile:integration.endpoint_sensitive_features"
+    }
+  }
+}
+```
+
+Preserve the existing disposition/source rules.
 
 ## Shape
 

@@ -1005,14 +1005,16 @@ def recommend_openai_workload(workload, region, catalog):
 
     if path == "mantle_openai_responses" and surface == "chat_completions":
         deltas.extend(_chat_to_responses_deltas())
+        selector = ", ".join(mantle_reasons) or "the selected Responses-only requirement"
         blocks.append(
             _finding(
                 "chat_completions_to_responses_required",
                 "[BLOCKS]",
-                "GPT-5.x on Mantle rejects Chat Completions; the source must reshape to the "
-                "Responses API.",
-                "Apply the request/response/tool/state reshape deltas before cutover; do not "
-                "target mantle_openai_chat for GPT-5.x.",
+                f"{selector} requires Mantle Responses, so this call site must reshape from "
+                "Chat Completions to Responses.",
+                "Apply the request/response/tool/state reshape deltas before cutover, or remove "
+                "the Responses-only selector and use mantle_openai_chat when the model card "
+                "confirms Chat Completions.",
             )
         )
     deltas.extend(f_deltas)

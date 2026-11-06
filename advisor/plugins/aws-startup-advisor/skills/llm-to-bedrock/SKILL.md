@@ -266,20 +266,30 @@ artifacts Phase B needs are actually present before Execute reads them.)
 
 ### B1 — Read Assess outputs
 
-Read `$MIGRATION_DIR/aws-design-ai.json` and extract:
+Read `$MIGRATION_DIR/aws-design-ai.json` and extract
+`ai_architecture.bedrock_models[]`. Each executable row MUST carry
+`source_model` (normalize `source_model_id` or `gcp_model_id` to this key), `aws_model_id`,
+`use_case`, and its exact `migration_path`; retain
+`workload_id` and `call_sites[]` when present. Normalize legacy paths on each row: absent,
+`"converse"`, or `"gpt-oss"` → `runtime_converse`; `"mantle"` →
+`mantle_openai_responses`. Accept only `runtime_openai_responses`,
+`runtime_openai_chat`, `runtime_messages`, `mantle_openai_responses`,
+`mantle_openai_chat`, `mantle_messages`, `runtime_converse`, or `runtime_invoke`.
 
-- `ai_architecture.bedrock_models[]` → array of `{source_model, aws_model_id, use_case}`
-- `ai_architecture.code_migration.migration_path` → `$BEDROCK_API_PATH`. Normalize an absent
-  value or legacy `"converse"` / `"gpt-oss"` to `runtime_converse`, and legacy `"mantle"`
-  to `mantle_openai_responses`. Otherwise accept only these exact values:
-  `runtime_openai_responses`, `runtime_openai_chat`, `runtime_messages`,
-  `mantle_openai_responses`, `mantle_openai_chat`, `mantle_messages`,
-  `runtime_converse`, or `runtime_invoke`. If a non-empty value is not in that list, STOP:
-  `Unknown Bedrock API path '<value>' — rerun Design with a supported migration_path.`
-- Collect all `aws_model_id` values into `$TARGET_MODELS` (array). Keep the `use_case` of each:
-  the preflight script probes embeddings with InvokeModel and all other targets through the
-  exact selected API path; the evaluator's quality scoring only applies to chat models —
-  embedding targets get format/dimension validation only.
+For a legacy artifact where rows lack `migration_path`, use
+`ai_architecture.code_migration.migration_path` only when every non-embedding row has the
+same confirmed source API surface; embeddings use `runtime_invoke`. If multiple source API
+surfaces or providers are present and any row lacks an exact path, STOP:
+`Unsupported mixed API surfaces — rerun Design so every bedrock_models row has migration_path.`
+Never apply one run-wide path to mixed rows.
+
+Build `$BEDROCK_WORKLOAD_ROUTES` in the plan's stable row order. Each route is
+`{workload_id, source_model, aws_model_id, use_case, migration_path, call_sites}`. Merge only
+rows with the same `(aws_model_id, migration_path)`, preserving first occurrence and sorting
+the merged call-site list. Match each discovered call site to exactly one route by workload ID,
+source model, and source API surface. If a call site matches zero or multiple routes, STOP with
+`Unsupported or ambiguous call-site route` and name the file/line; do not guess. Derive aligned
+`$TARGET_MODELS` and `$BEDROCK_API_PATHS` arrays from these routes.
 
 Read `$MIGRATION_DIR/ai-workload-profile.json` and extract:
 
@@ -397,7 +407,7 @@ reliably visible, and even that must be materialized to the file for the baselin
 ### B4 — Bedrock preflight
 
 ```bash
-uv run --project $SCRIPTS python $SCRIPTS/preflight_bedrock.py --region $REGION --models <comma-separated $TARGET_MODELS> --api-path $BEDROCK_API_PATH --dataset-size 200
+uv run --project $SCRIPTS python $SCRIPTS/preflight_bedrock.py --region $REGION --models <comma-separated $TARGET_MODELS> --api-path <comma-separated aligned $BEDROCK_API_PATHS> --dataset-size 200
 ```
 
 (`--dataset-size 200` matches the golden-dataset cap, so the quota warning reflects the worst case. Prefix with `AWS_PROFILE=$AWS_PROFILE_CHOICE` if B2 chose a non-default profile.)
@@ -407,7 +417,7 @@ first failing model) plus `failing_models` (all failing ids); per-model verdicts
 
 - `ok == false` + `reason: credentials` → show the detail (configure/refresh credentials), stop; user re-runs after fixing.
 - `ok == false` + `reason: model_access` → model access not enabled in the Bedrock console (NOT an IAM problem): point the user at the console Model access page for the failing models, stop; re-run B4 after they enable it.
-- `ok == false` + `reason: authz` → IAM denies inference. For a Converse/InvokeModel target the action to grant is `bedrock:InvokeModel`; for a mantle-only `openai.gpt-5*` target it is the `bedrock-mantle:*` set (see B4a). The `detail` names which. Tell the user the action to grant; stop.
+- `ok == false` + `reason: authz` → IAM denies inference. For a Converse/InvokeModel target the action to grant is `bedrock:InvokeModel`; for a mantle-only `openai.gpt-5*` target it is the `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` set (see B4a). The `detail` names which. Tell the user the action to grant; stop.
 - `ok == false` + `reason: mantle_deps_missing` → the pinned scripts environment lacks `openai` / `aws-bedrock-token-generator`, so a mantle-only target could not be probed at all. This is an environment fault, not a Bedrock verdict: tell the user to re-sync (`uv sync --project $SCRIPTS`) and stop. Do NOT proceed — access was never verified.
 - `ok == false` + `reason: model_unavailable` → Read the `resolve-bedrock-model-id` reference at `$HELPERS/resolve-bedrock-model-id/resolve-bedrock-model-id.md` and follow its procedure with each ID from `failing_models` + region. AskUserQuestion with the candidates: "Use `<candidate>` (cross-region inference profile)" / "Paste a different model ID" / "Abort". On a choice, replace the ID in `$TARGET_MODELS` and re-run B4.
 - `ok == false` + any other `reason` → show `detail` and stop.
@@ -449,7 +459,7 @@ Repository: <$REPO>
 AWS region: <$REGION>
 AWS profile (pass as --profile / AWS_PROFILE= inline on every aws/boto3 invocation): <$AWS_PROFILE_CHOICE — omit line if default>
 Target Bedrock model(s): <comma-joined $TARGET_MODELS, with any resolved overrides already applied>
-Bedrock API path: <$BEDROCK_API_PATH>
+Bedrock workload routes: <compact JSON $BEDROCK_WORKLOAD_ROUTES; each object keeps migration_path beside its model and call_sites>
 Migration plan dir: <$MIGRATION_DIR>
 Resolved target model id: <override for the primary chat model — omit if none>
 Scripts directory (pinned uv toolchain): <$SCRIPTS>
@@ -499,8 +509,8 @@ Bedrock at their expense, capped at 200 cases.
   "repo_head_sha": "<git -C $REPO rev-parse HEAD>",
   "repo_branch": "<git -C $REPO rev-parse --abbrev-ref HEAD>",
   "repo_dirty_sha256": "<sha256 of: git status --porcelain + git diff + git diff --cached, EACH with pathspecs -- . ':(exclude).saws-migrate' ':(exclude).migration' ':(exclude)MIGRATION_REPORT_*.md'; \"\" when all three are empty>",
-  "target_models": [{"source_model": "...", "aws_model_id": "...", "use_case": "..."}],
-  "bedrock_api_path": "<$BEDROCK_API_PATH>",
+  "target_models": [{"source_model": "...", "aws_model_id": "...", "use_case": "...", "migration_path": "...", "call_sites": ["..."]}],
+  "bedrock_workload_routes": [{"workload_id": "...", "source_model": "...", "aws_model_id": "...", "use_case": "...", "migration_path": "...", "call_sites": ["..."]}],
   "resolved_model_overrides": {},
   "source_provider": "<from B1>",
   "source_baseline_available": <true|false from B3>,
@@ -548,7 +558,7 @@ uv run --project $SCRIPTS python $SCRIPTS/validate_result.py --check-run-context
 | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------- |
 | repo_root, migration_dir, region, aws_profile, aws_account, source_provider, assess_design_sha256, schema_version, plugin_version | everything                      | —         |
 | repo_head_sha / repo_branch / repo_dirty_sha256                                                                                   | everything                      | —         |
-| target_models / bedrock_api_path / resolved_model_overrides                                                                       | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
+| target_models / bedrock_workload_routes / resolved_model_overrides                                                                | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
 | log_files / max_golden_cases                                                                                                      | everything                      | —         |
 | source_key_sha256 / source_baseline_available                                                                                     | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
 
@@ -584,7 +594,7 @@ prior-phase file paths), then validate its output file:
   `resolved_model_overrides`, fold it into the Target line
 - `source_key_auth` → user supplies a new key (re-run B3) or sets baseline unavailable
 - `authz` → IAM denies inference. The `detail` names the action set to grant:
-  `bedrock:InvokeModel*` for a Converse target, or the `bedrock-mantle:*` actions
+  `bedrock:InvokeModel*` for a Converse target, or the `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`, `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` actions
   (`CreateInference`, `CallWithBearerToken`) for a mantle-only `openai.gpt-5*` target.
   User fixes IAM; nothing fingerprinted changes, so re-dispatch the blocked phase only.
   Do NOT route this to `model_access` — the console Model access page is the wrong fix
@@ -622,10 +632,15 @@ Below, AskUserQuestion:
   invalidates ANALYSIS/EVAL and execution resumes at C1). Cap: 2 retries.
 - **Abort** → stop, no code touched.
 
-**Gate (a.5) — Bedrock API path (from migration plan).** Re-read
-`ai_architecture.code_migration.migration_path` and apply the exact B1 normalization and
-validation. Dispatch only the normalized `$BEDROCK_API_PATH`; never infer an endpoint from a
-model ID and never use a catch-all `else` branch. The supported paths are:
+**Gate (a.5) — Bedrock workload routes (from migration plan).** Re-read every
+`ai_architecture.bedrock_models[]` row and rebuild `$BEDROCK_WORKLOAD_ROUTES` with the exact B1
+normalization and validation. Each model/call-site group keeps its own exact path. A mixed
+Responses+Chat or OpenAI+Anthropic repository therefore dispatches both lanes in stable plan
+order; no run-wide path is inferred. Unknown non-empty paths, missing per-row paths in a mixed
+artifact, and call sites that cannot be assigned to exactly one route stop before C5 with the
+named B1 error.
+
+For each route, the supported path is one of:
 
 - `runtime_openai_responses` → Runtime OpenAI Responses
 - `runtime_openai_chat` → Runtime OpenAI Chat Completions
@@ -635,9 +650,6 @@ model ID and never use a catch-all `else` branch. The supported paths are:
 - `mantle_messages` → Mantle Anthropic Messages
 - `runtime_converse` → Bedrock Runtime Converse
 - `runtime_invoke` → Bedrock Runtime InvokeModel
-
-An absent legacy value retains the previous Converse fallback. An unknown non-empty value stops
-before C5 with the named `Unknown Bedrock API path` error.
 
 **Gate (b) — Behavior-delta resolution.** For each `analysis.behavior_deltas[]` with
 `user_visible == true`, AskUserQuestion with the options from the `behavior-delta-detection`
@@ -660,14 +672,12 @@ C5's context block includes the `Confirmed behavior-delta decisions file` line a
 `Report date suffix` line (from run-context, NOT today's date on a resume). C6's context
 block lists all four phase-result file paths.
 
-C5 always receives `Bedrock API path: <$BEDROCK_API_PATH>` in the shared context block. It
-uses the exact matching lane and no endpoint-family fallback. For any Mantle path, also include:
-
-- `Mantle model map: <source-model> -> <bedrock-model-id>` — sourced from the plan's
-  `ai_architecture.bedrock_models[]` entries (each `source_model` → `aws_model_id` pair).
-- `Same model: true` when `bedrock_models[].model_change` is `false`. This keeps model
-  parameters untouched; only endpoint, credentials, model ID, and an explicitly selected API
-  surface may change.
+C5 always receives `Bedrock workload routes: <$BEDROCK_WORKLOAD_ROUTES>` in the shared
+context block. It assigns every analyzed call site to exactly one route and uses that route's
+exact lane; it never applies one lane to all models. For any Mantle route, the route object
+itself carries the source-model to Bedrock-model mapping and `model_change`. A false
+`model_change` keeps model parameters untouched; only endpoint, credentials, model ID, and an
+explicitly selected API surface may change.
 
 ### C7 — Render summary
 

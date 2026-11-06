@@ -146,25 +146,31 @@ Conservative scope — only universally-junk patterns; `.venv/` / `node_modules/
 
 ## Strategy selection (check FIRST)
 
-Read the exact `Bedrock API path:` context line and dispatch by equality. Supported lanes are
+Read and parse the compact JSON from `Bedrock workload routes:`. Assign every analyzed source
+call site to exactly one route by `workload_id`, source model/API surface, and `call_sites[]`.
+Process routes in supplied order and call sites in sorted file/line order. Dispatch each call
+site by exact equality on its route's `migration_path`; a mixed repository may use several lanes
+in one rewrite. Supported lanes are
 `runtime_openai_responses`, `runtime_openai_chat`, `runtime_messages`,
 `mantle_openai_responses`, `mantle_openai_chat`, `mantle_messages`, `runtime_converse`, and
-`runtime_invoke`. If the line is absent or unknown, STOP with `unknown Bedrock API path`; never
-use a catch-all Converse branch.
+`runtime_invoke`. If a route's path is absent or unknown, or a call site matches zero or
+multiple routes, STOP with `Unsupported or ambiguous call-site route: <file:line>`; never use a
+catch-all Converse branch and never reuse another route's path.
 
-| Lane                       | Preserve                                      | Base URL / client                                             |
-| -------------------------- | --------------------------------------------- | ------------------------------------------------------------- |
-| `runtime_openai_responses` | OpenAI SDK, Responses input/output            | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1`    |
-| `runtime_openai_chat`      | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1`    |
-| `runtime_messages`         | Anthropic SDK, Messages content               | `https://bedrock-runtime.<REGION>.amazonaws.com/anthropic/v1` |
-| `mantle_openai_responses`  | OpenAI SDK, Responses input/output            | `https://bedrock-mantle.<REGION>.api.aws/openai/v1`           |
-| `mantle_openai_chat`       | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-mantle.<REGION>.api.aws/openai/v1`           |
-| `mantle_messages`          | Anthropic SDK, Messages content               | `https://bedrock-mantle.<REGION>.api.aws/anthropic/v1`        |
-| `runtime_converse`         | Bedrock Converse                              | boto3 `bedrock-runtime` client                                |
-| `runtime_invoke`           | model-native InvokeModel payload              | boto3 `bedrock-runtime` client                                |
+| Lane                       | Preserve                                      | Base URL / client                                          |
+| -------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
+| `runtime_openai_responses` | OpenAI SDK, Responses input/output            | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1` |
+| `runtime_openai_chat`      | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-runtime.<REGION>.amazonaws.com/openai/v1` |
+| `runtime_messages`         | Anthropic SDK, Messages content               | `https://bedrock-runtime.<REGION>.amazonaws.com/anthropic` |
+| `mantle_openai_responses`  | OpenAI SDK, Responses input/output            | `https://bedrock-mantle.<REGION>.api.aws/openai/v1`        |
+| `mantle_openai_chat`       | OpenAI SDK, Chat Completions messages/choices | `https://bedrock-mantle.<REGION>.api.aws/openai/v1`        |
+| `mantle_messages`          | Anthropic SDK, Messages content               | `https://bedrock-mantle.<REGION>.api.aws/anthropic`        |
+| `runtime_converse`         | Bedrock Converse                              | boto3 `bedrock-runtime` client                             |
+| `runtime_invoke`           | model-native InvokeModel payload              | boto3 `bedrock-runtime` client                             |
 
 Only `runtime_converse` and `runtime_invoke` perform Bedrock-native payload/response rewrites.
-The six compatible-API lanes preserve the selected source API request and response shape. All
+The six compatible-API lanes preserve the selected source API request and response shape for
+the call sites assigned to that route. All
 compatible-API examples for servers, workers, and scheduled jobs MUST use an auto-refreshing
 provider, `lambda: provide_token(region=region)`, rather than storing a bearer token.
 
@@ -212,7 +218,7 @@ Anthropic Messages lane example:
 ```python
 from anthropic import Anthropic
 client = Anthropic(
-    base_url=f"https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1",
+    base_url=f"https://bedrock-runtime.{region}.amazonaws.com/anthropic",
     auth_token=lambda: provide_token(region=region),
 )
 response = client.messages.create(
@@ -221,6 +227,9 @@ response = client.messages.create(
 )
 text = response.content[0].text
 ```
+
+Anthropic SDK appends `/v1/messages` to the `/anthropic` base, so the final request path is
+exactly `/anthropic/v1/messages`.
 
 Use the Mantle hosts from the lane table only for exact `mantle_*` selections. Do not reshape
 Chat into Responses or Messages into Converse unless the selected path explicitly changes that
@@ -287,7 +296,7 @@ client = anthropic.Anthropic()
 import os
 import anthropic
 client = anthropic.Anthropic(
-    base_url="https://bedrock-mantle.us-east-1.api.aws/anthropic/v1",
+    base_url="https://bedrock-mantle.us-east-1.api.aws/anthropic",
     auth_token=lambda: provide_token(region="us-east-1"),
 )
 ```

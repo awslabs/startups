@@ -52,10 +52,10 @@ Do not generalize these rows to another model or future date. Re-read its card.
 
 ## Hosts, credentials, and IAM
 
-| Path           | Base URL                                                   | ID form                 | IAM family             |
-| -------------- | ---------------------------------------------------------- | ----------------------- | ---------------------- |
-| Runtime OpenAI | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1` | current Runtime/CRIS ID | `bedrock:InvokeModel*` |
-| Mantle OpenAI  | `https://bedrock-mantle.{region}.api.aws/openai/v1`        | documented bare ID      | `bedrock-mantle:*`     |
+| Path           | Base URL                                                   | ID form                 | IAM family                                                                 |
+| -------------- | ---------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------- |
+| Runtime OpenAI | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1` | current Runtime/CRIS ID | `bedrock:InvokeModel*`                                                     |
+| Mantle OpenAI  | `https://bedrock-mantle.{region}.api.aws/openai/v1`        | documented bare ID      | `CreateInference`, `GetProject`, `ListProjects`, and `CallWithBearerToken` |
 
 Use an auto-refreshing short-lived Bedrock token provider for long-running services. Never
 reuse an OpenAI API key, commit a token, pair a bare Mantle ID with Runtime, or pair a prefixed
@@ -66,12 +66,17 @@ Runtime CRIS ID with Mantle.
 For the same model and routing option, public endpoint guidance says per-token pricing is the
 same across Runtime and Mantle. Routing still changes price. Current cards can price in-Region
 and geographic CRIS differently from Global CRIS, and Global routing has broader data-residency
-implications. GPT-5.4 and GPT-5.5 point-in-time standard rates are:
+implications. GPT-5.4 and GPT-5.5 point-in-time rates published by the cited model-card pricing
+sections are:
 
-| Model   | In-Region / US Geo input · output per 1M | Global CRIS input · output per 1M |
-| ------- | ---------------------------------------- | --------------------------------- |
-| GPT-5.5 | $5.50 · $33.00                           | $5.00 · $30.00                    |
-| GPT-5.4 | $2.75 · $16.50                           | $2.50 · $15.00                    |
+| Model   | In-Region / US Geo input · output per 1M | Global CRIS |
+| ------- | ---------------------------------------- | ----------- |
+| GPT-5.5 | $5.50 · $33.00                           | Unverified  |
+| GPT-5.4 | $2.75 · $16.50                           | Unverified  |
+
+The public sections cited here do not publish a distinct price for the `global.` GPT-5.4 or
+GPT-5.5 IDs. Treat pricing for those IDs as unavailable unless a current public AWS source
+explicitly lists it; do not derive it from OpenAI's standard rates.
 
 Never infer availability from a price row or price from an endpoint row. Revalidate the model
 card's pricing, context tier, API, and Region immediately before estimating. A cached amount is

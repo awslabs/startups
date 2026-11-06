@@ -21,10 +21,12 @@ _knowledge:
 **Schema reference**: `references/shared/schema-preferences.md`.
 
 When the AI fragment fires, the assembler MUST write
-`ai_constraints.ai_endpoint_requirements` as the confirmed array. Allowed values are
+`ai_constraints.ai_endpoint_requirements` as a schema wrapper whose `value` is the confirmed
+array. Set `chosen_by`, `prompt`, and `design_consequence` like every other GCP constraint row;
+use `chosen_by: "derived"` when the user confirms the detected/default union. Allowed values are
 `background_inference`, `server_side_tools`, `web_search`, `projects`, `workspaces`,
-`required_model_api`, and `strict_in_region`; write `[]` when none apply. Preserve all unrelated
-constraint values and existing default behavior.
+`required_model_api`, and `strict_in_region`; write `value: []` when none apply. Preserve all
+unrelated constraint values and existing default behavior.
 
 ## This unit owns the conversation
 

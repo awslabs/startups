@@ -43,10 +43,17 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 
 ## Step 0: Determine Artifact Path
 
-Check `preferences.json` → `ai_constraints.ai_framework.value` and `aws-design-ai.json` → `ai_architecture.code_migration.migration_path`:
+Read `aws-design-ai.json → ai_architecture.bedrock_models[]` and build one artifact route
+per row from its `workload_id`, `call_sites[]`, `aws_model_id`, and `migration_path`. Preserve
+row order and generate the matching lane for each route; mixed Responses, Chat, and Messages
+repositories may emit several lane-specific client setups in one migration. Use
+`ai_architecture.code_migration.migration_path` only for a legacy single-surface artifact whose
+rows lack paths. If a mixed artifact lacks a row path, or a call site matches zero or multiple
+rows, STOP with `Unsupported or ambiguous call-site route` rather than applying a run-wide path.
 
-Normalize legacy absent/`direct`, `converse`, `gpt-oss`, and `mantle` once at this
-boundary. Reject every other unknown non-empty value. Then dispatch exactly:
+Check `preferences.json` → `ai_constraints.ai_framework.value`. Normalize legacy absent/`direct`,
+`converse`, `gpt-oss`, and `mantle` per row. Reject every other unknown non-empty value. Then
+dispatch exactly:
 
 | `migration_path`           | Artifact lane                                                  |
 | -------------------------- | -------------------------------------------------------------- |
@@ -74,8 +81,9 @@ Bedrock token, the selected prefixed Runtime/CRIS ID, and `bedrock:InvokeModel*`
 the selected Responses or Chat method and payload shape.
 
 For `runtime_messages`, generate source-SDK code with
-`https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1`, the same credential posture,
-the selected Runtime/CRIS ID, and Runtime IAM. Preserve `messages.create`. Do not also emit the
+`https://bedrock-runtime.{region}.amazonaws.com/anthropic`, the same credential posture,
+the selected Runtime/CRIS ID, and Runtime IAM. Preserve `messages.create`; the Anthropic SDK
+appends `/v1/messages`, so the final path is `/anthropic/v1/messages`. Do not also emit the
 Bedrock-native provider adapter for these lanes.
 
 ## Step 1M: Generate Mantle Migration Script (source SDK via Mantle)
@@ -88,7 +96,10 @@ Generate `ai-migration/migrate_to_mantle.sh` — a shell script that configures 
 - Print the endpoint-appropriate base path. OpenAI paths use `https://bedrock-mantle.{region}.api.aws/openai/v1`; Anthropic Messages uses the currently documented Mantle Anthropic base path.
 - Preserve `responses.create`, `chat.completions.create`, or `messages.create` according to the exact `mantle_*` path.
 - Print the model string change to the documented bare Mantle model ID and use an auto-refreshing short-lived Bedrock token.
-- Generate `bedrock-mantle:*` IAM scoped as current public documentation permits; do not emit Runtime actions for this lane.
+- Generate only `bedrock-mantle:CreateInference`, `bedrock-mantle:GetProject`,
+  `bedrock-mantle:ListProjects`, and `bedrock-mantle:CallWithBearerToken` via `iam_policy.py`,
+  scoped as current public documentation permits: project ARN for the first three and
+  `Resource: "*"` only for `CallWithBearerToken`; do not emit Runtime actions for this lane.
 - **Add a warning comment** about `max_tokens`: OpenAI SDK users migrating via Mantle carry over their existing `max_tokens` value unchanged. If the existing value is 4096 (OpenAI default), this reduces Bedrock concurrency by 5–8x on TPM quota. Instruct users to audit `max_tokens` before production and include the workload-type lookup table (see Step 1M max_tokens guidance above).
 - Note: "The source SDK and selected API shape are preserved; endpoint, credential, model ID, and IAM change."
 - Reference [Mantle documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) for API key generation

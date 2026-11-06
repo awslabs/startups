@@ -75,6 +75,18 @@ def test_chat_completions_gpt5_target_selects_runtime_chat():
     assert "chat_completions_to_responses_required" not in _codes(rec["blocks"])
 
 
+def test_chat_completions_mantle_model_api_selector_preserves_chat():
+    rec = _recommend(
+        _workload(
+            source={"api_surface": "chat_completions", "model_ids": ["gpt-5.5"]},
+            requirements={"verified_mantle_only_model_api": True},
+        )
+    )
+    assert rec["api_path"] == "mantle_openai_chat"
+    assert "chat_completions_to_responses_required" not in _codes(rec["blocks"])
+    assert "chat_to_responses_request" not in _delta_codes(rec)
+
+
 def test_chat_completions_runtime_path_does_not_emit_reshape_deltas():
     rec = _recommend(
         _workload(

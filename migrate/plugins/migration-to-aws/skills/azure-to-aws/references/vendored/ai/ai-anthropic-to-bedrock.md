@@ -49,9 +49,10 @@ or `mantle_messages` only for a verified selector.
 ## Step 3: Preserve the Anthropic client on Runtime
 
 Keep `client.messages.create(...)` and its payload shape. Change the base URL to
-`https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1`, replace the source API key with
+`https://bedrock-runtime.{region}.amazonaws.com/anthropic`, replace the source API key with
 an auto-refreshing short-lived Bedrock token provider, and use the Runtime model or CRIS
-inference-profile ID selected from the current model card. Do not commit source API keys or
+inference-profile ID selected from the current model card. The Anthropic SDK appends
+`/v1/messages`, producing the final request path `/anthropic/v1/messages`. Do not commit source API keys or
 short-lived tokens.
 
 Use `boto3` Converse only when the user explicitly chooses the normalized Bedrock-native API
@@ -75,7 +76,7 @@ for the exact model and inference profile.
 - [ ] Current Endpoint availability, API compatibility, Programmatic Access, and Region data were checked
 - [ ] `runtime_messages` is used unless a verified Mantle selector applies
 - [ ] `client.messages.create()` and the Anthropic payload shape are preserved on Runtime
-- [ ] Runtime base URL includes `/anthropic/v1`
+- [ ] Runtime SDK base URL ends at `/anthropic`; the SDK sends `/anthropic/v1/messages`
 - [ ] Credentials are short-lived and auto-refreshing; the source API key is removed
 - [ ] IAM actions and model-ID form match the selected endpoint
 - [ ] The exact selected model and path were probed in the target account and Region

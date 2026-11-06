@@ -51,9 +51,10 @@ Derive `ai_endpoint_requirements` from
 Allowed values are `background_inference`, `server_side_tools`, `web_search`, `projects`,
 `workspaces`, `required_model_api`, and `strict_in_region`. Use `[]` when discovery found none
 and the user confirms the default. General server-side/preconfigured tools includes Web Search;
-ordinary client-side tools and stored Responses state do not belong in this array. Persist the
-confirmed array under `ai_constraints.ai_endpoint_requirements`; Design uses it to decide
-whether a verified Mantle exception exists.
+ordinary client-side tools and stored Responses state do not belong in this array. Return the
+confirmed array as the `value` of the `ai_endpoint_requirements` constraint row; the assembler
+persists it under `ai_constraints.ai_endpoint_requirements.value`. Design uses that exact value
+to decide whether a verified Mantle exception exists.
 
 ---
 

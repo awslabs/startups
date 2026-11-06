@@ -72,12 +72,12 @@ STATIC_FALLBACK = {
     "openai.gpt-5.6-luna":                          {"input_per_1k_usd": 0.00022, "output_per_1k_usd": 0.00132},
     "openai.gpt-5.5":                               {"input_per_1k_usd": 0.0055, "output_per_1k_usd": 0.033},
     "openai.gpt-5.4":                               {"input_per_1k_usd": 0.00275, "output_per_1k_usd": 0.0165},
-    # GPT-5.4/GPT-5.5 Runtime CRIS forms. Geo routing uses the data-residency
-    # rate; Global routing uses the standard rate.
+    # GPT-5.4/GPT-5.5 Runtime Geo CRIS forms use the publicly listed
+    # in-Region/Geo rate. Their Global CRIS rates are not published by the
+    # cited model-card pricing sections, so Global IDs intentionally remain
+    # absent and resolve to pricing unavailable.
     "us.openai.gpt-5.5":                            {"input_per_1k_usd": 0.0055, "output_per_1k_usd": 0.033},
-    "global.openai.gpt-5.5":                        {"input_per_1k_usd": 0.005, "output_per_1k_usd": 0.030},
     "us.openai.gpt-5.4":                            {"input_per_1k_usd": 0.00275, "output_per_1k_usd": 0.0165},
-    "global.openai.gpt-5.4":                        {"input_per_1k_usd": 0.0025, "output_per_1k_usd": 0.015},
     # GPT-5.6 CRIS profile ids (bedrock-runtime). Geo = data-residency tier
     # (same as in-region); Global = standard-price parity.
     "us.openai.gpt-5.6-sol":                        {"input_per_1k_usd": 0.0044, "output_per_1k_usd": 0.022},
@@ -164,10 +164,10 @@ def lookup(region: str, model_id: str) -> dict:
         fb["note"] = ("static pricing table (verified 2026-08-04 against "
                       "aws.amazon.com/bedrock/pricing and the vendored pricing cache)")
         return fb
-    if is_mantle_gpt(model_id):
-        # Short-circuit: the PriceList API carries no rows for the proprietary GPT
-        # models, so a live lookup would burn a round trip and still return nothing —
-        # and a generic "unavailable" would read as "this model doesn't exist".
+    if is_mantle_gpt(model_id) or re.match(
+            r"^(us|in|global)\.openai\.gpt-5", model_id.lower()):
+        # Short-circuit: the PriceList API carries no rows for proprietary GPT
+        # models. Exact IDs absent from the verified table must stay unpriced.
         return unavailable(
             f"the AWS PriceList API does not carry OpenAI's proprietary GPT models, and "
             f"{model_id} is not in the static table. This does NOT mean the model is "

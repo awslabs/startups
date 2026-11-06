@@ -35,9 +35,11 @@ Create an `ai_endpoint_requirements` row from
 `integration.endpoint_sensitive_features` and show it for confirmation. Allowed values:
 `background_inference`, `server_side_tools`, `web_search`, `projects`, `workspaces`,
 `required_model_api`, `strict_in_region`. Use `[]` when none were detected. Ordinary client-side
-tools and stored Responses state are not endpoint requirements. Persist the confirmed array at
-`ai_constraints.ai_endpoint_requirements`; it is the only Clarify input that can justify a
-Mantle exception.
+tools and stored Responses state are not endpoint requirements. Return the confirmed array in
+the row's `value`; the assembler persists the full row object at
+`ai_constraints.ai_endpoint_requirements`, and Design reads
+`ai_constraints.ai_endpoint_requirements.value`. This value is the only Clarify input that can
+justify a Mantle exception.
 
 ## Step 2: The rows
 

@@ -32,7 +32,10 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 defaults (prefer managed Bedrock, no latency constraint, no budget cap).
 
 **Endpoint selection gate:** Read `integration.source_api_surface` and
-`ai_constraints.ai_endpoint_requirements`. Verify the selected model's current Endpoint availability,
+`ai_constraints.ai_endpoint_requirements.value`. Select and record a path independently for
+every confirmed workload/call-site group; write it on that workload's
+`ai_architecture.bedrock_models[].migration_path` row together with `workload_id` and
+`call_sites[]`. Verify the selected model's current Endpoint availability,
 Programmatic Access, API compatibility, and Region data. Default to
 `runtime_openai_responses`, `runtime_openai_chat`, or `runtime_messages` for the matching
 supported source API. Choose a `mantle_*` path only when a confirmed requirement
@@ -199,11 +202,11 @@ the detected API surface whenever the current model/API/Region supports it:
   Runtime/CRIS model ID, and `bedrock:InvokeModel*` IAM.
 - `runtime_openai_chat`: the same Runtime setup while preserving
   `chat.completions.create(...)`.
-- `runtime_messages`: Anthropic SDK, Runtime `/anthropic/v1`, short-lived Bedrock token, and
+- `runtime_messages`: Anthropic SDK, Runtime `/anthropic`, short-lived Bedrock token, and
   Runtime IAM while preserving `messages.create(...)`.
 - `mantle_openai_responses`, `mantle_openai_chat`, or `mantle_messages`: only for a verified
   `ai_endpoint_requirements` selector; use the Mantle host, bare model ID, and
-  `bedrock-mantle:*` IAM. Web Search is a supported preconfigured server-side tool on Mantle
+  `CreateInference`, `GetProject`, `ListProjects`, and `CallWithBearerToken` only IAM. Web Search is a supported preconfigured server-side tool on Mantle
   for documented models.
 - `runtime_converse` or `runtime_invoke`: only for an explicit Bedrock-native API choice or
   required feature; translate payloads intentionally.

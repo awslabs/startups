@@ -87,8 +87,9 @@ def generate_policy(model_ids: list[str], region: str, account_id: str,
         statements.extend([
             {
                 "Sid": "BedrockMantleInference", "Effect": "Allow",
-                "Action": ["bedrock-mantle:CreateInference", "bedrock-mantle:Get*",
-                           "bedrock-mantle:List*"],
+                "Action": ["bedrock-mantle:CreateInference",
+                           "bedrock-mantle:GetProject",
+                           "bedrock-mantle:ListProjects"],
                 "Resource": mantle_project_arn(region, account_id),
             },
             {

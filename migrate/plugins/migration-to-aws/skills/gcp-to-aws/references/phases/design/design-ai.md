@@ -19,7 +19,10 @@ Read `$MIGRATION_DIR/ai-workload-profile.json`:
 Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If absent: use defaults (prefer managed Bedrock, no latency constraint, no budget cap).
 
 **Endpoint selection gate:** Read `integration.source_api_surface` and the confirmed
-`ai_constraints.ai_endpoint_requirements`. Check the selected model's current Endpoint availability, Programmatic Access, API compatibility, and Region data. Emit
+`ai_constraints.ai_endpoint_requirements.value` array. Select and record a path independently
+for every confirmed workload/call-site group; write it on that workload's
+`ai_architecture.bedrock_models[].migration_path` row together with `workload_id` and
+`call_sites[]`. Check the selected model's current Endpoint availability, Programmatic Access, API compatibility, and Region data. Emit
 `runtime_openai_responses`, `runtime_openai_chat`, or `runtime_messages` by default for the
 matching supported source API. Emit `mantle_openai_responses`, `mantle_openai_chat`, or
 `mantle_messages` only when a confirmed requirement (`background_inference`,
@@ -381,7 +384,7 @@ Responses/Chat compatibility for GPT-5.4 and GPT-5.5; revalidate live before sel
 `mantle_messages` only when a confirmed `ai_endpoint_requirements` value is verified as
 Mantle-only for the exact model/API/Region. Web Search is a preconfigured server-side tool and
 can justify Mantle. Preserve Chat Completions when documented; do not reshape it solely because
-Mantle was selected. Use the Mantle host, bare model ID, and `bedrock-mantle:*` IAM.
+Mantle was selected. Use the Mantle host, bare model ID, and `CreateInference`/`GetProject`/`ListProjects` plus `CallWithBearerToken` IAM.
 
 **Converse and Invoke:** Emit `runtime_converse` or `runtime_invoke` only for an explicit
 Bedrock-native API choice or required feature. Do not silently translate an OpenAI- or
@@ -430,7 +433,7 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 | `ai_architecture.honest_assessment`        | string      | `"strong_migrate"`, `"moderate_migrate"`, `"weak_migrate"`, `"recommend_stay"`, `"not_applicable"` (per-workload only — traditional-AI capabilities `document_extraction`/`image_analysis`/`speech_transcription`; never the overall assessment) |
 | `ai_architecture.honest_assessment_reason` | string/null | Required when `honest_assessment == "recommend_stay"`. The specific non-cost blocker (region, Realtime API, separate-service capability, Assistants API feature, unsupported API surface). Null otherwise.                                       |
 | `ai_architecture.tiered_strategy`          | object/null | Tiered model routing (null for low/medium volume)                                                                                                                                                                                                |
-| `ai_architecture.bedrock_models`           | array       | Per-model: `gcp_model_id`, `aws_model_id`, `capabilities_matched[]`, `capability_gaps[]`, `honest_assessment`, `source_provider_price`, `bedrock_price`, `price_comparison`, `migration_complexity`                                              |
+| `ai_architecture.bedrock_models`           | array       | Per-workload route: `workload_id`, `call_sites[]`, source model, `aws_model_id`, exact `migration_path`, `capabilities_matched[]`, `capability_gaps[]`, assessment, prices, and complexity. Preserve confirmed workload order.                   |
 | `ai_architecture.capability_mapping`       | object      | Per-capability: `parity` (full/partial/none), `notes`                                                                                                                                                                                            |
 | `ai_architecture.code_migration`           | object      | `primary_pattern`, `framework`, `files_to_modify[]`, `dependency_changes`                                                                                                                                                                        |
 | `ai_architecture.infrastructure`           | array       | GCP resource → AWS equivalent mappings with confidence                                                                                                                                                                                           |
@@ -443,7 +446,7 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 
 - [ ] `metadata.ai_source` matches `summary.ai_source` from input
 - [ ] Every model in `models[]` has a corresponding `bedrock_models` entry
-- [ ] Every `bedrock_models[]` entry has pricing (`source_provider_price`, `bedrock_price`, `price_comparison`)
+- [ ] Every `bedrock_models[]` entry has `workload_id`, `call_sites[]`, an exact per-row `migration_path`, and pricing (`source_provider_price`, `bedrock_price`, `price_comparison`); mixed source surfaces/providers remain separate rows
 - [ ] Every `design_blocks[]` entry with `capability` in {`document_extraction`, `image_analysis`, `speech_transcription`} has `target_bedrock_model: null`, a non-null `target_aws_service`, and `honest_assessment: "not_applicable"` — these are NOT included in `bedrock_models[]` and do NOT need pricing here. (Estimate phase currently excludes them from cost analysis entirely — see `estimate-ai.md` "Traditional-AI workloads" note. Per-page/per-image/per-minute cost modeling for Textract/Rekognition/Transcribe is a known follow-up, not yet implemented.)
 - [ ] `capability_mapping` covers every `true` capability from `capabilities_summary`
 - [ ] `code_migration.primary_pattern` matches `integration.pattern`

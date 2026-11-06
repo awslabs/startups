@@ -15,12 +15,11 @@
       "model_id_strategy": "clean_openai_model_id",
       "supports_cris": false,
       "strengths": [
-        "Preserves the OpenAI SDK and minimizes client rewrite",
-        "GPT-5.x on Bedrock Mantle is served through the Responses API"
+        "Preserves the OpenAI SDK and Responses surface when a Responses-only selector applies"
       ],
       "constraints": [
-        "Mantle itself has no cross-region form for any GPT model (in-region only); for GPT-5.6 the bedrock-runtime CRIS path covers additional regions instead (see runtime_converse)",
-        "GPT-5.x on Mantle rejects Chat Completions; a Chat Completions source must reshape to Responses (reference-verified on gpt-5.4; the 5.6 cards list Chat Completions as a supported API but its mantle-side availability is unprobed — verify in the target account)",
+        "Mantle itself has no cross-region form for any GPT model; use a documented Runtime CRIS path when the workload permits cross-Region processing",
+        "Chat Completions support is model-specific; preserve Chat through mantle_openai_chat when the current model card and target-account probe confirm it",
         "Availability must be probed in the target account and region"
       ]
     },

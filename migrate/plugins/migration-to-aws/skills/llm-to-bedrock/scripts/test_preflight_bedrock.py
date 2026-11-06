@@ -321,3 +321,66 @@ def test_runtime_invoke_uses_invoke_model_for_chat_model():
     verdict = p.probe_model(client, "anthropic.claude-sonnet-5", "runtime_invoke")
     assert verdict["ok"] is True
     assert client.called["modelId"] == "anthropic.claude-sonnet-5"
+
+
+def test_main_routes_mixed_responses_and_chat_per_model(monkeypatch, capsys):
+    import json
+
+    calls = []
+    monkeypatch.setattr(
+        p, "probe_compatible_model",
+        lambda model, region, path: calls.append((model, path)) or
+        {"ok": True, "reason": "ok", "detail": "authorized"},
+    )
+    monkeypatch.setattr(p, "fetch_bedrock_quotas", lambda region: [])
+    import boto3
+    monkeypatch.setattr(boto3, "client", lambda *args, **kwargs: object())
+
+    rc = p.main([
+        "--region", "us-east-1",
+        "--models", "global.openai.gpt-5.4,us.openai.gpt-5.5",
+        "--api-path", "runtime_openai_responses,runtime_openai_chat",
+    ])
+    out = json.loads(capsys.readouterr().out)
+
+    assert rc == 0
+    assert calls == [
+        ("global.openai.gpt-5.4", "runtime_openai_responses"),
+        ("us.openai.gpt-5.5", "runtime_openai_chat"),
+    ]
+    assert out["api_path"] is None
+    assert out["api_paths"] == ["runtime_openai_responses", "runtime_openai_chat"]
+
+
+def test_main_routes_mixed_openai_and_anthropic_per_model(monkeypatch, capsys):
+    import json
+
+    calls = []
+    monkeypatch.setattr(
+        p, "probe_compatible_model",
+        lambda model, region, path: calls.append((model, path)) or
+        {"ok": True, "reason": "ok", "detail": "authorized"},
+    )
+    monkeypatch.setattr(p, "fetch_bedrock_quotas", lambda region: [])
+    import boto3
+    monkeypatch.setattr(boto3, "client", lambda *args, **kwargs: object())
+
+    rc = p.main([
+        "--region", "us-east-1",
+        "--models", "global.openai.gpt-5.4,global.anthropic.claude-sonnet-5",
+        "--api-path", "runtime_openai_responses,runtime_messages",
+    ])
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["api_paths"] == [
+        "runtime_openai_responses", "runtime_messages"]
+    assert calls[-1] == ("global.anthropic.claude-sonnet-5", "runtime_messages")
+
+
+def test_mixed_path_count_mismatch_fails_closed():
+    import pytest
+
+    with pytest.raises(ValueError, match="API path count"):
+        p.normalize_api_paths(
+            "runtime_openai_responses,runtime_openai_chat",
+            ["model-a", "model-b", "model-c"],
+        )

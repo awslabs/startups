@@ -33,6 +33,32 @@ def read(relative: str) -> str:
     return (SKILLS / relative).read_text()
 
 
+def endpoint_requirements_value(preferences: dict) -> list[str]:
+    """Mirror the documented consumer path for artifact-shape regression coverage."""
+    return preferences["ai_constraints"]["ai_endpoint_requirements"]["value"]
+
+
+def test_endpoint_requirements_artifact_shape_empty_and_nonempty():
+    for value in ([], ["web_search", "strict_in_region"]):
+        preferences = {
+            "ai_constraints": {
+                "ai_endpoint_requirements": {
+                    "value": value,
+                    "chosen_by": "derived",
+                    "prompt": "Confirmed endpoint requirements",
+                    "design_consequence": "Select the matching endpoint",
+                }
+            }
+        }
+        assert endpoint_requirements_value(preferences) == value
+
+    for skill in ("gcp-to-aws", "azure-to-aws"):
+        assembler = read(f"{skill}/references/phases/clarify/clarify-assemble.md")
+        design = read(f"{skill}/references/phases/design/design-ai.md")
+        assert "ai_endpoint_requirements" in assembler and "value" in assembler
+        assert "ai_constraints.ai_endpoint_requirements.value" in design
+
+
 def test_runtime_default_and_verified_mantle_selectors_are_reachable():
     for skill in ("gcp-to-aws", "azure-to-aws"):
         entrypoint = read(f"{skill}/SKILL.md")
@@ -61,18 +87,28 @@ def test_exact_paths_reach_generation_with_matching_hosts_and_iam():
         assert path in gcp
         assert path in azure
     assert "bedrock-runtime.{region}.amazonaws.com/openai/v1" in combined
-    assert "bedrock-runtime.{region}.amazonaws.com/anthropic/v1" in combined
+    assert "bedrock-runtime.{region}.amazonaws.com/anthropic" in combined
     assert "bedrock-mantle.{region}.api.aws/openai/v1" in combined
     assert "bedrock:InvokeModel" in combined
-    assert "bedrock-mantle:*" in combined
+    for action in (
+        "CreateInference", "GetProject", "ListProjects", "CallWithBearerToken"):
+        assert action in combined
+    assert "bedrock-mantle:*" not in combined
     assert "auto-refreshing short-lived" in combined
 
 
 def test_llm_executor_consumes_the_delegated_exact_vocabulary():
     skill = read("llm-to-bedrock/SKILL.md")
+    analyzer = (SKILLS.parent / "agents/llm2bedrock-code-analyzer.md").read_text()
+    rewriter = (SKILLS.parent / "agents/llm2bedrock-code-rewriter.md").read_text()
     assert "gcp-to-aws" in skill
     for path in EXACT_PATHS:
         assert path in skill
+    assert "Bedrock workload routes:" in skill
+    assert "mixed" in skill
+    assert "Responses+Chat or OpenAI+Anthropic" in skill
+    assert "Unsupported or ambiguous call-site" in analyzer and "route:" in analyzer
+    assert "Unsupported or ambiguous call-site route" in rewriter
     assert "unknown" in skill.lower() and "STOP" in skill
 
 

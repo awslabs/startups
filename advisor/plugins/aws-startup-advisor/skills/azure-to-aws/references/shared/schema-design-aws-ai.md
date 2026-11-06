@@ -98,8 +98,9 @@ Traditional-AI capabilities (AWS AI service, not Bedrock): `document_extraction`
   recommend staying when the source models are on Bedrock.
 - **`tiered_strategy`** — object when `ai_token_volume == "high"` (a 3-tier routing plan);
   null for low/medium.
-- **`bedrock_models[]`** — per Bedrock target: `source_model_id`, `aws_model_id`,
-  `capabilities_matched[]`, `capability_gaps[]`, `honest_assessment`, `source_provider_price`,
+- **`bedrock_models[]`** — one route per confirmed workload/call-site group, preserving
+  workload order: `workload_id`, `call_sites[]`, `source_model_id`, `aws_model_id`,
+  `migration_path`, `capabilities_matched[]`, `capability_gaps[]`, `honest_assessment`, `source_provider_price`,
   `bedrock_price`, `price_comparison`, `migration_complexity`, `model_change` (bool),
   `migration_path` (see below), `quota_risk` (`low|medium|high`). Traditional-AI capabilities
   do NOT appear here — they are `design_blocks[]` rows with `target_aws_service`.
@@ -176,6 +177,8 @@ rubric file (`ai.md`, `ai-azure-openai-to-bedrock.md`, or a `vendored/ai/*` ref)
       `price_comparison`.
 - [ ] `honest_assessment` overall is the weakest across `bedrock_models[]`; if
       `recommend_stay`, `honest_assessment_reason` names a non-cost blocker.
+- [ ] Every `bedrock_models[]` route has `workload_id`, `call_sites[]`, and an exact
+      `migration_path`; mixed API surfaces/providers remain separate and each call site maps once.
 - [ ] Every `migration_path` is in the exact vocabulary and its endpoint host, base path,
       credential method, IAM actions, and model-ID form match.
 - [ ] If `ai_source` is `azure_openai` or `openai`: every source model that is available on

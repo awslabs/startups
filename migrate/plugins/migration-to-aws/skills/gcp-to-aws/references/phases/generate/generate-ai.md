@@ -28,16 +28,17 @@ Check `preferences.json` → `ai_constraints.ai_framework` to determine the migr
 | Voice Platform (Vapi, Bland.ai)   | Check native Bedrock support, update dashboard                | Dashboard config  |
 | Framework (LangChain, LlamaIndex) | Swap provider import (e.g., `ChatBedrock` for `ChatVertexAI`) | 1-5 lines of code |
 
-**Source-SDK-preserving paths** — dispatch on the exact `migration_path`, never a prefix:
+**Source-SDK-preserving paths** — dispatch each `bedrock_models[]` route on its exact
+`migration_path`, never a prefix or one run-wide value:
 
-| Path                       | Preserve                  | Base URL                                                      | IAM                    |
-| -------------------------- | ------------------------- | ------------------------------------------------------------- | ---------------------- |
-| `runtime_openai_responses` | `responses.create`        | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`    | `bedrock:InvokeModel*` |
-| `runtime_openai_chat`      | `chat.completions.create` | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1`    | `bedrock:InvokeModel*` |
-| `runtime_messages`         | `messages.create`         | `https://bedrock-runtime.{region}.amazonaws.com/anthropic/v1` | `bedrock:InvokeModel*` |
-| `mantle_openai_responses`  | `responses.create`        | `https://bedrock-mantle.{region}.api.aws/openai/v1`           | `bedrock-mantle:*`     |
-| `mantle_openai_chat`       | `chat.completions.create` | `https://bedrock-mantle.{region}.api.aws/openai/v1`           | `bedrock-mantle:*`     |
-| `mantle_messages`          | `messages.create`         | documented Mantle Anthropic base path                         | `bedrock-mantle:*`     |
+| Path                       | Preserve                  | Base URL                                                   | IAM                                                                      |
+| -------------------------- | ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `runtime_openai_responses` | `responses.create`        | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1` | `bedrock:InvokeModel*`                                                   |
+| `runtime_openai_chat`      | `chat.completions.create` | `https://bedrock-runtime.{region}.amazonaws.com/openai/v1` | `bedrock:InvokeModel*`                                                   |
+| `runtime_messages`         | `messages.create`         | `https://bedrock-runtime.{region}.amazonaws.com/anthropic` | `bedrock:InvokeModel*`                                                   |
+| `mantle_openai_responses`  | `responses.create`        | `https://bedrock-mantle.{region}.api.aws/openai/v1`        | `CreateInference`/`GetProject`/`ListProjects` plus `CallWithBearerToken` |
+| `mantle_openai_chat`       | `chat.completions.create` | `https://bedrock-mantle.{region}.api.aws/openai/v1`        | `CreateInference`/`GetProject`/`ListProjects` plus `CallWithBearerToken` |
+| `mantle_messages`          | `messages.create`         | documented Mantle Anthropic base path                      | `CreateInference`/`GetProject`/`ListProjects` plus `CallWithBearerToken` |
 
 For every row, use an auto-refreshing short-lived Bedrock token and the endpoint-appropriate
 model-ID form. `runtime_converse` and `runtime_invoke` generate the Bedrock-native adapter.
@@ -65,7 +66,7 @@ Based on `ai-workload-profile.json` → `integration.pattern` and `integration.l
 | ---------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | OpenAI SDK (Responses) | Runtime or Mantle Responses       | Preserve `responses.create`; change endpoint, credential, model ID, and IAM to match the exact path                                                |
 | OpenAI SDK (Chat)      | Runtime or Mantle Chat            | Preserve `chat.completions.create` when the selected model/API supports it                                                                         |
-| Anthropic SDK          | Runtime or Mantle Messages        | Preserve `messages.create`; use `/anthropic/v1` on Runtime                                                                                         |
+| Anthropic SDK          | Runtime or Mantle Messages        | Preserve `messages.create`; use `/anthropic` on Runtime                                                                                            |
 | Vertex AI (Python)     | boto3 Bedrock Converse API        | `GenerativeModel.generate_content()` → `bedrock.converse()`                                                                                        |
 | Vertex AI (JS)         | @aws-sdk/client-bedrock-runtime   | `model.generateContent()` → `client.send(new ConverseCommand())`                                                                                   |
 | Vertex AI (Go)         | aws-sdk-go-v2 bedrockruntime      | `aiplatform` → `bedrockruntime.Converse()`                                                                                                         |

@@ -30,8 +30,8 @@ wording are Azure-swapped (Azure OpenAI, no Gemini).
 > **Integration:** [`integration.pattern`] via [`integration.primary_sdk`] ·
 > **Gateway/router:** [`integration.gateway_type`, or "None (direct SDK)"]
 
-Before the fast-path check, derive and confirm
-`ai_constraints.ai_endpoint_requirements` from `integration.endpoint_sensitive_features`.
+Before the fast-path check, derive and confirm the `value` for the
+`ai_constraints.ai_endpoint_requirements` row from `integration.endpoint_sensitive_features`.
 Allowed values: `background_inference`, `server_side_tools`, `web_search`, `projects`,
 `workspaces`, `required_model_api`, `strict_in_region`. Use `[]` only through the existing
 assumption/default flow. Ordinary client-side tools and stored Responses state do not belong in

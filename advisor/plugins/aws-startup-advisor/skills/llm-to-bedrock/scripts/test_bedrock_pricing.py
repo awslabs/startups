@@ -232,17 +232,21 @@ def test_unpriced_mantle_gpt_says_unavailable_not_nonexistent(monkeypatch):
     assert "aws.amazon.com/bedrock/pricing" in v["note"]
 
 
-def test_gpt_54_and_55_runtime_cris_forms_price_exactly():
+def test_gpt_54_and_55_runtime_cris_forms_price_only_verified_geo_rates():
     expected = {
         "us.openai.gpt-5.4": (0.00275, 0.0165),
-        "global.openai.gpt-5.4": (0.0025, 0.015),
         "us.openai.gpt-5.5": (0.0055, 0.033),
-        "global.openai.gpt-5.5": (0.005, 0.030),
     }
     for model_id, rates in expected.items():
         value = bp.lookup("us-east-1", model_id)
         assert value["available"] is True, model_id
         assert (value["input_per_1k_usd"], value["output_per_1k_usd"]) == rates
+
+    for model_id in ("global.openai.gpt-5.4", "global.openai.gpt-5.5"):
+        value = bp.lookup("us-east-1", model_id)
+        assert value["available"] is False, model_id
+        assert value["input_per_1k_usd"] is None
+        assert "not in the static table" in value["note"]
 
 
 def test_incomplete_gpt_54_and_55_cris_ids_never_inherit_a_rate():

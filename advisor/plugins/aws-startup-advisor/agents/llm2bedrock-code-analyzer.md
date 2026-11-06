@@ -32,8 +32,10 @@ Read from the context block prepended to this prompt:
 - **Migration plan dir** — the `Migration plan dir:` line. Used by §6 (read plan) and §10 (validate target model IDs).
 - **AWS region** — the `AWS region:` line. Used for Bedrock validation in §10.
 - **AWS profile** — the `AWS profile` line, when present. Pass it to the resolve-bedrock-model-id skill and add `--profile` to any aws CLI call you run; omit when absent.
-- **Bedrock API path** — the exact `Bedrock API path:` line. This is authoritative for
-  endpoint and request-surface selection; never infer it from the model ID.
+- **Bedrock workload routes** — parse the compact JSON from the `Bedrock workload routes:`
+  line. Every object binds one workload/model/call-site group to its exact `migration_path`.
+  This is authoritative for endpoint and request-surface selection; never infer a path from a
+  model ID and never apply one route to all call sites.
 - **Model mapping** — the `Target Bedrock model(s):` line (and the `Resolved target model id:` line, if present), plus the model-mapping artifacts in the plan directory. Drives §7 framework detection and §10 ID validation.
 
 # 4. Helper references to Read
@@ -69,7 +71,10 @@ Extract `ai_architecture.bedrock_models[]` — an array of objects:
   {
     "source_model": "gpt-4o",
     "aws_model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
-    "use_case": "primary"
+    "use_case": "primary",
+    "migration_path": "runtime_openai_responses",
+    "workload_id": "wl-chat",
+    "call_sites": ["src/chat.py:42"]
   },
   {
     "source_model": "text-embedding-3-small",
@@ -242,17 +247,18 @@ grep -rn "image_url\|image_file\|vision\|ImageBlock" <REPO> --include="*.py" --i
 
 # 9. Detect behavior deltas (user-visible parameter-surface differences)
 
-If `source_provider ∈ {openai, google}` AND `same_model_family == false`, scan the source code for known parameter-surface differences between the source provider and Bedrock. The rewriter (T2-5) will ask the user to confirm each user-visible change before modifying code; this step enumerates them. (Vertex AI customers are emitted as `google` per §7.1.2 — parameter surface is identical between Gemini API and Vertex AI Gemini.)
+Assign every scanned call site to exactly one supplied workload route before computing deltas.
+For an OpenAI route that keeps the same model family, select API-surface deltas from that
+route's `migration_path`: Chat lanes preserve Chat Completions, while Responses lanes emit the
+surface-change deltas only for call sites assigned to that route. Anthropic Messages lanes
+preserve Messages. For a genuine model-family change, apply the provider-specific parameter
+deltas below to that route only. Apply these rules independently in stable route order, so mixed
+Responses+Chat and OpenAI+Anthropic repositories retain separate groups.
 
-For any other source_provider (`anthropic`, `cohere`, `custom`) OR `same_model_family == true`, set `behavior_deltas: []` and skip the rest of this section.
-
-If `source_provider == openai` AND `same_model_family == true`, select API-surface deltas from
-`Bedrock API path:` rather than from the model ID. For `runtime_openai_chat` and
-`mantle_openai_chat`, Chat Completions is preserved and no Chat-to-Responses delta applies. For
-`runtime_openai_responses` and `mantle_openai_responses`, emit the API-surface deltas from the
-reference that apply to a source surface change. For all other selected paths, use only deltas
-that apply to that exact target surface. Never label a Runtime path as Mantle merely because the
-model ID contains `openai.gpt-5`.
+If an observed call site matches zero or multiple supplied routes, return a blocked result with
+`reason: "assess_output_missing"` and detail beginning `Unsupported or ambiguous call-site
+route:`; do not choose by model family or first-row order. Never label a Runtime path as Mantle
+merely because the model ID contains `openai.gpt-5`.
 
 1. Read the `behavior-delta-detection` reference at the absolute path given in your
    context block's `behavior-delta-detection reference:` line. Call that file's directory

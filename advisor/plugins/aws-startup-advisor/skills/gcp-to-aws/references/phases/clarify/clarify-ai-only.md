@@ -49,7 +49,8 @@ Check `$MIGRATION_DIR/` for existing state:
 
 ## Endpoint requirements
 
-Before Fast Path, derive and confirm `ai_constraints.ai_endpoint_requirements` from
+Before Fast Path, derive and confirm the `value` for the
+`ai_constraints.ai_endpoint_requirements` wrapper from
 `integration.endpoint_sensitive_features`. Allowed values: `background_inference`,
 `server_side_tools`, `web_search`, `projects`, `workspaces`, `required_model_api`, and
 `strict_in_region`. Default to `[]` only through the existing assumption-sheet/default behavior.
