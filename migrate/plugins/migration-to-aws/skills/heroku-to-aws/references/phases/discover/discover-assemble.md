@@ -35,6 +35,34 @@ After all sub-discoveries complete, assemble `heroku-resource-inventory.json` in
 7. Include `terraform_metadata` section only when `.tf` files with `heroku_*` resources were actually FOUND (the terraform fragment always runs but may exit empty — an empty run contributes no section and no `"terraform"` discovery source).
 8. Include `live_metadata` section (if the live fragment ran, with `found`, `captured_at`, `apps_captured`, `apps_failed`, `capture_warnings`, `limitations` — and `drift` per the Merge & Drift Rules below).
 
+9. **Shared data stores (rule 9).** When live discovery wrote `attached_apps` on any
+   `heroku-postgresql`, `heroku-redis` or `heroku-kafka` add-on, write the top-level
+   `shared_data_stores` section (schema § `shared_data_stores`):
+   - For each such add-on with a non-empty `attached_apps`, the set
+     `{ heroku_app } ∪ attached_apps` is one link. Apps that share any link are in the
+     same cohort (take the connected components over those sets).
+   - Name cohorts `C1`, `C2`, … ordered by app count descending, then by first app
+     name. `shared_stores` lists the linking add-ons' `resource_id`s.
+   - Set `apps_in_cohorts` to the number of distinct apps across all cohorts.
+   - Apps whose data stores are attached to no other app form no cohort — do not
+     emit single-app cohorts.
+
+   This is a label for the report and the estate workbook, not a dependency graph:
+   no `cluster_id` on resources, no edges, no ordering. It tells a reviewer which apps
+   cannot move strictly one at a time without cross-cloud access to a shared store.
+   Skip the section entirely when no add-on carries `attached_apps` (Terraform-only
+   runs cannot see attachments).
+
+10. **Estate workbook (fail-open).** After the inventory is written, run
+    `python3 "<SKILL_BASE>/scripts/emit-estate-workbook.py" --migration-dir "$MIGRATION_DIR"`
+    (absolute paths). It copies the inventory into `$MIGRATION_DIR/heroku-estate.xlsx`,
+    one tab per resource family plus Summary and Shared data stores, so the customer can
+    review what was found in a spreadsheet before any AWS design exists. It prints
+    `ESTATE_OK | …` or `ESTATE_SKIP | reason=…`; on skip, continue — the inventory is
+    the artifact, the workbook is a convenience. Mention the file in the phase output
+    only when it printed `ESTATE_OK`. Later phases re-run the same script to add the
+    AWS mapping and cost tabs.
+
 ## Merge & Drift Rules (when BOTH terraform and live fragments contributed)
 
 Resource identity is `resource_id` (both fragments use the same deterministic ID
