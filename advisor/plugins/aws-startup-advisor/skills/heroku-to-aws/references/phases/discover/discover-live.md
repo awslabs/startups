@@ -80,7 +80,15 @@ text, keep the plan-only entry and record a warning):
 - `pg-<app>.out` → `pg_version`, `data_size_gb` (convert e.g. `10.5 GB`; MB → GB),
   `table_count`, `connection_pooling` (`true` if a Connection Pooling line is
   present, `false` if absent — never omit the field). The `data_size_gb` value
-  feeds downstream database-migration tool selection.
+  feeds downstream database-migration tool selection. Also set `pg_role`:
+  `"follower"` when a `Following:` line is present, `"fork"` when a `Forked From:`
+  line is present, otherwise `"leader"`; copy the referenced attachment name (e.g.
+  `HEROKU_POSTGRESQL_TEAL`) into `pg_leader` (or `null` for a leader). One app
+  commonly owns a leader plus one or more followers — without `pg_role` the Design
+  phase sizes every one of them as a separate database and the data-volume total
+  double-counts. When `pg:info` lists several databases for one app, parse each
+  `=== <ATTACHMENT>` block separately and attach the fields to the add-on whose
+  attachment name matches.
 - `redis-<app>.out` → `redis_version`, `maxmemory_policy`; set `ha_enabled: true`
   when the plan tier starts with `premium` or `private`, and
   `encryption_in_transit: true` for those tiers.

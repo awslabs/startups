@@ -55,30 +55,33 @@ Complete inventory of discovered Heroku resources. Uses a **flat resource model*
 
 Report-level information about the discovery run.
 
-| Field                   | Type              | Required | Description                                                                                                                                                                     |
-| ----------------------- | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `discovery_timestamp`   | string (ISO 8601) | ✅       | When discovery was executed                                                                                                                                                     |
-| `total_apps_discovered` | integer           | ✅       | Count of Heroku apps found                                                                                                                                                      |
-| `discovery_sources`     | string[]          | ✅       | Sources used: `"terraform"`, `"procfile"`, `"billing"`, `"live"`                                                                                                                |
-| `confidence`            | string            | ✅       | `"full"` (primary source(s) parsed/captured successfully) or `"reduced"` (partial data, e.g., Terraform parse errors, failed/skipped live captures, missing expected resources) |
-| `confidence_note`       | string            | ❌       | Explanation when confidence is `"reduced"`                                                                                                                                      |
+| Field                      | Type              | Required | Description                                                                                                                                                                     |
+| -------------------------- | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discovery_timestamp`      | string (ISO 8601) | ✅       | When discovery was executed                                                                                                                                                     |
+| `total_apps_discovered`    | integer           | ✅       | Count of Heroku apps found                                                                                                                                                      |
+| `discovery_sources`        | string[]          | ✅       | Sources used: `"terraform"`, `"procfile"`, `"billing"`, `"live"`                                                                                                                |
+| `confidence`               | string            | ✅       | `"full"` (primary source(s) parsed/captured successfully) or `"reduced"` (partial data, e.g., Terraform parse errors, failed/skipped live captures, missing expected resources) |
+| `confidence_note`          | string            | ❌       | Explanation when confidence is `"reduced"`                                                                                                                                      |
+| `apps_by_environment_tier` | object            | ❌       | Per-tier app counts from assemble rule 5a, e.g. `{ "prod": 3, "staging": 2, "dev": 4, "unmarked": 1 }`                                                                                     |
 
 ### `apps[]` (REQUIRED)
 
 Per-app metadata entries. One entry per discovered Heroku app.
 
-| Field                    | Type           | Required | Description                                                                                               |
-| ------------------------ | -------------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| `app_name`               | string         | ✅       | Heroku app name                                                                                           |
-| `app_id`                 | string (UUID)  | ✅       | Heroku app UUID                                                                                           |
-| `heroku_generation`      | string         | ✅       | `"cedar"`, `"fir"`, or `"unknown"`                                                                        |
-| `generation_action`      | string         | ✅       | Always `"detect_only"` in v1                                                                              |
-| `generation_diagnostics` | string[]       | ✅       | Diagnostic reasons (empty array if resolved cleanly; contains `"generation_unresolved"` on timeout/error) |
-| `space`                  | string \| null | ✅       | Private Space name, or `null` if not in a space                                                           |
-| `discovery_status`       | string         | ✅       | `"success"` or `"discovery_failed"`                                                                       |
-| `failure_reason`         | string \| null | ✅       | Error description when `discovery_status` is `"discovery_failed"`, otherwise `null`                       |
-| `procfile_parse_warning` | string \| null | ✅       | Warning text if Procfile parsing failed, otherwise `null`                                                 |
-| `app_json_parse_warning` | string \| null | ✅       | Warning text if app.json parsing failed, otherwise `null`                                                 |
+| Field                     | Type           | Required | Description                                                                                               |
+| ------------------------- | -------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `app_name`                | string         | ✅       | Heroku app name                                                                                           |
+| `app_id`                  | string (UUID)  | ✅       | Heroku app UUID                                                                                           |
+| `heroku_generation`       | string         | ✅       | `"cedar"`, `"fir"`, or `"unknown"`                                                                        |
+| `generation_action`       | string         | ✅       | Always `"detect_only"` in v1                                                                              |
+| `generation_diagnostics`  | string[]       | ✅       | Diagnostic reasons (empty array if resolved cleanly; contains `"generation_unresolved"` on timeout/error) |
+| `space`                   | string \| null | ✅       | Private Space name, or `null` if not in a space                                                           |
+| `environment_tier`        | string         | ❌       | `"prod"`, `"staging"`, `"qa"`, `"dev"`, `"demo"`, `"test"`, or `"unmarked"` (see assemble rule 5a)        |
+| `environment_tier_source` | string         | ❌       | `"pipeline"` or `"name-heuristic"`; absent when `environment_tier` is absent                              |
+| `discovery_status`        | string         | ✅       | `"success"` or `"discovery_failed"`                                                                       |
+| `failure_reason`          | string \| null | ✅       | Error description when `discovery_status` is `"discovery_failed"`, otherwise `null`                       |
+| `procfile_parse_warning`  | string \| null | ✅       | Warning text if Procfile parsing failed, otherwise `null`                                                 |
+| `app_json_parse_warning`  | string \| null | ✅       | Warning text if app.json parsing failed, otherwise `null`                                                 |
 
 ### `resources[]` (REQUIRED)
 
@@ -198,7 +201,7 @@ Deterministic ID format per resource type:
 **Optional live-enrichment fields** (present only when live discovery ran):
 
 - Any addon: `monthly_price_usd` (number — from the add-on's plan price)
-- **heroku-postgresql**: `pg_version` (string), `data_size_gb` (number — feeds database migration tool selection), `table_count` (integer)
+- **heroku-postgresql**: `pg_version` (string), `data_size_gb` (number — feeds database migration tool selection), `table_count` (integer), `pg_role` (`"leader"` \| `"follower"` \| `"fork"` — from the `Following:` / `Forked From:` lines of `pg:info`), `pg_leader` (string \| null — attachment name of the followed/forked database)
 - **heroku-redis**: `maxmemory_policy` (string)
 
 ### `space` config
