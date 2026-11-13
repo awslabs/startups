@@ -155,6 +155,16 @@ Strands agents deploy on AgentCore Runtime for production:
 | `session`                               | `SessionManager` with in-session state. AgentCore Runtime sessions are stateful by default. |
 | `cross_session`                         | `SessionManager` with S3 backend + AgentCore Memory service for long-term knowledge.        |
 
+**Long-term memory ingestion (`cross_session` only):**
+
+Add `agentic_design.memory_ingestion` to `aws-design-ai.json` with `api` (`"IngestData"` or `"CreateEvent"`) and `rationale` (why the workload needs that path). Omit this object for `none` or `session`.
+
+- Choose `IngestData` when only extracted long-term records are needed and raw interactions do not need to be stored as AgentCore events, including when the application already retains them elsewhere.
+- Choose `CreateEvent` when raw interactions must remain retrievable as AgentCore short-term events or support event branching. If this requirement is unknown, confirm it before selecting an API.
+- Keep the `SessionManager` choice independent: ingestion does not replace session-state persistence. `IngestData` uses the memory's configured long-term extraction strategies; successful submission means accepted, and records become available after processing.
+
+Source: [Ingest content into long-term memory](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/long-term-ingest-data.html).
+
 ---
 
 ## Output: `agentic_design` in `aws-design-ai.json`
@@ -177,17 +187,23 @@ When Strands path is selected, write this to `aws-design-ai.json`:
         }
       ],
       "orchestration_primitive": "single_agent|agents_as_tools|swarm|graph",
-      "session_manager": "none|file|s3",
-      "memory_service": false,
+      "session_manager": "s3",
+      "memory_service": true,
       "deployment_target": "agentcore_runtime",
       "bridge_phase": true,
       "source_framework": "from agentic_profile.framework"
     },
     "regional_fit": "available|preview|unavailable",
+    "memory_ingestion": {
+      "api": "IngestData",
+      "rationale": "The application retains raw interactions elsewhere; only extracted long-term records are needed in AgentCore."
+    },
     "warnings": []
   }
 }
 ```
+
+**Memory fields:** This skeleton illustrates `cross_session`. Select `memory_ingestion.api` and `rationale` using the ingestion rules above; `IngestData` is not an unconditional default. For `none` or `session`, omit `memory_ingestion`, set `strands_config.memory_service` to `false`, and select `session_manager` from the memory integration table.
 
 **Mapping `orchestration_pattern` → `orchestration_primitive`:**
 
@@ -254,6 +270,7 @@ After the standard model comparison summary from `design-ai.md`, add:
 > - Tools to migrate: [count] (existing functions get `@tool` decorator)
 > - Deployment: AgentCore Runtime ([task_duration] sessions)
 > - Memory: [session_manager] + [AgentCore Memory if cross_session]
+> - Memory ingestion (cross_session only): [memory_ingestion.api] — [memory_ingestion.rationale]
 > - Bridge phase: [yes/no — for OpenAI Agents SDK users]
 > - Estimated effort: [range] depending on [drivers from guardrails]
 > - **Performance loop (preview):** Because this design targets AgentCore Runtime, you can optionally add AgentCore's preview performance loop for evaluation, simulation, prompt/tool recommendations, and A/B validation. Note: CloudTrail not yet supported; user simulation incurs model costs.

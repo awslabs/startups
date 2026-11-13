@@ -18,6 +18,14 @@ fragments, no separate plan file). Reads `aws-design-ai.json`, `estimation-ai.js
 budget seed), `ai-workload-profile.json`, `preferences.json`. Missing a REQUIRED input → STOP
 ("Missing required artifact: `<file>`. Complete the prior phase that produces it.").
 
+**Cross-session AgentCore memory:** For Harness with `harness_config.memory_type == "cross_session"`
+or Strands with `strands_config.memory_service == true`, read
+`aws-design-ai.json → agentic_design.memory_ingestion`. Require `api` to be `IngestData` or
+`CreateEvent` and `rationale` to be a non-empty string. If missing or invalid, STOP and report to the
+main window: "Return to Design to confirm raw-event retention and record the memory ingestion
+choice." The file-only worker must not choose an API, prompt the user, or overwrite design or
+preferences inputs.
+
 ## Step 0: Determine the artifact path
 
 Read `aws-design-ai.json → ai_architecture.code_migration.migration_path` and
@@ -123,6 +131,20 @@ default 50). Cost-anomaly monitor `monitor_type = "DIMENSIONAL"`, `monitor_dimen
 `azure_openai` (the pre-cutover provider — flip to `bedrock` to cut over, back to `azure_openai`
 to roll back).
 
+For cross-session AgentCore memory, add an activity to `migration_plan.phases[].activities`
+preserving `memory_ingestion.api` and `rationale`, the application integration point, the
+matching `bedrock-agentcore:IngestData` or `bedrock-agentcore:CreateEvent` IAM action, required
+retrieval permissions, and long-term extraction strategy setup. Verify expected extracted
+facts in the intended namespace with `RetrieveMemoryRecords` (semantic search) or paginated
+`ListMemoryRecords`; use a returned `memoryRecordId` with `GetMemoryRecord` to inspect a
+specific candidate. Match content/metadata rather than merely a non-empty response; a search
+miss alone does not prove extraction failed. `IngestData` returns no record ID and successful
+submission means accepted, not extraction complete. `CreateEvent` also requires a raw-event
+retrieval check; `IngestData` creates no retrievable short-term event.
+
+Write the plan for the current design. For `none` or `session`, omit memory-ingestion
+activities, including any left in a previous `generation-ai.json`.
+
 ## Write `STARTUP_PROGRAMS.md`
 
 AWS Activate tiers, branching on `preferences.json → startup_program_status`
@@ -141,6 +163,8 @@ is AWS-only and ports from gcp unchanged.
       (mantle-only).
 - [ ] Plugin attribution strings say "Azure-to-AWS".
 - [ ] `generation-ai.json` validates; `rollback_plan.mechanism == "feature_flag"`.
+- [ ] Cross-session memory activities preserve the selected API/rationale, integration point,
+      IAM and extraction checks; `none`/`session` plans contain no memory-ingestion activity.
 
 ## Phase Completion
 
